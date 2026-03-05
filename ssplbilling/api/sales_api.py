@@ -135,27 +135,29 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
         s["actual_qty"] = float(s["actual_qty"] or 0)
         s["reserved_qty"] = float(s["reserved_qty"] or 0)
 
-    # Last purchase by customer
-    last_purchase = None
+    # Previous purchases by customer
+    previous_purchases = []
     if customer:
         rows = frappe.db.sql(
             """
-            SELECT si.posting_date as date, sii.rate, sii.qty
+            SELECT si.name, si.posting_date as date, sii.rate, sii.qty, sii.discount_percentage as discount
             FROM `tabSales Invoice Item` sii
             JOIN `tabSales Invoice` si ON si.name = sii.parent
             WHERE sii.item_code = %s AND si.customer = %s AND si.docstatus = 1
-            ORDER BY si.posting_date DESC
-            LIMIT 1
+            ORDER BY si.posting_date DESC, si.creation DESC
+            LIMIT 5
             """,
             (item_code, customer),
             as_dict=True,
         )
-        if rows:
-            last_purchase = {
-                "date": str(rows[0].date),
-                "rate": float(rows[0].rate),
-                "qty": float(rows[0].qty),
-            }
+        for r in rows:
+            previous_purchases.append({
+                "name": r.name,
+                "date": str(r.date),
+                "rate": float(r.rate),
+                "qty": float(r.qty),
+                "discount": float(r.discount or 0),
+            })
 
     # All selling price lists
     price_lists = frappe.get_all(
@@ -169,7 +171,7 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
 
     return {
         "stock": stock,
-        "last_purchase": last_purchase,
+        "previous_purchases": previous_purchases,
         "price_lists": price_lists,
     }
 

@@ -108,8 +108,16 @@
                 <div v-else class="text-xs text-gray-300">No stock data</div>
               </div>
               <div class="flex-1">
-                <div class="mb-1 text-[10px] font-bold uppercase text-gray-400">Last Purchase</div>
-                <div v-if="selectedItemData.lastPurchase" class="text-xs text-gray-600">{{ selectedItemData.lastPurchase.date }} <span class="ml-1 font-mono font-semibold">@ &#8377;{{ Number(selectedItemData.lastPurchase.rate || 0).toFixed(2) }}</span> <span class="ml-1 text-gray-400">x {{ selectedItemData.lastPurchase.qty }}</span></div>
+                <div class="mb-1 text-[10px] font-bold uppercase text-gray-400">Previous purchases</div>
+                <div v-if="selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="flex flex-col">
+                  <div v-for="p in selectedItemData.previousPurchases" :key="p.name" class="flex items-center gap-2 border-b border-gray-50 py-0.5 text-[11px] last:border-0">
+                    <span class="w-24 truncate font-medium text-blue-600" :title="p.name">{{ p.name }}</span>
+                    <span class="text-gray-400">{{ p.date }}</span>
+                    <span class="font-mono font-bold text-gray-700">&#8377;{{ p.rate.toFixed(2) }}</span>
+                    <span class="text-gray-400">x{{ p.qty }}</span>
+                    <span v-if="p.discount > 0" class="font-bold text-red-500">-{{ p.discount }}%</span>
+                  </div>
+                </div>
                 <div v-else class="text-xs text-gray-300">--</div>
               </div>
               <div class="flex-1">
@@ -634,14 +642,14 @@ watch(selectedRow, async (idx) => {
       await insightResource.submit({ item_code: code, customer: customer.value || null, warehouse: defaultWarehouse.value || null })
       const d = insightResource.data?.message || insightResource.data
       if (d) {
-        selectedItemData.value = {
-          item_code: code,
-          item_name: items.value[idx].item_name,
-          uom: items.value[idx].uom,
-          stock: d.stock || [],
-          lastPurchase: d.last_purchase,
-          priceLists: (d.price_lists || []).map(pl => ({ name: pl.name, rate: pl.rate })),
-        }
+          selectedItemData.value = {
+            item_code: code,
+            item_name: items.value[idx].item_name,
+            uom: items.value[idx].uom,
+            stock: d.stock || [],
+            previousPurchases: d.previous_purchases || [],
+            priceLists: (d.price_lists || []).map(pl => ({ name: pl.name, rate: pl.rate })),
+          }
       }
     } catch (e) { selectedItemData.value = null }
   } else { selectedItemData.value = null }
