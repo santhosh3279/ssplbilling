@@ -1,0 +1,283 @@
+<template>
+  <div class="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+    <div class="bg-white p-6 rounded shadow-sm mb-6 flex gap-4">
+      <div class="flex-1">
+        <label class="block text-sm font-bold text-gray-700">Customer</label>
+        <select v-model="form.customer" class="w-full border p-2 rounded" required>
+          <option v-for="cust in customers" :key="cust.name" :value="cust.name">
+            {{ cust.customer_name || cust.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="flex-1">
+        <label class="block text-sm font-bold text-gray-700">Date</label>
+        <input type="date" v-model="form.bill_date" class="w-full border p-2 rounded" />
+      </div>
+
+      <div class="flex-1">
+        <label class="block text-sm font-bold text-gray-700">Series</label>
+        <select v-model="form.naming_series" class="w-full border p-2 rounded">
+          <option v-for="s in seriesOptions" :key="s" :value="s">{{ s }}</option>
+        </select>
+      </div>
+
+      <div class="flex-1">
+        <label class="block text-sm font-bold text-gray-700">Payment</label>
+        <select v-model="form.payment_type" class="w-full border p-2 rounded">
+          <option value="Cash">Cash</option>
+          <option value="Credit">Credit</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bg-white rounded shadow-sm overflow-hidden">
+      <table class="w-full text-left">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="p-3 w-48">Barcode / Search</th>
+            <th class="p-3">Item Code</th>
+            <th class="p-3">Item Name</th>
+            <th class="p-3 w-24">Rate</th>
+            <th class="p-3 w-24">Stock</th>
+            <th class="p-3 w-24">Qty</th>
+            <th class="p-3 w-24">Disc %</th>
+            <th class="p-3 w-32">Amount</th>
+            <th class="p-3 w-12"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, index) in rows" :key="index" class="border-b">
+            <td class="p-2">
+              <input 
+                :ref="el => setInputRef(el, index, 'barcode')"
+                v-model="row.barcode"
+                @keydown.enter.prevent="handleBarcodeEnter(index)"
+                class="w-full border-b border-gray-300 focus:border-blue-500 outline-none p-1"
+                placeholder="Scan..."
+              />
+            </td>
+            <td class="p-2 text-gray-600">{{ row.item_code }}</td>
+            <td class="p-2 text-gray-600">{{ row.item_name }}</td>
+            <td class="p-2 text-gray-600">{{ row.rate }}</td>
+            <td class="p-2 text-gray-600">{{ row.stock }}</td>
+            
+            <td class="p-2">
+              <input 
+                :ref="el => setInputRef(el, index, 'qty')"
+                type="number"
+                v-model="row.qty"
+                @keydown.enter.prevent="focusNext(index, 'discount')"
+                @input="calculateRow(index)"
+                class="w-full border p-1 rounded"
+              />
+            </td>
+            <td class="p-2">
+              <input 
+                :ref="el => setInputRef(el, index, 'discount')"
+                type="number"
+                v-model="row.discount"
+                @keydown.enter.prevent="focusNextRow(index)"
+                @input="calculateRow(index)"
+                class="w-full border p-1 rounded"
+              />
+            </td>
+            <td class="p-2 font-bold">{{ row.amount.toFixed(2) }}</td>
+            <td class="p-2 text-center text-red-500 cursor-pointer" @click="removeRow(index)">✕</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-6 flex justify-between items-center bg-white p-6 rounded shadow-sm">
+      <div class="text-2xl font-bold">Grand Total: ₹{{ grandTotal.toFixed(2) }}</div>
+      <button 
+        @click="saveInvoice" 
+        class="bg-blue-600 text-white px-8 py-3 rounded font-bold hover:bg-blue-700 transition"
+        :disabled="isSaving"
+      >
+        {{ isSaving ? 'Saving...' : 'SAVE INVOICE (F2)' }}
+      </button>
+    </div>
+
+    <ItemSearchModal 
+      :show="showModal" 
+      :initial-query="currentRowQuery"
+      @close="showModal = false"
+      @selected="handleModalSelection"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { api } from '../services/api'
+import ItemSearchModal from '../components/billing/ItemSearchModal.vue'
+
+// --- STATE ---
+const form = reactive({
+  customer: '',
+  bill_date: new Date().toISOString().split('T')[0],
+  naming_series: '',
+  payment_type: 'Cash'
+})
+
+const customers = ref([])
+const seriesOptions = ref([])
+const rows = ref([])
+const isSaving = ref(false)
+
+// Modal State
+const showModal = ref(false)
+const currentRowQuery = ref('')
+const activeRowIndex = ref(0)
+
+// DOM Refs for dynamic focusing
+const inputRefs = ref({})
+
+// --- COMPUTED ---
+const grandTotal = computed(() => {
+  return rows.value.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
+})
+
+// --- INIT ---
+onMounted(async () => {
+  customers.value = await api.getCustomers()
+  seriesOptions.value = await api.getNamingSeries()
+  if (seriesOptions.value.length) form.naming_series = seriesOptions.value[0]
+  
+  // Initialize first row
+  addRow()
+  
+  // Global hotkeys
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F2') {
+      e.preventDefault()
+      saveInvoice()
+    }
+  })
+})
+
+// --- ROW MANAGEMENT ---
+const getEmptyRow = () => ({
+  barcode: '', item_code: '', item_name: '', rate: 0, stock: 0, qty: 1, discount: 0, amount: 0
+})
+
+const addRow = () => {
+  rows.value.push(getEmptyRow())
+}
+
+const removeRow = (index) => {
+  rows.value.splice(index, 1)
+  if (rows.value.length === 0) addRow()
+}
+
+// --- LOGIC & CALCULATIONS ---
+const calculateRow = (index) => {
+  const row = rows.value[index]
+  const gross = row.qty * row.rate
+  const discountAmount = gross * (row.discount / 100)
+  row.amount = gross - discountAmount
+}
+
+const handleBarcodeEnter = async (index) => {
+  const row = rows.value[index]
+  if (!row.barcode) return
+  
+  const itemData = await api.getItemByBarcode(row.barcode)
+  
+  if (itemData) {
+    applyItemToRow(index, itemData)
+  } else {
+    // Open modal if not found
+    activeRowIndex.value = index
+    currentRowQuery.value = row.barcode
+    showModal.value = true
+  }
+}
+
+const applyItemToRow = (index, itemData) => {
+  const row = rows.value[index]
+  row.item_code = itemData.item_code
+  row.item_name = itemData.item_name
+  row.rate = itemData.rate || (itemData.standard_rate || 0)
+  row.stock = itemData.stock || 0
+  
+  calculateRow(index)
+  focusNext(index, 'qty')
+}
+
+const handleModalSelection = async (item) => {
+  // We only get basic item info from modal, fetch full details just to be safe
+  const itemData = await api.getItemByBarcode(item.name) 
+  applyItemToRow(activeRowIndex.value, itemData || item)
+}
+
+// --- FOCUS MANAGEMENT ---
+const setInputRef = (el, rowIndex, fieldName) => {
+  if (el) {
+    inputRefs.value[`${rowIndex}-${fieldName}`] = el
+  }
+}
+
+const focusNext = (rowIndex, fieldName) => {
+  const nextInput = inputRefs.value[`${rowIndex}-${fieldName}`]
+  if (nextInput) nextInput.focus()
+}
+
+const focusNextRow = (rowIndex) => {
+  if (rowIndex === rows.value.length - 1) {
+    addRow()
+  }
+  setTimeout(() => focusNext(rowIndex + 1, 'barcode'), 50)
+}
+
+// --- SAVE LOGIC ---
+const saveInvoice = async () => {
+  if (!form.customer) return alert('Please select a customer')
+  
+  const validItems = rows.value.filter(r => r.item_code && r.qty > 0)
+  if (!validItems.length) return alert('Please add at least one valid item')
+
+  isSaving.value = true
+
+  const doc = {
+    doctype: 'Sales Invoice',
+    customer: form.customer,
+    posting_date: form.bill_date,
+    naming_series: form.naming_series,
+    set_posting_time: 1,
+    items: validItems.map(item => ({
+      item_code: item.item_code,
+      qty: item.qty,
+      rate: item.rate,
+      discount_percentage: item.discount
+    }))
+  }
+
+  // Handle Cash Payment Mode
+  if (form.payment_type === 'Cash') {
+    doc.is_pos = 1 // Highly recommended for cash sales to auto-allocate payments
+    doc.payments = [{
+      mode_of_payment: 'Cash',
+      amount: grandTotal.value
+    }]
+  }
+
+  try {
+    const response = await api.createInvoice(doc)
+    console.log('Invoice created:', response)
+    
+    // Reset Form
+    form.customer = ''
+    rows.value = [getEmptyRow()]
+    setTimeout(() => focusNext(0, 'barcode'), 100)
+    
+  } catch (error) {
+    console.error('Save failed:', error)
+    alert('Failed to save invoice. Check console.')
+  } finally {
+    isSaving.value = false
+  }
+}
+</script>

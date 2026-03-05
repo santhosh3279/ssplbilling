@@ -1,0 +1,277 @@
+<template>
+  <div class="flex min-h-screen bg-gray-50">
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside class="flex w-56 flex-col border-r border-gray-200 bg-white">
+      <!-- Logo -->
+      <div class="border-b border-gray-100 px-4 py-4">
+        <div class="text-base font-bold text-gray-900">Wholesale<span class="font-light text-gray-400">Billing</span></div>
+        <div class="mt-0.5 text-[10px] text-gray-400">Fast Billing System</div>
+      </div>
+
+      <!-- User -->
+      <div class="border-b border-gray-100 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+            {{ userInitials }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-sm font-semibold text-gray-700">{{ session.fullName.value || 'User' }}</div>
+            <div class="truncate text-[10px] text-gray-400">{{ session.user.value }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-3 py-3">
+        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Menu</div>
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-left text-sm font-semibold text-blue-700"
+        >
+           Dashboard
+        </button>
+      </nav>
+
+      <!-- Settings section -->
+      <div class="border-t border-gray-100 px-3 py-3">
+        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Settings</div>
+
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50"
+          @click="showEncryptionSettings = true"
+        >
+           Price Encryption
+        </button>
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50"
+          @click="showGeneralSettings = true"
+        >
+           General
+        </button>
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50"
+          @click="handleLogout"
+        >
+           Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="flex-1">
+      <!-- Top Bar -->
+      <header class="sticky top-0 z-40 border-b border-gray-200 bg-white px-6 py-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-lg font-bold text-gray-800">Dashboard</h1>
+            <p class="text-xs text-gray-400">{{ today }}</p>
+          </div>
+        </div>
+      </header>
+
+      <!-- Tiles -->
+      <div class="mx-auto max-w-4xl px-6 py-8">
+        <div class="grid grid-cols-3 gap-4">
+          <div
+            v-for="tile in tiles"
+            :key="tile.id"
+            class="group relative cursor-pointer rounded-xl border border-gray-200 bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"
+            @click="openModule(tile.id)"
+          >
+            <span class="absolute right-3 top-3 rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-gray-400">
+              {{ tile.shortcut }}
+            </span>
+            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg text-xl" :class="tile.iconBg">
+              {{ tile.icon }}
+            </div>
+            <div class="text-sm font-semibold text-gray-800">{{ tile.name }}</div>
+            <div class="mt-1 text-xs text-gray-400">{{ tile.desc }}</div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex items-center justify-center gap-6 text-xs text-gray-400">
+          <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F1</kbd> – <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F9</kbd> to quick open</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===================== ENCRYPTION SETTINGS DIALOG ===================== -->
+    <div v-if="showEncryptionSettings" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showEncryptionSettings = false">
+      <div class="w-[440px] rounded-xl bg-white shadow-2xl">
+        <div class="border-b border-gray-200 px-5 py-4">
+          <div class="text-sm font-semibold text-gray-700"> Price Encryption Settings</div>
+          <div class="mt-0.5 text-xs text-gray-400">Map each digit (0–9) to a letter for price display</div>
+        </div>
+        <div class="px-5 py-4">
+          <div class="grid grid-cols-5 gap-3">
+            <div v-for="d in 10" :key="d - 1" class="flex items-center gap-1.5">
+              <span class="w-5 text-center text-sm font-bold text-blue-600">{{ d - 1 }}</span>
+              <span class="text-gray-400">?</span>
+              <input
+                :value="cipherMap[d - 1]"
+                @input="updateCipher(d - 1, $event.target.value)"
+                maxlength="1"
+                class="w-9 rounded border border-gray-300 p-1.5 text-center text-sm font-bold outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div class="mt-4 rounded-lg bg-gray-50 p-3 text-sm">
+            <span class="text-gray-500">Preview:</span> ?1,250 ?
+            <span class="ml-1 font-mono font-bold tracking-wider text-amber-600">{{ encryptPreview }}</span>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-gray-200 px-5 py-3">
+          <button class="rounded border border-gray-300 px-4 py-1.5 text-sm font-semibold text-gray-600 hover:bg-gray-50" @click="resetCipher">Reset Default</button>
+          <button class="rounded bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700" @click="showEncryptionSettings = false">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== GENERAL SETTINGS DIALOG ===================== -->
+    <div v-if="showGeneralSettings" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showGeneralSettings = false">
+      <div class="w-[440px] rounded-xl bg-white shadow-2xl">
+        <div class="border-b border-gray-200 px-5 py-4">
+          <div class="text-sm font-semibold text-gray-700"> General Settings</div>
+        </div>
+        <div class="flex flex-col gap-4 px-5 py-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500">Default Tax Rate (%)</label>
+            <input
+              type="number"
+              v-model.number="defaultTaxRate"
+              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500">Default Warehouse</label>
+            <input
+              v-model="defaultWarehouse"
+              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="Stores - WB"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500">Default Price List</label>
+            <input
+              v-model="defaultPriceList"
+              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="Standard Selling"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500">Bill Naming Series</label>
+            <input
+              v-model="defaultSeries"
+              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="ACC-SINV-.YYYY.-"
+            />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-gray-200 px-5 py-3">
+          <button class="rounded bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700" @click="saveGeneralSettings">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { session } from '../session'
+
+const router = useRouter()
+
+// ==================== USER ====================
+const userInitials = computed(() => {
+  const name = String(session.fullName.value || session.user.value || 'U')
+  return name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || 'U'
+})
+
+async function handleLogout() {
+  await session.logout()
+  router.push('/login')
+}
+
+// ==================== DATE ====================
+const today = new Date().toLocaleDateString('en-IN', {
+  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+})
+
+// ==================== TILES ====================
+const tiles = [
+  { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '', shortcut: 'F1', iconBg: 'bg-blue-50' },
+  { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '', shortcut: 'F2', iconBg: 'bg-green-50' },
+  { id: 'payment', name: 'Payment Entry', desc: 'Outgoing payments', icon: '', shortcut: 'F3', iconBg: 'bg-amber-50' },
+  { id: 'receipt', name: 'Receipt Entry', desc: 'Incoming receipts', icon: '', shortcut: 'F4', iconBg: 'bg-green-50' },
+  { id: 'cashier', name: 'Cashier Entry', desc: 'POS cash management', icon: '', shortcut: 'F5', iconBg: 'bg-amber-50' },
+  { id: 'stock', name: 'Stock Checking', desc: 'Check item stock levels', icon: '', shortcut: 'F6', iconBg: 'bg-blue-50' },
+  { id: 'pricelist', name: 'Price List Viewer', desc: 'View item prices', icon: '', shortcut: 'F7', iconBg: 'bg-green-50' },
+  { id: 'journal', name: 'Journal Entry', desc: 'Manual journal entries', icon: '', shortcut: 'F8', iconBg: 'bg-red-50' },
+  { id: 'contra', name: 'Contra Entry', desc: 'Bank to cash transfers', icon: '', shortcut: 'F9', iconBg: 'bg-amber-50' },
+]
+
+const readyModules = ['sales']
+
+function openModule(id) {
+  if (readyModules.includes(id)) {
+    router.push('/' + id)
+  } else {
+    alert('Coming soon: ' + id)
+  }
+}
+
+// ==================== F-KEY SHORTCUTS ====================
+const routeMap = {
+  F1: 'sales', F2: 'purchase', F3: 'payment',
+  F4: 'receipt', F5: 'cashier', F6: 'stock',
+  F7: 'pricelist', F8: 'journal', F9: 'contra',
+}
+
+function handleKeydown(e) {
+  if (showEncryptionSettings.value || showGeneralSettings.value) return
+  if (routeMap[e.key]) {
+    e.preventDefault()
+    openModule(routeMap[e.key])
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+
+// ==================== ENCRYPTION SETTINGS ====================
+const showEncryptionSettings = ref(false)
+const defaultCipherMap = ['K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T']
+const cipherMap = ref(
+  JSON.parse(localStorage.getItem('wb-cipher') || JSON.stringify(defaultCipherMap))
+)
+
+function updateCipher(idx, val) {
+  cipherMap.value[idx] = (val || '').charAt(0).toUpperCase() || defaultCipherMap[idx]
+  localStorage.setItem('wb-cipher', JSON.stringify(cipherMap.value))
+}
+
+function resetCipher() {
+  cipherMap.value = [...defaultCipherMap]
+  localStorage.setItem('wb-cipher', JSON.stringify(cipherMap.value))
+}
+
+const encryptPreview = computed(() => {
+  return '1250'.split('').map(ch => cipherMap.value[parseInt(ch)] || '?').join('')
+})
+
+// ==================== GENERAL SETTINGS ====================
+const showGeneralSettings = ref(false)
+const defaultTaxRate = ref(JSON.parse(localStorage.getItem('wb-tax-rate') || '18'))
+const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
+const defaultPriceList = ref(localStorage.getItem('wb-price-list') || 'Standard Selling')
+const defaultSeries = ref(localStorage.getItem('wb-series') || 'ACC-SINV-.YYYY.-')
+
+function saveGeneralSettings() {
+  localStorage.setItem('wb-tax-rate', JSON.stringify(defaultTaxRate.value))
+  localStorage.setItem('wb-warehouse', defaultWarehouse.value)
+  localStorage.setItem('wb-price-list', defaultPriceList.value)
+  localStorage.setItem('wb-series', defaultSeries.value)
+  showGeneralSettings.value = false
+}
+</script>

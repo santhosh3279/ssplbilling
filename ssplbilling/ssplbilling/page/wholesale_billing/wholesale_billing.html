@@ -1,0 +1,128 @@
+<style>
+  .wb-container { display: flex; height: calc(100vh - 150px); gap: 20px; font-family: inherit; }
+  .wb-left-panel { flex: 7; display: flex; flex-direction: column; gap: 15px; }
+  .wb-right-panel { flex: 3; background: #f8f9fa; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; }
+  .wb-header-card { display: flex; gap: 15px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+  .wb-grid-card { flex: 1; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; flex-direction: column; }
+  .wb-table-wrapper { flex: 1; overflow-y: auto; }
+  
+  /* --- NEW SPREADSHEET TABLE STYLES --- */
+  .wb-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .wb-table th { background: #f1f5f9; padding: 12px 10px; font-size: 12px; text-transform: uppercase; color: #475569; position: sticky; top: 0; border: 1px solid #cbd5e1; z-index: 10;}
+  .wb-table td { border: 1px solid #e2e8f0; padding: 0; position: relative; } /* Padding is 0 so inputs fill the cell */
+  
+  /* Make inputs invisible until focused, filling the cell */
+  .wb-table input, .wb-table select { 
+      width: 100%; 
+      height: 100%; 
+      padding: 12px 10px; 
+      border: none; 
+      background: transparent; 
+      font-size: 14px; 
+      outline: none; 
+      box-sizing: border-box; 
+      border-radius: 0;
+  }
+  
+  /* Spreadsheet focus effect */
+  .wb-table input:focus { 
+      background-color: #fff; 
+      box-shadow: inset 0 0 0 2px #2563eb; 
+      z-index: 5;
+  }
+
+  /* Override Frappe's default Link field styling inside our table */
+  .wb-item-cell .frappe-control { margin-bottom: 0 !important; }
+  .wb-item-cell .form-group { margin-bottom: 0 !important; }
+  .wb-item-cell .control-input, .wb-item-cell .control-input-wrapper { height: 100%; }
+  .wb-item-cell input.input-with-feedback { 
+      border: none !important; 
+      background-color: transparent !important; 
+      height: 100%; 
+      padding: 12px 10px !important;
+  }
+  .wb-item-cell input.input-with-feedback:focus {
+      box-shadow: inset 0 0 0 2px #2563eb !important; 
+      background-color: #fff !important;
+  }
+
+  /* Text cells that aren't inputs */
+  .wb-row-total { padding: 12px 10px; background-color: #f8fafc; color: #334155; }
+  
+  /* Buttons & Layout */
+  .wb-input { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; outline: none; }
+  .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+  .wb-btn-add { background: #f8fafc; color: #2563eb; border: none; padding: 12px; width: 100%; cursor: pointer; font-weight: 600; border-top: 1px solid #cbd5e1; }
+  .wb-btn-add:hover { background: #f1f5f9; }
+  .wb-summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px; color: #475569; }
+  .wb-total-row { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; border-top: 2px solid #cbd5e1; font-size: 26px; font-weight: bold; color: #0f172a; }
+  .wb-btn-save { background: #2563eb; color: white; border: none; padding: 16px; width: 100%; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-bottom: 12px; transition: 0.2s; }
+  .wb-btn-save:hover { background: #1d4ed8; }
+  .wb-btn-clear { background: #e2e8f0; color: #475569; border: none; padding: 12px; width: 100%; font-size: 16px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+  .wb-btn-clear:hover { background: #cbd5e1; }
+  .wb-btn-remove { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .wb-btn-remove:hover { background-color: #fef2f2; }
+</style>
+
+<div class="wb-container">
+  <div class="wb-left-panel">
+    <div class="wb-header-card">
+      <div style="flex: 1;">
+        <label style="display: block; font-size: 12px; font-weight: bold; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Customer</label>
+        <div id="wb-customer-wrapper">
+            <input type="text" id="wb-customer" class="wb-input" placeholder="Select Customer...">
+        </div>
+      </div>
+      <div style="width: 200px;">
+        <label style="display: block; font-size: 12px; font-weight: bold; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">Payment Mode</label>
+        <select id="wb-pay-type" class="wb-input">
+          <option value="Cash">Cash</option>
+          <option value="Credit">Credit</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="wb-grid-card">
+      <div class="wb-table-wrapper">
+        <table class="wb-table" id="wb-item-table">
+          <thead>
+            <tr>
+              <th style="width: 35%;">Item / Barcode</th>
+              <th style="width: 12%;">Qty</th>
+              <th style="width: 18%;">Rate</th>
+              <th style="width: 12%;">Tax %</th>
+              <th style="width: 18%;">Total</th>
+              <th style="width: 5%;"></th>
+            </tr>
+          </thead>
+          <tbody id="wb-item-body">
+            </tbody>
+        </table>
+      </div>
+      <button class="wb-btn-add" id="wb-add-row">+ Add Row (F4)</button>
+    </div>
+  </div>
+
+  <div class="wb-right-panel">
+    <div>
+      <h3 style="margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; color: #1e293b; font-size: 20px;">Bill Summary</h3>
+      <div class="wb-summary-row" style="margin-top: 20px;">
+        <span>Subtotal</span>
+        <span id="wb-subtotal">₹0.00</span>
+      </div>
+      <div class="wb-summary-row">
+        <span>Total Tax</span>
+        <span id="wb-tax-total">₹0.00</span>
+      </div>
+      <div class="wb-total-row">
+        <span>Grand Total</span>
+        <span id="wb-grand-total" style="color: #16a34a;">₹0.00</span>
+      </div>
+    </div>
+    
+    <div>
+      <button class="wb-btn-save" id="wb-save-btn">Save & Print (Ctrl+Enter)</button>
+      <button class="wb-btn-clear" id="wb-clear-btn">Clear Bill (Esc)</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "creation": "2026-03-02 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "encryption_section",
+  "cipher_map",
+  "discount_account",
+  "section_break_series",
+  "billing_series",
+  "user_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "encryption_section",
+   "fieldtype": "Section Break",
+   "label": "Price Encryption"
+  },
+  {
+   "default": "[\"K\",\"L\",\"M\",\"N\",\"O\",\"P\",\"Q\",\"R\",\"S\",\"T\"]",
+   "fieldname": "cipher_map",
+   "fieldtype": "Data",
+   "label": "Cipher Map (JSON array, digits 0-9)"
+  },
+  {
+   "fieldname": "section_break_series",
+   "fieldtype": "Section Break",
+   "label": "Billing Series"
+  },
+  {
+   "fieldname": "billing_series",
+   "fieldtype": "Table",
+   "label": "Billing Series",
+   "options": "SSPL Billing Series"
+  },
+  {
+   "fieldname": "user_series",
+   "fieldtype": "Table",
+   "label": "User Series ",
+   "options": "USER SERIES"
+  },
+  {
+   "fieldname": "discount_account",
+   "fieldtype": "Link",
+   "label": "Discount Account",
+   "options": "Account"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-03-05 00:40:17.241579",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Billing Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

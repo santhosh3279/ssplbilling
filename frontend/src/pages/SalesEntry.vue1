@@ -1,0 +1,836 @@
+<template>
+  <div class="flex h-screen flex-col">
+    <!-- Top Bar -->
+    <header class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
+      <div class="flex items-center gap-3">
+        <button
+          class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+          @click="router.push('/')"
+        >
+          ← Dashboard
+        </button>
+        <span class="text-xs text-gray-300">|</span>
+        <span class="text-sm font-semibold text-gray-800">Sales Entry</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-gray-400">
+        <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">↑↓</kbd> Navigate rows</span>
+        <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Tab</kbd> Next column</span>
+        <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Ctrl+S</kbd> Save</span>
+        <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
+      </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="flex flex-1 overflow-hidden">
+
+      <!-- ===================== LEFT SIDE (70%) ===================== -->
+      <div class="flex w-[70%] flex-col border-r border-gray-200">
+
+        <!-- Item Entry Table (80%) -->
+        <div class="flex flex-[8] flex-col overflow-hidden">
+          <div class="flex-1 overflow-y-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="sticky top-0 z-10 bg-gray-50">
+                  <th class="w-8 border-b-2 border-gray-200 px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">#</th>
+                  <th class="w-32 border-b-2 border-gray-200 px-2 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Item Code</th>
+                  <th class="border-b-2 border-gray-200 px-2 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Item Name</th>
+                  <th class="w-14 border-b-2 border-gray-200 px-2 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">UOM</th>
+                  <th class="w-16 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Qty</th>
+                  <th class="w-24 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Rate</th>
+                  <th class="w-16 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Tax %</th>
+                  <th class="w-24 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Amount</th>
+                  <th class="w-8 border-b-2 border-gray-200"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Existing rows -->
+                <tr
+                  v-for="(item, idx) in items"
+                  :key="idx"
+                  class="cursor-pointer border-b border-gray-100"
+                  :class="{
+                    'bg-blue-50': selectedRow === idx && !item.deleted,
+                    'bg-red-50/40': item.deleted,
+                    'hover:bg-blue-50/50': !item.deleted,
+                  }"
+                  @click="selectRow(idx)"
+                >
+                  <!-- # -->
+                  <td class="px-3 py-1.5">
+                    <span
+                      class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
+                      :class="item.deleted ? 'bg-red-100 text-red-400' : 'bg-gray-100 text-gray-500'"
+                    >{{ idx + 1 }}</span>
+                  </td>
+
+                  <!-- Item Code -->
+                  <td class="px-2 py-1.5">
+                    <input
+                      v-if="selectedRow === idx && !item.deleted"
+                      :ref="el => setRef(el, 'code', idx)"
+                      v-model="item.item_code"
+                      class="w-full rounded border border-gray-300 bg-white px-2 py-0.5 font-mono text-xs outline-none focus:border-blue-500"
+                      @keydown.enter.prevent="onCodeEnter(idx)"
+                      @keydown.tab.prevent="focusField('qty', idx)"
+                      @keydown.down.prevent="moveRow(idx, 1)"
+                      @keydown.up.prevent="moveRow(idx, -1)"
+                    />
+                    <span v-else class="font-mono text-xs" :class="item.deleted ? 'text-gray-300' : 'text-gray-600'">{{ item.item_code }}</span>
+                  </td>
+
+                  <!-- Item Name -->
+                  <td class="px-2 py-1.5">
+                    <span :class="item.deleted ? 'text-red-300 line-through' : 'text-gray-800'">{{ item.item_name || '—' }}</span>
+                    <span v-if="item.deleted" class="ml-1 text-[10px] font-semibold text-red-400">DELETED</span>
+                  </td>
+
+                  <!-- UOM -->
+                  <td class="px-2 py-1.5 text-gray-400" :class="{ 'text-gray-300': item.deleted }">{{ item.uom || '—' }}</td>
+
+                  <!-- Qty -->
+                  <td class="px-2 py-1.5 text-right">
+                    <input
+                      v-if="!item.deleted"
+                      :ref="el => setRef(el, 'qty', idx)"
+                      type="number"
+                      v-model.number="item.qty"
+                      min="1"
+                      class="w-14 rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none"
+                      @keydown.enter.prevent="focusField('rate', idx)"
+                      @keydown.tab.prevent="focusField('rate', idx)"
+                      @keydown.shift.tab.prevent="focusField('code', idx)"
+                      @keydown.down.prevent="moveRow(idx, 1)"
+                      @keydown.up.prevent="moveRow(idx, -1)"
+                    />
+                    <span v-else class="font-mono text-xs text-gray-300">{{ item.qty }}</span>
+                  </td>
+
+                  <!-- Rate -->
+                  <td class="px-2 py-1.5 text-right">
+                    <input
+                      v-if="!item.deleted"
+                      :ref="el => setRef(el, 'rate', idx)"
+                      type="number"
+                      v-model.number="item.rate"
+                      step="0.01"
+                      class="w-20 rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none"
+                      @keydown.enter.prevent="focusField('tax', idx)"
+                      @keydown.tab.prevent="focusField('tax', idx)"
+                      @keydown.shift.tab.prevent="focusField('qty', idx)"
+                      @keydown.down.prevent="moveRow(idx, 1)"
+                      @keydown.up.prevent="moveRow(idx, -1)"
+                    />
+                    <span v-else class="font-mono text-xs text-gray-300">{{ item.rate }}</span>
+                  </td>
+
+                  <!-- Tax % -->
+                  <td class="px-2 py-1.5 text-right">
+                    <input
+                      v-if="!item.deleted"
+                      :ref="el => setRef(el, 'tax', idx)"
+                      type="number"
+                      v-model.number="item.tax_rate"
+                      step="0.01"
+                      min="0"
+                      class="w-14 rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none"
+                      @keydown.enter.prevent="goToNextRow(idx)"
+                      @keydown.tab.prevent="goToNextRow(idx)"
+                      @keydown.shift.tab.prevent="focusField('rate', idx)"
+                      @keydown.down.prevent="moveRow(idx, 1)"
+                      @keydown.up.prevent="moveRow(idx, -1)"
+                    />
+                    <span v-else class="font-mono text-xs text-gray-300">{{ item.tax_rate }}</span>
+                  </td>
+
+                  <!-- Amount -->
+                  <td class="px-2 py-1.5 text-right font-mono font-semibold" :class="item.deleted ? 'text-gray-300 line-through' : 'text-gray-800'">
+                    {{ item.deleted ? '' : (item.qty * item.rate).toFixed(2) }}
+                  </td>
+
+                  <!-- Delete / Restore -->
+                  <td class="px-2 py-1.5 text-center">
+                    <button
+                      v-if="!item.deleted"
+                      class="rounded px-1 py-0.5 text-xs text-gray-300 hover:bg-red-50 hover:text-red-500"
+                      @click.stop="softDelete(idx)"
+                    >✕</button>
+                    <button
+                      v-else
+                      class="rounded px-1 py-0.5 text-[10px] font-semibold text-blue-400 hover:bg-blue-50 hover:text-blue-600"
+                      @click.stop="restoreItem(idx)"
+                    >↩</button>
+                  </td>
+                </tr>
+
+                <!-- NEW ENTRY ROW -->
+                <tr class="border-b border-gray-100 bg-gray-50/50">
+                  <td class="px-3 py-1.5">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-500">+</span>
+                  </td>
+                  <td class="px-2 py-1.5">
+                    <input
+                      ref="newCodeInput"
+                      v-model="newItemCode"
+                      class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                      placeholder="Item code"
+                      @keydown.enter.prevent="onNewCodeEnter"
+                      @keydown.tab.prevent="focusNewQty"
+                      @keydown.up.prevent="moveToLastActiveRow"
+                    />
+                  </td>
+                  <td class="px-2 py-1.5 text-xs text-gray-400">{{ newPending.item_name || '—' }}</td>
+                  <td class="px-2 py-1.5 text-xs text-gray-400">{{ newPending.uom || '—' }}</td>
+                  <td class="px-2 py-1.5 text-right">
+                    <input
+                      ref="newQtyInput"
+                      v-model.number="newQty"
+                      type="number"
+                      min="1"
+                      class="w-14 rounded border border-gray-300 bg-white px-1 py-1 text-right font-mono text-xs outline-none focus:border-blue-500"
+                      @keydown.enter.prevent="addNewItem"
+                      @keydown.shift.tab.prevent="focusNewCode"
+                    />
+                  </td>
+                  <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">{{ newPending.rate ? newPending.rate.toFixed(2) : '—' }}</td>
+                  <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">{{ defaultTaxRate }}</td>
+                  <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '—' }}</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div v-if="!items.length" class="flex flex-col items-center py-8 text-gray-300">
+              <div class="text-xs">Type an item code and press <kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Enter</kbd></div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-400">
+            <span>{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</span>
+            <span class="font-mono font-semibold text-gray-600">Subtotal: ₹{{ subtotal.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- BOTTOM: Item Insight (20%) -->
+        <div class="flex-[2] overflow-y-auto border-t border-gray-200 bg-white px-4 py-3">
+          <div class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            Item Insight
+            <span v-if="selectedItemData" class="ml-2 font-normal normal-case text-gray-300">{{ selectedItemData.item_code }}</span>
+          </div>
+          <template v-if="selectedItemData">
+            <div class="flex gap-6">
+              <div class="flex-1">
+                <div class="mb-1 text-[10px] font-bold uppercase text-gray-400">📦 Stock</div>
+                <span
+                  class="rounded-full px-2 py-0.5 text-xs font-bold"
+                  :class="selectedItemData.stock > 20 ? 'bg-green-50 text-green-600' : selectedItemData.stock > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'"
+                >{{ selectedItemData.stock }} {{ selectedItemData.uom }}</span>
+              </div>
+              <div class="flex-1">
+                <div class="mb-1 text-[10px] font-bold uppercase text-gray-400">🕐 Last Purchase</div>
+                <div class="text-xs text-gray-600">
+                  {{ selectedItemData.lastDate || '—' }}
+                  <span v-if="selectedItemData.lastRate" class="ml-1 font-mono font-semibold">@ ₹{{ selectedItemData.lastRate.toFixed(2) }}</span>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="mb-1 text-[10px] font-bold uppercase text-gray-400">💰 Prices</div>
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="pl in selectedItemData.priceLists" :key="pl.name" class="rounded bg-amber-50 px-1.5 py-0.5 text-[11px]">
+                    <span class="text-gray-500">{{ pl.name }}:</span>
+                    <span class="ml-0.5 font-mono font-bold tracking-wider text-amber-700">{{ pl.rate }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div v-else class="py-2 text-xs text-gray-300">Click a row to see stock, last purchase & prices</div>
+        </div>
+      </div>
+
+      <!-- ===================== RIGHT SIDE (30%) ===================== -->
+      <div class="flex w-[30%] flex-col overflow-y-auto bg-white">
+        <!-- Invoice Details -->
+        <div class="border-b border-gray-100 p-4">
+          <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Invoice Details</div>
+          <div class="flex flex-col gap-2.5">
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Bill Date</label>
+              <input type="date" v-model="billDate" class="rounded border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Customer</label>
+              <div class="flex gap-1.5">
+                <input
+                  ref="customerInput"
+                  v-model="customer"
+                  class="flex-1 rounded border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500"
+                  placeholder="Type customer name…"
+                  @keydown.enter.prevent="onCustomerEnter"
+                />
+                <button
+                  class="rounded border border-gray-300 px-2 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50"
+                  @click="openNewCustomer"
+                  title="Create new customer"
+                >+ New</button>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <div class="flex flex-1 flex-col gap-1">
+                <label class="text-[10px] font-bold uppercase text-gray-400">Series</label>
+                <select v-model="billSeries" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+                  <option>ACC-SINV-.YYYY.-</option>
+                  <option>SINV-.####</option>
+                </select>
+              </div>
+              <div class="flex flex-1 flex-col gap-1">
+                <label class="text-[10px] font-bold uppercase text-gray-400">Bill No</label>
+                <input value="SINV-2026-00001" readonly class="rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 font-mono text-sm text-gray-400" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment -->
+        <div class="border-b border-gray-100 p-4">
+          <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Payment Mode</div>
+          <div class="flex gap-2">
+            <button
+              class="flex-1 rounded border py-2 text-center text-sm font-semibold transition"
+              :class="paymentMode === 'Cash' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'"
+              @click="paymentMode = 'Cash'"
+            >💵 Cash</button>
+            <button
+              class="flex-1 rounded border py-2 text-center text-sm font-semibold transition"
+              :class="paymentMode === 'Credit' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'"
+              @click="paymentMode = 'Credit'"
+            >📝 Credit</button>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="border-b border-gray-100 p-4">
+          <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Summary</div>
+          <div class="flex justify-between py-1 text-sm">
+            <span class="text-gray-500">Subtotal</span>
+            <span class="font-mono font-semibold">₹{{ subtotal.toFixed(2) }}</span>
+          </div>
+          <div class="flex items-center justify-between py-1 text-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="text-gray-500">Discount</span>
+              <input type="number" v-model.number="discountPct" min="0" max="100" class="w-12 rounded border border-gray-200 px-1 py-0.5 text-right text-xs outline-none focus:border-blue-400" />
+              <span class="text-xs text-gray-400">%</span>
+            </div>
+            <span class="font-mono font-semibold text-red-500">-₹{{ discountAmt.toFixed(2) }}</span>
+          </div>
+          <div class="flex justify-between py-1 text-sm">
+            <span class="text-gray-500">Total Tax</span>
+            <span class="font-mono font-semibold">+₹{{ totalTax.toFixed(2) }}</span>
+          </div>
+          <div class="mt-2 flex justify-between border-t-2 border-gray-200 pt-2">
+            <span class="font-semibold text-gray-700">Grand Total</span>
+            <span class="font-mono text-lg font-bold text-blue-600">₹{{ grandTotal.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-auto flex flex-col gap-2 p-4">
+          <!-- Saved indicator -->
+          <div v-if="billSaved" class="mb-1 rounded bg-green-50 px-3 py-2 text-center text-xs font-semibold text-green-700">
+            ✅ Bill Saved — Press <kbd class="rounded border border-green-300 bg-green-100 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> for new bill
+          </div>
+          <button
+            class="w-full rounded-lg py-2.5 text-center text-sm font-semibold transition"
+            :class="billSaved ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'"
+            @click="saveBill"
+            :disabled="billSaved"
+          >{{ billSaved ? '✅ Saved' : '💾 Save Bill' }}</button>
+          <div class="flex gap-2">
+            <button class="flex-1 rounded-lg border border-gray-300 py-2 text-center text-sm font-semibold text-gray-600 transition hover:bg-gray-50" @click="printBill">🖨 Print</button>
+            <button class="flex-1 rounded-lg border border-red-200 py-2 text-center text-sm font-semibold text-red-500 transition hover:bg-red-50" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== ITEM SEARCH POPUP ===================== -->
+    <div v-if="showSearch" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="closeSearch">
+      <div class="flex max-h-[70vh] w-[600px] flex-col rounded-xl bg-white shadow-2xl">
+        <div class="border-b border-gray-200 px-4 py-3">
+          <div class="mb-2 text-sm font-semibold text-gray-700">Search Item</div>
+          <input
+            ref="searchInput"
+            v-model="searchQuery"
+            class="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            placeholder="Type item code or name…"
+            @keydown.esc="closeSearch"
+            @keydown.down.prevent="searchIdx = Math.min(searchIdx + 1, searchResults.length - 1)"
+            @keydown.up.prevent="searchIdx = Math.max(searchIdx - 1, 0)"
+            @keydown.enter.prevent="pickSearchItem"
+          />
+        </div>
+        <div class="flex-1 overflow-y-auto">
+          <table v-if="searchResults.length" class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="px-4 py-2 text-left text-[10px] font-bold uppercase text-gray-400">Code</th>
+                <th class="px-3 py-2 text-left text-[10px] font-bold uppercase text-gray-400">Item Name</th>
+                <th class="px-3 py-2 text-left text-[10px] font-bold uppercase text-gray-400">UOM</th>
+                <th class="px-3 py-2 text-right text-[10px] font-bold uppercase text-gray-400">Rate</th>
+                <th class="px-3 py-2 text-right text-[10px] font-bold uppercase text-gray-400">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, idx) in searchResults"
+                :key="item.item_code"
+                class="cursor-pointer border-b border-gray-100"
+                :class="{ 'bg-blue-50': searchIdx === idx }"
+                @click="pickSearchItemByIdx(idx)"
+                @mouseenter="searchIdx = idx"
+              >
+                <td class="px-4 py-2 font-mono text-xs">{{ item.item_code }}</td>
+                <td class="px-3 py-2">{{ item.item_name }}</td>
+                <td class="px-3 py-2 text-gray-400">{{ item.uom }}</td>
+                <td class="px-3 py-2 text-right font-mono">{{ item.rate.toFixed(2) }}</td>
+                <td class="px-3 py-2 text-right">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-bold" :class="item.stock > 20 ? 'bg-green-50 text-green-600' : item.stock > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'">{{ item.stock }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="px-4 py-8 text-center text-xs text-gray-400">No items found</div>
+        </div>
+        <div class="flex items-center justify-between border-t border-gray-200 px-4 py-2 text-xs text-gray-400">
+          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">↑↓</kbd> Navigate <kbd class="ml-2 rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Enter</kbd> Select</span>
+          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> Close</span>
+        </div>
+      </div>
+    </div>
+    <!-- ===================== NEW CUSTOMER POPUP ===================== -->
+    <div v-if="showNewCustomer" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="closeNewCustomer">
+      <div class="w-[420px] rounded-xl bg-white shadow-2xl">
+        <div class="border-b border-gray-200 px-5 py-4">
+          <div class="text-sm font-semibold text-gray-700">Create New Customer</div>
+        </div>
+        <div class="flex flex-col gap-3 px-5 py-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase text-gray-400">Customer Name *</label>
+            <input
+              ref="newCustNameInput"
+              v-model="newCustName"
+              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="Full name"
+              @keydown.enter.prevent="saveNewCustomer"
+              @keydown.esc="closeNewCustomer"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase text-gray-400">Mobile Number</label>
+            <input
+              v-model="newCustMobile"
+              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="+91 XXXXX XXXXX"
+              @keydown.enter.prevent="saveNewCustomer"
+              @keydown.esc="closeNewCustomer"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase text-gray-400">Customer Group</label>
+            <select v-model="newCustGroup" class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
+              <option>All Customer Groups</option>
+              <option>Individual</option>
+              <option>Commercial</option>
+              <option>Non Profit</option>
+              <option>Government</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase text-gray-400">Customer Type</label>
+            <select class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
+              <option>Individual</option>
+              <option>Company</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase text-gray-400">Territory</label>
+            <select class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
+              <option>All Territories</option>
+              <option>India</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-gray-200 px-5 py-3">
+          <button class="rounded border border-gray-300 px-4 py-1.5 text-sm font-semibold text-gray-600 hover:bg-gray-50" @click="closeNewCustomer">Cancel</button>
+          <button class="rounded bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700" @click="saveNewCustomer">Save & Select</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+// ==================== SAMPLE DATA ====================
+const sampleItems = {
+  'ITEM-001': { item_code: 'ITEM-001', item_name: 'Basmati Rice 25kg', uom: 'Bag', rate: 1250, stock: 145, lastDate: '2026-02-15', lastRate: 1200, priceLists: [{ name: 'Standard', rate: 'LMOK' }, { name: 'Wholesale', rate: 'LLRK' }] },
+  'ITEM-002': { item_code: 'ITEM-002', item_name: 'Toor Dal 1kg', uom: 'Kg', rate: 165, stock: 320, lastDate: '2026-02-20', lastRate: 160, priceLists: [{ name: 'Standard', rate: 'LPO' }, { name: 'Wholesale', rate: 'LOM' }] },
+  'ITEM-003': { item_code: 'ITEM-003', item_name: 'Sunflower Oil 5L', uom: 'Can', rate: 680, stock: 8, lastDate: '2026-01-10', lastRate: 650, priceLists: [{ name: 'Standard', rate: 'PRK' }] },
+  'ITEM-004': { item_code: 'ITEM-004', item_name: 'Sugar 50kg', uom: 'Bag', rate: 2100, stock: 0, lastDate: null, lastRate: null, priceLists: [{ name: 'Standard', rate: 'MLKK' }] },
+  'ITEM-005': { item_code: 'ITEM-005', item_name: 'Wheat Flour 10kg', uom: 'Bag', rate: 420, stock: 67, lastDate: '2026-02-28', lastRate: 410, priceLists: [{ name: 'Standard', rate: 'NMK' }, { name: 'Wholesale', rate: 'NSO' }] },
+}
+const allItemsList = Object.values(sampleItems)
+const defaultTaxRate = 18
+
+// ==================== INPUT REFS ====================
+const inputRefs = {}
+function setRef(el, type, idx) {
+  const key = `${type}-${idx}`
+  if (el) { inputRefs[key] = el } else { delete inputRefs[key] }
+}
+const newCodeInput = ref(null)
+const newQtyInput = ref(null)
+const customerInput = ref(null)
+
+// ==================== NEW CUSTOMER DIALOG ====================
+const showNewCustomer = ref(false)
+const newCustName = ref('')
+const newCustMobile = ref('')
+const newCustGroup = ref('All Customer Groups')
+const newCustNameInput = ref(null)
+
+function openNewCustomer() {
+  newCustName.value = customer.value.trim()
+  newCustMobile.value = ''
+  newCustGroup.value = 'All Customer Groups'
+  showNewCustomer.value = true
+  nextTick(() => newCustNameInput.value?.focus())
+}
+
+function saveNewCustomer() {
+  if (!newCustName.value.trim()) { alert('Customer name is required'); return }
+  // TODO: Replace with createResource call to ERPNext
+  // frappe.call('wholesale_billing.api.customers.quick_create_customer', { ... })
+  customer.value = newCustName.value.trim()
+  showNewCustomer.value = false
+  nextTick(() => newCodeInput.value?.focus())
+}
+
+function closeNewCustomer() {
+  showNewCustomer.value = false
+  nextTick(() => customerInput.value?.focus())
+}
+
+// ==================== STATE ====================
+const items = ref([])
+const selectedRow = ref(-1)
+const newItemCode = ref('')
+const newQty = ref(1)
+const billSaved = ref(false)
+
+const activeItems = computed(() => items.value.filter(i => !i.deleted))
+const deletedCount = computed(() => items.value.filter(i => i.deleted).length)
+
+const newPending = computed(() => {
+  const code = newItemCode.value.toUpperCase().trim()
+  return sampleItems[code] || { item_name: '', uom: '', rate: null }
+})
+
+const selectedItemData = computed(() => {
+  if (selectedRow.value >= 0 && selectedRow.value < items.value.length) {
+    const code = items.value[selectedRow.value].item_code
+    return sampleItems[code] || null
+  }
+  return null
+})
+
+// ==================== COLUMN FOCUS HELPERS ====================
+// Column order for Tab navigation: code → qty → rate → tax
+const columnOrder = ['code', 'qty', 'rate', 'tax']
+
+function focusField(field, idx) {
+  nextTick(() => {
+    const el = inputRefs[`${field}-${idx}`]
+    if (el) { el.focus(); el.select() }
+  })
+}
+
+function focusNewCode() {
+  nextTick(() => newCodeInput.value?.focus())
+}
+
+function focusNewQty() {
+  nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() })
+}
+
+// ==================== ROW NAVIGATION (skips deleted) ====================
+function findNextActiveRow(fromIdx, direction) {
+  // direction: 1 = down, -1 = up
+  let idx = fromIdx + direction
+  while (idx >= 0 && idx < items.value.length) {
+    if (!items.value[idx].deleted) return idx
+    idx += direction
+  }
+  return null // no active row found
+}
+
+function moveRow(fromIdx, direction) {
+  const nextIdx = findNextActiveRow(fromIdx, direction)
+  if (nextIdx !== null) {
+    selectedRow.value = nextIdx
+    focusField('code', nextIdx)
+  } else if (direction === 1) {
+    // Went past last row — go to new entry
+    selectedRow.value = -1
+    focusNewCode()
+  }
+}
+
+function moveToLastActiveRow() {
+  // From new entry row, go up to last active row
+  for (let i = items.value.length - 1; i >= 0; i--) {
+    if (!items.value[i].deleted) {
+      selectedRow.value = i
+      focusField('code', i)
+      return
+    }
+  }
+}
+
+function selectRow(idx) {
+  if (!items.value[idx].deleted) {
+    selectedRow.value = idx
+  }
+}
+
+// After finishing last column (tax), go to next row or new entry
+function goToNextRow(fromIdx) {
+  const nextIdx = findNextActiveRow(fromIdx, 1)
+  if (nextIdx !== null) {
+    selectedRow.value = nextIdx
+    focusField('code', nextIdx)
+  } else {
+    selectedRow.value = -1
+    focusNewCode()
+  }
+}
+
+// ==================== ITEM CODE ENTER (existing row) ====================
+function onCodeEnter(idx) {
+  const code = items.value[idx].item_code.toUpperCase().trim()
+  items.value[idx].item_code = code
+  const master = sampleItems[code]
+
+  if (master) {
+    // Valid — fill details, go to QTY
+    items.value[idx].item_name = master.item_name
+    items.value[idx].uom = master.uom
+    items.value[idx].rate = master.rate
+    items.value[idx].deleted = false
+    focusField('qty', idx)
+  } else {
+    // Invalid — open search
+    openSearch(code, idx)
+  }
+}
+
+// ==================== NEW ROW ENTER ====================
+function onNewCodeEnter() {
+  const code = newItemCode.value.toUpperCase().trim()
+  if (!code) return
+
+  const master = sampleItems[code]
+  if (master) {
+    // Valid — go to qty first, then Enter on qty adds item
+    focusNewQty()
+  } else {
+    // Invalid — open search
+    openSearch(code, null)
+  }
+}
+
+function addNewItem() {
+  const code = newItemCode.value.toUpperCase().trim()
+  if (!code) return
+
+  const master = sampleItems[code]
+  if (!master) { openSearch(code, null); return }
+  if (master.stock <= 0) { alert('Out of stock: ' + master.item_name); return }
+
+  const existingIdx = items.value.findIndex(i => i.item_code === code && !i.deleted)
+  if (existingIdx >= 0) {
+    items.value[existingIdx].qty += newQty.value
+    selectedRow.value = existingIdx
+  } else {
+    items.value.push({
+      item_code: master.item_code,
+      item_name: master.item_name,
+      uom: master.uom,
+      qty: newQty.value,
+      rate: master.rate,
+      tax_rate: defaultTaxRate,
+      deleted: false,
+    })
+    selectedRow.value = items.value.length - 1
+  }
+
+  newItemCode.value = ''
+  newQty.value = 1
+  focusNewCode()
+}
+
+// ==================== SOFT DELETE / RESTORE ====================
+function softDelete(idx) {
+  items.value[idx].deleted = true
+}
+
+function restoreItem(idx) {
+  items.value[idx].deleted = false
+}
+
+// ==================== SEARCH POPUP ====================
+const showSearch = ref(false)
+const searchQuery = ref('')
+const searchIdx = ref(0)
+const searchInput = ref(null)
+let searchTargetRow = null
+
+const searchResults = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return allItemsList
+  return allItemsList.filter(
+    i => i.item_code.toLowerCase().includes(q) || i.item_name.toLowerCase().includes(q)
+  )
+})
+
+watch(searchQuery, () => { searchIdx.value = 0 })
+
+function openSearch(prefill, rowIdx) {
+  searchTargetRow = rowIdx
+  searchQuery.value = prefill || ''
+  searchIdx.value = 0
+  showSearch.value = true
+  nextTick(() => searchInput.value?.focus())
+}
+
+function closeSearch() {
+  showSearch.value = false
+  searchQuery.value = ''
+  if (searchTargetRow !== null && searchTargetRow >= 0) {
+    focusField('code', searchTargetRow)
+  } else {
+    focusNewCode()
+  }
+}
+
+function pickSearchItem() {
+  if (searchResults.value.length) pickSearchItemByIdx(searchIdx.value)
+}
+
+function pickSearchItemByIdx(idx) {
+  const picked = searchResults.value[idx]
+  if (!picked) return
+
+  if (searchTargetRow !== null && searchTargetRow >= 0) {
+    // Editing existing row
+    const row = items.value[searchTargetRow]
+    row.item_code = picked.item_code
+    row.item_name = picked.item_name
+    row.uom = picked.uom
+    row.rate = picked.rate
+    row.deleted = false
+    showSearch.value = false
+    selectedRow.value = searchTargetRow
+    focusField('qty', searchTargetRow)
+  } else {
+    // New row — set code, close search, go to qty
+    newItemCode.value = picked.item_code
+    showSearch.value = false
+    nextTick(() => focusNewQty())
+  }
+}
+
+// ==================== BILLING ====================
+const billDate = ref(new Date().toISOString().split('T')[0])
+const customer = ref('')
+const billSeries = ref('ACC-SINV-.YYYY.-')
+const paymentMode = ref('Cash')
+const discountPct = ref(0)
+
+const subtotal = computed(() => activeItems.value.reduce((sum, i) => sum + i.qty * i.rate, 0))
+const discountAmt = computed(() => subtotal.value * (discountPct.value / 100))
+const taxableAmt = computed(() => subtotal.value - discountAmt.value)
+const totalTax = computed(() => activeItems.value.reduce((sum, i) => {
+  const lineAmt = i.qty * i.rate
+  const lineDisc = lineAmt * (discountPct.value / 100)
+  return sum + (lineAmt - lineDisc) * (i.tax_rate / 100)
+}, 0))
+const grandTotal = computed(() => taxableAmt.value + totalTax.value)
+
+// ==================== CUSTOMER FLOW ====================
+function onCustomerEnter() {
+  if (!customer.value.trim()) {
+    alert('Please enter or create a customer first')
+    return
+  }
+  // TODO: Validate customer exists in ERPNext via createResource
+  // For now just move to item entry
+  nextTick(() => newCodeInput.value?.focus())
+}
+
+function saveBill() {
+  if (!customer.value.trim()) { alert('Please enter a customer'); return }
+  if (!activeItems.value.length) { alert('Add at least one item'); return }
+  billSaved.value = true
+  alert('✅ Bill saved!\nTotal: ₹' + grandTotal.value.toFixed(2) + '\nItems: ' + activeItems.value.length + '\nMode: ' + paymentMode.value + '\n\nPress Esc to start a new bill')
+}
+
+function startNewBill() {
+  items.value = []
+  selectedRow.value = -1
+  customer.value = ''
+  discountPct.value = 0
+  newItemCode.value = ''
+  newQty.value = 1
+  paymentMode.value = 'Cash'
+  billSaved.value = false
+  nextTick(() => customerInput.value?.focus())
+}
+function printBill() { alert('🖨 Print preview coming soon') }
+function cancelBill() {
+  startNewBill()
+}
+
+// ==================== GLOBAL KEYS ====================
+function handleKeydown(e) {
+  if (showSearch.value || showNewCustomer.value) return
+  if (e.key === 'Escape') {
+    if (billSaved.value) {
+      startNewBill()
+    } else {
+      router.push('/')
+    }
+    return
+  }
+  if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveBill() }
+  if (e.key === 'Delete' && selectedRow.value >= 0 && !showSearch.value && !showNewCustomer.value) {
+    const el = document.activeElement
+    // Only delete row if not typing inside an input
+    if (!el || el.tagName !== 'INPUT') {
+      e.preventDefault()
+      softDelete(selectedRow.value)
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+  customerInput.value?.focus()
+})
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+</script>

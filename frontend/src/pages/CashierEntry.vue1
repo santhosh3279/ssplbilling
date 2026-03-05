@@ -1,0 +1,550 @@
+<template>
+  <div class="flex h-screen flex-col" style="background:#060810;color:#e2e8f0;font-family:'Barlow Condensed',sans-serif">
+
+    <!-- ═══════════════════ TOP BAR ═══════════════════ -->
+    <header class="flex h-11 shrink-0 items-center gap-3 border-b px-4" style="border-color:#1e2235;background:#0b0e19">
+      <button
+        class="flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors"
+        style="color:#64748b"
+        @click="$router.push('/')"
+        @mouseenter="e => e.target.style.color='#94a3b8'"
+        @mouseleave="e => e.target.style.color='#64748b'"
+      >
+        ← Dashboard
+      </button>
+      <span class="text-xs font-bold tracking-widest" style="color:#94a3b8">|</span>
+      <span class="text-sm font-bold tracking-wider" style="color:#f1f5f9">CASHIER ENTRY</span>
+      <span class="ml-2 rounded px-2 py-0.5 text-[10px] font-semibold" style="background:#1e2235;color:#64748b">
+        {{ invoices.length }} pending
+      </span>
+      <span class="ml-auto text-[10px]" style="color:#475569">{{ todayStr }}</span>
+    </header>
+
+    <!-- ═══════════════════ THREE-PANEL BODY ═══════════════════ -->
+    <div class="flex flex-1 overflow-hidden">
+
+      <!-- ─── LEFT: Draft Invoice List ───────────────────────── -->
+      <div class="flex w-72 shrink-0 flex-col border-r" style="border-color:#1e2235;background:#0b0e19">
+
+        <!-- Search -->
+        <div class="shrink-0 border-b p-3" style="border-color:#1e2235">
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            @input="debouncedSearch"
+            @keydown.down.prevent="focusBillList"
+            placeholder="Search bills / customer..."
+            class="w-full rounded border px-3 py-2 text-xs outline-none transition-colors"
+            style="background:#131929;border-color:#1e2235;color:#e2e8f0"
+            @focus="e => e.target.style.borderColor='#3b82f6'"
+            @blur="e => e.target.style.borderColor='#1e2235'"
+          />
+        </div>
+
+        <!-- Bill list -->
+        <div ref="billListRef" class="flex-1 overflow-y-auto">
+          <div v-if="loadingList" class="flex items-center justify-center py-12 text-xs" style="color:#475569">
+            Loading...
+          </div>
+          <div v-else-if="!invoices.length" class="py-12 text-center text-xs" style="color:#475569">
+            No draft bills found
+          </div>
+
+          <button
+            v-for="(inv, idx) in invoices"
+            :key="inv.name"
+            :ref="el => { if (el) billRefs[idx] = el }"
+            @click="selectInvoice(inv)"
+            @keydown.enter.prevent="selectInvoice(inv)"
+            @keydown.down.prevent="billRefs[idx+1]?.focus()"
+            @keydown.up.prevent="idx === 0 ? searchInputRef?.focus() : billRefs[idx-1]?.focus()"
+            class="flex w-full flex-col gap-1 border-b px-4 py-3 text-left transition-all outline-none"
+            :style="selectedInvoice?.name === inv.name
+              ? 'background:#1e3a5f;border-left:2px solid #3b82f6;border-bottom-color:#1e2235'
+              : 'background:transparent;border-left:2px solid transparent;border-bottom-color:#1e2235'"
+          >
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-xs font-semibold" style="color:#60a5fa">{{ inv.name }}</span>
+              <span class="text-xs font-bold" style="color:#4ade80">₹{{ fmt(inv.grand_total) }}</span>
+            </div>
+            <div class="truncate text-xs" style="color:#cbd5e1">{{ inv.customer_name }}</div>
+            <div class="text-[10px]" style="color:#475569">{{ fmtDate(inv.posting_date) }}</div>
+          </button>
+        </div>
+
+        <!-- Refresh -->
+        <div class="shrink-0 border-t p-3" style="border-color:#1e2235">
+          <button
+            @click="loadInvoices"
+            class="w-full rounded py-1.5 text-xs transition-colors"
+            style="background:#131929;color:#64748b"
+            @mouseenter="e => e.target.style.background='#1e2235'"
+            @mouseleave="e => e.target.style.background='#131929'"
+          >
+            ↺ Refresh List
+          </button>
+        </div>
+      </div>
+
+      <!-- ─── CENTER: Bill Preview ───────────────────────────── -->
+      <div class="flex flex-1 flex-col overflow-hidden">
+
+        <!-- Empty state -->
+        <div v-if="!selectedInvoice" class="flex flex-1 flex-col items-center justify-center gap-3" style="color:#334155">
+          <div class="text-5xl">👈</div>
+          <div class="text-sm font-semibold">Select a bill to preview</div>
+          <div class="text-xs">Choose a draft invoice from the left panel</div>
+        </div>
+
+        <template v-else>
+          <!-- Bill header -->
+          <div class="shrink-0 border-b px-6 py-4" style="border-color:#1e2235;background:#0b0e19">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="font-mono text-xl font-bold" style="color:#f1f5f9">{{ selectedInvoice.name }}</div>
+                <div class="mt-0.5 text-sm font-semibold" style="color:#94a3b8">{{ selectedInvoice.customer_name }}</div>
+                <div class="mt-0.5 text-xs" style="color:#475569">{{ selectedInvoice.customer }}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] uppercase tracking-wider" style="color:#475569">Date</div>
+                <div class="text-sm" style="color:#cbd5e1">{{ fmtDate(selectedInvoice.posting_date) }}</div>
+                <div class="mt-1 text-[10px] uppercase tracking-wider" style="color:#475569">Series</div>
+                <div class="font-mono text-xs" style="color:#64748b">{{ selectedInvoice.naming_series }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="loadingPreview" class="flex flex-1 items-center justify-center text-xs" style="color:#475569">
+            Loading invoice details...
+          </div>
+
+          <template v-else>
+            <!-- Items table -->
+            <div class="flex-1 overflow-y-auto px-6 py-4">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b text-[10px] uppercase tracking-wider" style="border-color:#1e2235;color:#475569">
+                    <th class="pb-2 text-left font-normal w-8">#</th>
+                    <th class="pb-2 text-left font-normal">Item</th>
+                    <th class="pb-2 text-right font-normal w-20">Qty</th>
+                    <th class="pb-2 text-right font-normal w-24">Rate</th>
+                    <th class="pb-2 text-right font-normal w-24">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, idx) in previewItems"
+                    :key="idx"
+                    class="border-b"
+                    style="border-color:#0f1320"
+                  >
+                    <td class="py-2.5 text-xs" style="color:#475569">{{ idx + 1 }}</td>
+                    <td class="py-2.5">
+                      <div class="text-xs font-semibold" style="color:#e2e8f0">{{ item.item_code }}</div>
+                      <div class="text-[10px]" style="color:#64748b">{{ item.item_name }}</div>
+                    </td>
+                    <td class="py-2.5 text-right text-xs" style="color:#94a3b8">
+                      {{ item.qty }} <span style="color:#475569">{{ item.uom }}</span>
+                    </td>
+                    <td class="py-2.5 text-right font-mono text-xs" style="color:#94a3b8">₹{{ fmt(item.rate) }}</td>
+                    <td class="py-2.5 text-right font-mono text-xs font-semibold" style="color:#e2e8f0">
+                      ₹{{ fmt(Number(item.qty) * Number(item.rate)) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Totals footer -->
+            <div class="shrink-0 border-t px-6 py-4" style="border-color:#1e2235;background:#0b0e19">
+              <div class="flex justify-end">
+                <div class="w-64 space-y-1.5">
+                  <div class="flex justify-between text-xs" style="color:#64748b">
+                    <span>Subtotal</span>
+                    <span class="font-mono">₹{{ fmt(previewSubtotal) }}</span>
+                  </div>
+                  <div v-if="selectedInvoice.discount_percentage" class="flex justify-between text-xs" style="color:#f87171">
+                    <span>Discount ({{ selectedInvoice.discount_percentage }}%)</span>
+                    <span class="font-mono">−₹{{ fmt(previewDiscount) }}</span>
+                  </div>
+                  <div class="flex justify-between border-t pt-2 text-sm font-bold" style="border-color:#1e2235;color:#f1f5f9">
+                    <span>Grand Total</span>
+                    <span class="font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </template>
+      </div>
+
+      <!-- ─── RIGHT: Cash Collection ─────────────────────────── -->
+      <div class="flex w-80 shrink-0 flex-col border-l" style="border-color:#1e2235;background:#0b0e19">
+
+        <!-- Panel header -->
+        <div class="shrink-0 border-b px-4 py-3" style="border-color:#1e2235">
+          <div class="text-[10px] font-bold uppercase tracking-widest" style="color:#475569">Cash Collection</div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4">
+
+          <!-- Bill Amount display -->
+          <div class="mb-5 rounded-xl p-4 text-center" style="background:#131929">
+            <div class="text-[10px] uppercase tracking-wider mb-1" style="color:#475569">Bill Amount</div>
+            <div
+              class="font-mono text-4xl font-bold tracking-tight"
+              :style="selectedInvoice ? 'color:#f1f5f9' : 'color:#1e2235'"
+            >
+              ₹{{ selectedInvoice ? fmt(selectedInvoice.grand_total) : '0.00' }}
+            </div>
+          </div>
+
+          <!-- Payment inputs -->
+          <div class="space-y-4">
+
+            <!-- Cash -->
+            <div>
+              <label class="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style="color:#64748b">
+                <span class="inline-block h-2 w-2 rounded-full" style="background:#4ade80"></span>
+                Cash
+              </label>
+              <div
+                class="flex items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors"
+                style="background:#131929;border-color:#1e2235"
+                @focusin="e => e.currentTarget.style.borderColor='#4ade80'"
+                @focusout="e => e.currentTarget.style.borderColor='#1e2235'"
+              >
+                <span class="text-sm font-bold" style="color:#4ade80">₹</span>
+                <input
+                  ref="cashInputRef"
+                  v-model.number="cashAmount"
+                  @input="onPaymentInput"
+                  @keydown.enter="upiInputRef?.focus()"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="flex-1 bg-transparent text-right font-mono text-sm outline-none"
+                  style="color:#e2e8f0"
+                  :disabled="!selectedInvoice || submitting"
+                />
+              </div>
+            </div>
+
+            <!-- UPI -->
+            <div>
+              <label class="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style="color:#64748b">
+                <span class="inline-block h-2 w-2 rounded-full" style="background:#818cf8"></span>
+                UPI
+              </label>
+              <div
+                class="flex items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors"
+                style="background:#131929;border-color:#1e2235"
+                @focusin="e => e.currentTarget.style.borderColor='#818cf8'"
+                @focusout="e => e.currentTarget.style.borderColor='#1e2235'"
+              >
+                <span class="text-sm font-bold" style="color:#818cf8">₹</span>
+                <input
+                  ref="upiInputRef"
+                  v-model.number="upiAmount"
+                  @input="onPaymentInput"
+                  @keydown.enter="handleSubmit"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="flex-1 bg-transparent text-right font-mono text-sm outline-none"
+                  style="color:#e2e8f0"
+                  :disabled="!selectedInvoice || submitting"
+                />
+              </div>
+            </div>
+
+            <!-- Quick amount presets (shown when bill is selected) -->
+            <div v-if="selectedInvoice && !submitting" class="flex flex-wrap gap-1.5">
+              <button
+                v-for="preset in quickPresets"
+                :key="preset.label"
+                @click="applyPreset(preset)"
+                class="rounded px-2 py-1 text-[10px] font-semibold transition-colors"
+                style="background:#1e2235;color:#64748b"
+                @mouseenter="e => { e.target.style.background='#253047'; e.target.style.color='#94a3b8' }"
+                @mouseleave="e => { e.target.style.background='#1e2235'; e.target.style.color='#64748b' }"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
+
+            <!-- Running totals -->
+            <div class="rounded-xl p-3 space-y-2" style="background:#131929">
+              <div class="flex justify-between text-xs">
+                <span style="color:#475569">Total Received</span>
+                <span
+                  class="font-mono font-semibold"
+                  :style="totalPaid >= grandTotal && grandTotal > 0 ? 'color:#4ade80' : 'color:#fbbf24'"
+                >
+                  ₹{{ fmt(totalPaid) }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between border-t pt-2" style="border-color:#1e2235">
+                <span class="text-sm font-bold" style="color:#94a3b8">Balance Due</span>
+                <span
+                  class="font-mono text-2xl font-bold"
+                  :style="balance <= 0.005 ? 'color:#4ade80' : 'color:#f87171'"
+                >
+                  ₹{{ fmt(Math.max(0, balance)) }}
+                </span>
+              </div>
+              <div v-if="change > 0.005" class="flex justify-between border-t pt-2 text-xs" style="border-color:#1e2235">
+                <span style="color:#475569">Change to Return</span>
+                <span class="font-mono font-bold" style="color:#60a5fa">₹{{ fmt(change) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit area -->
+        <div class="shrink-0 border-t p-4" style="border-color:#1e2235">
+          <!-- Error -->
+          <div v-if="submitError" class="mb-3 rounded-lg px-3 py-2 text-xs" style="background:#450a0a;color:#f87171">
+            {{ submitError }}
+          </div>
+
+          <!-- Success -->
+          <div v-if="successMsg" class="mb-3 rounded-lg px-3 py-2 text-center text-xs" style="background:#052e16;color:#4ade80">
+            {{ successMsg }}
+          </div>
+
+          <button
+            @click="handleSubmit"
+            :disabled="!canSubmit"
+            class="w-full rounded-xl py-3.5 text-sm font-bold tracking-wider transition-all"
+            :style="canSubmit
+              ? 'background:#16a34a;color:#fff;cursor:pointer'
+              : 'background:#131929;color:#334155;cursor:not-allowed'"
+            @mouseenter="e => { if (canSubmit) e.target.style.background='#15803d' }"
+            @mouseleave="e => { if (canSubmit) e.target.style.background='#16a34a' }"
+          >
+            <span v-if="submitting">Processing...</span>
+            <span v-else>Collect &amp; Submit  [Enter]</span>
+          </button>
+
+          <div class="mt-2 text-center text-[10px]" style="color:#334155">
+            Press <kbd class="rounded border px-1 py-0.5 font-mono" style="border-color:#1e2235">F9</kbd> to submit
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment } from '../api.js'
+
+const router = useRouter()
+
+// ─── Refs ─────────────────────────────────────────────────────────────────────
+const invoices = ref([])
+const selectedInvoice = ref(null)
+const previewItems = ref([])
+
+const loadingList = ref(false)
+const loadingPreview = ref(false)
+const submitting = ref(false)
+const submitError = ref('')
+const successMsg = ref('')
+
+const searchQuery = ref('')
+const cashAmount = ref(null)
+const upiAmount = ref(null)
+
+// DOM refs
+const searchInputRef = ref(null)
+const cashInputRef = ref(null)
+const upiInputRef = ref(null)
+const billListRef = ref(null)
+const billRefs = ref([])
+
+// ─── Computed ─────────────────────────────────────────────────────────────────
+const grandTotal = computed(() => Number(selectedInvoice.value?.grand_total || 0))
+const totalPaid = computed(() => Number(cashAmount.value || 0) + Number(upiAmount.value || 0))
+const balance = computed(() => grandTotal.value - totalPaid.value)
+const change = computed(() => Math.max(0, totalPaid.value - grandTotal.value))
+
+const canSubmit = computed(() =>
+  selectedInvoice.value &&
+  grandTotal.value > 0 &&
+  totalPaid.value >= grandTotal.value - 0.01 &&
+  !submitting.value
+)
+
+const previewSubtotal = computed(() =>
+  previewItems.value.reduce((s, r) => s + Number(r.qty) * Number(r.rate), 0)
+)
+const previewDiscount = computed(() => {
+  if (!selectedInvoice.value?.discount_percentage) return 0
+  return previewSubtotal.value * (Number(selectedInvoice.value.discount_percentage) / 100)
+})
+
+/** Quick-pay presets: exact, round up to next 50/100/500 */
+const quickPresets = computed(() => {
+  if (!grandTotal.value) return []
+  const gt = grandTotal.value
+  const presets = [{ label: 'Exact', cash: gt, upi: 0 }]
+  for (const step of [50, 100, 500, 1000]) {
+    const rounded = Math.ceil(gt / step) * step
+    if (rounded > gt && rounded <= gt + step * 2) {
+      presets.push({ label: `₹${rounded}`, cash: rounded, upi: 0 })
+    }
+  }
+  return presets.slice(0, 4)
+})
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return Number(n || 0)
+    .toFixed(2)
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+function fmtDate(d) {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const todayStr = new Date().toLocaleDateString('en-IN', {
+  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+})
+
+// ─── Invoice List ──────────────────────────────────────────────────────────────
+async function loadInvoices() {
+  loadingList.value = true
+  billRefs.value = []
+  try {
+    invoices.value = await fetchDraftInvoices(searchQuery.value, 100)
+  } catch (e) {
+    console.error('[cashier] loadInvoices:', e)
+  } finally {
+    loadingList.value = false
+  }
+}
+
+let searchTimer = null
+function debouncedSearch() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(loadInvoices, 250)
+}
+
+function focusBillList() {
+  nextTick(() => billRefs.value[0]?.focus())
+}
+
+// ─── Invoice Selection ─────────────────────────────────────────────────────────
+async function selectInvoice(inv) {
+  if (selectedInvoice.value?.name === inv.name) return
+
+  // Reset state
+  cashAmount.value = null
+  upiAmount.value = null
+  submitError.value = ''
+  successMsg.value = ''
+  previewItems.value = []
+  selectedInvoice.value = { ...inv, items: [] }
+
+  loadingPreview.value = true
+  try {
+    const details = await getInvoiceDetails(inv.name)
+    selectedInvoice.value = details
+    previewItems.value = details.items || []
+
+    // Auto-fill cash for full amount — cashier can adjust if needed
+    cashAmount.value = Number(details.grand_total || 0)
+  } catch (e) {
+    submitError.value = e.message
+  } finally {
+    loadingPreview.value = false
+  }
+
+  // Focus cash input for quick keyboard entry
+  await nextTick()
+  cashInputRef.value?.focus()
+}
+
+function onPaymentInput() {
+  submitError.value = ''
+  successMsg.value = ''
+}
+
+function applyPreset(preset) {
+  cashAmount.value = preset.cash
+  upiAmount.value = preset.upi || 0
+  submitError.value = ''
+  successMsg.value = ''
+}
+
+// ─── Submit ────────────────────────────────────────────────────────────────────
+async function handleSubmit() {
+  if (!canSubmit.value) return
+
+  submitting.value = true
+  submitError.value = ''
+  successMsg.value = ''
+
+  try {
+    const result = await submitInvoiceWithPayment({
+      invoice_name: selectedInvoice.value.name,
+      cash_amount: Number(cashAmount.value || 0),
+      upi_amount: Number(upiAmount.value || 0),
+    })
+
+    const peList = (result.payment_entries || []).join(', ')
+    successMsg.value = `✓ ${result.invoice_name} submitted  |  Payment: ${peList || '—'}`
+
+    // Remove from list, clear preview
+    invoices.value = invoices.value.filter(i => i.name !== result.invoice_name)
+    selectedInvoice.value = null
+    previewItems.value = []
+    cashAmount.value = null
+    upiAmount.value = null
+
+    // Refresh so any new drafts appear
+    await loadInvoices()
+
+    // Clear success message after 6 s
+    setTimeout(() => { successMsg.value = '' }, 6000)
+  } catch (e) {
+    submitError.value = e.message
+  } finally {
+    submitting.value = false
+  }
+}
+
+// ─── Keyboard shortcuts ────────────────────────────────────────────────────────
+function handleKeydown(e) {
+  if (e.key === 'F9') {
+    e.preventDefault()
+    handleSubmit()
+  }
+  if (e.key === 'Escape') {
+    selectedInvoice.value = null
+    previewItems.value = []
+    cashAmount.value = null
+    upiAmount.value = null
+    submitError.value = ''
+    successMsg.value = ''
+    nextTick(() => searchInputRef.value?.focus())
+  }
+}
+
+onMounted(() => {
+  loadInvoices()
+  window.addEventListener('keydown', handleKeydown)
+  nextTick(() => searchInputRef.value?.focus())
+})
+
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+</script>

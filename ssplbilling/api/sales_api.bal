@@ -1,0 +1,260 @@
+import json
+import frappe
+
+
+@frappe.whitelist()
+def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
+    """Look up item by code or barcode. Returns item details + stock + rate."""
+    # Try barcode first
+    barcode_item = frappe.db.get_value("Item Barcode", {"barcode": item_code}, "parent")
+    if barcode_item:
+        item_code = barcode_item
+
+    if not frappe.db.exists("Item", item_code):
+        return {"found": False, "item_code": item_code}
+
+    item = frappe.get_cached_doc("Item", item_code)
+    wh = warehouse or frappe.db.get_single_value("Stock Settings", "default_warehouse") or ""
+
+    # Get selling rate from price list
+    rate = frappe.db.get_value(
+        "Item Price",
+        {"item_code": item_code, "price_list": price_list, "selling": 1},
+        "price_list_rate",
+    ) or item.standard_rate or 0
+
+    # Get stock qty
+    stock_qty = 0
+    if wh:
+        stock_qty = (
+            frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": wh}, "actual_qty")
+            or 0
+        )
+
+    return {
+        "found": True,
+        "item_code": item.item_code,
+        "item_name": item.item_name,
+        "uom": item.stock_uom,
+        "rate": float(rate),
+        "stock_qty": float(stock_qty),
+        "warehouse": wh,
+    }
+
+
+@frappe.whitelist()
+def search_items(query, price_list="Standard Selling"):
+    """Search items by code, name, or barcode. Returns list of matches."""
+    if not query or len(query) < 1:
+        return []
+
+    # Check barcode
+    barcode_item = frappe.db.get_value("Item Barcode", {"barcode": query}, "parent")
+    if barcode_item:
+        return [get_item_details(barcode_item, price_list)]
+
+    items = frappe.get_all(
+        "Item",
+        or_filters={
+            "item_code": ["like", f"%{query}%"],
+            "item_name": ["like", f"%{query}%"],
+        },
+        filters={"disabled": 0, "is_sales_item": 1},
+        fields=["item_code", "item_name", "stock_uom as uom", "standard_rate"],
+        limit=20,
+        order_by="item_name asc",
+    )
+
+    # Enrich with rate and stock
+    wh = frappe.db.get_single_value("Stock Settings", "default_warehouse") or ""
+    for item in items:
+        item["rate"] = float(
+            frappe.db.get_value(
+                "Item Price",
+                {"item_code": item["item_code"], "price_list": price_list, "selling": 1},
+                "price_list_rate",
+            )
+            or item.get("standard_rate")
+            or 0
+        )
+        item["stock_qty"] = float(
+            frappe.db.get_value("Bin", {"item_code": item["item_code"], "warehouse": wh}, "actual_qty")
+            or 0
+        ) if wh else 0
+        item["warehouse"] = wh
+        item["found"] = True
+
+    return items
+
+
+@frappe.whitelist()
+def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
+    """Get stock across warehouses, last purchase by customer, all price list rates."""
+    wh = warehouse or frappe.db.get_single_value("Stock Settings", "default_warehouse") or ""
+
+    # All warehouse stock
+    stock = frappe.get_all(
+        "Bin",
+        filters={"item_code": item_code},
+        fields=["warehouse", "actual_qty", "reserved_qty", "projected_qty"],
+    )
+    for s in stock:
+        s["actual_qty"] = float(s["actual_qty"] or 0)
+        s["reserved_qty"] = float(s["reserved_qty"] or 0)
+
+    # Last purchase by customer
+    last_purchase = None
+    if customer:
+        rows = frappe.db.sql(
+            """
+            SELECT si.posting_date as date, sii.rate, sii.qty
+            FROM `tabSales Invoice Item` sii
+            JOIN `tabSales Invoice` si ON si.name = sii.parent
+            WHERE sii.item_code = %s AND si.customer = %s AND si.docstatus = 1
+            ORDER BY si.posting_date DESC
+            LIMIT 1
+            """,
+            (item_code, customer),
+            as_dict=True,
+        )
+        if rows:
+            last_purchase = {
+                "date": str(rows[0].date),
+                "rate": float(rows[0].rate),
+                "qty": float(rows[0].qty),
+            }
+
+    # All selling price lists
+    price_lists = frappe.get_all(
+        "Item Price",
+        filters={"item_code": item_code, "selling": 1},
+        fields=["price_list as name", "price_list_rate as rate", "currency"],
+        order_by="price_list_rate asc",
+    )
+    for pl in price_lists:
+        pl["rate"] = float(pl["rate"] or 0)
+
+    return {
+        "stock": stock,
+        "last_purchase": last_purchase,
+        "price_lists": price_lists,
+    }
+
+
+@frappe.whitelist()
+def search_customers(query):
+    """Search customers by name or ID."""
+    if not query or len(query) < 1:
+        return []
+
+    return frappe.get_all(
+        "Customer",
+        or_filters={
+            "name": ["like", f"%{query}%"],
+            "customer_name": ["like", f"%{query}%"],
+        },
+        filters={"disabled": 0},
+        fields=["name", "customer_name", "customer_group", "territory"],
+        limit=10,
+        order_by="customer_name asc",
+    )
+
+
+@frappe.whitelist()
+def quick_create_customer(customer_name, mobile=None, customer_group=None, customer_type=None, territory=None):
+    """Create a minimal Customer record."""
+    if not customer_name or not customer_name.strip():
+        frappe.throw("Customer name is required")
+
+    cust = frappe.new_doc("Customer")
+    cust.customer_name = customer_name.strip()
+    cust.customer_type = customer_type or "Individual"
+    cust.customer_group = customer_group or frappe.db.get_single_value("Selling Settings", "customer_group") or "All Customer Groups"
+    cust.territory = territory or frappe.db.get_single_value("Selling Settings", "territory") or "All Territories"
+
+    if mobile:
+        cust.mobile_no = mobile
+
+    cust.insert(ignore_permissions=True)
+
+    return {
+        "name": cust.name,
+        "customer_name": cust.customer_name,
+    }
+
+
+@frappe.whitelist()
+def create_sales_invoice(data):
+    """Create Sales Invoice in Draft. If Cash mode, auto-create Payment Entry."""
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    if not data.get("customer"):
+        frappe.throw("Customer is required")
+    if not data.get("items"):
+        frappe.throw("At least one item is required")
+
+    # Create Sales Invoice
+    si = frappe.new_doc("Sales Invoice")
+    si.customer = data["customer"]
+    si.posting_date = data.get("date", frappe.utils.today())
+    # Get naming series - use provided or first available from ERPNext
+    if data.get("naming_series"):
+        si.naming_series = data["naming_series"]
+    else:
+        series_list = get_naming_series()
+        if series_list:
+            si.naming_series = series_list[0]
+    si.update_stock = 1
+
+    if data.get("discount_percentage"):
+        si.additional_discount_percentage = float(data["discount_percentage"])
+
+    for item in data["items"]:
+        row = {
+            "item_code": item["item_code"],
+            "qty": float(item["qty"]),
+            "rate": float(item["rate"]),
+        }
+        if item.get("warehouse"):
+            row["warehouse"] = item["warehouse"]
+        si.append("items", row)
+
+    si.insert()
+
+    result = {
+        "invoice_name": si.name,
+        "grand_total": float(si.grand_total),
+        "status": "Draft",
+    }
+
+    # Auto-create Payment Entry for Cash
+    if data.get("payment_mode") == "Cash":
+        try:
+            from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+            pe = get_payment_entry("Sales Invoice", si.name)
+            pe.paid_amount = float(si.grand_total)
+            pe.received_amount = float(si.grand_total)
+            pe.reference_no = si.name
+            pe.reference_date = si.posting_date
+            pe.insert()
+            pe.submit()
+            result["payment_entry"] = pe.name
+        except Exception as e:
+            result["payment_error"] = str(e)
+
+    return result
+
+
+@frappe.whitelist()
+def get_naming_series():
+    """Get available naming series for Sales Invoice from ERPNext."""
+    try:
+        meta = frappe.get_meta("Sales Invoice")
+        series_field = meta.get_field("naming_series")
+        if series_field and series_field.options:
+            series = [s.strip() for s in series_field.options.split("\n") if s.strip()]
+            return series
+    except Exception:
+        pass
+    return []

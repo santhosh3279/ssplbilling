@@ -1,0 +1,7 @@
+frappe.pages['wholesale-billing'].on_page_load = function(wrapper) {
+	var page = frappe.ui.make_app_page({
+		parent: wrapper,
+		title: 'Wholesale Billing',
+		single_column: true
+	});
+}
