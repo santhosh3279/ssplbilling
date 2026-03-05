@@ -91,42 +91,98 @@
 
     <!-- ===================== GENERAL SETTINGS DIALOG ===================== -->
     <div v-if="showGeneralSettings" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showGeneralSettings = false">
-      <div class="w-[440px] rounded-xl bg-white shadow-2xl">
+      <div class="w-[680px] rounded-xl bg-white shadow-2xl">
         <div class="border-b border-gray-200 px-5 py-4">
           <div class="text-sm font-semibold text-gray-700">⚙️ General Settings</div>
         </div>
-        <div class="flex flex-col gap-4 px-5 py-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-gray-500">Default Tax Rate (%)</label>
-            <input
-              type="number"
-              v-model.number="defaultTaxRate"
-              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-gray-500">Default Warehouse</label>
-            <input
-              v-model="defaultWarehouse"
-              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-              placeholder="Stores - WB"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-gray-500">Default Price List</label>
-            <input
-              v-model="defaultPriceList"
-              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-              placeholder="Standard Selling"
-            />
-          </div>
+        <div class="flex max-h-[75vh] flex-col gap-4 overflow-y-auto px-5 py-4">
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-gray-500">Bill Naming Series</label>
-            <input
+            <select
               v-model="defaultSeries"
               class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-              placeholder="ACC-SINV-.YYYY.-"
-            />
+            >
+              <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
+            </select>
+            <div v-if="userAllowedString" class="mt-1 flex flex-wrap gap-1">
+              <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400">User Permissions:</span>
+              <span v-for="p in userAllowedString.split(',')" :key="p" class="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                {{ p.trim() }}
+              </span>
+            </div>
+          </div>
+
+          <!-- SSPL Billing Settings Details -->
+          <div v-if="systemSettings" class="mt-4 border-t border-gray-100 pt-4">
+            <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">System Configuration (SSPL Billing Settings)</div>
+
+            <!-- Discount Account & Cipher Map -->
+            <div class="mb-3 flex flex-col gap-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-gray-500">Discount Account</span>
+                <span class="font-medium text-gray-700">{{ systemSettings.discount_account || '--' }}</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-gray-500">Cipher Map</span>
+                <span class="font-mono text-gray-700">{{ systemSettings.cipher_map || '--' }}</span>
+              </div>
+            </div>
+
+            <!-- Billing Series -->
+            <div class="mb-3">
+              <div class="mb-1 text-[10px] font-semibold text-gray-400">Billing Series</div>
+              <div class="overflow-auto rounded-lg border border-gray-100">
+                <table class="w-full text-[10px]">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Series</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Price List</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Warehouse</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Tax Template</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Cost Center</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Print Format</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Cash A/C</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Bank</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">UPI</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="bs in systemSettings.billing_series" :key="bs.series" class="border-t border-gray-100">
+                      <td class="whitespace-nowrap px-2 py-1.5 font-medium">{{ bs.series }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.price_list || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.warehouse || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.tax_template || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.cost_center || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.print_format || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.cash_account || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.bank || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.upi || '--' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- User Series -->
+            <div v-if="systemSettings.user_series?.length">
+              <div class="mb-1 text-[10px] font-semibold text-gray-400">User Series Permissions</div>
+              <div class="overflow-auto rounded-lg border border-gray-100">
+                <table class="w-full text-[10px]">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-2 py-1.5 text-left text-gray-400">User</th>
+                      <th class="px-2 py-1.5 text-left text-gray-400">Allowed Series</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="us in systemSettings.user_series" :key="us.user" class="border-t border-gray-100">
+                      <td class="px-2 py-1.5 font-medium">{{ us.user }}</td>
+                      <td class="px-2 py-1.5 font-mono">{{ us.allowed_series || '--' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
         <div class="flex justify-end gap-2 border-t border-gray-200 px-5 py-3">
@@ -203,20 +259,69 @@ function handleKeydown(e) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', handleKeydown))
+const API = '/api/method/ssplbilling.api.sales_api'
+const availableSeries = ref([])
+const userAllowedString = ref('')
+const systemSettings = ref(null)
+
+const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
+const BILLING_SETTINGS_TTL = 60 * 60 * 1000 // 1 hour
+
+async function fetchBillingSettings() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(BILLING_SETTINGS_CACHE_KEY) || 'null')
+    if (cached && (Date.now() - cached.ts) < BILLING_SETTINGS_TTL) {
+      return cached.data
+    }
+  } catch (e) {}
+  try {
+    const res = await fetch(`${API}.get_billing_settings`)
+    const json = await res.json()
+    const data = json.message
+    if (data) {
+      localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }))
+    }
+    return data || null
+  } catch (e) {
+    return null
+  }
+}
+
+async function fetchSeries() {
+  // 1. Fetch allowed series for this user
+  try {
+    const res = await fetch(`${API}.get_allowed_series`)
+    const json = await res.json()
+    const d = json.message || {}
+    availableSeries.value = d.allowed_series || []
+    userAllowedString.value = d.user_allowed_string || ''
+    if (availableSeries.value.length && !availableSeries.value.includes(defaultSeries.value)) {
+      defaultSeries.value = availableSeries.value[0]
+    }
+  } catch (e) {
+    console.warn('[Dashboard] fetchSeries failed:', e)
+  }
+
+  // 2. Fetch global settings
+  try {
+    const settings = await fetchBillingSettings()
+    systemSettings.value = settings
+  } catch (e) {
+    console.warn('[Dashboard] fetchBillingSettings failed:', e)
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+  fetchSeries()
+})
 onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
 // ==================== GENERAL SETTINGS ====================
 const showGeneralSettings = ref(false)
-const defaultTaxRate = ref(JSON.parse(localStorage.getItem('wb-tax-rate') || '18'))
-const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
-const defaultPriceList = ref(localStorage.getItem('wb-price-list') || 'Standard Selling')
-const defaultSeries = ref(localStorage.getItem('wb-series') || 'ACC-SINV-.YYYY.-')
+const defaultSeries = ref(localStorage.getItem('wb-series') || '')
 
 function saveGeneralSettings() {
-  localStorage.setItem('wb-tax-rate', JSON.stringify(defaultTaxRate.value))
-  localStorage.setItem('wb-warehouse', defaultWarehouse.value)
-  localStorage.setItem('wb-price-list', defaultPriceList.value)
   localStorage.setItem('wb-series', defaultSeries.value)
   showGeneralSettings.value = false
 }

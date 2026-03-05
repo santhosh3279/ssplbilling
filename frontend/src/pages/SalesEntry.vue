@@ -874,9 +874,23 @@ async function fetchSeriesList() {
     const settings = await fetchBillingSettings()
     const rows = (settings?.billing_series || []).filter(r => r.series)
 
+    // Fetch allowed series for this user
+    let allowedList = []
+    try {
+      const res = await fetch(`${API}.get_allowed_series`)
+      const json = await res.json()
+      allowedList = json.message || []
+    } catch (e) {
+      console.warn('[SalesEntry] get_allowed_series failed:', e)
+    }
+
     if (rows.length) {
       billingSeriesConfig.value = rows
-      availableSeries.value = rows.map(r => r.series)
+      // Filter available series strictly based on user allowed series
+      availableSeries.value = rows
+        .map(r => r.series)
+        .filter(s => allowedList.includes(s))
+
       if (settings.default_warehouse) defaultWarehouse.value = settings.default_warehouse
       try {
         const raw = settings.cipher_map
@@ -885,6 +899,11 @@ async function fetchSeriesList() {
           if (Array.isArray(parsed) && parsed.length === 10) cipherMap.value = parsed
         }
       } catch (e) { /* non-fatal */ }
+
+      if (availableSeries.value.length === 0) {
+        alert('You do not have permission to use any naming series.')
+        return
+      }
 
       const target = availableSeries.value.includes(billSeries.value)
         ? billSeries.value
