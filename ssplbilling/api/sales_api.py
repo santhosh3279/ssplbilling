@@ -2,6 +2,37 @@ import json
 import frappe
 
 
+def _get_item_tax_rate(item_code):
+    """Return the effective tax rate (%) for an item from its Item Tax Template.
+
+    Looks at the Item's taxes child table, picks the most recent template whose
+    valid_from is on or before today, then sums the rates from Item Tax Template Detail.
+    Returns 0.0 if no template is configured.
+    """
+    today = frappe.utils.today()
+    tax_rows = frappe.get_all(
+        "Item Tax",
+        filters={"parent": item_code, "parenttype": "Item"},
+        fields=["item_tax_template", "valid_from"],
+        order_by="valid_from desc",
+    )
+    template_name = None
+    for row in tax_rows:
+        if not row.valid_from or str(row.valid_from) <= today:
+            template_name = row.item_tax_template
+            break
+
+    if not template_name:
+        return 0.0
+
+    details = frappe.get_all(
+        "Item Tax Template Detail",
+        filters={"parent": template_name},
+        fields=["tax_rate"],
+    )
+    return float(sum(d.tax_rate or 0 for d in details)) / 2
+
+
 @frappe.whitelist()
 def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
     """Look up item by code or barcode. Returns item details + stock + rate."""
@@ -39,6 +70,7 @@ def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
         "rate": float(rate),
         "stock_qty": float(stock_qty),
         "warehouse": wh,
+        "tax_rate": _get_item_tax_rate(item.item_code),
     }
 
 
@@ -83,6 +115,7 @@ def search_items(query, price_list="Standard Selling"):
         ) if wh else 0
         item["warehouse"] = wh
         item["found"] = True
+        item["tax_rate"] = _get_item_tax_rate(item["item_code"])
 
     return items
 
@@ -249,10 +282,15 @@ def create_sales_invoice(data=None, **kwargs):
         si.additional_discount_percentage = float(data["discount_percentage"])
 
     for item in data["items"]:
+        disc = float(item.get("discount_percentage") or 0)
+        price_list_rate = float(item.get("price_list_rate") or item["rate"])
+        rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
         row = {
             "item_code": item["item_code"],
             "qty": float(item["qty"]),
-            "rate": float(item["rate"]),
+            "price_list_rate": price_list_rate,
+            "discount_percentage": disc,
+            "rate": rate,
         }
         if item.get("warehouse"):
             row["warehouse"] = item["warehouse"]
@@ -396,6 +434,7 @@ def get_sales_invoice(invoice_name):
                 "rate": float(item.rate),
                 "warehouse": item.warehouse or "",
                 "cost_center": item.cost_center or "",
+                "tax_rate": _get_item_tax_rate(item.item_code),
                 "deleted": False,
             }
             for item in si.items
@@ -675,10 +714,15 @@ def update_sales_invoice(data=None, **kwargs):
 
     si.items = []
     for item in data["items"]:
+        disc = float(item.get("discount_percentage") or 0)
+        price_list_rate = float(item.get("price_list_rate") or item["rate"])
+        rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
         row = {
             "item_code": item["item_code"],
             "qty": float(item["qty"]),
-            "rate": float(item["rate"]),
+            "price_list_rate": price_list_rate,
+            "discount_percentage": disc,
+            "rate": rate,
         }
         if item.get("warehouse"):
             row["warehouse"] = item["warehouse"]

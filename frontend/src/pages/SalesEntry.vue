@@ -31,6 +31,7 @@
                   <th class="w-14 border-b-2 border-gray-200 px-2 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">UOM</th>
                   <th class="w-16 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Qty</th>
                   <th class="w-24 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Rate</th>
+                  <th class="w-16 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Disc %</th>
                   <th class="w-16 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Tax %</th>
                   <th class="w-24 border-b-2 border-gray-200 px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Amount</th>
                   <th class="w-8 border-b-2 border-gray-200"></th>
@@ -45,19 +46,22 @@
                   </td>
                   <td class="px-2 py-1.5"><span :class="item.deleted ? 'text-red-300 line-through' : 'text-gray-800'">{{ item.item_name || '--' }}</span><span v-if="item.deleted" class="ml-1 text-[10px] font-semibold text-red-400">DELETED</span></td>
                   <td class="px-2 py-1.5 text-gray-400" :class="{ 'text-gray-300': item.deleted }">{{ item.uom || '--' }}</td>
-                  <td class="px-2 py-1.5 text-right">
-                    <input v-if="!item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" min="1" class="w-14 rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="font-mono text-xs text-gray-300">{{ item.qty }}</span>
+                  <td class="px-2 py-1.5">
+                    <input v-if="!item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" min="1" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono text-xs text-gray-300">{{ item.qty }}</span>
+                  </td>
+                  <td class="px-2 py-1.5">
+                    <input v-if="!item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" step="0.01" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono text-xs text-gray-300">{{ item.rate }}</span>
+                  </td>
+                  <td class="px-2 py-1.5">
+                    <input v-if="!item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono text-xs text-gray-300">{{ item.discount || 0 }}</span>
                   </td>
                   <td class="px-2 py-1.5 text-right">
-                    <input v-if="!item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" step="0.01" class="w-20 rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="focusField('tax', idx)" @keydown.tab.prevent="focusField('tax', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="font-mono text-xs text-gray-300">{{ item.rate }}</span>
+                    <span class="font-mono text-sm" :class="item.deleted ? 'text-gray-300' : 'text-gray-600'">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
                   </td>
-                  <td class="px-2 py-1.5 text-right">
-                    <input v-if="!item.deleted" :ref="el => setRef(el, 'tax', idx)" type="number" v-model.number="item.tax_rate" step="0.01" min="0" class="w-14 rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="font-mono text-xs text-gray-300">{{ item.tax_rate }}</span>
-                  </td>
-                  <td class="px-2 py-1.5 text-right font-mono font-semibold" :class="item.deleted ? 'text-gray-300 line-through' : 'text-gray-800'">{{ item.deleted ? '' : (item.qty * item.rate).toFixed(2) }}</td>
+                  <td class="px-2 py-1.5 text-right font-mono font-semibold" :class="item.deleted ? 'text-gray-300 line-through' : 'text-gray-800'">{{ item.deleted ? '' : (item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
                   <td class="px-2 py-1.5 text-center">
                     <button v-if="!item.deleted" class="rounded px-1 py-0.5 text-xs text-gray-300 hover:bg-red-50 hover:text-red-500" @click.stop="softDelete(idx)">&times;</button>
                     <button v-else class="rounded px-1 py-0.5 text-[10px] font-semibold text-blue-400 hover:bg-blue-50 hover:text-blue-600" @click.stop="restoreItem(idx)">&larr;</button>
@@ -71,7 +75,8 @@
                   <td class="px-2 py-1.5 text-xs text-gray-400">{{ newPending.uom || '--' }}</td>
                   <td class="px-2 py-1.5 text-right"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-14 rounded border border-gray-300 bg-white px-1 py-1 text-right font-mono text-xs outline-none focus:border-blue-500" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" /></td>
                   <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">{{ newPending.rate ? newPending.rate.toFixed(2) : '--' }}</td>
-                  <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">{{ defaultTaxRate }}</td>
+                  <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">0</td>
+                  <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">{{ isExempted ? 0 : defaultTaxRate }}</td>
                   <td class="px-2 py-1.5 text-right font-mono text-xs text-gray-400">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '--' }}</td>
                   <td></td>
                 </tr>
@@ -203,7 +208,7 @@
         <!-- Summary -->
         <div class="border-b border-gray-100 p-4">
           <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Summary</div>
-          <div class="flex justify-between py-1 text-sm"><span class="text-gray-500">Subtotal</span><span class="font-mono font-semibold">&#8377;{{ subtotal.toFixed(2) }}</span></div>
+          <div class="flex justify-between py-1 text-sm"><span class="text-gray-500">Subtotal{{ isInclusive ? ' (ex-tax)' : '' }}</span><span class="font-mono font-semibold">&#8377;{{ subtotal.toFixed(2) }}</span></div>
           <div class="flex items-center justify-between py-1 text-sm">
             <div class="flex items-center gap-1.5"><span class="text-gray-500">Discount</span><input type="number" v-model.number="discountPct" min="0" max="100" class="w-12 rounded border border-gray-200 px-1 py-0.5 text-right text-xs outline-none focus:border-blue-400" /><span class="text-xs text-gray-400">%</span></div>
             <span class="font-mono font-semibold text-red-500">-&#8377;{{ discountAmt.toFixed(2) }}</span>
@@ -679,7 +684,7 @@ function goToNextRow(from) { const n = findNextActiveRow(from, 1); if (n !== nul
 async function onCodeEnter(idx) {
   const code = items.value[idx].item_code.trim(); if (!code) return; items.value[idx].item_code = code
   const r = await lookupItem(code)
-  if (r) { items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].rate = r.rate; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false; focusField('qty', idx) }
+  if (r) { items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false; focusField('qty', idx) }
   else openSearch(code, idx)
 }
 
@@ -697,7 +702,7 @@ async function addNewItem() {
   if (r.stock_qty <= 0) { alert('Out of stock: ' + r.item_name); return }
   const ei = items.value.findIndex(i => i.item_code === code && !i.deleted)
   if (ei >= 0) { items.value[ei].qty += newQty.value; selectedRow.value = ei }
-  else { items.value.push({ item_code: r.item_code, item_name: r.item_name, uom: r.uom, qty: newQty.value, rate: r.rate, tax_rate: defaultTaxRate.value, warehouse: r.warehouse, deleted: false }); selectedRow.value = items.value.length - 1 }
+  else { items.value.push({ item_code: r.item_code, item_name: r.item_name, uom: r.uom, qty: newQty.value, rate: r.rate, discount: 0, tax_rate: r.tax_rate ?? defaultTaxRate.value, warehouse: r.warehouse, deleted: false }); selectedRow.value = items.value.length - 1 }
   newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', rate: null }; focusNewCode()
 }
 
@@ -719,7 +724,7 @@ function pickSearchItem() { if (searchResults.value.length) pickSearchItemByIdx(
 function pickSearchItemByIdx(idx) {
   const p = searchResults.value[idx]; if (!p) return
   if (searchTargetRow !== null && searchTargetRow >= 0) {
-    const row = items.value[searchTargetRow]; row.item_code = p.item_code; row.item_name = p.item_name; row.uom = p.uom; row.rate = p.rate; row.warehouse = p.warehouse || defaultWarehouse.value; row.deleted = false
+    const row = items.value[searchTargetRow]; row.item_code = p.item_code; row.item_name = p.item_name; row.uom = p.uom; row.rate = p.rate; row.tax_rate = p.tax_rate ?? defaultTaxRate.value; row.warehouse = p.warehouse || defaultWarehouse.value; row.deleted = false
     showSearch.value = false; selectedRow.value = searchTargetRow; focusField('qty', searchTargetRow)
   } else {
     newItemCode.value = p.item_code; newPending.value = { item_name: p.item_name, uom: p.uom, rate: p.rate }
@@ -781,7 +786,7 @@ async function loadInvoice(invoiceName) {
     discountPct.value = inv.discount_percentage || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
-    items.value = inv.items.map(i => ({ ...i, tax_rate: defaultTaxRate.value }))
+    items.value = inv.items.map(i => ({ ...i, discount: i.discount || 0, tax_rate: i.tax_rate ?? defaultTaxRate.value }))
     selectedRow.value = -1
     newItemCode.value = ''
     newQty.value = 1
@@ -875,11 +880,43 @@ async function fetchNextBillNo() {
   } catch (e) { nextBillNo.value = '...' }
 }
 
-const subtotal = computed(() => activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0))
+const isExempted = computed(() => taxTemplate.value.toLowerCase().includes('exempt'))
+const isInclusive = computed(() => taxTemplate.value.toLowerCase().includes('inclusive'))
+
+// Gross = sum of (qty * rate * (1 - item discount%)) — after item-level discount
+const grossTotal = computed(() =>
+  activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
+)
+
+// Subtotal: ex-tax amount for inclusive, gross otherwise
+const subtotal = computed(() => {
+  if (isInclusive.value) {
+    return activeItems.value.reduce((s, i) => {
+      const amt = i.qty * i.rate * (1 - (i.discount || 0) / 100)
+      return s + amt / (1 + (i.tax_rate || 0) / 100)
+    }, 0)
+  }
+  return grossTotal.value
+})
+
 const discountAmt = computed(() => subtotal.value * (discountPct.value / 100))
 const taxableAmt = computed(() => subtotal.value - discountAmt.value)
-const totalTax = computed(() => activeItems.value.reduce((s, i) => { const a = i.qty * i.rate; return s + (a - a * (discountPct.value / 100)) * (i.tax_rate / 100) }, 0))
-const grandTotal = computed(() => taxableAmt.value + totalTax.value)
+
+const totalTax = computed(() => {
+  if (isExempted.value) return 0
+  if (isInclusive.value) {
+    return (grossTotal.value - subtotal.value) * (1 - discountPct.value / 100)
+  }
+  return activeItems.value.reduce((s, i) => {
+    const a = i.qty * i.rate * (1 - (i.discount || 0) / 100)
+    return s + (a - a * (discountPct.value / 100)) * (i.tax_rate / 100)
+  }, 0)
+})
+
+const grandTotal = computed(() => {
+  if (isInclusive.value) return grossTotal.value * (1 - discountPct.value / 100)
+  return taxableAmt.value + totalTax.value
+})
 
 async function saveBill() {
   if (!customer.value.trim()) { alert('Please enter a customer'); return }
@@ -896,7 +933,9 @@ async function saveBill() {
     items: activeItems.value.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
-      rate: i.rate,
+      price_list_rate: i.rate,
+      discount_percentage: i.discount || 0,
+      rate: i.rate * (1 - (i.discount || 0) / 100),
       warehouse: i.warehouse || defaultWarehouse.value,
       cost_center: costCenter.value || '',
     })),
