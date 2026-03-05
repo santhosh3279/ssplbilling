@@ -876,10 +876,13 @@ async function fetchSeriesList() {
 
     // Fetch allowed series for this user
     let allowedList = []
+    let userAllowedString = ''
     try {
       const res = await fetch(`${API}.get_allowed_series`)
       const json = await res.json()
-      allowedList = json.message || []
+      const d = json.message || {}
+      allowedList = d.allowed_series || []
+      userAllowedString = d.user_allowed_string || ''
     } catch (e) {
       console.warn('[SalesEntry] get_allowed_series failed:', e)
     }
@@ -887,9 +890,14 @@ async function fetchSeriesList() {
     if (rows.length) {
       billingSeriesConfig.value = rows
       // Filter available series strictly based on user allowed series
-      availableSeries.value = rows
-        .map(r => r.series)
-        .filter(s => allowedList.includes(s))
+      const allSeries = rows.map(r => r.series)
+      if (allowedList.length === 0 && !userAllowedString) {
+        // Unrestricted user: show all series from billing settings
+        availableSeries.value = allSeries
+      } else {
+        // Restricted user: show only allowed series
+        availableSeries.value = allSeries.filter(s => allowedList.includes(s))
+      }
 
       if (settings.default_warehouse) defaultWarehouse.value = settings.default_warehouse
       try {

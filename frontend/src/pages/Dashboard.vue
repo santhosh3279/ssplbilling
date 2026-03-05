@@ -147,7 +147,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="bs in systemSettings.billing_series" :key="bs.series" class="border-t border-gray-100">
+                    <tr v-for="bs in filteredBillingSeries" :key="bs.series" class="border-t border-gray-100">
                       <td class="whitespace-nowrap px-2 py-1.5 font-medium">{{ bs.series }}</td>
                       <td class="whitespace-nowrap px-2 py-1.5">{{ bs.price_list || '--' }}</td>
                       <td class="whitespace-nowrap px-2 py-1.5">{{ bs.warehouse || '--' }}</td>
@@ -310,6 +310,14 @@ async function fetchSeries() {
     console.warn('[Dashboard] fetchBillingSettings failed:', e)
   }
 }
+
+const filteredBillingSeries = computed(() => {
+  const all = systemSettings.value?.billing_series || []
+  if (!availableSeries.value?.length) {
+    return userAllowedString.value ? [] : all
+  }
+  return all.filter(bs => availableSeries.value.includes(bs.series))
+})
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
