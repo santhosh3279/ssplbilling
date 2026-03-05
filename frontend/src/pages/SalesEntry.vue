@@ -41,21 +41,21 @@
                 <tr v-for="(item, idx) in items" :key="idx" class="cursor-pointer border-b border-gray-100" :class="{ 'bg-blue-50': selectedRow === idx && !item.deleted, 'bg-red-50/40': item.deleted, 'hover:bg-blue-50/50': !item.deleted }" @click="selectRow(idx)">
                   <td class="px-3 py-1.5"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" :class="item.deleted ? 'bg-red-100 text-red-400' : 'bg-gray-100 text-gray-500'">{{ idx + 1 }}</span></td>
                   <td class="px-2 py-1.5">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" class="w-full rounded border border-gray-300 bg-white px-2 py-0.5 font-mono text-xs outline-none focus:border-blue-500" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0" class="w-full rounded border border-gray-300 bg-white px-2 py-0.5 font-mono text-xs outline-none focus:border-blue-500 disabled:bg-gray-50" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="font-mono text-xs" :class="item.deleted ? 'text-gray-300' : 'text-gray-600'">{{ item.item_code }}</span>
                   </td>
                   <td class="px-2 py-1.5"><span :class="item.deleted ? 'text-red-300 line-through' : 'text-gray-800'">{{ item.item_name || '--' }}</span><span v-if="item.deleted" class="ml-1 text-[10px] font-semibold text-red-400">DELETED</span></td>
                   <td class="px-2 py-1.5 text-gray-400" :class="{ 'text-gray-300': item.deleted }">{{ item.uom || '--' }}</td>
                   <td class="px-2 py-1.5">
-                    <input v-if="!item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" min="1" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="!item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono text-xs text-gray-300">{{ item.qty }}</span>
                   </td>
                   <td class="px-2 py-1.5">
-                    <input v-if="!item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" step="0.01" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="!item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0" step="0.01" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono text-xs text-gray-300">{{ item.rate }}</span>
                   </td>
                   <td class="px-2 py-1.5">
-                    <input v-if="!item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="!item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-sm focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono text-xs text-gray-300">{{ item.discount || 0 }}</span>
                   </td>
                   <td class="px-2 py-1.5 text-right">
@@ -68,7 +68,7 @@
                   </td>
                 </tr>
                 <!-- NEW ENTRY ROW -->
-                <tr class="border-b border-gray-100 bg-gray-50/50">
+                <tr v-if="billDocStatus === 0" class="border-b border-gray-100 bg-gray-50/50">
                   <td class="px-3 py-1.5"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-500">+</span></td>
                   <td class="px-2 py-1.5"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
                   <td class="px-2 py-1.5 text-xs text-gray-400">{{ newPending.item_name || '--' }}</td>
@@ -141,127 +141,126 @@
         <div class="border-b border-gray-100 p-4">
           <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Invoice Details</div>
           <div class="flex flex-col gap-2.5">
-            <div class="flex flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-400">Bill Date</label>
-              <input type="date" v-model="billDate" class="rounded border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500" />
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase text-gray-400">Bill Date</label>
+            <input type="date" v-model="billDate" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" />
+          </div>
+          <!-- Series + Bill No — starting point -->
+          <div class="flex gap-2">
+            <div class="flex flex-1 flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Series</label>
+              <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50">
+                <option v-for="s in availableSeries" :key="s">{{ s }}</option>
+              </select>
             </div>
-            <!-- Series + Bill No — starting point -->
-            <div class="flex gap-2">
-              <div class="flex flex-1 flex-col gap-1">
-                <label class="text-[10px] font-bold uppercase text-gray-400">Series</label>
-                <select ref="seriesSelect" v-model="billSeries" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-                  <option v-for="s in availableSeries" :key="s">{{ s }}</option>
-                </select>
-              </div>
-              <div class="flex flex-1 flex-col gap-1">
-                <label class="text-[10px] font-bold uppercase text-gray-400">Bill No</label>
-                <input :value="nextBillNo" readonly class="rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 font-mono text-sm text-gray-400" />
-              </div>
+            <div class="flex flex-1 flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Bill No</label>
+              <input :value="nextBillNo" readonly class="rounded border border-gray-200 bg-gray-50 px-2.5 py-1.5 font-mono text-sm text-gray-400" />
             </div>
-            <!-- Customer -->
-            <div class="flex flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-400">Customer</label>
-              <div class="relative">
-                <input ref="customerInput" v-model="custSearch" class="w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500" :placeholder="customer || 'Search customer...'" :class="{ 'border-green-400': customer }" @input="doCustSearch" @focus="showCustDD = true" @keydown.enter.prevent="onCustomerEnter" @keydown.down.prevent="custDDIdx = Math.min(custDDIdx + 1, custResults.length)" @keydown.up.prevent="custDDIdx = Math.max(custDDIdx - 1, 0)" @keydown.esc="showCustDD = false" />
-                <div v-if="showCustDD && (custResults.length || custSearch.trim())" class="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded border border-gray-200 bg-white shadow-lg">
-                  <div v-for="(c, i) in custResults" :key="c.name" class="cursor-pointer px-3 py-1.5 text-sm" :class="custDDIdx === i ? 'bg-blue-50' : 'hover:bg-gray-50'" @click="pickCust(c)" @mouseenter="custDDIdx = i"><span class="font-medium text-gray-700">{{ c.customer_name }}</span> <span class="ml-2 text-[10px] text-gray-400">{{ c.name }}</span></div>
-                  <div v-if="custSearch.trim()" class="cursor-pointer border-t border-gray-100 px-3 py-2 text-sm font-semibold text-blue-600" :class="custDDIdx === custResults.length ? 'bg-blue-50' : 'hover:bg-blue-50'" @click="openNewCustForm" @mouseenter="custDDIdx = custResults.length">+ Create "{{ custSearch.trim() }}"</div>
-                </div>
-              </div>
-            </div>
-            <!-- Warehouse + Price List (single row) -->
-            <div class="flex gap-2">
-              <div class="flex flex-1 flex-col gap-1">
-                <label class="text-[10px] font-bold uppercase text-gray-400">Warehouse</label>
-                <select v-model="defaultWarehouse" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-                  <option value="">-- Default --</option>
-                  <option v-for="w in availableWarehouses" :key="w" :value="w">{{ w }}</option>
-                </select>
-              </div>
-              <div class="flex flex-1 flex-col gap-1">
-                <label class="text-[10px] font-bold uppercase text-gray-400">Price List</label>
-                <select v-model="priceList" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-                  <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
-                </select>
-              </div>
-            </div>
-            <!-- Tax Template + Cost Center (single row) -->
-            <div class="flex gap-2">
-              <div class="flex flex-1 flex-col gap-1">
-                <label class="text-[10px] font-bold uppercase text-gray-400">Tax Template</label>
-                <select v-model="taxTemplate" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-                  <option value="">-- None --</option>
-                  <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
-                </select>
-              </div>
-              <div class="flex flex-1 flex-col gap-1">
-                <label class="text-[10px] font-bold uppercase text-gray-400">Cost Center</label>
-                <select v-model="costCenter" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-                  <option value="">-- Default --</option>
-                  <option v-for="cc in availableCostCenters" :key="cc" :value="cc">{{ cc }}</option>
-                </select>
+          </div>
+          <!-- Customer -->
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase text-gray-400">Customer</label>
+            <div class="relative">
+              <input ref="customerInput" v-model="custSearch" :disabled="billDocStatus !== 0" class="w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" :placeholder="customer || 'Search customer...'" :class="{ 'border-green-400': customer }" @input="doCustSearch" @focus="showCustDD = true" @keydown.enter.prevent="onCustomerEnter" @keydown.down.prevent="custDDIdx = Math.min(custDDIdx + 1, custResults.length)" @keydown.up.prevent="custDDIdx = Math.max(custDDIdx - 1, 0)" @keydown.esc="showCustDD = false" />
+              <div v-if="showCustDD && (custResults.length || custSearch.trim())" class="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded border border-gray-200 bg-white shadow-lg">
+                <div v-for="(c, i) in custResults" :key="c.name" class="cursor-pointer px-3 py-1.5 text-sm" :class="custDDIdx === i ? 'bg-blue-50' : 'hover:bg-gray-50'" @click="pickCust(c)" @mouseenter="custDDIdx = i"><span class="font-medium text-gray-700">{{ c.customer_name }}</span> <span class="ml-2 text-[10px] text-gray-400">{{ c.name }}</span></div>
+                <div v-if="custSearch.trim()" class="cursor-pointer border-t border-gray-100 px-3 py-2 text-sm font-semibold text-blue-600" :class="custDDIdx === custResults.length ? 'bg-blue-50' : 'hover:bg-blue-50'" @click="openNewCustForm" @mouseenter="custDDIdx = custResults.length">+ Create "{{ custSearch.trim() }}"</div>
               </div>
             </div>
           </div>
-        </div>
+          <!-- Warehouse + Price List (single row) -->
+          <div class="flex gap-2">
+            <div class="flex flex-1 flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Warehouse</label>
+              <select v-model="defaultWarehouse" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50">
+                <option value="">-- Default --</option>
+                <option v-for="w in availableWarehouses" :key="w" :value="w">{{ w }}</option>
+              </select>
+            </div>
+            <div class="flex flex-1 flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Price List</label>
+              <select v-model="priceList" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50">
+                <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
+              </select>
+            </div>
+          </div>
+          <!-- Tax Template + Cost Center (single row) -->
+          <div class="flex gap-2">
+            <div class="flex flex-1 flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Tax Template</label>
+              <select v-model="taxTemplate" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50">
+                <option value="">-- None --</option>
+                <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
+              </select>
+            </div>
+            <div class="flex flex-1 flex-col gap-1">
+              <label class="text-[10px] font-bold uppercase text-gray-400">Cost Center</label>
+              <select v-model="costCenter" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50">
+                <option value="">-- Default --</option>
+                <option v-for="cc in availableCostCenters" :key="cc" :value="cc">{{ cc }}</option>
+              </select>
+            </div>
+          </div>
+          </div>
+          </div>
 
-        <!-- Payment Mode -->
-        <div class="border-b border-gray-100 p-4">
+          <!-- Payment Mode -->
+          <div class="border-b border-gray-100 p-4">
           <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Payment Mode</div>
           <div class="flex gap-2">
-            <button class="flex-1 rounded border py-2 text-center text-sm font-semibold transition" :class="paymentMode === 'Cash' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'" @click="paymentMode = 'Cash'">Cash</button>
-            <button class="flex-1 rounded border py-2 text-center text-sm font-semibold transition" :class="paymentMode === 'Credit' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'" @click="paymentMode = 'Credit'">Credit</button>
+          <button :disabled="billDocStatus !== 0" class="flex-1 rounded border py-2 text-center text-sm font-semibold transition disabled:opacity-50" :class="paymentMode === 'Cash' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'" @click="paymentMode = 'Cash'">Cash</button>
+          <button :disabled="billDocStatus !== 0" class="flex-1 rounded border py-2 text-center text-sm font-semibold transition disabled:opacity-50" :class="paymentMode === 'Credit' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'" @click="paymentMode = 'Credit'">Credit</button>
           </div>
-        </div>
+          </div>
 
-        <!-- Summary -->
-        <div class="border-b border-gray-100 p-4">
+          <!-- Summary -->
+          <div class="border-b border-gray-100 p-4">
           <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Summary</div>
           <div class="flex justify-between py-1 text-sm"><span class="text-gray-500">Subtotal{{ isInclusive ? ' (ex-tax)' : '' }}</span><span class="font-mono font-semibold">&#8377;{{ subtotal.toFixed(2) }}</span></div>
           <div class="flex items-center justify-between py-1 text-sm">
-            <div class="flex items-center gap-1.5"><span class="text-gray-500">Discount</span><input type="number" v-model.number="discountPct" min="0" max="100" class="w-12 rounded border border-gray-200 px-1 py-0.5 text-right text-xs outline-none focus:border-blue-400" /><span class="text-xs text-gray-400">%</span></div>
-            <span class="font-mono font-semibold text-red-500">-&#8377;{{ discountAmt.toFixed(2) }}</span>
+          <div class="flex items-center gap-1.5"><span class="text-gray-500">Discount</span><input type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" class="w-12 rounded border border-gray-200 px-1 py-0.5 text-right text-xs outline-none focus:border-blue-400 disabled:bg-gray-50" /><span class="text-xs text-gray-400">%</span></div>
+          <span class="font-mono font-semibold text-red-500">-&#8377;{{ discountAmt.toFixed(2) }}</span>
           </div>
           <div class="flex justify-between py-1 text-sm"><span class="text-gray-500">Total Tax</span><span class="font-mono font-semibold">+&#8377;{{ totalTax.toFixed(2) }}</span></div>
           <div class="mt-2 flex justify-between border-t-2 border-gray-200 pt-2"><span class="font-semibold text-gray-700">Grand Total</span><span class="font-mono text-lg font-bold text-blue-600">&#8377;{{ grandTotal.toFixed(2) }}</span></div>
-        </div>
+          </div>
 
-        <!-- Bottom Actions -->
-        <div class="mt-auto flex flex-col gap-2 p-4">
+          <!-- Bottom Actions -->
+          <div class="mt-auto flex flex-col gap-2 p-4">
           <!-- Print Scheme -->
           <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase text-gray-400">Print Scheme</label>
-            <select v-model="printScheme" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-              <option value="">-- Default --</option>
-              <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
-            </select>
+          <label class="text-[10px] font-bold uppercase text-gray-400">Print Scheme</label>
+          <select v-model="printScheme" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+            <option value="">-- Default --</option>
+            <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
+          </select>
           </div>
 
           <!-- Saved state indicator -->
-          <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-50 px-3 py-2 text-xs">
-            <span class="font-semibold text-green-700">Saved: <span class="font-mono">{{ savedInvoiceName }}</span></span>
-            <span class="text-gray-400">Esc → new bill</span>
+          <div v-if="billSaved" class="flex items-center justify-between rounded px-3 py-2 text-xs" :class="billDocStatus === 1 ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'">
+          <span class="font-semibold">{{ billDocStatus === 0 ? 'Saved' : billDocStatus === 1 ? 'Submitted' : 'Status' }}: <span class="font-mono">{{ savedInvoiceName }}</span></span>
+          <span class="text-gray-400">Esc → new bill</span>
           </div>
 
-          <!-- Edit button (shown after save) -->
+          <!-- Edit button (shown after save, only for Draft) -->
           <button
-            v-if="billSaved"
-            @click="enterEditMode"
-            class="w-full rounded-lg border border-amber-400 bg-amber-50 py-2.5 text-center text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+          v-if="billSaved && billDocStatus === 0"
+          @click="enterEditMode"
+          class="w-full rounded-lg border border-amber-400 bg-amber-50 py-2.5 text-center text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
           >
-            ✏ Edit Bill
+          ✏ Edit Bill
           </button>
 
           <!-- Save / Update button (shown when not saved) -->
           <button
-            v-else
-            @click="saveBill"
-            class="w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition"
-            :class="savedInvoiceName ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'"
+          v-else-if="!billSaved"
+          @click="saveBill"
+          class="w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition"
+          :class="savedInvoiceName ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'"
           >
-            {{ savedInvoiceName ? 'Update Bill' : 'Save Bill' }}
+          {{ savedInvoiceName ? 'Update Bill' : 'Save Bill' }}
           </button>
-
           <div class="flex gap-2">
             <button class="flex-1 rounded-lg border border-gray-300 py-2 text-center text-sm font-semibold text-gray-600 transition hover:bg-gray-50" @click="printBill">Print</button>
             <button class="flex-1 rounded-lg border border-red-200 py-2 text-center text-sm font-semibold text-red-500 transition hover:bg-red-50" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
@@ -271,23 +270,32 @@
     </div>
 
     <!-- =================== MODIFY BILL SUBWINDOW =================== -->
-    <div v-if="showModifyBill" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showModifyBill = false">
-      <div class="flex max-h-[80vh] w-[680px] flex-col rounded-xl bg-white shadow-2xl">
+    <div v-if="showModifyBill" class="fixed inset-0 z-50 flex justify-center bg-black/40 pt-12" @click.self="showModifyBill = false">
+      <div class="flex max-h-[85vh] w-[680px] flex-col rounded-xl bg-white shadow-2xl">
         <!-- Header -->
         <div class="border-b border-gray-200 px-5 py-4">
           <div class="text-sm font-semibold text-gray-700">Modify Existing Bill</div>
           <div class="mt-0.5 text-xs text-gray-400">Search and select a Draft invoice to edit</div>
         </div>
 
-        <!-- Search -->
-        <div class="border-b border-gray-100 px-5 py-3">
+        <!-- Search & Date Filter -->
+        <div class="flex items-center gap-3 border-b border-gray-100 px-5 py-3">
           <input
             ref="modifySearchInput"
             v-model="modifyQuery"
-            class="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             placeholder="Search by invoice no. or customer name..."
             @keydown.esc="showModifyBill = false"
           />
+          <div class="flex items-center rounded border border-gray-300">
+            <button @click="changeModifyDate(-1)" class="px-2 py-1.5 text-gray-500 hover:bg-gray-50 border-r border-gray-300">&larr;</button>
+            <input
+              type="date"
+              v-model="modifyDate"
+              class="w-36 px-3 py-1.5 text-sm outline-none focus:border-blue-500"
+            />
+            <button @click="changeModifyDate(1)" class="px-2 py-1.5 text-gray-500 hover:bg-gray-50 border-l border-gray-300">&rarr;</button>
+          </div>
         </div>
 
         <!-- Results -->
@@ -300,7 +308,7 @@
                 <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Customer</th>
                 <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Date</th>
                 <th class="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-400">Amount</th>
-                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Series</th>
+                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -317,7 +325,14 @@
                 </td>
                 <td class="px-3 py-2.5 text-xs text-gray-500">{{ inv.posting_date }}</td>
                 <td class="px-3 py-2.5 text-right font-mono text-sm font-semibold text-gray-800">&#8377;{{ inv.grand_total.toFixed(2) }}</td>
-                <td class="px-3 py-2.5 text-xs text-gray-400">{{ inv.naming_series }}</td>
+                <td class="px-3 py-2.5">
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" :class="{
+                    'bg-gray-100 text-gray-600': inv.status === 'Draft',
+                    'bg-green-100 text-green-700': inv.status === 'Paid',
+                    'bg-blue-100 text-blue-700': inv.status === 'Submitted',
+                    'bg-red-100 text-red-700': inv.status === 'Cancelled'
+                  }">{{ inv.status }}</span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -605,6 +620,7 @@ const selectedRow = ref(-1)
 const newItemCode = ref('')
 const newQty = ref(1)
 const billSaved = ref(false)
+const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-saved invoice name
 const activeItems = computed(() => items.value.filter(i => !i.deleted))
 const deletedCount = computed(() => items.value.filter(i => i.deleted).length)
@@ -744,6 +760,7 @@ function pickSearchItemByIdx(idx) {
 // ==================== MODIFY BILL ====================
 const showModifyBill = ref(false)
 const modifyQuery = ref('')
+const modifyDate = ref(new Date().toISOString().split('T')[0])
 const modifyResults = ref([])
 const modifyLoading = ref(false)
 let modifySearchTimeout = null
@@ -752,6 +769,16 @@ watch(modifyQuery, (q) => {
   clearTimeout(modifySearchTimeout)
   modifySearchTimeout = setTimeout(() => searchBills(q), 300)
 })
+
+watch(modifyDate, (d) => {
+  searchBills(modifyQuery.value)
+})
+
+function changeModifyDate(days) {
+  const d = new Date(modifyDate.value)
+  d.setDate(d.getDate() + days)
+  modifyDate.value = d.toISOString().split('T')[0]
+}
 
 function openModifyBill() {
   modifyQuery.value = ''
@@ -766,7 +793,11 @@ function openModifyBill() {
 async function searchBills(query) {
   modifyLoading.value = true
   try {
-    const qs = new URLSearchParams({ query: query || '', limit: 30 })
+    const qs = new URLSearchParams({
+      query: query || '',
+      limit: 30,
+      posting_date: modifyDate.value,
+    })
     const res = await fetch(`${API}.get_sales_invoices?${qs}`)
     const json = await res.json()
     modifyResults.value = Array.isArray(json.message) ? json.message : []
@@ -803,7 +834,9 @@ async function loadInvoice(invoiceName) {
     selectedItemData.value = null
 
     savedInvoiceName.value = inv.name
-    billSaved.value = false
+    billDocStatus.value = inv.docstatus
+    // If it's already submitted or cancelled, treat as saved/read-only
+    billSaved.value = inv.docstatus !== 0
     showModifyBill.value = false
 
     nextTick(() => customerInput.value?.focus())
@@ -814,6 +847,10 @@ async function loadInvoice(invoiceName) {
 
 /** Click Edit after save → re-enable the form for updates */
 function enterEditMode() {
+  if (billDocStatus.value !== 0) {
+    alert('Cannot edit a submitted/cancelled invoice.')
+    return
+  }
   billSaved.value = false
   nextTick(() => customerInput.value?.focus())
 }
@@ -966,6 +1003,7 @@ async function saveBill() {
     }
 
     billSaved.value = true
+    billDocStatus.value = 0 // Still Draft after save/update
     fetchNextBillNo()
     alert(`Invoice ${result?.invoice_name || ''} saved!\nTotal: ₹${(result?.grand_total || grandTotal.value).toFixed(2)}\n\nPress Esc to start a new bill`)
   } catch (e) {
@@ -976,7 +1014,7 @@ async function saveBill() {
 function startNewBill() {
   items.value = []; selectedRow.value = -1; customer.value = ''; custSearch.value = ''
   discountPct.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
-  billSaved.value = false; savedInvoiceName.value = null; selectedItemData.value = null
+  billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   escWarning.value = false; clearTimeout(escWarnTimer)
   nextTick(() => seriesSelect.value?.focus())
 }

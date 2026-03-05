@@ -384,12 +384,12 @@ def get_next_bill_no(naming_series="SINV-.YY.-"):
 
 @frappe.whitelist()
 def get_sales_invoices(query="", limit=20, posting_date=None):
-    """List Draft Sales Invoices for modification. Searchable by invoice name or customer name.
+    """List Sales Invoices for modification. Searchable by invoice name or customer name.
     Optionally filtered by posting_date (YYYY-MM-DD). Defaults to today when not supplied."""
     date_filter = posting_date or frappe.utils.today()
     kwargs = dict(
-        filters={"docstatus": 0, "posting_date": date_filter},
-        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "naming_series", "modified"],
+        filters={"posting_date": date_filter},
+        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
         limit=int(limit),
         order_by="modified desc",
     )
@@ -406,10 +406,8 @@ def get_sales_invoices(query="", limit=20, posting_date=None):
 
 @frappe.whitelist()
 def get_sales_invoice(invoice_name):
-    """Fetch a Draft Sales Invoice with its items for frontend editing."""
+    """Fetch a Sales Invoice with its items for frontend viewing/editing."""
     si = frappe.get_doc("Sales Invoice", invoice_name)
-    if si.docstatus != 0:
-        frappe.throw(f"Invoice {invoice_name} is not a Draft and cannot be edited here.")
 
     payment_mode = "Cash"
     if si.payments:
@@ -429,6 +427,8 @@ def get_sales_invoice(invoice_name):
         "grand_total": float(si.grand_total or 0),
         "tax_template": si.taxes_and_charges or "",
         "cost_center": cost_center or "",
+        "docstatus": si.docstatus,
+        "status": si.status,
         "items": [
             {
                 "item_code": item.item_code,
