@@ -161,14 +161,6 @@
                 </div>
               </div>
             </div>
-            <!-- Tax Template -->
-            <div class="flex flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-400">Tax Template</label>
-              <select v-model="taxTemplate" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-                <option value="">-- None --</option>
-                <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
-              </select>
-            </div>
             <!-- Warehouse + Price List (single row) -->
             <div class="flex gap-2">
               <div class="flex flex-1 flex-col gap-1">
@@ -185,13 +177,22 @@
                 </select>
               </div>
             </div>
-            <!-- Cost Center -->
-            <div class="flex flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-400">Cost Center</label>
-              <select v-model="costCenter" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
-                <option value="">-- Default --</option>
-                <option v-for="cc in availableCostCenters" :key="cc" :value="cc">{{ cc }}</option>
-              </select>
+            <!-- Tax Template + Cost Center (single row) -->
+            <div class="flex gap-2">
+              <div class="flex flex-1 flex-col gap-1">
+                <label class="text-[10px] font-bold uppercase text-gray-400">Tax Template</label>
+                <select v-model="taxTemplate" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+                  <option value="">-- None --</option>
+                  <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
+                </select>
+              </div>
+              <div class="flex flex-1 flex-col gap-1">
+                <label class="text-[10px] font-bold uppercase text-gray-400">Cost Center</label>
+                <select v-model="costCenter" class="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+                  <option value="">-- Default --</option>
+                  <option v-for="cc in availableCostCenters" :key="cc" :value="cc">{{ cc }}</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>

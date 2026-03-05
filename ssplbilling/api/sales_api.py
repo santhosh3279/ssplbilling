@@ -277,6 +277,8 @@ def create_sales_invoice(data=None, **kwargs):
     si.posting_date = data.get("date", frappe.utils.today())
     si.naming_series = data.get("naming_series", "SINV-.YY.-")
     si.update_stock = 1
+    if data.get("cost_center"):
+        si.cost_center = data["cost_center"]
 
     if data.get("discount_percentage"):
         si.additional_discount_percentage = float(data["discount_percentage"])
@@ -692,6 +694,8 @@ def update_sales_invoice(data=None, **kwargs):
     si.posting_date = data.get("date", frappe.utils.today())
     if data.get("naming_series"):
         si.naming_series = data["naming_series"]
+    if data.get("cost_center"):
+        si.cost_center = data["cost_center"]
     si.additional_discount_percentage = float(data.get("discount_percentage", 0))
     si.update_stock = 1
 
