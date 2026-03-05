@@ -303,21 +303,24 @@ def create_sales_invoice(data=None, **kwargs):
             row["cost_center"] = cost_center
         si.append("items", row)
 
-    # Apply tax template if provided
+    # Set tax template — let ERPNext populate tax rows via set_missing_values()
+    # so all fields (including included_in_print_rate) are correctly copied from the template.
     if data.get("tax_template"):
         si.taxes_and_charges = data["tax_template"]
-        try:
-            tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
-            for tax in tmpl.taxes:
-                si.append("taxes", {
-                    "charge_type": tax.charge_type,
-                    "account_head": tax.account_head,
-                    "description": tax.description,
-                    "rate": tax.rate,
-                    "cost_center": data.get("cost_center") or tax.cost_center or "",
-                })
-        except Exception:
-            pass  # Non-fatal: ERPNext will still save without tax rows
+
+    # set_missing_values() populates taxes from the template, sets selling_price_list,
+    # currency, conversion_rate and other fields that calculate_taxes_and_totals() needs.
+    si.set_missing_values()
+
+    # Override cost_center on tax rows if caller specified one
+    cost_center = data.get("cost_center") or ""
+    if cost_center and si.taxes:
+        for tax in si.taxes:
+            if not tax.cost_center:
+                tax.cost_center = cost_center
+
+    # Run ERPNext's own tax+total engine before saving
+    si.calculate_taxes_and_totals()
 
     si.insert()
 
