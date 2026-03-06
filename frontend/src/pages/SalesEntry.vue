@@ -712,6 +712,12 @@
         </div>
       </div>
     </div>
+
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="savedInvoiceName"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
@@ -721,10 +727,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, fetchItemPrice, searchCustomers, frappeGet, frappePost } from '../api.js'
 import { localDb } from '../services/localDb'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const API = '/api/method/ssplbilling.api.sales_api'
+
+const showPrintModal = ref(false)
 
 // ==================== BILLING SETTINGS ====================
 const billingSeriesConfig = ref([])
@@ -1564,7 +1573,7 @@ async function saveBill() {
     billSaved.value = true
     billDocStatus.value = 0 // Still Draft after save/update
     fetchNextBillNo()
-    alert(`Invoice ${result?.invoice_name || ''} saved!\nTotal: ₹${(result?.grand_total || grandTotal.value).toFixed(2)}\n\nPress Esc to start a new bill`)
+    showPrintModal.value = true
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save invoice'))
   }
