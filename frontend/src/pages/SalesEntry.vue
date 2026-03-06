@@ -18,38 +18,57 @@
     </header>
 
     <div class="flex flex-col border-b border-gray-200 bg-white px-4 py-3">
-      <div class="flex flex-wrap items-end justify-between gap-y-3">
-        <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-6">
+        <!-- Left Side: Basic Info Row -->
+        <div class="flex flex-wrap items-center gap-x-10 gap-y-2">
+          
           <!-- Series -->
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-bold uppercase text-gray-600">Series</label>
-            <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" @keydown.enter.prevent="openCustomerSearch">
+          <div class="flex items-center gap-3">
+            <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Series</label>
+            <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 bg-white px-2 py-1 text-sm font-bold outline-none focus:border-blue-500 disabled:bg-gray-50">
               <option v-for="s in availableSeries" :key="s">{{ s }}</option>
             </select>
           </div>
+
           <!-- Bill No -->
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-bold uppercase text-gray-600">Bill No</label>
-            <input :value="nextBillNo" readonly class="w-32 rounded border border-gray-200 bg-gray-50 px-2.5 py-1 font-mono text-sm text-gray-600" />
+          <div class="flex items-center gap-3 w-[240px]">
+            <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap w-[60px]">Bill No</label>
+            <div class="text-2xl font-bold text-gray-900 tracking-normal truncate" style="font-family: 'Poppins', sans-serif">
+              {{ nextBillNo }}
+            </div>
           </div>
+
+
           <!-- Customer -->
-          <div class="flex flex-col gap-1 min-w-[200px] max-w-[220px]">
-            <label class="text-xs font-bold uppercase text-gray-600">Customer</label>
-            <div class="relative flex items-center gap-1">
-              <input ref="customerInput" v-model="custSearch" :disabled="billDocStatus !== 0" maxlength="20" class="w-full rounded border border-gray-300 px-2.5 py-1 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" :placeholder="customer || 'Search...'" :class="{ 'border-green-400 bg-green-50/30': customer }" @input="doCustSearch" @focus="openCustomerSearch" @keydown.enter.prevent="onCustomerEnter" @keydown.down.prevent="custDDIdx = Math.min(custDDIdx + 1, custResults.length)" @keydown.up.prevent="custDDIdx = Math.max(custDDIdx - 1, 0)" @keydown.esc="showCustDD = false" @keydown.f2.prevent="openCustomerSearch" />
-              
-              <div v-if="showCustDD && (custResults.length || custSearch.trim())" class="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded border border-gray-200 bg-white shadow-lg">
-                <div v-for="(c, i) in custResults" :key="c.name" class="cursor-pointer px-3 py-1.5 text-sm" :class="custDDIdx === i ? 'bg-blue-50' : 'hover:bg-gray-50'" @click="pickCust(c)" @mouseenter="custDDIdx = i"><span class="font-medium text-gray-700">{{ c.customer_name }}</span> <span class="ml-2 text-xs text-gray-600">{{ c.name }}</span></div>
-                <div v-if="custSearch.trim()" class="cursor-pointer border-t border-gray-100 px-3 py-2 text-sm font-semibold text-blue-600" :class="custDDIdx === custResults.length ? 'bg-blue-50' : 'hover:bg-blue-50'" @click="openNewCustForm" @mouseenter="custDDIdx = custResults.length">+ Create "{{ custSearch.trim() }}"</div>
+          <div class="flex items-center gap-3 w-[340px]">
+            <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap w-[70px]">Customer</label>
+            <div class="flex flex-1 items-center gap-2 overflow-hidden">
+              <div 
+                class="flex-1 truncate text-sm font-bold py-1 px-2 rounded cursor-pointer transition-colors"
+                :class="customer ? 'text-blue-900 bg-blue-50' : 'text-gray-400 bg-gray-50'"
+                @click="openCustomerSearch"
+              >
+                {{ custSearch || 'Not Selected' }}
               </div>
+              <button 
+                ref="customerInput"
+                type="button"
+                :disabled="billDocStatus !== 0"
+                class="rounded border border-gray-300 bg-white p-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                title="Search Customer [F2]"
+                @click="openCustomerSearch"
+                @focus="openCustomerSearch"
+              >
+                🔍
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Date (Right Aligned) -->
-        <div class="flex flex-col items-end gap-1">
-          <label class="text-xs font-bold uppercase text-gray-500">Bill Date</label>
-          <div class="text-xl font-bold tracking-tight text-blue-700">
+        <!-- Right Side: Date -->
+        <div class="flex items-center gap-3">
+          <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Bill Date</label>
+          <div class="text-lg font-black tracking-tight text-blue-800">
             {{ fmtDate(billDate) }}
           </div>
         </div>
