@@ -104,7 +104,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in items" :key="idx" class="cursor-pointer border-b border-gray-300" :class="{ 'bg-blue-100': selectedRow === idx && !item.deleted, 'bg-red-50/40': item.deleted, 'hover:bg-blue-50/50': !item.deleted }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)">
+                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-gray-300 outline-none" :class="{ 'bg-blue-200 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted, 'bg-red-50/40': item.deleted, 'hover:bg-blue-50': !item.deleted && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
                   <td class="px-3 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-100 text-red-400' : 'bg-gray-100 text-gray-500'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="px-2 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0" class="w-full rounded border border-gray-300 bg-white px-2 py-0.5 font-mono outline-none focus:border-blue-500 disabled:bg-gray-50" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
@@ -556,16 +556,24 @@
             class="w-full rounded border border-gray-300 bg-white px-4 py-3 text-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             placeholder="Type item code or name..."
             @keydown.esc="closeSearch"
-            @keydown.down.prevent="searchIdx = Math.min(searchIdx + 1, searchResults.length - 1)"
-            @keydown.up.prevent="searchIdx = Math.max(searchIdx - 1, 0)"
+            @keydown.down.prevent="moveSearchCursor(1)"
+            @keydown.up.prevent="moveSearchCursor(-1)"
             @keydown.enter.prevent="pickSearchItem"
           />
        </div>
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto" ref="resultsWrapRef">
           <table v-if="searchResults.length" class="w-full text-2xl">
             <thead><tr class="bg-gray-50"><th class="px-4 py-3 text-left text-lg font-bold uppercase text-gray-600">Code</th><th class="px-3 py-3 text-left text-lg font-bold uppercase text-gray-600">Item Name</th><th class="px-3 py-3 text-left text-lg font-bold uppercase text-gray-600">UOM</th><th class="px-3 py-3 text-right text-lg font-bold uppercase text-gray-600">Rate</th><th class="px-3 py-3 text-right text-lg font-bold uppercase text-gray-600">Stock</th></tr></thead>
             <tbody>
-              <tr v-for="(item, idx) in searchResults" :key="item.item_code" class="cursor-pointer border-b border-gray-100" :class="{ 'bg-blue-50': searchIdx === idx }" @click="pickSearchItemByIdx(idx)" @mouseenter="searchIdx = idx">
+              <tr 
+                v-for="(item, idx) in searchResults" 
+                :key="item.item_code" 
+                class="cursor-pointer border-b border-gray-100" 
+                :class="{ 'bg-blue-100': searchIdx === idx }" 
+                :ref="el => setSearchRowRef(el, idx)"
+                @click="pickSearchItemByIdx(idx)" 
+                @mouseenter="searchIdx = idx"
+              >
                 <td class="px-4 py-3 font-mono text-2xl">{{ item.item_code }}</td><td class="px-3 py-3">{{ item.item_name }}</td><td class="px-3 py-3 text-gray-600">{{ item.uom }}</td><td class="px-3 py-3 text-right font-mono">{{ item.rate.toFixed(2) }}</td>
                 <td class="px-3 py-3 text-right"><span class="rounded-full px-3 py-1 text-xl font-bold" :class="item.stock_qty > 20 ? 'bg-green-50 text-green-600' : item.stock_qty > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'">{{ item.stock_qty }}</span></td>
               </tr>
@@ -860,7 +868,9 @@ async function apiPost(method, params) {
 
 // ==================== INPUT REFS ====================
 const inputRefs = {}
+const rowRefs   = {}
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
+function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const customerInput = ref(null)
@@ -871,6 +881,9 @@ const seriesSelect = ref(null)
 const discountInput = ref(null)
 const saveButton = ref(null)
 const stayHereBtn = ref(null)
+const resultsWrapRef = ref(null)
+const searchRowRefs = new Map()
+function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else searchRowRefs.delete(idx) }
 
 // ==================== CUSTOMER DROPDOWN ====================
 const custSearch = ref('')
@@ -1162,7 +1175,8 @@ watch(priceList, async (newList) => {
 
 // ==================== FOCUS ====================
 function focusField(f, idx) { nextTick(() => { const el = inputRefs[`${f}-${idx}`]; if (el) { el.focus(); el.select() } }) }
-function focusNewCode() { nextTick(() => newCodeInput.value?.focus()) }
+function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
+function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
 function focusNewQty() {
   if (newItemCode.value.trim() && newPending.value.item_name) {
     loadItemInsight(newItemCode.value.trim(), newPending.value.item_name, newPending.value.uom)
@@ -1172,10 +1186,17 @@ function focusNewQty() {
 
 // ==================== ROW NAV ====================
 function findNextActiveRow(from, dir) { let i = from + dir; while (i >= 0 && i < items.value.length) { if (!items.value[i].deleted) return i; i += dir }; return null }
-function moveRow(from, dir) { const n = findNextActiveRow(from, dir); if (n !== null) { selectedRow.value = n; focusField('code', n) } else if (dir === 1) { selectedRow.value = -1; focusNewCode() } }
-function moveToLastActiveRow() { for (let i = items.value.length - 1; i >= 0; i--) { if (!items.value[i].deleted) { selectedRow.value = i; focusField('code', i); return } } }
-function selectRow(idx) { if (!items.value[idx].deleted) selectedRow.value = idx }
-function goToNextRow(from) { const n = findNextActiveRow(from, 1); if (n !== null) { selectedRow.value = n; focusField('code', n) } else { selectedRow.value = -1; focusNewCode() } }
+function moveRow(from, dir) { const n = findNextActiveRow(from, dir); if (n !== null) { selectedRow.value = n; focusRow(n) } else if (dir === 1) { selectedRow.value = -1; focusNewCode() } }
+function moveToLastActiveRow() { for (let i = items.value.length - 1; i >= 0; i--) { if (!items.value[i].deleted) { selectedRow.value = i; focusRow(i); return } } }
+function selectRow(idx) { if (!items.value[idx].deleted) { selectedRow.value = idx; focusRow(idx) } }
+function goToNextRow(from) { const n = findNextActiveRow(from, 1); if (n !== null) { selectedRow.value = n; focusRow(n) } else { selectedRow.value = -1; focusNewCode() } }
+function enterRow(idx) { if (!items.value[idx]?.deleted && billDocStatus.value === 0) focusField('code', idx) }
+function onRowKeydown(e, idx) {
+  if (e.target !== e.currentTarget) return  // bubbled from a child input — ignore
+  if (e.key === 'ArrowDown')  { e.preventDefault(); moveRow(idx, 1) }
+  else if (e.key === 'ArrowUp')   { e.preventDefault(); moveRow(idx, -1) }
+  else if (e.key === 'Enter')     { e.preventDefault(); enterRow(idx) }
+}
 
 // ==================== ITEM ENTRY ====================
 async function onCodeEnter(idx) {
@@ -1303,6 +1324,16 @@ function openSearch(prefill, rowIdx) {
   nextTick(() => searchInput.value?.focus()) 
 }
 function closeSearch() { showSearch.value = false; searchQuery.value = ''; if (searchTargetRow !== null && searchTargetRow >= 0) focusField('code', searchTargetRow); else focusNewCode() }
+
+function moveSearchCursor(dir) {
+  if (!searchResults.value.length) return
+  searchIdx.value = Math.max(0, Math.min(searchResults.value.length - 1, searchIdx.value + dir))
+  nextTick(() => {
+    const el = searchRowRefs.get(searchIdx.value)
+    if (el) el.scrollIntoView({ block: 'nearest' })
+  })
+}
+
 function pickSearchItem() { if (searchResults.value.length) pickSearchItemByIdx(searchIdx.value) }
 
 async function pickSearchItemByIdx(idx) {
