@@ -885,8 +885,16 @@ function doCustSearch() {
 function openCustomerSearch() {
   showCustDD.value = false
   showCustomerSearchModal.value = true
+  if (customer.value) {
+    // Keep the current name in the search field to filter by it immediately
+  } else {
+    custSearch.value = ''
+  }
   if (allCustomers.value.length === 0) fetchAllCustomers(); else filterCustomers();
-  nextTick(() => custSearchInput.value?.focus())
+  nextTick(() => {
+    custSearchInput.value?.focus()
+    custSearchInput.value?.select()
+  })
 }
 
 function pickCust(c) {
