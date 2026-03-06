@@ -48,7 +48,7 @@ function parseExc(exc) {
  * @param {string} method  e.g. "frappe.client.get_list"
  * @param {Object} params  key-value pairs; objects/arrays will be JSON-stringified
  */
-async function frappeGet(method, params = {}) {
+export async function frappeGet(method, params = {}) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     qs.set(k, typeof v === "object" ? JSON.stringify(v) : String(v));
@@ -65,7 +65,7 @@ async function frappeGet(method, params = {}) {
 /**
  * POST to a Frappe whitelisted method.
  */
-async function frappePost(method, body = {}) {
+export async function frappePost(method, body = {}) {
   const res = await fetch(`/api/method/${method}`, {
     method: "POST",
     headers: postHeaders(),
@@ -80,25 +80,15 @@ async function frappePost(method, body = {}) {
 // ─── Customer ─────────────────────────────────────────────────────────────────
 
 /**
- * Search customers by name (partial match).
+ * Search customers by name or ID (partial match) via custom API.
+ * Returns customer info including mobile_no and current balance.
  *
- * FRAPPE CALL:
- *   frappe.client.get_list("Customer", {
- *     fields: ["name", "customer_name"],
- *     filters: [["customer_name", "like", "%query%"]],
- *     limit_page_length: 30
- *   })
+ * PYTHON CALL: ssplbilling.api.sales_api.search_customers
  *
- * @returns {Promise<Array<{name: string, customer_name: string}>>}
+ * @returns {Promise<Array<{name: string, customer_name: string, mobile_no: string, balance: number}>>}
  */
 export async function searchCustomers(query = "") {
-  return frappeGet("frappe.client.get_list", {
-    doctype: "Customer",
-    fields: ["name", "customer_name"],
-    filters: query ? [["customer_name", "like", `%${query}%`]] : [],
-    limit_page_length: 30,
-    order_by: "customer_name asc",
-  });
+  return frappeGet("ssplbilling.api.sales_api.search_customers", { query });
 }
 
 // ─── Naming Series ─────────────────────────────────────────────────────────────

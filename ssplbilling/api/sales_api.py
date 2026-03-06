@@ -125,6 +125,9 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
     """Get stock across warehouses, last purchase by customer, all price list rates."""
     wh = warehouse or frappe.db.get_single_value("Stock Settings", "default_warehouse") or ""
 
+    # Basic item info
+    item_info = frappe.db.get_value("Item", item_code, ["item_name", "stock_uom"], as_dict=True) or {}
+
     # All warehouse stock
     stock = frappe.get_all(
         "Bin",
@@ -170,6 +173,8 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
         pl["rate"] = float(pl["rate"] or 0)
 
     return {
+        "item_name": item_info.get("item_name"),
+        "uom": item_info.get("stock_uom"),
         "stock": stock,
         "previous_purchases": previous_purchases,
         "price_lists": price_lists,
@@ -178,21 +183,36 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
 
 @frappe.whitelist()
 def search_customers(query):
-    """Search customers by name or ID."""
+    """Search customers by name or ID, including mobile and current balance."""
     if not query or len(query) < 1:
         return []
 
-    return frappe.get_all(
+    customers = frappe.get_all(
         "Customer",
         or_filters={
             "name": ["like", f"%{query}%"],
             "customer_name": ["like", f"%{query}%"],
         },
         filters={"disabled": 0},
-        fields=["name", "customer_name", "customer_group", "territory"],
-        limit=10,
+        fields=["name", "customer_name", "mobile_no"],
+        limit=20,
         order_by="customer_name asc",
     )
+
+    for c in customers:
+        # Get current balance from GL Entry
+        balance = frappe.db.sql(
+            """
+            SELECT SUM(debit) - SUM(credit) as balance
+            FROM `tabGL Entry`
+            WHERE party_type = 'Customer' AND party = %s AND is_cancelled = 0
+            """,
+            (c.name,),
+            as_dict=True,
+        )
+        c["balance"] = float(balance[0].balance or 0) if balance else 0.0
+
+    return customers
 
 
 @frappe.whitelist()
