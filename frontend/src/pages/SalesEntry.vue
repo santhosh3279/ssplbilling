@@ -104,7 +104,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in items" :key="idx" class="cursor-pointer border-b border-gray-300" :class="{ 'bg-blue-50': selectedRow === idx && !item.deleted, 'bg-red-50/40': item.deleted, 'hover:bg-blue-50/50': !item.deleted }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)">
+                <tr v-for="(item, idx) in items" :key="idx" class="cursor-pointer border-b border-gray-300" :class="{ 'bg-blue-100': selectedRow === idx && !item.deleted, 'bg-red-50/40': item.deleted, 'hover:bg-blue-50/50': !item.deleted }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)">
                   <td class="px-3 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-100 text-red-400' : 'bg-gray-100 text-gray-500'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="px-2 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0" class="w-full rounded border border-gray-300 bg-white px-2 py-0.5 font-mono outline-none focus:border-blue-500 disabled:bg-gray-50" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
@@ -134,7 +134,7 @@
                   </td>
                 </tr>
                 <!-- NEW ENTRY ROW -->
-                <tr v-if="billDocStatus === 0" class="border-b border-gray-300 bg-gray-50/50" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                <tr v-if="billDocStatus === 0" class="border-b border-gray-300" :class="selectedRow === -1 ? 'bg-blue-100' : 'bg-gray-50/50'" :style="{ fontSize: dynamicRowStyle.fontSize }">
                   <td class="px-3 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
                   <td class="px-2 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-gray-300 bg-white px-2 py-1 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
                   <td class="px-2 text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
