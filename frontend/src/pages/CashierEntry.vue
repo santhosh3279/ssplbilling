@@ -440,12 +440,22 @@
 
     </div>
   </div>
+
+  <!-- ═══════════════════ PRINT OPTIONS MODAL ═══════════════════ -->
+  <PrintOptionsModal
+    v-if="showPrintModal"
+    :invoice-name="printModalInvoice"
+    doctype="Sales Invoice"
+    @close="showPrintModal = false"
+  />
+
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchBillingSettings } from '../api.js'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 const router = useRouter()
 
@@ -460,6 +470,9 @@ const loadingPreview = ref(false)
 const submitting = ref(false)
 const submitError = ref('')
 const successMsg = ref('')
+
+const showPrintModal    = ref(false)
+const printModalInvoice = ref('')
 
 const searchQuery = ref('')
 const filterDate = ref(new Date().toISOString().slice(0, 10))
@@ -660,6 +673,9 @@ async function handleSubmit() {
     const peList = (result.payment_entries || []).join(', ')
     const modeLabel = isCredit.value ? 'Credit' : peList || '—'
     successMsg.value = `✓ ${result.invoice_name} submitted  |  ${modeLabel}`
+
+    printModalInvoice.value = result.invoice_name
+    showPrintModal.value = true
 
     invoices.value = invoices.value.filter(i => i.name !== result.invoice_name)
     selectedInvoice.value = null
