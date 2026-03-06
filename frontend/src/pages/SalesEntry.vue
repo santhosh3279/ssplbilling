@@ -537,7 +537,7 @@ import { fetchBillingSettings, fetchItemPrice, searchCustomers, frappeGet, frapp
 
 const router = useRouter()
 const route = useRoute()
-const API = 'ssplbilling.api.sales_api'
+const API = '/api/method/ssplbilling.api.sales_api'
 
 // ==================== BILLING SETTINGS ====================
 const billingSeriesConfig = ref([])
@@ -629,7 +629,7 @@ function encPrice(val) {
 
 // ==================== SHARED POST HELPER ====================
 async function apiPost(method, params) {
-  return frappePost(`${API}.${method}`, params)
+  return frappePost(`ssplbilling.api.sales_api.${method}`, params)
 }
 
 // ==================== INPUT REFS ====================
@@ -931,7 +931,7 @@ function openModifyBill() {
 async function searchBills(query) {
   modifyLoading.value = true
   try {
-    modifyResults.value = await frappeGet(`${API}.get_sales_invoices`, {
+    modifyResults.value = await frappeGet('ssplbilling.api.sales_api.get_sales_invoices', {
       query: query || '',
       limit: 30,
       posting_date: modifyDate.value,
@@ -944,7 +944,7 @@ async function searchBills(query) {
 
 async function loadInvoice(invoiceName) {
   try {
-    const inv = await frappeGet(`${API}.get_sales_invoice`, { invoice_name: invoiceName })
+    const inv = await frappeGet('ssplbilling.api.sales_api.get_sales_invoice', { invoice_name: invoiceName })
     if (!inv) { alert('Could not load invoice'); return }
 
     // Populate form with invoice data
@@ -1010,7 +1010,7 @@ async function fetchSeriesList() {
     let allowedList = []
     let userAllowedString = ''
     try {
-      const d = await frappeGet(`${API}.get_allowed_series`)
+      const d = await frappeGet('ssplbilling.api.sales_api.get_allowed_series')
       allowedList = d.allowed_series || []
       userAllowedString = d.user_allowed_string || ''
     } catch (e) {
@@ -1060,7 +1060,7 @@ async function fetchSeriesList() {
   }
 
   try {
-    const list = await frappeGet(`${API}.get_naming_series`)
+    const list = await frappeGet('ssplbilling.api.sales_api.get_naming_series')
     if (Array.isArray(list) && list.length) {
       availableSeries.value = list
       if (list.includes(billSeries.value)) { fetchNextBillNo() }
@@ -1075,7 +1075,7 @@ async function fetchSeriesList() {
 async function fetchNextBillNo() {
   if (!billSeries.value) { nextBillNo.value = '...'; return }
   try {
-    const res = await frappeGet(`${API}.get_next_bill_no`, { naming_series: billSeries.value })
+    const res = await frappeGet('ssplbilling.api.sales_api.get_next_bill_no', { naming_series: billSeries.value })
     nextBillNo.value = res || '...'
   } catch (e) { nextBillNo.value = '...' }
 }
