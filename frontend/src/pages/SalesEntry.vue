@@ -3,7 +3,7 @@
     <!-- Top Bar -->
     <header class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
       <div class="flex items-center gap-3">
-        <button class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" @click="router.push('/')">&larr; Dashboard</button>
+        <button class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" @click="handleBack">&larr; Dashboard</button>
         <span class="text-sm text-gray-300">|</span>
         <span class="text-sm font-semibold text-gray-800">Sales Entry</span>
         <button class="rounded border border-gray-300 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50" @click="openModifyBill">Modify Bill</button>
@@ -20,8 +20,7 @@
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Up/Down</kbd> Navigate rows</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Tab</kbd> Next column</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Ctrl+S</kbd> Save</span>
-        <span v-if="escWarning" class="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Press Esc again to discard and exit</span>
-        <span v-else><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
+        <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
       </div>
     </header>
 
@@ -718,6 +717,37 @@
       :invoice-name="savedInvoiceName"
       @close="showPrintModal = false"
     />
+
+    <!-- DISCARD BILL MODAL -->
+    <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60" @click.self="showDiscardModal = false">
+      <div class="w-[450px] overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="bg-amber-50 px-6 py-6 flex items-center gap-4 border-b border-amber-100">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-2xl text-amber-600">⚠️</div>
+          <div>
+            <div class="text-xl font-bold text-gray-900">Discard Unsaved Bill?</div>
+            <div class="text-sm text-amber-700">You have unsaved items in this bill.</div>
+          </div>
+        </div>
+        <div class="p-6">
+          <p class="text-gray-600 leading-relaxed">Are you sure you want to go back to the dashboard? All unsaved changes will be permanently lost.</p>
+        </div>
+        <div class="flex justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
+          <button 
+            ref="stayHereBtn"
+            class="rounded-xl border border-gray-300 bg-white px-6 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-100 transition-all shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            @click="showDiscardModal = false"
+          >
+            Stay Here
+          </button>
+          <button 
+            class="rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-red-700 shadow-md hover:shadow-lg transition-all"
+            @click="router.push('/')"
+          >
+            Discard & Exit
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -840,8 +870,7 @@ const modifySearchInput = ref(null)
 const seriesSelect = ref(null)
 const discountInput = ref(null)
 const saveButton = ref(null)
-const escWarning = ref(false)
-let escWarnTimer = null
+const stayHereBtn = ref(null)
 
 // ==================== CUSTOMER DROPDOWN ====================
 const custSearch = ref('')
@@ -1027,6 +1056,7 @@ const newQty = ref(1)
 const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-saved invoice name
+const showDiscardModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
 const dynamicRowStyle = computed(() => ({
   fontSize: `${(14 * zoomPercent.value) / 100}px`,
@@ -1060,6 +1090,14 @@ watch(newItemCode, (val) => {
     const r = await lookupItem(code)
     newPending.value = r ? { item_name: r.item_name, uom: r.uom, rate: r.rate } : { item_name: '', uom: '', rate: null }
   }, 300)
+})
+
+watch(showDiscardModal, (val) => {
+  if (val) {
+    nextTick(() => {
+      stayHereBtn.value?.focus()
+    })
+  }
 })
 
 const selectedItemData = ref(null)
@@ -1584,12 +1622,19 @@ function startNewBill() {
   discountPct.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedCustomerDetails.value = null
-  escWarning.value = false; clearTimeout(escWarnTimer)
   nextTick(() => seriesSelect.value?.focus())
 }
 
 function printBill() { alert('Print preview coming soon') }
 function cancelBill() { startNewBill() }
+
+function handleBack() {
+  if (activeItems.value.length > 0 && !billSaved.value) {
+    showDiscardModal.value = true
+  } else {
+    router.push('/')
+  }
+}
 
 // ==================== GLOBAL KEYS ====================
 function handleKeydown(e) {
@@ -1633,10 +1678,16 @@ function handleKeydown(e) {
     openEditCustForm()
     return
   }
-  if (showSearch.value || showCustDD.value || showNewCustForm.value || showEditCustForm.value || showModifyBill.value || showCustomerSearchModal.value) {
+  if (showSearch.value || showCustDD.value || showNewCustForm.value || showEditCustForm.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value) {
     if (e.key === 'Escape') {
-      showSearch.value = false; showCustDD.value = false; showNewCustForm.value = false; showEditCustForm.value = false; showModifyBill.value = false; showCustomerSearchModal.value = false
+      showSearch.value = false; showCustDD.value = false; showNewCustForm.value = false; showEditCustForm.value = false; showModifyBill.value = false; showCustomerSearchModal.value = false; showDiscardModal.value = false; showPrintModal.value = false
     }
+    return
+  }
+
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    handleBack()
     return
   }
   if (e.key === 'F2') {
