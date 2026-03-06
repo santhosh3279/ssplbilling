@@ -20,8 +20,8 @@
     <div class="flex flex-col border-b border-gray-200 bg-white px-4 py-3">
       <div class="flex flex-wrap items-center justify-between gap-6">
         <!-- Left Side: Basic Info Row -->
-        <div class="flex flex-wrap items-center gap-x-10 gap-y-2">
-          
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+
           <!-- Series -->
           <div class="flex items-center gap-3">
             <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Series</label>
@@ -31,47 +31,39 @@
           </div>
 
           <!-- Bill No -->
-          <div class="flex items-center gap-3 w-[240px]">
-            <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap w-[60px]">Bill No</label>
-            <div class="text-2xl font-bold text-gray-900 tracking-normal truncate" style="font-family: 'Poppins', sans-serif">
+          <div class="flex items-center gap-2 w-[180px]">
+            <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Bill No</label>
+            <div class="text-2xl font-medium text-gray-900 tracking-normal truncate" style="font-family: 'Poppins', sans-serif">
               {{ nextBillNo }}
             </div>
           </div>
 
-
           <!-- Customer -->
-          <div class="flex items-center gap-3 w-[340px]">
-            <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap w-[70px]">Customer</label>
-            <div class="flex flex-1 items-center gap-2 overflow-hidden">
+          <div class="flex items-center gap-2 w-[400px]">
+            <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Customer</label>
+            <div class="flex-1 overflow-hidden">
               <div 
-                class="flex-1 truncate text-sm font-bold py-1 px-2 rounded cursor-pointer transition-colors"
-                :class="customer ? 'text-blue-900 bg-blue-50' : 'text-gray-400 bg-gray-50'"
+                class="truncate text-2xl font-medium transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600"
+                :class="customer ? 'text-gray-900' : 'text-gray-300 italic'"
+                style="font-family: 'Poppins', sans-serif"
                 @click="openCustomerSearch"
+                tabindex="0"
+                @keydown.enter.prevent="openCustomerSearch"
+                @keydown.space.prevent="openCustomerSearch"
               >
                 {{ custSearch || 'Not Selected' }}
               </div>
-              <button 
-                ref="customerInput"
-                type="button"
-                :disabled="billDocStatus !== 0"
-                class="rounded border border-gray-300 bg-white p-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                title="Search Customer [F2]"
-                @click="openCustomerSearch"
-                @focus="openCustomerSearch"
-              >
-                🔍
-              </button>
             </div>
           </div>
         </div>
-
-        <!-- Right Side: Date -->
-        <div class="flex items-center gap-3">
+          <!-- Right Side: Date -->
+          <div class="flex items-center gap-3">
           <label class="text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Bill Date</label>
-          <div class="text-lg font-black tracking-tight text-blue-800">
+          <div class="text-2xl font-medium tracking-tight text-gray-900" style="font-family: 'Poppins', sans-serif">
             {{ fmtDate(billDate) }}
           </div>
-        </div>
+          </div>
+
       </div>
 
       <div class="mt-3 flex flex-wrap items-center gap-x-6 border-t border-gray-100 pt-3">
