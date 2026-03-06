@@ -47,12 +47,12 @@
           </div>
 
           <!-- Customer -->
-          <div class="flex items-center gap-2 w-[400px]">
+          <div class="flex items-center gap-2 w-[600px] ml-[50px]">
             <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Customer</label>
-            <div class="flex-1 overflow-hidden flex flex-col">
+            <div class="flex-1 overflow-hidden flex items-baseline gap-4">
               <div 
                 ref="customerInput"
-                class="truncate text-2xl font-medium transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600 leading-none"
+                class="shrink-0 max-w-[300px] truncate text-2xl font-medium transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600 leading-none"
                 :class="customer ? 'text-gray-900' : 'text-gray-300 italic'"
                 style="font-family: 'Poppins', sans-serif"
                 @click="openCustomerSearch"
@@ -62,12 +62,12 @@
               >
                 {{ custSearch || 'Not Selected' }}
               </div>
-              <div v-if="selectedCustomerDetails" class="flex items-center gap-3 mt-0.5 text-[11px] font-bold">
-                <span :class="selectedCustomerDetails.balance > 0 ? 'text-red-500' : 'text-green-500'">
-                  Bal: &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} {{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}
-                </span>
-                <span v-if="selectedCustomerDetails.address_line1" class="text-gray-400 truncate max-w-[200px]" :title="selectedCustomerDetails.address_line1">
+              <div v-if="selectedCustomerDetails" class="flex-1 flex items-baseline justify-between font-bold whitespace-nowrap">
+                <span v-if="selectedCustomerDetails.address_line1" class="text-sm text-gray-600 truncate max-w-[250px] ml-2" :title="selectedCustomerDetails.address_line1">
                   {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
+                </span>
+                <span :class="selectedCustomerDetails.balance > 0 ? 'text-red-500' : 'text-green-500'" class="text-2xl ml-auto">
+                  Bal: &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} {{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}
                 </span>
               </div>
             </div>
@@ -235,10 +235,10 @@
                 </div>
                 <div class="flex-1">
                   <div class="mb-1 text-[10px] font-bold uppercase text-gray-600">Prices</div>
-                  <div class="flex flex-wrap gap-2">
-                    <span v-for="pl in selectedItemData.priceLists" :key="pl.name" class="rounded bg-amber-50 px-1.5 py-0.5 text-[11px]">
+                  <div class="flex flex-wrap gap-3">
+                    <span v-for="pl in selectedItemData.priceLists" :key="pl.name" class="rounded bg-amber-50 px-2.5 py-1 text-lg">
                       <span class="text-gray-500">{{ pl.name }}:</span>
-                      <span class="ml-0.5 font-mono font-bold text-amber-700">&#8377;{{ encPrice(pl.rate || 0) }}</span>
+                      <span class="ml-1 font-mono font-bold text-amber-700">&#8377;{{ encPrice(pl.rate || 0) }}</span>
                     </span>
                   </div>
                 </div>
