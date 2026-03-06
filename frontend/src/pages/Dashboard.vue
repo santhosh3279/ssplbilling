@@ -112,11 +112,28 @@
             </div>
           </div>
 
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500">Default Zoom (%)</label>
+            <div class="flex items-center gap-3">
+              <input
+                type="number"
+                v-model.number="defaultZoom"
+                min="50"
+                max="300"
+                step="10"
+                class="w-24 rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              />
+              <span class="text-xs text-gray-400">50 – 300{{ defaultZoom !== null ? ` (current: ${defaultZoom}%)` : '' }}</span>
+            </div>
+          </div>
+
+
+
           <!-- SSPL Billing Settings Details -->
           <div v-if="systemSettings" class="mt-4 border-t border-gray-100 pt-4">
             <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">System Configuration (SSPL Billing Settings)</div>
 
-            <!-- Discount Account & Cipher Map -->
+            <!-- Discount Account, Cipher Map & Zoom -->
             <div class="mb-3 flex flex-col gap-1.5">
               <div class="flex justify-between text-xs">
                 <span class="text-gray-500">Discount Account</span>
@@ -125,6 +142,10 @@
               <div class="flex justify-between text-xs">
                 <span class="text-gray-500">Cipher Map</span>
                 <span class="font-mono text-gray-700">{{ systemSettings.cipher_map || '--' }}</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-gray-500">Your Zoom</span>
+                <span class="font-medium text-gray-700">{{ systemSettings.user_zoom || '--' }}%</span>
               </div>
             </div>
 
@@ -172,12 +193,14 @@
                     <tr>
                       <th class="px-2 py-1.5 text-left text-gray-400">User</th>
                       <th class="px-2 py-1.5 text-left text-gray-400">Allowed Series</th>
+                      <th class="px-2 py-1.5 text-right text-gray-400">Zoom</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="us in systemSettings.user_series" :key="us.user" class="border-t border-gray-100">
                       <td class="px-2 py-1.5 font-medium">{{ us.user }}</td>
                       <td class="px-2 py-1.5 font-mono">{{ us.allowed_series || '--' }}</td>
+                      <td class="px-2 py-1.5 text-right font-mono">{{ us.zoom_value || '--' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -197,6 +220,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
+import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
 
@@ -259,7 +283,6 @@ function handleKeydown(e) {
   }
 }
 
-const API = '/api/method/ssplbilling.api.sales_api'
 const availableSeries = ref([])
 const userAllowedString = ref('')
 const systemSettings = ref(null)
@@ -267,47 +290,62 @@ const systemSettings = ref(null)
 const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
 const BILLING_SETTINGS_TTL = 60 * 60 * 1000 // 1 hour
 
-async function fetchBillingSettings() {
+// ==================== GENERAL SETTINGS ====================
+const showGeneralSettings = ref(false)
+const defaultSeries = ref(localStorage.getItem('wb-series') || '')
+const defaultZoom = ref(null) // populated from SSPL Billing Settings on load
+
+async function saveGeneralSettings() {
+  localStorage.setItem('wb-series', defaultSeries.value)
+  if (defaultZoom.value === null) { showGeneralSettings.value = false; return }
+  const zoom = Math.max(50, Math.min(300, defaultZoom.value))
+  defaultZoom.value = zoom
+  localStorage.setItem('wb-zoom', String(zoom))
   try {
-    const cached = JSON.parse(localStorage.getItem(BILLING_SETTINGS_CACHE_KEY) || 'null')
-    if (cached && (Date.now() - cached.ts) < BILLING_SETTINGS_TTL) {
-      return cached.data
-    }
-  } catch (e) {}
-  try {
-    const res = await fetch(`${API}.get_billing_settings`)
-    const json = await res.json()
-    const data = json.message
-    if (data) {
-      localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }))
-    }
-    return data || null
+    await dashboardApi.saveDefaultZoom(zoom)
+    // Bust the settings cache so next load picks up the new zoom
+    localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
   } catch (e) {
-    return null
+    console.warn('[Dashboard] saveDefaultZoom failed:', e)
   }
+  showGeneralSettings.value = false
 }
 
-async function fetchSeries() {
+async function fetchSettings() {
   // 1. Fetch allowed series for this user
   try {
-    const res = await fetch(`${API}.get_allowed_series`)
-    const json = await res.json()
-    const d = json.message || {}
+    const d = await dashboardApi.getAllowedSeries()
     availableSeries.value = d.allowed_series || []
     userAllowedString.value = d.user_allowed_string || ''
     if (availableSeries.value.length && !availableSeries.value.includes(defaultSeries.value)) {
       defaultSeries.value = availableSeries.value[0]
     }
   } catch (e) {
-    console.warn('[Dashboard] fetchSeries failed:', e)
+    console.warn('[Dashboard] getAllowedSeries failed:', e)
   }
 
   // 2. Fetch global settings
   try {
-    const settings = await fetchBillingSettings()
+    // Check cache first
+    let settings = null
+    const cached = JSON.parse(localStorage.getItem(BILLING_SETTINGS_CACHE_KEY) || 'null')
+    if (cached && (Date.now() - cached.ts) < BILLING_SETTINGS_TTL) {
+      settings = cached.data
+    } else {
+      settings = await dashboardApi.getBillingSettings()
+      if (settings) {
+        localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
+      }
+    }
+    
     systemSettings.value = settings
+    // Sync user's zoom to localStorage so Sales Entry can use it
+    if (settings && settings.user_zoom) {
+      localStorage.setItem('wb-zoom', settings.user_zoom)
+      defaultZoom.value = parseInt(settings.user_zoom)
+    }
   } catch (e) {
-    console.warn('[Dashboard] fetchBillingSettings failed:', e)
+    console.warn('[Dashboard] getBillingSettings failed:', e)
   }
 }
 
@@ -321,16 +359,8 @@ const filteredBillingSeries = computed(() => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
-  fetchSeries()
+  fetchSettings()
 })
 onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
-// ==================== GENERAL SETTINGS ====================
-const showGeneralSettings = ref(false)
-const defaultSeries = ref(localStorage.getItem('wb-series') || '')
-
-function saveGeneralSettings() {
-  localStorage.setItem('wb-series', defaultSeries.value)
-  showGeneralSettings.value = false
-}
 </script>

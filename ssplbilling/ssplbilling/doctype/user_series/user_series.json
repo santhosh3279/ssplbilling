@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "user",
-  "allowed_series_seperated_by_comma"
+  "allowed_series_seperated_by_comma",
+  "zoom_value"
  ],
  "fields": [
   {
@@ -20,13 +21,18 @@
    "fieldname": "allowed_series_seperated_by_comma",
    "fieldtype": "Data",
    "label": "Allowed Series seperated by Comma"
+  },
+  {
+   "fieldname": "zoom_value",
+   "fieldtype": "Data",
+   "label": "Zoom Value"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-05 00:14:36.640657",
+ "modified": "2026-03-06 16:16:47.731182",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "USER SERIES",

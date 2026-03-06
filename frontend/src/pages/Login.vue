@@ -61,6 +61,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
+import { dashboardApi } from '../services/dashboard'
+import { localDb } from '../services/localDb'
+
+const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
 
 const router = useRouter()
 
@@ -83,6 +87,31 @@ async function handleLogin() {
   loading.value = true
   try {
     await session.login(email.value.trim(), password.value)
+    
+    // 1. Sync Items to local DB for fast search
+    try {
+      const items = await dashboardApi.fetchAllItemsForSync()
+      if (items && items.length) {
+        await localDb.saveItems(items)
+        console.log(`[Login] Synced ${items.length} items to local DB`)
+      }
+    } catch (e) {
+      console.warn('[Login] Failed to sync items:', e)
+    }
+
+    // 2. Pre-load billing settings into localStorage
+    try {
+      const settings = await dashboardApi.getBillingSettings()
+      if (settings) {
+        localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
+        if (settings.default_zoom) {
+          localStorage.setItem('wb-zoom', settings.default_zoom)
+        }
+      }
+    } catch (e) {
+      console.warn('[Login] Failed to preload billing settings:', e)
+    }
+    
     router.push('/')
   } catch (e) {
     errorMsg.value = e.message || 'Invalid email or password'

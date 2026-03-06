@@ -33,7 +33,7 @@
           <!-- Series -->
           <div class="flex items-center gap-3">
             <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Series</label>
-            <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 bg-white px-2 py-1 text-sm font-bold outline-none focus:border-blue-500 disabled:bg-gray-50">
+            <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 bg-white px-2 py-1 text-sm font-bold outline-none focus:border-blue-500 disabled:bg-gray-50" @keydown.enter.prevent="openCustomerSearch">
               <option v-for="s in availableSeries" :key="s">{{ s }}</option>
             </select>
           </div>
@@ -51,6 +51,7 @@
             <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Customer</label>
             <div class="flex-1 overflow-hidden">
               <div 
+                ref="customerInput"
                 class="truncate text-2xl font-medium transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600"
                 :class="customer ? 'text-gray-900' : 'text-gray-300 italic'"
                 style="font-family: 'Poppins', sans-serif"
@@ -86,10 +87,10 @@
                   <th class="w-8 border-r border-b border-gray-300 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-800">#</th>
                   <th class="w-32 border-r border-b border-gray-300 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-1000">Item Code</th>
                   <th class="border-r border-b border-gray-300 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-1000">Item Name</th>
-                  <th class="w-14 border-r border-b border-gray-300 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-1000">UOM</th>
                   <th class="w-16 border-r border-b border-gray-300 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-1000">Qty</th>
-                  <th class="w-16 border-r border-b border-gray-300 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-1000">Disc %</th>
+                  <th class="w-14 border-r border-b border-gray-300 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-1000">UOM</th>
                   <th class="w-24 border-r border-b border-gray-300 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-1000">Rate</th>
+                  <th class="w-16 border-r border-b border-gray-300 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-1000">Disc %</th>
                   <th class="w-16 border-r border-b border-gray-300 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-1000">Tax %</th>
                   <th class="w-24 border-r border-b border-gray-300 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-1000">Amount</th>
                   <th class="w-8 border-b border-gray-300"></th>
@@ -103,18 +104,18 @@
                     <span v-else class="font-mono" :class="item.deleted ? 'text-gray-300' : 'text-gray-600'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
                   <td class="px-2 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-300 line-through' : 'text-gray-800'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item.deleted" class="ml-1 font-semibold text-red-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
-                  <td class="px-2 text-gray-600 border-r border-gray-300" :class="item.deleted ? 'text-gray-300' : ''" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
                   <td class="px-2 border-r border-gray-300 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-gray-300' : 'text-gray-700'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
-                  <td class="px-2 border-r border-gray-300 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-gray-300' : 'text-gray-700'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
-                  </td>
+                  <td class="px-2 text-gray-600 border-r border-gray-300" :class="item.deleted ? 'text-gray-300' : ''" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
                   <td class="px-2 border-r border-gray-300 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0" step="0.01" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-gray-300' : 'text-gray-700'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
+                  </td>
+                  <td class="px-2 border-r border-gray-300 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-gray-300' : 'text-gray-700'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
                   </td>
                   <td class="px-2 text-right border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span class="font-mono" :class="item.deleted ? 'text-gray-300' : 'text-gray-600'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
@@ -130,13 +131,13 @@
                   <td class="px-3 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
                   <td class="px-2 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-gray-300 bg-white px-2 py-1 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
                   <td class="px-2 text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
-                  <td class="px-2 text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.uom || '--' }}</td>
                   <td class="px-2 text-right border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-14 rounded border border-gray-300 bg-white px-1 py-1 text-right font-mono outline-none focus:border-blue-500" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" /></td>
-                  <td class="px-2 text-right font-mono text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">0</td>
+                  <td class="px-2 text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.uom || '--' }}</td>
                   <td class="px-2 text-right border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="newPending.rate" class="font-mono text-gray-700">{{ newPending.rate.toFixed(2) }}</span>
                     <span v-else class="text-gray-600">--</span>
                   </td>
+                  <td class="px-2 text-right font-mono text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">0</td>
                   <td class="px-2 text-right font-mono text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ isExempted ? 0 : defaultTaxRate }}</td>
                   <td class="px-2 text-right font-mono text-gray-600 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '--' }}</td>
                   <td class="border-gray-300"></td>
@@ -181,6 +182,14 @@
                   <option v-for="cc in availableCostCenters" :key="cc" :value="cc">{{ cc }}</option>
                 </select>
               </div>
+              <!-- Print Format -->
+              <div class="flex items-center gap-1.5">
+                <label class="text-[10px] font-bold uppercase text-gray-500">Print</label>
+                <select v-model="printScheme" class="rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] outline-none focus:border-blue-500 shadow-sm max-w-[150px]">
+                  <option value="">-- Default --</option>
+                  <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
+                </select>
+              </div>
             </div>
             <span class="font-mono font-semibold text-gray-500">Grid Subtotal: &#8377;{{ subtotal.toFixed(2) }}</span>
           </div>
@@ -204,7 +213,7 @@
                   <div v-else class="text-sm text-gray-300">No stock data</div>
                 </div>
                 <div class="flex-1">
-                  <div class="mb-1 text-[10px] font-bold uppercase text-gray-600">Previous purchases</div>
+                  <div class="mb-1 text-[10px] font-bold uppercase text-gray-600">Previous Sales</div>
                   <div v-if="selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="flex flex-col">
                     <div v-for="p in selectedItemData.previousPurchases" :key="p.name" class="flex items-center gap-2 border-b border-gray-50 py-0.5 text-[11px] last:border-0">
                       <span class="w-24 truncate font-medium text-blue-600" :title="p.name">{{ p.name }}</span>
@@ -236,27 +245,27 @@
             <div class="flex-1 pr-6 border-r border-gray-200">
               <div class="mb-3 text-xs font-bold uppercase tracking-wider text-gray-600">Calculations</div>
               <div class="flex flex-col gap-2">
-                <div class="flex justify-between text-base font-semibold">
+                <div class="flex justify-between text-lg font-semibold">
                   <span class="text-gray-600">Total (Gross)</span>
                   <span class="font-mono text-gray-800">&#8377;{{ totalBeforeItemDiscount.toFixed(2) }}</span>
                 </div>
-                <div class="flex justify-between text-base">
+                <div class="flex justify-between text-lg">
                   <span class="text-gray-600 font-semibold">Item Discount</span>
                   <span class="font-mono font-semibold text-red-500">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</span>
                 </div>
-                <div class="flex justify-between text-lg border-t border-gray-100 pt-1">
+                <div class="flex justify-between text-xl border-t border-gray-100 pt-1">
                   <span class="text-gray-700 font-bold">Subtotal</span>
                   <span class="font-mono font-bold text-gray-900">&#8377;{{ subtotal.toFixed(2) }}</span>
                 </div>
-                <div class="flex items-center justify-between text-base">
+                <div class="flex items-center justify-between text-lg">
                   <div class="flex items-center gap-1.5">
                     <span class="text-gray-600 font-semibold">Discount</span>
-                    <input type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-16 rounded border border-gray-300 px-1.5 py-1 text-right text-base font-bold outline-none focus:border-blue-400 disabled:bg-gray-50" />
-                    <span class="text-sm text-gray-600 font-bold">%</span>
+                    <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-20 rounded border border-gray-300 px-1.5 py-1 text-right text-lg font-bold outline-none focus:border-blue-400 disabled:bg-gray-50" @keydown.enter="saveButton?.focus()" />
+                    <span class="text-base text-gray-600 font-bold">%</span>
                   </div>
                   <span class="font-mono font-semibold text-red-500">-&#8377;{{ discountAmt.toFixed(2) }}</span>
                 </div>
-                <div class="flex justify-between text-base font-semibold">
+                <div class="flex justify-between text-lg font-semibold">
                   <span class="text-gray-600">Tax</span>
                   <span class="font-mono text-gray-800">+&#8377;{{ totalTax.toFixed(2) }}</span>
                 </div>
@@ -267,17 +276,8 @@
             <div class="flex-1 pl-6 flex flex-col justify-between">
               <div>
                 <div class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">Total Payable</div>
-                <div class="font-mono text-4xl font-bold text-blue-600 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>
+                <div class="font-mono text-6xl font-bold text-blue-600 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>
                 
-                <!-- Print Format Selector -->
-                <div class="mt-4">
-                  <label class="text-[10px] font-bold uppercase text-gray-500 block mb-1">Print Format</label>
-                  <select v-model="printScheme" class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-blue-500 shadow-sm">
-                    <option value="">-- Default --</option>
-                    <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
-                  </select>
-                </div>
-
                 <div v-if="billSaved" class="mt-3 flex items-center justify-between rounded bg-green-50 px-3 py-1.5 text-sm text-green-700">
                   <span class="font-bold">{{ savedInvoiceName }}</span>
                   <span class="font-semibold uppercase text-[10px]">Saved</span>
@@ -286,7 +286,7 @@
 
               <div class="flex flex-col gap-2">
                 <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded-lg border border-amber-400 bg-amber-50 py-2.5 text-center text-sm font-semibold text-amber-700 transition hover:bg-amber-100">✏ Edit Bill</button>
-                <button v-else-if="!billSaved" @click="saveBill" class="w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition shadow-lg" :class="savedInvoiceName ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
+                <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition shadow-lg" :class="savedInvoiceName ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
                 
                 <div class="flex gap-2">
                   <button class="flex-1 rounded-lg border border-gray-300 py-2 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50" @click="printBill">Print</button>
@@ -430,39 +430,61 @@
 
     <!-- ITEM SEARCH POPUP -->
     <div v-if="showSearch" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="closeSearch">
-      <div class="flex max-h-[70vh] w-[600px] flex-col rounded-xl bg-white shadow-2xl">
+      <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
+
+        <div class="border-b border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50/50">
+          <div class="text-2xl font-semibold text-gray-700">Search Item</div>
+          <button 
+            @click="refreshLocalItems" 
+            :disabled="isSyncing"
+            class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-100 disabled:opacity-50"
+          >
+            <span v-if="isSyncing" class="animate-spin">⏳</span>
+            <span v-else>🔄</span>
+            {{ isSyncing ? 'Syncing...' : 'Refresh Items' }}
+          </button>
+        </div>
         <div class="border-b border-gray-200 px-4 py-3">
-          <div class="mb-2 text-sm font-semibold text-gray-700">Search Item</div>
-          <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-gray-300 bg-white px-2 py-1 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 placeholder:text-xs" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Scan" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" />
+          <input
+            ref="searchInput"
+            v-model="searchQuery"
+            class="w-full rounded border border-gray-300 bg-white px-4 py-3 text-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            placeholder="Type item code or name..."
+            @keydown.esc="closeSearch"
+            @keydown.down.prevent="searchIdx = Math.min(searchIdx + 1, searchResults.length - 1)"
+            @keydown.up.prevent="searchIdx = Math.max(searchIdx - 1, 0)"
+            @keydown.enter.prevent="pickSearchItem"
+          />
        </div>
         <div class="flex-1 overflow-y-auto">
-          <table v-if="searchResults.length" class="w-full text-sm">
-            <thead><tr class="bg-gray-50"><th class="px-4 py-2 text-left text-[10px] font-bold uppercase text-gray-600">Code</th><th class="px-3 py-2 text-left text-[10px] font-bold uppercase text-gray-600">Item Name</th><th class="px-3 py-2 text-left text-[10px] font-bold uppercase text-gray-600">UOM</th><th class="px-3 py-2 text-right text-[10px] font-bold uppercase text-gray-600">Rate</th><th class="px-3 py-2 text-right text-[10px] font-bold uppercase text-gray-600">Stock</th></tr></thead>
+          <table v-if="searchResults.length" class="w-full text-2xl">
+            <thead><tr class="bg-gray-50"><th class="px-4 py-3 text-left text-lg font-bold uppercase text-gray-600">Code</th><th class="px-3 py-3 text-left text-lg font-bold uppercase text-gray-600">Item Name</th><th class="px-3 py-3 text-left text-lg font-bold uppercase text-gray-600">UOM</th><th class="px-3 py-3 text-right text-lg font-bold uppercase text-gray-600">Rate</th><th class="px-3 py-3 text-right text-lg font-bold uppercase text-gray-600">Stock</th></tr></thead>
             <tbody>
               <tr v-for="(item, idx) in searchResults" :key="item.item_code" class="cursor-pointer border-b border-gray-100" :class="{ 'bg-blue-50': searchIdx === idx }" @click="pickSearchItemByIdx(idx)" @mouseenter="searchIdx = idx">
-                <td class="px-4 py-2 font-mono text-sm">{{ item.item_code }}</td><td class="px-3 py-2">{{ item.item_name }}</td><td class="px-3 py-2 text-gray-600">{{ item.uom }}</td><td class="px-3 py-2 text-right font-mono">{{ item.rate.toFixed(2) }}</td>
-                <td class="px-3 py-2 text-right"><span class="rounded-full px-2 py-0.5 text-sm font-bold" :class="item.stock_qty > 20 ? 'bg-green-50 text-green-600' : item.stock_qty > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'">{{ item.stock_qty }}</span></td>
+                <td class="px-4 py-3 font-mono text-2xl">{{ item.item_code }}</td><td class="px-3 py-3">{{ item.item_name }}</td><td class="px-3 py-3 text-gray-600">{{ item.uom }}</td><td class="px-3 py-3 text-right font-mono">{{ item.rate.toFixed(2) }}</td>
+                <td class="px-3 py-3 text-right"><span class="rounded-full px-3 py-1 text-xl font-bold" :class="item.stock_qty > 20 ? 'bg-green-50 text-green-600' : item.stock_qty > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'">{{ item.stock_qty }}</span></td>
               </tr>
             </tbody>
           </table>
-          <div v-else class="px-4 py-8 text-center text-sm text-gray-600">No items found</div>
+          <div v-else class="px-4 py-8 text-center text-2xl text-gray-600">No items found</div>
         </div>
-        <div class="flex items-center justify-between border-t border-gray-200 px-4 py-2 text-sm text-gray-600">
-          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Up/Down</kbd> Navigate <kbd class="ml-2 rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Enter</kbd> Select</span>
-          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> Close</span>
+        <div class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-lg text-gray-600">
+          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-base">Up/Down</kbd> Navigate <kbd class="ml-2 rounded border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-base">Enter</kbd> Select</span>
+          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-base">Esc</kbd> Close</span>
         </div>
       </div>
     </div>
     <!-- CUSTOMER SEARCH MODAL -->
     <div v-if="showCustomerSearchModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showCustomerSearchModal = false">
-      <div class="flex max-h-[85vh] w-[720px] flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
+      <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
+
         <!-- Header -->
         <div class="border-b border-gray-200 px-5 py-4 flex items-center justify-between bg-gray-50">
           <div>
-            <div class="text-sm font-semibold text-gray-700">Detailed Customer Search</div>
-            <div class="text-[10px] text-gray-500">View balances and contact info</div>
+            <div class="text-2xl font-semibold text-gray-700">Detailed Customer Search</div>
+            <div class="text-lg text-gray-500">View balances and contact info</div>
           </div>
-          <button @click="showCustomerSearchModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+          <button @click="showCustomerSearchModal = false" class="text-2xl text-gray-400 hover:text-gray-600">✕</button>
         </div>
 
         <!-- Search input -->
@@ -471,7 +493,7 @@
             ref="custSearchInput"
             v-model="custSearch"
             @input="doCustSearch"
-            class="w-full rounded border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            class="w-full rounded border border-gray-300 px-4 py-3 text-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             placeholder="Type customer name or mobile..."
             @keydown.esc="showCustomerSearchModal = false"
             @keydown.down.prevent="custDDIdx = Math.min(custDDIdx + 1, custResults.length - 1)"
@@ -482,9 +504,9 @@
 
         <!-- Results Table -->
         <div class="flex-1 overflow-y-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-2xl">
             <thead class="sticky top-0 bg-white shadow-sm">
-              <tr class="text-xs font-bold uppercase tracking-wider text-gray-600 border-b">
+              <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b">
                 <th class="px-5 py-3 text-left">Customer Name</th>
                 <th class="px-5 py-3 text-left">Mobile Number</th>
                 <th class="px-5 py-3 text-right">Balance</th>
@@ -499,20 +521,20 @@
                 @click="pickCust(c)"
                 @mouseenter="custDDIdx = idx"
               >
-                <td class="px-5 py-3">
+                <td class="px-5 py-4">
                   <div class="font-medium text-gray-800">{{ c.customer_name }}</div>
-                  <div class="text-[10px] text-gray-400 font-mono">{{ c.name }}</div>
+                  <div class="text-lg text-gray-400 font-mono">{{ c.name }}</div>
                 </td>
-                <td class="px-5 py-3 text-gray-600">
+                <td class="px-5 py-4 text-gray-600">
                   {{ c.mobile_no || '--' }}
                 </td>
-                <td class="px-5 py-3 text-right font-mono font-bold" :class="c.balance > 0 ? 'text-red-600' : 'text-green-600'">
+                <td class="px-5 py-4 text-right font-mono font-bold" :class="c.balance > 0 ? 'text-red-600' : 'text-green-600'">
                   ₹{{ c.balance.toFixed(2) }}
-                  <span class="text-[10px] font-normal text-gray-400">{{ c.balance > 0 ? 'Dr' : 'Cr' }}</span>
+                  <span class="text-lg font-normal text-gray-400">{{ c.balance > 0 ? 'Dr' : 'Cr' }}</span>
                 </td>
               </tr>
               <tr v-if="!custResults.length">
-                <td colspan="3" class="px-5 py-12 text-center text-gray-400 text-[10px] italic">
+                <td colspan="3" class="px-5 py-12 text-center text-gray-400 text-xl italic">
                   No customers found matching "{{ custSearch }}"
                 </td>
               </tr>
@@ -521,9 +543,9 @@
         </div>
 
         <!-- Footer -->
-        <div class="border-t border-gray-100 bg-gray-50 px-5 py-3 flex items-center justify-between text-[10px] text-gray-500">
-          <span><kbd class="rounded border bg-white px-1.5 py-0.5 font-mono">Enter</kbd> to Select</span>
-          <button @click="showCustomerSearchModal = false" class="rounded border border-gray-300 bg-white px-4 py-1.5 font-semibold text-gray-600 hover:bg-gray-50">Close</button>
+        <div class="border-t border-gray-100 bg-gray-50 px-5 py-4 flex items-center justify-between text-lg text-gray-500">
+          <span><kbd class="rounded border bg-white px-2 py-1 font-mono">Enter</kbd> to Select</span>
+          <button @click="showCustomerSearchModal = false" class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-50">Close</button>
         </div>
       </div>
     </div>
@@ -535,6 +557,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, fetchItemPrice, searchCustomers, frappeGet, frappePost } from '../api.js'
+import { localDb } from '../services/localDb'
 
 const router = useRouter()
 const route = useRoute()
@@ -640,8 +663,11 @@ const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const customerInput = ref(null)
 const custSearchInput = ref(null)
+const searchInput = ref(null)
 const modifySearchInput = ref(null)
 const seriesSelect = ref(null)
+const discountInput = ref(null)
+const saveButton = ref(null)
 const escWarning = ref(false)
 let escWarnTimer = null
 
@@ -721,7 +747,7 @@ const newQty = ref(1)
 const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-saved invoice name
-const zoomPercent = ref(150)
+const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
 const dynamicRowStyle = computed(() => ({
   fontSize: `${(14 * zoomPercent.value) / 100}px`,
   paddingTop: '0px',
@@ -845,8 +871,18 @@ async function onCodeEnter(idx) {
   else openSearch(code, idx)
 }
 
+let emptyCodeEnters = 0
 async function onNewCodeEnter() {
-  const code = newItemCode.value.trim(); if (!code) return
+  const code = newItemCode.value.trim()
+  if (!code) {
+    emptyCodeEnters++
+    if (emptyCodeEnters >= 2) {
+      emptyCodeEnters = 0
+      openSearch('', null)
+    }
+    return
+  }
+  emptyCodeEnters = 0
   const r = await lookupItem(code)
   if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate }; focusNewQty() }
   else openSearch(code, null)
@@ -867,24 +903,117 @@ function softDelete(idx) { items.value[idx].deleted = true }
 function restoreItem(idx) { items.value[idx].deleted = false }
 
 // ==================== ITEM SEARCH POPUP ====================
-const showSearch = ref(false); const searchQuery = ref(''); const searchIdx = ref(0); const searchInput = ref(null); let searchTargetRow = null; const searchResults = ref([])
+const showSearch = ref(false); const searchQuery = ref(''); const searchIdx = ref(0); let searchTargetRow = null; 
+const allItems = ref([]); const searchResults = ref([]); const isSyncing = ref(false)
 
-watch(searchQuery, async (q) => {
-  searchIdx.value = 0; const t = (q || '').trim(); if (t.length < 1) { searchResults.value = []; return }
-  try { await itemSearchResource.submit({ query: t, price_list: priceList.value }); const d = itemSearchResource.data?.message || itemSearchResource.data; searchResults.value = Array.isArray(d) ? d : [] } catch (e) { searchResults.value = [] }
-})
+async function refreshLocalItems() {
+  if (isSyncing.value) return
+  isSyncing.value = true
+  try {
+    const freshItems = await frappeGet('frappe.client.get_list', {
+      doctype: 'Item',
+      fields: ['item_code', 'item_name', 'stock_uom as uom', 'standard_rate as rate'],
+      filters: { disabled: 0, is_sales_item: 1 },
+      limit_page_length: 5000,
+      order_by: 'item_name asc'
+    })
+    if (freshItems && freshItems.length) {
+      await localDb.clear() // Clear old data
+      await localDb.saveItems(freshItems)
+      
+      // Update local state and re-fetch stock to keep everything fresh
+      await fetchAllItems() 
+    }
+  } catch (e) {
+    console.error('Manual sync failed:', e)
+    alert('Failed to refresh items from server')
+  } finally {
+    isSyncing.value = false
+  }
+}
 
-function openSearch(prefill, rowIdx) { searchTargetRow = rowIdx; searchQuery.value = prefill || ''; searchIdx.value = 0; showSearch.value = true; nextTick(() => searchInput.value?.focus()) }
+async function fetchAllItems() {
+  try {
+    // 1. Try loading items from local IndexedDB first
+    let itemsFromDb = await localDb.getAllItems()
+    
+    // 2. If empty, sync from server
+    if (!itemsFromDb || itemsFromDb.length === 0) {
+      itemsFromDb = await frappeGet('frappe.client.get_list', {
+        doctype: 'Item',
+        fields: ['item_code', 'item_name', 'stock_uom as uom', 'standard_rate as rate'],
+        filters: { disabled: 0, is_sales_item: 1 },
+        limit_page_length: 5000,
+        order_by: 'item_name asc'
+      })
+      if (itemsFromDb && itemsFromDb.length) {
+        await localDb.saveItems(itemsFromDb)
+      }
+    }
+
+    // 3. Always fetch real-time stock from Bin (not stored in local DB as it changes)
+    const binsRes = await frappeGet('frappe.client.get_list', {
+      doctype: 'Bin',
+      fields: ['item_code', 'actual_qty as stock_qty'],
+      limit_page_length: 10000
+    })
+    
+    const stockMap = {}
+    binsRes.forEach(b => {
+      stockMap[b.item_code] = (stockMap[b.item_code] || 0) + b.stock_qty
+    })
+
+    allItems.value = (itemsFromDb || []).map(i => ({
+      ...i,
+      stock_qty: stockMap[i.item_code] || 0
+    }))
+    filterItems()
+  } catch (e) {
+    console.error('Failed to fetch items:', e)
+  }
+}
+
+function filterItems() {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) {
+    searchResults.value = allItems.value.slice(0, 100)
+    return
+  }
+  searchResults.value = allItems.value.filter(i => 
+    i.item_code.toLowerCase().includes(q) || 
+    i.item_name.toLowerCase().includes(q)
+  ).slice(0, 100)
+  searchIdx.value = 0
+}
+
+watch(searchQuery, filterItems)
+
+function openSearch(prefill, rowIdx) { 
+  searchTargetRow = rowIdx; 
+  searchQuery.value = prefill || ''; 
+  searchIdx.value = 0; 
+  showSearch.value = true; 
+  if (allItems.value.length === 0) fetchAllItems(); else filterItems();
+  nextTick(() => searchInput.value?.focus()) 
+}
 function closeSearch() { showSearch.value = false; searchQuery.value = ''; if (searchTargetRow !== null && searchTargetRow >= 0) focusField('code', searchTargetRow); else focusNewCode() }
 function pickSearchItem() { if (searchResults.value.length) pickSearchItemByIdx(searchIdx.value) }
 
-function pickSearchItemByIdx(idx) {
+async function pickSearchItemByIdx(idx) {
   const p = searchResults.value[idx]; if (!p) return
+  
+  // Fetch real-time rate for the selected price list before picking
+  let finalRate = p.rate || 0
+  try {
+    const r = await lookupItem(p.item_code)
+    if (r) finalRate = r.rate
+  } catch (e) {}
+
   if (searchTargetRow !== null && searchTargetRow >= 0) {
-    const row = items.value[searchTargetRow]; row.item_code = p.item_code; row.item_name = p.item_name; row.uom = p.uom; row.rate = p.rate; row.tax_rate = p.tax_rate ?? defaultTaxRate.value; row.warehouse = p.warehouse || defaultWarehouse.value; row.deleted = false
+    const row = items.value[searchTargetRow]; row.item_code = p.item_code; row.item_name = p.item_name; row.uom = p.uom; row.rate = finalRate; row.tax_rate = p.tax_rate ?? defaultTaxRate.value; row.warehouse = p.warehouse || defaultWarehouse.value; row.deleted = false
     showSearch.value = false; selectedRow.value = searchTargetRow; focusField('qty', searchTargetRow)
   } else {
-    newItemCode.value = p.item_code; newPending.value = { item_name: p.item_name, uom: p.uom, rate: p.rate }
+    newItemCode.value = p.item_code; newPending.value = { item_name: p.item_name, uom: p.uom, rate: finalRate }
     showSearch.value = false; nextTick(() => focusNewQty())
   }
 }
@@ -1196,6 +1325,21 @@ function handleKeydown(e) {
   if (e.key === 'F2') {
     e.preventDefault()
     openCustomerSearch()
+    return
+  }
+  if (e.key === 'F4') {
+    e.preventDefault()
+    openSearch('', null)
+    return
+  }
+  if (e.key === 'End') {
+    e.preventDefault()
+    if (document.activeElement === discountInput.value) {
+      saveButton.value?.focus()
+    } else {
+      discountInput.value?.focus()
+      discountInput.value?.select()
+    }
     return
   }
   if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveBill() }
