@@ -482,9 +482,17 @@
         <div class="border-b border-gray-200 px-5 py-4 flex items-center justify-between bg-gray-50">
           <div>
             <div class="text-2xl font-semibold text-gray-700">Detailed Customer Search</div>
-            <div class="text-lg text-gray-500">View balances and contact info</div>
+            <div class="text-lg text-gray-500">View contact info and select customer</div>
           </div>
-          <button @click="showCustomerSearchModal = false" class="text-2xl text-gray-400 hover:text-gray-600">✕</button>
+          <div class="flex items-center gap-3">
+            <button 
+              @click="fetchAllCustomers(true)" 
+              class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-100"
+            >
+              🔄 Refresh
+            </button>
+            <button @click="showCustomerSearchModal = false" class="text-2xl text-gray-400 hover:text-gray-600">✕</button>
+          </div>
         </div>
 
         <!-- Search input -->
@@ -509,7 +517,6 @@
               <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b">
                 <th class="px-5 py-3 text-left">Customer Name</th>
                 <th class="px-5 py-3 text-left">Mobile Number</th>
-                <th class="px-5 py-3 text-right">Balance</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
@@ -528,13 +535,9 @@
                 <td class="px-5 py-4 text-gray-600">
                   {{ c.mobile_no || '--' }}
                 </td>
-                <td class="px-5 py-4 text-right font-mono font-bold" :class="c.balance > 0 ? 'text-red-600' : 'text-green-600'">
-                  ₹{{ c.balance.toFixed(2) }}
-                  <span class="text-lg font-normal text-gray-400">{{ c.balance > 0 ? 'Dr' : 'Cr' }}</span>
-                </td>
               </tr>
               <tr v-if="!custResults.length">
-                <td colspan="3" class="px-5 py-12 text-center text-gray-400 text-xl italic">
+                <td colspan="2" class="px-5 py-12 text-center text-gray-400 text-xl italic">
                   No customers found matching "{{ custSearch }}"
                 </td>
               </tr>
@@ -673,26 +676,61 @@ let escWarnTimer = null
 
 // ==================== CUSTOMER DROPDOWN ====================
 const custSearch = ref('')
+const allCustomers = ref([])
 const custResults = ref([])
 const showCustDD = ref(false)
 const showCustomerSearchModal = ref(false)
 const custDDIdx = ref(0)
-let custSearchTimeout = null
 
-async function doCustSearch() {
-  clearTimeout(custSearchTimeout); custDDIdx.value = 0
-  const q = custSearch.value.trim()
-  if (q.length < 1) { custResults.value = []; return }
-  custSearchTimeout = setTimeout(async () => {
-    try {
-      custResults.value = await searchCustomers(q)
-    } catch (e) { custResults.value = [] }
-  }, 250)
+async function fetchAllCustomers(force = false) {
+  try {
+    // 1. Try loading customers from local IndexedDB first (unless forcing)
+    let custFromDb = force ? [] : await localDb.getAllCustomers()
+    
+    // 2. If empty or forced, sync from server
+    if (!custFromDb || custFromDb.length === 0) {
+      custFromDb = await frappeGet('frappe.client.get_list', {
+        doctype: 'Customer',
+        fields: ['name', 'customer_name', 'mobile_no'],
+        filters: { disabled: 0 },
+        limit_page_length: 5000,
+        order_by: 'customer_name asc'
+      })
+      if (custFromDb && custFromDb.length) {
+        await localDb.clearStore('customers')
+        await localDb.saveCustomers(custFromDb)
+      }
+    }
+
+    allCustomers.value = custFromDb || []
+    filterCustomers()
+  } catch (e) {
+    console.error('Failed to fetch customers:', e)
+  }
+}
+
+function filterCustomers() {
+  const q = custSearch.value.toLowerCase().trim()
+  if (!q) {
+    custResults.value = allCustomers.value.slice(0, 100)
+    return
+  }
+  custResults.value = allCustomers.value.filter(c => 
+    c.customer_name.toLowerCase().includes(q) || 
+    c.name.toLowerCase().includes(q) ||
+    (c.mobile_no && c.mobile_no.includes(q))
+  ).slice(0, 100)
+  custDDIdx.value = 0
+}
+
+function doCustSearch() {
+  filterCustomers()
 }
 
 function openCustomerSearch() {
   showCustDD.value = false
   showCustomerSearchModal.value = true
+  if (allCustomers.value.length === 0) fetchAllCustomers(); else filterCustomers();
   nextTick(() => custSearchInput.value?.focus())
 }
 
@@ -910,20 +948,7 @@ async function refreshLocalItems() {
   if (isSyncing.value) return
   isSyncing.value = true
   try {
-    const freshItems = await frappeGet('frappe.client.get_list', {
-      doctype: 'Item',
-      fields: ['item_code', 'item_name', 'stock_uom as uom', 'standard_rate as rate'],
-      filters: { disabled: 0, is_sales_item: 1 },
-      limit_page_length: 5000,
-      order_by: 'item_name asc'
-    })
-    if (freshItems && freshItems.length) {
-      await localDb.clear() // Clear old data
-      await localDb.saveItems(freshItems)
-      
-      // Update local state and re-fetch stock to keep everything fresh
-      await fetchAllItems() 
-    }
+    await fetchAllItems(true)
   } catch (e) {
     console.error('Manual sync failed:', e)
     alert('Failed to refresh items from server')
@@ -932,10 +957,10 @@ async function refreshLocalItems() {
   }
 }
 
-async function fetchAllItems() {
+async function fetchAllItems(force = false) {
   try {
     // 1. Try loading items from local IndexedDB first
-    let itemsFromDb = await localDb.getAllItems()
+    let itemsFromDb = force ? [] : await localDb.getAllItems()
     
     // 2. If empty, sync from server
     if (!itemsFromDb || itemsFromDb.length === 0) {
@@ -947,6 +972,7 @@ async function fetchAllItems() {
         order_by: 'item_name asc'
       })
       if (itemsFromDb && itemsFromDb.length) {
+        await localDb.clearStore('items')
         await localDb.saveItems(itemsFromDb)
       }
     }
@@ -1350,6 +1376,8 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   fetchSeriesList()
   fetchDropdownOptions()
+  fetchAllItems()
+  fetchAllCustomers()
   if (route.query.invoice) {
     loadInvoice(route.query.invoice)
   } else {

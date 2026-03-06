@@ -49,6 +49,20 @@
           🚪 Logout
         </button>
       </div>
+
+      <!-- Local DB Stats -->
+      <div class="mt-auto border-t border-gray-100 p-4">
+        <div class="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+          <span>Local Sync</span>
+          <div class="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.4)]"></div>
+        </div>
+        <div class="rounded-lg bg-gray-50/50 p-2.5 border border-gray-100">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-medium text-gray-500">Items Stored</span>
+            <span class="font-mono text-xs font-bold text-gray-700">{{ localItemCount.toLocaleString() }}</span>
+          </div>
+        </div>
+      </div>
     </aside>
 
     <!-- ===================== MAIN CONTENT ===================== -->
@@ -221,6 +235,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
+import { localDb } from '../services/localDb'
 
 const router = useRouter()
 
@@ -286,6 +301,7 @@ function handleKeydown(e) {
 const availableSeries = ref([])
 const userAllowedString = ref('')
 const systemSettings = ref(null)
+const localItemCount = ref(0)
 
 const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
 const BILLING_SETTINGS_TTL = 60 * 60 * 1000 // 1 hour
@@ -312,6 +328,14 @@ async function saveGeneralSettings() {
 }
 
 async function fetchSettings() {
+  // 0. Fetch local item count
+  try {
+    const items = await localDb.getAllItems()
+    localItemCount.value = items?.length || 0
+  } catch (e) {
+    console.warn('[Dashboard] Failed to fetch local item count:', e)
+  }
+
   // 1. Fetch allowed series for this user
   try {
     const d = await dashboardApi.getAllowedSeries()

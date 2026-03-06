@@ -28,5 +28,18 @@ export const dashboardApi = {
       limit_page_length: 5000,
       order_by: 'item_name asc'
     })
+  },
+
+  /**
+   * Fetch all customers for local sync.
+   */
+  fetchAllCustomersForSync: () => {
+    return frappeGet('frappe.client.get_list', {
+      doctype: 'Customer',
+      fields: ['name', 'customer_name', 'mobile_no'],
+      filters: { disabled: 0 },
+      limit_page_length: 5000,
+      order_by: 'customer_name asc'
+    })
   }
 }

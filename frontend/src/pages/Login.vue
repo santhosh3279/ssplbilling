@@ -88,15 +88,23 @@ async function handleLogin() {
   try {
     await session.login(email.value.trim(), password.value)
     
-    // 1. Sync Items to local DB for fast search
+    // 1. Sync Data to local DB for fast search
     try {
-      const items = await dashboardApi.fetchAllItemsForSync()
+      const [items, customers] = await Promise.all([
+        dashboardApi.fetchAllItemsForSync(),
+        dashboardApi.fetchAllCustomersForSync()
+      ])
+      
       if (items && items.length) {
         await localDb.saveItems(items)
         console.log(`[Login] Synced ${items.length} items to local DB`)
       }
+      if (customers && customers.length) {
+        await localDb.saveCustomers(customers)
+        console.log(`[Login] Synced ${customers.length} customers to local DB`)
+      }
     } catch (e) {
-      console.warn('[Login] Failed to sync items:', e)
+      console.warn('[Login] Failed to sync data:', e)
     }
 
     // 2. Pre-load billing settings into localStorage
