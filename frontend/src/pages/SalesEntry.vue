@@ -388,50 +388,148 @@
       </div>
     </div>
 
-    <!-- NEW CUSTOMER SUBWINDOW -->
-    <div v-if="showNewCustForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showNewCustForm = false">
-      <div class="w-[460px] rounded-xl bg-white shadow-2xl">
+    <!-- EDIT CUSTOMER SUBWINDOW -->
+    <div v-if="showEditCustForm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="showEditCustForm = false">
+      <div class="w-[600px] rounded-xl bg-white shadow-2xl">
         <div class="border-b border-gray-200 px-5 py-4">
-          <div class="text-sm font-semibold text-gray-700">New Customer</div>
-          <div class="text-[10px] text-gray-600">Create a new customer record</div>
+          <div class="text-xl font-bold text-gray-700">Modify Customer Details</div>
+          <div class="text-sm text-gray-600">Update information for {{ selectedCustomerDetails?.customer_name }}</div>
         </div>
-        <div class="flex flex-col gap-3 px-5 py-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase text-gray-600">Customer Name *</label>
-            <input ref="newCustNameInput" v-model="newCustData.customer_name" class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Full name" @keydown.esc="showNewCustForm = false" />
+        <div class="flex flex-col gap-4 px-6 py-5 max-h-[75vh] overflow-y-auto">
+          <!-- Basic Info Row -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer Name *</label>
+            <input ref="editCustNameInput" v-model="editCustData.customer_name" class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" placeholder="Full name" @keydown.esc="showEditCustForm = false" />
           </div>
-          <div class="flex gap-3">
-            <div class="flex flex-1 flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-600">Mobile</label>
-              <input v-model="newCustData.mobile" class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc="showNewCustForm = false" />
+
+          <!-- Contact Row -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile</label>
+              <input v-model="editCustData.mobile" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc="showEditCustForm = false" />
             </div>
-            <div class="flex flex-1 flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-600">Email</label>
-              <input v-model="newCustData.email" type="email" class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc="showNewCustForm = false" />
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
+              <input v-model="editCustData.email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc="showEditCustForm = false" />
             </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase text-gray-600">GSTIN</label>
-            <input v-model="newCustData.gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-sm uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc="showNewCustForm = false" />
+
+          <!-- GSTIN -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
+            <input v-model="editCustData.gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc="showEditCustForm = false" />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase text-gray-600">Address</label>
-            <input v-model="newCustData.address_line1" class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc="showNewCustForm = false" />
+
+          <!-- Address Lines -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 1</label>
+            <input v-model="editCustData.address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc="showEditCustForm = false" />
           </div>
-          <div class="flex gap-3">
-            <div class="flex flex-1 flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-600">City</label>
-              <input v-model="newCustData.city" class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="City" @keydown.esc="showNewCustForm = false" />
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 2</label>
+              <input v-model="editCustData.address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc="showEditCustForm = false" />
             </div>
-            <div class="flex flex-1 flex-col gap-1">
-              <label class="text-[10px] font-bold uppercase text-gray-600">Pincode</label>
-              <input v-model="newCustData.pincode" class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="678XXX" @keydown.esc="showNewCustForm = false" />
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 3</label>
+              <input v-model="editCustData.address_line3" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Landmark" @keydown.esc="showEditCustForm = false" />
+            </div>
+          </div>
+
+          <!-- City, Pincode, State -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">City</label>
+              <input v-model="editCustData.city" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="City" @keydown.esc="showEditCustForm = false" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pincode</label>
+              <input v-model="editCustData.pincode" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="678XXX" @keydown.esc="showEditCustForm = false" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
+              <input v-model="editCustData.state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="State" @keydown.esc="showEditCustForm = false" />
             </div>
           </div>
         </div>
-        <div class="flex justify-end gap-2 border-t border-gray-200 px-5 py-3">
-          <button class="rounded border border-gray-300 px-4 py-1.5 text-sm font-semibold text-gray-600 hover:bg-gray-50" @click="showNewCustForm = false">Cancel</button>
-          <button class="rounded bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700" :disabled="newCustSaving" @click="saveNewCust">{{ newCustSaving ? 'Saving...' : 'Save &amp; Select' }}</button>
+        <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-xl">
+          <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-100 transition-colors" @click="showEditCustForm = false">Cancel</button>
+          <button class="rounded bg-orange-600 px-6 py-2 font-bold text-white hover:bg-orange-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2" :disabled="newCustSaving" @click="saveEditCust">
+            {{ newCustSaving ? 'Updating...' : 'Update Details' }}
+            <kbd v-if="!newCustSaving" class="rounded border border-orange-500 bg-orange-500 px-1.5 py-0.5 font-mono text-xs text-white shadow-sm">End</kbd>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div v-if="showNewCustForm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="showNewCustForm = false">
+      <div class="w-[600px] rounded-xl bg-white shadow-2xl">
+        <div class="border-b border-gray-200 px-5 py-4">
+          <div class="text-xl font-bold text-gray-700">New Customer</div>
+          <div class="text-sm text-gray-600">Enter customer details to create a new record</div>
+        </div>
+        <div class="flex flex-col gap-4 px-6 py-5 max-h-[75vh] overflow-y-auto">
+          <!-- Basic Info Row -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer Name *</label>
+            <input ref="newCustNameInput" v-model="newCustData.customer_name" class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" placeholder="Full name" @keydown.esc="showNewCustForm = false" />
+          </div>
+
+          <!-- Contact Row -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile</label>
+              <input v-model="newCustData.mobile" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc="showNewCustForm = false" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
+              <input v-model="newCustData.email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc="showNewCustForm = false" />
+            </div>
+          </div>
+
+          <!-- GSTIN -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
+            <input v-model="newCustData.gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc="showNewCustForm = false" />
+          </div>
+
+          <!-- Address Lines -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 1</label>
+            <input v-model="newCustData.address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc="showNewCustForm = false" />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 2</label>
+              <input v-model="newCustData.address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc="showNewCustForm = false" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 3</label>
+              <input v-model="newCustData.address_line3" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Landmark" @keydown.esc="showNewCustForm = false" />
+            </div>
+          </div>
+
+          <!-- City, Pincode, State -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">City</label>
+              <input v-model="newCustData.city" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="City" @keydown.esc="showNewCustForm = false" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pincode</label>
+              <input v-model="newCustData.pincode" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="678XXX" @keydown.esc="showNewCustForm = false" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
+              <input v-model="newCustData.state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="State" @keydown.esc="showNewCustForm = false" />
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-xl">
+          <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-100 transition-colors" @click="showNewCustForm = false">Cancel</button>
+          <button class="rounded bg-blue-600 px-6 py-2 font-bold text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2" :disabled="newCustSaving" @click="saveNewCust">
+            {{ newCustSaving ? 'Saving...' : 'Save & Select Customer' }}
+            <kbd v-if="!newCustSaving" class="rounded border border-blue-500 bg-blue-500 px-1.5 py-0.5 font-mono text-xs text-white shadow-sm">End</kbd>
+          </button>
         </div>
       </div>
     </div>
@@ -493,6 +591,19 @@
             <div class="text-lg text-gray-500">View contact info and select customer</div>
           </div>
           <div class="flex items-center gap-3">
+            <button 
+              @click="openNewCustForm" 
+              class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 hover:bg-gray-200 shadow-sm"
+            >
+              New Customer <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F2</kbd>
+            </button>
+            <button 
+              @click="openEditCustForm" 
+              v-if="selectedCustomerDetails"
+              class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 hover:bg-gray-200 shadow-sm"
+            >
+              Edit Details <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F3</kbd>
+            </button>
             <button 
               @click="fetchAllCustomers(true)" 
               class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-100"
@@ -592,7 +703,11 @@
 
         <!-- Footer -->
         <div class="border-t border-gray-100 bg-gray-50 px-5 py-4 flex items-center justify-between text-lg text-gray-500">
-          <span><kbd class="rounded border bg-white px-2 py-1 font-mono">Enter</kbd> to Select</span>
+          <div class="flex gap-4">
+            <span><kbd class="rounded border bg-white px-2 py-1 font-mono">F2</kbd> New Customer</span>
+            <span><kbd class="rounded border bg-white px-2 py-1 font-mono">F3</kbd> Edit</span>
+            <span><kbd class="rounded border bg-white px-2 py-1 font-mono">Enter</kbd> to Select</span>
+          </div>
           <button @click="showCustomerSearchModal = false" class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-50">Close</button>
         </div>
       </div>
@@ -789,17 +904,82 @@ function clearCustomerSelection() {
   nextTick(() => customerInput.value?.focus())
 }
 
-// ==================== NEW CUSTOMER SUBWINDOW ====================
+// ==================== NEW/EDIT CUSTOMER SUBWINDOW ====================
 const showNewCustForm = ref(false)
+const showEditCustForm = ref(false)
 const newCustSaving = ref(false)
 const newCustNameInput = ref(null)
-const newCustData = ref({ customer_name: '', mobile: '', email: '', gstin: '', address_line1: '', city: '', pincode: '' })
+const editCustNameInput = ref(null)
+const newCustData = ref({ 
+  customer_name: '', mobile: '', email: '', gstin: '', 
+  address_line1: '', address_line2: '', address_line3: '', 
+  city: '', pincode: '', state: '' 
+})
+const editCustData = ref({ 
+  customer_name: '', mobile: '', email: '', gstin: '', 
+  address_line1: '', address_line2: '', address_line3: '', 
+  city: '', pincode: '', state: '' 
+})
 
 function openNewCustForm() {
-  newCustData.value = { customer_name: custSearch.value.trim(), mobile: '', email: '', gstin: '', address_line1: '', city: '', pincode: '' }
+  newCustData.value = { 
+    customer_name: custSearch.value.trim(), mobile: '', email: '', gstin: '', 
+    address_line1: '', address_line2: '', address_line3: '', 
+    city: '', pincode: '', state: '' 
+  }
   showCustDD.value = false
+  showCustomerSearchModal.value = false
   showNewCustForm.value = true
   nextTick(() => newCustNameInput.value?.focus())
+}
+
+function openEditCustForm(c = null) {
+  const target = c || selectedCustomerDetails.value
+  if (!target || !target.name) return
+
+  editCustData.value = { 
+    customer_name: target.customer_name || '', 
+    mobile: target.mobile_no || '', 
+    email: target.email_id || '', 
+    gstin: target.gstin || '', 
+    address_line1: target.address_line1 || '', 
+    address_line2: target.address_line2 || '', 
+    address_line3: target.address_line3 || '', 
+    city: target.city || '', 
+    pincode: target.pincode || '', 
+    state: target.state || '' 
+  }
+  showCustomerSearchModal.value = false
+  showEditCustForm.value = true
+  nextTick(() => editCustNameInput.value?.focus())
+}
+
+async function saveEditCust() {
+  if (!editCustData.value.customer_name.trim()) { alert('Customer name is required'); return }
+  newCustSaving.value = true
+  try {
+    const customerId = selectedCustomerDetails.value?.name
+    const res = await apiPost('update_customer_details', { 
+      customer: customerId, 
+      data: JSON.stringify(editCustData.value) 
+    })
+    
+    // Update local state
+    if (selectedCustomerDetails.value) {
+      Object.assign(selectedCustomerDetails.value, editCustData.value)
+      selectedCustomerDetails.value.customer_name = res.customer_name
+      custSearch.value = res.customer_name
+    }
+    
+    // Re-fetch all customers to update the cache
+    fetchAllCustomers(true)
+    
+    showEditCustForm.value = false
+    alert(`Customer ${res.customer_name} updated successfully!`)
+  } catch (e) { 
+    alert('Error: ' + (e?.message || 'Unknown')) 
+  }
+  newCustSaving.value = false
 }
 
 async function saveNewCust() {
@@ -1396,9 +1576,37 @@ function cancelBill() { startNewBill() }
 
 // ==================== GLOBAL KEYS ====================
 function handleKeydown(e) {
-  if (showSearch.value || showCustDD.value || showNewCustForm.value || showModifyBill.value || showCustomerSearchModal.value) {
+  if (showNewCustForm.value && e.key === 'End') {
+    e.preventDefault()
+    saveNewCust()
+    return
+  }
+  if (showEditCustForm.value && e.key === 'End') {
+    e.preventDefault()
+    saveEditCust()
+    return
+  }
+  if (showCustomerSearchModal.value) {
+    if (e.key === 'F2') {
+      e.preventDefault()
+      openNewCustForm()
+      return
+    }
+    if (e.key === 'F3') {
+      e.preventDefault()
+      const c = custResults.value[custDDIdx.value]
+      if (c) openEditCustForm(c)
+      return
+    }
+  }
+  if (!showCustomerSearchModal.value && !showNewCustForm.value && !showEditCustForm.value && e.key === 'F3' && selectedCustomerDetails.value) {
+    e.preventDefault()
+    openEditCustForm()
+    return
+  }
+  if (showSearch.value || showCustDD.value || showNewCustForm.value || showEditCustForm.value || showModifyBill.value || showCustomerSearchModal.value) {
     if (e.key === 'Escape') {
-      showSearch.value = false; showCustDD.value = false; showNewCustForm.value = false; showModifyBill.value = false; showCustomerSearchModal.value = false
+      showSearch.value = false; showCustDD.value = false; showNewCustForm.value = false; showEditCustForm.value = false; showModifyBill.value = false; showCustomerSearchModal.value = false
     }
     return
   }

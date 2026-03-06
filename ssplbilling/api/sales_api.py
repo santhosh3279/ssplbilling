@@ -318,6 +318,8 @@ def quick_create_customer(data=None, **kwargs):
         addr.address_title = customer_name
         addr.address_type = "Billing"
         addr.address_line1 = data.get("address_line1", "")
+        addr.address_line2 = data.get("address_line2", "")
+        addr.address_line3 = data.get("address_line3", "")
         addr.city = data.get("city", "")
         addr.state = data.get("state", "")
         addr.pincode = data.get("pincode", "")
@@ -328,6 +330,99 @@ def quick_create_customer(data=None, **kwargs):
             addr.gstin = data["gstin"]
         addr.append("links", {"link_doctype": "Customer", "link_name": cust.name})
         addr.insert(ignore_permissions=True)
+
+    # Create Contact if provided
+    if data.get("mobile") or data.get("email"):
+        contact = frappe.new_doc("Contact")
+        contact.first_name = customer_name
+        contact.mobile_no = data.get("mobile", "")
+        contact.phone = data.get("mobile", "")
+        contact.email_id = data.get("email", "")
+        contact.append("links", {"link_doctype": "Customer", "link_name": cust.name})
+        contact.insert(ignore_permissions=True)
+
+    return {
+        "name": cust.name,
+        "customer_name": cust.customer_name,
+    }
+
+
+@frappe.whitelist()
+def update_customer_details(customer=None, data=None):
+    """Update existing Customer and their primary Address."""
+    if not customer:
+        customer = frappe.form_dict.get("customer")
+    if not data:
+        data = frappe.form_dict.get("data")
+        
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    if not customer:
+        frappe.throw("customer is required")
+        
+    if not frappe.db.exists("Customer", customer):
+        frappe.throw(f"Customer {customer} not found")
+
+    cust = frappe.get_doc("Customer", customer)
+    if data.get("customer_name"):
+        cust.customer_name = data["customer_name"]
+    if data.get("mobile"):
+        cust.mobile_no = data["mobile"]
+    if data.get("email"):
+        cust.email_id = data["email"]
+    if data.get("gstin"):
+        cust.gstin = data["gstin"]
+    cust.save(ignore_permissions=True)
+
+    # Update or Create Address
+    addr_name = frappe.db.get_value("Dynamic Link", 
+        {"link_doctype": "Customer", "link_name": customer, "parenttype": "Address"}, 
+        "parent"
+    )
+
+    if addr_name:
+        addr = frappe.get_doc("Address", addr_name)
+    else:
+        addr = frappe.new_doc("Address")
+        addr.address_title = cust.customer_name
+        addr.address_type = "Billing"
+        addr.country = "India"
+        addr.append("links", {"link_doctype": "Customer", "link_name": customer})
+
+    if data.get("address_line1") is not None: addr.address_line1 = data["address_line1"]
+    if data.get("address_line2") is not None: addr.address_line2 = data["address_line2"]
+    if data.get("address_line3") is not None: addr.address_line3 = data["address_line3"]
+    if data.get("city") is not None: addr.city = data["city"]
+    if data.get("state") is not None: addr.state = data["state"]
+    if data.get("pincode") is not None: addr.pincode = data["pincode"]
+    if data.get("mobile"): addr.phone = data["mobile"]
+    if data.get("email"): addr.email_id = data["email"]
+    if data.get("gstin"): addr.gstin = data["gstin"]
+
+    addr.save(ignore_permissions=True)
+
+    # Update or Create Contact
+    contact_name = frappe.db.get_value("Dynamic Link", 
+        {"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"}, 
+        "parent"
+    )
+
+    if contact_name:
+        contact = frappe.get_doc("Contact", contact_name)
+    else:
+        contact = frappe.new_doc("Contact")
+        contact.first_name = data.get("customer_name") or cust.customer_name
+        contact.append("links", {"link_doctype": "Customer", "link_name": customer})
+
+    if data.get("mobile"):
+        contact.mobile_no = data["mobile"]
+        # Ensure it's in the phone_nos table too if needed, but mobile_no is primary
+        contact.phone = data["mobile"]
+    if data.get("email"):
+        contact.email_id = data["email"]
+    
+    contact.save(ignore_permissions=True)
 
     return {
         "name": cust.name,
