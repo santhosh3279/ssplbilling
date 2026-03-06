@@ -547,7 +547,7 @@
           >
             <span v-if="isSyncing" class="animate-spin">⏳</span>
             <span v-else>🔄</span>
-            {{ isSyncing ? 'Syncing...' : 'Refresh Items' }}
+            {{ isSyncing ? 'Syncing...' : 'Refresh Items' }} <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
           </button>
         </div>
         <div class="border-b border-gray-200 px-4 py-3">
@@ -608,7 +608,7 @@
               @click="fetchAllCustomers(true)" 
               class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-100"
             >
-              🔄 Refresh
+              🔄 Refresh <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
             </button>
             <button @click="showCustomerSearchModal = false" class="text-2xl text-gray-400 hover:text-gray-600">✕</button>
           </div>
@@ -1587,6 +1587,11 @@ function handleKeydown(e) {
     return
   }
   if (showCustomerSearchModal.value) {
+    if (e.key === 'F5') {
+      e.preventDefault()
+      fetchAllCustomers(true)
+      return
+    }
     if (e.key === 'F2') {
       e.preventDefault()
       openNewCustForm()
@@ -1596,6 +1601,13 @@ function handleKeydown(e) {
       e.preventDefault()
       const c = custResults.value[custDDIdx.value]
       if (c) openEditCustForm(c)
+      return
+    }
+  }
+  if (showSearch.value) {
+    if (e.key === 'F5') {
+      e.preventDefault()
+      refreshLocalItems()
       return
     }
   }
@@ -1613,6 +1625,11 @@ function handleKeydown(e) {
   if (e.key === 'F2') {
     e.preventDefault()
     openCustomerSearch()
+    return
+  }
+  if (e.key === 'PageUp') {
+    e.preventDefault()
+    seriesSelect.value?.focus()
     return
   }
   if (e.key === 'F4') {
