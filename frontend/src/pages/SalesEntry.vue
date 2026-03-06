@@ -18,46 +18,39 @@
     </header>
 
     <div class="flex flex-col border-b border-gray-200 bg-white px-4 py-3">
-      <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
-        <!-- Date -->
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-bold uppercase text-gray-600">Bill Date</label>
-          <div class="flex items-center rounded border border-gray-300">
-            <button @click="changeBillDate(-1)" :disabled="billDocStatus !== 0" class="px-2 py-1 text-gray-500 hover:bg-gray-50 border-r border-gray-300 disabled:opacity-50">&larr;</button>
-            <input type="date" v-model="billDate" :disabled="billDocStatus !== 0" class="px-2 py-1 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50 border-none" />
-            <button @click="changeBillDate(1)" :disabled="billDocStatus !== 0" class="px-2 py-1 text-gray-500 hover:bg-gray-50 border-l border-gray-300 disabled:opacity-50">&rarr;</button>
+      <div class="flex flex-wrap items-end justify-between gap-y-3">
+        <div class="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <!-- Series -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold uppercase text-gray-600">Series</label>
+            <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" @keydown.enter.prevent="openCustomerSearch">
+              <option v-for="s in availableSeries" :key="s">{{ s }}</option>
+            </select>
           </div>
-        </div>
-        <!-- Series -->
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-bold uppercase text-gray-600">Series</label>
-          <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" @keydown.enter.prevent="customerInput?.focus()">
-            <option v-for="s in availableSeries" :key="s">{{ s }}</option>
-          </select>
-        </div>
-        <!-- Bill No -->
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-bold uppercase text-gray-600">Bill No</label>
-          <input :value="nextBillNo" readonly class="w-32 rounded border border-gray-200 bg-gray-50 px-2.5 py-1 font-mono text-sm text-gray-600" />
-        </div>
-        <!-- Customer -->
-        <div class="flex flex-1 flex-col gap-1 min-w-[300px]">
-          <label class="text-xs font-bold uppercase text-gray-600">Customer</label>
-          <div class="relative flex items-center gap-1">
-            <input ref="customerInput" v-model="custSearch" :disabled="billDocStatus !== 0" class="w-full rounded border border-gray-300 px-2.5 py-1 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" :placeholder="customer || 'Search customer...'" :class="{ 'border-green-400': customer }" @input="doCustSearch" @focus="showCustDD = true" @keydown.enter.prevent="onCustomerEnter" @keydown.down.prevent="custDDIdx = Math.min(custDDIdx + 1, custResults.length)" @keydown.up.prevent="custDDIdx = Math.max(custDDIdx - 1, 0)" @keydown.esc="showCustDD = false" @keydown.f2.prevent="openCustomerSearch" />
-            <button v-if="billDocStatus === 0" @click="openCustomerSearch" class="rounded border border-gray-300 bg-gray-50 p-1.5 text-gray-500 hover:bg-gray-100" title="Search Detailed [F2]">🔍</button>
-            <div v-if="showCustDD && (custResults.length || custSearch.trim())" class="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded border border-gray-200 bg-white shadow-lg">
-              <div v-for="(c, i) in custResults" :key="c.name" class="cursor-pointer px-3 py-1.5 text-sm" :class="custDDIdx === i ? 'bg-blue-50' : 'hover:bg-gray-50'" @click="pickCust(c)" @mouseenter="custDDIdx = i"><span class="font-medium text-gray-700">{{ c.customer_name }}</span> <span class="ml-2 text-xs text-gray-600">{{ c.name }}</span></div>
-              <div v-if="custSearch.trim()" class="cursor-pointer border-t border-gray-100 px-3 py-2 text-sm font-semibold text-blue-600" :class="custDDIdx === custResults.length ? 'bg-blue-50' : 'hover:bg-blue-50'" @click="openNewCustForm" @mouseenter="custDDIdx = custResults.length">+ Create "{{ custSearch.trim() }}"</div>
+          <!-- Bill No -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold uppercase text-gray-600">Bill No</label>
+            <input :value="nextBillNo" readonly class="w-32 rounded border border-gray-200 bg-gray-50 px-2.5 py-1 font-mono text-sm text-gray-600" />
+          </div>
+          <!-- Customer -->
+          <div class="flex flex-col gap-1 min-w-[200px] max-w-[220px]">
+            <label class="text-xs font-bold uppercase text-gray-600">Customer</label>
+            <div class="relative flex items-center gap-1">
+              <input ref="customerInput" v-model="custSearch" :disabled="billDocStatus !== 0" maxlength="20" class="w-full rounded border border-gray-300 px-2.5 py-1 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50" :placeholder="customer || 'Search...'" :class="{ 'border-green-400 bg-green-50/30': customer }" @input="doCustSearch" @focus="openCustomerSearch" @keydown.enter.prevent="onCustomerEnter" @keydown.down.prevent="custDDIdx = Math.min(custDDIdx + 1, custResults.length)" @keydown.up.prevent="custDDIdx = Math.max(custDDIdx - 1, 0)" @keydown.esc="showCustDD = false" @keydown.f2.prevent="openCustomerSearch" />
+              
+              <div v-if="showCustDD && (custResults.length || custSearch.trim())" class="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded border border-gray-200 bg-white shadow-lg">
+                <div v-for="(c, i) in custResults" :key="c.name" class="cursor-pointer px-3 py-1.5 text-sm" :class="custDDIdx === i ? 'bg-blue-50' : 'hover:bg-gray-50'" @click="pickCust(c)" @mouseenter="custDDIdx = i"><span class="font-medium text-gray-700">{{ c.customer_name }}</span> <span class="ml-2 text-xs text-gray-600">{{ c.name }}</span></div>
+                <div v-if="custSearch.trim()" class="cursor-pointer border-t border-gray-100 px-3 py-2 text-sm font-semibold text-blue-600" :class="custDDIdx === custResults.length ? 'bg-blue-50' : 'hover:bg-blue-50'" @click="openNewCustForm" @mouseenter="custDDIdx = custResults.length">+ Create "{{ custSearch.trim() }}"</div>
+              </div>
             </div>
           </div>
         </div>
-        <!-- Payment Mode -->
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-bold uppercase text-gray-600">Payment Mode</label>
-          <div class="flex gap-1">
-            <button :disabled="billDocStatus !== 0" class="rounded border px-3 py-1 text-center text-sm font-semibold transition disabled:opacity-50" :class="paymentMode === 'Cash' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'" @click="paymentMode = 'Cash'">Cash</button>
-            <button :disabled="billDocStatus !== 0" class="rounded border px-3 py-1 text-center text-sm font-semibold transition disabled:opacity-50" :class="paymentMode === 'Credit' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'" @click="paymentMode = 'Credit'">Credit</button>
+
+        <!-- Date (Right Aligned) -->
+        <div class="flex flex-col items-end gap-1">
+          <label class="text-xs font-bold uppercase text-gray-500">Bill Date</label>
+          <div class="text-xl font-bold tracking-tight text-blue-700">
+            {{ fmtDate(billDate) }}
           </div>
         </div>
       </div>
@@ -610,6 +603,13 @@ function fmtPrice(val) {
   return n % 1 === 0 ? String(n) : n.toFixed(2)
 }
 
+function fmtDate(d) {
+  if (!d) return ''
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  })
+}
+
 function encPrice(val) {
   const str = fmtPrice(val)
   if (!cipherMap.value.length) return str
@@ -661,6 +661,11 @@ function openCustomerSearch() {
 function pickCust(c) {
   customer.value = c.name; custSearch.value = c.customer_name; showCustDD.value = false; showCustomerSearchModal.value = false
   nextTick(() => newCodeInput.value?.focus())
+}
+
+function clearCustomerSelection() {
+  customer.value = ''; custSearch.value = ''; custResults.value = []; showCustDD.value = false
+  nextTick(() => customerInput.value?.focus())
 }
 
 // ==================== NEW CUSTOMER SUBWINDOW ====================
