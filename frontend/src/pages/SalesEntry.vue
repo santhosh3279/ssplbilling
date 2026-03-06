@@ -49,10 +49,10 @@
           <!-- Customer -->
           <div class="flex items-center gap-2 w-[400px]">
             <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Customer</label>
-            <div class="flex-1 overflow-hidden">
+            <div class="flex-1 overflow-hidden flex flex-col">
               <div 
                 ref="customerInput"
-                class="truncate text-2xl font-medium transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600"
+                class="truncate text-2xl font-medium transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600 leading-none"
                 :class="customer ? 'text-gray-900' : 'text-gray-300 italic'"
                 style="font-family: 'Poppins', sans-serif"
                 @click="openCustomerSearch"
@@ -61,6 +61,14 @@
                 @keydown.space.prevent="openCustomerSearch"
               >
                 {{ custSearch || 'Not Selected' }}
+              </div>
+              <div v-if="selectedCustomerDetails" class="flex items-center gap-3 mt-0.5 text-[11px] font-bold">
+                <span :class="selectedCustomerDetails.balance > 0 ? 'text-red-500' : 'text-green-500'">
+                  Bal: &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} {{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}
+                </span>
+                <span v-if="selectedCustomerDetails.address_line1" class="text-gray-400 truncate max-w-[200px]" :title="selectedCustomerDetails.address_line1">
+                  {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
+                </span>
               </div>
             </div>
           </div>
@@ -517,6 +525,8 @@
               <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b">
                 <th class="px-5 py-3 text-left">Customer Name</th>
                 <th class="px-5 py-3 text-left">Mobile Number</th>
+                <th class="px-5 py-3 text-right">Balance</th>
+                <th class="px-5 py-3 text-left">Address</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
@@ -528,21 +538,56 @@
                 @click="pickCust(c)"
                 @mouseenter="custDDIdx = idx"
               >
-                <td class="px-5 py-4">
+                <td class="px-5 py-2">
                   <div class="font-medium text-gray-800">{{ c.customer_name }}</div>
-                  <div class="text-lg text-gray-400 font-mono">{{ c.name }}</div>
                 </td>
-                <td class="px-5 py-4 text-gray-600">
+                <td class="px-5 py-2 text-gray-600">
                   {{ c.mobile_no || '--' }}
+                </td>
+                <td class="px-5 py-2 text-right">
+                  <span :class="c.balance > 0 ? 'text-red-600' : c.balance < 0 ? 'text-green-600' : 'text-gray-400'" class="font-bold">
+                    &#8377;{{ (c.balance || 0).toFixed(2) }}
+                  </span>
+                </td>
+                <td class="px-5 py-2 text-gray-500 text-lg truncate max-w-[300px]">
+                  {{ c.address_line1 }}{{ c.city ? ', ' + c.city : '' }}
                 </td>
               </tr>
               <tr v-if="!custResults.length">
-                <td colspan="2" class="px-5 py-12 text-center text-gray-400 text-xl italic">
+                <td colspan="4" class="px-5 py-12 text-center text-gray-400 text-xl italic">
                   No customers found matching "{{ custSearch }}"
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Detail Footer -->
+        <div v-if="custResults[custDDIdx]" class="border-t border-gray-200 bg-blue-50/30 px-6 py-3">
+          <div class="flex flex-wrap gap-x-8 gap-y-2">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-gray-400">Current Balance</span>
+              <span class="text-xl font-bold" :class="custResults[custDDIdx].balance > 0 ? 'text-red-600' : 'text-green-600'">
+                &#8377;{{ (custResults[custDDIdx].balance || 0).toFixed(2) }}
+                <span class="text-xs font-normal uppercase ml-1">{{ custResults[custDDIdx].balance > 0 ? 'Debit' : 'Credit' }}</span>
+              </span>
+            </div>
+            <div class="flex flex-col flex-1">
+              <span class="text-[10px] font-bold uppercase text-gray-400">Address</span>
+              <span class="text-lg text-gray-700">
+                <template v-if="custResults[custDDIdx].address_line1">
+                  {{ custResults[custDDIdx].address_line1 }}{{ custResults[custDDIdx].city ? ', ' + custResults[custDDIdx].city : '' }}{{ custResults[custDDIdx].pincode ? ' - ' + custResults[custDDIdx].pincode : '' }}
+                </template>
+                <template v-else>
+                  <span class="text-gray-300 italic">No address provided</span>
+                </template>
+              </span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-gray-400">Mobile</span>
+              <span class="text-lg text-gray-700">{{ custResults[custDDIdx].mobile_no || '--' }}</span>
+            </div>
+          </div>
         </div>
 
         <!-- Footer -->
@@ -681,6 +726,7 @@ const custResults = ref([])
 const showCustDD = ref(false)
 const showCustomerSearchModal = ref(false)
 const custDDIdx = ref(0)
+const selectedCustomerDetails = ref(null)
 
 async function fetchAllCustomers(force = false) {
   try {
@@ -689,13 +735,7 @@ async function fetchAllCustomers(force = false) {
     
     // 2. If empty or forced, sync from server
     if (!custFromDb || custFromDb.length === 0) {
-      custFromDb = await frappeGet('frappe.client.get_list', {
-        doctype: 'Customer',
-        fields: ['name', 'customer_name', 'mobile_no'],
-        filters: { disabled: 0 },
-        limit_page_length: 5000,
-        order_by: 'customer_name asc'
-      })
+      custFromDb = await frappeGet('ssplbilling.api.sales_api.get_all_customers_detailed')
       if (custFromDb && custFromDb.length) {
         await localDb.clearStore('customers')
         await localDb.saveCustomers(custFromDb)
@@ -735,12 +775,17 @@ function openCustomerSearch() {
 }
 
 function pickCust(c) {
-  customer.value = c.name; custSearch.value = c.customer_name; showCustDD.value = false; showCustomerSearchModal.value = false
+  customer.value = c.name; 
+  custSearch.value = c.customer_name; 
+  showCustDD.value = false; 
+  showCustomerSearchModal.value = false;
+  // We can store extra info in a reactive ref if we want to show it on the main page
+  selectedCustomerDetails.value = c;
   nextTick(() => newCodeInput.value?.focus())
 }
 
 function clearCustomerSelection() {
-  customer.value = ''; custSearch.value = ''; custResults.value = []; showCustDD.value = false
+  customer.value = ''; custSearch.value = ''; custResults.value = []; showCustDD.value = false; selectedCustomerDetails.value = null
   nextTick(() => customerInput.value?.focus())
 }
 
@@ -1127,6 +1172,14 @@ async function loadInvoice(invoiceName) {
     billSaved.value = inv.docstatus !== 0
     showModifyBill.value = false
 
+    // Set selectedCustomerDetails for display
+    selectedCustomerDetails.value = allCustomers.value.find(c => c.name === inv.customer) || {
+      name: inv.customer,
+      customer_name: inv.customer_name,
+      balance: 0,
+      address_line1: ""
+    }
+
     nextTick(() => customerInput.value?.focus())
   } catch (e) {
     alert('Error loading invoice: ' + (e.message || 'Unknown error'))
@@ -1333,6 +1386,7 @@ function startNewBill() {
   items.value = []; selectedRow.value = -1; customer.value = ''; custSearch.value = ''
   discountPct.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
+  selectedCustomerDetails.value = null
   escWarning.value = false; clearTimeout(escWarnTimer)
   nextTick(() => seriesSelect.value?.focus())
 }

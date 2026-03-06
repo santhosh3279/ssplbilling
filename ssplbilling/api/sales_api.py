@@ -182,8 +182,60 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
 
 
 @frappe.whitelist()
+def get_all_customers_detailed():
+    """Fetch all customers with mobile_no, balance, and primary address for local sync."""
+    customers = frappe.get_all(
+        "Customer",
+        filters={"disabled": 0},
+        fields=["name", "customer_name", "mobile_no"],
+        order_by="customer_name asc",
+    )
+
+    # Batch fetch addresses
+    # Dynamic Link parent is the Address name. We join with Address to get details.
+    addresses = frappe.db.sql("""
+        SELECT 
+            dl.link_name as customer,
+            addr.address_line1,
+            addr.city,
+            addr.pincode
+        FROM `tabDynamic Link` dl
+        JOIN `tabAddress` addr ON addr.name = dl.parent
+        WHERE dl.link_doctype = 'Customer' AND dl.parenttype = 'Address'
+    """, as_dict=True)
+
+    addr_map = {a.customer: a for a in addresses}
+
+    # Batch fetch balances
+    balances = frappe.db.sql("""
+        SELECT 
+            party as customer,
+            SUM(debit) - SUM(credit) as balance
+        FROM `tabGL Entry`
+        WHERE party_type = 'Customer' AND is_cancelled = 0
+        GROUP BY party
+    """, as_dict=True)
+
+    bal_map = {b.customer: float(b.balance or 0) for b in balances}
+
+    for c in customers:
+        c["balance"] = bal_map.get(c.name, 0.0)
+        addr = addr_map.get(c.name)
+        if addr:
+            c["address_line1"] = addr.address_line1
+            c["city"] = addr.city
+            c["pincode"] = addr.pincode
+        else:
+            c["address_line1"] = ""
+            c["city"] = ""
+            c["pincode"] = ""
+
+    return customers
+
+
+@frappe.whitelist()
 def search_customers(query):
-    """Search customers by name or ID, including mobile and current balance."""
+    """Search customers by name or ID, including mobile, current balance, and address."""
     if not query or len(query) < 1:
         return []
 
@@ -211,6 +263,18 @@ def search_customers(query):
             as_dict=True,
         )
         c["balance"] = float(balance[0].balance or 0) if balance else 0.0
+
+        # Get Address
+        addr_name = frappe.db.get_value("Dynamic Link", 
+            {"link_doctype": "Customer", "link_name": c.name, "parenttype": "Address"}, 
+            "parent"
+        )
+        if addr_name:
+            addr = frappe.db.get_value("Address", addr_name, ["address_line1", "city", "pincode"], as_dict=True)
+            if addr:
+                c["address_line1"] = addr.address_line1
+                c["city"] = addr.city
+                c["pincode"] = addr.pincode
 
     return customers
 
