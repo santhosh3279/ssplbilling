@@ -53,7 +53,7 @@
       </div>
 
       <!-- Results Table -->
-      <div class="flex-1 overflow-y-auto">
+      <div ref="scrollContainer" class="flex-1 overflow-y-auto">
         <table class="w-full text-2xl">
           <thead class="sticky top-0 bg-white shadow-sm">
             <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b">
@@ -327,6 +327,7 @@ const emit = defineEmits([
 
 const searchInput = ref(null)
 const formNameInput = ref(null)
+const scrollContainer = ref(null)
 
 const showNewForm = ref(false)
 const showEditForm = ref(false)
@@ -409,7 +410,30 @@ const footerStats = ref(null)   // { balance, last_invoice_date } or null
 const footerLoading = ref(false)
 let statsTimer = null
 
-watch(() => props.selectedIdx, (idx) => {
+watch(() => props.selectedIdx, async (idx) => {
+  // --- Scroll Logic ---
+  await nextTick()
+  const container = scrollContainer.value
+  const activeRow = container?.querySelector(`tbody tr:nth-child(${idx + 1})`)
+  
+  if (container && activeRow) {
+    const rowTop = activeRow.offsetTop
+    const rowBottom = rowTop + activeRow.offsetHeight
+    const containerScrollTop = container.scrollTop
+    const containerHeight = container.offsetHeight
+    
+    // Sticky header height is roughly 52px (adjust based on actual height)
+    const headerHeight = container.querySelector('thead')?.offsetHeight || 50
+
+    if (rowTop < containerScrollTop + headerHeight) {
+      // Scroll up to show row below header
+      container.scrollTop = rowTop - headerHeight
+    } else if (rowBottom > containerScrollTop + containerHeight) {
+      // Scroll down to show row at bottom
+      container.scrollTop = rowBottom - containerHeight
+    }
+  }
+
   clearTimeout(statsTimer)
   footerStats.value = null
   const customer = props.results[idx]
