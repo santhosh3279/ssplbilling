@@ -16,24 +16,24 @@
         <div class="flex items-center gap-3">
           <button 
             @click="openNewForm" 
-            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 hover:bg-gray-200 shadow-sm transition-colors"
+            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
           >
             New Customer <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F2</kbd>
           </button>
           <button 
             @click="openEditForm(results[selectedIdx])" 
             v-if="selectedCustomer || results[selectedIdx]"
-            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 hover:bg-gray-200 shadow-sm transition-colors"
+            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
           >
             Edit Details <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F3</kbd>
           </button>
           <button 
             @click="$emit('refresh')" 
-            class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-100 transition-colors"
+            class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 transition-colors"
           >
             🔄 Refresh <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
           </button>
-          <button @click="$emit('close')" class="text-2xl text-gray-400 hover:text-gray-600">✕</button>
+          <button @click="$emit('close')" class="text-2xl text-gray-400">✕</button>
         </div>
       </div>
 
@@ -46,52 +46,11 @@
           class="w-full rounded border border-gray-300 px-4 py-3 text-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           placeholder="Type customer name or mobile..."
           @keydown.esc.stop="handleEsc"
-          @keydown.down.prevent="$emit('update:selectedIdx', Math.min(selectedIdx + 1, results.length - 1))"
-          @keydown.up.prevent="$emit('update:selectedIdx', Math.max(selectedIdx - 1, 0))"
-          @keydown.enter.prevent="results[selectedIdx] && $emit('select', results[selectedIdx])"
         />
       </div>
 
-      <!-- Results Table -->
-      <div ref="scrollContainer" class="flex-1 overflow-y-auto">
-        <table class="w-full text-2xl">
-          <thead class="sticky top-0 bg-white shadow-sm">
-            <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b">
-              <th class="px-5 py-3 text-left">Customer Name</th>
-              <th class="px-5 py-3 text-left">Mobile</th>
-              <th class="px-5 py-3 text-left">WhatsApp</th>
-              <th class="px-5 py-3 text-left">Address</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr
-              v-for="(c, idx) in results"
-              :key="c.name"
-              class="cursor-pointer hover:bg-blue-100"
-              :class="{ 'bg-blue-200': selectedIdx === idx }"
-              @click="$emit('select', c)"
-              @mouseenter="$emit('update:selectedIdx', idx)"
-            >
-              <td class="px-5 py-2">
-                <div class="font-medium text-gray-800">{{ c.customer_name }}</div>
-              </td>
-              <td class="px-5 py-2 text-gray-600">{{ c.mobile_no || '--' }}</td>
-              <td class="px-5 py-2 text-gray-600">{{ c.whatsapp || '--' }}</td>
-              <td class="px-5 py-2 text-gray-500 text-lg truncate max-w-[300px]">
-                {{ c.address_line1 }}{{ c.city ? ', ' + c.city : '' }}
-              </td>
-            </tr>
-            <tr v-if="!results.length">
-              <td colspan="5" class="px-5 py-12 text-center text-gray-400 text-xl italic">
-                No customers found matching "{{ query }}"
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Detail Footer -->
-      <div v-if="results[selectedIdx]" class="border-t border-gray-200 bg-blue-50/30 px-6 py-3">
+      <!-- Detail Panel (Moved from bottom) -->
+      <div v-if="results[selectedIdx]" class="border-b border-gray-200 bg-blue-50/30 px-6 py-3">
         <div class="flex flex-wrap items-start gap-x-8 gap-y-2">
 
           <!-- Balance -->
@@ -143,34 +102,66 @@
           <!-- WhatsApp -->
           <div class="flex flex-col">
             <span class="text-[10px] font-bold uppercase text-gray-400">WhatsApp</span>
-            <span class="text-lg font-semibold text-gray-700">{{ results[selectedIdx].whatsapp || '--' }}</span>
+            <span class="text-lg font-semibold text-gray-700">{{ getCustomerDetail(results[selectedIdx], 'whatsapp') || '--' }}</span>
           </div>
 
           <!-- Address -->
           <div class="flex flex-col flex-1">
             <span class="text-[10px] font-bold uppercase text-gray-400">Address</span>
             <span class="text-lg text-gray-700">
-              <template v-if="results[selectedIdx].address_line1">
-                {{ results[selectedIdx].address_line1 }}{{ results[selectedIdx].city ? ', ' + results[selectedIdx].city : '' }}
-              </template>
-              <template v-else>
-                <span class="text-gray-300 italic">No address provided</span>
-              </template>
+              {{ getCustomerAddressFormatted(results[selectedIdx]) }}
             </span>
           </div>
 
         </div>
       </div>
 
-      <!-- Footer -->
-      <div class="border-t border-gray-100 bg-gray-50 px-5 py-4 flex items-center justify-between text-lg text-gray-500">
-        <div class="flex gap-4">
-          <span><kbd class="rounded border bg-white px-2 py-1 font-mono">F2</kbd> New</span>
-          <span><kbd class="rounded border bg-white px-2 py-1 font-mono">F3</kbd> Edit</span>
-          <span><kbd class="rounded border bg-white px-2 py-1 font-mono">F5</kbd> Refresh</span>
-          <span><kbd class="rounded border bg-white px-2 py-1 font-mono">Enter</kbd> Select</span>
-        </div>
-        <button @click="$emit('close')" class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-50 transition-colors">Close</button>
+      <!-- Results Table -->
+      <div ref="scrollContainer" class="flex-1 overflow-y-auto">
+        <table class="w-full text-2xl">
+          <thead class="sticky top-0 bg-white shadow-sm">
+            <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b">
+              <th class="px-5 py-3 text-left">Customer Name</th>
+              <th class="px-5 py-3 text-left">Mobile</th>
+              <th class="px-5 py-3 text-right">Ledger Balance</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr
+              v-for="(c, idx) in results"
+              :key="c.name"
+              class="cursor-pointer"
+              :class="{ 'bg-blue-200': selectedIdx === idx }"
+              @click="$emit('select', c)"
+            >
+              <td class="px-5 py-2">
+                <div class="font-medium text-gray-800">{{ c.customer_name }}</div>
+              </td>
+              <td class="px-5 py-2 text-gray-600">{{ c.mobile_no || '--' }}</td>
+              <td class="px-5 py-2 text-right">
+                <span 
+                  v-if="getCustomerBalance(c) !== null"
+                  class="font-bold"
+                  :class="getCustomerBalance(c) > 0 ? 'text-red-600' : getCustomerBalance(c) < 0 ? 'text-green-600' : 'text-gray-400'"
+                >
+                  {{ Math.abs(getCustomerBalance(c)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  <span class="text-xs font-normal uppercase ml-0.5">
+                    {{ getCustomerBalance(c) > 0 ? 'DR' : getCustomerBalance(c) < 0 ? 'CR' : '' }}
+                  </span>
+                </span>
+                <span v-else class="text-gray-300">
+                  <template v-if="balancesLoading[c.name]">...</template>
+                  <template v-else>--</template>
+                </span>
+              </td>
+            </tr>
+            <tr v-if="!results.length">
+              <td colspan="3" class="px-5 py-12 text-center text-gray-400 text-xl italic">
+                No customers found matching "{{ query }}"
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- SUB-MODALS (New / Edit) -->
@@ -281,10 +272,10 @@
           </div>
 
           <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50">
-            <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-100 transition-colors" @click="closeSubForm">Cancel</button>
+            <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 transition-colors" @click="closeSubForm">Cancel</button>
             <button 
               class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95" 
-              :class="showNewForm ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'"
+              :class="showNewForm ? 'bg-blue-600' : 'bg-orange-600'"
               @click="submitForm"
               :disabled="saving || editLoading"
             >
@@ -383,7 +374,18 @@ function handleGlobalKeydown(e) {
     return
   }
 
-  if (e.key === 'F2') {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    emit('update:selectedIdx', Math.min(props.selectedIdx + 1, props.results.length - 1))
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    emit('update:selectedIdx', Math.max(props.selectedIdx - 1, 0))
+  } else if (e.key === 'Enter') {
+    if (props.results[props.selectedIdx]) {
+      e.preventDefault()
+      emit('select', props.results[props.selectedIdx])
+    }
+  } else if (e.key === 'F2') {
     e.preventDefault()
     openNewForm()
   } else if (e.key === 'F3') {
@@ -414,6 +416,101 @@ const footerStats = ref(null)   // { balance, last_invoice_date } or null
 const footerLoading = ref(false)
 let statsTimer = null
 
+// Balances cache for table rows
+const balancesCache = ref({}) // customerName -> balance
+const balancesLoading = ref({}) // customerName -> boolean
+
+// Full details cache for detail panel
+const detailsCache = ref({}) // customerName -> { address, whatsapp, ... }
+const detailsLoading = ref({}) // customerName -> boolean
+
+function getCustomerBalance(c) {
+  if (c.balance !== undefined && c.balance !== null) return c.balance
+  return balancesCache.value[c.name] ?? null
+}
+
+function getCustomerDetail(c, field) {
+  return detailsCache.value[c.name]?.[field] ?? c[field] ?? ''
+}
+
+function getCustomerAddressFormatted(c) {
+  const cached = detailsCache.value[c.name]
+  if (cached) {
+    const parts = [cached.address_line1, cached.address_line2, cached.city].filter(Boolean)
+    return parts.join(', ') || 'No address provided'
+  }
+  const parts = [c.address_line1, c.city].filter(Boolean)
+  return parts.join(', ') || (detailsLoading.value[c.name] ? 'Loading...' : 'No address provided')
+}
+
+async function fetchRowBalances(newResults) {
+  if (!newResults) return
+  
+  // Create a list of names that need fetching
+  const namesToFetch = newResults
+    .filter(c => c.balance === undefined && balancesCache.value[c.name] === undefined && !balancesLoading.value[c.name])
+    .map(c => c.name)
+
+  if (namesToFetch.length === 0) return
+
+  // Fetch balances (sequential to avoid server overload)
+  for (const name of namesToFetch) {
+    try {
+      balancesLoading.value[name] = true
+      const stats = await frappeGet(
+        'ssplbilling.api.sales_api.get_customer_quick_stats',
+        { customer: name }
+      )
+      balancesCache.value[name] = stats.balance
+    } catch {
+      balancesCache.value[name] = null
+    } finally {
+      balancesLoading.value[name] = false
+    }
+  }
+}
+
+watch(() => props.results, (newResults) => {
+  fetchRowBalances(newResults)
+}, { immediate: true })
+
+async function updateFooterStats(idx) {
+  clearTimeout(statsTimer)
+  footerStats.value = null
+  const customer = props.results[idx]
+  if (!customer) return
+  
+  statsTimer = setTimeout(async () => {
+    footerLoading.value = true
+    try {
+      // 1. Fetch quick stats (balance, last invoice)
+      const stats = await frappeGet(
+        'ssplbilling.api.sales_api.get_customer_quick_stats',
+        { customer: customer.name }
+      )
+      footerStats.value = stats
+      
+      // Sync with cache
+      if (stats?.balance !== undefined) {
+        balancesCache.value[customer.name] = stats.balance
+      }
+
+      // 2. Fetch full details (address, whatsapp) if not cached
+      if (!detailsCache.value[customer.name]) {
+        detailsLoading.value[customer.name] = true
+        const full = await fetchCustomerDetails(customer.name)
+        detailsCache.value[customer.name] = full
+      }
+
+    } catch (e) { 
+      console.warn('[CustomerSearchModal] updateFooterStats failed:', e.message)
+    } finally {
+      footerLoading.value = false
+      detailsLoading.value[customer.name] = false
+    }
+  }, 350)
+}
+
 watch(() => props.selectedIdx, async (idx) => {
   // --- Scroll Logic ---
   await nextTick()
@@ -438,25 +535,13 @@ watch(() => props.selectedIdx, async (idx) => {
     }
   }
 
-  clearTimeout(statsTimer)
-  footerStats.value = null
-  const customer = props.results[idx]
-  if (!customer) return
-  statsTimer = setTimeout(async () => {
-    footerLoading.value = true
-    try {
-      footerStats.value = await frappeGet(
-        'ssplbilling.api.sales_api.get_customer_quick_stats',
-        { customer: customer.name }
-      )
-    } catch { /* silently ignore */ }
-    footerLoading.value = false
-  }, 350)
+  updateFooterStats(idx)
 })
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
     focus()
+    updateFooterStats(props.selectedIdx)
   } else {
     showNewForm.value = false
     showEditForm.value = false

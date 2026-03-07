@@ -476,7 +476,7 @@
       :saving="newCustSaving"
       @close="closeCustomerSearchModal"
       @select="pickCust"
-      @refresh="fetchAllCustomers(true)"
+      @refresh="refreshCustSearch"
       @save-new="saveNewCust"
       @save-edit="saveEditCust"
     />
@@ -531,7 +531,6 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, fetchItemPrice, searchCustomers, frappeGet, frappePost } from '../api.js'
-import { localDb } from '../services/localDb'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
@@ -657,60 +656,49 @@ function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else sea
 
 // ==================== CUSTOMER DROPDOWN ====================
 const custSearch = ref('')
-const allCustomers = ref([])
 const custResults = ref([])
 const showCustDD = ref(false)
 const showCustomerSearchModal = ref(false)
 const custDDIdx = ref(0)
 const selectedCustomerDetails = ref(null)
+const isCustLoading = ref(false)
 
-async function fetchAllCustomers(force = false) {
-  try {
-    // 1. Try loading customers from local IndexedDB first (unless forcing)
-    let custFromDb = force ? [] : await localDb.getAllCustomers()
-    
-    // 2. If empty or forced, sync from server
-    if (!custFromDb || custFromDb.length === 0) {
-      custFromDb = await frappeGet('ssplbilling.api.sales_api.get_all_customers_for_sync')
-      if (custFromDb && custFromDb.length) {
-        await localDb.clearStore('customers')
-        await localDb.saveCustomers(custFromDb)
-      }
-    }
-
-    allCustomers.value = custFromDb || []
-    filterCustomers()
-  } catch (e) {
-    console.error('Failed to fetch customers:', e)
-  }
-}
-
-function filterCustomers() {
-  const q = custSearch.value.toLowerCase().trim()
-  if (!q) {
-    custResults.value = allCustomers.value.slice(0, 100)
+let _custDebounce = null
+watch(custSearch, (q) => {
+  clearTimeout(_custDebounce)
+  if (!q.trim()) {
+    custResults.value = []
     return
   }
-  custResults.value = allCustomers.value.filter(c =>
-    c.customer_name.toLowerCase().includes(q) ||
-    c.name.toLowerCase().includes(q) ||
-    (c.mobile_no && c.mobile_no.includes(q)) ||
-    (c.whatsapp && c.whatsapp.includes(q))
-  ).slice(0, 100)
-  custDDIdx.value = 0
-}
+  isCustLoading.value = true
+  _custDebounce = setTimeout(async () => {
+    try {
+      custResults.value = await searchCustomers(q)
+      custDDIdx.value = 0
+    } catch (e) {
+      console.error('Customer search failed:', e)
+    } finally {
+      isCustLoading.value = false
+    }
+  }, 300)
+})
 
-watch(custSearch, filterCustomers)
+async function refreshCustSearch() {
+  if (!custSearch.value.trim()) return
+  isCustLoading.value = true
+  try {
+    custResults.value = await searchCustomers(custSearch.value)
+  } catch (e) {
+    console.error('Customer search refresh failed:', e)
+  } finally {
+    isCustLoading.value = false
+  }
+}
 
 function openCustomerSearch() {
   showCustDD.value = false
   showCustomerSearchModal.value = true
-  if (customer.value) {
-    // Keep the current name in the search field to filter by it immediately
-  } else {
-    custSearch.value = ''
-  }
-  if (allCustomers.value.length === 0) fetchAllCustomers(); else filterCustomers();
+  custSearch.value = ''
 }
 
 function pickCust(c) {
@@ -749,8 +737,8 @@ async function saveEditCust(data) {
       custSearch.value = res.customer_name
     }
 
-    // Re-fetch all customers to update the cache
-    fetchAllCustomers(true)
+    // Re-fetch search results to update the view
+    refreshCustSearch()
 
     custSearchModalRef.value?.closeSubForm()
     alert(`Customer ${res.customer_name} updated successfully!`)
@@ -962,84 +950,39 @@ function restoreItem(idx) { items.value[idx].deleted = false }
 
 // ==================== ITEM SEARCH POPUP ====================
 const showSearch = ref(false); const searchQuery = ref(''); const searchIdx = ref(0); let searchTargetRow = null; 
-const allItems = ref([]); const searchResults = ref([]); const isSyncing = ref(false)
+const searchResults = ref([]); const isSyncing = ref(false); const isLoadingItems = ref(false)
 
 async function refreshLocalItems() {
-  if (isSyncing.value) return
-  isSyncing.value = true
-  try {
-    await fetchAllItems(true)
-  } catch (e) {
-    console.error('Manual sync failed:', e)
-    alert('Failed to refresh items from server')
-  } finally {
-    isSyncing.value = false
-  }
+  // Manual refresh of search (clear current search results)
+  searchQuery.value = ''
+  searchResults.value = []
 }
 
-async function fetchAllItems(force = false) {
-  try {
-    // 1. Try loading items from local IndexedDB first
-    let itemsFromDb = force ? [] : await localDb.getAllItems()
-    
-    // 2. If empty, sync from server
-    if (!itemsFromDb || itemsFromDb.length === 0) {
-      itemsFromDb = await frappeGet('frappe.client.get_list', {
-        doctype: 'Item',
-        fields: ['item_code', 'item_name', 'stock_uom as uom', 'standard_rate as rate'],
-        filters: { disabled: 0, is_sales_item: 1 },
-        limit_page_length: 5000,
-        order_by: 'item_name asc'
-      })
-      if (itemsFromDb && itemsFromDb.length) {
-        await localDb.clearStore('items')
-        await localDb.saveItems(itemsFromDb)
-      }
-    }
-
-    // 3. Always fetch real-time stock from Bin (not stored in local DB as it changes)
-    const binsRes = await frappeGet('frappe.client.get_list', {
-      doctype: 'Bin',
-      fields: ['item_code', 'actual_qty as stock_qty'],
-      limit_page_length: 10000
-    })
-    
-    const stockMap = {}
-    binsRes.forEach(b => {
-      stockMap[b.item_code] = (stockMap[b.item_code] || 0) + b.stock_qty
-    })
-
-    allItems.value = (itemsFromDb || []).map(i => ({
-      ...i,
-      stock_qty: stockMap[i.item_code] || 0
-    }))
-    filterItems()
-  } catch (e) {
-    console.error('Failed to fetch items:', e)
-  }
-}
-
-function filterItems() {
-  const q = searchQuery.value.toLowerCase().trim()
-  if (!q) {
-    searchResults.value = allItems.value.slice(0, 100)
+let _itemSearchTimeout = null
+watch(searchQuery, (q) => {
+  clearTimeout(_itemSearchTimeout)
+  if (!q.trim()) {
+    searchResults.value = []
     return
   }
-  searchResults.value = allItems.value.filter(i => 
-    i.item_code.toLowerCase().includes(q) || 
-    i.item_name.toLowerCase().includes(q)
-  ).slice(0, 100)
-  searchIdx.value = 0
-}
-
-watch(searchQuery, filterItems)
+  isLoadingItems.value = true
+  _itemSearchTimeout = setTimeout(async () => {
+    try {
+      searchResults.value = await searchItems(q)
+      searchIdx.value = 0
+    } catch (e) {
+      console.error('Item search failed:', e)
+    } finally {
+      isLoadingItems.value = false
+    }
+  }, 300)
+})
 
 function openSearch(prefill, rowIdx) { 
   searchTargetRow = rowIdx; 
   searchQuery.value = prefill || ''; 
   searchIdx.value = 0; 
   showSearch.value = true; 
-  if (allItems.value.length === 0) fetchAllItems(); else filterItems();
   nextTick(() => searchInput.value?.focus()) 
 }
 function closeSearch() { showSearch.value = false; searchQuery.value = ''; if (searchTargetRow !== null && searchTargetRow >= 0) focusField('code', searchTargetRow); else focusNewCode() }
@@ -1158,11 +1101,15 @@ async function loadInvoice(invoiceName) {
     showModifyBill.value = false
 
     // Set selectedCustomerDetails for display
-    selectedCustomerDetails.value = allCustomers.value.find(c => c.name === inv.customer) || {
-      name: inv.customer,
-      customer_name: inv.customer_name,
-      balance: 0,
-      address_line1: ""
+    try {
+      selectedCustomerDetails.value = await fetchCustomerDetails(inv.customer)
+    } catch (e) {
+      selectedCustomerDetails.value = {
+        name: inv.customer,
+        customer_name: inv.customer_name,
+        balance: 0,
+        address_line1: ""
+      }
     }
 
     nextTick(() => customerInput.value?.focus())
@@ -1497,8 +1444,6 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   fetchSeriesList()
   fetchDropdownOptions()
-  fetchAllItems()
-  fetchAllCustomers()
   if (route.query.invoice) {
     loadInvoice(route.query.invoice)
   } else {

@@ -62,7 +62,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
-import { localDb } from '../services/localDb'
 
 const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
 
@@ -88,26 +87,7 @@ async function handleLogin() {
   try {
     await session.login(email.value.trim(), password.value)
     
-    // 1. Sync Data to local DB for fast search
-    try {
-      const [items, customers] = await Promise.all([
-        dashboardApi.fetchAllItemsForSync(),
-        dashboardApi.fetchAllCustomersForSync()
-      ])
-      
-      if (items && items.length) {
-        await localDb.saveItems(items)
-        console.log(`[Login] Synced ${items.length} items to local DB`)
-      }
-      if (customers && customers.length) {
-        await localDb.saveCustomers(customers)
-        console.log(`[Login] Synced ${customers.length} customers to local DB`)
-      }
-    } catch (e) {
-      console.warn('[Login] Failed to sync data:', e)
-    }
-
-    // 2. Pre-load billing settings into localStorage
+    // Pre-load billing settings into localStorage
     try {
       const settings = await dashboardApi.getBillingSettings()
       if (settings) {

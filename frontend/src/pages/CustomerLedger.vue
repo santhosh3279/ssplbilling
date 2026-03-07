@@ -3,18 +3,30 @@
 
     <!-- ═══════ HEADER ═══════ -->
     <header class="sticky top-0 z-40 border-b border-gray-200 bg-white px-6 py-3">
-      <div class="flex items-center gap-3">
-        <button
-          @click="$router.push('/')"
-          class="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-        >
-          ← Dashboard
-        </button>
-        <span class="text-gray-300">|</span>
-        <h1 class="text-sm font-bold text-gray-800">Customer Ledger</h1>
-        <span v-if="ledgerData" class="rounded bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600">
-          {{ ledgerData.entries.length }} entries
-        </span>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button
+            @click="$router.push('/')"
+            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            ← Dashboard
+          </button>
+          <span class="text-gray-300">|</span>
+          <h1 class="text-sm font-bold text-gray-800">Customer Ledger</h1>
+          <span v-if="ledgerData" class="rounded bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600">
+            {{ ledgerData.entries.length }} entries
+          </span>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="flex items-center rounded border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-gray-500 hover:bg-gray-100">&minus;</button>
+          <div class="flex flex-col items-center justify-center border-x border-gray-200 bg-gray-50 px-3 min-w-[50px]">
+            <span class="text-[9px] font-bold uppercase tracking-tight text-gray-400 leading-none">Zoom</span>
+            <span class="text-[11px] font-bold text-gray-600 leading-tight">{{ zoomPercent }}%</span>
+          </div>
+          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-gray-500 hover:bg-gray-100">&plus;</button>
+        </div>
       </div>
     </header>
 
@@ -98,15 +110,18 @@
 
         <!-- Summary chips (visible after load) -->
         <template v-if="ledgerData">
-          <div class="ml-2 flex items-center gap-3 text-xs">
-            <span class="rounded bg-red-50 px-2 py-1 font-semibold text-red-700">
+          <div class="ml-2 flex items-center gap-3 text-xl">
+            <span class="rounded bg-orange-50 px-3 py-1.5 font-semibold text-orange-700">
+              Opening ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }} {{ ledgerData.opening_balance < 0 ? '(Cr)' : '(Dr)' }}
+            </span>
+            <span class="rounded bg-red-50 px-3 py-1.5 font-semibold text-red-700">
               Dr ₹{{ fmt(ledgerData.total_debit) }}
             </span>
-            <span class="rounded bg-green-50 px-2 py-1 font-semibold text-green-700">
+            <span class="rounded bg-green-50 px-3 py-1.5 font-semibold text-green-700">
               Cr ₹{{ fmt(ledgerData.total_credit) }}
             </span>
             <span
-              class="rounded px-2 py-1 font-bold"
+              class="rounded px-3 py-1.5 font-bold"
               :class="ledgerData.closing_balance >= 0 ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'"
             >
               Balance ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
@@ -139,34 +154,35 @@
 
         <template v-else-if="ledgerData">
           <div class="flex-1 overflow-y-auto">
-            <table class="w-full border-collapse text-xs">
+            <table class="w-full border-collapse" :style="{ fontSize: dynamicRowStyle.fontSize }">
               <thead class="sticky top-0 z-10 bg-gray-50">
                 <tr class="border-b border-gray-200">
-                  <th class="px-4 py-2.5 text-left font-semibold uppercase tracking-wider text-gray-400">Date</th>
-                  <th class="px-4 py-2.5 text-left font-semibold uppercase tracking-wider text-gray-400">Type</th>
-                  <th class="px-4 py-2.5 text-left font-semibold uppercase tracking-wider text-gray-400">Voucher No</th>
-                  <th class="px-4 py-2.5 text-right font-semibold uppercase tracking-wider text-gray-400">Debit (Dr)</th>
-                  <th class="px-4 py-2.5 text-right font-semibold uppercase tracking-wider text-gray-400">Credit (Cr)</th>
-                  <th class="px-4 py-2.5 text-right font-semibold uppercase tracking-wider text-gray-400">Balance</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Date</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Type</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Voucher No</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Debit (Dr)</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Credit (Cr)</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Balance</th>
                 </tr>
               </thead>
               <tbody ref="tableBodyRef">
                 <!-- Opening Balance row -->
                 <tr class="border-b border-gray-100 bg-gray-50">
-                  <td colspan="5" class="px-4 py-2 text-xs font-semibold text-gray-500">
+                  <td colspan="5" class="px-4 font-semibold text-gray-500" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     Opening Balance
-                    <span class="ml-1 font-normal text-gray-400">(before {{ fmtDate(ledgerData.from_date) }})</span>
+                    <span class="ml-1 font-normal text-gray-400" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">(before {{ fmtDate(ledgerData.from_date) }})</span>
                   </td>
-                  <td class="px-4 py-2 text-right font-bold"
+                  <td class="px-4 text-right font-bold"
+                    :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
                     :class="ledgerData.opening_balance >= 0 ? 'text-orange-600' : 'text-green-600'">
                     ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }}
-                    <span class="ml-0.5 text-[10px] font-normal">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
+                    <span class="ml-0.5 font-normal" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
                 </tr>
 
                 <!-- No entries message -->
                 <tr v-if="!ledgerData.entries.length">
-                  <td colspan="6" class="px-4 py-8 text-center text-gray-400">
+                  <td colspan="6" class="px-4 py-12 text-center text-gray-400">
                     No transactions found for the selected period.
                   </td>
                 </tr>
@@ -184,16 +200,17 @@
                       ? 'bg-blue-50'
                       : 'hover:bg-gray-50'"
                 >
-                  <td class="px-4 py-2 text-gray-600">{{ fmtDate(entry.date) }}</td>
-                  <td class="px-4 py-2">
+                  <td class="px-4 text-gray-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ fmtDate(entry.date) }}</td>
+                  <td class="px-4" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span
-                      class="rounded px-1.5 py-0.5 text-[10px] font-bold"
+                      class="rounded px-1.5 py-0.5 font-bold"
+                      :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }"
                       :class="voucherBadgeClass(entry.voucher_type)"
                     >
                       {{ voucherLabel(entry.voucher_type) }}
                     </span>
                   </td>
-                  <td class="px-4 py-2">
+                  <td class="px-4" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button
                       @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
                       class="font-mono text-blue-600 hover:underline"
@@ -201,30 +218,32 @@
                       {{ entry.voucher_no }}
                     </button>
                   </td>
-                  <td class="px-4 py-2 text-right font-mono">
+                  <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="entry.debit" class="font-semibold text-red-600">₹{{ fmt(entry.debit) }}</span>
                     <span v-else class="text-gray-300">—</span>
                   </td>
-                  <td class="px-4 py-2 text-right font-mono">
+                  <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="entry.credit" class="font-semibold text-green-600">₹{{ fmt(entry.credit) }}</span>
                     <span v-else class="text-gray-300">—</span>
                   </td>
-                  <td class="px-4 py-2 text-right font-mono font-bold"
+                  <td class="px-4 text-right font-mono font-bold"
+                    :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
                     :class="entry.balance < 0 ? 'text-green-700' : 'text-gray-800'">
                     ₹{{ fmt(Math.abs(entry.balance)) }}
-                    <span class="ml-0.5 text-[10px] font-normal text-gray-400">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
+                    <span class="ml-0.5 font-normal text-gray-400" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
                 </tr>
 
                 <!-- Closing Balance row -->
                 <tr v-if="ledgerData.entries.length" class="border-t-2 border-gray-300 bg-gray-50">
-                  <td colspan="3" class="px-4 py-2.5 text-xs font-bold text-gray-600">Closing Balance</td>
-                  <td class="px-4 py-2.5 text-right font-mono font-bold text-red-600">₹{{ fmt(ledgerData.total_debit) }}</td>
-                  <td class="px-4 py-2.5 text-right font-mono font-bold text-green-600">₹{{ fmt(ledgerData.total_credit) }}</td>
-                  <td class="px-4 py-2.5 text-right font-mono font-bold"
+                  <td colspan="3" class="px-4 font-bold text-gray-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">Closing Balance</td>
+                  <td class="px-4 text-right font-mono font-bold text-red-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_debit) }}</td>
+                  <td class="px-4 text-right font-mono font-bold text-green-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_credit) }}</td>
+                  <td class="px-4 text-right font-mono font-bold"
+                    :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
                     :class="ledgerData.closing_balance < 0 ? 'text-green-700' : 'text-orange-700'">
                     ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
-                    <span class="ml-0.5 text-[10px] font-normal">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
+                    <span class="ml-0.5 font-normal" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -391,11 +410,24 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { searchCustomers, fetchCustomerLedger, fetchVoucherDetail } from '../api.js'
+import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { searchCustomers, fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
 
 const router = useRouter()
+const route = useRoute()
+
+// ─── Zoom ─────────────────────────────────────────────────────────────────────
+const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
+const dynamicRowStyle = computed(() => ({
+  fontSize: `${(14 * zoomPercent.value) / 100}px`,
+  paddingTop: `${(4 * zoomPercent.value) / 100}px`,
+  paddingBottom: `${(4 * zoomPercent.value) / 100}px`
+}))
+
+watch(zoomPercent, (newZoom) => {
+  localStorage.setItem('wb-zoom', newZoom.toString())
+})
 
 // ─── Filter state ─────────────────────────────────────────────────────────────
 const today = new Date().toISOString().slice(0, 10)
@@ -600,9 +632,32 @@ function onGlobalKeydown(e) {
   onTableKeydown(e)
 }
 
-onMounted(() => {
+onMounted(async () => {
   nextTick(() => customerInputRef.value?.focus())
   window.addEventListener('keydown', onGlobalKeydown)
+
+  // Auto-load if customer is in query params
+  if (route.query.customer) {
+    loading.value = true
+    try {
+      const cust = await frappeGet('frappe.client.get', {
+        doctype: 'Customer',
+        name: route.query.customer
+      })
+      if (cust) {
+        selectedCustomer.value = {
+          name: cust.name,
+          customer_name: cust.customer_name
+        }
+        customerQuery.value = cust.customer_name
+        loadLedger()
+      }
+    } catch (e) {
+      console.warn('[Ledger] Failed to auto-load customer:', e.message)
+    } finally {
+      loading.value = false
+    }
+  }
 })
 
 onUnmounted(() => {
