@@ -164,9 +164,20 @@
         </table>
       </div>
 
-      <!-- SUB-MODALS (New / Edit) -->
-      <div v-if="showNewForm || showEditForm" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="handleEsc">
-        <div class="w-[600px] rounded-xl bg-white shadow-2xl overflow-hidden">
+      <!-- SUB-MODALS (New / Edit / Date) -->
+      <div v-if="showNewForm || showEditForm || showDateModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="handleEsc">
+        
+        <!-- Date Range Sub-window (Refactored) -->
+        <DateFilter
+          v-if="showDateModal"
+          :show="showDateModal"
+          :customer-name="results[selectedIdx]?.customer_name"
+          @close="showDateModal = false"
+          @confirm="handleDateConfirm"
+        />
+
+        <!-- New / Edit Form -->
+        <div v-if="showNewForm || showEditForm" class="w-[600px] rounded-xl bg-white shadow-2xl overflow-hidden">
           <div class="border-b border-gray-200 px-5 py-4 bg-gray-50">
             <div class="text-xl font-bold text-gray-700">{{ showNewForm ? 'New Customer' : 'Modify Customer Details' }}</div>
             <div class="text-sm text-gray-600 flex items-center gap-2">
@@ -293,6 +304,7 @@
 import { ref, nextTick, watch } from 'vue'
 import { fetchCustomerDetails } from '../api/customer.js'
 import { frappeGet } from '../api.js'
+import DateFilter from './DateFilter.vue'
 
 
 const props = defineProps({
@@ -326,6 +338,7 @@ const scrollContainer = ref(null)
 
 const showNewForm = ref(false)
 const showEditForm = ref(false)
+const showDateModal = ref(false)
 const editLoading = ref(false)
 
 // States listed first (alphabetical), then Union Territories — must match ERPNext State doctype exactly
@@ -357,7 +370,7 @@ const editData = ref({
 })
 
 function handleEsc() {
-  if (showNewForm.value || showEditForm.value) {
+  if (showNewForm.value || showEditForm.value || showDateModal.value) {
     closeSubForm()
   } else {
     emit('close')
@@ -373,6 +386,8 @@ function handleGlobalKeydown(e) {
     }
     return
   }
+  
+  if (showDateModal.value) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -383,7 +398,7 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'Enter') {
     if (props.results[props.selectedIdx]) {
       e.preventDefault()
-      emit('select', props.results[props.selectedIdx])
+      showDateModal.value = true
     }
   } else if (e.key === 'F2') {
     e.preventDefault()
@@ -395,6 +410,14 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'F5') {
     e.preventDefault()
     emit('refresh')
+  }
+}
+
+function handleDateConfirm(dates) {
+  const customer = props.results[props.selectedIdx]
+  if (customer) {
+    showDateModal.value = false
+    emit('select', customer, dates)
   }
 }
 
@@ -545,6 +568,7 @@ watch(() => props.show, (newVal) => {
   } else {
     showNewForm.value = false
     showEditForm.value = false
+    showDateModal.value = false
   }
 })
 
@@ -595,6 +619,7 @@ async function openEditForm(c) {
 function closeSubForm() {
   showNewForm.value = false
   showEditForm.value = false
+  showDateModal.value = false
   focus()
 }
 

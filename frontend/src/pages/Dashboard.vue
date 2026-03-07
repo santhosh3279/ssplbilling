@@ -85,6 +85,8 @@
 
         <div class="mt-8 flex items-center justify-center gap-6 text-xs text-gray-400">
           <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F1</kbd> – <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F9</kbd> to quick open</span>
+          <span class="text-gray-300">|</span>
+          <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">Ctrl+L</kbd> for Customer Search</span>
         </div>
       </div>
     </main>
@@ -229,6 +231,16 @@
       @save-new="saveNewCust"
       @save-edit="saveEditCust"
     />
+
+    <!-- CUSTOMER LEDGER SUB-WINDOW -->
+    <CustomerLedger
+      v-if="showLedgerWindow"
+      :is-sub-window="true"
+      :customer-name="ledgerCustomerName"
+      :initial-from-date="ledgerFromDate"
+      :initial-to-date="ledgerToDate"
+      @close="closeLedgerAndReturnToSearch"
+    />
   </div>
 </template>
 
@@ -238,6 +250,7 @@ import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import CustomerLedger from './CustomerLedger.vue'
 import { searchCustomers } from '../api.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 
@@ -297,6 +310,7 @@ const routeMap = {
 function handleKeydown(e) {
   if (showGeneralSettings.value) return
   if (showCustomerSearchModal.value) return
+  if (showLedgerWindow.value) return
 
   // Ctrl + L -> Advanced Customer Search
   if (e.ctrlKey && e.key === 'l') {
@@ -341,6 +355,10 @@ async function saveGeneralSettings() {
 
 // ==================== CUSTOMER SEARCH ====================
 const showCustomerSearchModal = ref(false)
+const showLedgerWindow = ref(false)
+const ledgerCustomerName = ref('')
+const ledgerFromDate = ref('')
+const ledgerToDate = ref('')
 const custSearch = ref('')
 const allCustomers = ref([])
 const custResults = ref([])
@@ -378,9 +396,16 @@ async function refreshCustSearch() {
   }
 }
 
-async function openCustomerSearch() {
+async function openCustomerSearch(clear = true) {
   showCustomerSearchModal.value = true
-  custSearch.value = ''
+  // Reset any open sub-forms or date filters when opening the search modal
+  nextTick(() => {
+    custSearchModalRef.value?.closeSubForm()
+  })
+
+  if (clear) {
+    custSearch.value = ''
+  }
   
   if (allCustomers.value.length === 0) {
     await refreshCustSearch()
@@ -395,10 +420,22 @@ function closeCustomerSearchModal() {
   showCustomerSearchModal.value = false
 }
 
-function pickCust(c) {
+function closeLedgerAndReturnToSearch() {
+  showLedgerWindow.value = false
+  openCustomerSearch(false) // Return without clearing search
+}
+
+function pickCust(c, dates) {
   showCustomerSearchModal.value = false
-  // Optionally redirect to ledger or sales with this customer
-  router.push({ path: '/ledger', query: { customer: c.name } })
+  ledgerCustomerName.value = c.name
+  if (dates) {
+    ledgerFromDate.value = dates.from
+    ledgerToDate.value = dates.to
+  } else {
+    ledgerFromDate.value = ''
+    ledgerToDate.value = ''
+  }
+  showLedgerWindow.value = true
 }
 
 async function saveEditCust(data) {
@@ -416,13 +453,18 @@ async function saveEditCust(data) {
   newCustSaving.value = false
 }
 
-async function saveNewCust(data) {
+async function saveNewCust(data, dates) {
   if (!data.customer_name.trim()) { alert('Customer name is required'); return }
   newCustSaving.value = true
   try {
     const res = await createCustomer(data)
     showCustomerSearchModal.value = false
-    router.push({ path: '/ledger', query: { customer: res.name } })
+    ledgerCustomerName.value = res.name
+    if (dates) {
+      ledgerFromDate.value = dates.from
+      ledgerToDate.value = dates.to
+    }
+    showLedgerWindow.value = true
   } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
   newCustSaving.value = false
 }

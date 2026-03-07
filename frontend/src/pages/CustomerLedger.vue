@@ -1,21 +1,27 @@
 <template>
-  <div class="flex min-h-screen flex-col bg-gray-50">
-
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-white' : 'flex min-h-screen flex-col bg-gray-50'">
+    <div class="flex h-full flex-col">
     <!-- ═══════ HEADER ═══════ -->
     <header class="sticky top-0 z-40 border-b border-gray-200 bg-white px-6 py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button
-            @click="$router.push('/')"
+            @click="handleBack"
             class="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
           >
-            ← Dashboard
+            ← {{ isSubWindow ? 'Close' : 'Dashboard' }}
           </button>
           <span class="text-gray-300">|</span>
           <h1 class="text-sm font-bold text-gray-800">Customer Ledger</h1>
           <span v-if="ledgerData" class="rounded bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600">
             {{ ledgerData.entries.length }} entries
           </span>
+        </div>
+
+        <!-- Shortcut info for sub-window -->
+        <div v-if="isSubWindow" class="flex items-center gap-4 text-[10px] text-gray-400">
+          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Ctrl+L</kbd> Search</span>
+          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Esc</kbd> Close</span>
         </div>
 
         <!-- Zoom Controls -->
@@ -36,7 +42,12 @@
 
         <!-- Customer search -->
         <div class="relative w-64">
-          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">Customer</label>
+          <label class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <span>Customer</span>
+            <span class="font-normal opacity-70">
+              <kbd class="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[9px]">Ctrl+L</kbd> Search
+            </span>
+          </label>
           <input
             ref="customerInputRef"
             v-model="customerQuery"
@@ -193,6 +204,7 @@
                   :key="idx"
                   :data-idx="idx"
                   @click="onRowClick(entry, idx)"
+                  @mouseenter="onRowMouseEnter(entry, idx)"
                   class="cursor-pointer border-b border-gray-100 transition-colors"
                   :class="focusedIdx === idx
                     ? 'bg-blue-100 outline outline-1 outline-blue-300'
@@ -268,11 +280,18 @@
             </div>
             <div class="flex items-center gap-2">
               <button
-                @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
+                v-if="selectedEntry.voucher_type === 'Sales Invoice'"
+                @click="openInternalSalesEntry(selectedEntry.voucher_no)"
                 class="rounded px-2 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50"
+              >
+                View / Edit
+              </button>
+              <button
+                @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
+                class="rounded px-2 py-1 text-[10px] font-semibold text-gray-500 hover:bg-gray-100"
                 title="Open in ERPNext"
               >
-                Open ↗
+                ERPNext ↗
               </button>
               <button @click="closeDetail" class="rounded p-1 text-gray-400 hover:bg-gray-100">✕</button>
             </div>
@@ -335,8 +354,8 @@
                    voucherDetail.voucher_type === 'Journal Entry' ? 'Accounts' : 'Items' }}
               </div>
 
-              <!-- Sales Invoice items -->
-              <template v-if="voucherDetail.voucher_type === 'Sales Invoice'">
+              <!-- Sales/Purchase/Credit items -->
+              <template v-if="['Sales Invoice', 'Purchase Invoice', 'Credit Note'].includes(voucherDetail.voucher_type)">
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="border-b border-gray-200 text-[10px] text-gray-400">
@@ -413,6 +432,23 @@
       :invoice-name="subWindowInvoiceName"
       @close="showSalesEntryWindow = false"
     />
+
+    <!-- CUSTOMER SEARCH MODAL -->
+    <CustomerSearchModal
+      ref="ledgerCustSearchModalRef"
+      :show="showCustomerSearchModal"
+      v-model:query="custSearchQuery"
+      v-model:selectedIdx="custSelectedIdx"
+      :results="custSearchResults"
+      :selectedCustomer="selectedCustomer"
+      :saving="newCustSaving"
+      @close="closeCustomerSearchModal"
+      @select="(c, d) => { pickCustomer(c, d); closeCustomerSearchModal() }"
+      @refresh="refreshCustSearch"
+      @save-new="saveNewCust"
+      @save-edit="saveEditCust"
+    />
+    </div>
   </div>
 </template>
 
@@ -421,12 +457,121 @@ import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { searchCustomers, fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
 import SalesEntry from './SalesEntry.vue'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { createCustomer, updateCustomer } from '../api/customer.js'
+
+const props = defineProps({
+  isSubWindow: {
+    type: Boolean,
+    default: false
+  },
+  customerName: {
+    type: String,
+    default: ''
+  },
+  initialFromDate: {
+    type: String,
+    default: ''
+  },
+  initialToDate: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['close'])
 
 const router = useRouter()
 const route = useRoute()
 
+function handleBack() {
+  if (props.isSubWindow) {
+    emit('close')
+  } else {
+    router.push('/')
+  }
+}
+
 const showSalesEntryWindow = ref(false)
 const subWindowInvoiceName = ref('')
+
+// ─── Customer Search Modal State ──────────────────────────────────────────────
+const showCustomerSearchModal = ref(false)
+const custSearchQuery = ref('')
+const custSearchResults = ref([])
+const custSelectedIdx = ref(0)
+const newCustSaving = ref(false)
+const isCustLoading = ref(false)
+
+let _custDebounce = null
+watch(custSearchQuery, (q) => {
+  clearTimeout(_custDebounce)
+  if (!q.trim()) {
+    custSearchResults.value = []
+    return
+  }
+  isCustLoading.value = true
+  _custDebounce = setTimeout(async () => {
+    try {
+      custSearchResults.value = await searchCustomers(q)
+      custSelectedIdx.value = 0
+    } catch (e) {
+      console.error('Customer search failed:', e)
+    } finally {
+      isCustLoading.value = false
+    }
+  }, 300)
+})
+
+function openCustomerSearch() {
+  showCustomerSearchModal.value = true
+  custSearchQuery.value = customerQuery.value
+}
+
+function closeCustomerSearchModal() {
+  showCustomerSearchModal.value = false
+}
+
+async function refreshCustSearch() {
+  if (!custSearchQuery.value.trim()) return
+  isCustLoading.value = true
+  try {
+    custSearchResults.value = await searchCustomers(custSearchQuery.value)
+  } catch (e) {
+    console.error('Customer search refresh failed:', e)
+  } finally {
+    isCustLoading.value = false
+  }
+}
+
+async function saveEditCust(data) {
+  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
+  newCustSaving.value = true
+  try {
+    const customerId = data.name || selectedCustomer.value?.name
+    const res = await updateCustomer(customerId, data)
+    if (selectedCustomer.value && selectedCustomer.value.name === customerId) {
+      selectedCustomer.value = { ...selectedCustomer.value, ...res }
+      customerQuery.value = res.customer_name
+    }
+    refreshCustSearch()
+    alert(`Customer ${res.customer_name} updated successfully!`)
+  } catch (e) { 
+    alert('Error: ' + (e?.message || 'Unknown')) 
+  }
+  newCustSaving.value = false
+}
+
+async function saveNewCust(data) {
+  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
+  newCustSaving.value = true
+  try {
+    const res = await createCustomer(data)
+    pickCustomer({ name: res.name, customer_name: res.customer_name })
+    showCustomerSearchModal.value = false
+  } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
+  newCustSaving.value = false
+}
 
 // ─── Zoom ─────────────────────────────────────────────────────────────────────
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
@@ -580,35 +725,58 @@ async function loadLedger() {
 watch(fromDate, () => { if (selectedCustomer.value) loadLedger() })
 watch(toDate,   () => { if (selectedCustomer.value) loadLedger() })
 
-// ─── Row click → detail panel or SalesEntry ───────────────────────────────────
+// ─── Row hover/keyboard → update preview ───────────────────────────────────
+let previewTimer = null
+async function updatePreview(entry, idx) {
+  if (idx !== undefined) focusedIdx.value = idx
+  if (selectedEntry.value === entry) return
+
+  selectedEntry.value = entry
+  voucherDetail.value = null
+  
+  clearTimeout(previewTimer)
+  previewTimer = setTimeout(async () => {
+    loadingDetail.value = true
+    try {
+      voucherDetail.value = await fetchVoucherDetail(entry.voucher_type, entry.voucher_no)
+    } catch (e) {
+      voucherDetail.value = { error: e.message }
+    } finally {
+      loadingDetail.value = false
+    }
+  }, 150) // Small debounce for hover/keyboard speed
+}
+
+function onRowMouseEnter(entry, idx) {
+  updatePreview(entry, idx)
+}
+
+// ─── Row click/Enter → open SalesEntry if invoice ─────────────────────────────
 async function onRowClick(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
 
   if (entry.voucher_type === 'Sales Invoice') {
-    subWindowInvoiceName.value = entry.voucher_no
-    showSalesEntryWindow.value = true
+    openInternalSalesEntry(entry.voucher_no)
     return
   }
 
-  if (selectedEntry.value === entry) {
-    closeDetail()
-    return
+  // If not invoice, toggle/ensure preview is open
+  if (selectedEntry.value === entry && voucherDetail.value) {
+    // Already showing, do nothing or could closeDetail() if toggle preferred
+  } else {
+    updatePreview(entry, idx)
   }
-  selectedEntry.value = entry
-  voucherDetail.value = null
-  loadingDetail.value = true
-  try {
-    voucherDetail.value = await fetchVoucherDetail(entry.voucher_type, entry.voucher_no)
-  } catch (e) {
-    voucherDetail.value = { error: e.message }
-  } finally {
-    loadingDetail.value = false
-  }
+}
+
+function openInternalSalesEntry(invoiceNo) {
+  subWindowInvoiceName.value = invoiceNo
+  showSalesEntryWindow.value = true
 }
 
 function closeDetail() {
   selectedEntry.value = null
   voucherDetail.value = null
+  clearTimeout(previewTimer)
 }
 
 // ─── Keyboard navigation for ledger rows ──────────────────────────────────────
@@ -619,14 +787,22 @@ function onTableKeydown(e) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     focusedIdx.value = Math.min(focusedIdx.value + 1, len - 1)
+    updatePreview(ledgerData.value.entries[focusedIdx.value], focusedIdx.value)
     scrollRowIntoView(focusedIdx.value)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     focusedIdx.value = Math.max(focusedIdx.value - 1, 0)
+    updatePreview(ledgerData.value.entries[focusedIdx.value], focusedIdx.value)
     scrollRowIntoView(focusedIdx.value)
   } else if (e.key === 'Enter' && focusedIdx.value >= 0) {
     e.preventDefault()
-    onRowClick(ledgerData.value.entries[focusedIdx.value], focusedIdx.value)
+    const entry = ledgerData.value.entries[focusedIdx.value]
+    if (entry.voucher_type === 'Sales Invoice') {
+      openInternalSalesEntry(entry.voucher_no)
+    } else {
+      // For other types, Enter just ensures preview is loaded immediately (no debounce)
+      onRowClick(entry, focusedIdx.value)
+    }
   }
 }
 
@@ -639,6 +815,27 @@ function scrollRowIntoView(idx) {
 
 function onGlobalKeydown(e) {
   if (showSalesEntryWindow.value) return
+  if (showCustomerSearchModal.value) return
+
+  if (e.key === 'Escape') {
+    if (selectedEntry.value) {
+      e.preventDefault()
+      closeDetail()
+      return
+    }
+    if (props.isSubWindow) {
+      e.preventDefault()
+      handleBack()
+      return
+    }
+  }
+
+  if (e.ctrlKey && e.key === 'l') {
+    e.preventDefault()
+    openCustomerSearch()
+    return
+  }
+
   // Only handle arrow/enter when customer input is not focused and ledger is loaded
   if (document.activeElement === customerInputRef.value) return
   if (!ledgerData.value) return
@@ -649,13 +846,18 @@ onMounted(async () => {
   nextTick(() => customerInputRef.value?.focus())
   window.addEventListener('keydown', onGlobalKeydown)
 
-  // Auto-load if customer is in query params
-  if (route.query.customer) {
+  // Apply initial dates if provided
+  if (props.initialFromDate) fromDate.value = props.initialFromDate
+  if (props.initialToDate) toDate.value = props.initialToDate
+
+  // Auto-load if customer is in query params (or prop)
+  const targetCust = props.customerName || route.query.customer
+  if (targetCust) {
     loading.value = true
     try {
       const cust = await frappeGet('frappe.client.get', {
         doctype: 'Customer',
-        name: route.query.customer
+        name: targetCust
       })
       if (cust) {
         selectedCustomer.value = {
