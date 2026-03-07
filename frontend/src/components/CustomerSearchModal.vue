@@ -199,7 +199,7 @@
                 class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" 
                 placeholder="Full name"
                 @keydown.esc.stop="handleEsc"
-                @keydown.enter.prevent="submitForm"
+                @keydown.enter.prevent="handleFormEnter"
               />
             </div>
 
@@ -212,6 +212,7 @@
                   placeholder="10-digit mobile" 
                   maxlength="10"
                   @keydown.esc.stop="handleEsc" 
+                  @keydown.enter.prevent="handleFormEnter"
                 />
               </div>
               <div class="flex flex-col gap-1.5">
@@ -222,6 +223,7 @@
                   placeholder="10-digit whatsapp" 
                   maxlength="10"
                   @keydown.esc.stop="handleEsc" 
+                  @keydown.enter.prevent="handleFormEnter"
                 />
               </div>
             </div>
@@ -229,28 +231,28 @@
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
-                <input v-model="(showNewForm ? newData : editData).email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc.stop="handleEsc" />
+                <input v-model="(showNewForm ? newData : editData).email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
-                <input v-model="(showNewForm ? newData : editData).gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="handleEsc" />
+                <input v-model="(showNewForm ? newData : editData).gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
             </div>
 
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 1</label>
-              <input v-model="(showNewForm ? newData : editData).address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="handleEsc" />
+              <input v-model="(showNewForm ? newData : editData).address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
             </div>
 
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 2</label>
-              <input v-model="(showNewForm ? newData : editData).address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc.stop="handleEsc" />
+              <input v-model="(showNewForm ? newData : editData).address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
             </div>
 
             <div class="grid grid-cols-3 gap-4">
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">City</label>
-                <input v-model="(showNewForm ? newData : editData).city" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="City" @keydown.esc.stop="handleEsc" />
+                <input v-model="(showNewForm ? newData : editData).city" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="City" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pincode</label>
@@ -260,6 +262,7 @@
                   placeholder="678XXX" 
                   maxlength="6"
                   @keydown.esc.stop="handleEsc" 
+                  @keydown.enter.prevent="handleFormEnter"
                 />
               </div>
               <div class="flex flex-col gap-1.5">
@@ -268,6 +271,7 @@
                   v-model="(showNewForm ? newData : editData).state"
                   class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500"
                   @keydown.esc.stop="handleEsc"
+                  @keydown.enter.prevent="handleFormEnter"
                 >
                   <option value="">Select State</option>
                   <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
@@ -527,6 +531,19 @@ function validateForm(data) {
     return false
   }
   return true
+}
+
+function handleFormEnter(e) {
+  const form = e.target.closest('.flex-col.gap-4')
+  if (!form) return
+
+  const focusables = Array.from(form.querySelectorAll('input, select, button'))
+  const index = focusables.indexOf(e.target)
+  if (index > -1 && index < focusables.length - 1) {
+    focusables[index + 1].focus()
+  } else {
+    submitForm()
+  }
 }
 
 function submitForm() {
