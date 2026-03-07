@@ -24,83 +24,83 @@
       </div>
     </header>
 
-    <div class="flex flex-col border-b border-gray-200 bg-white px-4 py-3">
-      <div class="flex flex-wrap items-center justify-between gap-6">
-        <!-- Left Side: Basic Info Row -->
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+    <div class="border-b border-gray-200 bg-white px-4 py-2">
+      <div class="flex items-center gap-6">
+        <!-- Series -->
+        <div class="flex items-center gap-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">Series</label>
+          <select 
+            ref="seriesSelect" 
+            v-model="billSeries" 
+            :disabled="billDocStatus !== 0" 
+            class="rounded border border-gray-300 bg-white px-2 py-1 text-sm font-bold outline-none focus:border-blue-500 disabled:bg-gray-50"
+            @keydown.enter.prevent="openCustomerSearch"
+          >
+            <option v-for="s in availableSeries" :key="s">{{ s }}</option>
+          </select>
+        </div>
 
-          <!-- Series -->
-          <div class="flex items-center gap-3">
-            <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Series</label>
-            <select ref="seriesSelect" v-model="billSeries" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 bg-white px-2 py-1 text-sm font-bold outline-none focus:border-blue-500 disabled:bg-gray-50" @keydown.enter.prevent="openCustomerSearch">
-              <option v-for="s in availableSeries" :key="s">{{ s }}</option>
-            </select>
+        <!-- Bill No -->
+        <div class="flex items-center gap-2 border-l border-gray-100 pl-6">
+          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">Bill No</label>
+          <div class="text-xl font-bold text-gray-900 tabular-nums" style="font-family: 'Poppins', sans-serif">
+            {{ nextBillNo }}
           </div>
+        </div>
 
-          <!-- Bill No -->
-          <div class="flex items-center gap-2 w-[180px]">
-            <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Bill No</label>
-            <div class="text-2xl font-medium text-gray-900 tracking-normal truncate" style="font-family: 'Poppins', sans-serif">
-              {{ nextBillNo }}
+        <!-- Customer Section (Flex-1 to take middle space) -->
+        <div class="flex-1 flex items-center gap-4 border-l border-gray-100 pl-6 overflow-hidden">
+          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">Customer</label>
+          
+          <!-- Name & Address -->
+          <div class="flex items-baseline gap-4 min-w-0">
+            <div 
+              ref="customerInput"
+              class="shrink-0 max-w-[300px] truncate text-xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600 leading-none"
+              :class="customer ? 'text-gray-900' : 'text-gray-300 italic'"
+              style="font-family: 'Poppins', sans-serif"
+              @click="openCustomerSearch"
+              tabindex="0"
+              @keydown.enter.prevent="openCustomerSearch"
+              @keydown.space.prevent="openCustomerSearch"
+            >
+              {{ custSearch || 'Not Selected' }}
+            </div>
+
+            <div v-if="selectedCustomerDetails" class="flex items-center gap-3 min-w-0">
+              <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-gray-500 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
+                {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
+              </span>
+              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-gray-400 font-bold leading-none">
+                PH: {{ selectedCustomerDetails.mobile_no }}
+              </span>
             </div>
           </div>
 
-          <!-- Customer -->
-          <div class="flex items-center gap-2 w-[950px] ml-[50px]">
-            <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Customer</label>
-            <div class="flex-1 overflow-hidden flex items-baseline gap-4">
-              <!-- Name & Contact Inline -->
-              <div 
-                ref="customerInput"
-                class="shrink-0 max-w-[400px] truncate text-2xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-600 focus:text-blue-600 leading-none"
-                :class="customer ? 'text-gray-900' : 'text-gray-300 italic'"
-                style="font-family: 'Poppins', sans-serif"
-                @click="openCustomerSearch"
-                tabindex="0"
-                @keydown.enter.prevent="openCustomerSearch"
-                @keydown.space.prevent="openCustomerSearch"
-              >
-                {{ custSearch || 'Not Selected' }}
-              </div>
-
-              <!-- Address & Phone Inline -->
-              <div v-if="selectedCustomerDetails" class="flex items-center gap-3 overflow-hidden leading-none mb-1">
-                <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[450px] text-2xl text-gray-500 font-normal" :title="selectedCustomerDetails.address_line1">
-                  {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
-                </span>
-                <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-xs text-gray-700 font-bold ml-1 border-l border-gray-200 pl-3">
-                  PH: {{ selectedCustomerDetails.mobile_no }}
-                </span>
-              </div>
+          <!-- Stats Group -->
+          <div v-if="selectedCustomerDetails" class="flex items-center gap-6 ml-auto mr-6">
+            <!-- Last Invoice Date -->
+            <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
+              <span class="text-[8px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Last Inv</span>
+              <span class="text-sm text-gray-700 font-medium">
+                {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
+              </span>
             </div>
 
-            <div v-if="selectedCustomerDetails" class="flex items-center gap-6 ml-auto">
-              <!-- Stats Group -->
-              <div class="flex items-center gap-6">
-                <!-- Last Invoice Date -->
-                <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
-                  <span class="text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Last Inv</span>
-                  <span class="text-lg text-gray-800 font-medium">
-                    {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
-                  </span>
-                </div>
-
-                <!-- Ledger Balance -->
-                <div class="flex flex-col items-end leading-none border-l border-gray-100 pl-6">
-                  <span class="text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Ledger Bal</span>
-                  <span :class="selectedCustomerDetails.balance > 0 ? 'text-red-500' : 'text-green-500'" class="text-2xl">
-                    &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-xs">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
-                  </span>
-                </div>
-              </div>
+            <!-- Ledger Balance -->
+            <div class="flex flex-col items-end leading-none border-l border-gray-100 pl-6">
+              <span class="text-[8px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Ledger Bal</span>
+              <span :class="selectedCustomerDetails.balance > 0 ? 'text-red-500' : 'text-green-500'" class="text-xl font-bold tabular-nums">
+                &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-[10px] font-bold">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Right Side: Date -->
-        <div class="flex items-center gap-3">
-          <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Bill Date</label>
-          <div class="text-2xl font-medium tracking-tight text-gray-900" style="font-family: 'Poppins', sans-serif">
+        <!-- Bill Date -->
+        <div class="flex items-center gap-3 border-l border-gray-100 pl-6 whitespace-nowrap">
+          <label class="text-[10px] font-bold uppercase text-gray-400">Bill Date</label>
+          <div class="text-xl font-bold text-gray-900" style="font-family: 'Poppins', sans-serif">
             {{ fmtDate(billDate) }}
           </div>
         </div>
