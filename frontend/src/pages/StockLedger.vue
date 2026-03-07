@@ -12,15 +12,15 @@
             ← {{ isSubWindow ? 'Close' : 'Dashboard' }}
           </button>
           <span class="text-gray-300">|</span>
-          <h1 class="text-sm font-bold text-gray-800">Customer Ledger</h1>
-          <span v-if="ledgerData" class="rounded bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600">
+          <h1 class="text-sm font-bold text-gray-800">Stock Ledger</h1>
+          <span v-if="ledgerData" class="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
             {{ ledgerData.entries.length }} entries
           </span>
         </div>
 
         <!-- Shortcut info for sub-window -->
         <div v-if="isSubWindow" class="flex items-center gap-4 text-[10px] text-gray-400">
-          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Ctrl+L</kbd> Search</span>
+          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Ctrl+I</kbd> Item Search</span>
           <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Esc</kbd> Close</span>
         </div>
 
@@ -40,48 +40,25 @@
     <div class="border-b border-gray-200 bg-white px-6 py-3">
       <div class="flex flex-wrap items-end gap-3">
 
-        <!-- Customer search -->
-        <div class="relative w-64">
+        <!-- Item search -->
+        <div class="relative w-80">
           <label class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            <span>Customer</span>
+            <span>Item</span>
             <span class="font-normal opacity-70">
-              <kbd class="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[9px]">Ctrl+L</kbd> Search
+              <kbd class="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[9px]">Ctrl+I</kbd> Search
             </span>
           </label>
-          <input
-            ref="customerInputRef"
-            v-model="customerQuery"
-            @input="onCustomerSearch"
-            @keydown.down.prevent="cursorDown"
-            @keydown.up.prevent="cursorUp"
-            @keydown.enter.prevent="pickCursor"
-            @keydown.escape="customerDropdownOpen = false"
-            @blur="onCustomerBlur"
-            placeholder="Search customer..."
-            class="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none transition-colors focus:border-blue-500"
-            :class="selectedCustomer ? 'bg-blue-50 font-semibold text-blue-800' : 'bg-white text-gray-800'"
-            autocomplete="off"
-          />
-          <!-- Dropdown -->
-          <ul
-            v-if="customerDropdownOpen && customerOptions.length"
-            class="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg"
+          <div 
+            @click="openItemSearch"
+            class="w-full cursor-pointer rounded border border-gray-300 px-3 py-2 text-sm outline-none transition-colors hover:border-blue-400"
+            :class="selectedItem ? 'bg-blue-50 font-semibold text-blue-800' : 'bg-white text-gray-400'"
           >
-            <li
-              v-for="(c, idx) in customerOptions"
-              :key="c.name"
-              @mousedown.prevent="pickCustomer(c)"
-              class="cursor-pointer px-3 py-2 text-xs"
-              :class="cursor === idx ? 'bg-blue-50' : 'hover:bg-gray-50'"
-            >
-              <div class="font-semibold text-gray-800">{{ c.customer_name }}</div>
-              <div class="font-mono text-[10px] text-gray-400">{{ c.name }}</div>
-            </li>
-          </ul>
+            {{ selectedItem ? `${selectedItem.item_code} - ${selectedItem.item_name}` : 'Select an item...' }}
+          </div>
           <!-- Clear button -->
           <button
-            v-if="selectedCustomer"
-            @click="clearCustomer"
+            v-if="selectedItem"
+            @click="clearItem"
             class="absolute right-2 top-7 text-gray-400 hover:text-gray-600"
           >
             ✕
@@ -108,36 +85,48 @@
           />
         </div>
 
+        <!-- Warehouse filter -->
+        <div class="w-48">
+          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">Warehouse</label>
+          <select
+            v-model="selectedWarehouse"
+            class="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          >
+            <option value="">All Warehouses</option>
+            <option v-for="w in allowedWarehouses" :key="w" :value="w">{{ w }}</option>
+          </select>
+        </div>
+
         <button
           @click="loadLedger"
-          :disabled="!selectedCustomer || loading"
+          :disabled="!selectedItem || loading"
           class="rounded-lg px-5 py-2 text-sm font-semibold transition-colors"
-          :class="selectedCustomer && !loading
+          :class="selectedItem && !loading
             ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
             : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
         >
           {{ loading ? 'Loading...' : 'Load Ledger' }}
         </button>
 
-        <!-- Summary chips (visible after load) -->
+        <!-- Summary chips -->
         <template v-if="ledgerData">
-          <div class="ml-2 flex items-center gap-3 text-xl">
-            <span class="rounded bg-orange-50 px-3 py-1.5 font-semibold text-orange-700">
-              Opening ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }} {{ ledgerData.opening_balance < 0 ? '(Cr)' : '(Dr)' }}
-            </span>
-            <span class="rounded bg-red-50 px-3 py-1.5 font-semibold text-red-700">
-              Dr ₹{{ fmt(ledgerData.total_debit) }}
-            </span>
-            <span class="rounded bg-green-50 px-3 py-1.5 font-semibold text-green-700">
-              Cr ₹{{ fmt(ledgerData.total_credit) }}
-            </span>
-            <span
-              class="rounded px-3 py-1.5 font-bold"
-              :class="ledgerData.closing_balance >= 0 ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'"
-            >
-              Balance ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
-              {{ ledgerData.closing_balance < 0 ? '(Cr)' : '(Dr)' }}
-            </span>
+          <div class="ml-2 flex items-center gap-2">
+            <div class="flex flex-col rounded bg-orange-50 px-3 py-1 border border-orange-100">
+              <span class="text-[9px] font-bold uppercase text-orange-400 leading-none">Opening</span>
+              <span class="text-sm font-bold text-orange-700 leading-tight">{{ ledgerData.opening_balance }}</span>
+            </div>
+            <div class="flex flex-col rounded bg-green-50 px-3 py-1 border border-green-100">
+              <span class="text-[9px] font-bold uppercase text-green-400 leading-none">Purchase (In)</span>
+              <span class="text-sm font-bold text-green-700 leading-tight">+{{ ledgerData.total_in }}</span>
+            </div>
+            <div class="flex flex-col rounded bg-red-50 px-3 py-1 border border-red-100">
+              <span class="text-[9px] font-bold uppercase text-red-400 leading-none">Sale (Out)</span>
+              <span class="text-sm font-bold text-red-700 leading-tight">-{{ ledgerData.total_out }}</span>
+            </div>
+            <div class="flex flex-col rounded bg-blue-50 px-3 py-1 border border-blue-100">
+              <span class="text-[9px] font-bold uppercase text-blue-400 leading-none">Closing</span>
+              <span class="text-sm font-bold text-blue-700 leading-tight">{{ ledgerData.closing_balance }}</span>
+            </div>
           </div>
         </template>
       </div>
@@ -151,8 +140,8 @@
 
         <!-- Empty / loading state -->
         <div v-if="!ledgerData && !loading && !error" class="flex flex-1 flex-col items-center justify-center gap-2 text-gray-400">
-          <div class="text-4xl">📋</div>
-          <div class="text-sm font-semibold">Select a customer and load the ledger</div>
+          <div class="text-4xl">📦</div>
+          <div class="text-sm font-semibold">Select an item and load the stock ledger</div>
         </div>
 
         <div v-else-if="loading" class="flex flex-1 items-center justify-center text-sm text-gray-400">
@@ -171,30 +160,16 @@
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Date</th>
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Type</th>
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Voucher No</th>
-                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Debit (Dr)</th>
-                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Credit (Cr)</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Warehouse</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Qty</th>
                   <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Balance</th>
                 </tr>
               </thead>
               <tbody ref="tableBodyRef">
-                <!-- Opening Balance row -->
-                <tr class="border-b border-gray-100 bg-gray-50">
-                  <td colspan="5" class="px-4 font-semibold text-gray-500" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    Opening Balance
-                    <span class="ml-1 font-normal text-gray-400" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">(before {{ fmtDate(ledgerData.from_date) }})</span>
-                  </td>
-                  <td class="px-4 text-right font-bold"
-                    :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="ledgerData.opening_balance >= 0 ? 'text-orange-600' : 'text-green-600'">
-                    ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }}
-                    <span class="ml-0.5 font-normal" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
-                  </td>
-                </tr>
-
                 <!-- No entries message -->
                 <tr v-if="!ledgerData.entries.length">
                   <td colspan="6" class="px-4 py-12 text-center text-gray-400">
-                    No transactions found for the selected period.
+                    No stock transactions found for the selected period.
                   </td>
                 </tr>
 
@@ -230,32 +205,18 @@
                       {{ entry.voucher_no }}
                     </button>
                   </td>
-                  <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span v-if="entry.debit" class="font-semibold text-red-600">₹{{ fmt(entry.debit) }}</span>
-                    <span v-else class="text-gray-300">—</span>
+                  <td class="px-4 text-gray-500" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    {{ entry.warehouse }}
                   </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span v-if="entry.credit" class="font-semibold text-green-600">₹{{ fmt(entry.credit) }}</span>
-                    <span v-else class="text-gray-300">—</span>
+                    <span :class="entry.actual_qty > 0 ? 'font-semibold text-green-600' : 'font-semibold text-red-600'">
+                      {{ entry.actual_qty > 0 ? '+' : '' }}{{ entry.actual_qty }}
+                    </span>
                   </td>
                   <td class="px-4 text-right font-mono font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="entry.balance < 0 ? 'text-green-700' : 'text-gray-800'">
-                    ₹{{ fmt(Math.abs(entry.balance)) }}
-                    <span class="ml-0.5 font-normal text-gray-400" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
-                  </td>
-                </tr>
-
-                <!-- Closing Balance row -->
-                <tr v-if="ledgerData.entries.length" class="border-t-2 border-gray-300 bg-gray-50">
-                  <td colspan="3" class="px-4 font-bold text-gray-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">Closing Balance</td>
-                  <td class="px-4 text-right font-mono font-bold text-red-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_debit) }}</td>
-                  <td class="px-4 text-right font-mono font-bold text-green-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_credit) }}</td>
-                  <td class="px-4 text-right font-mono font-bold"
-                    :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="ledgerData.closing_balance < 0 ? 'text-green-700' : 'text-orange-700'">
-                    ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
-                    <span class="ml-0.5 font-normal" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
+                    :class="entry.balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                    {{ entry.balance }}
                   </td>
                 </tr>
               </tbody>
@@ -318,29 +279,6 @@
                 <span class="text-gray-500">Amount</span>
                 <span class="font-bold text-gray-800">₹{{ fmt(voucherDetail.total_amount) }}</span>
               </div>
-              <div v-if="voucherDetail.mode_of_payment" class="flex justify-between">
-                <span class="text-gray-500">Mode</span>
-                <span class="font-semibold">{{ voucherDetail.mode_of_payment }}</span>
-              </div>
-              <div v-if="voucherDetail.outstanding_amount !== undefined" class="flex justify-between">
-                <span class="text-gray-500">Outstanding</span>
-                <span class="font-semibold" :class="voucherDetail.outstanding_amount > 0 ? 'text-red-600' : 'text-green-600'">
-                  ₹{{ fmt(voucherDetail.outstanding_amount) }}
-                </span>
-              </div>
-              <div v-if="voucherDetail.status" class="flex justify-between">
-                <span class="text-gray-500">Status</span>
-                <span class="rounded px-1.5 py-0.5 text-[10px] font-bold"
-                  :class="{
-                    'bg-green-100 text-green-700': ['Paid', 'Submitted'].includes(voucherDetail.status),
-                    'bg-yellow-100 text-yellow-700': voucherDetail.status === 'Unpaid',
-                    'bg-blue-100 text-blue-700': voucherDetail.status === 'Partly Paid',
-                    'bg-gray-100 text-gray-600': !['Paid','Submitted','Unpaid','Partly Paid'].includes(voucherDetail.status),
-                  }"
-                >
-                  {{ voucherDetail.status }}
-                </span>
-              </div>
               <div v-if="voucherDetail.remarks" class="pt-1">
                 <span class="text-gray-500">Remarks</span>
                 <p class="mt-0.5 text-gray-700">{{ voucherDetail.remarks }}</p>
@@ -350,71 +288,29 @@
             <!-- Line items -->
             <div v-if="voucherDetail.items?.length">
               <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                {{ voucherDetail.voucher_type === 'Payment Entry' ? 'References' :
-                   voucherDetail.voucher_type === 'Journal Entry' ? 'Accounts' : 'Items' }}
+                Items
               </div>
 
               <!-- Sales/Purchase/Credit items -->
-              <template v-if="['Sales Invoice', 'Purchase Invoice', 'Credit Note'].includes(voucherDetail.voucher_type)">
+              <template v-if="['Sales Invoice', 'Purchase Invoice', 'Credit Note', 'Stock Entry', 'Delivery Note', 'Purchase Receipt'].includes(voucherDetail.voucher_type)">
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="border-b border-gray-200 text-[10px] text-gray-400">
                       <th class="pb-1.5 text-left font-normal">Item</th>
                       <th class="pb-1.5 text-right font-normal">Qty</th>
                       <th class="pb-1.5 text-right font-normal">Rate</th>
-                      <th class="pb-1.5 text-right font-normal">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(item, i) in voucherDetail.items" :key="i" class="border-b border-gray-100">
                       <td class="py-1.5">
-                        <div class="font-semibold text-gray-800">{{ item.item_code }}</div>
+                        <div class="font-semibold text-gray-800" :class="{ 'text-blue-600': item.item_code === selectedItem?.item_code }">
+                          {{ item.item_code }}
+                        </div>
                         <div class="text-[10px] text-gray-500">{{ item.item_name }}</div>
                       </td>
                       <td class="py-1.5 text-right text-gray-600">{{ item.qty }} {{ item.uom }}</td>
                       <td class="py-1.5 text-right font-mono text-gray-600">₹{{ fmt(item.rate) }}</td>
-                      <td class="py-1.5 text-right font-mono font-semibold text-gray-800">₹{{ fmt(item.amount) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </template>
-
-              <!-- Payment Entry references -->
-              <template v-else-if="voucherDetail.voucher_type === 'Payment Entry'">
-                <div v-for="(ref, i) in voucherDetail.items" :key="i"
-                  class="mb-1.5 flex items-center justify-between rounded bg-gray-50 px-3 py-2 text-xs">
-                  <div>
-                    <span class="text-[10px] text-gray-500">{{ ref.reference_doctype }}</span>
-                    <button
-                      @click="openInErpNext(ref.reference_doctype, ref.reference_name)"
-                      class="ml-1 font-mono text-blue-600 hover:underline"
-                    >{{ ref.reference_name }}</button>
-                  </div>
-                  <span class="font-mono font-semibold text-green-700">₹{{ fmt(ref.allocated_amount) }}</span>
-                </div>
-              </template>
-
-              <!-- Journal Entry accounts -->
-              <template v-else-if="voucherDetail.voucher_type === 'Journal Entry'">
-                <table class="w-full text-xs">
-                  <thead>
-                    <tr class="border-b border-gray-200 text-[10px] text-gray-400">
-                      <th class="pb-1.5 text-left font-normal">Account</th>
-                      <th class="pb-1.5 text-right font-normal">Dr</th>
-                      <th class="pb-1.5 text-right font-normal">Cr</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(acc, i) in voucherDetail.items" :key="i" class="border-b border-gray-100">
-                      <td class="py-1.5 text-gray-700">{{ acc.account }}</td>
-                      <td class="py-1.5 text-right font-mono text-red-600">
-                        <span v-if="acc.debit">₹{{ fmt(acc.debit) }}</span>
-                        <span v-else class="text-gray-300">—</span>
-                      </td>
-                      <td class="py-1.5 text-right font-mono text-green-600">
-                        <span v-if="acc.credit">₹{{ fmt(acc.credit) }}</span>
-                        <span v-else class="text-gray-300">—</span>
-                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -433,20 +329,16 @@
       @close="showSalesEntryWindow = false"
     />
 
-    <!-- CUSTOMER SEARCH MODAL -->
-    <CustomerSearchModal
-      ref="ledgerCustSearchModalRef"
-      :show="showCustomerSearchModal"
-      v-model:query="custSearchQuery"
-      v-model:selectedIdx="custSelectedIdx"
-      :results="custSearchResults"
-      :selectedCustomer="selectedCustomer"
-      :saving="newCustSaving"
-      @close="closeCustomerSearchModal"
-      @select="(c, d) => { pickCustomer(c, d); closeCustomerSearchModal() }"
-      @refresh="refreshCustSearch"
-      @save-new="saveNewCust"
-      @save-edit="saveEditCust"
+    <!-- ITEM SEARCH MODAL -->
+    <ItemSearch
+      ref="ledgerItemSearchModalRef"
+      :show="showItemSearchModal"
+      v-model:query="itemSearchQuery"
+      v-model:selectedIdx="itemSelectedIdx"
+      :results="itemSearchResults"
+      @close="showItemSearchModal = false"
+      @select="(i, d) => { pickItem(i, d); showItemSearchModal = false }"
+      @refresh="refreshItemSearch"
     />
     </div>
   </div>
@@ -455,17 +347,16 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { searchCustomers, fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
+import { searchItems, fetchItemDetails, fetchStockLedger, fetchVoucherDetail, frappeGet, fetchBillingSettings } from '../api.js'
 import SalesEntry from './SalesEntry.vue'
-import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import { createCustomer, updateCustomer } from '../api/customer.js'
+import ItemSearch from '../components/ItemSearch.vue'
 
 const props = defineProps({
   isSubWindow: {
     type: Boolean,
     default: false
   },
-  customerName: {
+  itemCode: {
     type: String,
     default: ''
   },
@@ -495,82 +386,66 @@ function handleBack() {
 const showSalesEntryWindow = ref(false)
 const subWindowInvoiceName = ref('')
 
-// ─── Customer Search Modal State ──────────────────────────────────────────────
-const showCustomerSearchModal = ref(false)
-const custSearchQuery = ref('')
-const custSearchResults = ref([])
-const custSelectedIdx = ref(0)
-const newCustSaving = ref(false)
-const isCustLoading = ref(false)
+// ─── Item Search Modal State ──────────────────────────────────────────────
+const showItemSearchModal = ref(false)
+const itemSearchQuery = ref('')
+const allItems = ref([])
+const itemSearchResults = ref([])
+const itemSelectedIdx = ref(0)
+const ledgerItemSearchModalRef = ref(null)
+const isItemLoading = ref(false)
 
-let _custDebounce = null
-watch(custSearchQuery, (q) => {
-  clearTimeout(_custDebounce)
-  if (!q.trim()) {
-    custSearchResults.value = []
+async function refreshItemSearch() {
+  isItemLoading.value = true
+  try {
+    const items = await searchItems('')
+    allItems.value = items.map(i => ({ ...i, price: 0, stock: 0, _loading: true, enriched: false }))
+    filterItems()
+  } catch (e) {
+    console.error('Item search refresh failed:', e)
+  } finally {
+    isItemLoading.value = false
+  }
+}
+
+function filterItems() {
+  const q = itemSearchQuery.value.toLowerCase().trim()
+  if (!q) {
+    itemSearchResults.value = allItems.value.slice(0, 100)
     return
   }
-  isCustLoading.value = true
-  _custDebounce = setTimeout(async () => {
-    try {
-      custSearchResults.value = await searchCustomers(q)
-      custSelectedIdx.value = 0
-    } catch (e) {
-      console.error('Customer search failed:', e)
-    } finally {
-      isCustLoading.value = false
-    }
-  }, 300)
-})
-
-function openCustomerSearch() {
-  showCustomerSearchModal.value = true
-  custSearchQuery.value = customerQuery.value
+  itemSearchResults.value = allItems.value.filter(i =>
+    i.item_code.toLowerCase().includes(q) ||
+    i.item_name.toLowerCase().includes(q)
+  ).slice(0, 100)
+  itemSelectedIdx.value = 0
 }
 
-function closeCustomerSearchModal() {
-  showCustomerSearchModal.value = false
-}
+watch(itemSearchQuery, filterItems)
 
-async function refreshCustSearch() {
-  if (!custSearchQuery.value.trim()) return
-  isCustLoading.value = true
-  try {
-    custSearchResults.value = await searchCustomers(custSearchQuery.value)
-  } catch (e) {
-    console.error('Customer search refresh failed:', e)
-  } finally {
-    isCustLoading.value = false
+async function openItemSearch() {
+  showItemSearchModal.value = true
+  if (allItems.value.length === 0) {
+    await refreshItemSearch()
+  } else {
+    filterItems()
   }
+  nextTick(() => ledgerItemSearchModalRef.value?.focus())
 }
 
-async function saveEditCust(data) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const customerId = data.name || selectedCustomer.value?.name
-    const res = await updateCustomer(customerId, data)
-    if (selectedCustomer.value && selectedCustomer.value.name === customerId) {
-      selectedCustomer.value = { ...selectedCustomer.value, ...res }
-      customerQuery.value = res.customer_name
-    }
-    refreshCustSearch()
-    alert(`Customer ${res.customer_name} updated successfully!`)
-  } catch (e) { 
-    alert('Error: ' + (e?.message || 'Unknown')) 
+function pickItem(item, dates) {
+  selectedItem.value = item
+  if (dates) {
+    fromDate.value = dates.from
+    toDate.value = dates.to
   }
-  newCustSaving.value = false
+  loadLedger()
 }
 
-async function saveNewCust(data) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const res = await createCustomer(data)
-    pickCustomer({ name: res.name, customer_name: res.customer_name })
-    showCustomerSearchModal.value = false
-  } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
-  newCustSaving.value = false
+function clearItem() {
+  selectedItem.value = null
+  ledgerData.value = null
+  error.value = ''
 }
 
 // ─── Zoom ─────────────────────────────────────────────────────────────────────
@@ -587,15 +462,13 @@ watch(zoomPercent, (newZoom) => {
 
 // ─── Filter state ─────────────────────────────────────────────────────────────
 const today = new Date().toISOString().slice(0, 10)
-const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
+const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
 
-const customerQuery = ref('')
-const customerOptions = ref([])
-const customerDropdownOpen = ref(false)
-const selectedCustomer = ref(null)
-const cursor = ref(-1)
-const fromDate = ref(ninetyDaysAgo)
+const fromDate = ref(sevenDaysAgo)
 const toDate = ref(today)
+const selectedItem = ref(null)
+const selectedWarehouse = ref('')
+const allowedWarehouses = ref([])
 
 // ─── Ledger state ─────────────────────────────────────────────────────────────
 const loading = ref(false)
@@ -610,9 +483,6 @@ const loadingDetail = ref(false)
 // Ledger row keyboard navigation
 const focusedIdx = ref(-1)
 const tableBodyRef = ref(null)
-
-// DOM refs
-const customerInputRef = ref(null)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(n) {
@@ -632,10 +502,10 @@ function fmtDate(d) {
 
 const VOUCHER_CONFIG = {
   'Sales Invoice':    { label: 'SINV', cls: 'bg-blue-100 text-blue-700' },
-  'Payment Entry':    { label: 'PAY',  cls: 'bg-green-100 text-green-700' },
-  'Journal Entry':    { label: 'JE',   cls: 'bg-gray-100 text-gray-600' },
   'Purchase Invoice': { label: 'PINV', cls: 'bg-orange-100 text-orange-700' },
-  'Credit Note':      { label: 'CN',   cls: 'bg-purple-100 text-purple-700' },
+  'Stock Entry':      { label: 'SE',   cls: 'bg-purple-100 text-purple-700' },
+  'Delivery Note':    { label: 'DN',   cls: 'bg-green-100 text-green-700' },
+  'Purchase Receipt': { label: 'PR',   cls: 'bg-amber-100 text-amber-700' },
 }
 
 function voucherLabel(type) {
@@ -650,59 +520,9 @@ function openInErpNext(voucherType, voucherNo) {
   window.open(`/app/${slug}/${voucherNo}`, '_blank')
 }
 
-// ─── Customer search ──────────────────────────────────────────────────────────
-let searchTimer = null
-function onCustomerSearch() {
-  selectedCustomer.value = null
-  cursor.value = -1
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(async () => {
-    if (!customerQuery.value.trim()) { customerOptions.value = []; customerDropdownOpen.value = false; return }
-    try {
-      customerOptions.value = await searchCustomers(customerQuery.value)
-      customerDropdownOpen.value = !!customerOptions.value.length
-    } catch { customerOptions.value = [] }
-  }, 220)
-}
-
-function pickCustomer(c) {
-  selectedCustomer.value = c
-  customerQuery.value = c.customer_name
-  customerOptions.value = []
-  customerDropdownOpen.value = false
-  cursor.value = -1
-  loadLedger()
-}
-
-function clearCustomer() {
-  selectedCustomer.value = null
-  customerQuery.value = ''
-  customerOptions.value = []
-  customerDropdownOpen.value = false
-  ledgerData.value = null
-  error.value = ''
-  nextTick(() => customerInputRef.value?.focus())
-}
-
-function cursorDown() {
-  if (!customerDropdownOpen.value) return
-  cursor.value = Math.min(cursor.value + 1, customerOptions.value.length - 1)
-}
-function cursorUp() {
-  cursor.value = Math.max(cursor.value - 1, 0)
-}
-function pickCursor() {
-  if (cursor.value >= 0 && customerOptions.value[cursor.value]) {
-    pickCustomer(customerOptions.value[cursor.value])
-  }
-}
-function onCustomerBlur() {
-  setTimeout(() => { customerDropdownOpen.value = false }, 150)
-}
-
 // ─── Load Ledger ──────────────────────────────────────────────────────────────
 async function loadLedger() {
-  if (!selectedCustomer.value) return
+  if (!selectedItem.value) return
   loading.value = true
   error.value = ''
   ledgerData.value = null
@@ -711,10 +531,11 @@ async function loadLedger() {
   focusedIdx.value = -1
 
   try {
-    ledgerData.value = await fetchCustomerLedger(
-      selectedCustomer.value.name,
+    ledgerData.value = await fetchStockLedger(
+      selectedItem.value.item_code,
       fromDate.value,
       toDate.value,
+      selectedWarehouse.value || null
     )
   } catch (e) {
     error.value = e.message
@@ -723,9 +544,10 @@ async function loadLedger() {
   }
 }
 
-// Auto-reload when dates change (only if customer already selected)
-watch(fromDate, () => { if (selectedCustomer.value) loadLedger() })
-watch(toDate,   () => { if (selectedCustomer.value) loadLedger() })
+// Auto-reload when filters change
+watch(fromDate, () => { if (selectedItem.value) loadLedger() })
+watch(toDate,   () => { if (selectedItem.value) loadLedger() })
+watch(selectedWarehouse, () => { if (selectedItem.value) loadLedger() })
 
 // ─── Row hover/keyboard → update preview ───────────────────────────────────
 let previewTimer = null
@@ -746,14 +568,13 @@ async function updatePreview(entry, idx) {
     } finally {
       loadingDetail.value = false
     }
-  }, 150) // Small debounce for hover/keyboard speed
+  }, 150)
 }
 
 function onRowMouseEnter(entry, idx) {
   updatePreview(entry, idx)
 }
 
-// ─── Row click/Enter → open SalesEntry if invoice ─────────────────────────────
 async function onRowClick(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
 
@@ -762,9 +583,8 @@ async function onRowClick(entry, idx) {
     return
   }
 
-  // If not invoice, toggle/ensure preview is open
   if (selectedEntry.value === entry && voucherDetail.value) {
-    // Already showing, do nothing or could closeDetail() if toggle preferred
+    // Already showing
   } else {
     updatePreview(entry, idx)
   }
@@ -802,7 +622,6 @@ function onTableKeydown(e) {
     if (entry.voucher_type === 'Sales Invoice') {
       openInternalSalesEntry(entry.voucher_no)
     } else {
-      // For other types, Enter just ensures preview is loaded immediately (no debounce)
       onRowClick(entry, focusedIdx.value)
     }
   }
@@ -817,7 +636,7 @@ function scrollRowIntoView(idx) {
 
 function onGlobalKeydown(e) {
   if (showSalesEntryWindow.value) return
-  if (showCustomerSearchModal.value) return
+  if (showItemSearchModal.value) return
 
   if (e.key === 'Escape') {
     if (selectedEntry.value) {
@@ -832,45 +651,56 @@ function onGlobalKeydown(e) {
     }
   }
 
-  if (e.ctrlKey && e.key === 'l') {
+  if (e.ctrlKey && e.key === 'i') {
     e.preventDefault()
-    openCustomerSearch()
+    openItemSearch()
     return
   }
 
-  // Only handle arrow/enter when customer input is not focused and ledger is loaded
-  if (document.activeElement === customerInputRef.value) return
   if (!ledgerData.value) return
   onTableKeydown(e)
 }
 
 onMounted(async () => {
-  nextTick(() => customerInputRef.value?.focus())
   window.addEventListener('keydown', onGlobalKeydown)
+
+  // Fetch allowed warehouses from billing settings
+  try {
+    const settings = await fetchBillingSettings()
+    if (settings?.billing_series) {
+      const warehouses = [...new Set(settings.billing_series.map(s => s.warehouse).filter(Boolean))]
+      allowedWarehouses.value = warehouses
+      // Set default warehouse if available
+      if (warehouses.length > 0) {
+        selectedWarehouse.value = warehouses[0]
+      }
+    }
+  } catch (e) {
+    console.warn('[StockLedger] Failed to fetch billing settings:', e.message)
+  }
 
   // Apply initial dates if provided
   if (props.initialFromDate) fromDate.value = props.initialFromDate
   if (props.initialToDate) toDate.value = props.initialToDate
 
-  // Auto-load if customer is in query params (or prop)
-  const targetCust = props.customerName || route.query.customer
-  if (targetCust) {
+  // Auto-load if itemCode is provided
+  if (props.itemCode) {
     loading.value = true
     try {
-      const cust = await frappeGet('frappe.client.get', {
-        doctype: 'Customer',
-        name: targetCust
+      // Basic fetch to get item name
+      const item = await frappeGet('frappe.client.get', {
+        doctype: 'Item',
+        name: props.itemCode
       })
-      if (cust) {
-        selectedCustomer.value = {
-          name: cust.name,
-          customer_name: cust.customer_name
+      if (item) {
+        selectedItem.value = {
+          item_code: item.name,
+          item_name: item.item_name
         }
-        customerQuery.value = cust.customer_name
         loadLedger()
       }
     } catch (e) {
-      console.warn('[Ledger] Failed to auto-load customer:', e.message)
+      console.warn('[StockLedger] Failed to auto-load item:', e.message)
     } finally {
       loading.value = false
     }

@@ -42,12 +42,20 @@
           <div class="flex flex-col min-w-[130px]">
             <span class="text-[10px] font-bold uppercase text-gray-400">Current Stock</span>
             <span class="text-xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-600' : 'text-green-600'">
-              {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
+              <span v-if="results[selectedIdx]._loading">...</span>
+              <span v-else>{{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}</span>
             </span>
+          </div>
+          <div v-if="warehouse" class="flex flex-col min-w-[130px] max-w-[200px]">
+            <span class="text-[10px] font-bold uppercase text-gray-400">Warehouse</span>
+            <span class="truncate text-sm font-semibold text-gray-600" :title="warehouse">{{ warehouse }}</span>
           </div>
           <div class="flex flex-col min-w-[130px]">
             <span class="text-[10px] font-bold uppercase text-gray-400">Rate</span>
-            <span class="text-xl font-bold text-gray-700">₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+            <span class="text-xl font-bold text-gray-700">
+              <span v-if="results[selectedIdx]._loading">...</span>
+              <span v-else>₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+            </span>
           </div>
           <div class="flex flex-col flex-1">
             <span class="text-[10px] font-bold uppercase text-gray-400">Item Name</span>
@@ -106,12 +114,22 @@
         <span><kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">F5</kbd> Refresh</span>
         <span><kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd> Close</span>
       </div>
+
+      <!-- SUB-MODALS (Date) -->
+      <DateFilter
+        v-if="showDateModal"
+        :show="showDateModal"
+        :customer-name="results[selectedIdx]?.item_name"
+        @close="showDateModal = false"
+        @confirm="handleDateConfirm"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, nextTick, watch } from 'vue'
+import DateFilter from './DateFilter.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -123,7 +141,8 @@ const props = defineProps({
   selectedIdx: {
     type: Number,
     default: 0
-  }
+  },
+  warehouse: String
 })
 
 const emit = defineEmits([
@@ -136,8 +155,11 @@ const emit = defineEmits([
 
 const searchInput = ref(null)
 const scrollContainer = ref(null)
+const showDateModal = ref(false)
 
 function handleGlobalKeydown(e) {
+  if (showDateModal.value) return
+
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     emit('update:selectedIdx', Math.min(props.selectedIdx + 1, props.results.length - 1))
@@ -147,11 +169,19 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'Enter') {
     if (props.results[props.selectedIdx]) {
       e.preventDefault()
-      emit('select', props.results[props.selectedIdx])
+      showDateModal.value = true
     }
   } else if (e.key === 'F5') {
     e.preventDefault()
     emit('refresh')
+  }
+}
+
+function handleDateConfirm(dates) {
+  const item = props.results[props.selectedIdx]
+  if (item) {
+    showDateModal.value = false
+    emit('select', item, dates)
   }
 }
 
@@ -187,6 +217,8 @@ watch(() => props.selectedIdx, async (idx) => {
 watch(() => props.show, (newVal) => {
   if (newVal) {
     focus()
+  } else {
+    showDateModal.value = false
   }
 })
 </script>

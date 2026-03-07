@@ -417,6 +417,26 @@ export async function fetchVoucherDetail(voucherType, voucherNo) {
   });
 }
 
+// ─── Stock Ledger ─────────────────────────────────────────────────────────────
+
+/**
+ * Fetch Stock Ledger Entry rows for an item with summary stats.
+ *
+ * @param {string} itemCode
+ * @param {string} fromDate
+ * @param {string} toDate
+ * @param {string|null} warehouse
+ * @returns {Promise<Object>}
+ */
+export async function fetchStockLedger(itemCode, fromDate, toDate, warehouse = null) {
+  return frappeGet("ssplbilling.api.sales_api.get_stock_ledger", {
+    item_code: itemCode,
+    from_date: fromDate,
+    to_date: toDate,
+    warehouse: warehouse,
+  });
+}
+
 // ─── Payment Entry (direct) ───────────────────────────────────────────────────
 
 /**

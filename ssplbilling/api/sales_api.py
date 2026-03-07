@@ -1652,3 +1652,103 @@ def create_journal_entry(data=None, **kwargs):
     je.submit()
 
     return {"journal_entry": je.name, "total_debit": total_dr}
+@frappe.whitelist()
+def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
+    """Return Stock Ledger Entry rows for an item with a running balance.
+    Returns a dict with summary stats and entries.
+    """
+    if not item_code:
+        frappe.throw("item_code is required")
+
+    to_date = to_date or frappe.utils.today()
+    from_date = from_date or frappe.utils.add_days(to_date, -30)
+
+    item_name = frappe.db.get_value("Item", item_code, "item_name") or item_code
+
+    # Opening balance: sum of actual_qty before from_date
+    wh_filter = ""
+    params = [item_code, from_date]
+    if warehouse:
+        wh_filter = " AND warehouse = %s"
+        params.append(warehouse)
+
+    opening_rows = frappe.db.sql(
+        f"""
+        SELECT COALESCE(SUM(actual_qty), 0) AS balance
+        FROM `tabStock Ledger Entry`
+        WHERE item_code = %s
+          AND is_cancelled = 0
+          AND posting_date < %s
+          {wh_filter}
+        """,
+        tuple(params),
+        as_dict=True,
+    )
+    opening_balance = float(opening_rows[0].balance if opening_rows else 0)
+
+    # Detail rows
+    params = [item_code, from_date, to_date]
+    if warehouse:
+        params.append(warehouse)
+
+    entries_raw = frappe.db.sql(
+        f"""
+        SELECT
+            posting_date,
+            posting_time,
+            voucher_type,
+            voucher_no,
+            actual_qty,
+            qty_after_transaction,
+            warehouse,
+            valuation_rate
+        FROM `tabStock Ledger Entry`
+        WHERE item_code = %s
+          AND is_cancelled = 0
+          AND posting_date >= %s
+          AND posting_date <= %s
+          {wh_filter}
+        ORDER BY posting_date ASC, posting_time ASC, creation ASC
+        LIMIT 1000
+        """,
+        tuple(params),
+        as_dict=True,
+    )
+
+    balance = opening_balance
+    entries = []
+    total_in = 0.0
+    total_out = 0.0
+
+    for row in entries_raw:
+        qty = float(row.actual_qty or 0)
+        if qty > 0:
+            total_in += qty
+        else:
+            total_out += abs(qty)
+        
+        balance += qty
+        entries.append(
+            {
+                "date": str(row.posting_date),
+                "time": str(row.posting_time),
+                "voucher_type": row.voucher_type,
+                "voucher_no": row.voucher_no,
+                "actual_qty": qty,
+                "balance": balance,
+                "warehouse": row.warehouse,
+                "valuation_rate": float(row.valuation_rate or 0),
+            }
+        )
+
+    return {
+        "item_code": item_code,
+        "item_name": item_name,
+        "from_date": str(from_date),
+        "to_date": str(to_date),
+        "opening_balance": opening_balance,
+        "closing_balance": balance,
+        "total_in": total_in,
+        "total_out": total_out,
+        "entries": entries,
+    }

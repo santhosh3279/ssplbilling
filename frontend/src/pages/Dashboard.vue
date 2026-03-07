@@ -241,6 +241,7 @@
       v-model:query="itemSearchQuery"
       v-model:selectedIdx="itemDDIdx"
       :results="itemResults"
+      :warehouse="warehouseLabel"
       @close="showItemSearchModal = false"
       @select="pickItem"
       @refresh="refreshItemSearch"
@@ -255,6 +256,16 @@
       :initial-to-date="ledgerToDate"
       @close="closeLedgerAndReturnToSearch"
     />
+
+    <!-- STOCK LEDGER SUB-WINDOW -->
+    <StockLedger
+      v-if="showStockLedgerWindow"
+      :is-sub-window="true"
+      :item-code="stockLedgerItemCode"
+      :initial-from-date="stockLedgerFromDate"
+      :initial-to-date="stockLedgerToDate"
+      @close="closeStockLedgerAndReturnToSearch"
+    />
   </div>
 </template>
 
@@ -265,6 +276,7 @@ import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import CustomerLedger from './CustomerLedger.vue'
+import StockLedger from './StockLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import { searchCustomers, fetchItemPrice, fetchItemStockForWarehouses } from '../api.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
@@ -327,6 +339,7 @@ function handleKeydown(e) {
   if (showCustomerSearchModal.value) return
   if (showItemSearchModal.value) return
   if (showLedgerWindow.value) return
+  if (showStockLedgerWindow.value) return
 
   // Ctrl + L -> Advanced Customer Search
   if (e.ctrlKey && e.key === 'l') {
@@ -494,6 +507,10 @@ async function saveNewCust(data, dates) {
 
 // ==================== ITEM SEARCH ====================
 const showItemSearchModal = ref(false)
+const showStockLedgerWindow = ref(false)
+const stockLedgerItemCode = ref('')
+const stockLedgerFromDate = ref('')
+const stockLedgerToDate = ref('')
 const itemSearchQuery = ref('')
 const allItems = ref([])
 const itemResults = ref([])
@@ -580,9 +597,22 @@ async function openItemSearch() {
   nextTick(() => itemSearchModalRef.value?.focus())
 }
 
-function pickItem(item) {
+function pickItem(item, dates) {
   showItemSearchModal.value = false
-  alert(`Item: ${item.item_code}\nName: ${item.item_name}\nPrice: ₹${item.price}\nStock: ${item.stock}`)
+  stockLedgerItemCode.value = item.item_code
+  if (dates) {
+    stockLedgerFromDate.value = dates.from
+    stockLedgerToDate.value = dates.to
+  } else {
+    stockLedgerFromDate.value = ''
+    stockLedgerToDate.value = ''
+  }
+  showStockLedgerWindow.value = true
+}
+
+function closeStockLedgerAndReturnToSearch() {
+  showStockLedgerWindow.value = false
+  openItemSearch()
 }
 
 async function fetchSettings() {
@@ -629,6 +659,15 @@ const filteredBillingSeries = computed(() => {
     return userAllowedString.value ? [] : all
   }
   return all.filter(bs => availableSeries.value.includes(bs.series))
+})
+
+const warehouseLabel = computed(() => {
+  const warehouses = [...new Set(
+    filteredBillingSeries.value.map(bs => bs.warehouse).filter(Boolean)
+  )]
+  if (warehouses.length === 0) return 'All Warehouses'
+  if (warehouses.length === 1) return warehouses[0]
+  return warehouses.join(', ')
 })
 
 onMounted(() => {
