@@ -412,60 +412,6 @@
       </div>
     </div>
 
-    <!-- ITEM SEARCH POPUP -->
-    <div v-if="showSearch" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="closeSearch">
-      <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
-
-        <div class="border-b border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50/50">
-          <div class="text-2xl font-semibold text-gray-700">Search Item</div>
-          <button 
-            @click="refreshLocalItems" 
-            :disabled="isSyncing"
-            class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-100 disabled:opacity-50"
-          >
-            <span v-if="isSyncing" class="animate-spin">⏳</span>
-            <span v-else>🔄</span>
-            {{ isSyncing ? 'Syncing...' : 'Refresh Items' }} <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
-          </button>
-        </div>
-        <div class="border-b border-gray-200 px-4 py-3">
-          <input
-            ref="searchInput"
-            v-model="searchQuery"
-            class="w-full rounded border border-gray-300 bg-white px-4 py-3 text-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            placeholder="Type item code or name..."
-            @keydown.esc="closeSearch"
-            @keydown.down.prevent="moveSearchCursor(1)"
-            @keydown.up.prevent="moveSearchCursor(-1)"
-            @keydown.enter.prevent="pickSearchItem"
-          />
-       </div>
-        <div class="flex-1 overflow-y-auto" ref="resultsWrapRef">
-          <table v-if="searchResults.length" class="w-full text-2xl">
-            <thead><tr class="bg-gray-50"><th class="px-4 py-3 text-left text-lg font-bold uppercase text-gray-600">Code</th><th class="px-3 py-3 text-left text-lg font-bold uppercase text-gray-600">Item Name</th><th class="px-3 py-3 text-left text-lg font-bold uppercase text-gray-600">UOM</th><th class="px-3 py-3 text-right text-lg font-bold uppercase text-gray-600">Rate</th><th class="px-3 py-3 text-right text-lg font-bold uppercase text-gray-600">Stock</th></tr></thead>
-            <tbody>
-              <tr 
-                v-for="(item, idx) in searchResults" 
-                :key="item.item_code" 
-                class="cursor-pointer border-b border-gray-100" 
-                :class="{ 'bg-blue-100': searchIdx === idx }" 
-                :ref="el => setSearchRowRef(el, idx)"
-                @click="pickSearchItemByIdx(idx)" 
-                @mouseenter="searchIdx = idx"
-              >
-                <td class="px-4 py-3 font-mono text-2xl">{{ item.item_code }}</td><td class="px-3 py-3">{{ item.item_name }}</td><td class="px-3 py-3 text-gray-600">{{ item.uom }}</td><td class="px-3 py-3 text-right font-mono">{{ item.rate.toFixed(2) }}</td>
-                <td class="px-3 py-3 text-right"><span class="rounded-full px-3 py-1 text-xl font-bold" :class="item.stock_qty > 20 ? 'bg-green-50 text-green-600' : item.stock_qty > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'">{{ item.stock_qty }}</span></td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="px-4 py-8 text-center text-2xl text-gray-600">No items found</div>
-        </div>
-        <div class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-lg text-gray-600">
-          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-base">Up/Down</kbd> Navigate <kbd class="ml-2 rounded border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-base">Enter</kbd> Select</span>
-          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-base">Esc</kbd> Close</span>
-        </div>
-      </div>
-    </div>
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
       ref="custSearchModalRef"
@@ -475,11 +421,25 @@
       :results="custResults"
       :selectedCustomer="selectedCustomerDetails"
       :saving="newCustSaving"
+      :skip-date-filter="true"
       @close="closeCustomerSearchModal"
       @select="pickCust"
       @refresh="refreshCustSearch"
       @save-new="saveNewCust"
       @save-edit="saveEditCust"
+    />
+
+    <!-- ITEM SEARCH MODAL -->
+    <ItemSearch
+      ref="itemSearchModalRef"
+      :show="showItemSearchModal"
+      v-model:query="itemSearchQuery"
+      v-model:selectedIdx="itemDDIdx"
+      :results="itemResults"
+      :skip-date-filter="true"
+      @close="closeItemSearch"
+      @select="pickItem"
+      @refresh="refreshItemSearch"
     />
 
     <PrintOptionsModal
@@ -532,11 +492,13 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
-import { fetchBillingSettings, fetchItemPrice, searchCustomers, frappeGet, frappePost } from '../api.js'
+import { fetchBillingSettings, fetchItemPrice, searchCustomers, searchItems, fetchItemDetails, frappeGet, frappePost } from '../api.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import ItemSearch from '../components/ItemSearch.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
-import { createCustomer, updateCustomer } from '../api/customer.js'
+import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
+
 
 const router = useRouter()
 const route = useRoute()
@@ -963,72 +925,105 @@ async function addNewItem() {
 function softDelete(idx) { items.value[idx].deleted = true }
 function restoreItem(idx) { items.value[idx].deleted = false }
 
-// ==================== ITEM SEARCH POPUP ====================
-const showSearch = ref(false); const searchQuery = ref(''); const searchIdx = ref(0); let searchTargetRow = null; 
-const searchResults = ref([]); const isSyncing = ref(false); const isLoadingItems = ref(false)
+// ==================== ITEM SEARCH MODAL ====================
+const showItemSearchModal = ref(false)
+const itemSearchQuery = ref('')
+const allItems = ref([])
+const itemResults = ref([])
+const itemDDIdx = ref(0)
+const itemSearchModalRef = ref(null)
+const isItemLoading = ref(false)
+let itemSearchTargetRow = null
 
-async function refreshLocalItems() {
-  // Manual refresh of search (clear current search results)
-  searchQuery.value = ''
-  searchResults.value = []
-}
-
-let _itemSearchTimeout = null
-watch(searchQuery, (q) => {
-  clearTimeout(_itemSearchTimeout)
-  if (!q.trim()) {
-    searchResults.value = []
+function filterItems() {
+  const q = itemSearchQuery.value.toLowerCase().trim()
+  if (!q) {
+    itemResults.value = allItems.value.slice(0, 100)
     return
   }
-  isLoadingItems.value = true
-  _itemSearchTimeout = setTimeout(async () => {
-    try {
-      searchResults.value = await searchItems(q)
-      searchIdx.value = 0
-    } catch (e) {
-      console.error('Item search failed:', e)
-    } finally {
-      isLoadingItems.value = false
-    }
-  }, 300)
-})
-
-function openSearch(prefill, rowIdx) { 
-  searchTargetRow = rowIdx; 
-  searchQuery.value = prefill || ''; 
-  searchIdx.value = 0; 
-  showSearch.value = true; 
-  nextTick(() => searchInput.value?.focus()) 
-}
-function closeSearch() { showSearch.value = false; searchQuery.value = ''; if (searchTargetRow !== null && searchTargetRow >= 0) focusField('code', searchTargetRow); else focusNewCode() }
-
-function moveSearchCursor(dir) {
-  if (!searchResults.value.length) return
-  searchIdx.value = Math.max(0, Math.min(searchResults.value.length - 1, searchIdx.value + dir))
-  nextTick(() => {
-    const el = searchRowRefs.get(searchIdx.value)
-    if (el) el.scrollIntoView({ block: 'nearest' })
-  })
+  itemResults.value = allItems.value.filter(i =>
+    i.item_code.toLowerCase().includes(q) ||
+    i.item_name.toLowerCase().includes(q)
+  ).slice(0, 100)
+  itemDDIdx.value = 0
 }
 
-function pickSearchItem() { if (searchResults.value.length) pickSearchItemByIdx(searchIdx.value) }
+watch(itemSearchQuery, filterItems)
 
-async function pickSearchItemByIdx(idx) {
-  const p = searchResults.value[idx]; if (!p) return
-  
-  // Fetch real-time rate for the selected price list before picking
-  let finalRate = p.rate || 0
+async function refreshItemSearch() {
+  isItemLoading.value = true
   try {
-    const r = await lookupItem(p.item_code)
-    if (r) finalRate = r.rate
+    const items = await searchItems('')
+    allItems.value = items.map(i => ({ 
+      ...i, 
+      price: 0, 
+      stock: 0, 
+      _loading: true,
+      enriched: false 
+    }))
+    filterItems()
+  } catch (e) {
+    console.error('Item search refresh failed:', e)
+  } finally {
+    isItemLoading.value = false
+  }
+}
+
+async function openSearch(prefill = '', rowIdx = null) {
+  itemSearchTargetRow = rowIdx
+  itemSearchQuery.value = prefill
+  showItemSearchModal.value = true
+  
+  if (allItems.value.length === 0) {
+    await refreshItemSearch()
+  } else {
+    filterItems()
+  }
+  
+  nextTick(() => itemSearchModalRef.value?.focus())
+}
+
+function closeItemSearch() {
+  showItemSearchModal.value = false
+  if (itemSearchTargetRow !== null) {
+    focusField('code', itemSearchTargetRow)
+  } else {
+    focusNewCode()
+  }
+}
+
+async function pickItem(item) {
+  showItemSearchModal.value = false
+  
+  // Fetch real-time details
+  let finalRate = item.price || 0
+  let finalTax = item.tax_rate ?? defaultTaxRate.value
+  let finalWh = item.warehouse || defaultWarehouse.value
+  
+  try {
+    const r = await lookupItem(item.item_code)
+    if (r) {
+      finalRate = r.rate
+      finalTax = r.tax_rate ?? defaultTaxRate.value
+      finalWh = r.warehouse || defaultWarehouse.value
+    }
   } catch (e) {}
 
-  if (searchTargetRow !== null && searchTargetRow >= 0) {
-    const row = items.value[searchTargetRow]; row.item_code = p.item_code; row.item_name = p.item_name; row.uom = p.uom; row.rate = finalRate; row.tax_rate = p.tax_rate ?? defaultTaxRate.value; row.warehouse = p.warehouse || defaultWarehouse.value; row.deleted = false
-    showSearch.value = false; selectedRow.value = searchTargetRow; focusField('qty', searchTargetRow)
+  if (itemSearchTargetRow !== null) {
+    const row = items.value[itemSearchTargetRow]
+    row.item_code = item.item_code
+    row.item_name = item.item_name
+    row.uom = item.uom
+    row.rate = finalRate
+    row.tax_rate = finalTax
+    row.warehouse = finalWh
+    row.deleted = false
+    selectedRow.value = itemSearchTargetRow
+    focusField('qty', itemSearchTargetRow)
   } else {
-    newItemCode.value = p.item_code; newPending.value = { item_name: p.item_name, uom: p.uom, rate: finalRate }
-    showSearch.value = false; nextTick(() => focusNewQty())
+    newItemCode.value = item.item_code
+    newPending.value = { item_name: item.item_name, uom: item.uom, rate: finalRate }
+    nextTick(() => focusNewQty())
   }
 }
 
@@ -1399,21 +1394,21 @@ function handleBack() {
 
 // ==================== GLOBAL KEYS ====================
 function handleKeydown(e) {
-  if (showSearch.value) {
+  if (showItemSearchModal.value) {
     if (e.key === 'F5') {
       e.preventDefault()
-      refreshLocalItems()
+      refreshItemSearch()
       return
     }
   }
   
-  if (showSearch.value || showCustDD.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value || showJumpModal.value) {
+  if (showItemSearchModal.value || showCustDD.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value || showJumpModal.value) {
     if (e.key === 'Escape') {
       if (showJumpModal.value) { showJumpModal.value = false; return }
       if (showDiscardModal.value) { showDiscardModal.value = false; return }
       if (showPrintModal.value) { showPrintModal.value = false; return }
       if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
-      if (showSearch.value) { showSearch.value = false; return }
+      if (showItemSearchModal.value) { closeItemSearch(); return }
       if (showModifyBill.value) { showModifyBill.value = false; return }
       if (showCustDD.value) { showCustDD.value = false; return }
     }

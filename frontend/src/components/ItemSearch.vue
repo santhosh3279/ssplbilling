@@ -142,7 +142,11 @@ const props = defineProps({
     type: Number,
     default: 0
   },
-  warehouse: String
+  warehouse: String,
+  skipDateFilter: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const emit = defineEmits([
@@ -167,9 +171,14 @@ function handleGlobalKeydown(e) {
     e.preventDefault()
     emit('update:selectedIdx', Math.max(props.selectedIdx - 1, 0))
   } else if (e.key === 'Enter') {
-    if (props.results[props.selectedIdx]) {
+    const item = props.results[props.selectedIdx]
+    if (item) {
       e.preventDefault()
-      showDateModal.value = true
+      if (props.skipDateFilter) {
+        emit('select', item)
+      } else {
+        showDateModal.value = true
+      }
     }
   } else if (e.key === 'F5') {
     e.preventDefault()
