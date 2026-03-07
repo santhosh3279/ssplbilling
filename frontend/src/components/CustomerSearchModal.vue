@@ -140,8 +140,14 @@
         <div class="w-[600px] rounded-xl bg-white shadow-2xl overflow-hidden">
           <div class="border-b border-gray-200 px-5 py-4 bg-gray-50">
             <div class="text-xl font-bold text-gray-700">{{ showNewForm ? 'New Customer' : 'Modify Customer Details' }}</div>
-            <div class="text-sm text-gray-600">
-              {{ showNewForm ? 'Enter customer details to create a new record' : ('Update information for ' + (editData.customer_name || '')) }}
+            <div class="text-sm text-gray-600 flex items-center gap-2">
+              <template v-if="showEditForm && editLoading">
+                <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent"></span>
+                Loading from ERPNext…
+              </template>
+              <template v-else>
+                {{ showNewForm ? 'Enter customer details to create a new record' : ('Update information for ' + (editData.customer_name || '')) }}
+              </template>
             </div>
           </div>
           
@@ -206,7 +212,14 @@
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
-                <input v-model="(showNewForm ? newData : editData).state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="State" @keydown.esc.stop="handleEsc" />
+                <select
+                  v-model="(showNewForm ? newData : editData).state"
+                  class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500"
+                  @keydown.esc.stop="handleEsc"
+                >
+                  <option value="">Select State</option>
+                  <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
+                </select>
               </div>
             </div>
           </div>
@@ -217,7 +230,7 @@
               class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95" 
               :class="showNewForm ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'"
               @click="submitForm"
-              :disabled="saving"
+              :disabled="saving || editLoading"
             >
               {{ saving ? (showNewForm ? 'Saving...' : 'Updating...') : (showNewForm ? 'Save & Select' : 'Update Details') }}
               <kbd class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm" :class="showNewForm ? 'border-blue-500 bg-blue-500' : 'border-orange-500 bg-orange-500'">End</kbd>
@@ -231,6 +244,8 @@
 
 <script setup>
 import { ref, nextTick, watch } from 'vue'
+import { fetchCustomerDetails } from '../api/customer.js'
+
 
 const props = defineProps({
   show: Boolean,
@@ -262,6 +277,23 @@ const formNameInput = ref(null)
 
 const showNewForm = ref(false)
 const showEditForm = ref(false)
+const editLoading = ref(false)
+
+// States listed first (alphabetical), then Union Territories — must match ERPNext State doctype exactly
+const indianStates = [
+  // States
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  // Union Territories
+  "Andaman and Nicobar Islands", "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu", "Delhi",
+  "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+]
+
 
 const newData = ref({ 
   customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '', 
@@ -338,26 +370,37 @@ function openNewForm() {
   focus()
 }
 
-function openEditForm(c) {
+async function openEditForm(c) {
   const target = c || props.selectedCustomer
   if (!target) return
-  
-  editData.value = { 
+
+  // Show the form immediately with whatever data we have from the search result
+  editData.value = {
     name: target.name,
-    customer_name: target.customer_name || '', 
-    mobile: target.mobile_no || '', 
-    whatsapp: target.whatsapp_no || '',
-    email: target.email_id || '', 
-    gstin: target.gstin || '', 
-    address_line1: target.address_line1 || '', 
-    address_line2: target.address_line2 || '', 
-    address_line3: target.address_line3 || '', 
-    city: target.city || '', 
-    pincode: target.pincode || '', 
-    state: target.state || '' 
+    customer_name: target.customer_name || '',
+    mobile: target.mobile_no || '',
+    whatsapp: '',
+    email: target.email_id || '',
+    gstin: target.gstin || '',
+    address_line1: target.address_line1 || '',
+    address_line2: '',
+    address_line3: '',
+    city: target.city || '',
+    pincode: '',
+    state: '',
   }
   showEditForm.value = true
+  editLoading.value = true
   focus()
+
+  try {
+    const full = await fetchCustomerDetails(target.name)
+    editData.value = full
+  } catch (e) {
+    console.warn('[CustomerSearchModal] fetchCustomerDetails failed:', e.message)
+  } finally {
+    editLoading.value = false
+  }
 }
 
 function closeSubForm() {
