@@ -479,6 +479,12 @@
       @close="showPrintModal = false"
     />
 
+    <JumpToRowModal 
+      v-model:show="showJumpModal"
+      :max-rows="items.length" 
+      @jump="handleJump" 
+    />
+
     <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60" @click.self="showDiscardModal = false">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -520,6 +526,7 @@ import { fetchBillingSettings, fetchItemPrice, searchCustomers, frappeGet, frapp
 import { localDb } from '../services/localDb'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 
 const router = useRouter()
@@ -771,6 +778,7 @@ const newItemCode = ref('')
 const newQty = ref(1)
 const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
+const showJumpModal = ref(false)
 const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-saved invoice name
 const showDiscardModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
@@ -1377,6 +1385,32 @@ function startNewBill() {
 function printBill() { alert('Print preview coming soon') }
 function cancelBill() { startNewBill() }
 
+function handleJump(targetNo) {
+  if (items.value.length === 0) return
+  
+  // Convert 1-based row number to 0-based index
+  let targetIdx = targetNo - 1
+  
+  // If number is higher than total rows, go to last row
+  if (targetIdx >= items.value.length) {
+    targetIdx = items.value.length - 1
+  }
+  
+  // If row is deleted, find previous active row
+  if (items.value[targetIdx].deleted) {
+    const prev = findNextActiveRow(targetIdx, -1)
+    if (prev !== null) targetIdx = prev
+    else {
+      const next = findNextActiveRow(targetIdx, 1)
+      if (next !== null) targetIdx = next
+      else return // All items deleted
+    }
+  }
+
+  selectedRow.value = targetIdx
+  focusRow(targetIdx)
+}
+
 function handleBack() {
   if (activeItems.value.length > 0 && !billSaved.value) {
     showDiscardModal.value = true
@@ -1395,8 +1429,9 @@ function handleKeydown(e) {
     }
   }
   
-  if (showSearch.value || showCustDD.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value) {
+  if (showSearch.value || showCustDD.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value || showJumpModal.value) {
     if (e.key === 'Escape') {
+      if (showJumpModal.value) { showJumpModal.value = false; return }
       if (showDiscardModal.value) { showDiscardModal.value = false; return }
       if (showPrintModal.value) { showPrintModal.value = false; return }
       if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
