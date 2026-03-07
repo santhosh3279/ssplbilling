@@ -46,7 +46,7 @@
           </div>
 
           <!-- Customer -->
-          <div class="flex items-center gap-2 w-[600px] ml-[50px]">
+          <div class="flex items-center gap-2 w-[750px] ml-[50px]">
             <label class="text-[10px] font-bold uppercase text-gray-500 whitespace-nowrap">Customer</label>
             <div class="flex-1 overflow-hidden flex items-baseline gap-4">
               <div 
@@ -61,13 +61,29 @@
               >
                 {{ custSearch || 'Not Selected' }}
               </div>
-              <div v-if="selectedCustomerDetails" class="flex-1 flex items-baseline justify-between font-bold whitespace-nowrap">
-                <span v-if="selectedCustomerDetails.address_line1" class="text-sm text-gray-600 truncate max-w-[250px] ml-2" :title="selectedCustomerDetails.address_line1">
+              <div v-if="selectedCustomerDetails" class="flex-1 flex items-center justify-between font-bold whitespace-nowrap overflow-hidden">
+                <span v-if="selectedCustomerDetails.address_line1" class="text-sm text-gray-600 truncate max-w-[180px] ml-2" :title="selectedCustomerDetails.address_line1">
                   {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
                 </span>
-                <span :class="selectedCustomerDetails.balance > 0 ? 'text-red-500' : 'text-green-500'" class="text-2xl ml-auto">
-                  Bal: &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} {{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}
-                </span>
+                
+                <!-- Stats Group -->
+                <div class="flex items-center gap-6 ml-auto">
+                  <!-- Last Invoice Date -->
+                  <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
+                    <span class="text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Last Inv</span>
+                    <span class="text-lg text-gray-800 font-medium">
+                      {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
+                    </span>
+                  </div>
+
+                  <!-- Ledger Balance -->
+                  <div class="flex flex-col items-end leading-none border-l border-gray-100 pl-6">
+                    <span class="text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Ledger Bal</span>
+                    <span :class="selectedCustomerDetails.balance > 0 ? 'text-red-500' : 'text-green-500'" class="text-2xl">
+                      &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-xs">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1153,6 +1169,19 @@ function enterEditMode() {
 const billDate = ref(new Date().toISOString().split('T')[0])
 const customer = ref('')
 const billSeries = ref('')
+
+watch(customer, async (newVal) => {
+  if (!newVal || !selectedCustomerDetails.value) return
+  try {
+    const stats = await frappeGet('ssplbilling.api.sales_api.get_customer_quick_stats', { customer: newVal })
+    if (stats && selectedCustomerDetails.value && selectedCustomerDetails.value.name === newVal) {
+      selectedCustomerDetails.value = { ...selectedCustomerDetails.value, ...stats }
+    }
+  } catch (e) {
+    console.warn('[SalesEntry] Failed to fetch customer quick stats:', e)
+  }
+})
+
 const paymentMode = ref('Cash')
 const discountPct = ref(0)
 const availableSeries = ref([])
