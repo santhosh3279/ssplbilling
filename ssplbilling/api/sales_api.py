@@ -234,6 +234,63 @@ def get_all_customers_detailed():
 
 
 @frappe.whitelist()
+def get_all_customers_for_sync():
+	"""Fetch all active customers for local IndexedDB sync.
+	Returns name, customer_name, mobile_no, whatsapp, address_line1, city.
+	No balance — keeps the payload fast.
+	"""
+	customers = frappe.get_all(
+		"Customer",
+		filters={"disabled": 0},
+		fields=["name", "customer_name", "mobile_no"],
+		order_by="customer_name asc",
+		limit=0,
+	)
+
+	# Batch fetch primary address (address_line1 + city) via Dynamic Link
+	addresses = frappe.db.sql(
+		"""
+		SELECT dl.link_name AS customer, addr.address_line1, addr.city
+		FROM `tabDynamic Link` dl
+		JOIN `tabAddress` addr ON addr.name = dl.parent
+		WHERE dl.link_doctype = 'Customer' AND dl.parenttype = 'Address'
+		ORDER BY addr.modified DESC
+		""",
+		as_dict=True,
+	)
+	addr_map = {}
+	for a in addresses:
+		addr_map.setdefault(a.customer, a)  # keep first (most recent due to ORDER BY)
+
+	# Batch fetch second phone number (WhatsApp) — stored as is_primary_mobile_no=0
+	# tabContact Phone has no 'type' column in this ERPNext version
+	wa_rows = frappe.db.sql(
+		"""
+		SELECT dl.link_name AS customer, cp.phone AS whatsapp
+		FROM `tabDynamic Link` dl
+		JOIN `tabContact Phone` cp
+			ON cp.parent = dl.parent
+			AND cp.parenttype = 'Contact'
+			AND cp.is_primary_mobile_no = 0
+		WHERE dl.link_doctype = 'Customer' AND dl.parenttype = 'Contact'
+		ORDER BY cp.idx ASC
+		""",
+		as_dict=True,
+	)
+	wa_map = {}
+	for w in wa_rows:
+		wa_map.setdefault(w.customer, w.whatsapp)
+
+	for c in customers:
+		addr = addr_map.get(c.name)
+		c["address_line1"] = addr.address_line1 if addr else ""
+		c["city"] = addr.city if addr else ""
+		c["whatsapp"] = wa_map.get(c.name, "")
+
+	return customers
+
+
+@frappe.whitelist()
 def search_customers(query):
     """Search customers by name or ID, including mobile, current balance, and address."""
     if not query or len(query) < 1:
@@ -277,6 +334,186 @@ def search_customers(query):
                 c["pincode"] = addr.pincode
 
     return customers
+
+
+@frappe.whitelist()
+def get_customer_full(customer):
+	"""Return complete customer data for the edit form in one server-side call:
+	Customer fields + primary linked Address + WhatsApp number from linked Contact."""
+	doc = frappe.get_doc("Customer", customer)
+
+	result = {
+		"name": doc.name,
+		"customer_name": doc.customer_name or "",
+		"mobile": doc.mobile_no or "",
+		"email": doc.email_id or "",
+		"gstin": doc.gstin or "",
+		"whatsapp": "",
+		"address_line1": "",
+		"address_line2": "",
+		"address_line3": "",
+		"city": "",
+		"pincode": "",
+		"state": "",
+	}
+
+	# Fetch the most recently modified linked Address
+	addr_name = frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": "Customer", "link_name": customer, "parenttype": "Address"},
+		"parent",
+		order_by="modified desc",
+	)
+	if addr_name:
+		addr = frappe.db.get_value(
+			"Address",
+			addr_name,
+			["address_line1", "address_line2", "address_line3", "city", "pincode", "state"],
+			as_dict=True,
+		)
+		if addr:
+			result["address_line1"] = addr.address_line1 or ""
+			result["address_line2"] = addr.address_line2 or ""
+			result["address_line3"] = addr.address_line3 or ""
+			result["city"] = addr.city or ""
+			result["pincode"] = addr.pincode or ""
+			result["state"] = addr.state or ""
+
+	# Fetch WhatsApp number from linked Contact's phone_nos
+	contact_name = frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"},
+		"parent",
+	)
+	if contact_name:
+		# WhatsApp is stored as the secondary phone (is_primary_mobile_no=0)
+		# tabContact Phone has no 'type' column in this ERPNext version
+		wa = frappe.db.get_value(
+			"Contact Phone",
+			{"parent": contact_name, "is_primary_mobile_no": 0},
+			"phone",
+			order_by="idx asc",
+		)
+		result["whatsapp"] = wa or ""
+
+	return result
+
+
+@frappe.whitelist()
+def get_customer_quick_stats(customer):
+	"""Return ledger balance and last submitted invoice date for a customer.
+	Used in the CustomerSearchModal footer panel.
+	"""
+	balance_row = frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(debit) - SUM(credit), 0) AS balance
+		FROM `tabGL Entry`
+		WHERE party_type = 'Customer' AND party = %s AND is_cancelled = 0
+		""",
+		(customer,),
+		as_dict=True,
+	)
+	last_inv = frappe.db.sql(
+		"""
+		SELECT posting_date
+		FROM `tabSales Invoice`
+		WHERE customer = %s AND docstatus = 1
+		ORDER BY posting_date DESC
+		LIMIT 1
+		""",
+		(customer,),
+		as_dict=True,
+	)
+	return {
+		"balance": float(balance_row[0].balance or 0) if balance_row else 0.0,
+		"last_invoice_date": str(last_inv[0].posting_date) if last_inv else None,
+	}
+
+
+@frappe.whitelist()
+def update_customer_full(data):
+	"""Update Customer + Address + Contact phones in one server-side call.
+
+	Expected data fields:
+	  name, customer_name, mobile, email, gstin,
+	  whatsapp, address_name (optional),
+	  address_line1, address_line2, address_line3, city, pincode, state
+	"""
+	if isinstance(data, str):
+		data = json.loads(data)
+
+	customer_id = data.get("name")
+	if not customer_id:
+		frappe.throw("Customer name is required")
+
+	# 1. Update Customer doc
+	cust = frappe.get_doc("Customer", customer_id)
+	cust.customer_name = data.get("customer_name") or cust.customer_name
+	cust.mobile_no = data.get("mobile") or ""
+	cust.email_id = data.get("email") or ""
+	cust.gstin = data.get("gstin") or ""
+	cust.save(ignore_permissions=True)
+
+	# 2. Update or create Address
+	address_name = data.get("address_name") or frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": "Customer", "link_name": customer_id, "parenttype": "Address"},
+		"parent",
+	)
+
+	if address_name:
+		addr = frappe.get_doc("Address", address_name)
+		addr.address_line1 = data.get("address_line1") or addr.address_line1
+		addr.address_line2 = data.get("address_line2") or ""
+		addr.address_line3 = data.get("address_line3") or ""
+		addr.city = data.get("city") or addr.city
+		addr.pincode = data.get("pincode") or ""
+		addr.state = data.get("state") or ""
+		addr.save(ignore_permissions=True)
+	elif data.get("address_line1") or data.get("city"):
+		addr = frappe.get_doc({
+			"doctype": "Address",
+			"address_title": cust.customer_name,
+			"address_type": "Billing",
+			"address_line1": data.get("address_line1") or "",
+			"address_line2": data.get("address_line2") or "",
+			"address_line3": data.get("address_line3") or "",
+			"city": data.get("city") or "",
+			"pincode": data.get("pincode") or "",
+			"state": data.get("state") or "",
+			"country": "India",
+			"links": [{"link_doctype": "Customer", "link_name": customer_id}],
+		})
+		addr.insert(ignore_permissions=True)
+
+	# 3. Update Contact phone numbers
+	contact_name = frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": "Customer", "link_name": customer_id, "parenttype": "Contact"},
+		"parent",
+	)
+	if contact_name:
+		contact = frappe.get_doc("Contact", contact_name)
+		mobile = data.get("mobile") or ""
+		whatsapp = data.get("whatsapp") or ""
+
+		# Ensure phone_nos has at least the primary entry
+		if contact.phone_nos:
+			contact.phone_nos[0].phone = mobile
+			contact.phone_nos[0].is_primary_mobile_no = 1
+		else:
+			contact.append("phone_nos", {"phone": mobile, "is_primary_mobile_no": 1})
+
+		# Update or add secondary (WhatsApp) entry
+		if len(contact.phone_nos) > 1:
+			contact.phone_nos[1].phone = whatsapp
+			contact.phone_nos[1].is_primary_mobile_no = 0
+		elif whatsapp:
+			contact.append("phone_nos", {"phone": whatsapp, "is_primary_mobile_no": 0})
+
+		contact.save(ignore_permissions=True)
+
+	return {"name": cust.name, "customer_name": cust.customer_name}
 
 
 @frappe.whitelist()
