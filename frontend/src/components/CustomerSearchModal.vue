@@ -159,10 +159,14 @@
               />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile</label>
                 <input v-model="(showNewForm ? newData : editData).mobile" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc.stop="handleEsc" />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">WhatsApp</label>
+                <input v-model="(showNewForm ? newData : editData).whatsapp" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc.stop="handleEsc" />
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
@@ -260,13 +264,13 @@ const showNewForm = ref(false)
 const showEditForm = ref(false)
 
 const newData = ref({ 
-  customer_name: '', mobile: '', email: '', gstin: '', 
+  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '', 
   address_line1: '', address_line2: '', address_line3: '', 
   city: 'Palakkad', pincode: '678000', state: 'Kerala' 
 })
 
 const editData = ref({ 
-  customer_name: '', mobile: '', email: '', gstin: '', 
+  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '', 
   address_line1: '', address_line2: '', address_line3: '', 
   city: '', pincode: '', state: '' 
 })
@@ -326,7 +330,7 @@ watch(() => props.show, (newVal) => {
 
 function openNewForm() {
   newData.value = { 
-    customer_name: props.query.trim(), mobile: '', email: '', gstin: '', 
+    customer_name: props.query.trim(), mobile: '', whatsapp: '', email: '', gstin: '', 
     address_line1: '', address_line2: '', address_line3: '', 
     city: 'Palakkad', pincode: '678000', state: 'Kerala' 
   }
@@ -342,6 +346,7 @@ function openEditForm(c) {
     name: target.name,
     customer_name: target.customer_name || '', 
     mobile: target.mobile_no || '', 
+    whatsapp: target.whatsapp_no || '',
     email: target.email_id || '', 
     gstin: target.gstin || '', 
     address_line1: target.address_line1 || '', 

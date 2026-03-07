@@ -504,6 +504,7 @@ import { fetchBillingSettings, fetchItemPrice, searchCustomers, frappeGet, frapp
 import { localDb } from '../services/localDb'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { createCustomer, updateCustomer } from '../api/customer.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -707,10 +708,7 @@ async function saveEditCust(data) {
   newCustSaving.value = true
   try {
     const customerId = data.name || selectedCustomerDetails.value?.name
-    const res = await apiPost('update_customer_details', { 
-      customer: customerId, 
-      data: JSON.stringify(data) 
-    })
+    const res = await updateCustomer(customerId, data)
 
     // Update local state
     if (selectedCustomerDetails.value && selectedCustomerDetails.value.name === customerId) {
@@ -734,7 +732,7 @@ async function saveNewCust(data) {
   if (!data.customer_name.trim()) { alert('Customer name is required'); return }
   newCustSaving.value = true
   try {
-    const res = await apiPost('quick_create_customer', { data: JSON.stringify(data) })
+    const res = await createCustomer(data)
     customer.value = res?.name || data.customer_name
     custSearch.value = res?.customer_name || data.customer_name
     showCustomerSearchModal.value = false // Close search modal after creating and selecting
@@ -742,7 +740,6 @@ async function saveNewCust(data) {
   } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
   newCustSaving.value = false
 }
-
 async function onCustomerEnter() {
   if (custDDIdx.value < custResults.value.length && showCustDD.value) { pickCust(custResults.value[custDDIdx.value]); return }
   if (custDDIdx.value === custResults.value.length && custSearch.value.trim() && showCustDD.value) { openCustomerSearch(); return }
