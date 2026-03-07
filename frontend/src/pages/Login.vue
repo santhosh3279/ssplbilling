@@ -3,7 +3,7 @@
     <div class="w-full max-w-sm">
       <!-- Logo -->
       <div class="mb-8 text-center">
-        <div class="mb-2 text-3xl font-bold text-gray-900">Wholesale<span class="font-light text-gray-400">Billing</span></div>
+        <div class="mb-2 text-3xl font-bold text-gray-900">SSPL<span class="font-light text-gray-400">Billing</span></div>
         <p class="text-sm text-gray-500">Sign in to your account</p>
       </div>
 
