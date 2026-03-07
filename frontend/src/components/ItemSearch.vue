@@ -177,6 +177,11 @@ function handleGlobalKeydown(e) {
   }
 }
 
+function closeSubForm() {
+  showDateModal.value = false
+  focus()
+}
+
 function handleDateConfirm(dates) {
   const item = props.results[props.selectedIdx]
   if (item) {
@@ -192,7 +197,7 @@ function focus() {
   })
 }
 
-defineExpose({ focus })
+defineExpose({ focus, closeSubForm })
 
 watch(() => props.selectedIdx, async (idx) => {
   await nextTick()

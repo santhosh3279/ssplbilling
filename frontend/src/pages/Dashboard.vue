@@ -587,8 +587,17 @@ async function refreshItemSearch() {
   }
 }
 
-async function openItemSearch() {
+async function openItemSearch(clear = true) {
   showItemSearchModal.value = true
+  // Reset any open sub-forms or date filters when opening the search modal
+  nextTick(() => {
+    itemSearchModalRef.value?.closeSubForm()
+  })
+
+  if (clear) {
+    itemSearchQuery.value = ''
+  }
+  
   if (allItems.value.length === 0) {
     await refreshItemSearch()
   } else {
@@ -612,7 +621,7 @@ function pickItem(item, dates) {
 
 function closeStockLedgerAndReturnToSearch() {
   showStockLedgerWindow.value = false
-  openItemSearch()
+  openItemSearch(false) // Return without clearing search
 }
 
 async function fetchSettings() {
