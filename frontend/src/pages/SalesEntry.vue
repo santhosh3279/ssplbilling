@@ -387,152 +387,6 @@
       </div>
     </div>
 
-    <!-- EDIT CUSTOMER SUBWINDOW -->
-    <div v-if="showEditCustForm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="showEditCustForm = false">
-      <div class="w-[600px] rounded-xl bg-white shadow-2xl">
-        <div class="border-b border-gray-200 px-5 py-4">
-          <div class="text-xl font-bold text-gray-700">Modify Customer Details</div>
-          <div class="text-sm text-gray-600">Update information for {{ selectedCustomerDetails?.customer_name }}</div>
-        </div>
-        <div class="flex flex-col gap-4 px-6 py-5 max-h-[75vh] overflow-y-auto">
-          <!-- Basic Info Row -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer Name *</label>
-            <input ref="editCustNameInput" v-model="editCustData.customer_name" class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" placeholder="Full name" @keydown.esc="showEditCustForm = false" />
-          </div>
-
-          <!-- Contact Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile</label>
-              <input v-model="editCustData.mobile" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc="showEditCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
-              <input v-model="editCustData.email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc="showEditCustForm = false" />
-            </div>
-          </div>
-
-          <!-- GSTIN -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
-            <input v-model="editCustData.gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc="showEditCustForm = false" />
-          </div>
-
-          <!-- Address Lines -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 1</label>
-            <input v-model="editCustData.address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc="showEditCustForm = false" />
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 2</label>
-              <input v-model="editCustData.address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc="showEditCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 3</label>
-              <input v-model="editCustData.address_line3" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Landmark" @keydown.esc="showEditCustForm = false" />
-            </div>
-          </div>
-
-          <!-- City, Pincode, State -->
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">City</label>
-              <input v-model="editCustData.city" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="City" @keydown.esc="showEditCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pincode</label>
-              <input v-model="editCustData.pincode" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="678XXX" @keydown.esc="showEditCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
-              <input v-model="editCustData.state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="State" @keydown.esc="showEditCustForm = false" />
-            </div>
-          </div>
-        </div>
-        <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-xl">
-          <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-100 transition-colors" @click="showEditCustForm = false">Cancel</button>
-          <button class="rounded bg-orange-600 px-6 py-2 font-bold text-white hover:bg-orange-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2" :disabled="newCustSaving" @click="saveEditCust">
-            {{ newCustSaving ? 'Updating...' : 'Update Details' }}
-            <kbd v-if="!newCustSaving" class="rounded border border-orange-500 bg-orange-500 px-1.5 py-0.5 font-mono text-xs text-white shadow-sm">End</kbd>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div v-if="showNewCustForm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="showNewCustForm = false">
-      <div class="w-[600px] rounded-xl bg-white shadow-2xl">
-        <div class="border-b border-gray-200 px-5 py-4">
-          <div class="text-xl font-bold text-gray-700">New Customer</div>
-          <div class="text-sm text-gray-600">Enter customer details to create a new record</div>
-        </div>
-        <div class="flex flex-col gap-4 px-6 py-5 max-h-[75vh] overflow-y-auto">
-          <!-- Basic Info Row -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer Name *</label>
-            <input ref="newCustNameInput" v-model="newCustData.customer_name" class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" placeholder="Full name" @keydown.esc="showNewCustForm = false" />
-          </div>
-
-          <!-- Contact Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile</label>
-              <input v-model="newCustData.mobile" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc="showNewCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
-              <input v-model="newCustData.email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc="showNewCustForm = false" />
-            </div>
-          </div>
-
-          <!-- GSTIN -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
-            <input v-model="newCustData.gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc="showNewCustForm = false" />
-          </div>
-
-          <!-- Address Lines -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 1</label>
-            <input v-model="newCustData.address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc="showNewCustForm = false" />
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 2</label>
-              <input v-model="newCustData.address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc="showNewCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 3</label>
-              <input v-model="newCustData.address_line3" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Landmark" @keydown.esc="showNewCustForm = false" />
-            </div>
-          </div>
-
-          <!-- City, Pincode, State -->
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">City</label>
-              <input v-model="newCustData.city" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="City" @keydown.esc="showNewCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pincode</label>
-              <input v-model="newCustData.pincode" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="678XXX" @keydown.esc="showNewCustForm = false" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
-              <input v-model="newCustData.state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="State" @keydown.esc="showNewCustForm = false" />
-            </div>
-          </div>
-        </div>
-        <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-xl">
-          <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 hover:bg-gray-100 transition-colors" @click="showNewCustForm = false">Cancel</button>
-          <button class="rounded bg-blue-600 px-6 py-2 font-bold text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2" :disabled="newCustSaving" @click="saveNewCust">
-            {{ newCustSaving ? 'Saving...' : 'Save & Select Customer' }}
-            <kbd v-if="!newCustSaving" class="rounded border border-blue-500 bg-blue-500 px-1.5 py-0.5 font-mono text-xs text-white shadow-sm">End</kbd>
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- ITEM SEARCH POPUP -->
     <div v-if="showSearch" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="closeSearch">
       <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-white shadow-2xl overflow-hidden">
@@ -589,16 +443,18 @@
     </div>
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
+      ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       v-model:query="custSearch"
       v-model:selectedIdx="custDDIdx"
       :results="custResults"
       :selectedCustomer="selectedCustomerDetails"
-      @close="showCustomerSearchModal = false"
+      :saving="newCustSaving"
+      @close="closeCustomerSearchModal"
       @select="pickCust"
-      @new-customer="openNewCustForm"
-      @edit-customer="openEditCustForm"
       @refresh="fetchAllCustomers(true)"
+      @save-new="saveNewCust"
+      @save-edit="saveEditCust"
     />
 
     <PrintOptionsModal
@@ -762,6 +618,7 @@ const seriesSelect = ref(null)
 const discountInput = ref(null)
 const saveButton = ref(null)
 const stayHereBtn = ref(null)
+const custSearchModalRef = ref(null)
 const resultsWrapRef = ref(null)
 const searchRowRefs = new Map()
 function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else searchRowRefs.delete(idx) }
@@ -839,76 +696,33 @@ function clearCustomerSelection() {
 }
 
 // ==================== NEW/EDIT CUSTOMER SUBWINDOW ====================
-const showNewCustForm = ref(false)
-const showEditCustForm = ref(false)
 const newCustSaving = ref(false)
-const newCustNameInput = ref(null)
-const editCustNameInput = ref(null)
-const newCustData = ref({ 
-  customer_name: '', mobile: '', email: '', gstin: '', 
-  address_line1: '', address_line2: '', address_line3: '', 
-  city: '', pincode: '', state: '' 
-})
-const editCustData = ref({ 
-  customer_name: '', mobile: '', email: '', gstin: '', 
-  address_line1: '', address_line2: '', address_line3: '', 
-  city: '', pincode: '', state: '' 
-})
 
-function openNewCustForm() {
-  newCustData.value = { 
-    customer_name: custSearch.value.trim(), mobile: '', email: '', gstin: '', 
-    address_line1: '', address_line2: '', address_line3: '', 
-    city: '', pincode: '', state: '' 
-  }
-  showCustDD.value = false
+function closeCustomerSearchModal() {
   showCustomerSearchModal.value = false
-  showNewCustForm.value = true
-  nextTick(() => newCustNameInput.value?.focus())
 }
 
-function openEditCustForm(c = null) {
-  const target = c || selectedCustomerDetails.value
-  if (!target || !target.name) return
-
-  editCustData.value = { 
-    customer_name: target.customer_name || '', 
-    mobile: target.mobile_no || '', 
-    email: target.email_id || '', 
-    gstin: target.gstin || '', 
-    address_line1: target.address_line1 || '', 
-    address_line2: target.address_line2 || '', 
-    address_line3: target.address_line3 || '', 
-    city: target.city || '', 
-    pincode: target.pincode || '', 
-    state: target.state || '' 
-  }
-  showCustomerSearchModal.value = false
-  showEditCustForm.value = true
-  nextTick(() => editCustNameInput.value?.focus())
-}
-
-async function saveEditCust() {
-  if (!editCustData.value.customer_name.trim()) { alert('Customer name is required'); return }
+async function saveEditCust(data) {
+  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
   newCustSaving.value = true
   try {
-    const customerId = selectedCustomerDetails.value?.name
+    const customerId = data.name || selectedCustomerDetails.value?.name
     const res = await apiPost('update_customer_details', { 
       customer: customerId, 
-      data: JSON.stringify(editCustData.value) 
+      data: JSON.stringify(data) 
     })
-    
+
     // Update local state
-    if (selectedCustomerDetails.value) {
-      Object.assign(selectedCustomerDetails.value, editCustData.value)
+    if (selectedCustomerDetails.value && selectedCustomerDetails.value.name === customerId) {
+      Object.assign(selectedCustomerDetails.value, data)
       selectedCustomerDetails.value.customer_name = res.customer_name
       custSearch.value = res.customer_name
     }
-    
+
     // Re-fetch all customers to update the cache
     fetchAllCustomers(true)
-    
-    showEditCustForm.value = false
+
+    custSearchModalRef.value?.closeSubForm()
     alert(`Customer ${res.customer_name} updated successfully!`)
   } catch (e) { 
     alert('Error: ' + (e?.message || 'Unknown')) 
@@ -916,14 +730,14 @@ async function saveEditCust() {
   newCustSaving.value = false
 }
 
-async function saveNewCust() {
-  if (!newCustData.value.customer_name.trim()) { alert('Customer name is required'); return }
+async function saveNewCust(data) {
+  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
   newCustSaving.value = true
   try {
-    const data = await apiPost('quick_create_customer', { data: JSON.stringify(newCustData.value) })
-    customer.value = data?.name || newCustData.value.customer_name
-    custSearch.value = data?.customer_name || newCustData.value.customer_name
-    showNewCustForm.value = false
+    const res = await apiPost('quick_create_customer', { data: JSON.stringify(data) })
+    customer.value = res?.name || data.customer_name
+    custSearch.value = res?.customer_name || data.customer_name
+    showCustomerSearchModal.value = false // Close search modal after creating and selecting
     nextTick(() => newCodeInput.value?.focus())
   } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
   newCustSaving.value = false
@@ -931,7 +745,7 @@ async function saveNewCust() {
 
 async function onCustomerEnter() {
   if (custDDIdx.value < custResults.value.length && showCustDD.value) { pickCust(custResults.value[custDDIdx.value]); return }
-  if (custDDIdx.value === custResults.value.length && custSearch.value.trim() && showCustDD.value) { openNewCustForm(); return }
+  if (custDDIdx.value === custResults.value.length && custSearch.value.trim() && showCustDD.value) { openCustomerSearch(); return }
   if (!customer.value) { alert('Please select or create a customer'); return }
   showCustDD.value = false; nextTick(() => newCodeInput.value?.focus())
 }
@@ -1544,34 +1358,6 @@ function handleBack() {
 
 // ==================== GLOBAL KEYS ====================
 function handleKeydown(e) {
-  if (showNewCustForm.value && e.key === 'End') {
-    e.preventDefault()
-    saveNewCust()
-    return
-  }
-  if (showEditCustForm.value && e.key === 'End') {
-    e.preventDefault()
-    saveEditCust()
-    return
-  }
-  if (showCustomerSearchModal.value) {
-    if (e.key === 'F5') {
-      e.preventDefault()
-      fetchAllCustomers(true)
-      return
-    }
-    if (e.key === 'F2') {
-      e.preventDefault()
-      openNewCustForm()
-      return
-    }
-    if (e.key === 'F3') {
-      e.preventDefault()
-      const c = custResults.value[custDDIdx.value]
-      if (c) openEditCustForm(c)
-      return
-    }
-  }
   if (showSearch.value) {
     if (e.key === 'F5') {
       e.preventDefault()
@@ -1579,14 +1365,15 @@ function handleKeydown(e) {
       return
     }
   }
-  if (!showCustomerSearchModal.value && !showNewCustForm.value && !showEditCustForm.value && e.key === 'F3' && selectedCustomerDetails.value) {
-    e.preventDefault()
-    openEditCustForm()
-    return
-  }
-  if (showSearch.value || showCustDD.value || showNewCustForm.value || showEditCustForm.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value) {
+  
+  if (showSearch.value || showCustDD.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value) {
     if (e.key === 'Escape') {
-      showSearch.value = false; showCustDD.value = false; showNewCustForm.value = false; showEditCustForm.value = false; showModifyBill.value = false; showCustomerSearchModal.value = false; showDiscardModal.value = false; showPrintModal.value = false
+      if (showDiscardModal.value) { showDiscardModal.value = false; return }
+      if (showPrintModal.value) { showPrintModal.value = false; return }
+      if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
+      if (showSearch.value) { showSearch.value = false; return }
+      if (showModifyBill.value) { showModifyBill.value = false; return }
+      if (showCustDD.value) { showCustDD.value = false; return }
     }
     return
   }
@@ -1599,6 +1386,15 @@ function handleKeydown(e) {
   if (e.key === 'F2') {
     e.preventDefault()
     openCustomerSearch()
+    return
+  }
+  if (e.key === 'F3' && selectedCustomerDetails.value) {
+    e.preventDefault()
+    // Open the modal first, then trigger its edit mode
+    openCustomerSearch()
+    nextTick(() => {
+      // The modal handles its own F3 internally now
+    })
     return
   }
   if (e.key === 'PageUp') {
