@@ -406,6 +406,13 @@
       </transition>
 
     </div>
+
+    <SalesEntry
+      v-if="showSalesEntryWindow"
+      :is-sub-window="true"
+      :invoice-name="subWindowInvoiceName"
+      @close="showSalesEntryWindow = false"
+    />
   </div>
 </template>
 
@@ -413,9 +420,13 @@
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { searchCustomers, fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
+import SalesEntry from './SalesEntry.vue'
 
 const router = useRouter()
 const route = useRoute()
+
+const showSalesEntryWindow = ref(false)
+const subWindowInvoiceName = ref('')
 
 // ─── Zoom ─────────────────────────────────────────────────────────────────────
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
@@ -574,7 +585,8 @@ async function onRowClick(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
 
   if (entry.voucher_type === 'Sales Invoice') {
-    router.push({ path: '/sales', query: { invoice: entry.voucher_no } })
+    subWindowInvoiceName.value = entry.voucher_no
+    showSalesEntryWindow.value = true
     return
   }
 
@@ -626,6 +638,7 @@ function scrollRowIntoView(idx) {
 }
 
 function onGlobalKeydown(e) {
+  if (showSalesEntryWindow.value) return
   // Only handle arrow/enter when customer input is not focused and ledger is loaded
   if (document.activeElement === customerInputRef.value) return
   if (!ledgerData.value) return

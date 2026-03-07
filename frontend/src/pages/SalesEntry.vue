@@ -1,5 +1,6 @@
 <template>
-  <div class="flex h-screen flex-col">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-white' : 'h-screen flex flex-col'">
+    <div class="flex h-full flex-col">
     <!-- Top Bar -->
     <header class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
       <div class="flex items-center gap-3">
@@ -523,6 +524,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -539,6 +541,19 @@ import { createCustomer, updateCustomer } from '../api/customer.js'
 const router = useRouter()
 const route = useRoute()
 const API = '/api/method/ssplbilling.api.sales_api'
+
+const props = defineProps({
+  isSubWindow: {
+    type: Boolean,
+    default: false
+  },
+  invoiceName: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['close'])
 
 const showPrintModal = ref(false)
 
@@ -1370,7 +1385,15 @@ function handleBack() {
   if (activeItems.value.length > 0 && !billSaved.value) {
     showDiscardModal.value = true
   } else {
-    router.push('/')
+    if (props.isSubWindow) {
+      emit('close')
+      return
+    }
+    if (route.query.from === 'ledger' && customer.value) {
+      router.push({ path: '/ledger', query: { customer: customer.value } })
+    } else {
+      router.push('/')
+    }
   }
 }
 
@@ -1444,8 +1467,10 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   fetchSeriesList()
   fetchDropdownOptions()
-  if (route.query.invoice) {
-    loadInvoice(route.query.invoice)
+  
+  const targetInvoice = props.isSubWindow ? props.invoiceName : route.query.invoice
+  if (targetInvoice) {
+    loadInvoice(targetInvoice)
   } else {
     nextTick(() => seriesSelect.value?.focus())
   }
