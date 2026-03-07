@@ -95,12 +95,10 @@ function formatDateToDisplay(iso) {
 
 function initDates() {
   const now = new Date()
-  const currentMonth = now.getMonth() + 1
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(now.getDate() - 7)
   
-  let fromYear = now.getFullYear()
-  if (currentMonth < 4) fromYear--
-  
-  const fromISO = `${fromYear}-04-01`
+  const fromISO = sevenDaysAgo.toISOString().slice(0, 10)
   const toISO = now.toISOString().slice(0, 10)
 
   dateData.value = {

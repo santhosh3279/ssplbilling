@@ -86,7 +86,9 @@
         <div class="mt-8 flex items-center justify-center gap-6 text-xs text-gray-400">
           <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F1</kbd> – <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F9</kbd> to quick open</span>
           <span class="text-gray-300">|</span>
-          <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">Ctrl+L</kbd> for Customer Search</span>
+          <span><kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">Ctrl+L</kbd> Customer</span>
+          <span class="text-gray-300">|</span>
+          <span><kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">Ctrl+I</kbd> Item Search</span>
         </div>
       </div>
     </main>
@@ -232,6 +234,18 @@
       @save-edit="saveEditCust"
     />
 
+    <!-- ITEM SEARCH MODAL -->
+    <ItemSearch
+      ref="itemSearchModalRef"
+      :show="showItemSearchModal"
+      v-model:query="itemSearchQuery"
+      v-model:selectedIdx="itemDDIdx"
+      :results="itemResults"
+      @close="showItemSearchModal = false"
+      @select="pickItem"
+      @refresh="refreshItemSearch"
+    />
+
     <!-- CUSTOMER LEDGER SUB-WINDOW -->
     <CustomerLedger
       v-if="showLedgerWindow"
@@ -251,7 +265,8 @@ import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import CustomerLedger from './CustomerLedger.vue'
-import { searchCustomers } from '../api.js'
+import ItemSearch from '../components/ItemSearch.vue'
+import { searchCustomers, searchItems, fetchItemDetails } from '../api.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 
 const router = useRouter()
@@ -310,12 +325,20 @@ const routeMap = {
 function handleKeydown(e) {
   if (showGeneralSettings.value) return
   if (showCustomerSearchModal.value) return
+  if (showItemSearchModal.value) return
   if (showLedgerWindow.value) return
 
   // Ctrl + L -> Advanced Customer Search
   if (e.ctrlKey && e.key === 'l') {
     e.preventDefault()
     openCustomerSearch()
+    return
+  }
+
+  // Ctrl + I -> Advanced Item Search
+  if (e.ctrlKey && e.key === 'i') {
+    e.preventDefault()
+    openItemSearch()
     return
   }
 
@@ -467,6 +490,89 @@ async function saveNewCust(data, dates) {
     showLedgerWindow.value = true
   } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
   newCustSaving.value = false
+}
+
+// ==================== ITEM SEARCH ====================
+const showItemSearchModal = ref(false)
+const itemSearchQuery = ref('')
+const allItems = ref([])
+const itemResults = ref([])
+const itemDDIdx = ref(0)
+const itemSearchModalRef = ref(null)
+const isItemLoading = ref(false)
+
+function filterItems() {
+  const q = itemSearchQuery.value.toLowerCase().trim()
+  if (!q) {
+    itemResults.value = allItems.value.slice(0, 100)
+    return
+  }
+  itemResults.value = allItems.value.filter(i =>
+    i.item_code.toLowerCase().includes(q) ||
+    i.item_name.toLowerCase().includes(q)
+  ).slice(0, 100)
+  itemDDIdx.value = 0
+}
+
+watch(itemSearchQuery, filterItems)
+
+async function enrichItemResults(items) {
+  // Only enrich the first 20 for performance, or as needed
+  const toEnrich = items.slice(0, 20)
+  for (const item of toEnrich) {
+    if (item.enriched) continue
+    try {
+      const details = await fetchItemDetails(item.item_code, defaultSeries.value || 'Standard Selling')
+      item.price = details.price
+      item.stock = details.stock
+      item.enriched = true
+    } catch (e) {
+      console.warn('Enrich failed for', item.item_code)
+    } finally {
+      item._loading = false
+    }
+  }
+}
+
+// Watch itemResults to enrich the visible ones
+watch(itemResults, (newVal) => {
+  if (newVal.length > 0) {
+    enrichItemResults(newVal)
+  }
+}, { deep: true })
+
+async function refreshItemSearch() {
+  isItemLoading.value = true
+  try {
+    const items = await searchItems('')
+    allItems.value = items.map(i => ({ 
+      ...i, 
+      price: 0, 
+      stock: 0, 
+      _loading: true,
+      enriched: false 
+    }))
+    filterItems()
+  } catch (e) {
+    console.error('Item search refresh failed:', e)
+  } finally {
+    isItemLoading.value = false
+  }
+}
+
+async function openItemSearch() {
+  showItemSearchModal.value = true
+  if (allItems.value.length === 0) {
+    await refreshItemSearch()
+  } else {
+    filterItems()
+  }
+  nextTick(() => itemSearchModalRef.value?.focus())
+}
+
+function pickItem(item) {
+  showItemSearchModal.value = false
+  alert(`Item: ${item.item_code}\nName: ${item.item_name}\nPrice: ₹${item.price}\nStock: ${item.stock}`)
 }
 
 async function fetchSettings() {
