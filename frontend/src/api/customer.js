@@ -22,11 +22,10 @@ async function createAddress(data, customerName) {
 }
 
 /**
- * After ERPNext auto-creates a Contact for the Customer, find it and append
- * the WhatsApp number to its phone_nos child table.
- * Silently skips if the Contact isn't found or the call fails.
+ * Updates or appends WhatsApp number to a Contact linked to the Customer.
+ * WhatsApp is treated as the Second Mobile Number (Index 1) in the phone_nos table.
  */
-async function addWhatsAppToContact(customerName, whatsapp) {
+async function syncContactPhones(customerName, mobile, whatsapp) {
   try {
     const contacts = await frappeGet('frappe.client.get_list', {
       doctype: 'Contact',
@@ -44,24 +43,48 @@ async function addWhatsAppToContact(customerName, whatsapp) {
       name: contacts[0].name,
     })
 
-    const alreadyAdded = (contact.phone_nos || []).some(p => p.phone === whatsapp)
-    if (alreadyAdded) return
-
     contact.phone_nos = contact.phone_nos || []
-    contact.phone_nos.push({ phone: whatsapp, is_primary_mobile_no: 0, type: 'WhatsApp' })
+
+    // Update or add Primary Mobile (Index 0)
+    if (mobile || mobile === '') {
+      if (contact.phone_nos.length > 0) {
+        contact.phone_nos[0].phone = mobile
+        contact.phone_nos[0].is_primary_mobile_no = 1
+      } else {
+        contact.phone_nos.push({ phone: mobile, is_primary_mobile_no: 1, type: 'Mobile' })
+      }
+    }
+
+    // Update or add WhatsApp as the Second Mobile Number (Index 1)
+    if (whatsapp || whatsapp === '') {
+      if (contact.phone_nos.length > 1) {
+        contact.phone_nos[1].phone = whatsapp
+        contact.phone_nos[1].is_primary_mobile_no = 0
+      } else {
+        // Ensure there's at least one entry before adding the second
+        if (contact.phone_nos.length === 0) {
+          contact.phone_nos.push({ phone: mobile || '', is_primary_mobile_no: 1, type: 'Mobile' })
+        }
+        contact.phone_nos.push({ phone: whatsapp, is_primary_mobile_no: 0, type: 'Mobile' })
+      }
+    }
+
     await frappePost('frappe.client.save', { doc: contact })
   } catch (e) {
-    console.warn('[customer] addWhatsAppToContact failed:', e.message)
+    console.warn('[customer] syncContactPhones failed:', e.message)
   }
 }
 
 /**
+ * After ERPNext auto-creates a Contact for the Customer, find it and append
+ * the WhatsApp number to its phone_nos child table.
+ */
+async function addWhatsAppToContact(customerName, whatsapp) {
+  return syncContactPhones(customerName, null, whatsapp)
+}
+
+/**
  * Creates a Customer with mobile_no and email_id set directly on the doc.
- * ERPNext automatically creates a linked Contact from these fields —
- * do NOT manually insert a Contact to avoid duplicates.
- *
- * If a WhatsApp number is provided, it is appended to the auto-created Contact.
- * Then creates a Billing Address if address data is provided.
  */
 export async function createCustomer(data) {
   const customerDoc = {
@@ -77,7 +100,6 @@ export async function createCustomer(data) {
 
   const customer = await frappePost('frappe.client.insert', { doc: customerDoc })
 
-  // Run address creation and WhatsApp update in parallel
   await Promise.all([
     (data.address_line1 || data.city) ? createAddress(data, customer.name) : Promise.resolve(),
     data.whatsapp ? addWhatsAppToContact(customer.name, data.whatsapp) : Promise.resolve(),
@@ -87,25 +109,96 @@ export async function createCustomer(data) {
 }
 
 /**
- * Fetches full customer details for the edit form via a single server-side call:
- * Customer fields + primary linked Address + WhatsApp from linked Contact.
+ * Fetches full customer details using standard Frappe CRUD.
+ * Avoids custom API 'ssplbilling.api.sales_api.get_customer_full' which may 500.
  */
 export async function fetchCustomerDetails(customerId) {
-  return frappeGet('ssplbilling.api.sales_api.get_customer_full', { customer: customerId })
+  const result = {
+    name: customerId,
+    customer_name: '',
+    mobile: '',
+    whatsapp: '',
+    email: '',
+    gstin: '',
+    address_name: '',
+    address_line1: '',
+    address_line2: '',
+    address_line3: '',
+    city: '',
+    pincode: '',
+    state: '',
+  }
+
+  try {
+    // 1. Fetch Customer basic info
+    const cust = await frappeGet('frappe.client.get', {
+      doctype: 'Customer',
+      name: customerId,
+    })
+    result.customer_name = cust.customer_name || ''
+    result.mobile = cust.mobile_no || ''
+    result.email = cust.email_id || ''
+    result.gstin = cust.gstin || ''
+
+    // 2. Fetch linked Address
+    const addresses = await frappeGet('frappe.client.get_list', {
+      doctype: 'Address',
+      fields: ['name'],
+      filters: [
+        ['Dynamic Link', 'link_doctype', '=', 'Customer'],
+        ['Dynamic Link', 'link_name', '=', customerId],
+      ],
+      limit_page_length: 1,
+    })
+
+    if (addresses.length) {
+      const addr = await frappeGet('frappe.client.get', {
+        doctype: 'Address',
+        name: addresses[0].name,
+      })
+      result.address_name = addr.name
+      result.address_line1 = addr.address_line1 || ''
+      result.address_line2 = addr.address_line2 || ''
+      result.address_line3 = addr.address_line3 || ''
+      result.city = addr.city || ''
+      result.pincode = addr.pincode || ''
+      result.state = addr.state || ''
+    }
+
+    // 3. Fetch linked Contact for WhatsApp (Index 1)
+    const contacts = await frappeGet('frappe.client.get_list', {
+      doctype: 'Contact',
+      fields: ['name'],
+      filters: [
+        ['Dynamic Link', 'link_doctype', '=', 'Customer'],
+        ['Dynamic Link', 'link_name', '=', customerId],
+      ],
+      limit_page_length: 1,
+    })
+
+    if (contacts.length) {
+      const contact = await frappeGet('frappe.client.get', {
+        doctype: 'Contact',
+        name: contacts[0].name,
+      })
+      if (contact.phone_nos && contact.phone_nos.length > 1) {
+        result.whatsapp = contact.phone_nos[1].phone
+      }
+    }
+  } catch (e) {
+    console.error('[customer] fetchCustomerDetails (standard) failed:', e.message)
+    throw e // Rethrow so caller knows it failed
+  }
+
+  return result
 }
 
 /**
- * Saves updated fields on an existing Customer.
- * mobile_no on the Customer doc is the source of truth for the auto-created Contact.
+ * Updates Customer + Address + Contact phones via a single server-side call.
+ * Avoids partial-document save errors from frappe.client.save.
  */
 export async function updateCustomer(customerId, data) {
-  const doc = {
-    doctype: 'Customer',
-    name: customerId,
-    customer_name: data.customer_name,
-    mobile_no: data.mobile || '',
-    email_id: data.email || '',
-    gstin: data.gstin || '',
-  }
-  return frappePost('frappe.client.save', { doc })
+  return frappePost('ssplbilling.api.sales_api.update_customer_full', {
+    data: JSON.stringify({ ...data, name: customerId }),
+  })
 }

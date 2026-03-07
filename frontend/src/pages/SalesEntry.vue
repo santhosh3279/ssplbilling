@@ -640,7 +640,7 @@ async function fetchAllCustomers(force = false) {
     
     // 2. If empty or forced, sync from server
     if (!custFromDb || custFromDb.length === 0) {
-      custFromDb = await frappeGet('ssplbilling.api.sales_api.get_all_customers_detailed')
+      custFromDb = await frappeGet('ssplbilling.api.sales_api.get_all_customers_for_sync')
       if (custFromDb && custFromDb.length) {
         await localDb.clearStore('customers')
         await localDb.saveCustomers(custFromDb)
@@ -660,10 +660,11 @@ function filterCustomers() {
     custResults.value = allCustomers.value.slice(0, 100)
     return
   }
-  custResults.value = allCustomers.value.filter(c => 
-    c.customer_name.toLowerCase().includes(q) || 
+  custResults.value = allCustomers.value.filter(c =>
+    c.customer_name.toLowerCase().includes(q) ||
     c.name.toLowerCase().includes(q) ||
-    (c.mobile_no && c.mobile_no.includes(q))
+    (c.mobile_no && c.mobile_no.includes(q)) ||
+    (c.whatsapp && c.whatsapp.includes(q))
   ).slice(0, 100)
   custDDIdx.value = 0
 }
@@ -1162,6 +1163,8 @@ watch(billSeries, (series) => {
   fetchNextBillNo()
 })
 
+import { session } from '../session.js'
+
 async function fetchSeriesList() {
   try {
     const settings = await fetchBillingSettings()
@@ -1171,7 +1174,7 @@ async function fetchSeriesList() {
     let allowedList = []
     let userAllowedString = ''
     try {
-      const d = await frappeGet('ssplbilling.api.sales_api.get_allowed_series')
+      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series')
       allowedList = d.allowed_series || []
       userAllowedString = d.user_allowed_string || ''
     } catch (e) {

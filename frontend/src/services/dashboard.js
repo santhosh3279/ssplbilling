@@ -1,4 +1,5 @@
 import { frappeGet, frappePost } from '../api.js'
+import { session } from '../session.js'
 
 const API_BASE = 'ssplbilling.api.dashboard_api'
 
@@ -14,7 +15,19 @@ export const dashboardApi = {
    * Return a list of naming series allowed for the current user.
    */
   getAllowedSeries: () => {
-    return frappeGet(`${API_BASE}.get_allowed_series`)
+    return frappeGet(`${API_BASE}.get_allowed_series`, {
+      user: session.user.value
+    })
+  },
+
+  /**
+   * Save the user-specific zoom preference to the server.
+   */
+  saveDefaultZoom: (zoom) => {
+    return frappePost(`${API_BASE}.save_default_zoom`, {
+      user: session.user.value,
+      zoom: zoom
+    })
   },
 
   /**

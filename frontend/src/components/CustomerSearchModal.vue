@@ -58,8 +58,8 @@
           <thead class="sticky top-0 bg-white shadow-sm">
             <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b">
               <th class="px-5 py-3 text-left">Customer Name</th>
-              <th class="px-5 py-3 text-left">Mobile Number</th>
-              <th class="px-5 py-3 text-right">Balance</th>
+              <th class="px-5 py-3 text-left">Mobile</th>
+              <th class="px-5 py-3 text-left">WhatsApp</th>
               <th class="px-5 py-3 text-left">Address</th>
             </tr>
           </thead>
@@ -67,28 +67,22 @@
             <tr
               v-for="(c, idx) in results"
               :key="c.name"
-              class="cursor-pointer hover:bg-blue-50/50"
-              :class="{ 'bg-blue-50': selectedIdx === idx }"
+              class="cursor-pointer hover:bg-blue-100"
+              :class="{ 'bg-blue-200': selectedIdx === idx }"
               @click="$emit('select', c)"
               @mouseenter="$emit('update:selectedIdx', idx)"
             >
               <td class="px-5 py-2">
                 <div class="font-medium text-gray-800">{{ c.customer_name }}</div>
               </td>
-              <td class="px-5 py-2 text-gray-600">
-                {{ c.mobile_no || '--' }}
-              </td>
-              <td class="px-5 py-2 text-right">
-                <span :class="c.balance > 0 ? 'text-red-600' : c.balance < 0 ? 'text-green-600' : 'text-gray-400'" class="font-bold">
-                  &#8377;{{ (c.balance || 0).toFixed(2) }}
-                </span>
-              </td>
+              <td class="px-5 py-2 text-gray-600">{{ c.mobile_no || '--' }}</td>
+              <td class="px-5 py-2 text-gray-600">{{ c.whatsapp || '--' }}</td>
               <td class="px-5 py-2 text-gray-500 text-lg truncate max-w-[300px]">
                 {{ c.address_line1 }}{{ c.city ? ', ' + c.city : '' }}
               </td>
             </tr>
             <tr v-if="!results.length">
-              <td colspan="4" class="px-5 py-12 text-center text-gray-400 text-xl italic">
+              <td colspan="5" class="px-5 py-12 text-center text-gray-400 text-xl italic">
                 No customers found matching "{{ query }}"
               </td>
             </tr>
@@ -98,29 +92,73 @@
 
       <!-- Detail Footer -->
       <div v-if="results[selectedIdx]" class="border-t border-gray-200 bg-blue-50/30 px-6 py-3">
-        <div class="flex flex-wrap gap-x-8 gap-y-2">
-          <div class="flex flex-col">
-            <span class="text-[10px] font-bold uppercase text-gray-400">Current Balance</span>
-            <span class="text-xl font-bold" :class="results[selectedIdx].balance > 0 ? 'text-red-600' : 'text-green-600'">
-              &#8377;{{ (results[selectedIdx].balance || 0).toFixed(2) }}
-              <span class="text-xs font-normal uppercase ml-1">{{ results[selectedIdx].balance > 0 ? 'Debit' : 'Credit' }}</span>
-            </span>
+        <div class="flex flex-wrap items-start gap-x-8 gap-y-2">
+
+          <!-- Balance -->
+          <div class="flex flex-col min-w-[130px]">
+            <span class="text-[10px] font-bold uppercase text-gray-400">Ledger Balance</span>
+            <template v-if="footerLoading">
+              <span class="mt-0.5 inline-block h-4 w-24 animate-pulse rounded bg-gray-200"></span>
+            </template>
+            <template v-else-if="footerStats">
+              <span
+                class="text-xl font-bold"
+                :class="footerStats.balance > 0 ? 'text-red-600' : footerStats.balance < 0 ? 'text-green-600' : 'text-gray-400'"
+              >
+                &#8377;{{ Math.abs(footerStats.balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                <span class="text-xs font-normal uppercase ml-1">
+                  {{ footerStats.balance > 0 ? 'DR' : footerStats.balance < 0 ? 'CR' : '' }}
+                </span>
+              </span>
+            </template>
+            <template v-else>
+              <span class="text-lg text-gray-300">--</span>
+            </template>
           </div>
+
+          <!-- Last Invoice -->
+          <div class="flex flex-col min-w-[130px]">
+            <span class="text-[10px] font-bold uppercase text-gray-400">Last Invoice</span>
+            <template v-if="footerLoading">
+              <span class="mt-0.5 inline-block h-4 w-20 animate-pulse rounded bg-gray-200"></span>
+            </template>
+            <template v-else-if="footerStats">
+              <span class="text-lg font-semibold text-gray-700">
+                {{ footerStats.last_invoice_date
+                    ? new Date(footerStats.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : 'No invoices' }}
+              </span>
+            </template>
+            <template v-else>
+              <span class="text-lg text-gray-300">--</span>
+            </template>
+          </div>
+
+          <!-- Mobile -->
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold uppercase text-gray-400">Mobile</span>
+            <span class="text-lg font-semibold text-gray-700">{{ results[selectedIdx].mobile_no || '--' }}</span>
+          </div>
+
+          <!-- WhatsApp -->
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold uppercase text-gray-400">WhatsApp</span>
+            <span class="text-lg font-semibold text-gray-700">{{ results[selectedIdx].whatsapp || '--' }}</span>
+          </div>
+
+          <!-- Address -->
           <div class="flex flex-col flex-1">
             <span class="text-[10px] font-bold uppercase text-gray-400">Address</span>
             <span class="text-lg text-gray-700">
               <template v-if="results[selectedIdx].address_line1">
-                {{ results[selectedIdx].address_line1 }}{{ results[selectedIdx].city ? ', ' + results[selectedIdx].city : '' }}{{ results[selectedIdx].pincode ? ' - ' + results[selectedIdx].pincode : '' }}
+                {{ results[selectedIdx].address_line1 }}{{ results[selectedIdx].city ? ', ' + results[selectedIdx].city : '' }}
               </template>
               <template v-else>
                 <span class="text-gray-300 italic">No address provided</span>
               </template>
             </span>
           </div>
-          <div class="flex flex-col">
-            <span class="text-[10px] font-bold uppercase text-gray-400">Mobile</span>
-            <span class="text-lg text-gray-700">{{ results[selectedIdx].mobile_no || '--' }}</span>
-          </div>
+
         </div>
       </div>
 
@@ -165,24 +203,38 @@
               />
             </div>
 
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile</label>
-                <input v-model="(showNewForm ? newData : editData).mobile" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc.stop="handleEsc" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile Number *</label>
+                <input 
+                  v-model="(showNewForm ? newData : editData).mobile" 
+                  class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" 
+                  placeholder="10-digit mobile" 
+                  maxlength="10"
+                  @keydown.esc.stop="handleEsc" 
+                />
               </div>
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">WhatsApp</label>
-                <input v-model="(showNewForm ? newData : editData).whatsapp" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="+91 XXXXX XXXXX" @keydown.esc.stop="handleEsc" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">WhatsApp Number</label>
+                <input 
+                  v-model="(showNewForm ? newData : editData).whatsapp" 
+                  class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" 
+                  placeholder="10-digit whatsapp" 
+                  maxlength="10"
+                  @keydown.esc.stop="handleEsc" 
+                />
               </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
                 <input v-model="(showNewForm ? newData : editData).email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc.stop="handleEsc" />
               </div>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
-              <input v-model="(showNewForm ? newData : editData).gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="handleEsc" />
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
+                <input v-model="(showNewForm ? newData : editData).gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="handleEsc" />
+              </div>
             </div>
 
             <div class="flex flex-col gap-1.5">
@@ -190,15 +242,9 @@
               <input v-model="(showNewForm ? newData : editData).address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="handleEsc" />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 2</label>
-                <input v-model="(showNewForm ? newData : editData).address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc.stop="handleEsc" />
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 3</label>
-                <input v-model="(showNewForm ? newData : editData).address_line3" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Landmark" @keydown.esc.stop="handleEsc" />
-              </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 2</label>
+              <input v-model="(showNewForm ? newData : editData).address_line2" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Area / Locality" @keydown.esc.stop="handleEsc" />
             </div>
 
             <div class="grid grid-cols-3 gap-4">
@@ -208,7 +254,13 @@
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pincode</label>
-                <input v-model="(showNewForm ? newData : editData).pincode" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="678XXX" @keydown.esc.stop="handleEsc" />
+                <input 
+                  v-model="(showNewForm ? newData : editData).pincode" 
+                  class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" 
+                  placeholder="678XXX" 
+                  maxlength="6"
+                  @keydown.esc.stop="handleEsc" 
+                />
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
@@ -245,6 +297,7 @@
 <script setup>
 import { ref, nextTick, watch } from 'vue'
 import { fetchCustomerDetails } from '../api/customer.js'
+import { frappeGet } from '../api.js'
 
 
 const props = defineProps({
@@ -297,13 +350,13 @@ const indianStates = [
 
 const newData = ref({ 
   customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '', 
-  address_line1: '', address_line2: '', address_line3: '', 
+  address_line1: '', address_line2: '', 
   city: 'Palakkad', pincode: '678000', state: 'Kerala' 
 })
 
 const editData = ref({ 
   customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '', 
-  address_line1: '', address_line2: '', address_line3: '', 
+  address_line1: '', address_line2: '', 
   city: '', pincode: '', state: '' 
 })
 
@@ -351,6 +404,28 @@ function focus() {
 
 defineExpose({ focus, closeSubForm })
 
+// ── Footer live stats (balance + last invoice) ────────────────────────────────
+const footerStats = ref(null)   // { balance, last_invoice_date } or null
+const footerLoading = ref(false)
+let statsTimer = null
+
+watch(() => props.selectedIdx, (idx) => {
+  clearTimeout(statsTimer)
+  footerStats.value = null
+  const customer = props.results[idx]
+  if (!customer) return
+  statsTimer = setTimeout(async () => {
+    footerLoading.value = true
+    try {
+      footerStats.value = await frappeGet(
+        'ssplbilling.api.sales_api.get_customer_quick_stats',
+        { customer: customer.name }
+      )
+    } catch { /* silently ignore */ }
+    footerLoading.value = false
+  }, 350)
+})
+
 watch(() => props.show, (newVal) => {
   if (newVal) {
     focus()
@@ -363,7 +438,7 @@ watch(() => props.show, (newVal) => {
 function openNewForm() {
   newData.value = { 
     customer_name: props.query.trim(), mobile: '', whatsapp: '', email: '', gstin: '', 
-    address_line1: '', address_line2: '', address_line3: '', 
+    address_line1: '', address_line2: '', 
     city: 'Palakkad', pincode: '678000', state: 'Kerala' 
   }
   showNewForm.value = true
@@ -383,11 +458,10 @@ async function openEditForm(c) {
     email: target.email_id || '',
     gstin: target.gstin || '',
     address_line1: target.address_line1 || '',
-    address_line2: '',
-    address_line3: '',
+    address_line2: target.address_line2 || '',
     city: target.city || '',
-    pincode: '',
-    state: '',
+    pincode: target.pincode || '',
+    state: target.state || 'Kerala',
   }
   showEditForm.value = true
   editLoading.value = true
@@ -395,7 +469,9 @@ async function openEditForm(c) {
 
   try {
     const full = await fetchCustomerDetails(target.name)
-    editData.value = full
+    // Merge fetched details into editData
+    // We expect full to contain address fields and whatsapp from contact
+    editData.value = { ...editData.value, ...full }
   } catch (e) {
     console.warn('[CustomerSearchModal] fetchCustomerDetails failed:', e.message)
   } finally {
@@ -409,11 +485,34 @@ function closeSubForm() {
   focus()
 }
 
+function validateForm(data) {
+  if (!data.customer_name.trim()) {
+    alert('Customer Name is required')
+    return false
+  }
+  if (!data.mobile || !/^\d{10}$/.test(data.mobile)) {
+    alert('Please enter a valid 10-digit Mobile Number')
+    return false
+  }
+  if (data.whatsapp && !/^\d{10}$/.test(data.whatsapp)) {
+    alert('Please enter a valid 10-digit WhatsApp Number')
+    return false
+  }
+  if (data.pincode && !/^\d{6}$/.test(data.pincode)) {
+    alert('Please enter a valid 6-digit Pincode')
+    return false
+  }
+  return true
+}
+
 function submitForm() {
+  const data = showNewForm.value ? newData.value : editData.value
+  if (!validateForm(data)) return
+
   if (showNewForm.value) {
-    emit('save-new', newData.value)
+    emit('save-new', data)
   } else if (showEditForm.value) {
-    emit('save-edit', editData.value)
+    emit('save-edit', data)
   }
 }
 </script>
