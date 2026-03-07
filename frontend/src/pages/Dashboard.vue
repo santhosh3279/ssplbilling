@@ -266,7 +266,7 @@ import { dashboardApi } from '../services/dashboard'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import CustomerLedger from './CustomerLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
-import { searchCustomers, searchItems, fetchItemDetails } from '../api.js'
+import { searchCustomers, fetchItemPrice, fetchItemStockForWarehouses } from '../api.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 
 const router = useRouter()
@@ -517,21 +517,31 @@ function filterItems() {
 watch(itemSearchQuery, filterItems)
 
 async function enrichItemResults(items) {
-  // Only enrich the first 20 for performance, or as needed
-  const toEnrich = items.slice(0, 20)
-  for (const item of toEnrich) {
-    if (item.enriched) continue
+  // Enrich visible ones in parallel batches
+  const toEnrich = items.slice(0, 20).filter(i => !i.enriched)
+  if (!toEnrich.length) return
+
+  // Collect warehouses from the user's allowed billing series
+  const allowedWarehouses = [...new Set(
+    filteredBillingSeries.value.map(bs => bs.warehouse).filter(Boolean)
+  )]
+  const priceList = filteredBillingSeries.value[0]?.price_list || defaultSeries.value || 'Standard Selling'
+
+  await Promise.all(toEnrich.map(async (item) => {
     try {
-      const details = await fetchItemDetails(item.item_code, defaultSeries.value || 'Standard Selling')
-      item.price = details.price
-      item.stock = details.stock
+      const [price, stock] = await Promise.all([
+        fetchItemPrice(item.item_code, priceList),
+        fetchItemStockForWarehouses(item.item_code, allowedWarehouses),
+      ])
+      item.price = price
+      item.stock = stock
       item.enriched = true
+      item._loading = false
     } catch (e) {
       console.warn('Enrich failed for', item.item_code)
-    } finally {
       item._loading = false
     }
-  }
+  }))
 }
 
 // Watch itemResults to enrich the visible ones
@@ -544,13 +554,13 @@ watch(itemResults, (newVal) => {
 async function refreshItemSearch() {
   isItemLoading.value = true
   try {
-    const items = await searchItems('')
-    allItems.value = items.map(i => ({ 
-      ...i, 
-      price: 0, 
-      stock: 0, 
+    const items = await dashboardApi.fetchAllItemsForSync()
+    allItems.value = items.map(i => ({
+      ...i,
+      price: 0,
+      stock: 0,
       _loading: true,
-      enriched: false 
+      enriched: false
     }))
     filterItems()
   } catch (e) {

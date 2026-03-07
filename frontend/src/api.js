@@ -279,6 +279,30 @@ export async function fetchItemStock(itemCode, warehouse = null) {
 }
 
 /**
+ * Fetch available stock summed across a specific list of warehouses.
+ * Pass an empty array to sum all warehouses.
+ *
+ * @param {string} itemCode
+ * @param {string[]} warehouses  e.g. ["Stores - SSPL", "Finished Goods - SSPL"]
+ * @returns {Promise<number>}
+ */
+export async function fetchItemStockForWarehouses(itemCode, warehouses = []) {
+  try {
+    const filters = [["item_code", "=", itemCode]];
+    if (warehouses.length) filters.push(["warehouse", "in", warehouses]);
+    const bins = await frappeGet("frappe.client.get_list", {
+      doctype: "Bin",
+      fields: ["actual_qty"],
+      filters,
+      limit_page_length: 100,
+    });
+    return bins.reduce((s, b) => s + Number(b.actual_qty || 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Convenience: fetch price + stock in parallel.
  * @returns {Promise<{price: number, stock: number}>}
  */

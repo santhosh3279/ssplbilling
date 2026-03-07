@@ -79,9 +79,13 @@
               <td class="px-5 py-2">
                 <div class="font-medium text-gray-800">{{ item.item_name }}</div>
               </td>
-              <td class="px-5 py-2 text-right font-mono">₹{{ (item.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</td>
+              <td class="px-5 py-2 text-right font-mono">
+                <span v-if="item._loading" class="animate-pulse text-gray-300">...</span>
+                <span v-else>₹{{ (item.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+              </td>
               <td class="px-5 py-2 text-right">
-                <span class="font-bold" :class="item.stock <= 0 ? 'text-red-600' : 'text-gray-700'">
+                <span v-if="item._loading" class="animate-pulse text-gray-300">...</span>
+                <span v-else class="font-bold" :class="item.stock <= 0 ? 'text-red-600' : 'text-gray-700'">
                   {{ item.stock || 0 }}
                 </span>
               </td>
