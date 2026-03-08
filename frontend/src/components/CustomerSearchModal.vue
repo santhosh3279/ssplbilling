@@ -95,63 +95,43 @@
       </div>
 
       <!-- Detail Panel (Moved to Footer) -->
-      <div v-if="results[selectedIdx]" class="border-t border-gray-200 bg-white px-6 py-4">
-        <div class="flex items-start gap-3">
-
-          <!-- Balance -->
-          <div class="flex flex-col shrink-0" style="width: 5%">
-            <span class="text-[10px] font-bold uppercase text-gray-400 truncate">Balance</span>
-            <span
-              class="text-base font-bold truncate"
-              :class="results[selectedIdx].balance > 0 ? 'text-red-600' : results[selectedIdx].balance < 0 ? 'text-green-600' : 'text-gray-400'"
-            >
-              {{ Math.abs(results[selectedIdx].balance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
-              <span class="text-[8px] font-normal uppercase">
-                {{ results[selectedIdx].balance > 0 ? 'DR' : results[selectedIdx].balance < 0 ? 'CR' : '' }}
-              </span>
-            </span>
-          </div>
+      <div v-if="results[selectedIdx]" class="border-t border-gray-200 bg-white px-8 py-6">
+        <div class="flex items-start gap-4">
 
           <!-- Last Invoice -->
-          <div class="flex flex-col shrink-0" style="width: 5%">
-            <span class="text-[10px] font-bold uppercase text-gray-400 truncate">Last Inv</span>
-            <span class="text-sm font-semibold text-gray-700 truncate">
+          <div class="flex flex-col shrink-0" style="width: 10%">
+            <span class="text-sm font-bold uppercase text-gray-400 truncate">Last Inv</span>
+            <span class="text-xl font-semibold text-gray-700 truncate">
               {{ results[selectedIdx].last_invoice_date
-                  ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit' })
+                  ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
                   : 'None' }}
             </span>
           </div>
 
-          <!-- Mobile -->
-          <div class="flex flex-col shrink-0" style="width: 8%">
-            <span class="text-[10px] font-bold uppercase text-gray-400 truncate">Mobile</span>
-            <span class="text-base font-semibold text-gray-700 truncate">{{ results[selectedIdx].mobile_no || '--' }}</span>
-          </div>
-
           <!-- WhatsApp -->
-          <div class="flex flex-col shrink-0" style="width: 8%">
-            <span class="text-[10px] font-bold uppercase text-gray-400 truncate">WhatsApp</span>
-            <span class="text-base font-semibold text-gray-700 truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
-          </div>
-
-          <!-- GSTIN -->
           <div class="flex flex-col shrink-0" style="width: 10%">
-            <span class="text-[10px] font-bold uppercase text-gray-400 truncate">GSTIN</span>
-            <span class="text-base font-semibold text-gray-700 font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
+            <span class="text-sm font-bold uppercase text-gray-400 truncate">WhatsApp</span>
+            <span class="text-2xl font-semibold text-gray-700 truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
           </div>
 
           <!-- Email -->
-          <div class="flex flex-col shrink-0" style="width: 18%">
-            <span class="text-[10px] font-bold uppercase text-gray-400 truncate">Email</span>
-            <span class="text-sm font-semibold text-gray-700 truncate">{{ results[selectedIdx].email || '--' }}</span>
+          <div class="flex flex-col shrink-0" style="width: 20%">
+            <span class="text-sm font-bold uppercase text-gray-400 truncate">Email</span>
+            <span class="text-xl font-semibold text-gray-700 truncate">{{ results[selectedIdx].email || '--' }}</span>
           </div>
 
           <!-- Address -->
-          <div class="flex flex-col flex-1" style="width: 46%">
-            <span class="text-[10px] font-bold uppercase text-gray-400 truncate">Address</span>
-            <span class="text-sm text-gray-700 line-clamp-2 leading-tight">
+          <div class="flex flex-col shrink-0" style="width: 45%">
+            <span class="text-sm font-bold uppercase text-gray-400 truncate">Address</span>
+            <span class="text-xl text-gray-700 line-clamp-2 leading-tight">
               {{ getCustomerAddressFormatted(results[selectedIdx]) }}
             </span>
+          </div>
+
+          <!-- GSTIN -->
+          <div class="flex flex-col shrink-0" style="width: 15%">
+            <span class="text-sm font-bold uppercase text-gray-400 truncate">GSTIN</span>
+            <span class="text-2xl font-semibold text-gray-700 font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
           </div>
 
         </div>
