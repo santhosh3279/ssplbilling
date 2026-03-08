@@ -73,6 +73,7 @@
               <th class="px-5 py-3 text-left w-24">Type</th>
               <th class="px-5 py-3 text-left">Ledger Name</th>
               <th class="px-5 py-3 text-left">ID / Code</th>
+              <th class="px-5 py-3 text-right">Balance</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -100,6 +101,17 @@
               </td>
               <td class="px-5 py-3 text-gray-400 font-mono text-base">
                 {{ c.name }}
+              </td>
+              <td class="px-5 py-3 text-right">
+                <span 
+                  class="font-bold whitespace-nowrap"
+                  :class="(c.balance || 0) > 0 ? 'text-red-600' : (c.balance || 0) < 0 ? 'text-green-600' : 'text-gray-400'"
+                >
+                  {{ Math.abs(c.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  <span class="text-xs font-normal uppercase ml-0.5">
+                    {{ (c.balance || 0) > 0 ? 'DR' : (c.balance || 0) < 0 ? 'CR' : '' }}
+                  </span>
+                </span>
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
