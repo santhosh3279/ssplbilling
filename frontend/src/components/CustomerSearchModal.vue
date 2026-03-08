@@ -10,19 +10,33 @@
       <!-- Header -->
       <div class="border-b border-gray-200 px-5 py-4 flex items-center justify-between bg-gray-50">
         <div>
-          <div class="text-2xl font-semibold text-gray-700">Detailed Customer Ledger</div>
-          <div class="text-lg text-gray-500">Fast local search across all customer records</div>
+          <div class="text-2xl font-semibold text-gray-700">Detailed Ledger Search</div>
+          <div class="text-lg text-gray-500">Search Customers, Suppliers, and Accounting Ledgers</div>
         </div>
         <div class="flex items-center gap-3">
+          <!-- Quick Filter Tabs -->
+          <div class="flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm mr-4">
+            <button 
+              v-for="t in ['All', 'Customer', 'Supplier', 'Account']" 
+              :key="t"
+              @click="activeType = t"
+              class="px-4 py-1.5 text-sm font-bold transition-all rounded-md"
+              :class="activeType === t ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'"
+            >
+              {{ t }}
+            </button>
+          </div>
+
           <button 
             @click="openNewForm" 
+            v-if="activeType === 'Customer'"
             class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
           >
             New Customer <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F2</kbd>
           </button>
           <button 
             @click="openEditForm(results[selectedIdx])" 
-            v-if="results[selectedIdx]"
+            v-if="results[selectedIdx] && results[selectedIdx].type === 'Customer'"
             class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
           >
             Edit Details <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F3</kbd>
@@ -56,9 +70,9 @@
         <table class="w-full text-2xl">
           <thead class="sticky top-0 bg-white shadow-sm z-10">
             <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b bg-gray-50">
-              <th class="px-5 py-3 text-left">Customer Name</th>
-              <th class="px-5 py-3 text-left">Mobile</th>
-              <th class="px-5 py-3 text-right">Balance</th>
+              <th class="px-5 py-3 text-left w-24">Type</th>
+              <th class="px-5 py-3 text-left">Ledger Name</th>
+              <th class="px-5 py-3 text-left">ID / Code</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -70,24 +84,27 @@
               @click="handleSelect(c)"
             >
               <td class="px-5 py-3">
-                <div class="font-medium text-gray-800">{{ c.customer_name }}</div>
-              </td>
-              <td class="px-5 py-3 text-gray-600">{{ c.mobile_no || '--' }}</td>
-              <td class="px-5 py-3 text-right">
                 <span 
-                  class="font-bold whitespace-nowrap"
-                  :class="c.balance > 0 ? 'text-red-600' : c.balance < 0 ? 'text-green-600' : 'text-gray-400'"
+                  class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
+                  :class="{
+                    'bg-blue-100 text-blue-700': c.type === 'Customer',
+                    'bg-orange-100 text-orange-700': c.type === 'Supplier',
+                    'bg-gray-100 text-gray-700': c.type === 'Account'
+                  }"
                 >
-                  {{ Math.abs(c.balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                  <span class="text-xs font-normal uppercase ml-0.5">
-                    {{ c.balance > 0 ? 'DR' : c.balance < 0 ? 'CR' : '' }}
-                  </span>
+                  {{ c.type }}
                 </span>
+              </td>
+              <td class="px-5 py-3">
+                <div class="font-medium text-gray-800">{{ c.label }}</div>
+              </td>
+              <td class="px-5 py-3 text-gray-400 font-mono text-base">
+                {{ c.name }}
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
               <td colspan="3" class="px-5 py-12 text-center text-gray-400 text-xl italic">
-                No customers found matching "{{ query }}"
+                No ledgers found matching "{{ query }}"
               </td>
             </tr>
           </tbody>
@@ -98,7 +115,7 @@
       <div v-if="results[selectedIdx]" class="border-t border-gray-200 bg-white px-8 py-6">
         <div class="flex items-start gap-4">
 
-          <!-- Last Invoice -->
+          <!-- Last Invoice (Customer Only) -->
           <div class="flex flex-col shrink-0" style="width: 10%">
             <span class="text-sm font-bold uppercase text-gray-400 truncate">Last Inv</span>
             <span class="text-xl font-semibold text-gray-700 truncate">
@@ -128,7 +145,7 @@
             </span>
           </div>
 
-          <!-- GSTIN -->
+          <!-- GSTIN (Right End) -->
           <div class="flex flex-col shrink-0" style="width: 15%">
             <span class="text-sm font-bold uppercase text-gray-400 truncate">GSTIN</span>
             <span class="text-2xl font-semibold text-gray-700 font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
@@ -144,12 +161,12 @@
         <DateFilter
           v-if="showDateModal"
           :show="showDateModal"
-          :customer-name="results[selectedIdx]?.customer_name"
+          :customer-name="results[selectedIdx]?.label"
           @close="showDateModal = false"
           @confirm="handleDateConfirm"
         />
 
-        <!-- New / Edit Form -->
+        <!-- New / Edit Form (Customer Only) -->
         <div v-if="showNewForm || showEditForm" class="w-[600px] rounded-xl bg-white shadow-2xl overflow-hidden">
           <div class="border-b border-gray-200 px-5 py-4 bg-gray-50">
             <div class="text-xl font-bold text-gray-700">{{ showNewForm ? 'New Customer' : 'Modify Customer Details' }}</div>
@@ -165,7 +182,6 @@
           </div>
           
           <div class="flex flex-col gap-4 px-6 py-5 max-h-[70vh] overflow-y-auto">
-            <!-- Form Fields (Same as before) -->
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer Name *</label>
               <input ref="formNameInput" v-model="(showNewForm ? newData : editData).customer_name" class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" placeholder="Full name" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
@@ -231,7 +247,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, computed } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer } from '../api/customer.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
@@ -241,6 +257,10 @@ const props = defineProps({
   skipDateFilter: {
     type: Boolean,
     default: false
+  },
+  initialType: {
+    type: String,
+    default: 'All'
   }
 })
 
@@ -248,8 +268,8 @@ const emit = defineEmits(['close', 'select'])
 
 // Internal State
 const query = ref('')
-const allCustomers = ref([]) // Full ledger cache
-const results = ref([])      // Filtered results
+const allLedgers = ref([]) 
+const activeType = ref(props.initialType) 
 const selectedIdx = ref(0)
 const loading = ref(false)
 const saving = ref(false)
@@ -292,9 +312,8 @@ const editData = ref({
 async function preloadLedger() {
   loading.value = true
   try {
-    const data = await frappeGet('ssplbilling.api.customersearch_api.get_customer_ledger')
-    allCustomers.value = data || []
-    filterResults()
+    const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers')
+    allLedgers.value = data || []
   } catch (e) {
     console.error('[CustomerSearchModal] Preload failed:', e)
   } finally {
@@ -304,26 +323,35 @@ async function preloadLedger() {
 
 // ─── Local Filtering ─────────────────────────────────────────────────────────
 
-function filterResults() {
+const results = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) {
-    results.value = allCustomers.value
-  } else {
-    results.value = allCustomers.value.filter(c => {
-      return (c.customer_name || '').toLowerCase().includes(q) ||
-             (c.mobile_no || '').includes(q) ||
-             (c.whatsapp || '').includes(q) ||
-             (c.gstin || '').toLowerCase().includes(q) ||
-             (c.city || '').toLowerCase().includes(q) ||
-             (c.email || '').toLowerCase().includes(q)
-    })
-  }
-  selectedIdx.value = 0
-}
+  let list = allLedgers.value
 
-watch(query, () => filterResults())
+  // Type Filter
+  if (activeType.value !== 'All') {
+    list = list.filter(l => l.type === activeType.value)
+  }
+
+  // Search Filter
+  if (!q) return list
+
+  return list.filter(l => {
+    return (l.label || '').toLowerCase().includes(q) ||
+           (l.name || '').toLowerCase().includes(q) ||
+           (l.mobile_no || '').includes(q) ||
+           (l.whatsapp || '').includes(q) ||
+           (l.gstin || '').toLowerCase().includes(q) ||
+           (l.city || '').toLowerCase().includes(q) ||
+           (l.email || '').toLowerCase().includes(q)
+  })
+})
+
+watch([query, activeType], () => {
+  selectedIdx.value = 0
+})
 
 function getCustomerAddressFormatted(c) {
+  if (c.type === 'Account') return 'General Accounting Ledger'
   const parts = [c.address_line1, c.city].filter(Boolean)
   return parts.join(', ') || 'No address provided'
 }
@@ -363,29 +391,30 @@ function handleGlobalKeydown(e) {
     }
   } else if (e.key === 'F2') {
     e.preventDefault()
-    openNewForm()
+    if (activeType.value === 'Customer') openNewForm()
   } else if (e.key === 'F3') {
     e.preventDefault()
-    if (results.value[selectedIdx.value]) openEditForm(results.value[selectedIdx.value])
+    const item = results.value[selectedIdx.value]
+    if (item && item.type === 'Customer') openEditForm(item)
   } else if (e.key === 'F5') {
     e.preventDefault()
     preloadLedger()
   }
 }
 
-function handleSelect(customer) {
+function handleSelect(item) {
   if (props.skipDateFilter) {
-    emit('select', customer)
+    emit('select', item)
   } else {
     showDateModal.value = true
   }
 }
 
 function handleDateConfirm(dates) {
-  const customer = results.value[selectedIdx.value]
-  if (customer) {
+  const item = results.value[selectedIdx.value]
+  if (item) {
     showDateModal.value = false
-    emit('select', customer, dates)
+    emit('select', item, dates)
   }
 }
 
@@ -431,7 +460,7 @@ watch(() => props.show, (newVal) => {
   }
 })
 
-// ─── Sub-Form Logic ──────────────────────────────────────────────────────────
+// ─── Sub-Form Logic (Customer Only) ──────────────────────────────────────────
 
 function openNewForm() {
   newData.value = { 
@@ -444,10 +473,10 @@ function openNewForm() {
 }
 
 async function openEditForm(target) {
-  if (!target) return
+  if (!target || target.type !== 'Customer') return
   editData.value = {
     name: target.name,
-    customer_name: target.customer_name || '',
+    customer_name: target.label || '',
     mobile: target.mobile_no || '',
     whatsapp: target.whatsapp || '',
     email: target.email || '',
@@ -507,10 +536,8 @@ async function submitForm() {
       result = await updateCustomer(data.name, data)
     }
     
-    // Refresh ledger to update local cache
     await preloadLedger()
     
-    // Find the saved customer in results to select it
     const savedName = result.name || result.customer_name
     const foundIdx = results.value.findIndex(c => c.name === savedName)
     if (foundIdx !== -1) selectedIdx.value = foundIdx

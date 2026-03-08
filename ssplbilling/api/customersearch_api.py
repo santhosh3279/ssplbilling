@@ -2,6 +2,105 @@ import json
 import frappe
 
 @frappe.whitelist()
+def get_all_ledgers():
+    """Fetch all Customers, Suppliers, and Accounts in a unified format for local preloading."""
+    ledgers = []
+
+    # 1. Customers
+    customers = frappe.get_all(
+        "Customer",
+        filters={"disabled": 0},
+        fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin"],
+        limit=0
+    )
+    for c in customers:
+        c["type"] = "Customer"
+    ledgers.extend(customers)
+
+    # 2. Suppliers
+    suppliers = frappe.get_all(
+        "Supplier",
+        filters={"disabled": 0},
+        fields=["name", "supplier_name as label", "mobile_no", "email_id as email", "gstin"],
+        limit=0
+    )
+    for s in suppliers:
+        s["type"] = "Supplier"
+    ledgers.extend(suppliers)
+
+    # 3. Accounts (Ledgers)
+    accounts = frappe.get_all(
+        "Account",
+        filters={"disabled": 0, "is_group": 0},
+        fields=["name", "account_name as label"],
+        limit=0
+    )
+    for a in accounts:
+        a["type"] = "Account"
+        a["mobile_no"] = ""
+        a["email"] = ""
+        a["gstin"] = ""
+    ledgers.extend(accounts)
+
+    # Map for fast lookup
+    ledger_map = {l.name: l for l in ledgers}
+
+    # 4. Batch fetch primary addresses (Customers & Suppliers)
+    addresses = frappe.db.sql("""
+        SELECT dl.link_name AS name, addr.address_line1, addr.city
+        FROM `tabDynamic Link` dl
+        JOIN `tabAddress` addr ON addr.name = dl.parent
+        WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Address'
+        ORDER BY addr.modified DESC
+    """, as_dict=True)
+    for a in addresses:
+        if a.name in ledger_map:
+            l = ledger_map[a.name]
+            if not l.get("address_line1"):
+                l["address_line1"] = a.address_line1
+                l["city"] = a.city
+
+    # 5. Batch fetch WhatsApp (Customers & Suppliers)
+    wa_rows = frappe.db.sql("""
+        SELECT dl.link_name AS name, cp.phone AS whatsapp
+        FROM `tabDynamic Link` dl
+        JOIN `tabContact Phone` cp ON cp.parent = dl.parent
+        WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Contact' AND cp.is_primary_mobile_no = 0
+    """, as_dict=True)
+    for w in wa_rows:
+        if w.name in ledger_map:
+            ledger_map[w.name]["whatsapp"] = w.whatsapp
+
+    # 6. Batch fetch Balances (Unified)
+    balances = frappe.db.sql("""
+        SELECT party as name, SUM(debit) - SUM(credit) as balance
+        FROM `tabGL Entry`
+        WHERE is_cancelled = 0
+        GROUP BY party
+        UNION
+        SELECT account as name, SUM(debit) - SUM(credit) as balance
+        FROM `tabGL Entry`
+        WHERE is_cancelled = 0 AND (party IS NULL OR party = '')
+        GROUP BY account
+    """, as_dict=True)
+    for b in balances:
+        if b.name in ledger_map:
+            ledger_map[b.name]["balance"] = float(b.balance or 0)
+
+    # 7. Batch fetch Last Invoice Dates (Customers only)
+    last_invoices = frappe.db.sql("""
+        SELECT customer, MAX(posting_date) as last_date
+        FROM `tabSales Invoice`
+        WHERE docstatus = 1
+        GROUP BY customer
+    """, as_dict=True)
+    for i in last_invoices:
+        if i.customer in ledger_map:
+            ledger_map[i.customer]["last_invoice_date"] = str(i.last_date)
+
+    return sorted(ledgers, key=lambda x: x["label"].lower())
+
+@frappe.whitelist()
 def get_customer_ledger():
     """Fetch all customers with full details (contact, address, balance) for local preloading."""
     # 1. Basic Customer Info
