@@ -348,6 +348,32 @@
       @selected="onModalItemSelected"
     />
 
+    <CustomerLedger
+      v-if="showCustomerLedgerWindow"
+      :is-sub-window="true"
+      :customer-name="ledgerCustomerName"
+      :initial-from-date="ledgerFromDate"
+      :initial-to-date="ledgerToDate"
+      @close="showCustomerLedgerWindow = false"
+    />
+
+    <StockLedger
+      v-if="showStockLedgerWindow"
+      :is-sub-window="true"
+      :item-code="stockLedgerItemCode"
+      :initial-from-date="stockLedgerFromDate"
+      :initial-to-date="stockLedgerToDate"
+      @close="showStockLedgerWindow = false"
+    />
+
+    <!-- CUSTOMER SEARCH MODAL -->
+    <CustomerSearchModal
+      ref="ledgerCustSearchModalRef"
+      :show="showCustomerSearchModal"
+      @close="closeCustomerSearchModal"
+      @select="pickCustomer"
+    />
+
     <!-- ══ TOAST STACK ════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <div class="toast-stack">
@@ -369,9 +395,68 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { ref, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
 import ItemSearchModal from "../components/ItemSearchModal.vue";
+import CustomerSearchModal from "../components/CustomerSearchModal.vue";
+import CustomerLedger from "./CustomerLedger.vue";
+import StockLedger from "./StockLedger.vue";
 import { useBilling } from "../composables/useBilling.js";
+
+// ─── Sub-window State ─────────────────────────────────────────────────────────
+const showCustomerLedgerWindow = ref(false)
+const ledgerCustomerName = ref('')
+const ledgerFromDate = ref('')
+const ledgerToDate = ref('')
+
+const showStockLedgerWindow = ref(false)
+const stockLedgerItemCode = ref('')
+const stockLedgerFromDate = ref('')
+const stockLedgerToDate = ref('')
+
+function openCustomerLedger(customerName, dates = null) {
+  ledgerCustomerName.value = customerName
+  if (dates) {
+    ledgerFromDate.value = dates.from
+    ledgerToDate.value = dates.to
+  } else {
+    ledgerFromDate.value = ''
+    ledgerToDate.value = ''
+  }
+  showCustomerLedgerWindow.value = true
+}
+
+function openStockLedger(itemCode, dates = null) {
+  stockLedgerItemCode.value = itemCode
+  if (dates) {
+    stockLedgerFromDate.value = dates.from
+    stockLedgerToDate.value = dates.to
+  } else {
+    stockLedgerFromDate.value = ''
+    stockLedgerToDate.value = ''
+  }
+  showStockLedgerWindow.value = true
+}
+
+// ─── Customer Search Modal State ──────────────────────────────────────────────
+const showCustomerSearchModal = ref(false)
+const ledgerCustSearchModalRef = ref(null)
+
+async function openCustomerSearch() {
+  showCustomerSearchModal.value = true
+  nextTick(() => {
+    ledgerCustSearchModalRef.value?.closeSubForm()
+    ledgerCustSearchModalRef.value?.focus()
+  })
+}
+
+function closeCustomerSearchModal() {
+  showCustomerSearchModal.value = false
+}
+
+function pickCustomer(c, dates) {
+  showCustomerSearchModal.value = false
+  openCustomerLedger(c.name, dates)
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const DEFAULT_PRICE_LIST = "Standard Selling";
@@ -515,6 +600,28 @@ function onClear() {
 
 // ─── Global keyboard shortcuts ────────────────────────────────────────────────
 function onGlobalKey(e) {
+  if (showCustomerSearchModal.value || modalOpen.value) {
+    if (e.key === 'Escape') {
+      if (showCustomerSearchModal.value) closeCustomerSearchModal()
+      if (modalOpen.value) modalOpen.value = false
+    }
+    return
+  }
+
+  // Ctrl + L -> Advanced Customer Search
+  if (e.ctrlKey && e.key === 'l') {
+    e.preventDefault()
+    openCustomerSearch()
+    return
+  }
+
+  // Ctrl + I -> Advanced Item Search
+  if (e.ctrlKey && e.key === 'i') {
+    e.preventDefault()
+    modalOpen.value = true
+    return
+  }
+
   // F9 → Save
   if (e.key === "F9") {
     e.preventDefault();

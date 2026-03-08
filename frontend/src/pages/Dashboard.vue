@@ -328,32 +328,27 @@ const routeMap = {
   F7: 'pricelist', F8: 'journal', F9: 'contra',
 }
 
-function handleKeydown(e) {
-  if (showGeneralSettings.value) return
-  if (showCustomerSearchModal.value) return
-  if (showItemSearchModal.value) return
-  if (showLedgerWindow.value) return
-  if (showStockLedgerWindow.value) return
+import { useShortcuts } from '../services/shortcutManager'
 
-  // Ctrl + L -> Advanced Customer Search
-  if (e.ctrlKey && e.key === 'l') {
-    e.preventDefault()
-    openCustomerSearch()
-    return
+// ==================== KEYBOARD SHORTCUTS ====================
+useShortcuts({
+  'F1': () => openModule('sales'),
+  'F2': () => openModule('purchase'),
+  'F3': () => openModule('payment'),
+  'F4': () => openModule('receipt'),
+  'F5': () => openModule('cashier'),
+  'F6': () => openModule('ledger'),
+  'F7': () => openModule('pricelist'),
+  'F8': () => openModule('journal'),
+  'F9': () => openModule('contra'),
+  'ESCAPE': () => {
+    if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
+    if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
+    if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
+    if (showLedgerWindow.value) { showLedgerWindow.value = false; return }
+    if (showStockLedgerWindow.value) { showStockLedgerWindow.value = false; return }
   }
-
-  // Ctrl + I -> Advanced Item Search
-  if (e.ctrlKey && e.key === 'i') {
-    e.preventDefault()
-    openItemSearch()
-    return
-  }
-
-  if (routeMap[e.key]) {
-    e.preventDefault()
-    openModule(routeMap[e.key])
-  }
-}
+})
 
 const availableSeries = ref([])
 const userAllowedString = ref('')
@@ -600,9 +595,15 @@ const warehouseLabel = computed(() => {
 })
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))
+  window.addEventListener('wb-global-item-search', openItemSearch)
+  window.addEventListener('wb-navigate-home', () => router.push('/'))
   fetchSettings()
 })
-onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+onUnmounted(() => {
+  window.removeEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))
+  window.removeEventListener('wb-global-item-search', openItemSearch)
+  window.removeEventListener('wb-navigate-home', () => router.push('/'))
+})
 
 </script>

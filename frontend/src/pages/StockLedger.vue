@@ -329,6 +329,15 @@
       @close="showSalesEntryWindow = false"
     />
 
+    <CustomerLedger
+      v-if="showCustomerLedgerWindow"
+      :is-sub-window="true"
+      :customer-name="ledgerCustomerName"
+      :initial-from-date="ledgerFromDate"
+      :initial-to-date="ledgerToDate"
+      @close="showCustomerLedgerWindow = false"
+    />
+
     <!-- ITEM SEARCH MODAL -->
     <ItemSearch
       ref="ledgerItemSearchModalRef"
@@ -337,8 +346,16 @@
       v-model:selectedIdx="itemSelectedIdx"
       :results="itemSearchResults"
       @close="showItemSearchModal = false"
-      @select="(i, d) => { pickItem(i, d); showItemSearchModal = false }"
+      @select="pickItem"
       @refresh="refreshItemSearch"
+    />
+
+    <!-- CUSTOMER SEARCH MODAL -->
+    <CustomerSearchModal
+      ref="ledgerCustSearchModalRef"
+      :show="showCustomerSearchModal"
+      @close="closeCustomerSearchModal"
+      @select="pickCustomer"
     />
     </div>
   </div>
@@ -349,7 +366,9 @@ import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { searchItems, fetchItemDetails, fetchStockLedger, fetchVoucherDetail, frappeGet, fetchBillingSettings } from '../api.js'
 import SalesEntry from './SalesEntry.vue'
+import CustomerLedger from './CustomerLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 
 const props = defineProps({
   isSubWindow: {
@@ -385,6 +404,24 @@ function handleBack() {
 
 const showSalesEntryWindow = ref(false)
 const subWindowInvoiceName = ref('')
+
+// ─── Customer Ledger Sub-window ──────────────────────────────────────────────
+const showCustomerLedgerWindow = ref(false)
+const ledgerCustomerName = ref('')
+const ledgerFromDate = ref('')
+const ledgerToDate = ref('')
+
+function openCustomerLedger(customerName, dates = null) {
+  ledgerCustomerName.value = customerName
+  if (dates) {
+    ledgerFromDate.value = dates.from
+    ledgerToDate.value = dates.to
+  } else {
+    ledgerFromDate.value = ''
+    ledgerToDate.value = ''
+  }
+  showCustomerLedgerWindow.value = true
+}
 
 // ─── Item Search Modal State ──────────────────────────────────────────────
 const showItemSearchModal = ref(false)
@@ -440,6 +477,27 @@ function pickItem(item, dates) {
     toDate.value = dates.to
   }
   loadLedger()
+}
+
+// ─── Customer Search Modal State ──────────────────────────────────────────────
+const showCustomerSearchModal = ref(false)
+const ledgerCustSearchModalRef = ref(null)
+
+async function openCustomerSearch() {
+  showCustomerSearchModal.value = true
+  nextTick(() => {
+    ledgerCustSearchModalRef.value?.closeSubForm()
+    ledgerCustSearchModalRef.value?.focus()
+  })
+}
+
+function closeCustomerSearchModal() {
+  showCustomerSearchModal.value = false
+}
+
+function pickCustomer(c, dates) {
+  showCustomerSearchModal.value = false
+  openCustomerLedger(c.name, dates)
 }
 
 function clearItem() {
@@ -636,7 +694,13 @@ function scrollRowIntoView(idx) {
 
 function onGlobalKeydown(e) {
   if (showSalesEntryWindow.value) return
-  if (showItemSearchModal.value) return
+  if (showItemSearchModal.value || showCustomerSearchModal.value) {
+    if (e.key === 'Escape') {
+      if (showItemSearchModal.value) showItemSearchModal.value = false
+      if (showCustomerSearchModal.value) closeCustomerSearchModal()
+    }
+    return
+  }
 
   if (e.key === 'Escape') {
     if (selectedEntry.value) {
@@ -649,6 +713,12 @@ function onGlobalKeydown(e) {
       handleBack()
       return
     }
+  }
+
+  if (e.ctrlKey && e.key === 'l') {
+    e.preventDefault()
+    openCustomerSearch()
+    return
   }
 
   if (e.ctrlKey && e.key === 'i') {

@@ -449,15 +449,175 @@
     @close="showPrintModal = false"
   />
 
+  <CustomerLedger
+    v-if="showCustomerLedgerWindow"
+    :is-sub-window="true"
+    :customer-name="ledgerCustomerName"
+    :initial-from-date="ledgerFromDate"
+    :initial-to-date="ledgerToDate"
+    @close="showCustomerLedgerWindow = false"
+  />
+
+  <StockLedger
+    v-if="showStockLedgerWindow"
+    :is-sub-window="true"
+    :item-code="stockLedgerItemCode"
+    :initial-from-date="stockLedgerFromDate"
+    :initial-to-date="stockLedgerToDate"
+    @close="showStockLedgerWindow = false"
+  />
+
+  <!-- CUSTOMER SEARCH MODAL -->
+  <CustomerSearchModal
+    ref="ledgerCustSearchModalRef"
+    :show="showCustomerSearchModal"
+    @close="closeCustomerSearchModal"
+    @select="pickCustomer"
+  />
+
+  <!-- ITEM SEARCH MODAL -->
+  <ItemSearch
+    ref="ledgerItemSearchModalRef"
+    :show="showItemSearchModal"
+    v-model:query="itemSearchQuery"
+    v-model:selectedIdx="itemDDIdx"
+    :results="itemSearchResults"
+    @close="closeItemSearch"
+    @select="pickItem"
+    @refresh="refreshItemSearch"
+  />
+
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchBillingSettings } from '../api.js'
+import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchBillingSettings, searchItems } from '../api.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import ItemSearch from '../components/ItemSearch.vue'
+import CustomerLedger from './CustomerLedger.vue'
+import StockLedger from './StockLedger.vue'
 
 const router = useRouter()
+
+// ─── Sub-window State ─────────────────────────────────────────────────────────
+const showCustomerLedgerWindow = ref(false)
+const ledgerCustomerName = ref('')
+const ledgerFromDate = ref('')
+const ledgerToDate = ref('')
+
+const showStockLedgerWindow = ref(false)
+const stockLedgerItemCode = ref('')
+const stockLedgerFromDate = ref('')
+const stockLedgerToDate = ref('')
+
+function openCustomerLedger(customerName, dates = null) {
+  ledgerCustomerName.value = customerName
+  if (dates) {
+    ledgerFromDate.value = dates.from
+    ledgerToDate.value = dates.to
+  } else {
+    ledgerFromDate.value = ''
+    ledgerToDate.value = ''
+  }
+  showCustomerLedgerWindow.value = true
+}
+
+function openStockLedger(itemCode, dates = null) {
+  stockLedgerItemCode.value = itemCode
+  if (dates) {
+    stockLedgerFromDate.value = dates.from
+    stockLedgerToDate.value = dates.to
+  } else {
+    stockLedgerFromDate.value = ''
+    stockLedgerToDate.value = ''
+  }
+  showStockLedgerWindow.value = true
+}
+
+// ─── Customer Search Modal State ──────────────────────────────────────────────
+const showCustomerSearchModal = ref(false)
+const ledgerCustSearchModalRef = ref(null)
+
+async function openCustomerSearch() {
+  showCustomerSearchModal.value = true
+  nextTick(() => {
+    ledgerCustSearchModalRef.value?.closeSubForm()
+    ledgerCustSearchModalRef.value?.focus()
+  })
+}
+
+function closeCustomerSearchModal() {
+  showCustomerSearchModal.value = false
+}
+
+function pickCustomer(c, dates) {
+  showCustomerSearchModal.value = false
+  openCustomerLedger(c.name, dates)
+}
+
+// ─── Item Search Modal State ──────────────────────────────────────────────────
+const showItemSearchModal = ref(false)
+const itemSearchQuery = ref('')
+const allItems = ref([])
+const itemSearchResults = ref([])
+const itemDDIdx = ref(0)
+const ledgerItemSearchModalRef = ref(null)
+const isItemLoading = ref(false)
+
+async function refreshItemSearch() {
+  isItemLoading.value = true
+  try {
+    const items = await searchItems('')
+    allItems.value = items.map(i => ({ 
+      ...i, 
+      price: 0, 
+      stock: 0, 
+      _loading: true,
+      enriched: false 
+    }))
+    filterItems()
+  } catch (e) {
+    console.error('Item search refresh failed:', e)
+  } finally {
+    isItemLoading.value = false
+  }
+}
+
+function filterItems() {
+  const q = itemSearchQuery.value.toLowerCase().trim()
+  if (!q) {
+    itemSearchResults.value = allItems.value.slice(0, 100)
+    return
+  }
+  itemSearchResults.value = allItems.value.filter(i =>
+    i.item_code.toLowerCase().includes(q) ||
+    i.item_name.toLowerCase().includes(q)
+  ).slice(0, 100)
+  itemDDIdx.value = 0
+}
+
+watch(itemSearchQuery, filterItems)
+
+async function openItemSearch() {
+  showItemSearchModal.value = true
+  if (allItems.value.length === 0) {
+    await refreshItemSearch()
+  } else {
+    filterItems()
+  }
+  nextTick(() => ledgerItemSearchModalRef.value?.focus())
+}
+
+function closeItemSearch() {
+  showItemSearchModal.value = false
+}
+
+function pickItem(item, dates) {
+  showItemSearchModal.value = false
+  openStockLedger(item.item_code, dates)
+}
 
 // ─── Refs ─────────────────────────────────────────────────────────────────────
 const invoices = ref([])
@@ -698,6 +858,28 @@ async function handleSubmit() {
 
 // ─── Keyboard shortcuts ────────────────────────────────────────────────────────
 function handleKeydown(e) {
+  if (showCustomerSearchModal.value || showItemSearchModal.value) {
+    if (e.key === 'Escape') {
+      if (showCustomerSearchModal.value) closeCustomerSearchModal()
+      if (showItemSearchModal.value) closeItemSearch()
+    }
+    return
+  }
+
+  // Ctrl + L -> Advanced Customer Search
+  if (e.ctrlKey && e.key === 'l') {
+    e.preventDefault()
+    openCustomerSearch()
+    return
+  }
+
+  // Ctrl + I -> Advanced Item Search
+  if (e.ctrlKey && e.key === 'i') {
+    e.preventDefault()
+    openItemSearch()
+    return
+  }
+
   if (e.key === 'F9') {
     e.preventDefault()
     handleSubmit()

@@ -433,20 +433,33 @@
       @close="showSalesEntryWindow = false"
     />
 
+    <StockLedger
+      v-if="showStockLedgerWindow"
+      :is-sub-window="true"
+      :item-code="stockLedgerItemCode"
+      :initial-from-date="stockLedgerFromDate"
+      :initial-to-date="stockLedgerToDate"
+      @close="showStockLedgerWindow = false"
+    />
+
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
       ref="ledgerCustSearchModalRef"
       :show="showCustomerSearchModal"
-      v-model:query="custSearchQuery"
-      v-model:selectedIdx="custSelectedIdx"
-      :results="custSearchResults"
-      :selectedCustomer="selectedCustomer"
-      :saving="newCustSaving"
       @close="closeCustomerSearchModal"
       @select="(c, d) => { pickCustomer(c, d); closeCustomerSearchModal() }"
-      @refresh="refreshCustSearch"
-      @save-new="saveNewCust"
-      @save-edit="saveEditCust"
+    />
+
+    <!-- ITEM SEARCH MODAL -->
+    <ItemSearch
+      ref="ledgerItemSearchModalRef"
+      :show="showItemSearchModal"
+      v-model:query="itemSearchQuery"
+      v-model:selectedIdx="itemDDIdx"
+      :results="itemSearchResults"
+      @close="closeItemSearch"
+      @select="pickItem"
+      @refresh="refreshItemSearch"
     />
     </div>
   </div>
@@ -458,8 +471,11 @@ import { useRouter, useRoute } from 'vue-router'
 import { fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import SalesEntry from './SalesEntry.vue'
+import StockLedger from './StockLedger.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import ItemSearch from '../components/ItemSearch.vue'
 import { createCustomer, updateCustomer } from '../api/customer.js'
+import { searchItems } from '../api.js'
 
 const props = defineProps({
   isSubWindow: {
@@ -495,6 +511,86 @@ function handleBack() {
 
 const showSalesEntryWindow = ref(false)
 const subWindowInvoiceName = ref('')
+
+// ─── Stock Ledger Sub-window ──────────────────────────────────────────────────
+const showStockLedgerWindow = ref(false)
+const stockLedgerItemCode = ref('')
+const stockLedgerFromDate = ref('')
+const stockLedgerToDate = ref('')
+
+function openStockLedger(itemCode, dates = null) {
+  stockLedgerItemCode.value = itemCode
+  if (dates) {
+    stockLedgerFromDate.value = dates.from
+    stockLedgerToDate.value = dates.to
+  } else {
+    stockLedgerFromDate.value = ''
+    stockLedgerToDate.value = ''
+  }
+  showStockLedgerWindow.value = true
+}
+
+// ─── Item Search Modal State ──────────────────────────────────────────────────
+const showItemSearchModal = ref(false)
+const itemSearchQuery = ref('')
+const allItems = ref([])
+const itemSearchResults = ref([])
+const itemDDIdx = ref(0)
+const ledgerItemSearchModalRef = ref(null)
+const isItemLoading = ref(false)
+
+async function refreshItemSearch() {
+  isItemLoading.value = true
+  try {
+    const items = await searchItems('')
+    allItems.value = items.map(i => ({ 
+      ...i, 
+      price: 0, 
+      stock: 0, 
+      _loading: true,
+      enriched: false 
+    }))
+    filterItems()
+  } catch (e) {
+    console.error('Item search refresh failed:', e)
+  } finally {
+    isItemLoading.value = false
+  }
+}
+
+function filterItems() {
+  const q = itemSearchQuery.value.toLowerCase().trim()
+  if (!q) {
+    itemSearchResults.value = allItems.value.slice(0, 100)
+    return
+  }
+  itemSearchResults.value = allItems.value.filter(i =>
+    i.item_code.toLowerCase().includes(q) ||
+    i.item_name.toLowerCase().includes(q)
+  ).slice(0, 100)
+  itemDDIdx.value = 0
+}
+
+watch(itemSearchQuery, filterItems)
+
+async function openItemSearch() {
+  showItemSearchModal.value = true
+  if (allItems.value.length === 0) {
+    await refreshItemSearch()
+  } else {
+    filterItems()
+  }
+  nextTick(() => ledgerItemSearchModalRef.value?.focus())
+}
+
+function closeItemSearch() {
+  showItemSearchModal.value = false
+}
+
+function pickItem(item, dates) {
+  showItemSearchModal.value = false
+  openStockLedger(item.item_code, dates)
+}
 
 // ─── Customer Search Modal State ──────────────────────────────────────────────
 const showCustomerSearchModal = ref(false)
@@ -818,7 +914,13 @@ function scrollRowIntoView(idx) {
 
 function onGlobalKeydown(e) {
   if (showSalesEntryWindow.value) return
-  if (showCustomerSearchModal.value) return
+  if (showCustomerSearchModal.value || showItemSearchModal.value) {
+    if (e.key === 'Escape') {
+      if (showCustomerSearchModal.value) closeCustomerSearchModal()
+      if (showItemSearchModal.value) closeItemSearch()
+    }
+    return
+  }
 
   if (e.key === 'Escape') {
     if (selectedEntry.value) {
@@ -836,6 +938,12 @@ function onGlobalKeydown(e) {
   if (e.ctrlKey && e.key === 'l') {
     e.preventDefault()
     openCustomerSearch()
+    return
+  }
+
+  if (e.ctrlKey && e.key === 'i') {
+    e.preventDefault()
+    openItemSearch()
     return
   }
 

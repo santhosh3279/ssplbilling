@@ -5,4 +5,9 @@
 </template>
 
 <script setup>
+import { useShortcuts } from './services/shortcutManager';
+import { globalShortcuts } from './shortcuts/globalShortcuts';
+
+// Register application-wide shortcuts
+useShortcuts(globalShortcuts, 'global');
 </script>

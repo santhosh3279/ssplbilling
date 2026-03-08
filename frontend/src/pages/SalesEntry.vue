@@ -1299,74 +1299,44 @@ function handleBack() {
   }
 }
 
-// ==================== GLOBAL KEYS ====================
-function handleKeydown(e) {
-  if (showItemSearchModal.value) {
-    if (e.key === 'F5') {
-      e.preventDefault()
-      refreshItemSearch()
-      return
-    }
-  }
-  
-  if (showItemSearchModal.value || showCustDD.value || showModifyBill.value || showCustomerSearchModal.value || showDiscardModal.value || showPrintModal.value || showJumpModal.value) {
-    if (e.key === 'Escape') {
-      if (showJumpModal.value) { showJumpModal.value = false; return }
-      if (showDiscardModal.value) { showDiscardModal.value = false; return }
-      if (showPrintModal.value) { showPrintModal.value = false; return }
-      if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
-      if (showItemSearchModal.value) { closeItemSearch(); return }
-      if (showModifyBill.value) { showModifyBill.value = false; return }
-      if (showCustDD.value) { showCustDD.value = false; return }
-    }
-    return
-  }
+import { useShortcuts } from '../services/shortcutManager'
+import { salesEntryShortcuts } from '../shortcuts/salesEntryShortcuts'
 
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    handleBack()
-    return
-  }
-  if (e.key === 'F2') {
-    e.preventDefault()
-    openCustomerSearch()
-    return
-  }
-  if (e.key === 'F3' && selectedCustomerDetails.value) {
-    e.preventDefault()
-    // Open the modal first, then trigger its edit mode
-    openCustomerSearch()
-    nextTick(() => {
-      // The modal handles its own F3 internally now
-    })
-    return
-  }
-  if (e.key === 'PageUp') {
-    e.preventDefault()
-    seriesSelect.value?.focus()
-    return
-  }
-  if (e.key === 'F4') {
-    e.preventDefault()
-    openSearch('', null)
-    return
-  }
-  if (e.key === 'End') {
-    e.preventDefault()
+// ==================== KEYBOARD SHORTCUTS ====================
+useShortcuts(salesEntryShortcuts({
+  save: () => saveBill(),
+  newCustomer: () => openCustomerSearch(),
+  searchItem: () => openSearch('', null),
+  deleteRow: () => {
+    if (selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
+      softDelete(selectedRow.value)
+    }
+  },
+  focusSeries: () => seriesSelect.value?.focus(),
+  toggleDiscountSave: () => {
     if (document.activeElement === discountInput.value) {
       saveButton.value?.focus()
     } else {
       discountInput.value?.focus()
       discountInput.value?.select()
     }
-    return
+  },
+  contextualBack: () => {
+    if (showJumpModal.value) { showJumpModal.value = false; return }
+    if (showDiscardModal.value) { showDiscardModal.value = false; return }
+    if (showPrintModal.value) { showPrintModal.value = false; return }
+    if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
+    if (showItemSearchModal.value) { closeItemSearch(); return }
+    if (showModifyBill.value) { showModifyBill.value = false; return }
+    handleBack()
   }
-  if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveBill() }
-  if (e.key === 'Delete' && selectedRow.value >= 0) { const el = document.activeElement; if (!el || el.tagName !== 'INPUT') { e.preventDefault(); softDelete(selectedRow.value) } }
-}
+}))
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
+  // Listen for global shortcut events
+  window.addEventListener('wb-global-ledger-search', openCustomerSearch);
+  window.addEventListener('wb-global-item-search', () => openSearch('', null));
+
   fetchSeriesList()
   fetchDropdownOptions()
   
@@ -1377,5 +1347,8 @@ onMounted(() => {
     nextTick(() => seriesSelect.value?.focus())
   }
 })
-onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+onUnmounted(() => {
+  window.removeEventListener('wb-global-ledger-search', openCustomerSearch);
+  window.removeEventListener('wb-global-item-search', () => openSearch('', null));
+})
 </script>
