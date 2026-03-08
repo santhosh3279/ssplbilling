@@ -222,16 +222,9 @@
     <CustomerSearchModal
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
-      v-model:query="custSearch"
-      v-model:selectedIdx="custDDIdx"
-      :results="custResults"
-      :selectedCustomer="selectedCustomerDetails"
-      :saving="newCustSaving"
+      :initialType="searchType"
       @close="closeCustomerSearchModal"
       @select="pickCust"
-      @refresh="refreshCustSearch"
-      @save-new="saveNewCust"
-      @save-edit="saveEditCust"
     />
 
     <!-- ITEM SEARCH MODAL -->
@@ -392,65 +385,22 @@ async function saveGeneralSettings() {
 
 // ==================== CUSTOMER SEARCH ====================
 const showCustomerSearchModal = ref(false)
+const searchType = ref('All')
 const showLedgerWindow = ref(false)
 const ledgerCustomerName = ref('')
 const ledgerFromDate = ref('')
 const ledgerToDate = ref('')
-const custSearch = ref('')
-const allCustomers = ref([])
-const custResults = ref([])
-const custDDIdx = ref(0)
-const selectedCustomerDetails = ref(null)
-const newCustSaving = ref(false)
 const custSearchModalRef = ref(null)
-const isCustLoading = ref(false)
 
-function filterCustomers() {
-  const q = custSearch.value.toLowerCase().trim()
-  if (!q) {
-    custResults.value = allCustomers.value.slice(0, 100)
-    return
-  }
-  custResults.value = allCustomers.value.filter(c =>
-    c.customer_name.toLowerCase().includes(q) ||
-    c.name.toLowerCase().includes(q) ||
-    (c.mobile_no && c.mobile_no.includes(q))
-  ).slice(0, 100)
-  custDDIdx.value = 0
-}
-
-watch(custSearch, filterCustomers)
-
-async function refreshCustSearch() {
-  isCustLoading.value = true
-  try {
-    allCustomers.value = await dashboardApi.fetchAllCustomersForSync()
-    filterCustomers()
-  } catch (e) {
-    console.error('Customer search refresh failed:', e)
-  } finally {
-    isCustLoading.value = false
-  }
-}
-
-async function openCustomerSearch(clear = true) {
+async function openCustomerSearch(type = 'All') {
+  searchType.value = type
   showCustomerSearchModal.value = true
+  
   // Reset any open sub-forms or date filters when opening the search modal
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
+    custSearchModalRef.value?.focus()
   })
-
-  if (clear) {
-    custSearch.value = ''
-  }
-  
-  if (allCustomers.value.length === 0) {
-    await refreshCustSearch()
-  } else {
-    filterCustomers()
-  }
-  
-  nextTick(() => custSearchModalRef.value?.focus())
 }
 
 function closeCustomerSearchModal() {
@@ -459,12 +409,12 @@ function closeCustomerSearchModal() {
 
 function closeLedgerAndReturnToSearch() {
   showLedgerWindow.value = false
-  openCustomerSearch(false) // Return without clearing search
+  openCustomerSearch(searchType.value)
 }
 
-function pickCust(c, dates) {
+function pickCust(item, dates) {
   showCustomerSearchModal.value = false
-  ledgerCustomerName.value = c.name
+  ledgerCustomerName.value = item.name
   if (dates) {
     ledgerFromDate.value = dates.from
     ledgerToDate.value = dates.to
@@ -473,37 +423,6 @@ function pickCust(c, dates) {
     ledgerToDate.value = ''
   }
   showLedgerWindow.value = true
-}
-
-async function saveEditCust(data) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const customerId = data.name || selectedCustomerDetails.value?.name
-    const res = await updateCustomer(customerId, data)
-    refreshCustSearch()
-    custSearchModalRef.value?.closeSubForm()
-    alert(`Customer ${res.customer_name} updated successfully!`)
-  } catch (e) { 
-    alert('Error: ' + (e?.message || 'Unknown')) 
-  }
-  newCustSaving.value = false
-}
-
-async function saveNewCust(data, dates) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const res = await createCustomer(data)
-    showCustomerSearchModal.value = false
-    ledgerCustomerName.value = res.name
-    if (dates) {
-      ledgerFromDate.value = dates.from
-      ledgerToDate.value = dates.to
-    }
-    showLedgerWindow.value = true
-  } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
-  newCustSaving.value = false
 }
 
 // ==================== ITEM SEARCH ====================

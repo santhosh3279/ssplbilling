@@ -15,7 +15,7 @@
         </div>
         <div class="flex items-center gap-3">
           <!-- Quick Filter Tabs -->
-          <div class="flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm mr-4">
+          <div class="flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm mr-4 relative group">
             <button 
               v-for="t in ['All', 'Customer', 'Supplier', 'Account']" 
               :key="t"
@@ -25,6 +25,9 @@
             >
               {{ t }}
             </button>
+            <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-gray-400 whitespace-nowrap shadow-sm">Cycle: F7</kbd>
+            </div>
           </div>
 
           <button 
@@ -71,8 +74,7 @@
           <thead class="sticky top-0 bg-white shadow-sm z-10">
             <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b bg-gray-50">
               <th class="px-5 py-3 text-left w-24">Type</th>
-              <th class="px-5 py-3 text-left">Ledger Name</th>
-              <th class="px-5 py-3 text-left">ID / Code</th>
+              <th class="px-5 py-3 text-left" style="padding-left: 10%">Ledger Name</th>
               <th class="px-5 py-3 text-right">Balance</th>
             </tr>
           </thead>
@@ -96,11 +98,8 @@
                   {{ c.type }}
                 </span>
               </td>
-              <td class="px-5 py-3">
+              <td class="px-5 py-3" style="padding-left: 10%">
                 <div class="font-medium text-gray-800">{{ c.label }}</div>
-              </td>
-              <td class="px-5 py-3 text-gray-400 font-mono text-base">
-                {{ c.name }}
               </td>
               <td class="px-5 py-3 text-right">
                 <span 
@@ -411,6 +410,15 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'F5') {
     e.preventDefault()
     preloadLedger()
+  } else if (e.key === 'F7') {
+    e.preventDefault()
+    const types = ['All', 'Customer', 'Supplier', 'Account']
+    const nextIdx = (types.indexOf(activeType.value) + 1) % types.length
+    activeType.value = types[nextIdx]
+  } else if (e.key === 'PageUp') {
+    e.preventDefault()
+    searchInput.value?.focus()
+    searchInput.value?.select()
   }
 }
 

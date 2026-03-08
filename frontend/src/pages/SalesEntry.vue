@@ -416,17 +416,10 @@
     <CustomerSearchModal
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
-      v-model:query="custSearch"
-      v-model:selectedIdx="custDDIdx"
-      :results="custResults"
-      :selectedCustomer="selectedCustomerDetails"
-      :saving="newCustSaving"
+      initial-type="Customer"
       :skip-date-filter="true"
       @close="closeCustomerSearchModal"
       @select="pickCust"
-      @refresh="refreshCustSearch"
-      @save-new="saveNewCust"
-      @save-edit="saveEditCust"
     />
 
     <!-- ITEM SEARCH MODAL -->
@@ -634,115 +627,28 @@ function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else sea
 
 // ==================== CUSTOMER DROPDOWN ====================
 const custSearch = ref('')
-const custResults = ref([])
-const showCustDD = ref(false)
 const showCustomerSearchModal = ref(false)
-const custDDIdx = ref(0)
 const selectedCustomerDetails = ref(null)
-const isCustLoading = ref(false)
-
-let _custDebounce = null
-watch(custSearch, (q) => {
-  clearTimeout(_custDebounce)
-  if (!q.trim()) {
-    custResults.value = []
-    return
-  }
-  isCustLoading.value = true
-  _custDebounce = setTimeout(async () => {
-    try {
-      custResults.value = await searchCustomers(q)
-      custDDIdx.value = 0
-    } catch (e) {
-      console.error('Customer search failed:', e)
-    } finally {
-      isCustLoading.value = false
-    }
-  }, 300)
-})
-
-async function refreshCustSearch() {
-  if (!custSearch.value.trim()) return
-  isCustLoading.value = true
-  try {
-    custResults.value = await searchCustomers(custSearch.value)
-  } catch (e) {
-    console.error('Customer search refresh failed:', e)
-  } finally {
-    isCustLoading.value = false
-  }
-}
 
 function openCustomerSearch() {
-  showCustDD.value = false
   showCustomerSearchModal.value = true
   custSearch.value = ''
+  nextTick(() => {
+    custSearchModalRef.value?.closeSubForm()
+    custSearchModalRef.value?.focus()
+  })
 }
 
 function pickCust(c) {
   customer.value = c.name; 
-  custSearch.value = c.customer_name; 
-  showCustDD.value = false; 
-  showCustomerSearchModal.value = false;
-  // We can store extra info in a reactive ref if we want to show it on the main page
+  custSearch.value = c.label || c.customer_name; 
+  showCustomerSearchModal.value = false; 
   selectedCustomerDetails.value = c;
   nextTick(() => newCodeInput.value?.focus())
 }
 
-function clearCustomerSelection() {
-  customer.value = ''; custSearch.value = ''; custResults.value = []; showCustDD.value = false; selectedCustomerDetails.value = null
-  nextTick(() => customerInput.value?.focus())
-}
-
-// ==================== NEW/EDIT CUSTOMER SUBWINDOW ====================
-const newCustSaving = ref(false)
-
 function closeCustomerSearchModal() {
   showCustomerSearchModal.value = false
-}
-
-async function saveEditCust(data) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const customerId = data.name || selectedCustomerDetails.value?.name
-    const res = await updateCustomer(customerId, data)
-
-    // Update local state
-    if (selectedCustomerDetails.value && selectedCustomerDetails.value.name === customerId) {
-      Object.assign(selectedCustomerDetails.value, data)
-      selectedCustomerDetails.value.customer_name = res.customer_name
-      custSearch.value = res.customer_name
-    }
-
-    // Re-fetch search results to update the view
-    refreshCustSearch()
-
-    custSearchModalRef.value?.closeSubForm()
-    alert(`Customer ${res.customer_name} updated successfully!`)
-  } catch (e) { 
-    alert('Error: ' + (e?.message || 'Unknown')) 
-  }
-  newCustSaving.value = false
-}
-
-async function saveNewCust(data) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const res = await createCustomer(data)
-    customer.value = res?.name || data.customer_name
-    custSearch.value = res?.customer_name || data.customer_name
-    showCustomerSearchModal.value = false // Close search modal after creating and selecting
-    nextTick(() => newCodeInput.value?.focus())
-  } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
-  newCustSaving.value = false
-}
-async function onCustomerEnter() {
-  if (custDDIdx.value < custResults.value.length && showCustDD.value) { pickCust(custResults.value[custDDIdx.value]); return }
-  if (custDDIdx.value === custResults.value.length && custSearch.value.trim() && showCustDD.value) { openCustomerSearch(); return }
-  if (!customer.value) { alert('Please select or create a customer'); return }
-  showCustDD.value = false; nextTick(() => newCodeInput.value?.focus())
 }
 
 // ==================== STATE ====================
