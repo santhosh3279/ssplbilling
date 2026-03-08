@@ -77,20 +77,6 @@ export async function frappePost(method, body = {}) {
   return json.message ?? json;
 }
 
-// ─── Customer ─────────────────────────────────────────────────────────────────
-
-/**
- * Search customers by name or ID (partial match) via custom API.
- * Returns customer info including mobile_no and current balance.
- *
- * PYTHON CALL: ssplbilling.api.sales_api.search_customers
- *
- * @returns {Promise<Array<{name: string, customer_name: string, mobile_no: string, balance: number}>>}
- */
-export async function searchCustomers(query = "") {
-  return frappeGet("ssplbilling.api.sales_api.search_customers", { query });
-}
-
 // ─── Naming Series ─────────────────────────────────────────────────────────────
 
 /**

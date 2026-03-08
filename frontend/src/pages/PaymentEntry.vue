@@ -529,12 +529,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  searchCustomers, searchSuppliers, searchAccounts,
+import { 
+  searchSuppliers, searchAccounts,
   fetchOutstandingInvoices, fetchOutstandingPurchaseInvoices,
   createPaymentEntry, createJournalEntry,
+  frappeGet,
 } from '../api.js'
-
+import { searchCustomers } from '../customersearch.js'
 const router = useRouter()
 const today = new Date().toISOString().slice(0, 10)
 

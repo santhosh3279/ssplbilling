@@ -95,11 +95,19 @@ function formatDateToDisplay(iso) {
 
 function initDates() {
   const now = new Date()
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(now.getDate() - 7)
   
-  const fromISO = sevenDaysAgo.toISOString().slice(0, 10)
-  const toISO = now.toISOString().slice(0, 10)
+  // Local date components
+  const y = now.getFullYear()
+  const m = now.getMonth() + 1 // Jan is 0, so +1
+  const d = now.getDate()
+
+  // From Date: April 1st of the current fiscal year
+  // If we are in Jan/Feb/March, the fiscal year started in the previous calendar year
+  const fromYear = m < 4 ? y - 1 : y
+  const fromISO = `${fromYear}-04-01`
+  
+  // To Date: Today's date (local YYYY-MM-DD)
+  const toISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
 
   dateData.value = {
     fromISO,

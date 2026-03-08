@@ -278,7 +278,8 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import CustomerLedger from './CustomerLedger.vue'
 import StockLedger from './StockLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
-import { searchCustomers, fetchItemPrice, fetchItemStockForWarehouses } from '../api.js'
+import { fetchItemPrice, fetchItemStockForWarehouses } from '../api.js'
+import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 
 const router = useRouter()

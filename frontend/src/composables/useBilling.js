@@ -16,7 +16,6 @@
 
 import { ref, computed, nextTick } from "vue";
 import {
-  searchCustomers,
   fetchNamingSeries,
   previewNextInvoiceNo,
   resolveBarcode,
@@ -24,6 +23,7 @@ import {
   searchItems as apiSearchItems,
   createSalesInvoice,
 } from "../api.js";
+import { searchCustomers } from "../customersearch.js";
 
 // ─── Row factory ──────────────────────────────────────────────────────────────
 

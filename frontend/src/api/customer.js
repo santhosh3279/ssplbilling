@@ -198,7 +198,7 @@ export async function fetchCustomerDetails(customerId) {
  * Avoids partial-document save errors from frappe.client.save.
  */
 export async function updateCustomer(customerId, data) {
-  return frappePost('ssplbilling.api.sales_api.update_customer_full', {
+  return frappePost('ssplbilling.api.customersearch_api.update_customer_full', {
     data: JSON.stringify({ ...data, name: customerId }),
   })
 }

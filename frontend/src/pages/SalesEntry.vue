@@ -492,7 +492,8 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
-import { fetchBillingSettings, fetchItemPrice, searchCustomers, searchItems, fetchItemDetails, frappeGet, frappePost } from '../api.js'
+import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, frappeGet, frappePost } from '../api.js'
+import { searchCustomers } from '../customersearch.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
@@ -1146,7 +1147,7 @@ const billSeries = ref('')
 watch(customer, async (newVal) => {
   if (!newVal || !selectedCustomerDetails.value) return
   try {
-    const stats = await frappeGet('ssplbilling.api.sales_api.get_customer_quick_stats', { customer: newVal })
+    const stats = await frappeGet('ssplbilling.api.customersearch_api.get_customer_quick_stats', { customer: newVal })
     if (stats && selectedCustomerDetails.value && selectedCustomerDetails.value.name === newVal) {
       selectedCustomerDetails.value = { ...selectedCustomerDetails.value, ...stats }
     }

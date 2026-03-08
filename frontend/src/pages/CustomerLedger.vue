@@ -455,7 +455,8 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { searchCustomers, fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
+import { fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
+import { searchCustomers } from '../customersearch.js'
 import SalesEntry from './SalesEntry.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { createCustomer, updateCustomer } from '../api/customer.js'
