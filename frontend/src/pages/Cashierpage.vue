@@ -600,7 +600,12 @@ async function processPayment() {
       upi_amount: payments.value.upi,
       bank_amount: payments.value.bank,
       discount_amount: payments.value.discount,
-      is_credit: isCredit.value
+      is_credit: isCredit.value,
+      // Pass the accounts resolved in UI to backend
+      cash_account: seriesAccounts.value.cash,
+      upi_account: seriesAccounts.value.upi,
+      bank_account: seriesAccounts.value.bank,
+      discount_account: seriesAccounts.value.discount
     }
     
     await submitInvoiceWithPayment(payload)

@@ -114,6 +114,12 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	discount_amount = float(data.get("discount_amount") or 0)
 	is_credit = bool(data.get("is_credit"))
 
+	# Explicit accounts passed from frontend (UI cache)
+	cash_account = data.get("cash_account")
+	upi_account = data.get("upi_account")
+	bank_account = data.get("bank_account")
+	discount_account = data.get("discount_account")
+
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	grand_total = float(si.grand_total)
 
@@ -169,7 +175,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		return pe.name
 
 	if discount_amount > 0.01:
-		write_off_acct = frappe.get_cached_value("Company", company, "write_off_account") or ""
+		write_off_acct = discount_account or _find_account(frappe.get_cached_value("Company", company, "write_off_account")) or ""
 		je = frappe.new_doc("Journal Entry")
 		je.voucher_type = "Journal Entry"
 		je.posting_date = si.posting_date
@@ -180,15 +186,15 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		payment_entries.append(je.name)
 
 	if cash_amount > 0.01:
-		pe_name = _create_pe(cash_amount, "Cash", _resolve_account("cash_account", "Cash"))
+		pe_name = _create_pe(cash_amount, "Cash", cash_account or _resolve_account("cash_account", "Cash"))
 		if pe_name: payment_entries.append(pe_name)
 
 	if upi_amount > 0.01:
-		pe_name = _create_pe(upi_amount, "UPI", _resolve_account("upi", "UPI"))
+		pe_name = _create_pe(upi_amount, "UPI", upi_account or _resolve_account("upi", "UPI"))
 		if pe_name: payment_entries.append(pe_name)
 
 	if bank_amount > 0.01:
-		pe_name = _create_pe(bank_amount, "Bank Transfer", _resolve_account("bank", "Bank Transfer"))
+		pe_name = _create_pe(bank_amount, "Bank Transfer", bank_account or _resolve_account("bank", "Bank Transfer"))
 		if pe_name: payment_entries.append(pe_name)
 
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}
