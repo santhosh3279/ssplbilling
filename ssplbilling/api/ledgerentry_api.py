@@ -41,6 +41,10 @@ def create_payment_entry(data):
     
     pe.mode_of_payment = data.get("mode_of_payment") or "Cash"
     
+    # Set exchange rates to 1.0 to avoid conversion issues
+    pe.source_exchange_rate = 1.0
+    pe.target_exchange_rate = 1.0
+    
     # If mode is cash/upi, we might need to set the specific account based on settings
     # For now, let Frappe handle defaults or provide them
     if data.get("paid_from"):
