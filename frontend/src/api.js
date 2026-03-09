@@ -324,14 +324,14 @@ export async function fetchBillingSettings() {
 /**
  * Fetch all Draft or Unpaid Submitted Sales Invoices, optionally filtered by query.
  *
- * PYTHON CALL: ssplbilling.api.sales_api.get_sales_invoices
+ * PYTHON CALL: ssplbilling.api.cashier_api.get_sales_invoices
  *
  * @param {string} [query]  Search text (invoice name or customer name)
  * @param {number} [limit]  Max rows to return (default 50)
  * @returns {Promise<Array<{name,customer,customer_name,posting_date,grand_total,outstanding_amount,docstatus}>>}
  */
 export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "") {
-  return frappeGet("ssplbilling.api.sales_api.get_sales_invoices", {
+  return frappeGet("ssplbilling.api.cashier_api.get_sales_invoices", {
     query,
     limit,
     ...(postingDate && { posting_date: postingDate }),
@@ -341,13 +341,13 @@ export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "
 /**
  * Fetch full details of a single Sales Invoice (must be Draft).
  *
- * PYTHON CALL: ssplbilling.api.ledger_api.get_sales_invoice
+ * PYTHON CALL: ssplbilling.api.cashier_api.get_sales_invoice
  *
  * @param {string} invoiceName
  * @returns {Promise<Object>}  Invoice doc with items array
  */
 export async function getInvoiceDetails(invoiceName) {
-  return frappeGet("ssplbilling.api.sales_api.get_sales_invoice", {
+  return frappeGet("ssplbilling.api.cashier_api.get_sales_invoice", {
     invoice_name: invoiceName,
   });
 }
@@ -355,13 +355,13 @@ export async function getInvoiceDetails(invoiceName) {
 /**
  * Submit a Draft Sales Invoice and create Payment Entry(ies).
  *
- * PYTHON CALL: ssplbilling.api.ledger_api.submit_invoice_with_payment
+ * PYTHON CALL: ssplbilling.api.cashier_api.submit_invoice_with_payment
  *
  * @param {{invoice_name: string, cash_amount: number, upi_amount: number}} payload
  * @returns {Promise<{invoice_name, payment_entries, grand_total, status}>}
  */
 export async function submitInvoiceWithPayment(payload) {
-  return frappePost("ssplbilling.api.sales_api.submit_invoice_with_payment", {
+  return frappePost("ssplbilling.api.cashier_api.submit_invoice_with_payment", {
     data: JSON.stringify(payload),
   });
 }

@@ -1006,7 +1006,7 @@ function openModifyBill() {
 async function searchBills(query) {
   modifyLoading.value = true
   try {
-    modifyResults.value = await frappeGet('ssplbilling.api.sales_api.get_sales_invoices', {
+    modifyResults.value = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoices', {
       query: query || '',
       limit: 30,
       posting_date: modifyDate.value,
@@ -1019,7 +1019,7 @@ async function searchBills(query) {
 
 async function loadInvoice(invoiceName) {
   try {
-    const inv = await frappeGet('ssplbilling.api.sales_api.get_sales_invoice', { invoice_name: invoiceName })
+    const inv = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: invoiceName })
     if (!inv) { alert('Could not load invoice'); return }
 
     // Populate form with invoice data
