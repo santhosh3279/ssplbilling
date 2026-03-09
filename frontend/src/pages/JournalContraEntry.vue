@@ -192,6 +192,8 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { useShortcuts } from '../services/shortcutManager'
+import { journalContraShortcuts } from '../shortcuts/journalContraShortcuts'
 
 const router = useRouter()
 
@@ -272,7 +274,29 @@ function formatBalance(val) {
 function getNewBalance(row) {
   return (Number(row.current_balance) || 0) + (Number(row.debit) || 0) - (Number(row.credit) || 0)
 }
+
+// --- SHORTCUTS ---
+useShortcuts(journalContraShortcuts({
+  addRow: addRow,
+  saveEntry: saveEntry,
+  navigateUp: () => {
+    if (activeRowIdx.value > 0) activeRowIdx.value--
+  },
+  navigateDown: () => {
+    if (activeRowIdx.value < rows.value.length - 1) activeRowIdx.value++
+  },
+  handleEnter: (e) => {
+    if (showSearchModal.value) return
+    const target = e.target
+    if (target.tagName !== 'INPUT') {
+       openLedgerSearch(activeRowIdx.value)
+    }
+  },
+  goBack: () => router.push('/')
+}))
+
 async function saveEntry() {
+
   if (!canSave.value || isSubmitting.value) return
   isSubmitting.value = true
   try {
@@ -300,49 +324,16 @@ async function saveEntry() {
       { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     ]
   } catch (e) {
-...
     alert('Failed to save: ' + e.message)
   } finally {
     isSubmitting.value = false
   }
 }
 
-// --- KEYBOARD ---
-function handleKeydown(e) {
-  if (showSearchModal.value) return
-
-  if (e.key === 'F9') {
-    e.preventDefault()
-    saveEntry()
-  } else if (e.key === 'F2') {
-    e.preventDefault()
-    addRow()
-  } else if (e.key === 'ArrowUp') {
-    if (activeRowIdx.value > 0) {
-      e.preventDefault()
-      activeRowIdx.value--
-    }
-  } else if (e.key === 'ArrowDown') {
-    if (activeRowIdx.value < rows.value.length - 1) {
-      e.preventDefault()
-      activeRowIdx.value++
-    }
-  } else if (e.key === 'Enter') {
-    // If on a ledger cell, open search
-    const target = e.target
-    if (target.tagName !== 'INPUT') {
-       e.preventDefault()
-       openLedgerSearch(activeRowIdx.value)
-    }
-  }
-}
-
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
