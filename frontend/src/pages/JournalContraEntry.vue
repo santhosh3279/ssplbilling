@@ -63,7 +63,6 @@
                 <th class="px-4 py-4 w-32 text-right">Debit (₹)</th>
                 <th class="px-4 py-4 w-32 text-right">Credit (₹)</th>
                 <th class="px-4 py-4 w-32 text-right">New Bal</th>
-                <th class="px-4 py-4 min-w-[200px]">Reference / Note</th>
                 <th class="px-6 py-4 w-12"></th>
               </tr>
             </thead>
@@ -117,15 +116,6 @@
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
-                <td class="px-4 py-2">
-                  <input 
-                    v-model="row.reference"
-                    @focus="activeRowIdx = idx"
-                    type="text"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-slate-600 outline-none focus:border-blue-500 focus:bg-white transition-all"
-                    placeholder="Ref / Chq / Note..."
-                  />
-                </td>
                 <td class="px-6 py-2 text-center">
                   <button 
                     @click="removeRow(idx)"
@@ -151,8 +141,17 @@
         </div>
 
         <!-- FOOTER: TOTALS -->
-        <div class="shrink-0 bg-slate-50 border-t border-slate-200 p-6">
-          <div class="flex justify-end gap-12">
+        <div class="shrink-0 bg-slate-50 border-t border-slate-200 p-6 flex items-start justify-between">
+          <div class="flex-1 max-w-xl">
+            <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Reference Note / Remarks</label>
+            <textarea 
+              v-model="userRemarks"
+              rows="2"
+              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+              placeholder="Enter reference number, cheque details or internal notes..."
+            ></textarea>
+          </div>
+          <div class="flex gap-12 ml-12">
             <div class="text-right">
               <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Debit</div>
               <div class="text-2xl font-black text-slate-900 font-mono">₹ {{ fmt(totalDebit) }}</div>
@@ -208,9 +207,10 @@ watch(isContra, () => {
 })
 
 const postingDate = ref(new Date().toISOString().slice(0, 10))
+const userRemarks = ref('')
 const rows = ref([
-  { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' },
-  { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' }
+  { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 },
+  { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
 ])
 const activeRowIdx = ref(0)
 const isSubmitting = ref(false)
@@ -236,13 +236,13 @@ function fmt(val) {
 }
 
 function addRow() {
-  rows.value.push({ account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' })
+  rows.value.push({ account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 })
   activeRowIdx.value = rows.value.length - 1
 }
 
 function removeRow(idx) {
   if (rows.value.length <= 2) {
-    rows.value[idx] = { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' }
+    rows.value[idx] = { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     return
   }
   rows.value.splice(idx, 1)
@@ -272,7 +272,6 @@ function formatBalance(val) {
 function getNewBalance(row) {
   return (Number(row.current_balance) || 0) + (Number(row.debit) || 0) - (Number(row.credit) || 0)
 }
-
 async function saveEntry() {
   if (!canSave.value || isSubmitting.value) return
   isSubmitting.value = true
@@ -280,6 +279,7 @@ async function saveEntry() {
     const payload = {
       voucher_type: isContra.value ? 'Contra' : 'Journal Entry',
       posting_date: postingDate.value,
+      user_remark: userRemarks.value,
       accounts: rows.value
         .filter(r => r.account)
         .map(r => ({
@@ -287,18 +287,20 @@ async function saveEntry() {
           account_type: r.account_type,
           debit_in_account_currency: r.debit,
           credit_in_account_currency: r.credit,
-          user_remark: r.reference
+          user_remark: userRemarks.value
         }))
     }
-    
+
     // We'll need a backend method for this or use frappe.client.insert
     await frappePost('ssplbilling.api.ledgerentry_api.create_journal_entry', { data: payload })
     alert('Entry saved successfully!')
+    userRemarks.value = ''
     rows.value = [
-      { account: '', account_name: '', debit: 0, credit: 0, reference: '' },
-      { account: '', account_name: '', debit: 0, credit: 0, reference: '' }
+      { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 },
+      { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     ]
   } catch (e) {
+...
     alert('Failed to save: ' + e.message)
   } finally {
     isSubmitting.value = false
