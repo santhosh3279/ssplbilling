@@ -1,6 +1,26 @@
 import frappe
 import json
 
+def _get_party_account(party_type, party):
+    """Get the default receivable/payable account for a party."""
+    from erpnext.accounts.party import get_party_account
+    return get_party_account(party_type, party, frappe.defaults.get_global_default("company"))
+
+def _get_mop_account(mode_of_payment):
+    """Get the default bank/cash account for a mode of payment."""
+    company = frappe.defaults.get_global_default("company")
+    account = frappe.db.get_value("Mode of Payment Account", 
+        {"parent": mode_of_payment, "company": company}, "default_account")
+    
+    if not account:
+        # Fallback to general company defaults
+        if "Cash" in mode_of_payment:
+            account = frappe.db.get_value("Company", company, "default_cash_account")
+        else:
+            account = frappe.db.get_value("Company", company, "default_bank_account")
+            
+    return account
+
 @frappe.whitelist()
 def get_outstanding_invoices(party, party_type="Customer"):
     """Fetch outstanding invoices/bills for a given party."""
@@ -29,28 +49,42 @@ def create_payment_entry(data):
     if isinstance(data, str):
         data = json.loads(data)
         
-    pe = frappe.new_doc("Payment Entry")
-    pe.payment_type = data.get("payment_type") # 'Receive' or 'Pay'
-    pe.party_type = data.get("party_type") # 'Customer' or 'Supplier'
-    pe.party = data.get("party")
-    pe.posting_date = data.get("date") or frappe.utils.today()
-    
+    payment_type = data.get("payment_type") # 'Receive' or 'Pay'
+    party_type = data.get("party_type") # 'Customer' or 'Supplier'
+    party = data.get("party")
+    mop = data.get("mode_of_payment") or "Cash"
     amount = float(data.get("amount") or 0)
+    company = frappe.defaults.get_global_default("company")
+
+    pe = frappe.new_doc("Payment Entry")
+    pe.payment_type = payment_type
+    pe.party_type = party_type
+    pe.party = party
+    pe.posting_date = data.get("date") or frappe.utils.today()
+    pe.company = company
+    
     pe.paid_amount = amount
     pe.received_amount = amount
-    
-    pe.mode_of_payment = data.get("mode_of_payment") or "Cash"
+    pe.mode_of_payment = mop
     
     # Set exchange rates to 1.0 to avoid conversion issues
     pe.source_exchange_rate = 1.0
     pe.target_exchange_rate = 1.0
     
-    # If mode is cash/upi, we might need to set the specific account based on settings
-    # For now, let Frappe handle defaults or provide them
-    if data.get("paid_from"):
-        pe.paid_from = data["paid_from"]
-    if data.get("paid_to"):
-        pe.paid_to = data["paid_to"]
+    # RESOLVE ACCOUNTS
+    party_account = _get_party_account(party_type, party)
+    mop_account = _get_mop_account(mop)
+    
+    if payment_type == "Receive":
+        pe.paid_from = party_account
+        pe.paid_to = mop_account
+    else: # Pay
+        pe.paid_from = mop_account
+        pe.paid_to = party_account
+
+    # Explicitly set currencies to avoid MandatoryError
+    pe.paid_from_account_currency = frappe.db.get_value("Account", pe.paid_from, "account_currency")
+    pe.paid_to_account_currency = frappe.db.get_value("Account", pe.paid_to, "account_currency")
         
     pe.reference_no = data.get("reference_no")
     pe.reference_date = data.get("reference_date") or pe.posting_date
