@@ -677,12 +677,25 @@ async function processPayment() {
   successMsg.value = ''
   
   try {
+    const bill = amountToCollect.value
+    const upi = Number(payments.value.upi) || 0
+    const bank = Number(payments.value.bank) || 0
+    const disc = Number(payments.value.discount) || 0
+    let cash = Number(payments.value.cash) || 0
+
+    // APPLY POSTING CALCULATION:
+    // If overpaid, adjust cash to exactly balance the bill (can be negative/refund)
+    const total = cash + upi + bank + disc
+    if (total > bill + 0.005) {
+      cash = bill - upi - bank - disc
+    }
+
     const payload = {
       invoice_name: selectedInvoice.value.name,
-      cash_amount: payments.value.cash,
-      upi_amount: payments.value.upi,
-      bank_amount: payments.value.bank,
-      discount_amount: payments.value.discount,
+      cash_amount: cash,
+      upi_amount: upi,
+      bank_amount: bank,
+      discount_amount: disc,
       is_credit: isCredit.value,
       // Pass the accounts resolved in UI to backend
       cash_account: seriesAccounts.value.cash,
