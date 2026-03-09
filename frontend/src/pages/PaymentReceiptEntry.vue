@@ -81,32 +81,28 @@
         <div class="space-y-6">
           <!-- Party Search -->
           <div>
-            <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">
-              {{ entryMode === 'Receive' ? 'Customer' : 'Supplier' }}
-            </label>
-            <div class="relative">
-              <input 
-                ref="partyInput"
-                v-model="partyQuery"
-                @input="onPartySearch"
-                @keydown.down.prevent="cursorDown"
-                @keydown.up.prevent="cursorUp"
-                @keydown.enter.prevent="pickCurrentCursor"
-                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                :placeholder="`Search ${entryMode === 'Receive' ? 'customer' : 'supplier'}...`"
-              />
-              <div v-if="partyResults.length" class="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-2xl overflow-hidden">
-                <div 
-                  v-for="(res, idx) in partyResults" 
-                  :key="res.name"
-                  @click="pickParty(res)"
-                  class="cursor-pointer px-4 py-3 text-sm transition-colors"
-                  :class="cursorIdx === idx ? 'bg-blue-500 text-white' : 'hover:bg-gray-50'"
-                >
-                  <div class="font-bold">{{ res.label }}</div>
-                  <div class="text-[10px]" :class="cursorIdx === idx ? 'text-blue-100' : 'text-gray-400'">{{ res.name }}</div>
-                </div>
-              </div>
+            <div class="mb-1.5 flex items-center justify-between">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                {{ entryMode === 'Receive' ? 'Customer' : 'Supplier' }}
+              </label>
+              <button 
+                v-if="party" 
+                @click="showLedgerWindow = true"
+                class="text-[10px] font-bold text-blue-600 hover:underline"
+              >
+                VIEW LEDGER &rarr;
+              </button>
+            </div>
+            <div 
+              ref="partyInput"
+              class="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg font-bold outline-none cursor-pointer hover:border-blue-400 transition-all focus:ring-4 focus:ring-blue-50"
+              :class="party ? 'bg-blue-50 text-blue-800 border-blue-300' : 'text-gray-300 italic'"
+              tabindex="0"
+              @click="openSearch"
+              @keydown.enter.prevent="openSearch"
+              @keydown.space.prevent="openSearch"
+            >
+              {{ partyName || `Select ${entryMode === 'Receive' ? 'customer' : 'supplier'}...` }}
             </div>
           </div>
 
@@ -171,6 +167,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Modals & Sub-windows -->
+    <CustomerSearchModal
+      ref="searchModalRef"
+      :show="showSearchModal"
+      :initial-type="entryMode === 'Receive' ? 'Customer' : 'Supplier'"
+      :skip-date-filter="true"
+      @close="showSearchModal = false"
+      @select="pickParty"
+    />
+
+    <CustomerLedger
+      v-if="showLedgerWindow"
+      :is-sub-window="true"
+      :ledger-name="party"
+      :ledger-type="entryMode === 'Receive' ? 'Customer' : 'Supplier'"
+      @close="showLedgerWindow = false"
+    />
   </div>
 </template>
 
@@ -178,6 +192,8 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import CustomerLedger from './CustomerLedger.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -194,9 +210,9 @@ const entryMode = ref(route.query.mode || 'Receive') // 'Receive' or 'Pay'
 const date = ref(new Date().toISOString().split('T')[0])
 const party = ref('')
 const partyName = ref('')
-const partyQuery = ref('')
-const partyResults = ref([])
-const cursorIdx = ref(-1)
+const showSearchModal = ref(false)
+const searchModalRef = ref(null)
+const showLedgerWindow = ref(false)
 const amount = ref(0)
 const mop = ref('Cash')
 const referenceNo = ref('')
@@ -223,9 +239,7 @@ function switchMode(m) {
 function resetForm() {
   party.value = ''
   partyName.value = ''
-  partyQuery.value = ''
-  partyResults.value = []
-  cursorIdx.value = -1
+  showSearchModal.value = false
   amount.value = 0
   referenceNo.value = ''
   remarks.value = ''
@@ -233,45 +247,20 @@ function resetForm() {
   outstandings.value = []
 }
 
-let partyTimer = null
-function onPartySearch() {
-  clearTimeout(partyTimer)
-  partyTimer = setTimeout(async () => {
-    if (partyQuery.value.length < 2) {
-      partyResults.value = []
-      return
-    }
-    try {
-      partyResults.value = await frappeGet('ssplbilling.api.ledgerentry_api.search_parties', {
-        query: partyQuery.value,
-        party_type: entryMode.value === 'Receive' ? 'Customer' : 'Supplier'
-      })
-      cursorIdx.value = partyResults.value.length ? 0 : -1
-    } catch (e) {
-      console.error(e)
-    }
-  }, 300)
+function openSearch() {
+  showSearchModal.value = true
+  nextTick(() => {
+    searchModalRef.value?.closeSubForm()
+    searchModalRef.value?.focus()
+  })
 }
 
 function pickParty(p) {
   party.value = p.name
-  partyName.value = p.label
-  partyQuery.value = p.label
-  partyResults.value = []
+  partyName.value = p.label || p.customer_name || p.supplier_name
+  showSearchModal.value = false
   fetchOutstandings()
   nextTick(() => amountInput.value?.focus())
-}
-
-function cursorDown() {
-  if (cursorIdx.value < partyResults.value.length - 1) cursorIdx.value++
-}
-function cursorUp() {
-  if (cursorIdx.value > 0) cursorIdx.value--
-}
-function pickCurrentCursor() {
-  if (cursorIdx.value >= 0 && partyResults.value[cursorIdx.value]) {
-    pickParty(partyResults.value[cursorIdx.value])
-  }
 }
 
 async function fetchOutstandings() {
@@ -326,6 +315,14 @@ function handleKeydown(e) {
   if (e.key === 'F9') {
     e.preventDefault()
     saveEntry()
+  } else if (e.key === 'Escape') {
+    if (showLedgerWindow.value) {
+      e.preventDefault()
+      showLedgerWindow.value = false
+    } else if (showSearchModal.value) {
+      e.preventDefault()
+      showSearchModal.value = false
+    }
   }
 }
 
