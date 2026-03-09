@@ -687,32 +687,46 @@ watch(showDiscardModal, (val) => {
 })
 
 const selectedItemData = ref(null)
+let insightTimeout = null
 
 async function loadItemInsight(code, itemName = '', uom = '') {
   if (!code) {
     selectedItemData.value = null
     return
   }
-  try {
-    await insightResource.submit({
-      item_code: code,
-      supplier: supplier.value || null,
-      warehouse: defaultWarehouse.value || null
-    })
-    const d = insightResource.data?.message || insightResource.data
-    if (d) {
-      selectedItemData.value = {
-        item_code: code,
-        item_name: itemName || d.item_name || '',
-        uom: uom || d.uom || '',
-        stock: d.stock || [],
-        previousPurchases: d.previous_purchases || [],
-        priceLists: (d.price_lists || []).map(pl => ({ name: pl.name, rate: pl.rate })),
-      }
-    }
-  } catch (e) {
-    selectedItemData.value = null
+
+  // 1. Instant update from cache
+  const cached = lookupItemInCache(code)
+  selectedItemData.value = {
+    item_code: code,
+    item_name: itemName || cached?.item_name || '',
+    uom: uom || cached?.uom || '',
+    stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
+    previousPurchases: [], // Will be loaded via API
+    priceLists: cached?.price_lists || [],
   }
+
+  // 2. Debounced API call for historical data (Previous Purchases)
+  clearTimeout(insightTimeout)
+  insightTimeout = setTimeout(async () => {
+    try {
+      await insightResource.submit({
+        item_code: code,
+        supplier: supplier.value || null,
+        warehouse: defaultWarehouse.value || null
+      })
+      const d = insightResource.data?.message || insightResource.data
+      if (d && selectedItemData.value?.item_code === code) {
+        selectedItemData.value.previousPurchases = d.previous_purchases || []
+        // Also update stock if API returned more detailed per-warehouse stock
+        if (d.stock?.length) {
+          selectedItemData.value.stock = d.stock
+        }
+      }
+    } catch (e) {
+      console.warn('[PurchaseEntry] historical insight failed:', e)
+    }
+  }, 400) // 400ms debounce
 }
 
 watch(selectedRow, async (idx) => {
