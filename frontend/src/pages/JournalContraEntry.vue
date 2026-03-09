@@ -78,8 +78,11 @@
                 </td>
                 <td class="px-4 py-2">
                   <div 
+                    ref="ledgerRefs"
                     @click="openLedgerSearch(idx)"
-                    class="w-full rounded-lg border border-transparent px-3 py-2 text-sm font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input"
+                    @keydown.enter.prevent.stop="openLedgerSearch(idx)"
+                    tabindex="0"
+                    class="w-full rounded-lg border border-transparent px-3 py-2 text-sm font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
                     :class="row.account ? 'text-slate-900' : 'text-slate-300 italic'"
                   >
                     <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
@@ -93,9 +96,11 @@
                 </td>
                 <td class="px-4 py-2">
                   <input 
+                    ref="debitRefs"
                     v-model.number="row.debit"
                     @focus="activeRowIdx = idx"
                     @input="row.credit = 0"
+                    @keydown.enter.prevent="moveNext(idx, 'debit')"
                     type="number"
                     class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all"
                     placeholder="0.00"
@@ -103,9 +108,11 @@
                 </td>
                 <td class="px-4 py-2">
                   <input 
+                    ref="creditRefs"
                     v-model.number="row.credit"
                     @focus="activeRowIdx = idx"
                     @input="row.debit = 0"
+                    @keydown.enter.prevent="moveNext(idx, 'credit')"
                     type="number"
                     class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all"
                     placeholder="0.00"
@@ -219,6 +226,11 @@ const isSubmitting = ref(false)
 const showSearchModal = ref(false)
 const ledgerSearchModal = ref(null)
 
+// Template Refs for Navigation
+const ledgerRefs = ref([])
+const debitRefs = ref([])
+const creditRefs = ref([])
+
 // --- COMPUTED ---
 const totalDebit = computed(() => rows.value.reduce((s, r) => s + (Number(r.debit) || 0), 0))
 const totalCredit = computed(() => rows.value.reduce((s, r) => s + (Number(r.credit) || 0), 0))
@@ -263,6 +275,12 @@ function selectLedger(ledger) {
   row.account_type = ledger.type
   row.current_balance = ledger.balance || 0
   showSearchModal.value = false
+  
+  // Move focus to Debit after selection
+  nextTick(() => {
+    debitRefs.value[activeRowIdx.value]?.focus()
+    debitRefs.value[activeRowIdx.value]?.select()
+  })
 }
 
 function formatBalance(val) {
@@ -273,6 +291,24 @@ function formatBalance(val) {
 
 function getNewBalance(row) {
   return (Number(row.current_balance) || 0) + (Number(row.debit) || 0) - (Number(row.credit) || 0)
+}
+
+function moveNext(idx, field) {
+  if (field === 'debit') {
+    creditRefs.value[idx]?.focus()
+    creditRefs.value[idx]?.select()
+  } else if (field === 'credit') {
+    // If it's the last row, add a new one
+    if (idx === rows.value.length - 1) {
+      addRow()
+    } else {
+      activeRowIdx.value = idx + 1
+    }
+    // Move to next row ledger
+    nextTick(() => {
+      ledgerRefs.value[activeRowIdx.value]?.focus()
+    })
+  }
 }
 
 // --- SHORTCUTS ---
