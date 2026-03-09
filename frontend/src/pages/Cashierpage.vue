@@ -65,7 +65,7 @@
           </div>
           <div v-else-if="invoices.length === 0" class="flex flex-col items-center justify-center py-20 opacity-30">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-slate-400"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span class="text-sm font-medium text-slate-500">No invoices found</span>
+            <span class="text-sm font-medium text-slate-500">No draft invoices found</span>
           </div>
           <div v-else class="px-3 pb-4">
             <button 
@@ -90,7 +90,7 @@
               </div>
               <div class="flex items-center justify-between mt-1">
                 <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-blue-200' : 'text-slate-400'">
-                  {{ inv.docstatus === 0 ? 'DRAFT' : 'UNPAID' }}
+                  DRAFT
                 </span>
                 <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-blue-200' : 'text-slate-400'">
                   {{ formatDate(inv.posting_date) }}
@@ -140,7 +140,7 @@
                   <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Invoice Details</div>
                   <div class="text-sm text-slate-600 mb-1">Date: <span class="font-bold text-slate-900">{{ formatDate(selectedInvoice.posting_date) }}</span></div>
                   <div class="flex justify-end">
-                    <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] uppercase font-bold text-slate-600 border border-slate-200">{{ selectedInvoice.docstatus === 0 ? 'DRAFT' : 'UNPAID' }}</span>
+                    <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] uppercase font-bold text-slate-600 border border-slate-200">DRAFT</span>
                   </div>
                 </div>
               </div>

@@ -28,13 +28,12 @@ def _get_item_tax_rate(item_code):
 
 @frappe.whitelist()
 def get_sales_invoices(query="", limit=20, posting_date=None):
-    """List Sales Invoices for cashiering (Draft or Unpaid Submitted)."""
+    """List only Draft Sales Invoices for cashiering."""
     date_filter = posting_date or frappe.utils.today()
     
-    # Filter for Draft (docstatus=0) OR Submitted (docstatus=1) with outstanding balance
     filters = [
         ["posting_date", "=", date_filter],
-        ["docstatus", "<", 2],
+        ["docstatus", "=", 0],
         ["status", "!=", "Cancelled"]
     ]
     
@@ -46,22 +45,18 @@ def get_sales_invoices(query="", limit=20, posting_date=None):
         order_by="modified desc",
     )
     
-    # Filter out submitted invoices that are fully paid
-    result = []
     for inv in invoices:
-        if inv.docstatus == 0 or (inv.docstatus == 1 and float(inv.outstanding_amount or 0) > 0.01):
-            inv["grand_total"] = float(inv["grand_total"] or 0)
-            inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
-            result.append(inv)
+        inv["grand_total"] = float(inv["grand_total"] or 0)
+        inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
             
     if query:
         query = query.lower()
-        result = [
-            inv for inv in result 
+        invoices = [
+            inv for inv in invoices 
             if query in inv.name.lower() or query in (inv.customer_name or "").lower()
         ]
         
-    return result[:int(limit)]
+    return invoices[:int(limit)]
 
 @frappe.whitelist()
 def get_sales_invoice(invoice_name):
@@ -130,7 +125,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
 	if si.docstatus == 0:
-		si.due_date = si.posting_date
+		si.due_date = frappe.utils.add_days(si.posting_date, 14) if is_credit else si.posting_date
 		if si.get("payment_schedule"):
 			si.payment_schedule = []
 		si.submit()
