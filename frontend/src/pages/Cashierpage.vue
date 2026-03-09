@@ -266,16 +266,9 @@
                       @input="e => payments.cash = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
-                    <button 
-                      @click="settleToField('cash')"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 hover:text-emerald-700 p-1 rounded-md hover:bg-emerald-50 transition-colors"
-                      title="Settle balance to Cash"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </button>
                   </div>
                 </div>
 
@@ -292,16 +285,9 @@
                       @input="e => payments.upi = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
-                    <button 
-                      @click="settleToField('upi')"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700 p-1 rounded-md hover:bg-blue-50 transition-colors"
-                      title="Settle balance to UPI"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </button>
                   </div>
                 </div>
 
@@ -318,16 +304,9 @@
                       @input="e => payments.bank = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
-                    <button 
-                      @click="settleToField('bank')"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 text-sky-500 hover:text-sky-700 p-1 rounded-md hover:bg-sky-50 transition-colors"
-                      title="Settle balance to Bank"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </button>
                   </div>
                 </div>
 
@@ -344,16 +323,9 @@
                       @input="e => payments.discount = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
-                    <button 
-                      @click="settleToField('discount')"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500 hover:text-rose-700 p-1 rounded-md hover:bg-rose-50 transition-colors"
-                      title="Apply remaining as Discount"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -488,13 +460,6 @@ function fmt(val) {
 
 function updatePayment(field, value) {
   payments.value[field] = value === '' ? 0 : Number(value)
-}
-
-function settleToField(field) {
-  if (!selectedInvoice.value) return
-  const otherSum = totalPaid.value - (Number(payments.value[field]) || 0)
-  const rem = amountToCollect.value - otherSum
-  payments.value[field] = parseFloat(Math.max(0, rem).toFixed(2))
 }
 
 function formatDate(dateStr) {
