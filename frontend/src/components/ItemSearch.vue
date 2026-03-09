@@ -98,7 +98,10 @@
               :class="{ 'bg-blue-200': selectedIdx === idx }"
               @click="$emit('select', item)"
             >
-              <td class="px-5 py-2 font-mono text-xl text-blue-600">{{ item.item_code }}</td>
+              <td class="px-5 py-2 font-mono text-xl text-blue-600 flex items-center gap-2">
+                <span v-if="item.has_history" class="h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" title="Previously sold to this customer"></span>
+                <span>{{ item.item_code }}</span>
+              </td>
               <td class="px-5 py-2">
                 <div class="font-medium text-gray-800">{{ item.item_name }}</div>
               </td>
@@ -165,7 +168,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'select'])
 
-const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading } = useItemCache()
+const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, hasHistory } = useItemCache()
 
 const query = ref('')
 const selectedIdx = ref(0)
@@ -243,12 +246,18 @@ async function fetchItemInsight(itemCode) {
 
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return allItems.value.slice(0, 100)
+  let list = allItems.value
+  if (q) {
+    list = allItems.value.filter(i => 
+      (i.item_code || '').toLowerCase().includes(q) ||
+      (i.item_name || '').toLowerCase().includes(q)
+    )
+  }
 
-  return allItems.value.filter(i => 
-    (i.item_code || '').toLowerCase().includes(q) ||
-    (i.item_name || '').toLowerCase().includes(q)
-  ).slice(0, 100)
+  return list.slice(0, 100).map(i => ({
+    ...i,
+    has_history: hasHistory(i.item_code)
+  }))
 })
 
 watch(query, () => {

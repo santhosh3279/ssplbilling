@@ -70,3 +70,34 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 			item_map[b.item_code]["stock"] += float(b.actual_qty or 0)
 
 	return items
+
+
+@frappe.whitelist()
+def get_customer_sales_history(customer):
+	"""Fetch all previous sales history for a customer in bulk."""
+	if not customer:
+		return []
+
+	# Fetch last 5000 items sold to this customer
+	history = frappe.db.sql(
+		"""
+		SELECT sii.item_code, si.name, si.posting_date as date, sii.rate, sii.qty, sii.discount_percentage as discount
+		FROM `tabSales Invoice Item` sii
+		JOIN `tabSales Invoice` si ON si.name = sii.parent
+		WHERE si.customer = %s AND si.docstatus = 1
+		ORDER BY si.posting_date DESC, si.creation DESC
+		LIMIT 5000
+		""",
+		(customer),
+		as_dict=True,
+	)
+
+	# Group by item_code for easier lookup on frontend
+	# or just return as a list if the frontend wants to filter
+	for row in history:
+		row["date"] = str(row["date"])
+		row["rate"] = float(row.rate or 0)
+		row["qty"] = float(row.qty or 0)
+		row["discount"] = float(row.discount or 0)
+
+	return history

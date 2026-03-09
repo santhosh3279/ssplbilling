@@ -509,7 +509,7 @@ const router = useRouter()
 const route = useRoute()
 const API = '/api/method/ssplbilling.api.sales_api'
 
-const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync } = useItemCache()
+const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, fetchCustomerSalesHistory, getItemHistoryFromCache } = useItemCache()
 
 const props = defineProps({
   isSubWindow: {
@@ -766,18 +766,20 @@ async function loadItemInsight(code, itemName = '', uom = '') {
     return
   }
 
-  // 1. Instant update from cache
+  // 1. Instant update from cache (Basic info + Local History)
   const cached = lookupItemInCache(code)
+  const localHistory = getItemHistoryFromCache(code)
+  
   selectedItemData.value = {
     item_code: code,
     item_name: itemName || cached?.item_name || '',
     uom: uom || cached?.uom || '',
     stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
-    previousPurchases: [], // Will be loaded via API
+    previousPurchases: localHistory.slice(0, 10), // Show latest 10 from cache immediately
     priceLists: cached?.price_lists || [],
   }
 
-  // 2. Debounced API call for historical data (Previous Sales)
+  // 2. Debounced API call for historical data (Extra history + Detailed Stock)
   clearTimeout(insightTimeout)
   insightTimeout = setTimeout(async () => {
     try {
@@ -788,8 +790,8 @@ async function loadItemInsight(code, itemName = '', uom = '') {
       })
       const d = insightResource.data?.message || insightResource.data
       if (d && selectedItemData.value?.item_code === code) {
+        // Update with full history from API (which might be more extensive than cached last 5000)
         selectedItemData.value.previousPurchases = d.previous_purchases || []
-        // Also update stock if API returned more detailed per-warehouse stock
         if (d.stock?.length) {
           selectedItemData.value.stock = d.stock
         }
@@ -1096,7 +1098,15 @@ const customer = ref('')
 const billSeries = ref('')
 
 watch(customer, async (newVal) => {
-  if (!newVal || !selectedCustomerDetails.value) return
+  if (!newVal) {
+    fetchCustomerSalesHistory(null)
+    return
+  }
+  
+  // Fetch sales history in bulk
+  fetchCustomerSalesHistory(newVal)
+
+  if (!selectedCustomerDetails.value) return
   try {
     const stats = await frappeGet('ssplbilling.api.customersearch_api.get_customer_quick_stats', { customer: newVal })
     if (stats && selectedCustomerDetails.value && selectedCustomerDetails.value.name === newVal) {
@@ -1296,6 +1306,7 @@ function startNewBill() {
   discountPct.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedCustomerDetails.value = null
+  fetchCustomerSalesHistory(null) // Clear history cache
   nextTick(() => seriesSelect.value?.focus())
 }
 
