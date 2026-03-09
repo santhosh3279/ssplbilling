@@ -100,6 +100,63 @@ def save_default_zoom(zoom):
 
 
 @frappe.whitelist()
+def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None):
+	"""Fetch all items with price and stock in bulk for local caching."""
+	filters = {"disabled": 0}
+	if search_type == "Sales":
+		filters["is_sales_item"] = 1
+	elif search_type == "Purchase":
+		filters["is_purchase_item"] = 1
+
+	items = frappe.get_all(
+		"Item",
+		filters=filters,
+		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate"],
+		limit=0,
+		order_by="item_name asc",
+	)
+
+	item_map = {i.item_code: i for i in items}
+	item_codes = list(item_map.keys())
+
+	# 1. Batch fetch rates
+	if not price_list:
+		price_list = "Standard Selling" if search_type == "Sales" else "Standard Buying"
+
+	rates = frappe.get_all(
+		"Item Price",
+		filters={"item_code": ["in", item_codes], "price_list": price_list},
+		fields=["item_code", "price_list_rate"],
+	)
+	for r in rates:
+		if r.item_code in item_map:
+			item_map[r.item_code]["price"] = float(r.price_list_rate or 0)
+
+	# 2. Batch fetch stock
+	stock_filters = {"item_code": ["in", item_codes]}
+	if warehouse:
+		stock_filters["warehouse"] = warehouse
+
+	bins = frappe.get_all(
+		"Bin",
+		filters=stock_filters,
+		fields=["item_code", "actual_qty"],
+	)
+	
+	# Clear initial stock
+	for i in items:
+		i["stock"] = 0.0
+		if "price" not in i:
+			i["price"] = float(i.rate or 0)
+
+	for b in bins:
+		if b.item_code in item_map:
+			item_map[b.item_code]["stock"] += float(b.actual_qty or 0)
+
+	return items
+
+
+@frappe.whitelist()
 def get_billing_settings():
 	"""Return SSPL Billing Settings; user_zoom is resolved for the current user."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

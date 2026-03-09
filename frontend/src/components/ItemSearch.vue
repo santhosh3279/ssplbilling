@@ -15,7 +15,7 @@
         </div>
         <div class="flex items-center gap-3">
           <button 
-            @click="preloadItems" 
+            @click="preloadItems(true)" 
             class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 transition-colors"
           >
             🔄 Refresh <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
@@ -44,8 +44,7 @@
           <div class="flex flex-col min-w-[130px]">
             <span class="text-[10px] font-bold uppercase text-gray-400">Current Stock</span>
             <span class="text-xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-600' : 'text-green-600'">
-              <span v-if="results[selectedIdx]._loading">...</span>
-              <span v-else>{{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}</span>
+              {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
             </span>
           </div>
           <div v-if="warehouse" class="flex flex-col min-w-[130px] max-w-[200px]">
@@ -55,8 +54,7 @@
           <div class="flex flex-col min-w-[130px]">
             <span class="text-[10px] font-bold uppercase text-gray-400">Rate</span>
             <span class="text-xl font-bold text-gray-700">
-              <span v-if="results[selectedIdx]._loading">...</span>
-              <span v-else>₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+              ₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </span>
           </div>
           <div class="flex flex-col flex-1">
@@ -90,12 +88,10 @@
                 <div class="font-medium text-gray-800">{{ item.item_name }}</div>
               </td>
               <td class="px-5 py-2 text-right font-mono">
-                <span v-if="item._loading" class="animate-pulse text-gray-300">...</span>
-                <span v-else>₹{{ (item.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                <span>₹{{ (item.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
               </td>
               <td class="px-5 py-2 text-right">
-                <span v-if="item._loading" class="animate-pulse text-gray-300">...</span>
-                <span v-else class="font-bold" :class="item.stock <= 0 ? 'text-red-600' : 'text-gray-700'">
+                <span class="font-bold" :class="item.stock <= 0 ? 'text-red-600' : 'text-gray-700'">
                   {{ item.stock || 0 }}
                 </span>
               </td>
@@ -131,7 +127,7 @@
 
 <script setup>
 import { ref, nextTick, watch, computed } from 'vue'
-import { frappeGet, fetchItemDetails } from '../api.js'
+import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
 
 const props = defineProps({
@@ -161,33 +157,29 @@ const searchInput = ref(null)
 const scrollContainer = ref(null)
 const showDateModal = ref(false)
 
+// Global cache to avoid redundant API calls
+const ITEM_CACHE = new Map()
+
 // ─── Data Preloading ─────────────────────────────────────────────────────────
 
-async function preloadItems() {
+async function preloadItems(forceRefresh = false) {
+  const cacheKey = `${props.searchType}-${props.priceList}-${props.warehouse || 'all'}`
+  
+  if (!forceRefresh && ITEM_CACHE.has(cacheKey)) {
+    allItems.value = ITEM_CACHE.get(cacheKey)
+    return
+  }
+
   loading.value = true
   try {
-    const filters = { disabled: 0 }
-    if (props.searchType === 'Sales') {
-      filters.is_sales_item = 1
-    } else if (props.searchType === 'Purchase') {
-      filters.is_purchase_item = 1
-    }
-
-    const data = await frappeGet('frappe.client.get_list', {
-      doctype: 'Item',
-      fields: ['item_code', 'item_name', 'stock_uom as uom', 'standard_rate as rate'],
-      filters: filters,
-      limit_page_length: 5000,
-      order_by: 'item_name asc'
+    const data = await frappeGet('ssplbilling.api.dashboard_api.get_all_items_detailed', {
+      search_type: props.searchType,
+      price_list: props.priceList,
+      warehouse: props.warehouse || null
     })
 
-    allItems.value = (data || []).map(i => ({
-      ...i,
-      price: 0,
-      stock: 0,
-      _loading: true,
-      enriched: false
-    }))
+    allItems.value = data || []
+    ITEM_CACHE.set(cacheKey, allItems.value)
   } catch (e) {
     console.error('[ItemSearch] Preload failed:', e)
   } finally {
@@ -210,42 +202,6 @@ const results = computed(() => {
 watch(query, () => {
   selectedIdx.value = 0
 })
-
-// ─── Result Enrichment ───────────────────────────────────────────────────────
-
-async function enrichVisibleResults(list) {
-  // Only enrich if visible and not already enriched
-  const toEnrich = list.filter(i => !i.enriched)
-  if (toEnrich.length === 0) return
-
-  const BATCH = 5
-  for (let i = 0; i < toEnrich.length; i += BATCH) {
-    const batch = toEnrich.slice(i, i + BATCH)
-    await Promise.all(batch.map(async (item) => {
-      try {
-        const { price, stock } = await fetchItemDetails(
-          item.item_code, 
-          props.priceList || (props.searchType === 'Sales' ? 'Standard Selling' : 'Standard Buying'),
-          props.warehouse
-        )
-        item.price = price
-        item.stock = stock
-        item.enriched = true
-      } catch (e) {
-        item.price = 0
-        item.stock = 0
-      } finally {
-        item._loading = false
-      }
-    }))
-  }
-}
-
-watch(results, (newVal) => {
-  if (newVal.length > 0) {
-    enrichVisibleResults(newVal)
-  }
-}, { immediate: true })
 
 // ─── Navigation & Events ─────────────────────────────────────────────────────
 
@@ -270,7 +226,7 @@ function handleGlobalKeydown(e) {
     }
   } else if (e.key === 'F5') {
     e.preventDefault()
-    preloadItems()
+    preloadItems(true)
   }
 }
 
@@ -318,9 +274,7 @@ watch(selectedIdx, async (idx) => {
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
-    if (allItems.value.length === 0) {
-      preloadItems()
-    }
+    preloadItems()
     focus()
   } else {
     showDateModal.value = false
