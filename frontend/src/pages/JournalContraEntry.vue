@@ -52,10 +52,10 @@
               <tr class="text-xs font-bold uppercase tracking-wider text-slate-500 text-left">
                 <th class="px-4 py-2 w-12 text-center">#</th>
                 <th class="px-2 py-2 min-w-[300px]">Ledger</th>
-                <th class="px-2 py-2 w-40 text-right">Balance</th>
-                <th class="px-2 py-2 w-40 text-right">Debit (₹)</th>
-                <th class="px-2 py-2 w-40 text-right">Credit (₹)</th>
-                <th class="px-2 py-2 w-40 text-right">New Bal</th>
+                <th class="px-4 py-2 w-80 text-right">Balance</th>
+                <th class="px-4 py-2 w-80 text-right">Debit (₹)</th>
+                <th class="px-4 py-2 w-80 text-right">Credit (₹)</th>
+                <th class="px-4 py-2 w-80 text-right">New Bal</th>
                 <th class="px-4 py-2 w-12"></th>
               </tr>
             </thead>
