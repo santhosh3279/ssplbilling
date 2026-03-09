@@ -101,22 +101,6 @@
         </div>
         <div class="flex max-h-[75vh] flex-col gap-4 overflow-y-auto px-5 py-4">
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-gray-500">Bill Naming Series</label>
-            <select
-              v-model="defaultSeries"
-              class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-            >
-              <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
-            </select>
-            <div v-if="userAllowedString" class="mt-1 flex flex-wrap gap-1">
-              <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400">User Permissions:</span>
-              <span v-for="p in userAllowedString.split(',')" :key="p" class="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
-                {{ p.trim() }}
-              </span>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-gray-500">Default Zoom (%)</label>
             <div class="flex items-center gap-3">
               <input
@@ -149,10 +133,6 @@
               <div class="flex justify-between text-xs">
                 <span class="text-gray-500">Cipher Map</span>
                 <span class="font-mono text-gray-700">{{ systemSettings.cipher_map || '--' }}</span>
-              </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-gray-500">Your Zoom</span>
-                <span class="font-medium text-gray-700">{{ systemSettings.user_zoom || '--' }}%</span>
               </div>
             </div>
 
