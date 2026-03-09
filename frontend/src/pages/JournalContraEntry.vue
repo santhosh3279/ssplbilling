@@ -389,35 +389,40 @@ function moveNext(idx, field) {
   }
 }
 
-// --- SHORTCUTS ---
-useShortcuts(journalContraShortcuts({
-  switchToJournal: () => { isContra.value = false },
-  switchToContra: () => { isContra.value = true },
-  addRow: addRow,
-  saveEntry: saveEntry,
-  navigateUp: () => {
-    if (activeRowIdx.value > 0) activeRowIdx.value--
-  },
-  navigateDown: () => {
-    if (activeRowIdx.value < rows.value.length - 1) activeRowIdx.value++
-  },
-  handleEnter: (e) => {
-    if (showSearchModal.value) return
-    const active = document.activeElement
-    if (active === document.body || !active) {
-      activeRowIdx.value = 0
-      openLedgerSearch(0)
-      return
-    }
-    if (active.tagName !== 'INPUT') {
-       openLedgerSearch(activeRowIdx.value)
-    }
-  },
-  goBack: () => router.push('/')
-}))
+onMounted(() => {
+  // Mount shortcuts on pageload
+  useShortcuts(journalContraShortcuts({
+    switchToJournal: () => { isContra.value = false },
+    switchToContra: () => { isContra.value = true },
+    addRow: addRow,
+    saveEntry: saveEntry,
+    navigateUp: () => {
+      if (activeRowIdx.value > 0) activeRowIdx.value--
+    },
+    navigateDown: () => {
+      if (activeRowIdx.value < rows.value.length - 1) activeRowIdx.value++
+    },
+    handleEnter: (e) => {
+      if (showSearchModal.value) return
+      const active = document.activeElement
+      if (active === document.body || !active) {
+        activeRowIdx.value = 0
+        openLedgerSearch(0)
+        return
+      }
+      if (active.tagName !== 'INPUT') {
+         openLedgerSearch(activeRowIdx.value)
+      }
+    },
+    goBack: () => router.push('/')
+  }))
+
+  nextTick(() => {
+    ledgerRefs[0]?.focus()
+  })
+})
 
 async function saveEntry() {
-
   if (!canSave.value || isSubmitting.value) return
   isSubmitting.value = true
   try {
@@ -450,12 +455,6 @@ async function saveEntry() {
     isSubmitting.value = false
   }
 }
-
-onMounted(() => {
-  nextTick(() => {
-    ledgerRefs[0]?.focus()
-  })
-})
 
 onUnmounted(() => {
 })
