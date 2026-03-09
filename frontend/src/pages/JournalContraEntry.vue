@@ -40,6 +40,16 @@
             class="bg-transparent text-sm font-bold text-slate-700 outline-none focus:text-blue-600"
           />
         </div>
+        <button 
+          ref="saveButton"
+          @click="saveEntry"
+          :disabled="isSubmitting || !canSave"
+          class="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+        >
+          <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+          <span>Save Entry</span>
+          <kbd class="ml-1 rounded border border-blue-400 bg-blue-500 px-1.5 py-0.5 font-mono text-[10px] text-blue-100">F9</kbd>
+        </button>
       </div>
     </header>
 
@@ -158,7 +168,7 @@
               <textarea 
                 ref="remarksInput"
                 v-model="userRemarks"
-                @keydown.enter.prevent="saveEntry"
+                @keydown.enter.prevent="handleRemarksEnter"
                 rows="2"
                 class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
                 placeholder="Enter reference number, cheque details or internal notes..."
@@ -176,21 +186,12 @@
               </div>
               <div class="text-right border-l border-slate-200 pl-12">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
-                <div
+                <div 
                   class="text-2xl font-black font-mono"
                   :class="Math.abs(difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600'"
                 >
                   ₹ {{ fmt(difference) }}
                 </div>
-                <button
-                  @click="saveEntry"
-                  :disabled="isSubmitting || !canSave"
-                  class="mt-3 flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                  <span>Save Entry</span>
-                  <kbd class="ml-1 rounded border border-blue-400 bg-blue-500 px-1.5 py-0.5 font-mono text-[10px] text-blue-100">F9</kbd>
-                </button>
               </div>
             </div>
           </div>
@@ -243,6 +244,7 @@ const isSubmitting = ref(false)
 const showSearchModal = ref(false)
 const ledgerSearchModal = ref(null)
 const remarksInput = ref(null)
+const saveButton = ref(null)
 
 // Template Refs for Navigation (using plain arrays for function refs)
 const ledgerRefs = []
@@ -350,6 +352,8 @@ function isFieldDisabled(idx, field) {
 }
 
 function moveNext(idx, field) {
+  const isBalanced = Math.abs(difference.value) < 0.01
+
   if (field === 'debit') {
     // If first row debit > 0, move straight to second row ledger search
     if (idx === 0 && Number(rows.value[0].debit) > 0.005) {
@@ -359,34 +363,39 @@ function moveNext(idx, field) {
       return
     }
     
+    // If debit is entered and it's already balanced (e.g. editing), go to remarks
+    if (isBalanced) {
+      remarksInput.value?.focus()
+      return
+    }
+
     const el = creditRefs[idx]
     if (el) {
       el.focus()
       el.select()
     }
   } else if (field === 'credit') {
-    // If it's the last row, check if balance is zero.
-    if (idx === rows.value.length - 1) {
-      if (Math.abs(difference.value) > 0.01) {
-        addRow()
-        // Move to next row ledger
-        nextTick(() => {
-          ledgerRefs[activeRowIdx.value]?.focus()
-        })
-      } else {
-        // Balance is zero, move to Remarks
-        nextTick(() => {
-          remarksInput.value?.focus()
-        })
-      }
+    if (isBalanced) {
+      // Balance is zero, move to Remarks
+      nextTick(() => {
+        remarksInput.value?.focus()
+      })
     } else {
-      activeRowIdx.value = idx + 1
-      // Move to next row ledger
+      // Not balanced, move to next row or add one
+      if (idx === rows.value.length - 1) {
+        addRow()
+      } else {
+        activeRowIdx.value = idx + 1
+      }
       nextTick(() => {
         ledgerRefs[activeRowIdx.value]?.focus()
       })
     }
   }
+}
+
+function handleRemarksEnter() {
+  saveButton.value?.focus()
 }
 
 onMounted(() => {
