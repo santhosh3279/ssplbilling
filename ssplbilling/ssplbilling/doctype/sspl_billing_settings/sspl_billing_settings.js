@@ -17,6 +17,9 @@ frappe.ui.form.on("SSPL Billing Series", {
 function load_series_options(frm) {
 	frappe.call({
 		method: "ssplbilling.api.sales_api.get_naming_series",
+		args: {
+			doctypes: ["Sales Invoice", "Purchase Invoice"]
+		},
 		callback(r) {
 			const series = r.message;
 			if (!series || !series.length) return;

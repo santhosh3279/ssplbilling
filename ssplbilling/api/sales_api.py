@@ -239,28 +239,43 @@ def create_sales_invoice(data=None, **kwargs):
 
 
 @frappe.whitelist()
-def get_naming_series():
-    """Get available naming series for Sales Invoice."""
-    try:
-        prop_value = frappe.db.get_value(
-            "Property Setter",
-            {"doc_type": "Sales Invoice", "field_name": "naming_series", "property": "options"},
-            "value",
-        )
-        if prop_value:
-            return [s.strip() for s in prop_value.split("\n") if s.strip()]
-    except Exception:
-        pass
+def get_naming_series(doctypes=None):
+    """Get available naming series for specified DocTypes. Defaults to Sales Invoice."""
+    if not doctypes:
+        doctypes = ["Sales Invoice"]
+    if isinstance(doctypes, str):
+        if doctypes.startswith("["):
+            doctypes = json.loads(doctypes)
+        else:
+            doctypes = [doctypes]
 
-    try:
-        meta = frappe.get_meta("Sales Invoice")
-        series_field = meta.get_field("naming_series")
-        if series_field and series_field.options:
-            return [s.strip() for s in series_field.options.split("\n") if s.strip()]
-    except Exception:
-        pass
+    def _get_series_for_doctype(doctype):
+        try:
+            prop_value = frappe.db.get_value(
+                "Property Setter",
+                {"doc_type": doctype, "field_name": "naming_series", "property": "options"},
+                "value",
+            )
+            if prop_value:
+                return [s.strip() for s in prop_value.split("\n") if s.strip()]
+        except Exception:
+            pass
+        try:
+            meta = frappe.get_meta(doctype)
+            sf = meta.get_field("naming_series")
+            if sf and sf.options:
+                return [s.strip() for s in sf.options.split("\n") if s.strip()]
+        except Exception:
+            pass
+        return []
 
-    return ["SINV-.YY.-"]
+    all_series = []
+    for dt in doctypes:
+        all_series.extend(_get_series_for_doctype(dt))
+
+    # Return unique sorted series. Fallback if none found.
+    result = sorted(list(set(all_series)))
+    return result if result else ["SINV-.YY.-"]
 
 
 @frappe.whitelist()
