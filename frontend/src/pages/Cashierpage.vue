@@ -125,8 +125,15 @@
                 {{ inv.customer_name }}
               </div>
               <div class="flex items-center justify-between mt-1">
-                <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-blue-200' : 'text-slate-400'">
-                  DRAFT
+                <span 
+                  class="text-[10px] font-bold tracking-wider" 
+                  :class="[
+                    selectedInvoice?.name === inv.name 
+                      ? 'text-blue-200' 
+                      : (inv.docstatus === 0 ? 'text-slate-400' : 'text-rose-500')
+                  ]"
+                >
+                  {{ inv.docstatus === 0 ? 'DRAFT' : 'UNPAID' }}
                 </span>
                 <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-blue-200' : 'text-slate-400'">
                   {{ formatDate(inv.posting_date) }}
@@ -176,7 +183,12 @@
                   <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Invoice Details</div>
                   <div class="text-sm text-slate-600 mb-1">Date: <span class="font-bold text-slate-900">{{ formatDate(selectedInvoice.posting_date) }}</span></div>
                   <div class="flex justify-end">
-                    <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] uppercase font-bold text-slate-600 border border-slate-200">DRAFT</span>
+                    <span 
+                      class="rounded px-2 py-0.5 text-[10px] uppercase font-bold border"
+                      :class="selectedInvoice.docstatus === 0 ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-rose-50 text-rose-600 border-rose-100'"
+                    >
+                      {{ selectedInvoice.docstatus === 0 ? 'DRAFT' : 'UNPAID' }}
+                    </span>
                   </div>
                 </div>
               </div>
