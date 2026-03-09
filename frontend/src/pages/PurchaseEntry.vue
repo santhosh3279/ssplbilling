@@ -786,7 +786,6 @@ function finalizeAddItem() {
   const ei = items.value.findIndex(i => i.item_code === code && !i.deleted)
   if (ei >= 0) { 
     items.value[ei].qty += newQty.value; 
-    selectedRow.value = ei 
   } else { 
     items.value.push({ 
       item_code: code, 
@@ -799,12 +798,12 @@ function finalizeAddItem() {
       warehouse: r.warehouse, 
       deleted: false 
     }); 
-    selectedRow.value = items.value.length - 1 
   }
   newItemCode.value = ''; 
   newQty.value = 1; 
   newPending.value = { item_name: '', uom: '', rate: null }; 
   priceListUpdateDiscount.value = 0;
+  selectedRow.value = -1; // Reset selection so we stay in "new entry" mode
   focusNewCode()
 }
 
