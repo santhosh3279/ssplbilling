@@ -118,14 +118,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	discount_amount = float(data.get("discount_amount") or 0)
 	is_credit = bool(data.get("is_credit"))
 
-	# Explicit accounts passed from frontend (UI cache)
-	cash_account = data.get("cash_account")
-	upi_account = data.get("upi_account")
-	bank_account = data.get("bank_account")
-	discount_account = data.get("discount_account")
-
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	grand_total = float(si.grand_total)
+	company = si.company
 
 	if not is_credit:
 		total_payment = cash_amount + upi_amount + bank_amount + discount_amount
@@ -134,7 +129,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
 	if si.docstatus == 0:
-		si.due_date = frappe.utils.today()
+		si.due_date = data.get("due_date") or frappe.utils.today()
 		if si.get("payment_schedule"):
 			si.payment_schedule = []
 		si.submit()
@@ -142,59 +137,43 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	if is_credit:
 		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted"}
 
-	company = si.company
 	today = frappe.utils.today()
 	payment_entries = []
 
-	series_cfg = None
-	try:
-		settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-		series_cfg = next((r for r in settings.billing_series if r.series == si.naming_series), None)
-	except: pass
+	# --- Resolve accounts from user_series in SSPL Billing Settings ---
+	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+	user_row = next((r for r in (settings.user_series or []) if r.user == frappe.session.user), None)
 
-	def _find_account(name):
-		if not name: return None
-		if frappe.db.exists("Account", name): return name
-		abbr = frappe.get_cached_value("Company", company, "abbr") or ""
-		suffixed = f"{name} - {abbr}"
-		return suffixed if frappe.db.exists("Account", suffixed) else None
+	def _mop_account(mop_name):
+		"""Fallback: account linked to a Mode of Payment for this company."""
+		return frappe.db.get_value(
+			"Mode of Payment Account",
+			{"parent": mop_name, "company": company},
+			"default_account",
+		) or ""
 
-	def _resolve_account(series_field, mop_fallback):
-		if series_cfg and getattr(series_cfg, series_field, None):
-			resolved = _find_account(getattr(series_cfg, series_field))
-			if resolved: return resolved
-		return frappe.db.get_value("Mode of Payment Account", {"parent": mop_fallback, "company": company}, "default_account") or ""
+	cash_account = (user_row.cash if user_row else None) or _mop_account("Cash")
+	upi_account = (user_row.upi if user_row else None) or _mop_account("UPI")
+	bank_account = (user_row.bank_account if user_row else None) or _mop_account("Bank Transfer")
+	discount_account = settings.discount_account or \
+		frappe.get_cached_value("Company", company, "write_off_account") or ""
 
-	def _create_pe(amount, mode_of_payment, paid_to_account):
+	def _mop_for_account(account):
+		"""Find the Mode of Payment whose default account matches, for this company."""
+		return frappe.db.get_value(
+			"Mode of Payment Account",
+			{"default_account": account, "company": company},
+			"parent",
+		) or "Cash"
+
+	def _create_pe(amount, paid_to_account):
 		if amount <= 0 or not paid_to_account: return None
-		
-		# Robust Mode of Payment resolution
-		actual_mop = mode_of_payment
-		if not frappe.db.exists("Mode of Payment", actual_mop):
-			# Try to find a MOP linked to this account
-			mop_linked = frappe.db.get_value("Mode of Payment Account", {"default_account": paid_to_account, "company": company}, "parent")
-			if mop_linked:
-				actual_mop = mop_linked
-			else:
-				# Fallback to anything that exists or "Cash" as a last resort
-				if "UPI" in mode_of_payment.upper():
-					# Find first MOP with UPI in name
-					mop_guess = frappe.db.get_value("Mode of Payment", {"name": ["like", "%UPI%"]}, "name")
-					if mop_guess: actual_mop = mop_guess
-				elif "BANK" in mode_of_payment.upper() or "TRANSFER" in mode_of_payment.upper():
-					mop_guess = frappe.db.get_value("Mode of Payment", {"name": ["like", "%Bank%"]}, "name") or \
-								frappe.db.get_value("Mode of Payment", {"name": ["like", "%Transfer%"]}, "name")
-					if mop_guess: actual_mop = mop_guess
-		
-		# If still not exists, final fallback to Cash if it exists
-		if not frappe.db.exists("Mode of Payment", actual_mop):
-			actual_mop = "Cash" if frappe.db.exists("Mode of Payment", "Cash") else actual_mop
-
+		mop = _mop_for_account(paid_to_account)
 		pe = frappe.new_doc("Payment Entry")
 		pe.payment_type = "Receive"
 		pe.posting_date = today
 		pe.company = company
-		pe.mode_of_payment = actual_mop
+		pe.mode_of_payment = mop
 		pe.party_type = "Customer"
 		pe.party = si.customer
 		pe.paid_from = si.debit_to
@@ -206,26 +185,25 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		return pe.name
 
 	if discount_amount > 0.01:
-		write_off_acct = discount_account or _find_account(frappe.get_cached_value("Company", company, "write_off_account")) or ""
 		je = frappe.new_doc("Journal Entry")
 		je.voucher_type = "Journal Entry"
 		je.posting_date = today
 		je.company = company
-		je.append("accounts", {"account": write_off_acct, "debit_in_account_currency": discount_amount})
+		je.append("accounts", {"account": discount_account, "debit_in_account_currency": discount_amount})
 		je.append("accounts", {"account": si.debit_to, "credit_in_account_currency": discount_amount, "party_type": "Customer", "party": si.customer, "reference_type": "Sales Invoice", "reference_name": si.name})
 		je.insert(); je.submit()
 		payment_entries.append(je.name)
 
 	if cash_amount > 0.01:
-		pe_name = _create_pe(cash_amount, "Cash", cash_account or _resolve_account("cash_account", "Cash"))
+		pe_name = _create_pe(cash_amount, cash_account)
 		if pe_name: payment_entries.append(pe_name)
 
 	if upi_amount > 0.01:
-		pe_name = _create_pe(upi_amount, "UPI", upi_account or _resolve_account("upi", "UPI"))
+		pe_name = _create_pe(upi_amount, upi_account)
 		if pe_name: payment_entries.append(pe_name)
 
 	if bank_amount > 0.01:
-		pe_name = _create_pe(bank_amount, "Bank Transfer", bank_account or _resolve_account("bank", "Bank Transfer"))
+		pe_name = _create_pe(bank_amount, bank_account)
 		if pe_name: payment_entries.append(pe_name)
 
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}

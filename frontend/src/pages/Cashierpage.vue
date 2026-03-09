@@ -301,7 +301,32 @@
                 </button>
               </div>
 
-              <div class="grid gap-4" :class="{ 'opacity-30 pointer-events-none grayscale': isCredit }">
+              <div v-if="isCredit" class="space-y-1.5">
+                <label class="px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Due Date (mmddyy)</label>
+                <div class="flex gap-2">
+                  <div class="relative flex-1 group">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-purple-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    </span>
+                    <input 
+                      ref="dueDateInput"
+                      :value="dueDate"
+                      @input="handleDueDateInput"
+                      @focus="$event.target.select()"
+                      type="text" 
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-left font-mono text-lg text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      placeholder="mm/dd/yy"
+                    />
+                  </div>
+                  <input 
+                    v-model="dueDate"
+                    type="date"
+                    class="w-12 rounded-xl border border-slate-200 bg-slate-50 px-2 outline-none focus:border-purple-500 transition-all hover:border-slate-300 shadow-inner cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div v-else class="grid gap-4">
                 <!-- CASH -->
                 <div class="space-y-1.5">
                   <div class="flex justify-between items-center px-1">
@@ -425,12 +450,14 @@ const cashInput = ref(null)
 const upiInput = ref(null)
 const bankInput = ref(null)
 const discountInput = ref(null)
+const dueDateInput = ref(null)
 
 // --- STATE ---
 const invoices = ref([])
 const selectedInvoice = ref(null)
 const previewItems = ref([])
 const isCredit = ref(false)
+const dueDate = ref('')
 const isSubmitting = ref(false)
 const loadingList = ref(false)
 const loadingPreview = ref(false)
@@ -477,28 +504,69 @@ function navigateBills(dir) {
 function handleEnter(e) {
   const active = document.activeElement
   
-  // 1. If in left panel or nothing focused, move to Cash
-  if (active.tagName !== 'INPUT' || active.type !== 'number') {
-    cashInput.value?.focus()
+  // 1. If in left panel or nothing focused, move to first relevant input
+  if (active.tagName !== 'INPUT' || (active.type !== 'number' && active.type !== 'text' && active.type !== 'date')) {
+    if (isCredit.value) {
+      dueDateInput.value?.focus()
+    } else {
+      cashInput.value?.focus()
+    }
     return
   }
 
   // 2. Navigation through inputs
-  if (active === cashInput.value) {
-    upiInput.value?.focus()
-  } else if (active === upiInput.value) {
-    bankInput.value?.focus()
-  } else if (active === bankInput.value) {
-    discountInput.value?.focus()
-  } else if (active === discountInput.value) {
-    processPayment()
+  if (isCredit.value) {
+    if (active === dueDateInput.value) {
+      processPayment()
+    }
+  } else {
+    if (active === cashInput.value) {
+      upiInput.value?.focus()
+    } else if (active === upiInput.value) {
+      bankInput.value?.focus()
+    } else if (active === bankInput.value) {
+      discountInput.value?.focus()
+    } else if (active === discountInput.value) {
+      processPayment()
+    }
   }
+}
+
+// mmddyy -> mm/dd/yy
+function handleDueDateInput(e) {
+  let raw = e.target.value.replace(/\D/g, '')
+  if (raw.length > 6) raw = raw.slice(0, 6)
+  
+  let formatted = raw
+  if (raw.length >= 4) {
+    formatted = raw.slice(0, 2) + '/' + raw.slice(2, 4) + '/' + raw.slice(4)
+  } else if (raw.length >= 2) {
+    formatted = raw.slice(0, 2) + '/' + raw.slice(2)
+  }
+  
+  dueDate.value = formatted
+}
+
+function getIsoDueDate() {
+  if (!dueDate.value || !dueDate.value.includes('/')) {
+    // If not formatted or empty, check if it's just a raw date string from picker
+    if (dueDate.value.match(/^\d{4}-\d{2}-\d{2}$/)) return dueDate.value
+    return new Date().toISOString().slice(0, 10)
+  }
+  const parts = dueDate.value.split('/')
+  if (parts.length !== 3) return new Date().toISOString().slice(0, 10)
+  const mm = parts[0]
+  const dd = parts[1]
+  const yy = parts[2]
+  const year = yy.length === 2 ? '20' + yy : yy
+  return `${year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
 }
 
 useShortcuts(cashierpageShortcuts({
   navigateBillsUp: () => navigateBills(-1),
   navigateBillsDown: () => navigateBills(1),
   handleEnter: handleEnter,
+  toggleCredit: toggleCredit,
   submitPayment: processPayment,
   goBack: () => window.history.back()
 }))
@@ -697,6 +765,7 @@ async function processPayment() {
       bank_amount: bank,
       discount_amount: disc,
       is_credit: isCredit.value,
+      due_date: getIsoDueDate(),
       // Pass the accounts resolved in UI to backend
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
