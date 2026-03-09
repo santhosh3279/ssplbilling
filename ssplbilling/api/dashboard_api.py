@@ -101,7 +101,7 @@ def save_default_zoom(zoom):
 
 @frappe.whitelist()
 def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None):
-	"""Fetch all items with price and stock in bulk for local caching."""
+	"""Fetch all items with price, stock, and ALL price lists in bulk for local caching."""
 	filters = {"disabled": 0}
 	if search_type == "Sales":
 		filters["is_sales_item"] = 1
@@ -119,18 +119,39 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	item_map = {i.item_code: i for i in items}
 	item_codes = list(item_map.keys())
 
-	# 1. Batch fetch rates
+	# Initialize fields
+	for i in items:
+		i["stock"] = 0.0
+		i["price"] = float(i.rate or 0)
+		i["price_lists"] = []
+
+	# 1. Batch fetch ALL rates for active price lists
+	enabled_price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])
+	pl_names = [pl.name for pl in enabled_price_lists]
+
+	all_rates = frappe.get_all(
+		"Item Price",
+		filters={"item_code": ["in", item_codes], "price_list": ["in", pl_names]},
+		fields=["item_code", "price_list", "price_list_rate"],
+	)
+
+	# Main price list requested for the 'price' field
 	if not price_list:
 		price_list = "Standard Selling" if search_type == "Sales" else "Standard Buying"
 
-	rates = frappe.get_all(
-		"Item Price",
-		filters={"item_code": ["in", item_codes], "price_list": price_list},
-		fields=["item_code", "price_list_rate"],
-	)
-	for r in rates:
-		if r.item_code in item_map:
-			item_map[r.item_code]["price"] = float(r.price_list_rate or 0)
+	for r in all_rates:
+		code = r.item_code
+		if code in item_map:
+			rate_val = float(r.price_list_rate or 0)
+			# Update the primary price if this matches the requested list
+			if r.price_list == price_list:
+				item_map[code]["price"] = rate_val
+			
+			# Append to the list of all prices
+			item_map[code]["price_lists"].append({
+				"name": r.price_list,
+				"rate": rate_val
+			})
 
 	# 2. Batch fetch stock
 	stock_filters = {"item_code": ["in", item_codes]}
@@ -143,12 +164,6 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		fields=["item_code", "actual_qty"],
 	)
 	
-	# Clear initial stock
-	for i in items:
-		i["stock"] = 0.0
-		if "price" not in i:
-			i["price"] = float(i.rate or 0)
-
 	for b in bins:
 		if b.item_code in item_map:
 			item_map[b.item_code]["stock"] += float(b.actual_qty or 0)
