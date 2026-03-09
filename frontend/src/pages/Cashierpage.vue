@@ -222,9 +222,16 @@
                   </div>
                 </div>
                 <div class="p-4 text-center bg-slate-50/50">
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Balance</div>
-                  <div class="text-xl font-black tracking-tight font-mono" :class="balance <= 0.01 ? 'text-emerald-600' : 'text-rose-600'">
-                    ₹{{ fmt(Math.max(0, balance)) }}
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                    {{ changeAmount > 0.005 ? 'Return Change' : 'Balance' }}
+                  </div>
+                  <div class="text-xl font-black tracking-tight font-mono" 
+                    :class="[
+                      changeAmount > 0.005 ? 'text-blue-600' : 
+                      (balance <= 0.01 ? 'text-emerald-600' : 'text-rose-600')
+                    ]"
+                  >
+                    ₹{{ fmt(changeAmount > 0.005 ? changeAmount : Math.max(0, balance)) }}
                   </div>
                 </div>
               </div>
@@ -350,14 +357,6 @@
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- SUMMARY (ONLY CHANGE) -->
-            <div v-if="changeAmount > 0.01 && !isCredit" class="rounded-2xl bg-blue-50 p-5 border border-blue-200">
-              <div class="flex items-center justify-between text-blue-600">
-                <span class="text-xs font-bold uppercase tracking-wider">Return Change</span>
-                <span class="text-2xl font-black font-mono">₹{{ fmt(changeAmount) }}</span>
               </div>
             </div>
           </template>
