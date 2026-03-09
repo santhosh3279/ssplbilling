@@ -159,11 +159,34 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	def _create_pe(amount, mode_of_payment, paid_to_account):
 		if amount <= 0 or not paid_to_account: return None
+		
+		# Robust Mode of Payment resolution
+		actual_mop = mode_of_payment
+		if not frappe.db.exists("Mode of Payment", actual_mop):
+			# Try to find a MOP linked to this account
+			mop_linked = frappe.db.get_value("Mode of Payment Account", {"default_account": paid_to_account, "company": company}, "parent")
+			if mop_linked:
+				actual_mop = mop_linked
+			else:
+				# Fallback to anything that exists or "Cash" as a last resort
+				if "UPI" in mode_of_payment.upper():
+					# Find first MOP with UPI in name
+					mop_guess = frappe.db.get_value("Mode of Payment", {"name": ["like", "%UPI%"]}, "name")
+					if mop_guess: actual_mop = mop_guess
+				elif "BANK" in mode_of_payment.upper() or "TRANSFER" in mode_of_payment.upper():
+					mop_guess = frappe.db.get_value("Mode of Payment", {"name": ["like", "%Bank%"]}, "name") or \
+								frappe.db.get_value("Mode of Payment", {"name": ["like", "%Transfer%"]}, "name")
+					if mop_guess: actual_mop = mop_guess
+		
+		# If still not exists, final fallback to Cash if it exists
+		if not frappe.db.exists("Mode of Payment", actual_mop):
+			actual_mop = "Cash" if frappe.db.exists("Mode of Payment", "Cash") else actual_mop
+
 		pe = frappe.new_doc("Payment Entry")
 		pe.payment_type = "Receive"
 		pe.posting_date = si.posting_date
 		pe.company = company
-		pe.mode_of_payment = mode_of_payment
+		pe.mode_of_payment = actual_mop
 		pe.party_type = "Customer"
 		pe.party = si.customer
 		pe.paid_from = si.debit_to
