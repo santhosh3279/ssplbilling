@@ -164,33 +164,33 @@
           <div class="flex items-start justify-between">
             <div class="flex-1 max-w-xl">
               <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Reference Note / Remarks</label>
-            <textarea 
-              v-model="userRemarks"
-              rows="2"
-              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
-              placeholder="Enter reference number, cheque details or internal notes..."
-            ></textarea>
-          </div>
-          <div class="flex gap-12 ml-12">
-            <div class="text-right">
-              <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Debit</div>
-              <div class="text-2xl font-black text-slate-900 font-mono">₹ {{ fmt(totalDebit) }}</div>
+              <textarea 
+                v-model="userRemarks"
+                rows="2"
+                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                placeholder="Enter reference number, cheque details or internal notes..."
+              ></textarea>
             </div>
-            <div class="text-right">
-              <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Credit</div>
-              <div class="text-2xl font-black text-slate-900 font-mono">₹ {{ fmt(totalCredit) }}</div>
-            </div>
-            <div class="text-right border-l border-slate-200 pl-12">
-              <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
-              <div 
-                class="text-2xl font-black font-mono"
-                :class="Math.abs(difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600'"
-              >
-                ₹ {{ fmt(difference) }}
+            <div class="flex gap-12 ml-12">
+              <div class="text-right">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Debit</div>
+                <div class="text-2xl font-black text-slate-900 font-mono">₹ {{ fmt(totalDebit) }}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Credit</div>
+                <div class="text-2xl font-black text-slate-900 font-mono">₹ {{ fmt(totalCredit) }}</div>
+              </div>
+              <div class="text-right border-l border-slate-200 pl-12">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
+                <div 
+                  class="text-2xl font-black font-mono"
+                  :class="Math.abs(difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600'"
+                >
+                  ₹ {{ fmt(difference) }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
       </div>
     </div>
 
