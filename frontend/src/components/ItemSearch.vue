@@ -144,7 +144,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed, onMounted } from 'vue'
+import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
@@ -305,6 +305,14 @@ function closeSubForm() {
   focus()
 }
 
+/** 
+ * Refresh stock when CTRL+L (ledger search) is pressed anywhere.
+ * This ensures that by the time they get to item entry, stock is fresh.
+ */
+function handleGlobalLedgerSearch() {
+  preloadItems(true)
+}
+
 defineExpose({ focus, closeSubForm })
 
 watch(selectedIdx, async (idx) => {
@@ -338,8 +346,13 @@ watch(() => props.show, (newVal) => {
 })
 
 onMounted(() => {
+  window.addEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
   if (props.show) {
     loadCipherMap()
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
 })
 </script>
