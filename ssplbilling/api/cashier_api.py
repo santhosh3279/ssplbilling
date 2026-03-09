@@ -134,7 +134,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
 	if si.docstatus == 0:
-		si.due_date = frappe.utils.add_days(si.posting_date, 14) if is_credit else si.posting_date
+		si.due_date = frappe.utils.today()
 		if si.get("payment_schedule"):
 			si.payment_schedule = []
 		si.submit()
@@ -143,6 +143,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted"}
 
 	company = si.company
+	today = frappe.utils.today()
 	payment_entries = []
 
 	series_cfg = None
@@ -191,7 +192,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 		pe = frappe.new_doc("Payment Entry")
 		pe.payment_type = "Receive"
-		pe.posting_date = si.posting_date
+		pe.posting_date = today
 		pe.company = company
 		pe.mode_of_payment = actual_mop
 		pe.party_type = "Customer"
@@ -208,7 +209,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		write_off_acct = discount_account or _find_account(frappe.get_cached_value("Company", company, "write_off_account")) or ""
 		je = frappe.new_doc("Journal Entry")
 		je.voucher_type = "Journal Entry"
-		je.posting_date = si.posting_date
+		je.posting_date = today
 		je.company = company
 		je.append("accounts", {"account": write_off_acct, "debit_in_account_currency": discount_amount})
 		je.append("accounts", {"account": si.debit_to, "credit_in_account_currency": discount_amount, "party_type": "Customer", "party": si.customer, "reference_type": "Sales Invoice", "reference_name": si.name})
