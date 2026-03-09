@@ -80,7 +80,7 @@
                 </td>
                 <td class="px-4 py-2">
                   <div 
-                    ref="ledgerRefs"
+                    :ref="el => { if (el) ledgerRefs[idx] = el }"
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
@@ -98,7 +98,7 @@
                 </td>
                 <td class="px-4 py-2">
                   <input 
-                    ref="debitRefs"
+                    :ref="el => { if (el) debitRefs[idx] = el }"
                     v-model.number="row.debit"
                     @focus="activeRowIdx = idx"
                     @input="row.credit = 0"
@@ -110,7 +110,7 @@
                 </td>
                 <td class="px-4 py-2">
                   <input 
-                    ref="creditRefs"
+                    :ref="el => { if (el) creditRefs[idx] = el }"
                     v-model.number="row.credit"
                     @focus="activeRowIdx = idx"
                     @input="row.debit = 0"
@@ -228,10 +228,10 @@ const isSubmitting = ref(false)
 const showSearchModal = ref(false)
 const ledgerSearchModal = ref(null)
 
-// Template Refs for Navigation
-const ledgerRefs = ref([])
-const debitRefs = ref([])
-const creditRefs = ref([])
+// Template Refs for Navigation (using plain arrays for function refs)
+const ledgerRefs = []
+const debitRefs = []
+const creditRefs = []
 
 // --- COMPUTED ---
 const totalDebit = computed(() => rows.value.reduce((s, r) => s + (Number(r.debit) || 0), 0))
@@ -280,8 +280,11 @@ function selectLedger(ledger) {
   
   // Move focus to Debit after selection
   nextTick(() => {
-    debitRefs.value[activeRowIdx.value]?.focus()
-    debitRefs.value[activeRowIdx.value]?.select()
+    const el = debitRefs[activeRowIdx.value]
+    if (el) {
+      el.focus()
+      el.select()
+    }
   })
 }
 
@@ -297,8 +300,11 @@ function getNewBalance(row) {
 
 function moveNext(idx, field) {
   if (field === 'debit') {
-    creditRefs.value[idx]?.focus()
-    creditRefs.value[idx]?.select()
+    const el = creditRefs[idx]
+    if (el) {
+      el.focus()
+      el.select()
+    }
   } else if (field === 'credit') {
     // If it's the last row, add a new one
     if (idx === rows.value.length - 1) {
@@ -308,7 +314,7 @@ function moveNext(idx, field) {
     }
     // Move to next row ledger
     nextTick(() => {
-      ledgerRefs.value[activeRowIdx.value]?.focus()
+      ledgerRefs[activeRowIdx.value]?.focus()
     })
   }
 }
