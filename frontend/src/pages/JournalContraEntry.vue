@@ -103,8 +103,10 @@
                     @focus="activeRowIdx = idx"
                     @input="row.credit = 0"
                     @keydown.enter.prevent="moveNext(idx, 'debit')"
+                    :disabled="isFieldDisabled(idx, 'debit')"
+                    :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all"
+                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
                     placeholder="0.00"
                   />
                 </td>
@@ -115,8 +117,10 @@
                     @focus="activeRowIdx = idx"
                     @input="row.debit = 0"
                     @keydown.enter.prevent="moveNext(idx, 'credit')"
+                    :disabled="isFieldDisabled(idx, 'credit')"
+                    :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all"
+                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
                     placeholder="0.00"
                   />
                 </td>
@@ -298,8 +302,25 @@ function getNewBalance(row) {
   return (Number(row.current_balance) || 0) + (Number(row.debit) || 0) - (Number(row.credit) || 0)
 }
 
+function isFieldDisabled(idx, field) {
+  const firstRowDebit = Number(rows.value[0]?.debit) || 0
+  if (firstRowDebit > 0.005) {
+    if (idx === 0 && field === 'credit') return true
+    if (idx > 0 && field === 'debit') return true
+  }
+  return false
+}
+
 function moveNext(idx, field) {
   if (field === 'debit') {
+    // If first row debit > 0, move straight to second row ledger search
+    if (idx === 0 && Number(rows.value[0].debit) > 0.005) {
+      if (rows.value.length < 2) addRow()
+      activeRowIdx.value = 1
+      openLedgerSearch(1)
+      return
+    }
+    
     const el = creditRefs[idx]
     if (el) {
       el.focus()
