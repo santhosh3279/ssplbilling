@@ -10,6 +10,25 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <h1 class="text-lg font-bold tracking-tight text-slate-900">{{ isContra ? 'CONTRA ENTRY' : 'JOURNAL ENTRY' }}</h1>
+        <div class="h-4 w-px bg-slate-200 mx-2"></div>
+        <div class="flex rounded-lg bg-slate-100 p-1">
+          <button 
+            @click="isContra = false"
+            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
+            :class="!isContra ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+          >
+            <span>Journal</span>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="!isContra ? 'border-blue-200 bg-blue-50' : 'border-slate-300 bg-slate-50'">F2</kbd>
+          </button>
+          <button 
+            @click="isContra = true"
+            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
+            :class="isContra ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+          >
+            <span>Contra</span>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="isContra ? 'border-emerald-200 bg-emerald-50' : 'border-slate-300 bg-slate-50'">F3</kbd>
+          </button>
+        </div>
       </div>
 
       <div class="flex items-center gap-4">
@@ -176,27 +195,6 @@
                   :class="Math.abs(difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600'"
                 >
                   ₹ {{ fmt(difference) }}
-                </div>
-                <!-- MODE TOGGLE -->
-                <div class="mt-4 flex justify-end">
-                  <div class="flex rounded-lg bg-slate-200/50 p-1 shadow-inner">
-                    <button 
-                      @click="isContra = false"
-                      class="rounded-md px-6 py-1.5 text-xs font-bold transition-all flex items-center gap-2"
-                      :class="!isContra ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'"
-                    >
-                      <span>JOURNAL</span>
-                      <kbd class="rounded border px-1 text-[9px] opacity-50" :class="!isContra ? 'border-blue-200 bg-blue-50' : 'border-slate-300 bg-slate-50'">F2</kbd>
-                    </button>
-                    <button 
-                      @click="isContra = true"
-                      class="rounded-md px-6 py-1.5 text-xs font-bold transition-all flex items-center gap-2"
-                      :class="isContra ? 'bg-white text-emerald-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'"
-                    >
-                      <span>CONTRA</span>
-                      <kbd class="rounded border px-1 text-[9px] opacity-50" :class="isContra ? 'border-emerald-200 bg-emerald-50' : 'border-slate-300 bg-slate-50'">F3</kbd>
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
