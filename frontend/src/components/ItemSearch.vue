@@ -216,29 +216,18 @@ async function preloadItems(forceRefresh = false) {
 
 // ─── Insight Fetching ────────────────────────────────────────────────────────
 
-async function fetchItemInsight(itemCode) {
-  if (!itemCode) {
+function updateItemInsight(item) {
+  if (!item) {
     insightData.value = null
     return
   }
-  try {
-    const method = props.searchType === 'Purchase' 
-      ? 'ssplbilling.api.purchase_api.get_item_insight'
-      : 'ssplbilling.api.sales_api.get_item_insight'
-      
-    const data = await frappeGet(method, {
-      item_code: itemCode,
-      warehouse: props.warehouse || null
-    })
-    
-    if (data) {
-      insightData.value = {
-        priceLists: (data.price_lists || []).map(pl => ({ name: pl.name, rate: pl.rate }))
-      }
-    }
-  } catch (e) {
-    console.warn('[ItemSearch] Insight fetch failed:', e)
-    insightData.value = null
+  
+  // Use the price lists already available in the cached item object
+  insightData.value = {
+    priceLists: (item.price_lists || []).map(pl => ({ 
+      name: pl.name, 
+      rate: pl.rate 
+    }))
   }
 }
 
@@ -266,11 +255,7 @@ watch(query, () => {
 
 watch([selectedIdx, results], () => {
   const item = results.value[selectedIdx.value]
-  if (item) {
-    fetchItemInsight(item.item_code)
-  } else {
-    insightData.value = null
-  }
+  updateItemInsight(item)
 }, { immediate: true })
 
 // ─── Navigation & Events ─────────────────────────────────────────────────────
