@@ -81,27 +81,29 @@
                 </td>
                 <td class="px-6 py-4 text-right">
                   <input 
-                    :ref="el => inputRefs[idx] = el"
+                    :ref="el => inputRefs[`rate-${idx}`] = el"
                     type="number" 
                     v-model.number="p.rate" 
                     step="0.01"
                     class="w-32 rounded border border-gray-300 px-3 py-1.5 text-right font-mono font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    @keydown.enter="handleEnter(idx)"
-                    @keydown.up.prevent="moveRow(idx, -1)"
-                    @keydown.down.prevent="moveRow(idx, 1)"
+                    @keydown.enter.prevent="onRateEnter(idx)"
+                    @keydown.up.prevent="moveVertical(idx, -1)"
+                    @keydown.down.prevent="moveVertical(idx, 1)"
                   />
                 </td>
                 <td v-if="selectedPriceList" class="px-6 py-4 text-right">
                   <input 
                     v-if="p.price_list === selectedPriceList"
-                    ref="discountInputRef"
+                    :ref="el => inputRefs[`disc-${idx}`] = el"
                     type="number" 
                     v-model.number="discount" 
                     step="0.5"
                     min="0"
                     max="100"
                     class="w-20 rounded border border-blue-300 bg-blue-50 px-3 py-1.5 text-right font-mono font-bold text-blue-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    @keydown.enter="saveAll"
+                    @keydown.enter.prevent="onDiscEnter(idx)"
+                    @keydown.up.prevent="moveVertical(idx, -1)"
+                    @keydown.down.prevent="moveVertical(idx, 1)"
                   />
                   <span v-else class="text-gray-300">--</span>
                 </td>
@@ -162,7 +164,6 @@ const saving = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
-const discountInputRef = ref(null)
 
 watch(() => props.initialDiscount, (val) => {
   discount.value = val
@@ -186,8 +187,7 @@ async function loadPrices(code) {
     }
 
     nextTick(() => {
-      inputRefs.value[activeRow.value]?.focus()
-      inputRefs.value[activeRow.value]?.select()
+      focusInput(`rate-${activeRow.value}`)
     })
   } catch (e) {
     alert('Failed to load prices: ' + e.message)
@@ -234,24 +234,55 @@ async function saveAll() {
   }
 }
 
-function handleEnter(idx) {
+function onRateEnter(idx) {
+  activeRow.value = idx
+  // Left to Right: If this row has a discount field, go to it
   if (prices.value[idx].price_list === props.selectedPriceList) {
-    discountInputRef.value?.focus()
-    discountInputRef.value?.select()
-  } else if (idx === prices.value.length - 1) {
-    saveAll()
+    focusInput(`disc-${idx}`)
   } else {
-    moveRow(idx, 1)
+    // Otherwise go to next row top to bottom
+    goToNextRow(idx)
   }
 }
 
-function moveRow(from, dir) {
-  const next = from + dir
+function onDiscEnter(idx) {
+  activeRow.value = idx
+  // Left to Right / Top to Bottom: After discount, go to next row rate
+  goToNextRow(idx)
+}
+
+function goToNextRow(idx) {
+  if (idx < prices.value.length - 1) {
+    activeRow.value = idx + 1
+    focusInput(`rate-${idx + 1}`)
+  } else {
+    // Last field in the whole sequence
+    saveAll()
+  }
+}
+
+function moveVertical(idx, dir) {
+  const next = idx + dir
   if (next >= 0 && next < prices.value.length) {
     activeRow.value = next
-    inputRefs.value[next]?.focus()
-    inputRefs.value[next]?.select()
+    // Maintain current column if possible
+    const isDisc = document.activeElement?.getAttribute('ref')?.includes('disc') || false
+    if (isDisc && prices.value[next].price_list === props.selectedPriceList) {
+      focusInput(`disc-${next}`)
+    } else {
+      focusInput(`rate-${next}`)
+    }
   }
+}
+
+function focusInput(key) {
+  nextTick(() => {
+    const el = inputRefs.value[key]
+    if (el) {
+      el.focus()
+      el.select()
+    }
+  })
 }
 
 const handleGlobalKeydown = (e) => {
