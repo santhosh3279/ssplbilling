@@ -58,10 +58,12 @@
             <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
               <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-500 text-left">
                 <th class="px-6 py-4 w-12 text-center">#</th>
-                <th class="px-4 py-4 min-w-[300px]">Ledger</th>
-                <th class="px-4 py-4 w-40 text-right">Debit (₹)</th>
-                <th class="px-4 py-4 w-40 text-right">Credit (₹)</th>
-                <th class="px-4 py-4">Reference / Note</th>
+                <th class="px-4 py-4 min-w-[250px]">Ledger</th>
+                <th class="px-4 py-4 w-32 text-right">Balance</th>
+                <th class="px-4 py-4 w-32 text-right">Debit (₹)</th>
+                <th class="px-4 py-4 w-32 text-right">Credit (₹)</th>
+                <th class="px-4 py-4 w-32 text-right">New Bal</th>
+                <th class="px-4 py-4 min-w-[200px]">Reference / Note</th>
                 <th class="px-6 py-4 w-12"></th>
               </tr>
             </thead>
@@ -85,6 +87,11 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover/input:text-blue-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
+                <td class="px-4 py-2 text-right">
+                  <div v-if="row.account" class="text-xs font-bold text-slate-500 font-mono">
+                    {{ formatBalance(row.current_balance) }}
+                  </div>
+                </td>
                 <td class="px-4 py-2">
                   <input 
                     v-model.number="row.debit"
@@ -104,6 +111,11 @@
                     class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all"
                     placeholder="0.00"
                   />
+                </td>
+                <td class="px-4 py-2 text-right">
+                  <div v-if="row.account" class="text-xs font-bold font-mono" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-600' : 'text-slate-400'">
+                    {{ formatBalance(getNewBalance(row)) }}
+                  </div>
                 </td>
                 <td class="px-4 py-2">
                   <input 
@@ -189,16 +201,16 @@ const isContra = ref(false)
 
 watch(isContra, () => {
   rows.value = [
-    { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' },
-    { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' }
+    { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' },
+    { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' }
   ]
   activeRowIdx.value = 0
 })
 
 const postingDate = ref(new Date().toISOString().slice(0, 10))
 const rows = ref([
-  { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' },
-  { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' }
+  { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' },
+  { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' }
 ])
 const activeRowIdx = ref(0)
 const isSubmitting = ref(false)
@@ -224,13 +236,13 @@ function fmt(val) {
 }
 
 function addRow() {
-  rows.value.push({ account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' })
+  rows.value.push({ account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' })
   activeRowIdx.value = rows.value.length - 1
 }
 
 function removeRow(idx) {
   if (rows.value.length <= 2) {
-    rows.value[idx] = { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' }
+    rows.value[idx] = { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' }
     return
   }
   rows.value.splice(idx, 1)
@@ -247,8 +259,18 @@ function selectLedger(ledger) {
   row.account = ledger.name
   row.account_name = ledger.label
   row.account_type = ledger.type
+  row.current_balance = ledger.balance || 0
   showSearchModal.value = false
-  // Auto focus next input
+}
+
+function formatBalance(val) {
+  const absVal = Math.abs(val || 0)
+  const suffix = val > 0.005 ? ' DR' : (val < -0.005 ? ' CR' : '')
+  return absVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix
+}
+
+function getNewBalance(row) {
+  return (Number(row.current_balance) || 0) + (Number(row.debit) || 0) - (Number(row.credit) || 0)
 }
 
 async function saveEntry() {
