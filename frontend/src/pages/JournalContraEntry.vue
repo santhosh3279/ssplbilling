@@ -154,9 +154,16 @@
         </div>
 
         <!-- FOOTER: TOTALS -->
-        <div class="shrink-0 bg-slate-50 border-t border-slate-200 p-6 flex items-start justify-between">
-          <div class="flex-1 max-w-xl">
-            <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Reference Note / Remarks</label>
+        <div class="shrink-0 bg-slate-50 border-t border-slate-200 p-6 flex flex-col gap-4">
+          <!-- ERROR ALERT -->
+          <div v-if="validationError" class="flex items-center gap-2 bg-rose-50 text-rose-600 px-4 py-2 rounded-lg border border-rose-100 text-xs font-bold animate-in fade-in slide-in-from-bottom-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            {{ validationError }}
+          </div>
+
+          <div class="flex items-start justify-between">
+            <div class="flex-1 max-w-xl">
+              <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Reference Note / Remarks</label>
             <textarea 
               v-model="userRemarks"
               rows="2"
@@ -241,10 +248,30 @@ const creditRefs = []
 const totalDebit = computed(() => rows.value.reduce((s, r) => s + (Number(r.debit) || 0), 0))
 const totalCredit = computed(() => rows.value.reduce((s, r) => s + (Number(r.credit) || 0), 0))
 const difference = computed(() => totalDebit.value - totalCredit.value)
+
+const validationError = computed(() => {
+  const r1 = rows.value[0]
+  if (!r1) return null
+  
+  if (Number(r1.debit) > 0.005) {
+    const sumOtherCredit = rows.value.slice(1).reduce((s, r) => s + (Number(r.credit) || 0), 0)
+    if (sumOtherCredit > Number(r1.debit) + 0.005) {
+      return `Total Credit (₹${fmt(sumOtherCredit)}) exceeds first row Debit (₹${fmt(r1.debit)})`
+    }
+  } else if (Number(r1.credit) > 0.005) {
+    const sumOtherDebit = rows.value.slice(1).reduce((s, r) => s + (Number(r.debit) || 0), 0)
+    if (sumOtherDebit > Number(r1.credit) + 0.005) {
+      return `Total Debit (₹${fmt(sumOtherDebit)}) exceeds first row Credit (₹${fmt(r1.credit)})`
+    }
+  }
+  return null
+})
+
 const canSave = computed(() => {
   return rows.value.filter(r => r.account).length >= 2 && 
          Math.abs(difference.value) < 0.01 && 
-         totalDebit.value > 0
+         totalDebit.value > 0 &&
+         !validationError.value
 })
 
 // --- METHODS ---
@@ -333,16 +360,24 @@ function moveNext(idx, field) {
       el.select()
     }
   } else if (field === 'credit') {
-    // If it's the last row, add a new one
+    // If it's the last row, check if balance is zero. If not, add a new one.
     if (idx === rows.value.length - 1) {
-      addRow()
+      if (Math.abs(difference.value) > 0.01) {
+        addRow()
+        // Move to next row ledger
+        nextTick(() => {
+          ledgerRefs[activeRowIdx.value]?.focus()
+        })
+      } else {
+        // Balance is zero, maybe stop or focus remarks
+      }
     } else {
       activeRowIdx.value = idx + 1
+      // Move to next row ledger
+      nextTick(() => {
+        ledgerRefs[activeRowIdx.value]?.focus()
+      })
     }
-    // Move to next row ledger
-    nextTick(() => {
-      ledgerRefs[activeRowIdx.value]?.focus()
-    })
   }
 }
 
