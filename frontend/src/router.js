@@ -3,6 +3,8 @@ import { session } from './session'
 import Login from './pages/Login.vue'
 import Dashboard from './pages/Dashboard.vue'
 import SalesEntry from './pages/SalesEntry.vue'
+import PurchaseEntry from './pages/PurchaseEntry.vue'
+import PriceListUpdate from './pages/PriceListUpdate.vue'
 import CashierEntry from './pages/CashierEntry.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentEntry from './pages/PaymentEntry.vue'
@@ -23,6 +25,16 @@ const routes = [
     path: '/sales',
     name: 'SalesEntry',
     component: SalesEntry,
+  },
+  {
+    path: '/purchase',
+    name: 'PurchaseEntry',
+    component: PurchaseEntry,
+  },
+  {
+    path: '/pricelist-update',
+    name: 'PriceListUpdate',
+    component: PriceListUpdate,
   },
   {
     path: '/cashier',

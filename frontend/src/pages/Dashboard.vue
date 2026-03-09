@@ -307,7 +307,7 @@ const tiles = [
   { id: 'contra', name: 'Contra Entry', desc: 'Bank to cash transfers', icon: '🔄', shortcut: 'F9', iconBg: 'bg-amber-50' },
 ]
 
-const readyModules = ['sales', 'cashier', 'ledger', 'payment', 'receipt', 'journal', 'contra']
+const readyModules = ['sales', 'purchase', 'cashier', 'ledger', 'payment', 'receipt', 'journal', 'contra']
 
 // receipt/journal/contra are aliases into the PaymentEntry page
 const routeAliases = { receipt: '/payment', journal: '/payment', contra: '/payment' }
