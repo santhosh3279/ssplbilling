@@ -118,6 +118,13 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	discount_amount = float(data.get("discount_amount") or 0)
 	is_credit = bool(data.get("is_credit"))
 
+	# Explicit accounts passed from frontend
+	f_cash_account = data.get("cash_account")
+	f_upi_account = data.get("upi_account")
+	f_bank_account = data.get("bank_account")
+	f_discount_account = data.get("discount_account")
+	bank_ref_no = data.get("bank_ref_no")
+
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	grand_total = float(si.grand_total)
 	company = si.company
@@ -152,10 +159,10 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			"default_account",
 		) or ""
 
-	cash_account = (user_row.cash if user_row else None) or _mop_account("Cash")
-	upi_account = (user_row.upi if user_row else None) or _mop_account("UPI")
-	bank_account = (user_row.bank_account if user_row else None) or _mop_account("Bank Transfer")
-	discount_account = settings.discount_account or \
+	cash_account = f_cash_account or (user_row.cash if user_row else None) or _mop_account("Cash")
+	upi_account = f_upi_account or (user_row.upi if user_row else None) or _mop_account("UPI")
+	bank_account = f_bank_account or (user_row.bank_account if user_row else None) or _mop_account("Bank Transfer")
+	discount_account = f_discount_account or settings.discount_account or \
 		frappe.get_cached_value("Company", company, "write_off_account") or ""
 
 	def _mop_for_account(account):
@@ -166,7 +173,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			"parent",
 		) or "Cash"
 
-	def _create_pe(amount, paid_to_account):
+	def _create_pe(amount, paid_to_account, ref_no=None):
 		if amount <= 0 or not paid_to_account: return None
 		mop = _mop_for_account(paid_to_account)
 		pe = frappe.new_doc("Payment Entry")
@@ -180,6 +187,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		pe.paid_to = paid_to_account
 		pe.paid_amount = amount
 		pe.received_amount = amount
+		if ref_no:
+			pe.reference_no = ref_no
+			pe.reference_date = today
 		pe.append("references", {"reference_doctype": "Sales Invoice", "reference_name": si.name, "allocated_amount": amount})
 		pe.insert(); pe.submit()
 		return pe.name
@@ -203,7 +213,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		if pe_name: payment_entries.append(pe_name)
 
 	if bank_amount > 0.01:
-		pe_name = _create_pe(bank_amount, bank_account)
+		pe_name = _create_pe(bank_amount, bank_account, ref_no=bank_ref_no)
 		if pe_name: payment_entries.append(pe_name)
 
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}

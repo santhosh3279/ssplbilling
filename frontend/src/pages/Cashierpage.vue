@@ -438,6 +438,52 @@
         </div>
       </aside>
     </div>
+
+    <!-- BANK REFERENCE MODAL -->
+    <div v-if="showBankRefModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+          <h3 class="text-sm font-bold uppercase tracking-widest text-slate-600 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-500"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            Bank Transfer Reference
+          </h3>
+          <button @click="showBankRefModal = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-8 space-y-6">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Reference Number / UTR</label>
+            <div class="relative group">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">#</span>
+              <input 
+                ref="bankRefInput"
+                v-model="bankRefNo"
+                @keydown.enter="confirmBankRef"
+                type="text" 
+                class="w-full rounded-xl border border-slate-200 bg-slate-50 py-4 pl-10 pr-4 text-left font-mono text-lg text-slate-900 outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-50 transition-all group-hover:border-slate-300 shadow-inner"
+                placeholder="Enter bank reference..."
+              />
+            </div>
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button 
+              @click="showBankRefModal = false"
+              class="flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95"
+            >
+              Cancel
+            </button>
+            <button 
+              @click="confirmBankRef"
+              :disabled="!bankRefNo"
+              class="flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-700 shadow-lg shadow-sky-100 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              Confirm & Post
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -453,6 +499,7 @@ const upiInput = ref(null)
 const bankInput = ref(null)
 const discountInput = ref(null)
 const dueDateInput = ref(null)
+const bankRefInput = ref(null)
 
 // --- STATE ---
 const invoices = ref([])
@@ -469,6 +516,8 @@ const successMsg = ref('')
 const searchQuery = ref('')
 const filterDate = ref(new Date().toISOString().slice(0, 10))
 const showUnpaid = ref(false)
+const showBankRefModal = ref(false)
+const bankRefNo = ref('')
 
 const payments = ref({
   cash: 0,
@@ -687,6 +736,7 @@ async function selectInvoice(inv) {
   errorMsg.value = ''
   successMsg.value = ''
   isCredit.value = false
+  bankRefNo.value = ''
   
   payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
   
@@ -740,6 +790,13 @@ function printPlaceholder() {
 async function processPayment() {
   if (!canSubmit.value) return
   
+  // If bank transfer is used but no ref number, ask for it
+  if (Number(payments.value.bank) > 0.01 && !bankRefNo.value) {
+    showBankRefModal.value = true
+    nextTick(() => bankRefInput.value?.focus())
+    return
+  }
+
   isSubmitting.value = true
   errorMsg.value = ''
   successMsg.value = ''
@@ -766,6 +823,7 @@ async function processPayment() {
       discount_amount: disc,
       is_credit: isCredit.value,
       due_date: getIsoDueDate(),
+      bank_ref_no: bankRefNo.value,
       // Pass the accounts resolved in UI to backend
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
@@ -790,6 +848,12 @@ async function processPayment() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+async function confirmBankRef() {
+  if (!bankRefNo.value) return
+  showBankRefModal.value = false
+  await processPayment()
 }
 
 function handleKeydown(e) {
