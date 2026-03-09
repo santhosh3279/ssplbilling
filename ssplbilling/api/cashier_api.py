@@ -131,6 +131,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	if si.docstatus == 0:
 		si.due_date = si.posting_date
+		if si.get("payment_schedule"):
+			si.payment_schedule = []
 		si.submit()
 
 	if is_credit:

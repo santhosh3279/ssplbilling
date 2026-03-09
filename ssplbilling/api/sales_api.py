@@ -229,6 +229,8 @@ def create_sales_invoice(data=None, **kwargs):
             pass
 
     si.due_date = si.posting_date
+    if si.get("payment_schedule"):
+        si.payment_schedule = []
     si.insert()
 
     return {
@@ -305,5 +307,7 @@ def update_sales_invoice(data=None, **kwargs):
         si.append("items", {"item_code": item["item_code"], "qty": float(item["qty"]), "rate": float(item["rate"]), "warehouse": item.get("warehouse")})
     
     si.due_date = si.posting_date
+    if si.get("payment_schedule"):
+        si.payment_schedule = []
     si.save()
     return {"invoice_name": si.name, "grand_total": float(si.grand_total)}
