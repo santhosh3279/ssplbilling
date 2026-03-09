@@ -23,7 +23,7 @@ Instructional context for Gemini CLI when working on the **ssplbilling** project
     - `doctype/`: Custom Frappe DocTypes.
 - `frontend/`: Vue 3 Single Page Application.
     - `src/api.js`: Central API service layer (canonical fetch transport).
-    - `src/pages/`: Main application views (SalesEntry, PurchaseEntry, CashierEntry, etc.).
+    - `src/pages/`: Main application views (SalesEntry, PurchaseEntry, Cashierpage, etc.).
     - `src/components/`: Reusable Vue components (Search modals, Print options).
     - `src/shortcuts/`: Keyboard shortcut definitions.
     - `src/services/`: Auxiliary services (IndexedDB wrapper, Dashboard API).

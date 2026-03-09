@@ -40,7 +40,7 @@ ssplbilling/                     ← Frappe app root
     │   │   ├── Login.vue
     │   │   ├── Dashboard.vue        ← Syncs items/customers to IndexedDB on load
     │   │   ├── SalesEntry.vue       ← Keyboard-driven draft invoice entry
-    │   │   ├── CashierEntry.vue     ← Lists drafts; submits with cash/UPI payment split
+    │   │   ├── Cashierpage.vue      ← Lists drafts; submits with multi-mode payment split
     │   │   ├── CustomerLedger.vue   ← GL ledger with running balance per customer
     │   │   ├── PaymentEntry.vue     ← Direct payment / journal entry creation
     │   │   └── WholesaleFastBilling.vue ← Barcode-scan POS (not in router, retained as backup)
@@ -90,7 +90,7 @@ bench --site <site> run-tests --app ssplbilling --module ssplbilling.ssplbilling
 ### Billing workflow (two-step)
 
 1. **SalesEntry** (`/sales`) — operator picks customer, scans/searches items, saves a **Draft** Sales Invoice (`docstatus=0`, `update_stock=1`). Uses `useBilling.js` composable.
-2. **CashierEntry** (`/cashier`) — cashier selects a draft from the list, enters cash/UPI split, and calls `submitInvoiceWithPayment` which submits the invoice and creates Payment Entry(ies) server-side.
+2. **Cashierpage** (`/cashier`) — cashier selects a draft from the list, enters multi-mode payment split, and calls `submitInvoiceWithPayment`.
 
 ### API layer
 

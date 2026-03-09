@@ -5,7 +5,6 @@ import Dashboard from './pages/Dashboard.vue'
 import SalesEntry from './pages/SalesEntry.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
-import CashierEntry from './pages/CashierEntry.vue'
 import Cashierpage from './pages/Cashierpage.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
@@ -39,11 +38,6 @@ const routes = [
   },
   {
     path: '/cashier',
-    name: 'CashierEntry',
-    component: CashierEntry,
-  },
-  {
-    path: '/cashier-desk',
     name: 'Cashierpage',
     component: Cashierpage,
   },
