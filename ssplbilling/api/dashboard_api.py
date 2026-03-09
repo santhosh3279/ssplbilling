@@ -58,6 +58,10 @@ def get_allowed_series():
 
     user = frappe.session.user
 
+    # Administrator / admin gets everything
+    if user in ["Administrator", "admin"]:
+        return {"allowed_series": available, "user_allowed_string": "ALL"}
+
     # Find rows for this user
     user_rows = [r for r in user_series_rows if r.user == user]
     if not user_rows:
