@@ -167,8 +167,8 @@
     <CustomerSearchModal
       ref="ledgerSearchModal"
       :show="showSearchModal"
-      :allowed-types="['Customer', 'Supplier']"
-      initial-type="All"
+      :allowed-types="isContra ? ['Account'] : ['Customer', 'Supplier']"
+      :initial-type="isContra ? 'Account' : 'All'"
       :skip-date-filter="true"
       @close="showSearchModal = false"
       @select="selectLedger"
@@ -177,7 +177,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
@@ -186,6 +186,15 @@ const router = useRouter()
 
 // --- STATE ---
 const isContra = ref(false)
+
+watch(isContra, () => {
+  rows.value = [
+    { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' },
+    { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' }
+  ]
+  activeRowIdx.value = 0
+})
+
 const postingDate = ref(new Date().toISOString().slice(0, 10))
 const rows = ref([
   { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' },
