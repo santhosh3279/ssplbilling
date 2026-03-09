@@ -43,6 +43,7 @@
         <button 
           ref="saveButton"
           @click="saveEntry"
+          @keydown.enter="saveEntry"
           :disabled="isSubmitting || !canSave"
           class="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
         >
@@ -353,6 +354,14 @@ function isFieldDisabled(idx, field) {
 
 function moveNext(idx, field) {
   const isBalanced = Math.abs(difference.value) < 0.01
+  const hasValue = totalDebit.value > 0
+
+  if (isBalanced && hasValue) {
+    nextTick(() => {
+      remarksInput.value?.focus()
+    })
+    return
+  }
 
   if (field === 'debit') {
     // If first row debit > 0, move straight to second row ledger search
@@ -375,22 +384,15 @@ function moveNext(idx, field) {
       el.select()
     }
   } else if (field === 'credit') {
-    if (isBalanced) {
-      // Balance is zero, move to Remarks
-      nextTick(() => {
-        remarksInput.value?.focus()
-      })
+    // Not balanced (checked at top), move to next row or add one
+    if (idx === rows.value.length - 1) {
+      addRow()
     } else {
-      // Not balanced, move to next row or add one
-      if (idx === rows.value.length - 1) {
-        addRow()
-      } else {
-        activeRowIdx.value = idx + 1
-      }
-      nextTick(() => {
-        ledgerRefs[activeRowIdx.value]?.focus()
-      })
+      activeRowIdx.value = idx + 1
     }
+    nextTick(() => {
+      ledgerRefs[activeRowIdx.value]?.focus()
+    })
   }
 }
 
@@ -414,12 +416,28 @@ onMounted(() => {
     handleEnter: (e) => {
       if (showSearchModal.value) return
       const active = document.activeElement
+      
+      // If a button is focused, click it
+      if (active.tagName === 'BUTTON') {
+        active.click()
+        return
+      }
+
+      const isBalanced = Math.abs(difference.value) < 0.01
+      const hasValue = totalDebit.value > 0
+
+      // If balanced and not in an input, go to remarks
+      if (isBalanced && hasValue && active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA') {
+        remarksInput.value?.focus()
+        return
+      }
+
       if (active === document.body || !active) {
         activeRowIdx.value = 0
         openLedgerSearch(0)
         return
       }
-      if (active.tagName !== 'INPUT') {
+      if (active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA') {
          openLedgerSearch(activeRowIdx.value)
       }
     },
