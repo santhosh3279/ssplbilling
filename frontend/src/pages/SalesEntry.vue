@@ -714,8 +714,8 @@ const newPending = ref({ item_name: '', uom: '', rate: null })
 
 async function lookupItem(code) {
   try {
-    await itemLookup.submit({ item_code: code, price_list: priceList.value, warehouse: defaultWarehouse.value })
-    const d = itemLookup.data?.message || itemLookup.data
+    const res = await itemLookup.submit({ item_code: code, price_list: priceList.value, warehouse: defaultWarehouse.value })
+    const d = res?.message || res || itemLookup.data?.message || itemLookup.data
     return d?.found ? d : null
   } catch (e) { return null }
 }
@@ -726,7 +726,7 @@ watch(newItemCode, (val) => {
   if (code.length < 2) { newPending.value = { item_name: '', uom: '', rate: null }; return }
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
-    newPending.value = r ? { item_name: r.item_name, uom: r.uom, rate: r.rate } : { item_name: '', uom: '', rate: null }
+    newPending.value = r ? { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse } : { item_name: '', uom: '', rate: null }
   }, 300)
 })
 
@@ -848,19 +848,42 @@ async function onNewCodeEnter() {
   }
   emptyCodeEnters = 0
   const r = await lookupItem(code)
-  if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate }; focusNewQty() }
+  if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }; focusNewQty() }
   else openSearch(code, null)
 }
 
 async function addNewItem() {
   const code = newItemCode.value.trim(); if (!code) return
-  const r = await lookupItem(code)
+  
+  // Use newPending if it matches, otherwise lookup
+  let r = (newPending.value && newItemCode.value === code && newPending.value.item_name) 
+    ? newPending.value 
+    : await lookupItem(code)
+
   if (!r) { openSearch(code, null); return }
-  if (r.stock_qty <= 0) { alert('Out of stock: ' + r.item_name); return }
+  
   const ei = items.value.findIndex(i => i.item_code === code && !i.deleted)
-  if (ei >= 0) { items.value[ei].qty += newQty.value; selectedRow.value = ei }
-  else { items.value.push({ item_code: r.item_code, item_name: r.item_name, uom: r.uom, qty: newQty.value, rate: r.rate, discount: 0, tax_rate: r.tax_rate ?? defaultTaxRate.value, warehouse: r.warehouse, deleted: false }); selectedRow.value = items.value.length - 1 }
-  newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', rate: null }; focusNewCode()
+  if (ei >= 0) { 
+    items.value[ei].qty += newQty.value; 
+  } else { 
+    items.value.push({ 
+      item_code: r.item_code || code, 
+      item_name: r.item_name, 
+      uom: r.uom, 
+      qty: newQty.value, 
+      rate: r.rate, 
+      discount: 0, 
+      tax_rate: r.tax_rate ?? defaultTaxRate.value, 
+      warehouse: r.warehouse || defaultWarehouse.value, 
+      deleted: false 
+    }); 
+  }
+  
+  newItemCode.value = ''; 
+  newQty.value = 1; 
+  newPending.value = { item_name: '', uom: '', rate: null }; 
+  selectedRow.value = -1; // Reset selection so we stay in "new entry" mode
+  focusNewCode()
 }
 
 function softDelete(idx) { items.value[idx].deleted = true }
