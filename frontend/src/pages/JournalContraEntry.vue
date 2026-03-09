@@ -403,8 +403,13 @@ useShortcuts(journalContraShortcuts({
   },
   handleEnter: (e) => {
     if (showSearchModal.value) return
-    const target = e.target
-    if (target.tagName !== 'INPUT') {
+    const active = document.activeElement
+    if (active === document.body || !active) {
+      activeRowIdx.value = 0
+      openLedgerSearch(0)
+      return
+    }
+    if (active.tagName !== 'INPUT') {
        openLedgerSearch(activeRowIdx.value)
     }
   },
@@ -447,6 +452,9 @@ async function saveEntry() {
 }
 
 onMounted(() => {
+  nextTick(() => {
+    ledgerRefs[0]?.focus()
+  })
 })
 
 onUnmounted(() => {
