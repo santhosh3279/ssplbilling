@@ -192,7 +192,7 @@
             </div>
 
             <!-- User Series -->
-            <div v-if="filteredUserSeries.length">
+            <div v-if="systemSettings.user_series?.length">
               <div class="mb-1 text-[10px] font-semibold text-gray-400">User Series Permissions</div>
               <div class="overflow-auto rounded-lg border border-gray-100">
                 <table class="w-full text-[10px]">
@@ -204,7 +204,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="us in filteredUserSeries" :key="us.user" class="border-t border-gray-100">
+                    <tr v-for="us in systemSettings.user_series" :key="us.user" class="border-t border-gray-100">
                       <td class="px-2 py-1.5 font-medium">{{ us.user }}</td>
                       <td class="px-2 py-1.5 font-mono">{{ us.allowed_series || '--' }}</td>
                       <td class="px-2 py-1.5 text-right font-mono">{{ us.zoom_value || '--' }}</td>
@@ -527,13 +527,6 @@ const warehouseLabel = computed(() => {
   if (warehouses.length === 0) return 'All Warehouses'
   if (warehouses.length === 1) return warehouses[0]
   return warehouses.join(', ')
-})
-
-const filteredUserSeries = computed(() => {
-  const all = systemSettings.value?.user_series || []
-  const user = currentUser.value
-  if (user === 'Administrator' || user === 'admin') return all
-  return all.filter(us => us.user === user)
 })
 
 onMounted(() => {
