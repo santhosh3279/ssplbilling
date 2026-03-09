@@ -12,7 +12,7 @@ const syncLoading = ref(false)
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null) {
   syncLoading.value = true
   try {
-    const data = await frappeGet('ssplbilling.api.dashboard_api.get_all_items_detailed', {
+    const data = await frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
       search_type: searchType,
       price_list: priceList,
       warehouse: warehouse
