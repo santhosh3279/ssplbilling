@@ -758,7 +758,6 @@ watch(showDiscardModal, (val) => {
 })
 
 const selectedItemData = ref(null)
-let insightTimeout = null
 
 async function loadItemInsight(code, itemName = '', uom = '') {
   if (!code) {
@@ -766,7 +765,7 @@ async function loadItemInsight(code, itemName = '', uom = '') {
     return
   }
 
-  // 1. Instant update from cache (Basic info + Local History)
+  // 1. Fetch from local cache (Instant)
   const cached = lookupItemInCache(code)
   const localHistory = getItemHistoryFromCache(code)
   
@@ -775,31 +774,9 @@ async function loadItemInsight(code, itemName = '', uom = '') {
     item_name: itemName || cached?.item_name || '',
     uom: uom || cached?.uom || '',
     stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
-    previousPurchases: localHistory.slice(0, 10), // Show latest 10 from cache immediately
+    previousPurchases: localHistory.slice(0, 10), // Show latest 10 from cache
     priceLists: cached?.price_lists || [],
   }
-
-  // 2. Debounced API call for historical data (Extra history + Detailed Stock)
-  clearTimeout(insightTimeout)
-  insightTimeout = setTimeout(async () => {
-    try {
-      await insightResource.submit({
-        item_code: code,
-        customer: customer.value || null,
-        warehouse: defaultWarehouse.value || null
-      })
-      const d = insightResource.data?.message || insightResource.data
-      if (d && selectedItemData.value?.item_code === code) {
-        // Update with full history from API (which might be more extensive than cached last 5000)
-        selectedItemData.value.previousPurchases = d.previous_purchases || []
-        if (d.stock?.length) {
-          selectedItemData.value.stock = d.stock
-        }
-      }
-    } catch (e) {
-      console.warn('[SalesEntry] historical insight failed:', e)
-    }
-  }, 400) // 400ms debounce
 }
 
 watch(selectedRow, async (idx) => {
@@ -812,25 +789,29 @@ watch(selectedRow, async (idx) => {
 })
 
 // Re-price all active items when price list changes
-watch(priceList, async (newList) => {
-  const repriceItem = async (item) => {
-    try {
-      const price = await fetchItemPrice(item.item_code, newList)
+watch(priceList, (newList) => {
+  const getPrice = (itemCode) => {
+    const cached = lookupItemInCache(itemCode)
+    if (cached?.price_lists) {
+      const pl = cached.price_lists.find(p => p.name === newList)
+      return pl ? pl.rate : 0
+    }
+    return 0
+  }
+
+  // Update active items in grid
+  items.value.forEach(item => {
+    if (!item.deleted && item.item_code) {
+      const price = getPrice(item.item_code)
       if (price > 0) item.rate = price
-    } catch (e) {}
-  }
+    }
+  })
 
-  const tasks = items.value.filter(i => !i.deleted && i.item_code).map(repriceItem)
-
+  // Update pending item
   if (newItemCode.value.trim() && newPending.value.rate !== null) {
-    tasks.push(
-      fetchItemPrice(newItemCode.value.trim(), newList)
-        .then(price => { if (price > 0) newPending.value = { ...newPending.value, rate: price } })
-        .catch(() => {})
-    )
+    const price = getPrice(newItemCode.value.trim())
+    if (price > 0) newPending.value.rate = price
   }
-
-  await Promise.all(tasks)
 })
 
 // ==================== FOCUS ====================

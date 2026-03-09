@@ -687,7 +687,6 @@ watch(showDiscardModal, (val) => {
 })
 
 const selectedItemData = ref(null)
-let insightTimeout = null
 
 async function loadItemInsight(code, itemName = '', uom = '') {
   if (!code) {
@@ -695,38 +694,17 @@ async function loadItemInsight(code, itemName = '', uom = '') {
     return
   }
 
-  // 1. Instant update from cache
+  // 1. Fetch from local cache (Instant)
   const cached = lookupItemInCache(code)
+  
   selectedItemData.value = {
     item_code: code,
     item_name: itemName || cached?.item_name || '',
     uom: uom || cached?.uom || '',
     stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
-    previousPurchases: [], // Will be loaded via API
+    previousPurchases: [], // Historical lookup not yet cached for Purchase
     priceLists: cached?.price_lists || [],
   }
-
-  // 2. Debounced API call for historical data (Previous Purchases)
-  clearTimeout(insightTimeout)
-  insightTimeout = setTimeout(async () => {
-    try {
-      await insightResource.submit({
-        item_code: code,
-        supplier: supplier.value || null,
-        warehouse: defaultWarehouse.value || null
-      })
-      const d = insightResource.data?.message || insightResource.data
-      if (d && selectedItemData.value?.item_code === code) {
-        selectedItemData.value.previousPurchases = d.previous_purchases || []
-        // Also update stock if API returned more detailed per-warehouse stock
-        if (d.stock?.length) {
-          selectedItemData.value.stock = d.stock
-        }
-      }
-    } catch (e) {
-      console.warn('[PurchaseEntry] historical insight failed:', e)
-    }
-  }, 400) // 400ms debounce
 }
 
 watch(selectedRow, async (idx) => {
@@ -735,6 +713,32 @@ watch(selectedRow, async (idx) => {
     await loadItemInsight(item.item_code, item.item_name, item.uom)
   } else {
     selectedItemData.value = null
+  }
+})
+
+// Re-price all active items when price list changes
+watch(priceList, (newList) => {
+  const getPrice = (itemCode) => {
+    const cached = lookupItemInCache(itemCode)
+    if (cached?.price_lists) {
+      const pl = cached.price_lists.find(p => p.name === newList)
+      return pl ? pl.rate : 0
+    }
+    return 0
+  }
+
+  // Update active items in grid
+  items.value.forEach(item => {
+    if (!item.deleted && item.item_code) {
+      const price = getPrice(item.item_code)
+      if (price > 0) item.rate = price
+    }
+  })
+
+  // Update pending item
+  if (newItemCode.value.trim() && newPending.value.rate !== null) {
+    const price = getPrice(newItemCode.value.trim())
+    if (price > 0) newPending.value.rate = price
   }
 })
 
