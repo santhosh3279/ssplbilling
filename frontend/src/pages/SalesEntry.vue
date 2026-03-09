@@ -437,13 +437,12 @@
     <ItemSearch
       ref="itemSearchModalRef"
       :show="showItemSearchModal"
-      v-model:query="itemSearchQuery"
-      v-model:selectedIdx="itemDDIdx"
-      :results="itemResults"
+      search-type="Sales"
+      :price-list="priceList"
+      :warehouse="defaultWarehouse"
       :skip-date-filter="true"
       @close="closeItemSearch"
       @select="pickItem"
-      @refresh="refreshItemSearch"
     />
 
     <PrintOptionsModal
@@ -869,60 +868,15 @@ function restoreItem(idx) { items.value[idx].deleted = false }
 
 // ==================== ITEM SEARCH MODAL ====================
 const showItemSearchModal = ref(false)
-const itemSearchQuery = ref('')
-const allItems = ref([])
-const itemResults = ref([])
-const itemDDIdx = ref(0)
 const itemSearchModalRef = ref(null)
-const isItemLoading = ref(false)
 let itemSearchTargetRow = null
-
-function filterItems() {
-  const q = itemSearchQuery.value.toLowerCase().trim()
-  if (!q) {
-    itemResults.value = allItems.value.slice(0, 100)
-    return
-  }
-  itemResults.value = allItems.value.filter(i =>
-    i.item_code.toLowerCase().includes(q) ||
-    i.item_name.toLowerCase().includes(q)
-  ).slice(0, 100)
-  itemDDIdx.value = 0
-}
-
-watch(itemSearchQuery, filterItems)
-
-async function refreshItemSearch() {
-  isItemLoading.value = true
-  try {
-    const items = await searchItems('')
-    allItems.value = items.map(i => ({ 
-      ...i, 
-      price: 0, 
-      stock: 0, 
-      _loading: true,
-      enriched: false 
-    }))
-    filterItems()
-  } catch (e) {
-    console.error('Item search refresh failed:', e)
-  } finally {
-    isItemLoading.value = false
-  }
-}
 
 async function openSearch(prefill = '', rowIdx = null) {
   itemSearchTargetRow = rowIdx
-  itemSearchQuery.value = prefill
   showItemSearchModal.value = true
-  
-  if (allItems.value.length === 0) {
-    await refreshItemSearch()
-  } else {
-    filterItems()
-  }
-  
-  nextTick(() => itemSearchModalRef.value?.focus())
+  nextTick(() => {
+    itemSearchModalRef.value?.focus()
+  })
 }
 
 function closeItemSearch() {

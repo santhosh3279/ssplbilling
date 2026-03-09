@@ -231,13 +231,11 @@
     <ItemSearch
       ref="itemSearchModalRef"
       :show="showItemSearchModal"
-      v-model:query="itemSearchQuery"
-      v-model:selectedIdx="itemDDIdx"
-      :results="itemResults"
+      search-type="Sales"
+      :price-list="filteredBillingSeries[0]?.price_list || defaultSeries || 'Standard Selling'"
       :warehouse="warehouseLabel"
       @close="showItemSearchModal = false"
       @select="pickItem"
-      @refresh="refreshItemSearch"
     />
 
     <!-- CUSTOMER LEDGER SUB-WINDOW -->
@@ -429,99 +427,15 @@ const showStockLedgerWindow = ref(false)
 const stockLedgerItemCode = ref('')
 const stockLedgerFromDate = ref('')
 const stockLedgerToDate = ref('')
-const itemSearchQuery = ref('')
-const allItems = ref([])
-const itemResults = ref([])
-const itemDDIdx = ref(0)
 const itemSearchModalRef = ref(null)
-const isItemLoading = ref(false)
-
-function filterItems() {
-  const q = itemSearchQuery.value.toLowerCase().trim()
-  if (!q) {
-    itemResults.value = allItems.value.slice(0, 100)
-    return
-  }
-  itemResults.value = allItems.value.filter(i =>
-    i.item_code.toLowerCase().includes(q) ||
-    i.item_name.toLowerCase().includes(q)
-  ).slice(0, 100)
-  itemDDIdx.value = 0
-}
-
-watch(itemSearchQuery, filterItems)
-
-async function enrichItemResults(items) {
-  // Enrich visible ones in parallel batches
-  const toEnrich = items.slice(0, 20).filter(i => !i.enriched)
-  if (!toEnrich.length) return
-
-  // Collect warehouses from the user's allowed billing series
-  const allowedWarehouses = [...new Set(
-    filteredBillingSeries.value.map(bs => bs.warehouse).filter(Boolean)
-  )]
-  const priceList = filteredBillingSeries.value[0]?.price_list || defaultSeries.value || 'Standard Selling'
-
-  await Promise.all(toEnrich.map(async (item) => {
-    try {
-      const [price, stock] = await Promise.all([
-        fetchItemPrice(item.item_code, priceList),
-        fetchItemStockForWarehouses(item.item_code, allowedWarehouses),
-      ])
-      item.price = price
-      item.stock = stock
-      item.enriched = true
-      item._loading = false
-    } catch (e) {
-      console.warn('Enrich failed for', item.item_code)
-      item._loading = false
-    }
-  }))
-}
-
-// Watch itemResults to enrich the visible ones
-watch(itemResults, (newVal) => {
-  if (newVal.length > 0) {
-    enrichItemResults(newVal)
-  }
-}, { deep: true })
-
-async function refreshItemSearch() {
-  isItemLoading.value = true
-  try {
-    const items = await dashboardApi.fetchAllItemsForSync()
-    allItems.value = items.map(i => ({
-      ...i,
-      price: 0,
-      stock: 0,
-      _loading: true,
-      enriched: false
-    }))
-    filterItems()
-  } catch (e) {
-    console.error('Item search refresh failed:', e)
-  } finally {
-    isItemLoading.value = false
-  }
-}
 
 async function openItemSearch(clear = true) {
   showItemSearchModal.value = true
   // Reset any open sub-forms or date filters when opening the search modal
   nextTick(() => {
     itemSearchModalRef.value?.closeSubForm()
+    itemSearchModalRef.value?.focus()
   })
-
-  if (clear) {
-    itemSearchQuery.value = ''
-  }
-  
-  if (allItems.value.length === 0) {
-    await refreshItemSearch()
-  } else {
-    filterItems()
-  }
-  nextTick(() => itemSearchModalRef.value?.focus())
 }
 
 function pickItem(item, dates) {
