@@ -241,12 +241,20 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-emerald-500">₹</span>
                     <input 
-                      v-model.number="payments.cash"
+                      :value="payments.cash === 0 ? '' : payments.cash"
+                      @input="e => payments.cash = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
+                    <button 
+                      @click="settleToField('cash')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 hover:text-emerald-700 p-1 rounded-md hover:bg-emerald-50 transition-colors"
+                      title="Settle balance to Cash"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </button>
                   </div>
                 </div>
 
@@ -259,12 +267,20 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-blue-500">₹</span>
                     <input 
-                      v-model.number="payments.upi"
+                      :value="payments.upi === 0 ? '' : payments.upi"
+                      @input="e => payments.upi = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
+                    <button 
+                      @click="settleToField('upi')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700 p-1 rounded-md hover:bg-blue-50 transition-colors"
+                      title="Settle balance to UPI"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </button>
                   </div>
                 </div>
 
@@ -277,12 +293,20 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-sky-500">₹</span>
                     <input 
-                      v-model.number="payments.bank"
+                      :value="payments.bank === 0 ? '' : payments.bank"
+                      @input="e => payments.bank = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
+                    <button 
+                      @click="settleToField('bank')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-sky-500 hover:text-sky-700 p-1 rounded-md hover:bg-sky-50 transition-colors"
+                      title="Settle balance to Bank"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </button>
                   </div>
                 </div>
 
@@ -292,12 +316,20 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-rose-500">₹</span>
                     <input 
-                      v-model.number="payments.discount"
+                      :value="payments.discount === 0 ? '' : payments.discount"
+                      @input="e => payments.discount = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
                       type="number" 
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg text-slate-900 outline-none focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-50 transition-all group-hover:border-slate-300 shadow-inner"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-12 text-right font-mono text-lg text-slate-900 outline-none focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-50 transition-all group-hover:border-slate-300 shadow-inner"
                       placeholder="0.00"
                     />
+                    <button 
+                      @click="settleToField('discount')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500 hover:text-rose-700 p-1 rounded-md hover:bg-rose-50 transition-colors"
+                      title="Apply remaining as Discount"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -403,18 +435,28 @@ const amountToCollect = computed(() => {
 })
 
 const totalPaid = computed(() => {
-  return Number(payments.value.cash || 0) + 
-         Number(payments.value.upi || 0) + 
-         Number(payments.value.bank || 0) + 
-         Number(payments.value.discount || 0)
+  const sum = (Number(payments.value.cash) || 0) + 
+              (Number(payments.value.upi) || 0) + 
+              (Number(payments.value.bank) || 0) + 
+              (Number(payments.value.discount) || 0)
+  return parseFloat(sum.toFixed(2))
 })
 
 const balance = computed(() => {
-  return amountToCollect.value - totalPaid.value
+  const diff = amountToCollect.value - totalPaid.value
+  return parseFloat(diff.toFixed(2))
 })
 
 const changeAmount = computed(() => {
-  return Math.max(0, totalPaid.value - amountToCollect.value)
+  // Change only comes from actual money received (Cash, UPI, Bank)
+  // net_to_pay = amountToCollect - discount
+  // change = (cash + upi + bank) - net_to_pay
+  const actualMoney = (Number(payments.value.cash) || 0) + 
+                      (Number(payments.value.upi) || 0) + 
+                      (Number(payments.value.bank) || 0)
+  const netToPay = amountToCollect.value - (Number(payments.value.discount) || 0)
+  const change = actualMoney - netToPay
+  return change > 0.005 ? parseFloat(change.toFixed(2)) : 0
 })
 
 const canSubmit = computed(() => {
@@ -438,6 +480,17 @@ function fmt(val) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })
+}
+
+function updatePayment(field, value) {
+  payments.value[field] = value === '' ? 0 : Number(value)
+}
+
+function settleToField(field) {
+  if (!selectedInvoice.value) return
+  const otherSum = totalPaid.value - (Number(payments.value[field]) || 0)
+  const rem = amountToCollect.value - otherSum
+  payments.value[field] = parseFloat(Math.max(0, rem).toFixed(2))
 }
 
 function formatDate(dateStr) {
