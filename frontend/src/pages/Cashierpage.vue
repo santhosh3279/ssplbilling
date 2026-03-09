@@ -337,7 +337,10 @@
 
                 <!-- DISCOUNT -->
                 <div class="space-y-1.5">
-                  <label class="px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Discount / Write-off</label>
+                  <div class="flex justify-between items-center px-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Discount / Write-off</label>
+                    <span v-if="seriesAccounts.discount" class="text-[9px] font-bold text-slate-400 truncate max-w-[150px]">{{ seriesAccounts.discount }}</span>
+                  </div>
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-rose-500">₹</span>
                     <input 
@@ -392,7 +395,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchBillingSettings } from '../api.js'
+import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings } from '../api.js'
 
 // --- STATE ---
 const invoices = ref([])
@@ -418,7 +421,8 @@ const payments = ref({
 const seriesAccounts = ref({
   cash: '',
   upi: '',
-  bank: ''
+  bank: '',
+  discount: ''
 })
 
 // --- COMPUTED ---
@@ -554,19 +558,22 @@ async function selectInvoice(inv) {
 
 async function loadSeriesSettings(series) {
   try {
-    const settings = await fetchBillingSettings()
-    const config = (settings.billing_series || []).find(s => s.series === series)
-    if (config) {
-      seriesAccounts.value = {
-        cash: config.cash_account || 'Cash',
-        upi: config.upi || 'UPI',
-        bank: config.bank || 'Bank Transfer'
-      }
-    } else {
-      seriesAccounts.value = { cash: 'Cash', upi: 'UPI', bank: 'Bank Transfer' }
+    const settings = await fetchDashboardSettings()
+
+    // 1. User defaults from settings (highest priority)
+    const userDefaults = settings.user_defaults || {}
+
+    // 2. Series defaults if user defaults are missing
+    const seriesConfig = (settings.billing_series || []).find(s => s.series === series)
+
+    seriesAccounts.value = {
+      cash: userDefaults.cash || seriesConfig?.cash_account || 'Cash',
+      upi: userDefaults.upi || seriesConfig?.upi || 'UPI',
+      bank: userDefaults.bank_account || seriesConfig?.bank || 'Bank',
+      discount: settings.discount_account || 'Write Off'
     }
   } catch (e) {
-    console.warn("Could not load series settings", e)
+    console.warn("Could not load accounts", e)
   }
 }
 

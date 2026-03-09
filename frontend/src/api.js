@@ -319,6 +319,15 @@ export async function fetchBillingSettings() {
   })
 }
 
+/**
+ * Fetch dashboard/billing settings resolved for the current user.
+ * 
+ * PYTHON CALL: ssplbilling.api.dashboard_api.get_billing_settings
+ */
+export async function fetchDashboardSettings() {
+  return frappeGet("ssplbilling.api.dashboard_api.get_billing_settings");
+}
+
 // ─── Cashier / Draft Invoice Helpers ─────────────────────────────────────────
 
 /**
