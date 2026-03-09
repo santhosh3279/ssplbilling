@@ -282,9 +282,15 @@ function selectLedger(ledger) {
   row.current_balance = ledger.balance || 0
   showSearchModal.value = false
   
-  // Move focus to Debit after selection
+  // Move focus to next available column after selection
   nextTick(() => {
-    const el = debitRefs[activeRowIdx.value]
+    let el = null
+    if (isFieldDisabled(activeRowIdx.value, 'debit')) {
+      el = creditRefs[activeRowIdx.value]
+    } else {
+      el = debitRefs[activeRowIdx.value]
+    }
+    
     if (el) {
       el.focus()
       el.select()
