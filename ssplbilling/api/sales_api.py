@@ -228,6 +228,7 @@ def create_sales_invoice(data=None, **kwargs):
         except Exception:
             pass
 
+    si.due_date = si.posting_date
     si.insert()
 
     return {
@@ -302,5 +303,7 @@ def update_sales_invoice(data=None, **kwargs):
     si.items = []
     for item in data["items"]:
         si.append("items", {"item_code": item["item_code"], "qty": float(item["qty"]), "rate": float(item["rate"]), "warehouse": item.get("warehouse")})
+    
+    si.due_date = si.posting_date
     si.save()
     return {"invoice_name": si.name, "grand_total": float(si.grand_total)}

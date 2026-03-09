@@ -130,6 +130,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
 	if si.docstatus == 0:
+		si.due_date = si.posting_date
 		si.submit()
 
 	if is_credit:
