@@ -107,6 +107,7 @@
             <button 
               v-for="inv in invoices" 
               :key="inv.name"
+              :data-inv-name="inv.name"
               @click="selectInvoice(inv)"
               class="mb-2 flex w-full flex-col gap-1.5 rounded-xl p-4 text-left transition-all outline-none group border shadow-sm"
               :class="selectedInvoice?.name === inv.name 
@@ -310,6 +311,7 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-emerald-500">₹</span>
                     <input 
+                      ref="cashInput"
                       :value="payments.cash === 0 ? '' : payments.cash"
                       @input="e => payments.cash = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
@@ -329,6 +331,7 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-blue-500">₹</span>
                     <input 
+                      ref="upiInput"
                       :value="payments.upi === 0 ? '' : payments.upi"
                       @input="e => payments.upi = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
@@ -348,6 +351,7 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-sky-500">₹</span>
                     <input 
+                      ref="bankInput"
                       :value="payments.bank === 0 ? '' : payments.bank"
                       @input="e => payments.bank = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
@@ -367,6 +371,7 @@
                   <div class="relative group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-rose-500">₹</span>
                     <input 
+                      ref="discountInput"
                       :value="payments.discount === 0 ? '' : payments.discount"
                       @input="e => payments.discount = e.target.value === '' ? 0 : Number(e.target.value)"
                       @focus="$event.target.select()"
@@ -412,6 +417,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings } from '../api.js'
+import { useShortcuts } from '../services/shortcutManager'
+import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
+
+// --- REFS ---
+const cashInput = ref(null)
+const upiInput = ref(null)
+const bankInput = ref(null)
+const discountInput = ref(null)
 
 // --- STATE ---
 const invoices = ref([])
@@ -441,6 +454,54 @@ const seriesAccounts = ref({
   bank: '',
   discount: ''
 })
+
+// --- SHORTCUT HANDLERS ---
+function navigateBills(dir) {
+  if (!invoices.value.length) return
+  if (!selectedInvoice.value) {
+    selectInvoice(invoices.value[0])
+    return
+  }
+  const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
+  const nextIdx = idx + dir
+  if (nextIdx >= 0 && nextIdx < invoices.value.length) {
+    selectInvoice(invoices.value[nextIdx])
+    // Scroll into view if needed
+    nextTick(() => {
+      const el = document.querySelector(`[data-inv-name="${invoices.value[nextIdx].name}"]`)
+      el?.scrollIntoView({ block: 'nearest' })
+    })
+  }
+}
+
+function handleEnter(e) {
+  const active = document.activeElement
+  
+  // 1. If in left panel or nothing focused, move to Cash
+  if (active.tagName !== 'INPUT' || active.type !== 'number') {
+    cashInput.value?.focus()
+    return
+  }
+
+  // 2. Navigation through inputs
+  if (active === cashInput.value) {
+    upiInput.value?.focus()
+  } else if (active === upiInput.value) {
+    bankInput.value?.focus()
+  } else if (active === bankInput.value) {
+    discountInput.value?.focus()
+  } else if (active === discountInput.value) {
+    processPayment()
+  }
+}
+
+useShortcuts(cashierpageShortcuts({
+  navigateBillsUp: () => navigateBills(-1),
+  navigateBillsDown: () => navigateBills(1),
+  handleEnter: handleEnter,
+  submitPayment: processPayment,
+  goBack: () => window.history.back()
+}))
 
 // --- COMPUTED ---
 const todayStr = computed(() => {
