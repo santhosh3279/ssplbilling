@@ -8,6 +8,7 @@ import PriceListUpdate from './pages/PriceListUpdate.vue'
 import Cashierpage from './pages/Cashierpage.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
+import JournalContraEntry from './pages/JournalContraEntry.vue'
 
 const routes = [
   {
@@ -45,6 +46,11 @@ const routes = [
     path: '/ledger',
     name: 'CustomerLedger',
     component: CustomerLedger,
+  },
+  {
+    path: '/journal-contra',
+    name: 'JournalContraEntry',
+    component: JournalContraEntry,
   },
   {
     path: '/payment',

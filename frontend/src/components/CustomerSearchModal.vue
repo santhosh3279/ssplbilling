@@ -17,7 +17,7 @@
           <!-- Quick Filter Tabs -->
           <div class="flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm mr-4 relative group">
             <button 
-              v-for="t in ['All', 'Customer', 'Supplier', 'Account']" 
+              v-for="t in availableTabs" 
               :key="t"
               @click="activeType = t"
               class="px-4 py-1.5 text-sm font-bold transition-all rounded-md"
@@ -272,7 +272,16 @@ const props = defineProps({
   initialType: {
     type: String,
     default: 'All'
+  },
+  allowedTypes: {
+    type: Array,
+    default: () => ['Customer', 'Supplier', 'Account']
   }
+})
+
+const availableTabs = computed(() => {
+  const tabs = ['All', ...props.allowedTypes]
+  return [...new Set(tabs)] // ensure unique
 })
 
 const emit = defineEmits(['close', 'select'])
@@ -337,6 +346,9 @@ async function preloadLedger() {
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
   let list = allLedgers.value
+
+  // Pre-filter by allowedTypes
+  list = list.filter(l => props.allowedTypes.includes(l.type))
 
   // Type Filter
   if (activeType.value !== 'All') {
@@ -412,7 +424,7 @@ function handleGlobalKeydown(e) {
     preloadLedger()
   } else if (e.key === 'F7') {
     e.preventDefault()
-    const types = ['All', 'Customer', 'Supplier', 'Account']
+    const types = availableTabs.value
     const nextIdx = (types.indexOf(activeType.value) + 1) % types.length
     activeType.value = types[nextIdx]
   } else if (e.key === 'PageUp') {

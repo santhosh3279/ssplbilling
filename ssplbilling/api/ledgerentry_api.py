@@ -108,6 +108,33 @@ def create_payment_entry(data):
     return {"name": pe.name, "status": "Submitted"}
 
 @frappe.whitelist()
+def create_journal_entry(data):
+    """Create and submit a Journal Entry or Contra."""
+    if isinstance(data, str):
+        data = json.loads(data)
+        
+    accounts = data.get("accounts") or []
+    if not accounts:
+        frappe.throw("At least two accounts are required for a Journal Entry")
+        
+    je = frappe.new_doc("Journal Entry")
+    je.voucher_type = data.get("voucher_type") or "Journal Entry"
+    je.posting_date = data.get("posting_date") or frappe.utils.today()
+    je.company = frappe.defaults.get_global_default("company")
+    
+    for acc in accounts:
+        je.append("accounts", {
+            "account": acc.get("account"),
+            "debit_in_account_currency": float(acc.get("debit_in_account_currency") or 0),
+            "credit_in_account_currency": float(acc.get("credit_in_account_currency") or 0),
+            "user_remark": acc.get("user_remark")
+        })
+        
+    je.insert()
+    je.submit()
+    return {"name": je.name, "status": "Submitted"}
+
+@frappe.whitelist()
 def search_parties(query, party_type="Customer"):
     """Search for Customer or Supplier."""
     doctype = "Customer" if party_type == "Customer" else "Supplier"

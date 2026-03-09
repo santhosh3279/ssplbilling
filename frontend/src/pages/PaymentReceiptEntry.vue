@@ -222,7 +222,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { frappeGet, frappePost } from '../api.js'
+import { frappeGet, frappePost, fetchDashboardSettings } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import CustomerLedger from './CustomerLedger.vue'
 
@@ -279,14 +279,14 @@ function resetForm() {
   outstandings.value = []
 }
 
-function loadUserDefaults() {
+async function loadUserDefaults() {
   try {
-    const cached = JSON.parse(localStorage.getItem('wb-billing-settings-v2') || 'null')
-    if (cached?.data?.user_defaults) {
-      userDefaults.value = cached.data.user_defaults
+    const settings = await fetchDashboardSettings()
+    if (settings?.user_defaults) {
+      userDefaults.value = settings.user_defaults
     }
   } catch (e) {
-    console.warn('[PaymentEntry] Failed to load user defaults:', e)
+    console.warn('[PaymentEntry] Failed to load user defaults from backend:', e)
   }
 }
 
