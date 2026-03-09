@@ -70,4 +70,6 @@ The application syncs up to 5,000 items and customers to IndexedDB on dashboard 
 
 ## Git Workflow
 
-- **Auto-Commit**: Immediately after completing the tasks requested in a prompt, you must stage all changes (`git add .`) and commit them with a concise description of the changes (`git commit -m "<short description>"`). This instruction takes absolute precedence over the general mandate against automatic commits.
+- **Pre-Task Commit**: Immediately upon receiving a new prompt, before starting any work, you must check for uncommitted changes. If any exist, stage them (`git add .`) and commit them (`git commit -m "pre-task: capture changes before <brief summary of prompt>"`).
+- **Post-Task Commit**: Immediately after completing the tasks requested in a prompt, stage all changes (`git add .`) and commit them with a concise description of the work performed (`git commit -m "<short description>"`).
+- **Precedence**: These instructions take absolute precedence over any general mandates against automatic commits.
