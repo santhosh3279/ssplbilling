@@ -52,14 +52,18 @@ def create_payment_entry(data):
     pe.reference_date = data.get("reference_date") or pe.posting_date
     pe.remarks = data.get("remarks")
     
-    # Link to invoice if provided
-    if data.get("invoice_name"):
+    # Link to invoices if provided
+    references = data.get("references") or []
+    if not references and data.get("invoice_name"):
+        references = [{"name": data["invoice_name"], "amount": amount}]
+
+    for ref in references:
         pe.append("references", {
             "reference_doctype": "Sales Invoice" if pe.party_type == "Customer" else "Purchase Invoice",
-            "reference_name": data["invoice_name"],
-            "allocated_amount": amount
+            "reference_name": ref["name"],
+            "allocated_amount": float(ref.get("amount") or 0)
         })
-        
+
     pe.insert()
     pe.submit()
     
