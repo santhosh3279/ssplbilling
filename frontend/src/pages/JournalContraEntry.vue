@@ -75,7 +75,7 @@
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-lg font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
+                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-xl font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
                     :class="row.account ? 'text-slate-900' : 'text-slate-300 italic'"
                   >
                     <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
