@@ -200,8 +200,8 @@ const isContra = ref(false)
 
 watch(isContra, () => {
   rows.value = [
-    { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' },
-    { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0, reference: '' }
+    { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 },
+    { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
   ]
   activeRowIdx.value = 0
 })
