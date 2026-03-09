@@ -412,32 +412,29 @@
                   </div>
                 </div>
               </div>
+
+              <!-- SUBMIT ACTION INTEGRATED -->
+              <div class="mt-6 pt-6 border-t border-slate-100">
+                <div v-if="errorMsg" class="mb-4 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-600 border border-rose-100">
+                  {{ errorMsg }}
+                </div>
+                <div v-if="successMsg" class="mb-4 rounded-xl bg-emerald-50 p-3 text-xs font-bold text-emerald-600 border border-emerald-100">
+                  {{ successMsg }}
+                </div>
+
+                <button 
+                  @click="processPayment"
+                  :disabled="!canSubmit"
+                  class="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold uppercase tracking-widest transition-all active:scale-95 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-lg text-white group"
+                  :class="isCredit ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-100' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100'"
+                >
+                  <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                  <span v-else>{{ isCredit ? 'Confirm Credit' : 'Submit Payment' }}</span>
+                  <svg v-if="!isSubmitting" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ml-1 group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+              </div>
             </div>
           </template>
-        </div>
-
-        <!-- SUBMIT ACTION -->
-        <div class="p-6 border-t border-slate-200 bg-white shadow-[0_-10px_25px_rgba(0,0,0,0.05)]">
-          <div v-if="errorMsg" class="mb-4 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-600 border border-rose-100">
-            {{ errorMsg }}
-          </div>
-          <div v-if="successMsg" class="mb-4 rounded-xl bg-emerald-50 p-3 text-xs font-bold text-emerald-600 border border-emerald-100">
-            {{ successMsg }}
-          </div>
-
-          <button 
-            @click="processPayment"
-            :disabled="!canSubmit"
-            class="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold uppercase tracking-widest transition-all active:scale-95 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-lg text-white group"
-            :class="isCredit ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-100' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100'"
-          >
-            <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            <span v-else>{{ isCredit ? 'Confirm Credit' : 'Submit Payment' }}</span>
-            <svg v-if="!isSubmitting" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ml-1 group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </button>
-          <div class="mt-4 text-center">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Press <kbd class="rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-slate-500">F9</kbd> to submit</span>
-          </div>
         </div>
       </aside>
     </div>
