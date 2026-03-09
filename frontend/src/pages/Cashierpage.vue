@@ -302,7 +302,7 @@
               </div>
 
               <div v-if="isCredit" class="space-y-1.5">
-                <label class="px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Due Date (mmddyy)</label>
+                <label class="px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Due Date (ddmmyyyy)</label>
                 <div class="flex gap-2">
                   <div class="relative flex-1 group">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-purple-500">
@@ -315,14 +315,19 @@
                       @focus="$event.target.select()"
                       type="text" 
                       class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-left font-mono text-lg text-slate-900 outline-none focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-50 transition-all group-hover:border-slate-300 shadow-inner"
-                      placeholder="mm/dd/yy"
+                      placeholder="dd/mm/yyyy"
                     />
                   </div>
-                  <input 
-                    v-model="dueDate"
-                    type="date"
-                    class="w-12 rounded-xl border border-slate-200 bg-slate-50 px-2 outline-none focus:border-purple-500 transition-all hover:border-slate-300 shadow-inner cursor-pointer"
-                  />
+                  <div class="relative w-12 h-12">
+                    <input 
+                      v-model="dueDate"
+                      type="date"
+                      class="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    />
+                    <div class="absolute inset-0 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:border-slate-300 transition-all shadow-inner">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -532,15 +537,15 @@ function handleEnter(e) {
   }
 }
 
-// mmddyy -> mm/dd/yy
+// ddmmyyyy -> dd/mm/yyyy
 function handleDueDateInput(e) {
   let raw = e.target.value.replace(/\D/g, '')
-  if (raw.length > 6) raw = raw.slice(0, 6)
+  if (raw.length > 8) raw = raw.slice(0, 8)
   
   let formatted = raw
-  if (raw.length >= 4) {
+  if (raw.length >= 5) {
     formatted = raw.slice(0, 2) + '/' + raw.slice(2, 4) + '/' + raw.slice(4)
-  } else if (raw.length >= 2) {
+  } else if (raw.length >= 3) {
     formatted = raw.slice(0, 2) + '/' + raw.slice(2)
   }
   
@@ -549,17 +554,15 @@ function handleDueDateInput(e) {
 
 function getIsoDueDate() {
   if (!dueDate.value || !dueDate.value.includes('/')) {
-    // If not formatted or empty, check if it's just a raw date string from picker
     if (dueDate.value.match(/^\d{4}-\d{2}-\d{2}$/)) return dueDate.value
     return new Date().toISOString().slice(0, 10)
   }
   const parts = dueDate.value.split('/')
   if (parts.length !== 3) return new Date().toISOString().slice(0, 10)
-  const mm = parts[0]
-  const dd = parts[1]
-  const yy = parts[2]
-  const year = yy.length === 2 ? '20' + yy : yy
-  return `${year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+  const dd = parts[0]
+  const mm = parts[1]
+  const yyyy = parts[2]
+  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
 }
 
 useShortcuts(cashierpageShortcuts({
