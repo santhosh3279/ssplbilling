@@ -135,7 +135,10 @@
 
           <!-- SSPL Billing Settings Details -->
           <div v-if="systemSettings" class="mt-4 border-t border-gray-100 pt-4">
-            <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">System Configuration (SSPL Billing Settings)</div>
+            <div class="mb-3 flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">System Configuration</span>
+              <button @click="syncSettings" class="text-[10px] font-bold text-blue-600 hover:underline">SYNC NOW</button>
+            </div>
 
             <!-- Discount Account, Cipher Map & Zoom -->
             <div class="mb-3 flex flex-col gap-1.5">
@@ -462,6 +465,12 @@ function pickItem(item, dates) {
 function closeStockLedgerAndReturnToSearch() {
   showStockLedgerWindow.value = false
   openItemSearch(false) // Return without clearing search
+}
+
+async function syncSettings() {
+  localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
+  await fetchSettings()
+  alert('Settings synchronized successfully')
 }
 
 async function fetchSettings() {

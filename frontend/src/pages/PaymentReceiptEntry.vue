@@ -249,6 +249,7 @@ const mop = ref('Cash')
 const referenceNo = ref('')
 const remarks = ref('')
 const selectedInvoices = ref([]) // Array of { name, amount }
+const userDefaults = ref(null)
 
 const outstandings = ref([])
 const loadingOutstandings = ref(false)
@@ -276,6 +277,17 @@ function resetForm() {
   remarks.value = ''
   selectedInvoices.value = []
   outstandings.value = []
+}
+
+function loadUserDefaults() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('wb-billing-settings-v2') || 'null')
+    if (cached?.data?.user_defaults) {
+      userDefaults.value = cached.data.user_defaults
+    }
+  } catch (e) {
+    console.warn('[PaymentEntry] Failed to load user defaults:', e)
+  }
 }
 
 function openSearch() {
@@ -349,6 +361,21 @@ async function saveEntry() {
       remarks: remarks.value,
       references: selectedInvoices.value
     }
+
+    // Resolve accounts if user defaults are available
+    if (userDefaults.value) {
+      const mopAcc = mop.value === 'Cash' ? userDefaults.value.cash :
+                     mop.value === 'UPI'  ? userDefaults.value.upi :
+                     userDefaults.value.bank_account;
+      
+      if (mopAcc) {
+        if (entryMode.value === 'Receive') {
+          payload.paid_to = mopAcc;
+        } else {
+          payload.paid_from = mopAcc;
+        }
+      }
+    }
     
     await frappePost('ssplbilling.api.ledgerentry_api.create_payment_entry', { data: payload })
     alert('Entry saved successfully!')
@@ -378,6 +405,7 @@ function handleKeydown(e) {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  loadUserDefaults()
   if (route.query.mode) {
     entryMode.value = route.query.mode
   }

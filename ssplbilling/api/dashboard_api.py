@@ -101,15 +101,23 @@ def save_default_zoom(zoom):
 
 @frappe.whitelist()
 def get_billing_settings():
-	"""Return SSPL Billing Settings; user_zoom is resolved for the current user."""
+	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current user."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 	user = frappe.session.user
 	user_row = next((r for r in settings.user_series if r.user == user), None)
+	
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
+	user_defaults = {
+		"cash": (user_row.cash or "") if user_row else "",
+		"bank_account": (user_row.bank_account or "") if user_row else "",
+		"upi": (user_row.upi or "") if user_row else "",
+	}
+
 	return {
 		"discount_account": settings.discount_account or "",
 		"cipher_map": settings.cipher_map or "",
 		"user_zoom": user_zoom,
+		"user_defaults": user_defaults,
 		"billing_series": [
 			{
 				"series": r.series or "",
@@ -118,9 +126,6 @@ def get_billing_settings():
 				"tax_template": r.tax_template or "",
 				"cost_center": r.cost_center or "",
 				"print_format": r.print_format or "",
-				"cash_account": r.cash_account or "",
-				"bank": r.bank or "",
-				"upi": r.upi or "",
 			}
 			for r in settings.billing_series
 		],
@@ -129,6 +134,9 @@ def get_billing_settings():
 				"user": r.user or "",
 				"allowed_series": r.allowed_series_seperated_by_comma or "",
 				"zoom_value": r.zoom_value or "",
+				"cash": r.cash or "",
+				"bank_account": r.bank_account or "",
+				"upi": r.upi or "",
 			}
 			for r in settings.user_series
 		],

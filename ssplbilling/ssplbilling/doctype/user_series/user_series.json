@@ -8,7 +8,10 @@
  "field_order": [
   "user",
   "allowed_series_seperated_by_comma",
-  "zoom_value"
+  "zoom_value",
+  "cash",
+  "bank_account",
+  "upi"
  ],
  "fields": [
   {
@@ -26,13 +29,31 @@
    "fieldname": "zoom_value",
    "fieldtype": "Data",
    "label": "Zoom Value"
+  },
+  {
+   "fieldname": "cash",
+   "fieldtype": "Link",
+   "label": "Cash",
+   "options": "Account"
+  },
+  {
+   "fieldname": "bank_account",
+   "fieldtype": "Link",
+   "label": "Bank Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "upi",
+   "fieldtype": "Link",
+   "label": "UPI",
+   "options": "Account"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-06 16:16:47.731182",
+ "modified": "2026-03-09 17:41:48.048372",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "USER SERIES",

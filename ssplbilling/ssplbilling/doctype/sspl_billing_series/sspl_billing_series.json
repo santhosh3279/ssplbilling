@@ -9,13 +9,10 @@
   "series",
   "print_format",
   "cost_center",
-  "cash_account",
-  "bank",
   "column_break_1",
   "price_list",
   "tax_template",
-  "warehouse",
-  "upi"
+  "warehouse"
  ],
  "fields": [
   {
@@ -61,31 +58,13 @@
    "fieldtype": "Link",
    "label": "Warehouse",
    "options": "Warehouse"
-  },
-  {
-   "fieldname": "cash_account",
-   "fieldtype": "Link",
-   "label": "Cash Account",
-   "options": "Mode of Payment"
-  },
-  {
-   "fieldname": "bank",
-   "fieldtype": "Link",
-   "label": "Bank",
-   "options": "Mode of Payment"
-  },
-  {
-   "fieldname": "upi",
-   "fieldtype": "Link",
-   "label": "UPI",
-   "options": "Mode of Payment"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-05 01:30:09.447646",
+ "modified": "2026-03-09 17:41:01.522394",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Billing Series",
