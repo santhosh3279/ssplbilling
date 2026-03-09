@@ -260,7 +260,7 @@
                 <!-- CASH -->
                 <div class="space-y-1.5">
                   <div class="flex justify-between items-center px-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cash</label>
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cash A/C</label>
                     <span v-if="seriesAccounts.cash" class="text-[9px] font-bold text-slate-400 truncate max-w-[150px]">{{ seriesAccounts.cash }}</span>
                   </div>
                   <div class="relative group">
@@ -286,7 +286,7 @@
                 <!-- UPI -->
                 <div class="space-y-1.5">
                   <div class="flex justify-between items-center px-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">UPI / QR</label>
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">UPI A/C</label>
                     <span v-if="seriesAccounts.upi" class="text-[9px] font-bold text-slate-400 truncate max-w-[150px]">{{ seriesAccounts.upi }}</span>
                   </div>
                   <div class="relative group">
@@ -312,7 +312,7 @@
                 <!-- BANK -->
                 <div class="space-y-1.5">
                   <div class="flex justify-between items-center px-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Bank Transfer</label>
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Bank A/C</label>
                     <span v-if="seriesAccounts.bank" class="text-[9px] font-bold text-slate-400 truncate max-w-[150px]">{{ seriesAccounts.bank }}</span>
                   </div>
                   <div class="relative group">
