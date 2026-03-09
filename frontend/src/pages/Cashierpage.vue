@@ -208,24 +208,30 @@
             <!-- TOP SUMMARY CARD -->
             <div class="rounded-2xl bg-white border-2 border-slate-100 shadow-sm relative overflow-hidden">
               <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-              <div class="grid grid-cols-2 divide-x divide-slate-100">
-                <div class="p-5 text-center">
+              <div class="grid grid-cols-3 divide-x divide-slate-100">
+                <div class="p-4 text-center">
                   <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Bill Amount</div>
-                  <div class="text-2xl font-black tracking-tight text-slate-900 font-mono">
+                  <div class="text-xl font-black tracking-tight text-slate-900 font-mono">
                     ₹{{ fmt(amountToCollect) }}
                   </div>
                 </div>
-                <div class="p-5 text-center bg-slate-50/30">
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Balance Due</div>
-                  <div class="text-2xl font-black tracking-tight font-mono" :class="balance <= 0.01 ? 'text-emerald-600' : 'text-rose-600'">
+                <div class="p-4 text-center bg-slate-50/20">
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Received</div>
+                  <div class="text-xl font-black tracking-tight text-slate-700 font-mono">
+                    ₹{{ fmt(totalPaid) }}
+                  </div>
+                </div>
+                <div class="p-4 text-center bg-slate-50/50">
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Balance</div>
+                  <div class="text-xl font-black tracking-tight font-mono" :class="balance <= 0.01 ? 'text-emerald-600' : 'text-rose-600'">
                     ₹{{ fmt(Math.max(0, balance)) }}
                   </div>
                 </div>
               </div>
-              <div v-if="isCredit" class="pb-3 text-center border-t border-slate-100 pt-2">
-                <div class="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-600 border border-purple-100">
+              <div v-if="isCredit" class="pb-2 text-center border-t border-slate-100 pt-1.5">
+                <div class="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-0.5 text-[9px] font-bold uppercase tracking-widest text-purple-600 border border-purple-100">
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m5 15 7 7 7-7"/></svg>
-                  Credit Ledger
+                  Credit Ledger Posting
                 </div>
               </div>
             </div>
@@ -347,24 +353,11 @@
               </div>
             </div>
 
-            <!-- SUMMARY -->
-            <div class="rounded-2xl bg-slate-50 p-5 space-y-3 border border-slate-200">
-              <div v-if="!isCredit" class="flex justify-between text-xs font-bold">
-                <span class="text-slate-400 uppercase tracking-wider">Total Received</span>
-                <span class="text-slate-700 font-mono">₹{{ fmt(totalPaid) }}</span>
-              </div>
-              <div class="flex items-center justify-between border-t border-slate-200 pt-3">
-                <span class="text-sm font-bold text-slate-600 uppercase tracking-wider">{{ isCredit ? 'Credit Amount' : 'Balance Due' }}</span>
-                <span 
-                  class="text-2xl font-black font-mono"
-                  :class="isCredit ? 'text-purple-600' : (balance <= 0.01 ? 'text-emerald-600' : 'text-rose-600')"
-                >
-                  ₹{{ fmt(isCredit ? amountToCollect : Math.max(0, balance)) }}
-                </span>
-              </div>
-              <div v-if="changeAmount > 0.01 && !isCredit" class="flex items-center justify-between border-t border-slate-200 pt-3 text-blue-600 bg-blue-50 -mx-5 px-5 pb-5 -mb-5 rounded-b-2xl mt-3">
+            <!-- SUMMARY (ONLY CHANGE) -->
+            <div v-if="changeAmount > 0.01 && !isCredit" class="rounded-2xl bg-blue-50 p-5 border border-blue-200">
+              <div class="flex items-center justify-between text-blue-600">
                 <span class="text-xs font-bold uppercase tracking-wider">Return Change</span>
-                <span class="text-xl font-bold font-mono">₹{{ fmt(changeAmount) }}</span>
+                <span class="text-2xl font-black font-mono">₹{{ fmt(changeAmount) }}</span>
               </div>
             </div>
           </template>
