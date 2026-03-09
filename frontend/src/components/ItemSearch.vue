@@ -306,10 +306,10 @@ function closeSubForm() {
 }
 
 /** 
- * Refresh stock when CTRL+L (ledger search) is pressed anywhere.
- * This ensures that by the time they get to item entry, stock is fresh.
+ * Refresh stock when CTRL+I (item search) is pressed anywhere.
+ * This ensures that when the modal opens, stock is already fresh.
  */
-function handleGlobalLedgerSearch() {
+function handleGlobalItemSearch() {
   preloadItems(true)
 }
 
@@ -346,13 +346,13 @@ watch(() => props.show, (newVal) => {
 })
 
 onMounted(() => {
-  window.addEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
+  window.addEventListener('wb-global-item-search', handleGlobalItemSearch)
   if (props.show) {
     loadCipherMap()
   }
 })
 
 onUnmounted(() => {
-  window.removeEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
+  window.removeEventListener('wb-global-item-search', handleGlobalItemSearch)
 })
 </script>
