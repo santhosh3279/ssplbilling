@@ -66,28 +66,28 @@
                 class="group hover:bg-slate-50/50 transition-colors"
                 :class="{ 'bg-blue-50/30': activeRowIdx === idx }"
               >
-                <td class="px-4 py-1.5 text-center text-xs font-bold text-slate-400">
+                <td class="px-4 py-0.5 text-center text-sm font-bold text-slate-400">
                   {{ idx + 1 }}
                 </td>
-                <td class="px-2 py-1">
+                <td class="px-2 py-0.5">
                   <div 
                     :ref="el => { if (el) ledgerRefs[idx] = el }"
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
+                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-lg font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
                     :class="row.account ? 'text-slate-900' : 'text-slate-300 italic'"
                   >
                     <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover/input:text-blue-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
-                <td class="px-2 py-1 text-right">
-                  <div v-if="row.account" class="text-xs font-bold text-slate-500 font-mono">
+                <td class="px-2 py-0.5 text-right">
+                  <div v-if="row.account" class="text-sm font-bold text-slate-500 font-mono whitespace-nowrap">
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
-                <td class="px-2 py-1">
+                <td class="px-2 py-0.5">
                   <input 
                     :ref="el => { if (el) debitRefs[idx] = el }"
                     v-model.number="row.debit"
@@ -97,11 +97,11 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-1.5 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
+                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-0.5 text-right font-mono text-lg font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-2 py-1">
+                <td class="px-2 py-0.5">
                   <input 
                     :ref="el => { if (el) creditRefs[idx] = el }"
                     v-model.number="row.credit"
@@ -111,12 +111,12 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-1.5 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
+                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-0.5 text-right font-mono text-lg font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-2 py-1 text-right">
-                  <div v-if="row.account" class="text-xs font-bold font-mono" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-600' : 'text-slate-400'">
+                <td class="px-2 py-0.5 text-right">
+                  <div v-if="row.account" class="text-sm font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-600' : 'text-slate-400'">
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
