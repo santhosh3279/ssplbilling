@@ -194,11 +194,7 @@
 
       <!-- RIGHT PANEL: PAYMENT -->
       <aside class="flex w-96 shrink-0 flex-col border-l border-slate-200 bg-white shadow-xl">
-        <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-          <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400">Payment Entry</h2>
-        </div>
-
-        <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
           <div v-if="!selectedInvoice" class="flex flex-col items-center justify-center h-full text-slate-400">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
             <p class="text-xs font-medium uppercase tracking-wider">Select bill to pay</p>
