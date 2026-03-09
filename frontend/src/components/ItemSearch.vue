@@ -42,26 +42,39 @@
 
       <!-- Detail Panel -->
       <div v-if="results[selectedIdx]" class="border-b border-gray-200 bg-blue-50/30 px-6 py-3">
-        <div class="flex flex-wrap items-start gap-x-8 gap-y-2">
-          <div class="flex flex-col min-w-[130px]">
-            <span class="text-[10px] font-bold uppercase text-gray-400">Current Stock</span>
-            <span class="text-xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-600' : 'text-green-600'">
-              {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
-            </span>
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-wrap items-start gap-x-8 gap-y-2">
+            <div class="flex flex-col min-w-[130px]">
+              <span class="text-[10px] font-bold uppercase text-gray-400">Current Stock</span>
+              <span class="text-xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-600' : 'text-green-600'">
+                {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
+              </span>
+            </div>
+            <div v-if="warehouse" class="flex flex-col min-w-[130px] max-w-[200px]">
+              <span class="text-[10px] font-bold uppercase text-gray-400">Warehouse</span>
+              <span class="truncate text-sm font-semibold text-gray-600" :title="warehouse">{{ warehouse }}</span>
+            </div>
+            <div class="flex flex-col min-w-[130px]">
+              <span class="text-[10px] font-bold uppercase text-gray-400">Default Rate</span>
+              <span class="text-xl font-bold text-gray-700">
+                ₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              </span>
+            </div>
+            <div class="flex flex-col flex-1">
+              <span class="text-[10px] font-bold uppercase text-gray-400">Item Name</span>
+              <span class="text-lg text-gray-700 font-semibold">{{ results[selectedIdx].item_name }}</span>
+            </div>
           </div>
-          <div v-if="warehouse" class="flex flex-col min-w-[130px] max-w-[200px]">
-            <span class="text-[10px] font-bold uppercase text-gray-400">Warehouse</span>
-            <span class="truncate text-sm font-semibold text-gray-600" :title="warehouse">{{ warehouse }}</span>
-          </div>
-          <div class="flex flex-col min-w-[130px]">
-            <span class="text-[10px] font-bold uppercase text-gray-400">Rate</span>
-            <span class="text-xl font-bold text-gray-700">
-              ₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-            </span>
-          </div>
-          <div class="flex flex-col flex-1">
-            <span class="text-[10px] font-bold uppercase text-gray-400">Item Name</span>
-            <span class="text-lg text-gray-700 font-semibold">{{ results[selectedIdx].item_name }}</span>
+
+          <!-- All Price Lists (Encrypted) -->
+          <div v-if="insightData?.priceLists?.length" class="flex flex-col gap-1 border-t border-blue-100 pt-2">
+            <span class="text-[10px] font-bold uppercase text-gray-400">All Price Lists</span>
+            <div class="flex flex-wrap gap-3">
+              <span v-for="pl in insightData.priceLists" :key="pl.name" class="rounded bg-amber-50 px-2.5 py-1 text-sm border border-amber-100">
+                <span class="text-gray-500 text-[10px] uppercase font-bold mr-1">{{ pl.name }}:</span>
+                <span class="font-mono font-bold text-amber-700">₹{{ encPrice(pl.rate || 0) }}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -128,8 +141,9 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed } from 'vue'
+import { ref, nextTick, watch, computed, onMounted } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
+import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
 
 const props = defineProps({
@@ -158,6 +172,32 @@ const selectedIdx = ref(0)
 const searchInput = ref(null)
 const scrollContainer = ref(null)
 const showDateModal = ref(false)
+const insightData = ref(null)
+const cipherMap = ref([])
+
+// ─── Encryption Logic ────────────────────────────────────────────────────────
+
+function loadCipherMap() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('wb-billing-settings-v2') || 'null')
+    const raw = cached?.data?.cipher_map
+    if (raw) {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+      if (Array.isArray(parsed) && parsed.length === 10) {
+        cipherMap.value = parsed
+      }
+    }
+  } catch (e) {
+    console.warn('[ItemSearch] Failed to load cipher map:', e)
+  }
+}
+
+function encPrice(val) {
+  const n = Number(val || 0)
+  const str = n % 1 === 0 ? String(n) : n.toFixed(2)
+  if (!cipherMap.value.length) return str
+  return str.replace(/\d/g, d => cipherMap.value[parseInt(d)] ?? d)
+}
 
 // ─── Data Preloading ─────────────────────────────────────────────────────────
 
@@ -168,6 +208,34 @@ async function preloadItems(forceRefresh = false) {
     await refreshItemCache(props.searchType, props.priceList, props.warehouse || null)
   } catch (e) {
     console.error('[ItemSearch] Preload failed:', e)
+  }
+}
+
+// ─── Insight Fetching ────────────────────────────────────────────────────────
+
+async function fetchItemInsight(itemCode) {
+  if (!itemCode) {
+    insightData.value = null
+    return
+  }
+  try {
+    const method = props.searchType === 'Purchase' 
+      ? 'ssplbilling.api.purchase_api.get_item_insight'
+      : 'ssplbilling.api.sales_api.get_item_insight'
+      
+    const data = await frappeGet(method, {
+      item_code: itemCode,
+      warehouse: props.warehouse || null
+    })
+    
+    if (data) {
+      insightData.value = {
+        priceLists: (data.price_lists || []).map(pl => ({ name: pl.name, rate: pl.rate }))
+      }
+    }
+  } catch (e) {
+    console.warn('[ItemSearch] Insight fetch failed:', e)
+    insightData.value = null
   }
 }
 
@@ -186,6 +254,15 @@ const results = computed(() => {
 watch(query, () => {
   selectedIdx.value = 0
 })
+
+watch([selectedIdx, results], () => {
+  const item = results.value[selectedIdx.value]
+  if (item) {
+    fetchItemInsight(item.item_code)
+  } else {
+    insightData.value = null
+  }
+}, { immediate: true })
 
 // ─── Navigation & Events ─────────────────────────────────────────────────────
 
@@ -258,10 +335,17 @@ watch(selectedIdx, async (idx) => {
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
+    loadCipherMap()
     preloadItems()
     focus()
   } else {
     showDateModal.value = false
+  }
+})
+
+onMounted(() => {
+  if (props.show) {
+    loadCipherMap()
   }
 })
 </script>
