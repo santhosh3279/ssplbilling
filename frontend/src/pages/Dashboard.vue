@@ -286,20 +286,22 @@ const tiles = [
   { id: 'payment', name: 'Payment Entry', desc: 'Outgoing payments', icon: '💸', shortcut: 'F3', iconBg: 'bg-amber-50' },
   { id: 'receipt', name: 'Receipt Entry', desc: 'Incoming receipts', icon: '📄', shortcut: 'F4', iconBg: 'bg-green-50' },
   { id: 'cashier', name: 'Cashier Entry', desc: 'POS cash management', icon: '💰', shortcut: 'F5', iconBg: 'bg-amber-50' },
+  { id: 'cashier-desk', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F10', iconBg: 'bg-blue-50' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', iconBg: 'bg-purple-50' },
   { id: 'pricelist', name: 'Price List Viewer', desc: 'View item prices', icon: '💲', shortcut: 'F7', iconBg: 'bg-green-50' },
   { id: 'journal', name: 'Journal Entry', desc: 'Manual journal entries', icon: '📒', shortcut: 'F8', iconBg: 'bg-red-50' },
   { id: 'contra', name: 'Contra Entry', desc: 'Bank to cash transfers', icon: '🔄', shortcut: 'F9', iconBg: 'bg-amber-50' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'ledger', 'pricelist', 'journal', 'contra']
+const readyModules = ['sales', 'purchase', 'cashier', 'cashier-desk', 'ledger', 'pricelist', 'journal', 'contra']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = { 
   payment: '/payment?mode=Pay', 
   receipt: '/payment?mode=Receive',
   journal: '/payment', 
-  contra: '/payment' 
+  contra: '/payment',
+  'cashier-desk': '/cashier-desk'
 }
 
 function openModule(id) {
@@ -317,6 +319,7 @@ const routeMap = {
   F1: 'sales', F2: 'purchase', F3: 'payment',
   F4: 'receipt', F5: 'cashier', F6: 'ledger',
   F7: 'pricelist', F8: 'journal', F9: 'contra',
+  F10: 'cashier-desk',
 }
 
 import { useShortcuts } from '../services/shortcutManager'
@@ -332,6 +335,7 @@ useShortcuts({
   'F7': () => openModule('pricelist'),
   'F8': () => openModule('journal'),
   'F9': () => openModule('contra'),
+  'F10': () => openModule('cashier-desk'),
   'ESCAPE': () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }

@@ -290,23 +290,45 @@ def get_next_bill_no(naming_series="SINV-.YY.-"):
 
 @frappe.whitelist()
 def get_sales_invoices(query="", limit=20, posting_date=None):
-    """List Sales Invoices for modification."""
+    """List Sales Invoices for cashiering (Draft or Unpaid Submitted)."""
     date_filter = posting_date or frappe.utils.today()
-    kwargs = dict(
-        filters={"posting_date": date_filter},
-        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
+    
+    # Filter for Draft (docstatus=0) OR Submitted (docstatus=1) with outstanding balance
+    filters = [
+        ["posting_date", "=", date_filter],
+        ["docstatus", "<", 2],
+        ["status", "!=", "Cancelled"]
+    ]
+    
+    # We want either docstatus=0 OR (docstatus=1 AND outstanding_amount > 0)
+    # Since docstatus=0 invoices always have outstanding_amount (usually), 
+    # we can just filter by outstanding_amount > 0 if docstatus=1.
+    # Actually, easier to fetch and then filter or use complex filters.
+    
+    invoices = frappe.get_all(
+        "Sales Invoice",
+        filters=filters,
+        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus"],
         limit=int(limit),
         order_by="modified desc",
     )
-    if query:
-        kwargs["or_filters"] = {
-            "name": ["like", f"%{query}%"],
-            "customer_name": ["like", f"%{query}%"],
-        }
-    invoices = frappe.get_all("Sales Invoice", **kwargs)
+    
+    # Filter out submitted invoices that are fully paid
+    result = []
     for inv in invoices:
-        inv["grand_total"] = float(inv["grand_total"] or 0)
-    return invoices
+        if inv.docstatus == 0 or (inv.docstatus == 1 and float(inv.outstanding_amount or 0) > 0.01):
+            inv["grand_total"] = float(inv["grand_total"] or 0)
+            inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
+            result.append(inv)
+            
+    if query:
+        query = query.lower()
+        result = [
+            inv for inv in result 
+            if query in inv.name.lower() or query in (inv.customer_name or "").lower()
+        ]
+        
+    return result[:int(limit)]
 
 
 @frappe.whitelist()
@@ -366,10 +388,12 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	if not is_credit:
 		total_payment = cash_amount + upi_amount + bank_amount + discount_amount
-		if total_payment < grand_total - 0.01:
-			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{grand_total:.2f}.")
+		target_amount = float(si.outstanding_amount if si.docstatus == 1 else grand_total)
+		if total_payment < target_amount - 0.01:
+			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
-	si.submit()
+	if si.docstatus == 0:
+		si.submit()
 
 	if is_credit:
 		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted"}

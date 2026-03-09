@@ -322,13 +322,13 @@ export async function fetchBillingSettings() {
 // ─── Cashier / Draft Invoice Helpers ─────────────────────────────────────────
 
 /**
- * Fetch all Draft Sales Invoices (docstatus=0), optionally filtered by query.
+ * Fetch all Draft or Unpaid Submitted Sales Invoices, optionally filtered by query.
  *
- * PYTHON CALL: ssplbilling.api.ledger_api.get_sales_invoices
+ * PYTHON CALL: ssplbilling.api.sales_api.get_sales_invoices
  *
  * @param {string} [query]  Search text (invoice name or customer name)
  * @param {number} [limit]  Max rows to return (default 50)
- * @returns {Promise<Array<{name,customer,customer_name,posting_date,grand_total}>>}
+ * @returns {Promise<Array<{name,customer,customer_name,posting_date,grand_total,outstanding_amount,docstatus}>>}
  */
 export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "") {
   return frappeGet("ssplbilling.api.sales_api.get_sales_invoices", {
