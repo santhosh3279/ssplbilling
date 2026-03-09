@@ -244,7 +244,8 @@
     <CustomerLedger
       v-if="showLedgerWindow"
       :is-sub-window="true"
-      :customer-name="ledgerCustomerName"
+      :ledger-name="ledgerCustomerName"
+      :ledger-type="ledgerType"
       :initial-from-date="ledgerFromDate"
       :initial-to-date="ledgerToDate"
       @close="closeLedgerAndReturnToSearch"
@@ -383,6 +384,7 @@ const showCustomerSearchModal = ref(false)
 const searchType = ref('All')
 const showLedgerWindow = ref(false)
 const ledgerCustomerName = ref('')
+const ledgerType = ref('Customer')
 const ledgerFromDate = ref('')
 const ledgerToDate = ref('')
 const custSearchModalRef = ref(null)
@@ -410,6 +412,7 @@ function closeLedgerAndReturnToSearch() {
 function pickCust(item, dates) {
   showCustomerSearchModal.value = false
   ledgerCustomerName.value = item.name
+  ledgerType.value = item.type || 'Customer'
   if (dates) {
     ledgerFromDate.value = dates.from
     ledgerToDate.value = dates.to

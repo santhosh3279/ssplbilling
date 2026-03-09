@@ -12,7 +12,10 @@
             ← {{ isSubWindow ? 'Close' : 'Dashboard' }}
           </button>
           <span class="text-gray-300">|</span>
-          <h1 class="text-sm font-bold text-gray-800">Customer Ledger</h1>
+          <h1 class="text-sm font-bold text-gray-800">
+            <span v-if="selectedLedger">{{ selectedLedger.type }} Ledger</span>
+            <span v-else>Ledger Viewer</span>
+          </h1>
           <span v-if="ledgerData" class="rounded bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600">
             {{ ledgerData.entries.length }} entries
           </span>
@@ -40,52 +43,32 @@
     <div class="border-b border-gray-200 bg-white px-6 py-3">
       <div class="flex flex-wrap items-end gap-3">
 
-        <!-- Customer search -->
-        <div class="relative w-64">
+        <!-- Ledger search -->
+        <div class="relative w-80">
           <label class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            <span>Customer</span>
+            <span>Ledger Account / Party</span>
             <span class="font-normal opacity-70">
               <kbd class="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[9px]">Ctrl+L</kbd> Search
             </span>
           </label>
-          <input
-            ref="customerInputRef"
-            v-model="customerQuery"
-            @input="onCustomerSearch"
-            @keydown.down.prevent="cursorDown"
-            @keydown.up.prevent="cursorUp"
-            @keydown.enter.prevent="pickCursor"
-            @keydown.escape="customerDropdownOpen = false"
-            @blur="onCustomerBlur"
-            placeholder="Search customer..."
-            class="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none transition-colors focus:border-blue-500"
-            :class="selectedCustomer ? 'bg-blue-50 font-semibold text-blue-800' : 'bg-white text-gray-800'"
-            autocomplete="off"
-          />
-          <!-- Dropdown -->
-          <ul
-            v-if="customerDropdownOpen && customerOptions.length"
-            class="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg"
+          <div 
+            class="flex items-center justify-between rounded border border-gray-300 px-3 py-2 text-sm cursor-pointer hover:border-blue-400 transition-colors"
+            :class="selectedLedger ? 'bg-blue-50 font-semibold text-blue-800 border-blue-300' : 'bg-white text-gray-400'"
+            @click="openCustomerSearch"
           >
-            <li
-              v-for="(c, idx) in customerOptions"
-              :key="c.name"
-              @mousedown.prevent="pickCustomer(c)"
-              class="cursor-pointer px-3 py-2 text-xs"
-              :class="cursor === idx ? 'bg-blue-50' : 'hover:bg-gray-50'"
+            <div class="truncate flex items-center gap-2">
+              <span v-if="selectedLedger" class="px-1 py-0.5 rounded bg-blue-100 text-[8px] uppercase tracking-tighter text-blue-600">{{ selectedLedger.type }}</span>
+              <span v-if="selectedLedger">{{ selectedLedger.label || selectedLedger.customer_name }}</span>
+              <span v-else>Select account or party...</span>
+            </div>
+            <button
+              v-if="selectedLedger"
+              @click.stop="clearLedger"
+              class="ml-2 text-gray-400 hover:text-gray-600"
             >
-              <div class="font-semibold text-gray-800">{{ c.customer_name }}</div>
-              <div class="font-mono text-[10px] text-gray-400">{{ c.name }}</div>
-            </li>
-          </ul>
-          <!-- Clear button -->
-          <button
-            v-if="selectedCustomer"
-            @click="clearCustomer"
-            class="absolute right-2 top-7 text-gray-400 hover:text-gray-600"
-          >
-            ✕
-          </button>
+              ✕
+            </button>
+          </div>
         </div>
 
         <!-- From date -->
@@ -110,9 +93,9 @@
 
         <button
           @click="loadLedger"
-          :disabled="!selectedCustomer || loading"
+          :disabled="!selectedLedger || loading"
           class="rounded-lg px-5 py-2 text-sm font-semibold transition-colors"
-          :class="selectedCustomer && !loading
+          :class="selectedLedger && !loading
             ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
             : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
         >
@@ -152,7 +135,7 @@
         <!-- Empty / loading state -->
         <div v-if="!ledgerData && !loading && !error" class="flex flex-1 flex-col items-center justify-center gap-2 text-gray-400">
           <div class="text-4xl">📋</div>
-          <div class="text-sm font-semibold">Select a customer and load the ledger</div>
+          <div class="text-sm font-semibold">Search and select a ledger to view history</div>
         </div>
 
         <div v-else-if="loading" class="flex flex-1 items-center justify-center text-sm text-gray-400">
@@ -447,7 +430,7 @@
       ref="ledgerCustSearchModalRef"
       :show="showCustomerSearchModal"
       @close="closeCustomerSearchModal"
-      @select="(c, d) => { pickCustomer(c, d); closeCustomerSearchModal() }"
+      @select="(c, d) => { pickLedger(c, d); closeCustomerSearchModal() }"
     />
 
     <!-- ITEM SEARCH MODAL -->
@@ -468,13 +451,11 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { fetchCustomerLedger, fetchVoucherDetail, frappeGet } from '../api.js'
-import { searchCustomers } from '../customersearch.js'
+import { fetchLedger, fetchVoucherDetail, frappeGet } from '../api.js'
 import SalesEntry from './SalesEntry.vue'
 import StockLedger from './StockLedger.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
-import { createCustomer, updateCustomer } from '../api/customer.js'
 import { searchItems } from '../api.js'
 
 const props = defineProps({
@@ -482,9 +463,13 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  customerName: {
+  ledgerName: {
     type: String,
     default: ''
+  },
+  ledgerType: {
+    type: String,
+    default: 'Customer'
   },
   initialFromDate: {
     type: String,
@@ -592,82 +577,31 @@ function pickItem(item, dates) {
   openStockLedger(item.item_code, dates)
 }
 
-// ─── Customer Search Modal State ──────────────────────────────────────────────
+// ─── Ledger Search Modal State ──────────────────────────────────────────────
 const showCustomerSearchModal = ref(false)
-const custSearchQuery = ref('')
-const custSearchResults = ref([])
-const custSelectedIdx = ref(0)
-const newCustSaving = ref(false)
-const isCustLoading = ref(false)
-
-let _custDebounce = null
-watch(custSearchQuery, (q) => {
-  clearTimeout(_custDebounce)
-  if (!q.trim()) {
-    custSearchResults.value = []
-    return
-  }
-  isCustLoading.value = true
-  _custDebounce = setTimeout(async () => {
-    try {
-      custSearchResults.value = await searchCustomers(q)
-      custSelectedIdx.value = 0
-    } catch (e) {
-      console.error('Customer search failed:', e)
-    } finally {
-      isCustLoading.value = false
-    }
-  }, 300)
-})
+const ledgerCustSearchModalRef = ref(null)
 
 function openCustomerSearch() {
   showCustomerSearchModal.value = true
-  custSearchQuery.value = customerQuery.value
 }
 
 function closeCustomerSearchModal() {
   showCustomerSearchModal.value = false
 }
 
-async function refreshCustSearch() {
-  if (!custSearchQuery.value.trim()) return
-  isCustLoading.value = true
-  try {
-    custSearchResults.value = await searchCustomers(custSearchQuery.value)
-  } catch (e) {
-    console.error('Customer search refresh failed:', e)
-  } finally {
-    isCustLoading.value = false
+function pickLedger(l, dates) {
+  selectedLedger.value = l
+  if (dates) {
+    fromDate.value = dates.from
+    toDate.value = dates.to
   }
+  loadLedger()
 }
 
-async function saveEditCust(data) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const customerId = data.name || selectedCustomer.value?.name
-    const res = await updateCustomer(customerId, data)
-    if (selectedCustomer.value && selectedCustomer.value.name === customerId) {
-      selectedCustomer.value = { ...selectedCustomer.value, ...res }
-      customerQuery.value = res.customer_name
-    }
-    refreshCustSearch()
-    alert(`Customer ${res.customer_name} updated successfully!`)
-  } catch (e) { 
-    alert('Error: ' + (e?.message || 'Unknown')) 
-  }
-  newCustSaving.value = false
-}
-
-async function saveNewCust(data) {
-  if (!data.customer_name.trim()) { alert('Customer name is required'); return }
-  newCustSaving.value = true
-  try {
-    const res = await createCustomer(data)
-    pickCustomer({ name: res.name, customer_name: res.customer_name })
-    showCustomerSearchModal.value = false
-  } catch (e) { alert('Error: ' + (e?.message || 'Unknown')) }
-  newCustSaving.value = false
+function clearLedger() {
+  selectedLedger.value = null
+  ledgerData.value = null
+  error.value = ''
 }
 
 // ─── Zoom ─────────────────────────────────────────────────────────────────────
@@ -686,11 +620,7 @@ watch(zoomPercent, (newZoom) => {
 const today = new Date().toISOString().slice(0, 10)
 const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
 
-const customerQuery = ref('')
-const customerOptions = ref([])
-const customerDropdownOpen = ref(false)
-const selectedCustomer = ref(null)
-const cursor = ref(-1)
+const selectedLedger = ref(null)
 const fromDate = ref(ninetyDaysAgo)
 const toDate = ref(today)
 
@@ -707,9 +637,6 @@ const loadingDetail = ref(false)
 // Ledger row keyboard navigation
 const focusedIdx = ref(-1)
 const tableBodyRef = ref(null)
-
-// DOM refs
-const customerInputRef = ref(null)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(n) {
@@ -747,59 +674,9 @@ function openInErpNext(voucherType, voucherNo) {
   window.open(`/app/${slug}/${voucherNo}`, '_blank')
 }
 
-// ─── Customer search ──────────────────────────────────────────────────────────
-let searchTimer = null
-function onCustomerSearch() {
-  selectedCustomer.value = null
-  cursor.value = -1
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(async () => {
-    if (!customerQuery.value.trim()) { customerOptions.value = []; customerDropdownOpen.value = false; return }
-    try {
-      customerOptions.value = await searchCustomers(customerQuery.value)
-      customerDropdownOpen.value = !!customerOptions.value.length
-    } catch { customerOptions.value = [] }
-  }, 220)
-}
-
-function pickCustomer(c) {
-  selectedCustomer.value = c
-  customerQuery.value = c.customer_name
-  customerOptions.value = []
-  customerDropdownOpen.value = false
-  cursor.value = -1
-  loadLedger()
-}
-
-function clearCustomer() {
-  selectedCustomer.value = null
-  customerQuery.value = ''
-  customerOptions.value = []
-  customerDropdownOpen.value = false
-  ledgerData.value = null
-  error.value = ''
-  nextTick(() => customerInputRef.value?.focus())
-}
-
-function cursorDown() {
-  if (!customerDropdownOpen.value) return
-  cursor.value = Math.min(cursor.value + 1, customerOptions.value.length - 1)
-}
-function cursorUp() {
-  cursor.value = Math.max(cursor.value - 1, 0)
-}
-function pickCursor() {
-  if (cursor.value >= 0 && customerOptions.value[cursor.value]) {
-    pickCustomer(customerOptions.value[cursor.value])
-  }
-}
-function onCustomerBlur() {
-  setTimeout(() => { customerDropdownOpen.value = false }, 150)
-}
-
 // ─── Load Ledger ──────────────────────────────────────────────────────────────
 async function loadLedger() {
-  if (!selectedCustomer.value) return
+  if (!selectedLedger.value) return
   loading.value = true
   error.value = ''
   ledgerData.value = null
@@ -808,8 +685,9 @@ async function loadLedger() {
   focusedIdx.value = -1
 
   try {
-    ledgerData.value = await fetchCustomerLedger(
-      selectedCustomer.value.name,
+    ledgerData.value = await fetchLedger(
+      selectedLedger.value.name,
+      selectedLedger.value.type || 'Account',
       fromDate.value,
       toDate.value,
     )
@@ -820,12 +698,11 @@ async function loadLedger() {
   }
 }
 
-// Auto-reload when dates change (only if customer already selected)
-watch(fromDate, () => { if (selectedCustomer.value) loadLedger() })
-watch(toDate,   () => { if (selectedCustomer.value) loadLedger() })
+// Auto-reload when dates change
+watch(fromDate, () => { if (selectedLedger.value) loadLedger() })
+watch(toDate,   () => { if (selectedLedger.value) loadLedger() })
 
 // ─── Row hover/keyboard → update preview ───────────────────────────────────
-let previewTimer = null
 async function updatePreview(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
   if (selectedEntry.value === entry) return
@@ -833,24 +710,28 @@ async function updatePreview(entry, idx) {
   selectedEntry.value = entry
   voucherDetail.value = null
   
-  clearTimeout(previewTimer)
-  previewTimer = setTimeout(async () => {
-    loadingDetail.value = true
-    try {
-      voucherDetail.value = await fetchVoucherDetail(entry.voucher_type, entry.voucher_no)
-    } catch (e) {
-      voucherDetail.value = { error: e.message }
-    } finally {
-      loadingDetail.value = false
-    }
-  }, 150) // Small debounce for hover/keyboard speed
+  // 1. Try to get from pre-fetched cache
+  const cached = ledgerData.value?.voucher_details?.[entry.voucher_no]
+  if (cached) {
+    voucherDetail.value = cached
+    return
+  }
+
+  // 2. Fallback to API if not in cache (e.g. legacy data or unusual type)
+  loadingDetail.value = true
+  try {
+    voucherDetail.value = await fetchVoucherDetail(entry.voucher_type, entry.voucher_no)
+  } catch (e) {
+    voucherDetail.value = { error: e.message }
+  } finally {
+    loadingDetail.value = false
+  }
 }
 
 function onRowMouseEnter(entry, idx) {
   updatePreview(entry, idx)
 }
 
-// ─── Row click/Enter → open SalesEntry if invoice ─────────────────────────────
 async function onRowClick(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
 
@@ -859,9 +740,8 @@ async function onRowClick(entry, idx) {
     return
   }
 
-  // If not invoice, toggle/ensure preview is open
   if (selectedEntry.value === entry && voucherDetail.value) {
-    // Already showing, do nothing or could closeDetail() if toggle preferred
+    // Already showing
   } else {
     updatePreview(entry, idx)
   }
@@ -878,7 +758,6 @@ function closeDetail() {
   clearTimeout(previewTimer)
 }
 
-// ─── Keyboard navigation for ledger rows ──────────────────────────────────────
 function onTableKeydown(e) {
   if (!ledgerData.value?.entries?.length) return
   const len = ledgerData.value.entries.length
@@ -899,7 +778,6 @@ function onTableKeydown(e) {
     if (entry.voucher_type === 'Sales Invoice') {
       openInternalSalesEntry(entry.voucher_no)
     } else {
-      // For other types, Enter just ensures preview is loaded immediately (no debounce)
       onRowClick(entry, focusedIdx.value)
     }
   }
@@ -947,39 +825,42 @@ function onGlobalKeydown(e) {
     return
   }
 
-  // Only handle arrow/enter when customer input is not focused and ledger is loaded
-  if (document.activeElement === customerInputRef.value) return
   if (!ledgerData.value) return
   onTableKeydown(e)
 }
 
 onMounted(async () => {
-  nextTick(() => customerInputRef.value?.focus())
   window.addEventListener('keydown', onGlobalKeydown)
 
-  // Apply initial dates if provided
   if (props.initialFromDate) fromDate.value = props.initialFromDate
   if (props.initialToDate) toDate.value = props.initialToDate
 
-  // Auto-load if customer is in query params (or prop)
-  const targetCust = props.customerName || route.query.customer
-  if (targetCust) {
+  const targetName = props.ledgerName || route.query.customer || route.query.ledger
+  const targetType = props.ledgerType || (route.query.customer ? 'Customer' : 'Account')
+
+  if (targetName) {
     loading.value = true
     try {
-      const cust = await frappeGet('frappe.client.get', {
-        doctype: 'Customer',
-        name: targetCust
-      })
-      if (cust) {
-        selectedCustomer.value = {
-          name: cust.name,
-          customer_name: cust.customer_name
-        }
-        customerQuery.value = cust.customer_name
-        loadLedger()
+      let label = targetName
+      if (targetType === 'Customer') {
+        const doc = await frappeGet('frappe.client.get', { doctype: 'Customer', name: targetName })
+        label = doc.customer_name
+      } else if (targetType === 'Supplier') {
+        const doc = await frappeGet('frappe.client.get', { doctype: 'Supplier', name: targetName })
+        label = doc.supplier_name
+      } else {
+        const doc = await frappeGet('frappe.client.get', { doctype: 'Account', name: targetName })
+        label = doc.account_name
       }
+
+      selectedLedger.value = {
+        name: targetName,
+        label: label,
+        type: targetType
+      }
+      loadLedger()
     } catch (e) {
-      console.warn('[Ledger] Failed to auto-load customer:', e.message)
+      console.warn('[Ledger] Failed to auto-load:', e.message)
     } finally {
       loading.value = false
     }

@@ -422,6 +422,17 @@
       @select="pickCust"
     />
 
+    <!-- CUSTOMER LEDGER SUB-WINDOW -->
+    <CustomerLedger
+      v-if="showCustomerLedgerWindow"
+      :is-sub-window="true"
+      :ledger-name="ledgerCustomerName"
+      :ledger-type="ledgerType"
+      :initial-from-date="ledgerFromDate"
+      :initial-to-date="ledgerToDate"
+      @close="showCustomerLedgerWindow = false"
+    />
+
     <!-- ITEM SEARCH MODAL -->
     <ItemSearch
       ref="itemSearchModalRef"
@@ -639,12 +650,36 @@ function openCustomerSearch() {
   })
 }
 
-function pickCust(c) {
+function pickCust(c, dates) {
+  if (c.type !== 'Customer') {
+    showCustomerSearchModal.value = false
+    openCustomerLedger(c.name, c.type, dates)
+    return
+  }
   customer.value = c.name; 
   custSearch.value = c.label || c.customer_name; 
   showCustomerSearchModal.value = false; 
   selectedCustomerDetails.value = c;
   nextTick(() => newCodeInput.value?.focus())
+}
+
+const showCustomerLedgerWindow = ref(false)
+const ledgerCustomerName = ref('')
+const ledgerType = ref('Customer')
+const ledgerFromDate = ref('')
+const ledgerToDate = ref('')
+
+function openCustomerLedger(name, type, dates = null) {
+  ledgerCustomerName.value = name
+  ledgerType.value = type
+  if (dates) {
+    ledgerFromDate.value = dates.from
+    ledgerToDate.value = dates.to
+  } else {
+    ledgerFromDate.value = ''
+    ledgerToDate.value = ''
+  }
+  showCustomerLedgerWindow.value = true
 }
 
 function closeCustomerSearchModal() {
@@ -1328,6 +1363,7 @@ useShortcuts(salesEntryShortcuts({
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showModifyBill.value) { showModifyBill.value = false; return }
+    if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
     handleBack()
   }
 }))

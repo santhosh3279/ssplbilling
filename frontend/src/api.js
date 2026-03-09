@@ -324,7 +324,7 @@ export async function fetchBillingSettings() {
 /**
  * Fetch all Draft Sales Invoices (docstatus=0), optionally filtered by query.
  *
- * PYTHON CALL: ssplbilling.api.sales_api.get_sales_invoices
+ * PYTHON CALL: ssplbilling.api.ledger_api.get_sales_invoices
  *
  * @param {string} [query]  Search text (invoice name or customer name)
  * @param {number} [limit]  Max rows to return (default 50)
@@ -341,7 +341,7 @@ export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "
 /**
  * Fetch full details of a single Sales Invoice (must be Draft).
  *
- * PYTHON CALL: ssplbilling.api.sales_api.get_sales_invoice
+ * PYTHON CALL: ssplbilling.api.ledger_api.get_sales_invoice
  *
  * @param {string} invoiceName
  * @returns {Promise<Object>}  Invoice doc with items array
@@ -355,7 +355,7 @@ export async function getInvoiceDetails(invoiceName) {
 /**
  * Submit a Draft Sales Invoice and create Payment Entry(ies).
  *
- * PYTHON CALL: ssplbilling.api.sales_api.submit_invoice_with_payment
+ * PYTHON CALL: ssplbilling.api.ledger_api.submit_invoice_with_payment
  *
  * @param {{invoice_name: string, cash_amount: number, upi_amount: number}} payload
  * @returns {Promise<{invoice_name, payment_entries, grand_total, status}>}
@@ -366,12 +366,29 @@ export async function submitInvoiceWithPayment(payload) {
   });
 }
 
+/**
+ * Fetch GL Entry rows for a ledger (Customer, Supplier, or Account) with running balance.
+ *
+ * @param {string} ledgerName
+ * @param {string} ledgerType  'Customer', 'Supplier', or 'Account'
+ * @param {string} fromDate    ISO date
+ * @param {string} toDate      ISO date
+ */
+export async function fetchLedger(ledgerName, ledgerType, fromDate, toDate) {
+  return frappeGet("ssplbilling.api.ledger_api.get_ledger", {
+    ledger_name: ledgerName,
+    ledger_type: ledgerType,
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}
+
 // ─── Customer Ledger ──────────────────────────────────────────────────────────
 
 /**
  * Fetch GL Entry rows for a customer with running balance.
  *
- * PYTHON CALL: ssplbilling.api.sales_api.get_customer_ledger
+ * PYTHON CALL: ssplbilling.api.ledger_api.get_customer_ledger
  *
  * @param {string} customer   Customer name / ID
  * @param {string} fromDate   ISO date "YYYY-MM-DD"
@@ -380,7 +397,7 @@ export async function submitInvoiceWithPayment(payload) {
  *   opening_balance, closing_balance, total_debit, total_credit, entries}>}
  */
 export async function fetchCustomerLedger(customer, fromDate, toDate) {
-  return frappeGet("ssplbilling.api.sales_api.get_customer_ledger", {
+  return frappeGet("ssplbilling.api.ledger_api.get_customer_ledger", {
     customer,
     from_date: fromDate,
     to_date: toDate,
@@ -390,14 +407,14 @@ export async function fetchCustomerLedger(customer, fromDate, toDate) {
 /**
  * Fetch summary detail for a voucher (Sales Invoice, Payment Entry, etc.)
  *
- * PYTHON CALL: ssplbilling.api.sales_api.get_voucher_detail
+ * PYTHON CALL: ssplbilling.api.ledger_api.get_voucher_detail
  *
  * @param {string} voucherType  e.g. "Sales Invoice"
  * @param {string} voucherNo    e.g. "SINV-2026-001"
  * @returns {Promise<Object>}
  */
 export async function fetchVoucherDetail(voucherType, voucherNo) {
-  return frappeGet("ssplbilling.api.sales_api.get_voucher_detail", {
+  return frappeGet("ssplbilling.api.ledger_api.get_voucher_detail", {
     voucher_type: voucherType,
     voucher_no: voucherNo,
   });
@@ -415,7 +432,7 @@ export async function fetchVoucherDetail(voucherType, voucherNo) {
  * @returns {Promise<Object>}
  */
 export async function fetchStockLedger(itemCode, fromDate, toDate, warehouse = null) {
-  return frappeGet("ssplbilling.api.sales_api.get_stock_ledger", {
+  return frappeGet("ssplbilling.api.ledger_api.get_stock_ledger", {
     item_code: itemCode,
     from_date: fromDate,
     to_date: toDate,
@@ -429,21 +446,21 @@ export async function fetchStockLedger(itemCode, fromDate, toDate, warehouse = n
  * Fetch submitted Sales Invoices with outstanding balance for a customer.
  */
 export async function fetchOutstandingInvoices(customer) {
-  return frappeGet("ssplbilling.api.sales_api.get_outstanding_invoices", { customer })
+  return frappeGet("ssplbilling.api.ledger_api.get_outstanding_invoices", { customer })
 }
 
 /**
  * Fetch submitted Purchase Invoices with outstanding balance for a supplier.
  */
 export async function fetchOutstandingPurchaseInvoices(supplier) {
-  return frappeGet("ssplbilling.api.sales_api.get_outstanding_purchase_invoices", { supplier })
+  return frappeGet("ssplbilling.api.ledger_api.get_outstanding_purchase_invoices", { supplier })
 }
 
 /**
  * Create and submit a Payment Entry (Receive / Pay / Internal Transfer).
  */
 export async function createPaymentEntry(payload) {
-  return frappePost("ssplbilling.api.sales_api.create_payment_entry", {
+  return frappePost("ssplbilling.api.ledger_api.create_payment_entry", {
     data: JSON.stringify(payload),
   })
 }
@@ -452,7 +469,7 @@ export async function createPaymentEntry(payload) {
  * Create and submit a Journal Entry.
  */
 export async function createJournalEntry(payload) {
-  return frappePost("ssplbilling.api.sales_api.create_journal_entry", {
+  return frappePost("ssplbilling.api.ledger_api.create_journal_entry", {
     data: JSON.stringify(payload),
   })
 }
@@ -461,7 +478,7 @@ export async function createJournalEntry(payload) {
  * Search suppliers by name.
  */
 export async function searchSuppliers(query = "") {
-  return frappeGet("ssplbilling.api.sales_api.search_suppliers", { query })
+  return frappeGet("ssplbilling.api.ledger_api.search_suppliers", { query })
 }
 
 /**
@@ -470,7 +487,7 @@ export async function searchSuppliers(query = "") {
  * @param {string|null} accountType  Optional filter: "Cash", "Bank", "CashBank", etc.
  */
 export async function searchAccounts(query = "", accountType = null) {
-  return frappeGet("ssplbilling.api.sales_api.search_accounts", {
+  return frappeGet("ssplbilling.api.ledger_api.search_accounts", {
     query,
     ...(accountType && { account_type: accountType }),
   })

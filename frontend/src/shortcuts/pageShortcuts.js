@@ -15,13 +15,3 @@ export const entryFormShortcuts = (handlers) => ({
   'F4':     handlers.searchItem || (() => {}),
   'DELETE': handlers.deleteRow || (() => {}),
 });
-
-/**
- * Common search modal shortcuts
- */
-export const searchModalShortcuts = (handlers) => ({
-  'ESCAPE': handlers.close,
-  'ENTER':  handlers.select,
-  'F7':     handlers.cycleFilter || (() => {}),
-  'PAGEUP': handlers.focusSearch || (() => {}),
-});
