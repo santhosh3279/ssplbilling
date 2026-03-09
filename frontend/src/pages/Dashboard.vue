@@ -273,8 +273,11 @@ import ItemSearch from '../components/ItemSearch.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
+import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
+
+const { refreshItemCache } = useItemCache()
 
 // ==================== USER ====================
 const userInitials = computed(() => {
@@ -516,6 +519,7 @@ onMounted(() => {
   window.addEventListener('wb-global-item-search', openItemSearch)
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   fetchSettings()
+  refreshItemCache('Sales') // Preload items for fast entry
 })
 onUnmounted(() => {
   window.removeEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))

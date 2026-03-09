@@ -17,8 +17,10 @@
           <button 
             @click="preloadItems(true)" 
             class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 transition-colors"
+            :disabled="loading"
           >
-            🔄 Refresh <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
+            <span v-if="loading" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mr-1"></span>
+            <span v-else>🔄</span> Refresh <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
           </button>
           <button @click="$emit('close')" class="text-2xl text-gray-400">✕</button>
         </div>
@@ -33,7 +35,7 @@
           placeholder="Type item code or name..."
           @keydown.esc.stop="$emit('close')"
         />
-        <div v-if="loading" class="absolute right-8 top-1/2 -translate-y-1/2">
+        <div v-if="loading && !allItems.length" class="absolute right-8 top-1/2 -translate-y-1/2">
           <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
         </div>
       </div>
@@ -127,7 +129,7 @@
 
 <script setup>
 import { ref, nextTick, watch, computed } from 'vue'
-import { frappeGet } from '../api.js'
+import { useItemCache } from '../services/itemCache.js'
 import DateFilter from './DateFilter.vue'
 
 const props = defineProps({
@@ -149,41 +151,23 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'select'])
 
+const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading } = useItemCache()
+
 const query = ref('')
-const allItems = ref([])
 const selectedIdx = ref(0)
-const loading = ref(false)
 const searchInput = ref(null)
 const scrollContainer = ref(null)
 const showDateModal = ref(false)
 
-// Global cache to avoid redundant API calls
-const ITEM_CACHE = new Map()
-
 // ─── Data Preloading ─────────────────────────────────────────────────────────
 
 async function preloadItems(forceRefresh = false) {
-  const cacheKey = `${props.searchType}-${props.priceList}-${props.warehouse || 'all'}`
-  
-  if (!forceRefresh && ITEM_CACHE.has(cacheKey)) {
-    allItems.value = ITEM_CACHE.get(cacheKey)
-    return
-  }
+  if (!forceRefresh && allItems.value.length > 0) return
 
-  loading.value = true
   try {
-    const data = await frappeGet('ssplbilling.api.dashboard_api.get_all_items_detailed', {
-      search_type: props.searchType,
-      price_list: props.priceList,
-      warehouse: props.warehouse || null
-    })
-
-    allItems.value = data || []
-    ITEM_CACHE.set(cacheKey, allItems.value)
+    await refreshItemCache(props.searchType, props.priceList, props.warehouse || null)
   } catch (e) {
     console.error('[ItemSearch] Preload failed:', e)
-  } finally {
-    loading.value = false
   }
 }
 

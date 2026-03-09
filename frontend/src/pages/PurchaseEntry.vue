@@ -485,11 +485,14 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
+import { useItemCache } from '../services/itemCache.js'
 
 
 const router = useRouter()
 const route = useRoute()
 const API = '/api/method/ssplbilling.api.purchase_api'
+
+const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync } = useItemCache()
 
 const props = defineProps({
   isSubWindow: {
@@ -642,6 +645,22 @@ const insightResource = createResource({ url: `${API}.get_item_insight` })
 const newPending = ref({ item_name: '', uom: '', rate: null })
 
 async function lookupItem(code) {
+  // 1. Try local cache first
+  const cached = lookupItemInCache(code)
+  if (cached) {
+    return {
+      found: true,
+      item_code: cached.item_code,
+      item_name: cached.item_name,
+      uom: cached.uom,
+      rate: cached.price || cached.rate || 0,
+      stock_qty: cached.stock || 0,
+      tax_rate: cached.tax_rate,
+      warehouse: cached.warehouse
+    }
+  }
+
+  // 2. Fallback to API if not found or cache empty
   try {
     await itemLookup.submit({ item_code: code, price_list: priceList.value, warehouse: defaultWarehouse.value })
     const d = itemLookup.data?.message || itemLookup.data
@@ -1192,6 +1211,11 @@ useShortcuts(purchaseEntryShortcuts({
 onMounted(() => {
   fetchSeriesList()
   fetchDropdownOptions()
+  
+  // Ensure item cache is populated (TTL 5 mins)
+  if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
+    refreshItemCache('Purchase', priceList.value, defaultWarehouse.value)
+  }
   
   if (props.invoiceName) {
     loadInvoice(props.invoiceName)
