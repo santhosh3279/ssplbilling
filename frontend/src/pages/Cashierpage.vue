@@ -41,7 +41,14 @@
               class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             />
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-1 items-center">
+            <button 
+              @click="adjustDate(-1)"
+              class="rounded-lg bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-all border border-slate-200"
+              title="Previous Day"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
             <input 
               v-model="filterDate"
               @change="loadInvoices"
@@ -49,13 +56,42 @@
               class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-blue-500 transition-all"
             />
             <button 
+              @click="adjustDate(1)"
+              class="rounded-lg bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-all border border-slate-200"
+              title="Next Day"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button 
               @click="loadInvoices"
-              class="rounded-lg bg-slate-100 px-3 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-all"
+              class="rounded-lg bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-all border border-slate-200"
               title="Refresh List"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             </button>
           </div>
+          
+          <button 
+            @click="toggleUnpaid"
+            class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all border shadow-sm"
+            :class="showUnpaid 
+              ? 'bg-rose-50 text-rose-600 border-rose-200' 
+              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'"
+          >
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              <span>Include Unpaid Submitted</span>
+            </div>
+            <div 
+              class="w-8 h-4 rounded-full relative transition-all duration-200 border"
+              :class="showUnpaid ? 'bg-rose-500 border-rose-600' : 'bg-slate-200 border-slate-300'"
+            >
+              <div 
+                class="absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all duration-200"
+                :style="{ left: showUnpaid ? '18px' : '2px' }"
+              ></div>
+            </div>
+          </button>
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
@@ -65,7 +101,7 @@
           </div>
           <div v-else-if="invoices.length === 0" class="flex flex-col items-center justify-center py-20 opacity-30">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-slate-400"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span class="text-sm font-medium text-slate-500">No draft invoices found</span>
+            <span class="text-sm font-medium text-slate-500">No invoices found</span>
           </div>
           <div v-else class="px-3 pb-4">
             <button 
@@ -378,6 +414,7 @@ const successMsg = ref('')
 
 const searchQuery = ref('')
 const filterDate = ref(new Date().toISOString().slice(0, 10))
+const showUnpaid = ref(false)
 
 const payments = ref({
   cash: 0,
@@ -474,12 +511,24 @@ function formatDate(dateStr) {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value)
+    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, showUnpaid.value)
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
     loadingList.value = false
   }
+}
+
+function adjustDate(days) {
+  const d = new Date(filterDate.value)
+  d.setDate(d.getDate() + days)
+  filterDate.value = d.toISOString().slice(0, 10)
+  loadInvoices()
+}
+
+function toggleUnpaid() {
+  showUnpaid.value = !showUnpaid.value
+  loadInvoices()
 }
 
 let searchTimeout = null

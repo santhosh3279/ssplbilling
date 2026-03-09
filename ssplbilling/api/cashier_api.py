@@ -27,15 +27,20 @@ def _get_item_tax_rate(item_code):
     return float(sum(d.tax_rate or 0 for d in details)) / 2
 
 @frappe.whitelist()
-def get_sales_invoices(query="", limit=20, posting_date=None):
-    """List only Draft Sales Invoices for cashiering."""
+def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False):
+    """List Draft (and optionally Unpaid Submitted) Sales Invoices for cashiering."""
     date_filter = posting_date or frappe.utils.today()
+    show_unpaid = frappe.parse_json(show_unpaid)
     
     filters = [
         ["posting_date", "=", date_filter],
-        ["docstatus", "=", 0],
         ["status", "!=", "Cancelled"]
     ]
+    
+    if show_unpaid:
+        filters.append(["docstatus", "<", 2])
+    else:
+        filters.append(["docstatus", "=", 0])
     
     invoices = frappe.get_all(
         "Sales Invoice",
@@ -45,18 +50,22 @@ def get_sales_invoices(query="", limit=20, posting_date=None):
         order_by="modified desc",
     )
     
+    # Filter out submitted invoices that are fully paid if show_unpaid is True
+    result = []
     for inv in invoices:
-        inv["grand_total"] = float(inv["grand_total"] or 0)
-        inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
+        if inv.docstatus == 0 or (inv.docstatus == 1 and float(inv.outstanding_amount or 0) > 0.01):
+            inv["grand_total"] = float(inv["grand_total"] or 0)
+            inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
+            result.append(inv)
             
     if query:
         query = query.lower()
-        invoices = [
-            inv for inv in invoices 
+        result = [
+            inv for inv in result 
             if query in inv.name.lower() or query in (inv.customer_name or "").lower()
         ]
         
-    return invoices[:int(limit)]
+    return result[:int(limit)]
 
 @frappe.whitelist()
 def get_sales_invoice(invoice_name):

@@ -337,13 +337,16 @@ export async function fetchDashboardSettings() {
  *
  * @param {string} [query]  Search text (invoice name or customer name)
  * @param {number} [limit]  Max rows to return (default 50)
+ * @param {string} [postingDate]
+ * @param {boolean} [showUnpaid]
  * @returns {Promise<Array<{name,customer,customer_name,posting_date,grand_total,outstanding_amount,docstatus}>>}
  */
-export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "") {
+export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "", showUnpaid = false) {
   return frappeGet("ssplbilling.api.cashier_api.get_sales_invoices", {
     query,
     limit,
     ...(postingDate && { posting_date: postingDate }),
+    show_unpaid: showUnpaid
   });
 }
 
