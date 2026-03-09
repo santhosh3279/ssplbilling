@@ -205,16 +205,28 @@
           </div>
 
           <template v-else>
-            <!-- AMOUNT TO COLLECT -->
-            <div class="rounded-2xl bg-white p-6 text-center border-2 border-slate-100 shadow-sm relative overflow-hidden">
+            <!-- TOP SUMMARY CARD -->
+            <div class="rounded-2xl bg-white border-2 border-slate-100 shadow-sm relative overflow-hidden">
               <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-              <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Amount to Collect</div>
-              <div class="text-4xl font-black tracking-tight text-slate-900 font-mono">
-                ₹{{ fmt(amountToCollect) }}
+              <div class="grid grid-cols-2 divide-x divide-slate-100">
+                <div class="p-5 text-center">
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Bill Amount</div>
+                  <div class="text-2xl font-black tracking-tight text-slate-900 font-mono">
+                    ₹{{ fmt(amountToCollect) }}
+                  </div>
+                </div>
+                <div class="p-5 text-center bg-slate-50/30">
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Balance Due</div>
+                  <div class="text-2xl font-black tracking-tight font-mono" :class="balance <= 0.01 ? 'text-emerald-600' : 'text-rose-600'">
+                    ₹{{ fmt(Math.max(0, balance)) }}
+                  </div>
+                </div>
               </div>
-              <div v-if="isCredit" class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-600 border border-purple-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m5 15 7 7 7-7"/></svg>
-                Credit Ledger
+              <div v-if="isCredit" class="pb-3 text-center border-t border-slate-100 pt-2">
+                <div class="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-600 border border-purple-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m5 15 7 7 7-7"/></svg>
+                  Credit Ledger
+                </div>
               </div>
             </div>
 
@@ -536,9 +548,8 @@ async function selectInvoice(inv) {
     selectedInvoice.value = details
     previewItems.value = details.items || []
     
-    payments.value.cash = details.docstatus === 1 
-      ? Number(details.outstanding_amount || 0) 
-      : Number(details.grand_total || 0)
+    // Start at 0 so Balance Due shows the full bill amount
+    payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
       
     await loadSeriesSettings(details.naming_series)
     
@@ -569,11 +580,7 @@ async function loadSeriesSettings(series) {
 
 function toggleCredit() {
   isCredit.value = !isCredit.value
-  if (isCredit.value) {
-    payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
-  } else {
-    payments.value.cash = amountToCollect.value
-  }
+  payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
 }
 
 function printPlaceholder() {
