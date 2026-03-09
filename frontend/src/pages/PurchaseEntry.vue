@@ -437,6 +437,8 @@
       v-if="showPriceListUpdate"
       :is-sub-window="true"
       :item-code="priceListItemCode"
+      :selected-price-list="priceList"
+      :initial-discount="priceListUpdateDiscount"
       @close="closePriceListUpdate"
       @saved="onPriceListSaved"
     />
@@ -766,6 +768,7 @@ async function addNewItem() {
   // Show Price List Update BEFORE adding to grid and resetting
   priceListUpdateTargetIdx.value = -1
   priceListItemCode.value = r.item_code
+  priceListUpdateDiscount.value = 0 // Default for new item
   showPriceListUpdate.value = true
 }
 
@@ -773,6 +776,7 @@ async function addNewItem() {
 function onQtyEnter(idx) {
   priceListUpdateTargetIdx.value = idx
   priceListItemCode.value = items.value[idx].item_code
+  priceListUpdateDiscount.value = items.value[idx].discount || 0
   showPriceListUpdate.value = true
 }
 
@@ -791,7 +795,7 @@ function finalizeAddItem() {
       uom: r.uom, 
       qty: newQty.value, 
       rate: r.rate, 
-      discount: 0, 
+      discount: priceListUpdateDiscount.value, 
       tax_rate: r.tax_rate ?? defaultTaxRate.value, 
       warehouse: r.warehouse, 
       deleted: false 
@@ -801,6 +805,7 @@ function finalizeAddItem() {
   newItemCode.value = ''; 
   newQty.value = 1; 
   newPending.value = { item_name: '', uom: '', rate: null }; 
+  priceListUpdateDiscount.value = 0;
   focusNewCode()
 }
 
@@ -810,6 +815,7 @@ function restoreItem(idx) { items.value[idx].deleted = false }
 // ==================== PRICE LIST UPDATE ====================
 const showPriceListUpdate = ref(false)
 const priceListItemCode = ref('')
+const priceListUpdateDiscount = ref(0)
 const priceListUpdateTargetIdx = ref(null) // null = none, -1 = new row, 0+ = existing row
 
 function closePriceListUpdate() {
@@ -824,16 +830,22 @@ function closePriceListUpdate() {
   priceListUpdateTargetIdx.value = null
 }
 
-function onPriceListSaved(changed) {
-  // If the current price list was updated, sync it back to the entry
-  const current = changed.find(p => p.price_list === priceList.value)
-  if (!current) return
+function onPriceListSaved(data) {
+  const { changedPrices, discount: newDisc } = data
+  
+  // Update local discount ref first
+  priceListUpdateDiscount.value = newDisc
 
+  // If the current price list was updated, sync its rate back to the entry
+  const current = changedPrices.find(p => p.price_list === priceList.value)
+  
   const targetIdx = priceListUpdateTargetIdx.value
   if (targetIdx === -1) {
-    newPending.value.rate = current.rate
+    if (current) newPending.value.rate = current.rate
+    // finalizeAddItem will pick up priceListUpdateDiscount.value
   } else if (targetIdx !== null && targetIdx >= 0) {
-    items.value[targetIdx].rate = current.rate
+    if (current) items.value[targetIdx].rate = current.rate
+    items.value[targetIdx].discount = newDisc
   }
 }
 

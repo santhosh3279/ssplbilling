@@ -48,13 +48,14 @@
             />
           </div>
 
-          <table v-else class="w-full text-left">
+          <table v-else class="w-full text-left border-collapse">
             <thead class="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Price List</th>
                 <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Type</th>
                 <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Current Rate</th>
-                <th class="w-48 px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">New Rate</th>
+                <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">New Rate</th>
+                <th v-if="selectedPriceList" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Disc %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -67,6 +68,7 @@
               >
                 <td class="px-6 py-4">
                   <div class="font-semibold text-gray-800">{{ p.price_list }}</div>
+                  <div v-if="p.price_list === selectedPriceList" class="text-[10px] font-bold text-blue-500 uppercase">Selected in entry</div>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex gap-2">
@@ -88,6 +90,20 @@
                     @keydown.up.prevent="moveRow(idx, -1)"
                     @keydown.down.prevent="moveRow(idx, 1)"
                   />
+                </td>
+                <td v-if="selectedPriceList" class="px-6 py-4 text-right">
+                  <input 
+                    v-if="p.price_list === selectedPriceList"
+                    ref="discountInputRef"
+                    type="number" 
+                    v-model.number="discount" 
+                    step="0.5"
+                    min="0"
+                    max="100"
+                    class="w-20 rounded border border-blue-300 bg-blue-50 px-3 py-1.5 text-right font-mono font-bold text-blue-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    @keydown.enter="saveAll"
+                  />
+                  <span v-else class="text-gray-300">--</span>
                 </td>
               </tr>
             </tbody>
@@ -123,13 +139,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
-  itemCode: { type: String, default: '' }
+  itemCode: { type: String, default: '' },
+  selectedPriceList: { type: String, default: '' },
+  initialDiscount: { type: Number, default: 0 }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -138,11 +156,17 @@ const router = useRouter()
 const route = useRoute()
 
 const prices = ref([])
+const discount = ref(props.initialDiscount)
 const loading = ref(false)
 const saving = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
+const discountInputRef = ref(null)
+
+watch(() => props.initialDiscount, (val) => {
+  discount.value = val
+})
 
 async function loadPrices(code) {
   if (!code) return
@@ -154,9 +178,16 @@ async function loadPrices(code) {
       original_rate: p.rate,
       rate: p.rate // user editable
     }))
+    
+    // Set active row to selected price list if exists
+    if (props.selectedPriceList) {
+      const idx = prices.value.findIndex(p => p.price_list === props.selectedPriceList)
+      if (idx !== -1) activeRow.value = idx
+    }
+
     nextTick(() => {
-      inputRefs.value[0]?.focus()
-      inputRefs.value[0]?.select()
+      inputRefs.value[activeRow.value]?.focus()
+      inputRefs.value[activeRow.value]?.select()
     })
   } catch (e) {
     alert('Failed to load prices: ' + e.message)
@@ -170,19 +201,30 @@ async function saveAll() {
   if (!code) return
   
   // Only update prices that have changed
-  const changed = prices.value.filter(p => p.rate !== p.original_rate)
-  if (!changed.length) {
+  const changedPrices = prices.value.filter(p => p.rate !== p.original_rate)
+  const discountChanged = discount.value !== props.initialDiscount
+
+  if (!changedPrices.length && !discountChanged) {
     if (props.isSubWindow) emit('close')
     return
   }
 
   saving.value = true
   try {
-    await frappePost('ssplbilling.api.pricelist_api.update_multiple_prices', {
-      item_code: code,
-      prices: JSON.stringify(changed)
+    if (changedPrices.length) {
+      await frappePost('ssplbilling.api.pricelist_api.update_multiple_prices', {
+        item_code: code,
+        prices: JSON.stringify(changedPrices)
+      })
+    }
+    
+    // Emit back all relevant data
+    emit('saved', {
+      changedPrices,
+      discount: discount.value,
+      discountChanged
     })
-    emit('saved', changed)
+    
     if (props.isSubWindow) emit('close')
     else alert('Prices updated successfully')
   } catch (e) {
@@ -193,7 +235,10 @@ async function saveAll() {
 }
 
 function handleEnter(idx) {
-  if (idx === prices.value.length - 1) {
+  if (prices.value[idx].price_list === props.selectedPriceList) {
+    discountInputRef.value?.focus()
+    discountInputRef.value?.select()
+  } else if (idx === prices.value.length - 1) {
     saveAll()
   } else {
     moveRow(idx, 1)
