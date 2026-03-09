@@ -14,17 +14,19 @@
         <div class="flex rounded-lg bg-slate-100 p-1">
           <button 
             @click="isContra = false"
-            class="rounded-md px-4 py-1 text-xs font-bold transition-all"
+            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
             :class="!isContra ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
           >
-            Journal
+            <span>Journal</span>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="!isContra ? 'border-blue-200 bg-blue-50' : 'border-slate-300 bg-slate-50'">F2</kbd>
           </button>
           <button 
             @click="isContra = true"
-            class="rounded-md px-4 py-1 text-xs font-bold transition-all"
+            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
             :class="isContra ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
           >
-            Contra
+            <span>Contra</span>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="isContra ? 'border-emerald-200 bg-emerald-50' : 'border-slate-300 bg-slate-50'">F3</kbd>
           </button>
         </div>
       </div>
@@ -142,7 +144,7 @@
               class="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-2 text-xs font-bold text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-              Add New Row (F2)
+              Add New Row (INS)
             </button>
           </div>
         </div>
@@ -313,6 +315,8 @@ function moveNext(idx, field) {
 
 // --- SHORTCUTS ---
 useShortcuts(journalContraShortcuts({
+  switchToJournal: () => { isContra.value = false },
+  switchToContra: () => { isContra.value = true },
   addRow: addRow,
   saveEntry: saveEntry,
   navigateUp: () => {
