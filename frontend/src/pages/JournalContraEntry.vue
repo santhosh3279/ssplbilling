@@ -49,14 +49,14 @@
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <table class="w-full border-collapse">
             <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-500 text-left">
-                <th class="px-6 py-4 w-12 text-center">#</th>
-                <th class="px-4 py-4 min-w-[250px]">Ledger</th>
-                <th class="px-4 py-4 w-32 text-right">Balance</th>
-                <th class="px-4 py-4 w-32 text-right">Debit (₹)</th>
-                <th class="px-4 py-4 w-32 text-right">Credit (₹)</th>
-                <th class="px-4 py-4 w-32 text-right">New Bal</th>
-                <th class="px-6 py-4 w-12"></th>
+              <tr class="text-lg font-bold uppercase tracking-wider text-slate-500 text-left">
+                <th class="px-6 py-6 w-16 text-center">#</th>
+                <th class="px-4 py-6 min-w-[450px]">Ledger</th>
+                <th class="px-4 py-6 w-56 text-right">Balance</th>
+                <th class="px-4 py-6 w-56 text-right">Debit (₹)</th>
+                <th class="px-4 py-6 w-56 text-right">Credit (₹)</th>
+                <th class="px-4 py-6 w-56 text-right">New Bal</th>
+                <th class="px-6 py-6 w-16"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -66,28 +66,28 @@
                 class="group hover:bg-slate-50/50 transition-colors"
                 :class="{ 'bg-blue-50/30': activeRowIdx === idx }"
               >
-                <td class="px-6 py-4 text-center text-xs font-bold text-slate-400">
+                <td class="px-6 py-6 text-center text-xl font-bold text-slate-400">
                   {{ idx + 1 }}
                 </td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-4">
                   <div 
                     :ref="el => { if (el) ledgerRefs[idx] = el }"
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full rounded-lg border border-transparent px-3 py-2 text-sm font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
+                    class="w-full rounded-xl border border-transparent px-4 py-4 text-2xl font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
                     :class="row.account ? 'text-slate-900' : 'text-slate-300 italic'"
                   >
                     <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover/input:text-blue-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover/input:text-blue-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
-                <td class="px-4 py-2 text-right">
-                  <div v-if="row.account" class="text-xs font-bold text-slate-500 font-mono">
+                <td class="px-4 py-4 text-right">
+                  <div v-if="row.account" class="text-xl font-bold text-slate-500 font-mono">
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-4">
                   <input 
                     :ref="el => { if (el) debitRefs[idx] = el }"
                     v-model.number="row.debit"
@@ -97,11 +97,11 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
+                    class="w-full rounded-xl border border-transparent bg-transparent px-4 py-4 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-4">
                   <input 
                     :ref="el => { if (el) creditRefs[idx] = el }"
                     v-model.number="row.credit"
@@ -111,34 +111,34 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-2 text-right font-mono text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
+                    class="w-full rounded-xl border border-transparent bg-transparent px-4 py-4 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-4 py-2 text-right">
-                  <div v-if="row.account" class="text-xs font-bold font-mono" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-600' : 'text-slate-400'">
+                <td class="px-4 py-4 text-right">
+                  <div v-if="row.account" class="text-xl font-bold font-mono" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-600' : 'text-slate-400'">
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
-                <td class="px-6 py-2 text-center">
+                <td class="px-6 py-4 text-center">
                   <button 
                     @click="removeRow(idx)"
                     class="text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
                     tabindex="-1"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
           
-          <div class="p-4">
+          <div class="p-6">
             <button 
               @click="addRow"
-              class="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-2 text-xs font-bold text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center"
+              class="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 px-6 py-4 text-lg font-bold text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               Add New Row (INS)
             </button>
           </div>
