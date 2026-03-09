@@ -503,6 +503,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
+import CustomerLedger from './CustomerLedger.vue'
 
 
 const router = useRouter()
