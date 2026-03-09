@@ -188,8 +188,8 @@ const router = useRouter()
 const isContra = ref(false)
 const postingDate = ref(new Date().toISOString().slice(0, 10))
 const rows = ref([
-  { account: '', account_name: '', debit: 0, credit: 0, reference: '' },
-  { account: '', account_name: '', debit: 0, credit: 0, reference: '' }
+  { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' },
+  { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' }
 ])
 const activeRowIdx = ref(0)
 const isSubmitting = ref(false)
@@ -215,13 +215,13 @@ function fmt(val) {
 }
 
 function addRow() {
-  rows.value.push({ account: '', account_name: '', debit: 0, credit: 0, reference: '' })
+  rows.value.push({ account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' })
   activeRowIdx.value = rows.value.length - 1
 }
 
 function removeRow(idx) {
   if (rows.value.length <= 2) {
-    rows.value[idx] = { account: '', account_name: '', debit: 0, credit: 0, reference: '' }
+    rows.value[idx] = { account: '', account_name: '', account_type: '', debit: 0, credit: 0, reference: '' }
     return
   }
   rows.value.splice(idx, 1)
@@ -237,6 +237,7 @@ function selectLedger(ledger) {
   const row = rows.value[activeRowIdx.value]
   row.account = ledger.name
   row.account_name = ledger.label
+  row.account_type = ledger.type
   showSearchModal.value = false
   // Auto focus next input
 }
@@ -252,6 +253,7 @@ async function saveEntry() {
         .filter(r => r.account)
         .map(r => ({
           account: r.account,
+          account_type: r.account_type,
           debit_in_account_currency: r.debit,
           credit_in_account_currency: r.credit,
           user_remark: r.reference

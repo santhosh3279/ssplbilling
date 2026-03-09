@@ -117,16 +117,30 @@ def create_journal_entry(data):
     if not accounts:
         frappe.throw("At least two accounts are required for a Journal Entry")
         
+    company = frappe.defaults.get_global_default("company")
     je = frappe.new_doc("Journal Entry")
     je.voucher_type = data.get("voucher_type") or "Journal Entry"
     je.posting_date = data.get("posting_date") or frappe.utils.today()
-    je.company = frappe.defaults.get_global_default("company")
+    je.company = company
     
     for acc in accounts:
+        row_account = acc.get("account")
+        account_type = acc.get("account_type")
+        party_type = None
+        party = None
+        
+        # If it's a Customer or Supplier, we need their receivable/payable account
+        if account_type in ["Customer", "Supplier"]:
+            party_type = account_type
+            party = row_account
+            row_account = _get_party_account(party_type, party)
+            
         je.append("accounts", {
-            "account": acc.get("account"),
+            "account": row_account,
             "debit_in_account_currency": float(acc.get("debit_in_account_currency") or 0),
             "credit_in_account_currency": float(acc.get("credit_in_account_currency") or 0),
+            "party_type": party_type,
+            "party": party,
             "user_remark": acc.get("user_remark")
         })
         
