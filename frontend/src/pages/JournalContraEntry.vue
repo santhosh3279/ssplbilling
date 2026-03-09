@@ -99,7 +99,7 @@
                   </div>
                 </td>
                 <td class="px-2 py-0">
-                  <input 
+                  <input
                     :ref="el => { if (el) debitRefs[idx] = el }"
                     v-model.number="row.debit"
                     @focus="activeRowIdx = idx"
@@ -108,12 +108,13 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
+                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:bg-white transition-all disabled:opacity-20"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'border-rose-500 bg-rose-50 animate-blink' : 'border-transparent focus:border-blue-500'"
                     placeholder="0.00"
                   />
                 </td>
                 <td class="px-2 py-0">
-                  <input 
+                  <input
                     :ref="el => { if (el) creditRefs[idx] = el }"
                     v-model.number="row.credit"
                     @focus="activeRowIdx = idx"
@@ -122,7 +123,8 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border border-transparent bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all disabled:opacity-20"
+                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:bg-white transition-all disabled:opacity-20"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'border-rose-500 bg-rose-50 animate-blink' : 'border-transparent focus:border-blue-500'"
                     placeholder="0.00"
                   />
                 </td>
@@ -158,23 +160,24 @@
         <!-- FOOTER: TOTALS -->
         <div class="shrink-0 bg-slate-50 border-t border-slate-200 p-6 flex flex-col gap-4">
           <!-- ERROR ALERT -->
-          <div v-if="validationError" class="flex items-center gap-2 bg-rose-50 text-rose-600 px-4 py-2 rounded-lg border border-rose-100 text-xs font-bold animate-in fade-in slide-in-from-bottom-2">
+          <div v-if="validationError" class="flex items-center gap-2 bg-rose-50 text-rose-600 px-4 py-2 rounded-lg border border-rose-100 text-xs font-bold" :class="errorBlink ? 'animate-blink' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
             {{ validationError }}
           </div>
 
           <div class="flex items-start justify-between">
             <div class="flex-1 max-w-xl">
-              <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Reference Note / Remarks</label>
-              <textarea 
-                ref="remarksInput"
-                v-model="userRemarks"
-                @keydown.enter.prevent="handleRemarksEnter"
-                rows="2"
-                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
-                placeholder="Enter reference number, cheque details or internal notes..."
-              ></textarea>
-
+              <div>
+                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Remarks</label>
+                <textarea
+                  ref="remarksInput"
+                  v-model="userRemarks"
+                  @keydown.enter.prevent="handleRemarksEnter"
+                  rows="2"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                  placeholder="Internal notes..."
+                ></textarea>
+              </div>
             </div>
             <div class="flex gap-12 ml-12">
               <div class="text-right">
@@ -228,16 +231,15 @@ const isContra = ref(false)
 
 watch(isContra, () => {
   rows.value = [
-    { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 },
     { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
   ]
   activeRowIdx.value = 0
+  nextTick(() => ledgerRefs[0]?.focus())
 })
 
 const postingDate = ref(new Date().toISOString().slice(0, 10))
 const userRemarks = ref('')
 const rows = ref([
-  { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 },
   { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
 ])
 const activeRowIdx = ref(0)
@@ -246,6 +248,8 @@ const showSearchModal = ref(false)
 const ledgerSearchModal = ref(null)
 const remarksInput = ref(null)
 const saveButton = ref(null)
+const errorBlink = ref(false)
+const blinkCell = ref(null)
 
 // Template Refs for Navigation (using plain arrays for function refs)
 const ledgerRefs = []
@@ -296,7 +300,7 @@ function addRow() {
 }
 
 function removeRow(idx) {
-  if (rows.value.length <= 2) {
+  if (rows.value.length <= 1) {
     rows.value[idx] = { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     return
   }
@@ -345,14 +349,38 @@ function getNewBalance(row) {
 
 function isFieldDisabled(idx, field) {
   const firstRowDebit = Number(rows.value[0]?.debit) || 0
+  const firstRowCredit = Number(rows.value[0]?.credit) || 0
   if (firstRowDebit > 0.005) {
     if (idx === 0 && field === 'credit') return true
     if (idx > 0 && field === 'debit') return true
   }
+  if (firstRowCredit > 0.005) {
+    if (idx === 0 && field === 'debit') return true
+    if (idx > 0 && field === 'credit') return true
+  }
   return false
 }
 
+function triggerBlink(idx, field) {
+  errorBlink.value = true
+  blinkCell.value = { idx, field }
+  nextTick(() => {
+    const el = field === 'debit' ? debitRefs[idx] : creditRefs[idx]
+    el?.focus()
+    el?.select()
+  })
+  setTimeout(() => {
+    errorBlink.value = false
+    blinkCell.value = null
+  }, 700)
+}
+
 function moveNext(idx, field) {
+  if (validationError.value) {
+    triggerBlink(idx, field)
+    return
+  }
+
   const isBalanced = Math.abs(difference.value) < 0.01
   const hasValue = totalDebit.value > 0
 
@@ -372,12 +400,6 @@ function moveNext(idx, field) {
       return
     }
     
-    // If debit is entered and it's already balanced (e.g. editing), go to remarks
-    if (isBalanced) {
-      remarksInput.value?.focus()
-      return
-    }
-
     const el = creditRefs[idx]
     if (el) {
       el.focus()
@@ -473,7 +495,6 @@ async function saveEntry() {
     alert('Entry saved successfully!')
     userRemarks.value = ''
     rows.value = [
-      { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 },
       { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     ]
   } catch (e) {
@@ -488,6 +509,16 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.2; }
+  50% { opacity: 1; }
+  75% { opacity: 0.2; }
+}
+.animate-blink {
+  animation: blink 0.7s ease-in-out;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }

@@ -122,7 +122,11 @@ def create_journal_entry(data):
     je.voucher_type = data.get("voucher_type") or "Journal Entry"
     je.posting_date = data.get("posting_date") or frappe.utils.today()
     je.company = company
-    
+    je.user_remark = data.get("user_remark") or ""
+    if data.get("cheque_no"):
+        je.cheque_no = data.get("cheque_no")
+        je.cheque_date = data.get("posting_date") or frappe.utils.today()
+
     for acc in accounts:
         row_account = acc.get("account")
         account_type = acc.get("account_type")
