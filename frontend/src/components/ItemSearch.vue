@@ -177,6 +177,7 @@ const scrollContainer = ref(null)
 const showDateModal = ref(false)
 const insightData = ref(null)
 const cipherMap = ref([])
+const firstLoadDone = ref(false)
 
 // ─── Encryption Logic ────────────────────────────────────────────────────────
 
@@ -338,7 +339,13 @@ watch(selectedIdx, async (idx) => {
 watch(() => props.show, (newVal) => {
   if (newVal) {
     loadCipherMap()
-    preloadItems()
+    // Refresh only the first time it opens, or if cache is empty
+    if (!firstLoadDone.value) {
+      preloadItems(true)
+      firstLoadDone.value = true
+    } else {
+      preloadItems()
+    }
     focus()
   } else {
     showDateModal.value = false
