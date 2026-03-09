@@ -40,17 +40,6 @@
             class="bg-transparent text-sm font-bold text-slate-700 outline-none focus:text-blue-600"
           />
         </div>
-        <button 
-          ref="saveButton"
-          @click="saveEntry"
-          @keydown.enter="saveEntry"
-          :disabled="isSubmitting || !canSave"
-          class="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-        >
-          <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-          <span>Save Entry</span>
-          <kbd class="ml-1 rounded border border-blue-400 bg-blue-500 px-1.5 py-0.5 font-mono text-[10px] text-blue-100">F9</kbd>
-        </button>
       </div>
     </header>
 
@@ -195,6 +184,20 @@
                   :class="Math.abs(difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600'"
                 >
                   ₹ {{ fmt(difference) }}
+                </div>
+                <!-- SAVE BUTTON -->
+                <div class="mt-4 flex justify-end">
+                  <button 
+                    ref="saveButton"
+                    @click="saveEntry"
+                    @keydown.enter="saveEntry"
+                    :disabled="isSubmitting || !canSave"
+                    class="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3 text-base font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <span v-if="isSubmitting" class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-1"></span>
+                    <span>Save Entry</span>
+                    <kbd class="ml-2 rounded border border-blue-400 bg-blue-500 px-2 py-0.5 font-mono text-xs text-blue-100">F9</kbd>
+                  </button>
                 </div>
               </div>
             </div>
