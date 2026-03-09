@@ -137,7 +137,7 @@
                   </td>
                   <td class="px-2 border-r border-gray-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-300 line-through' : 'text-gray-800'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item.deleted" class="ml-1 font-semibold text-red-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
                   <td class="px-2 border-r border-gray-300 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono focus:border-blue-400 focus:bg-white focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onQtyEnter(idx)" @keydown.tab.prevent="onQtyEnter(idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-gray-300' : 'text-gray-700'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
                   <td class="px-2 text-gray-600 border-r border-gray-300" :class="item.deleted ? 'text-gray-300' : ''" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
@@ -764,7 +764,15 @@ async function addNewItem() {
   if (!r) { openSearch(code, null); return }
   
   // Show Price List Update BEFORE adding to grid and resetting
+  priceListUpdateTargetIdx.value = -1
   priceListItemCode.value = r.item_code
+  showPriceListUpdate.value = true
+}
+
+/** Triggered when Enter is pressed on Qty field of an existing row */
+function onQtyEnter(idx) {
+  priceListUpdateTargetIdx.value = idx
+  priceListItemCode.value = items.value[idx].item_code
   showPriceListUpdate.value = true
 }
 
@@ -802,17 +810,30 @@ function restoreItem(idx) { items.value[idx].deleted = false }
 // ==================== PRICE LIST UPDATE ====================
 const showPriceListUpdate = ref(false)
 const priceListItemCode = ref('')
+const priceListUpdateTargetIdx = ref(null) // null = none, -1 = new row, 0+ = existing row
 
 function closePriceListUpdate() {
+  const targetIdx = priceListUpdateTargetIdx.value
   showPriceListUpdate.value = false
-  finalizeAddItem()
+  
+  if (targetIdx === -1) {
+    finalizeAddItem()
+  } else if (targetIdx !== null && targetIdx >= 0) {
+    focusField('rate', targetIdx)
+  }
+  priceListUpdateTargetIdx.value = null
 }
 
 function onPriceListSaved(changed) {
-  // If the current price list was updated, we might want to update newPending.rate
+  // If the current price list was updated, sync it back to the entry
   const current = changed.find(p => p.price_list === priceList.value)
-  if (current) {
+  if (!current) return
+
+  const targetIdx = priceListUpdateTargetIdx.value
+  if (targetIdx === -1) {
     newPending.value.rate = current.rate
+  } else if (targetIdx !== null && targetIdx >= 0) {
+    items.value[targetIdx].rate = current.rate
   }
 }
 
