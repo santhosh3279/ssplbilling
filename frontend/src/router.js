@@ -7,7 +7,7 @@ import PurchaseEntry from './pages/PurchaseEntry.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
 import CashierEntry from './pages/CashierEntry.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
-import PaymentEntry from './pages/PaymentEntry.vue'
+import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
 
 const routes = [
   {
@@ -48,8 +48,8 @@ const routes = [
   },
   {
     path: '/payment',
-    name: 'PaymentEntry',
-    component: PaymentEntry,
+    name: 'PaymentReceiptEntry',
+    component: PaymentReceiptEntry,
   },
 ]
 
