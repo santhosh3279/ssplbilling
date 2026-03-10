@@ -163,7 +163,7 @@
                   v-model="userRemarks"
                   @keydown.enter.prevent="handleRemarksEnter"
                   rows="2"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-2xl font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
                   placeholder="Internal notes..."
                 ></textarea>
               </div>
