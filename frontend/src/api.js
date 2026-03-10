@@ -559,18 +559,6 @@ export async function createItem(data) {
   return frappePost("ssplbilling.api.item_api.create_item", { data });
 }
 
-/**
- * Fetch HSN/SAC codes for search.
- */
-export async function fetchHSNCodes(query = "") {
-  return frappeGet("frappe.client.get_list", {
-    doctype: "GST HSN Code",
-    fields: ["name"],
-    filters: [["name", "like", `%${query}%`]],
-    limit_page_length: 10
-  });
-}
-
 // ─── Sales Invoice ─────────────────────────────────────────────────────────────
 
 /**

@@ -8,6 +8,7 @@ def get_item_creation_metadata():
 		"item_groups": frappe.get_all("Item Group", filters={"is_group": 0}, fields=["name"]),
 		"uoms": frappe.get_all("UOM", fields=["name"]),
 		"tax_templates": frappe.get_all("Item Tax Template", fields=["name"]),
+		"hsn_codes": frappe.get_all("GST HSN Code", fields=["name"]),
 		"naming_series": get_item_naming_series()
 	}
 

@@ -72,11 +72,12 @@
               type="text"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
               placeholder="Search code..."
-              @input="onHSNInput"
+              @focus="showHSNDropdown = true"
+              @blur="setTimeout(() => showHSNDropdown = false, 200)"
             />
-            <div v-if="hsnResults.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white p-1 shadow-xl border border-slate-100">
+            <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white p-1 shadow-xl border border-slate-100">
               <button
-                v-for="res in hsnResults"
+                v-for="res in filteredHSNCodes"
                 :key="res.name"
                 class="w-full rounded-lg px-4 py-2 text-left text-sm hover:bg-blue-50 hover:text-blue-600 transition-colors"
                 @click="selectHSN(res.name)"
@@ -157,7 +158,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem, fetchHSNCodes } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem } from '../api.js'
 
 const props = defineProps({
   show: Boolean
@@ -168,7 +169,7 @@ const emit = defineEmits(['close', 'created'])
 const itemNameInput = ref(null)
 const isSubmitting = ref(false)
 const selectedSeries = ref('')
-const hsnResults = ref([])
+const showHSNDropdown = ref(false)
 
 const form = ref({
   item_name: '',
@@ -185,7 +186,16 @@ const metadata = ref({
   item_groups: [],
   uoms: [],
   tax_templates: [],
+  hsn_codes: [],
   naming_series: []
+})
+
+const filteredHSNCodes = computed(() => {
+  const q = form.value.hsn_sac.toLowerCase().trim()
+  if (!q) return metadata.value.hsn_codes.slice(0, 50)
+  return metadata.value.hsn_codes
+    .filter(h => h.name.toLowerCase().includes(q))
+    .slice(0, 50)
 })
 
 const canSubmit = computed(() => {
@@ -222,26 +232,9 @@ async function generateBarcode() {
   }
 }
 
-let hsnTimeout = null
-function onHSNInput() {
-  clearTimeout(hsnTimeout)
-  if (!form.value.hsn_sac) {
-    hsnResults.value = []
-    return
-  }
-  hsnTimeout = setTimeout(async () => {
-    try {
-      const res = await fetchHSNCodes(form.value.hsn_sac)
-      hsnResults.value = res || []
-    } catch (e) {
-      hsnResults.value = []
-    }
-  }, 300)
-}
-
 function selectHSN(name) {
   form.value.hsn_sac = name
-  hsnResults.value = []
+  showHSNDropdown.value = false
 }
 
 async function handleSubmit() {
