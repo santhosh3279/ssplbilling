@@ -34,6 +34,16 @@
             />
           </div>
 
+          <div class="space-y-1.5 md:col-span-2">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Item Print Name</label>
+            <input 
+              v-model="form.item_print_name"
+              type="text"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-lg font-medium outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
+              placeholder="Name as shown on printouts..."
+            />
+          </div>
+
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Barcode / Code</label>
             <div class="flex gap-2">
@@ -174,6 +184,7 @@ const showHSNDropdown = ref(false)
 
 const form = ref({
   item_name: '',
+  item_print_name: '',
   barcode: '',
   item_group: '',
   hsn_sac: '',
@@ -181,6 +192,11 @@ const form = ref({
   standard_rate: 0,
   safety_stock: 0,
   item_tax_template: ''
+})
+
+// Sync Item Print Name from Item Name by default
+watch(() => form.value.item_name, (newVal) => {
+  form.value.item_print_name = newVal
 })
 
 const metadata = ref({
@@ -263,6 +279,7 @@ async function handleSubmit() {
 function resetForm() {
   form.value = {
     item_name: '',
+    item_print_name: '',
     barcode: '',
     item_group: metadata.value.item_groups[0]?.name || '',
     hsn_sac: '',

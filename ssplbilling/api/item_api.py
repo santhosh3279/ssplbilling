@@ -38,6 +38,7 @@ def create_item(data):
 	item = frappe.new_doc("Item")
 	item.item_code = data.get("barcode") # Using barcode as item_code if provided
 	item.item_name = data.get("item_name")
+	item.item_print_name = data.get("item_print_name")
 	item.item_group = data.get("item_group")
 	item.stock_uom = data.get("stock_uom")
 	item.standard_rate = float(data.get("standard_rate") or 0)
