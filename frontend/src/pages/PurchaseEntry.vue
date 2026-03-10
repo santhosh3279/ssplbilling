@@ -7,7 +7,10 @@
         <button class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" @click="handleBack">&larr; Dashboard</button>
         <span class="text-sm text-gray-300">|</span>
         <span class="text-sm font-semibold text-gray-800">Purchase Entry</span>
-        <button class="rounded border border-gray-300 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50" @click="openModifyBill">Modify Bill</button>
+        <button class="rounded border border-gray-300 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1.5" @click="openModifyBill">
+          <span>Modify Bill</span>
+          <kbd class="rounded border bg-gray-50 px-1 text-[10px] text-gray-400">F3</kbd>
+        </button>
       </div>
       <div class="flex items-center gap-3 text-sm text-gray-600">
         <div class="flex items-center rounded border border-gray-200 bg-white shadow-sm overflow-hidden mr-4">
@@ -20,6 +23,7 @@
         </div>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Up/Down</kbd> Navigate rows</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Tab</kbd> Next column</span>
+        <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">F3</kbd> Modify</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Ctrl+S</kbd> Save</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
       </div>
@@ -1205,6 +1209,7 @@ useShortcuts(purchaseEntryShortcuts({
   save: () => saveBill(),
   newCustomer: () => openSupplierSearch(),
   searchItem: () => openSearch('', null),
+  openModifyBill: () => openModifyBill(),
   deleteRow: () => {
     if (selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       softDelete(selectedRow.value)

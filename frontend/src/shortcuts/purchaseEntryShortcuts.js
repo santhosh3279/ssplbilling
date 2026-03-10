@@ -11,6 +11,7 @@ export const purchaseEntryShortcuts = (handlers) => ({
   ...entryFormShortcuts(handlers),
 
   // Purchase Entry specific
+  'F3':     handlers.openModifyBill,
   'PAGEUP': handlers.focusSeries,
   'END':    handlers.toggleDiscountSave,
   'ESCAPE': handlers.contextualBack,
