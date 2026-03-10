@@ -12,6 +12,7 @@ export const journalContraShortcuts = (handlers) => ({
   'ARROWUP':   handlers.navigateUp,
   'ARROWDOWN': handlers.navigateDown,
   'PAGEUP':    handlers.focusDate,
+  'PAGEDOWN':  handlers.focusLastRow,
   'ENTER':     handlers.handleEnter,
   'ESCAPE':    handlers.goBack,
 });

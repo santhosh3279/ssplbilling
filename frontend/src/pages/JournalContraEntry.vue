@@ -466,6 +466,12 @@ onMounted(() => {
     focusDate: () => {
       dateInput.value?.focus()
     },
+    focusLastRow: () => {
+      activeRowIdx.value = rows.value.length - 1
+      nextTick(() => {
+        ledgerRefs[activeRowIdx.value]?.focus()
+      })
+    },
     handleEnter: (e) => {
       if (showSearchModal.value) return
       const active = document.activeElement
