@@ -75,14 +75,15 @@
               @focus="showHSNDropdown = true"
               @blur="setTimeout(() => showHSNDropdown = false, 200)"
             />
-            <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white p-1 shadow-xl border border-slate-100">
+            <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-xl bg-white p-1 shadow-xl border border-slate-100">
               <button
                 v-for="res in filteredHSNCodes"
                 :key="res.name"
-                class="w-full rounded-lg px-4 py-2 text-left text-sm hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                class="w-full rounded-lg px-4 py-2 text-left hover:bg-blue-50 transition-colors group flex flex-col gap-0.5"
                 @click="selectHSN(res.name)"
               >
-                {{ res.name }}
+                <span class="text-sm font-bold text-slate-700 group-hover:text-blue-600">{{ res.name }}</span>
+                <span v-if="res.description" class="text-[10px] text-slate-400 truncate line-clamp-1 italic">{{ res.description }}</span>
               </button>
             </div>
           </div>
@@ -194,7 +195,7 @@ const filteredHSNCodes = computed(() => {
   const q = form.value.hsn_sac.toLowerCase().trim()
   if (!q) return metadata.value.hsn_codes.slice(0, 50)
   return metadata.value.hsn_codes
-    .filter(h => h.name.toLowerCase().includes(q))
+    .filter(h => h.name.toLowerCase().includes(q) || (h.description || '').toLowerCase().includes(q))
     .slice(0, 50)
 })
 
