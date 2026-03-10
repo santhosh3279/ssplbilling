@@ -32,13 +32,29 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <div class="flex flex-col items-end mr-4">
-          <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Posting Date</label>
-          <input 
-            v-model="postingDate"
-            type="date"
-            class="bg-transparent text-sm font-bold text-slate-700 outline-none focus:text-blue-600"
-          />
+        <div class="flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+          <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">Posting Date</label>
+          <div class="flex items-center gap-1">
+            <button 
+              @click="changeDate(-1)"
+              class="p-1 hover:bg-white rounded-md text-slate-400 hover:text-blue-600 transition-all hover:shadow-sm"
+              tabindex="-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <input 
+              v-model="postingDate"
+              type="date"
+              class="bg-transparent text-xl font-black text-slate-800 outline-none focus:text-blue-600 w-44"
+            />
+            <button 
+              @click="changeDate(1)"
+              class="p-1 hover:bg-white rounded-md text-slate-400 hover:text-blue-600 transition-all hover:shadow-sm"
+              tabindex="-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -241,6 +257,13 @@ watch(isContra, () => {
 })
 
 const postingDate = ref(new Date().toISOString().slice(0, 10))
+
+function changeDate(days) {
+  const d = new Date(postingDate.value)
+  d.setDate(d.getDate() + days)
+  postingDate.value = d.toISOString().slice(0, 10)
+}
+
 const userRemarks = ref('')
 const rows = ref([
   { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
