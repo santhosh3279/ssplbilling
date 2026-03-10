@@ -908,9 +908,11 @@ function closeItemSearch() {
 
 async function pickItem(item) {
   showItemSearchModal.value = false
-  let finalRate = item.rate || 0
+  let finalRate = item.rate || item.price || 0
   let finalTax = item.tax_rate ?? defaultTaxRate.value
   let finalWh = item.warehouse || defaultWarehouse.value
+  let finalName = item.item_name
+  let finalUom = item.uom
   
   try {
     const r = await lookupItem(item.item_code)
@@ -918,14 +920,16 @@ async function pickItem(item) {
       finalRate = r.rate
       finalTax = r.tax_rate ?? defaultTaxRate.value
       finalWh = r.warehouse || defaultWarehouse.value
+      finalName = r.item_name
+      finalUom = r.uom
     }
   } catch (e) {}
 
   if (itemSearchTargetRow !== null) {
     const row = items.value[itemSearchTargetRow]
     row.item_code = item.item_code
-    row.item_name = item.item_name
-    row.uom = item.uom
+    row.item_name = finalName
+    row.uom = finalUom
     row.rate = finalRate
     row.tax_rate = finalTax
     row.warehouse = finalWh
@@ -934,7 +938,7 @@ async function pickItem(item) {
     focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
-    newPending.value = { item_name: item.item_name, uom: item.uom, rate: finalRate, tax_rate: finalTax, warehouse: finalWh }
+    newPending.value = { item_name: finalName, uom: finalUom, rate: finalRate, tax_rate: finalTax, warehouse: finalWh }
     nextTick(() => focusNewQty())
   }
 }
