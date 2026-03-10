@@ -273,6 +273,22 @@ function formatDateToDisplay(iso) {
 function onDateInput(e) {
   let val = e.target.value.replace(/\D/g, '') // Keep only digits
   
+  // Smart Year Logic: If user enters 4 digits (DDMM), auto-complete the current year
+  if (val.length === 4) {
+    const day = parseInt(val.slice(0, 2))
+    const month = parseInt(val.slice(2, 4))
+    
+    if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
+      const year = new Date().getFullYear()
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = month.toString().padStart(2, '0')
+      
+      postingDate.value = `${year}-${monthStr}-${dayStr}`
+      displayDate.value = `${dayStr}/${monthStr}/${year}`
+      return
+    }
+  }
+
   // Basic formatting as user types beyond 2 digits
   if (val.length > 2 && val.length <= 4) {
     val = val.slice(0, 2) + '/' + val.slice(2)
