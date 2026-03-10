@@ -43,6 +43,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
             <input 
+              ref="dateInput"
               v-model="postingDate"
               type="date"
               class="bg-transparent text-xl font-black text-slate-800 outline-none focus:text-blue-600 w-44"
@@ -257,6 +258,7 @@ watch(isContra, () => {
 })
 
 const postingDate = ref(new Date().toISOString().slice(0, 10))
+const dateInput = ref(null)
 
 function changeDate(days) {
   const d = new Date(postingDate.value)
@@ -460,6 +462,9 @@ onMounted(() => {
     },
     navigateDown: () => {
       if (activeRowIdx.value < rows.value.length - 1) activeRowIdx.value++
+    },
+    focusDate: () => {
+      dateInput.value?.focus()
     },
     handleEnter: (e) => {
       if (showSearchModal.value) return

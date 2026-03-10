@@ -11,6 +11,7 @@ export const journalContraShortcuts = (handlers) => ({
   'F9':        handlers.saveEntry,
   'ARROWUP':   handlers.navigateUp,
   'ARROWDOWN': handlers.navigateDown,
+  'PAGEUP':    handlers.focusDate,
   'ENTER':     handlers.handleEnter,
   'ESCAPE':    handlers.goBack,
 });
