@@ -47,20 +47,33 @@
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Barcode / Code</label>
             <div class="flex gap-2">
-              <input 
-                v-model="form.barcode"
-                type="text"
-                class="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 font-mono text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
-                placeholder="Auto or manual..."
-              />
-              <select 
-                v-model="selectedSeries"
-                class="w-24 rounded-xl border border-slate-200 bg-white px-2 text-xs font-bold outline-none focus:border-blue-500"
-                @change="generateBarcode"
-              >
-                <option value="">Series</option>
-                <option v-for="s in metadata.naming_series" :key="s" :value="s">{{ s }}</option>
-              </select>
+              <div class="relative flex-1">
+                <input 
+                  v-model="form.barcode"
+                  type="text"
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 font-mono text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
+                  placeholder="Auto or manual..."
+                />
+                <div v-if="isFetchingBarcode" class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent inline-block"></span>
+                </div>
+              </div>
+              <div class="flex rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <select 
+                  v-model="selectedSeries"
+                  class="bg-transparent px-2 text-[10px] font-bold outline-none border-r border-slate-100"
+                >
+                  <option value="">Series</option>
+                  <option v-for="s in metadata.naming_series" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <button 
+                  @click="generateBarcode"
+                  :disabled="!selectedSeries || isFetchingBarcode"
+                  class="px-3 bg-slate-50 hover:bg-slate-100 text-blue-600 font-bold text-[10px] uppercase tracking-wider disabled:opacity-50 transition-colors"
+                >
+                  Get
+                </button>
+              </div>
             </div>
           </div>
 
@@ -179,6 +192,7 @@ const emit = defineEmits(['close', 'created'])
 
 const itemNameInput = ref(null)
 const isSubmitting = ref(false)
+const isFetchingBarcode = ref(false)
 const selectedSeries = ref('')
 const showHSNDropdown = ref(false)
 
@@ -208,7 +222,7 @@ const metadata = ref({
 })
 
 const filteredHSNCodes = computed(() => {
-  const q = form.value.hsn_sac.toLowerCase().trim()
+  const q = (form.value.hsn_sac || '').toLowerCase().trim()
   if (!q) return metadata.value.hsn_codes.slice(0, 50)
   return metadata.value.hsn_codes
     .filter(h => h.name.toLowerCase().includes(q) || (h.description || '').toLowerCase().includes(q))
@@ -241,11 +255,14 @@ async function loadMetadata() {
 
 async function generateBarcode() {
   if (!selectedSeries.value) return
+  isFetchingBarcode.value = true
   try {
     const res = await getNextBarcode(selectedSeries.value)
     form.value.barcode = res
   } catch (e) {
     console.error('Failed to generate barcode', e)
+  } finally {
+    isFetchingBarcode.value = false
   }
 }
 
