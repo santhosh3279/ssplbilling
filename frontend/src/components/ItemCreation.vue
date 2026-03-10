@@ -31,16 +31,19 @@
               type="text"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-lg font-medium outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
               placeholder="Enter full item name..."
+              @keydown.enter.prevent="itemPrintNameInput?.focus()"
             />
           </div>
 
           <div class="space-y-1.5 md:col-span-2">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Item Print Name</label>
             <input 
+              ref="itemPrintNameInput"
               v-model="form.item_print_name"
               type="text"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-lg font-medium outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
               placeholder="Name as shown on printouts..."
+              @keydown.enter.prevent="barcodeInput?.focus()"
             />
           </div>
 
@@ -48,10 +51,12 @@
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Barcode / Code</label>
             <div class="relative">
               <input 
+                ref="barcodeInput"
                 v-model="form.barcode"
                 type="text"
                 class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 font-mono text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
                 placeholder="Auto or manual..."
+                @keydown.enter.prevent="itemGroupInput?.focus()"
               />
               <div v-if="isFetchingBarcode" class="absolute right-3 top-1/2 -translate-y-1/2">
                 <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent inline-block"></span>
@@ -62,8 +67,10 @@
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Item Group *</label>
             <select 
+              ref="itemGroupInput"
               v-model="form.item_group"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+              @keydown.enter.prevent="hsnInput?.focus()"
             >
               <option value="">Select Group...</option>
               <option v-for="g in metadata.item_groups" :key="g.name" :value="g.name">{{ g.name }}</option>
@@ -73,12 +80,14 @@
           <div class="space-y-1.5 relative">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">HSN/SAC Code</label>
             <input 
+              ref="hsnInput"
               v-model="form.hsn_sac"
               type="text"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
               placeholder="Search code..."
               @focus="showHSNDropdown = true"
               @blur="setTimeout(() => showHSNDropdown = false, 200)"
+              @keydown.enter.prevent="onHSNEnter"
             />
             <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-xl bg-white p-1 shadow-xl border border-slate-100">
               <button
@@ -96,8 +105,10 @@
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Default UOM *</label>
             <select 
+              ref="uomInput"
               v-model="form.stock_uom"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+              @keydown.enter.prevent="rateInput?.focus()"
             >
               <option v-for="u in metadata.uoms" :key="u.name" :value="u.name">{{ u.name }}</option>
             </select>
@@ -108,10 +119,12 @@
             <div class="relative">
               <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
               <input 
+                ref="rateInput"
                 v-model.number="form.standard_rate"
                 type="number"
                 class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg font-bold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white transition-all"
                 placeholder="0.00"
+                @keydown.enter.prevent="safetyStockInput?.focus()"
               />
             </div>
           </div>
@@ -119,18 +132,22 @@
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Safety Stock</label>
             <input 
+              ref="safetyStockInput"
               v-model.number="form.safety_stock"
               type="number"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-right font-mono text-lg text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all"
               placeholder="0"
+              @keydown.enter.prevent="taxTemplateInput?.focus()"
             />
           </div>
 
           <div class="space-y-1.5 md:col-span-2">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Tax Template</label>
             <select 
+              ref="taxTemplateInput"
               v-model="form.item_tax_template"
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+              @keydown.enter.prevent="handleSubmit"
             >
               <option value="">No Tax / Exempt</option>
               <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
@@ -173,6 +190,15 @@ const props = defineProps({
 const emit = defineEmits(['close', 'created'])
 
 const itemNameInput = ref(null)
+const itemPrintNameInput = ref(null)
+const barcodeInput = ref(null)
+const itemGroupInput = ref(null)
+const hsnInput = ref(null)
+const uomInput = ref(null)
+const rateInput = ref(null)
+const safetyStockInput = ref(null)
+const taxTemplateInput = ref(null)
+
 const isSubmitting = ref(false)
 const isFetchingBarcode = ref(false)
 const isBarcodeManual = ref(false)
@@ -271,6 +297,15 @@ async function generateBarcode() {
 function selectHSN(name) {
   form.value.hsn_sac = name
   showHSNDropdown.value = false
+  nextTick(() => uomInput.value?.focus())
+}
+
+function onHSNEnter() {
+  if (filteredHSNCodes.value.length > 0 && showHSNDropdown.value) {
+    selectHSN(filteredHSNCodes.value[0].name)
+  } else {
+    uomInput.value?.focus()
+  }
 }
 
 async function handleSubmit() {
