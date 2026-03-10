@@ -18,7 +18,11 @@ def create_journal_contra_entry(data):
         
     company = frappe.defaults.get_global_default("company")
     je = frappe.new_doc("Journal Entry")
-    je.voucher_type = data.get("voucher_type") or "Journal Entry"
+    voucher_type = data.get("voucher_type") or "Journal Entry"
+    # Map frontend shorthand to ERPNext's exact select option
+    if voucher_type == "Contra":
+        voucher_type = "Contra Entry"
+    je.voucher_type = voucher_type
     je.posting_date = data.get("posting_date") or frappe.utils.today()
     je.company = company
     je.user_remark = data.get("user_remark") or ""
