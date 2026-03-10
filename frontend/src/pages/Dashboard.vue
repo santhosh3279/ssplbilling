@@ -283,8 +283,7 @@ const today = new Date().toLocaleDateString('en-IN', {
 const tiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', iconBg: 'bg-blue-50' },
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', iconBg: 'bg-green-50' },
-  { id: 'payment', name: 'Payment Entry', desc: 'Outgoing payments', icon: '💸', shortcut: 'F3', iconBg: 'bg-amber-50' },
-  { id: 'receipt', name: 'Receipt Entry', desc: 'Incoming receipts', icon: '📄', shortcut: 'F4', iconBg: 'bg-green-50' },
+  { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', iconBg: 'bg-amber-50' },
   { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', iconBg: 'bg-blue-50' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', iconBg: 'bg-purple-50' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', iconBg: 'bg-rose-50' },
@@ -295,8 +294,7 @@ const readyModules = ['sales', 'purchase', 'cashier', 'ledger', 'pricelist', 'jo
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = { 
-  payment: '/payment?mode=Pay', 
-  receipt: '/payment?mode=Receive',
+  payment: '/payment', 
   'journal-contra': '/journal-contra'
 }
 
@@ -313,7 +311,7 @@ function openModule(id) {
 // ==================== F-KEY SHORTCUTS ====================
 const routeMap = {
   F1: 'sales', F2: 'purchase', F3: 'payment',
-  F4: 'receipt', F5: 'cashier', F6: 'ledger',
+  F5: 'cashier', F6: 'ledger',
   F7: 'pricelist', F8: 'journal-contra',
 }
 
@@ -324,7 +322,6 @@ useShortcuts({
   'F1': () => openModule('sales'),
   'F2': () => openModule('purchase'),
   'F3': () => openModule('payment'),
-  'F4': () => openModule('receipt'),
   'F5': () => openModule('cashier'),
   'F6': () => openModule('ledger'),
   'F7': () => openModule('pricelist'),
