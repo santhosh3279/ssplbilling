@@ -27,12 +27,13 @@ def get_item_naming_series():
 def get_next_barcode(naming_series):
 	"""
 	Peek at the next barcode without incrementing the database counter.
-	Used for UI display/preview only.
+	Returns only the digit part of the peeked value.
 	"""
 	from frappe.model.naming import parse_naming_series
+	import re
 	
-	# Returns the full alphanumeric next value
-	return parse_naming_series(naming_series)
+	res = parse_naming_series(naming_series)
+	return re.sub(r"\D", "", res)
 
 @frappe.whitelist()
 def create_item(data):
@@ -47,7 +48,10 @@ def create_item(data):
 	if not is_manual and naming_series:
 		# Server-side increment and fetch of the REAL next name
 		from frappe.model.naming import make_autoname
-		barcode = make_autoname(naming_series)
+		import re
+		res = make_autoname(naming_series)
+		# Strip non-digits for the auto-assigned code
+		barcode = re.sub(r"\D", "", res)
 	
 	if not barcode:
 		frappe.throw("Barcode/Item Code is required")
