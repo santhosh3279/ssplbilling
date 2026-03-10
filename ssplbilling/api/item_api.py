@@ -25,9 +25,13 @@ def get_item_naming_series():
 
 @frappe.whitelist()
 def get_next_barcode(naming_series):
-	"""Get next barcode from naming series."""
+	"""Get next barcode from naming series. Returns only digits."""
 	from frappe.model.naming import make_autoname
-	return make_autoname(naming_series)
+	import re
+	# Note: make_autoname increments the counter in tabSeries immediately.
+	# This reserves the number to prevent duplicates.
+	res = make_autoname(naming_series)
+	return re.sub(r"\D", "", res)
 
 @frappe.whitelist()
 def create_item(data):
@@ -36,7 +40,13 @@ def create_item(data):
 		data = json.loads(data)
 	
 	item = frappe.new_doc("Item")
-	item.item_code = data.get("barcode") # Using barcode as item_code if provided
+	
+	# Use the barcode provided by frontend
+	barcode = data.get("barcode")
+	if not barcode:
+		frappe.throw("Barcode/Item Code is required")
+		
+	item.item_code = barcode
 	item.item_name = data.get("item_name")
 	item.item_print_name = data.get("item_print_name")
 	item.item_group = data.get("item_group")
@@ -47,16 +57,10 @@ def create_item(data):
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data.get("hsn_sac")
 	
-	if data.get("item_tax_template"):
-		item.append("taxes", {
-			"item_tax_template": data.get("item_tax_template"),
-			"tax_category": ""
-		})
-	
-	if data.get("barcode"):
-		item.append("barcodes", {
-			"barcode": data.get("barcode")
-		})
+	# Add to barcodes child table
+	item.append("barcodes", {
+		"barcode": barcode
+	})
 	
 	item.is_sales_item = 1
 	item.is_purchase_item = 1

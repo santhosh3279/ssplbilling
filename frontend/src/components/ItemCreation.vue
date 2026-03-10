@@ -193,6 +193,7 @@ const emit = defineEmits(['close', 'created'])
 const itemNameInput = ref(null)
 const isSubmitting = ref(false)
 const isFetchingBarcode = ref(false)
+const isBarcodeManual = ref(false)
 const selectedSeries = ref('')
 const showHSNDropdown = ref(false)
 
@@ -211,6 +212,16 @@ const form = ref({
 // Sync Item Print Name from Item Name by default
 watch(() => form.value.item_name, (newVal) => {
   form.value.item_print_name = newVal
+})
+
+// Track manual changes and force digits only
+watch(() => form.value.barcode, (newVal, oldVal) => {
+  if (oldVal !== undefined && !isFetchingBarcode.value) {
+    isBarcodeManual.value = true
+  }
+  if (newVal && /\D/.test(newVal)) {
+    form.value.barcode = newVal.replace(/\D/g, '')
+  }
 })
 
 const metadata = ref({
@@ -259,6 +270,8 @@ async function generateBarcode() {
   try {
     const res = await getNextBarcode(selectedSeries.value)
     form.value.barcode = res
+    // Reset manual flag since we just got a fresh one from series
+    nextTick(() => { isBarcodeManual.value = false })
   } catch (e) {
     console.error('Failed to generate barcode', e)
   } finally {
@@ -276,7 +289,10 @@ async function handleSubmit() {
   
   isSubmitting.value = true
   try {
-    const name = await createItem(form.value)
+    const name = await createItem({
+      ...form.value,
+      is_manual_barcode: isBarcodeManual.value
+    })
     alert(`Item ${name} created successfully!`)
     emit('created', {
       item_code: form.value.barcode || name,
@@ -305,6 +321,7 @@ function resetForm() {
     safety_stock: 0,
     item_tax_template: ''
   }
+  isBarcodeManual.value = false
   if (selectedSeries.value) generateBarcode()
 }
 
