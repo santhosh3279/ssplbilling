@@ -55,7 +55,8 @@
                 v-model="form.barcode"
                 type="text"
                 class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 font-mono text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
-                placeholder="Auto or manual..."
+                placeholder="Enter alphanumeric barcode..."
+                @focus="e => e.target.select()"
                 @keydown.enter.prevent="itemGroupInput?.focus()"
               />
               <div v-if="isFetchingBarcode" class="absolute right-3 top-1/2 -translate-y-1/2">
@@ -223,7 +224,7 @@ watch(() => form.value.item_name, (newVal) => {
   form.value.item_print_name = newVal
 })
 
-// Track manual changes and force digits only
+// Track manual changes
 watch(() => form.value.barcode, (newVal, oldVal) => {
   if (oldVal !== undefined && !isFetchingBarcode.value) {
     if (newVal !== autoBarcode.value) {
@@ -231,9 +232,6 @@ watch(() => form.value.barcode, (newVal, oldVal) => {
     } else {
       isBarcodeManual.value = false
     }
-  }
-  if (newVal && /\D/.test(newVal)) {
-    form.value.barcode = newVal.replace(/\D/g, '')
   }
 })
 
