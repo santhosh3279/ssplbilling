@@ -20,6 +20,7 @@ Instructional context for Gemini CLI when working on the **ssplbilling** project
         - `dashboard_api.py`: Settings and dashboard-specific logic.
         - `pricelist_api.py`: Item price management.
         - `purchase_api.py`: Purchase invoice logic.
+        - `item_api.py`: Item creation and metadata endpoints.
     - `doctype/`: Custom Frappe DocTypes.
 - `frontend/`: Vue 3 Single Page Application.
     - `src/api.js`: Central API service layer (canonical fetch transport).

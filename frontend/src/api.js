@@ -536,6 +536,41 @@ export async function submitPurchaseInvoice(invoiceName) {
   });
 }
 
+// ─── Item Creation Helpers ─────────────────────────────────────────
+
+/**
+ * Fetch metadata for item creation.
+ */
+export async function fetchItemCreationMetadata() {
+  return frappeGet("ssplbilling.api.item_api.get_item_creation_metadata");
+}
+
+/**
+ * Get next barcode from naming series.
+ */
+export async function getNextBarcode(namingSeries) {
+  return frappeGet("ssplbilling.api.item_api.get_next_barcode", { naming_series: namingSeries });
+}
+
+/**
+ * Create a new item.
+ */
+export async function createItem(data) {
+  return frappePost("ssplbilling.api.item_api.create_item", { data });
+}
+
+/**
+ * Fetch HSN/SAC codes for search.
+ */
+export async function fetchHSNCodes(query = "") {
+  return frappeGet("frappe.client.get_list", {
+    doctype: "GST HSN Code",
+    fields: ["name"],
+    filters: [["name", "like", `%${query}%`]],
+    limit_page_length: 10
+  });
+}
+
 // ─── Sales Invoice ─────────────────────────────────────────────────────────────
 
 /**

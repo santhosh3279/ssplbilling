@@ -15,6 +15,12 @@
         </div>
         <div class="flex items-center gap-3">
           <button 
+            @click="showCreationModal = true"
+            class="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-lg font-semibold text-amber-600 transition-colors"
+          >
+            <span>➕</span> New Item <kbd class="ml-1 rounded border border-amber-200 bg-white px-1.5 py-0.5 font-mono text-xs text-amber-400">F2</kbd>
+          </button>
+          <button 
             @click="preloadItems(true)" 
             class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 transition-colors"
             :disabled="loading"
@@ -127,17 +133,24 @@
       <div class="border-t border-gray-200 px-5 py-3 bg-gray-50 flex gap-6 text-xs text-gray-400 uppercase tracking-widest font-bold">
         <span><kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">↑↓</kbd> Navigate</span>
         <span><kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">Enter</kbd> Select</span>
+        <span><kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">F2</kbd> New Item</span>
         <span><kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">F5</kbd> Refresh</span>
         <span><kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd> Close</span>
       </div>
 
-      <!-- SUB-MODALS (Date) -->
       <DateFilter
         v-if="showDateModal"
         :show="showDateModal"
         :customer-name="results[selectedIdx]?.item_name"
         @close="showDateModal = false"
         @confirm="handleDateConfirm"
+      />
+
+      <ItemCreation
+        v-if="showCreationModal"
+        :show="showCreationModal"
+        @close="showCreationModal = false"
+        @created="handleItemCreated"
       />
     </div>
   </div>
@@ -148,6 +161,7 @@ import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
+import ItemCreation from './ItemCreation.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -175,6 +189,7 @@ const selectedIdx = ref(0)
 const searchInput = ref(null)
 const scrollContainer = ref(null)
 const showDateModal = ref(false)
+const showCreationModal = ref(false)
 const insightData = ref(null)
 const cipherMap = ref([])
 
@@ -230,7 +245,6 @@ function updateItemInsight(item) {
     return
   }
   
-  // Use the price lists already available in the cached item object
   insightData.value = {
     priceLists: (item.price_lists || []).map(pl => ({ 
       name: pl.name, 
@@ -269,7 +283,7 @@ watch([selectedIdx, results], () => {
 // ─── Navigation & Events ─────────────────────────────────────────────────────
 
 function handleGlobalKeydown(e) {
-  if (showDateModal.value) return
+  if (showDateModal.value || showCreationModal.value) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -290,6 +304,9 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'F5') {
     e.preventDefault()
     preloadItems(true)
+  } else if (e.key === 'F2') {
+    e.preventDefault()
+    showCreationModal.value = true
   }
 }
 
@@ -301,6 +318,15 @@ function handleDateConfirm(dates) {
   }
 }
 
+function handleItemCreated(item) {
+  showCreationModal.value = false
+  // Refresh cache to include new item
+  preloadItems(true).then(() => {
+    // Select the new item after refresh
+    emit('select', item)
+  })
+}
+
 function focus() {
   nextTick(() => {
     searchInput.value?.focus()
@@ -310,13 +336,10 @@ function focus() {
 
 function closeSubForm() {
   showDateModal.value = false
+  showCreationModal.value = false
   focus()
 }
 
-/** 
- * Refresh stock when CTRL+I (item search) is pressed anywhere.
- * This ensures that when the modal opens, stock is already fresh.
- */
 function handleGlobalItemSearch() {
   preloadItems(true)
 }
@@ -350,6 +373,7 @@ watch(() => props.show, (newVal) => {
     focus()
   } else {
     showDateModal.value = false
+    showCreationModal.value = false
   }
 })
 

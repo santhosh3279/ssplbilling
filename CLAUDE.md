@@ -13,6 +13,8 @@ ssplbilling/                     ← Frappe app root
 ├── ssplbilling/                 ← Python package
 │   ├── api/
 │   │   ├── sales_api.py         ← Whitelisted Python endpoints (customers, invoices, payments, ledger)
+│   │   ├── purchase_api.py      ← Purchase invoice management endpoints
+│   │   ├── item_api.py          ← Item creation and metadata endpoints
 │   │   └── dashboard_api.py     ← Dashboard + settings endpoints (get_billing_settings, get_allowed_series)
 │   ├── ssplbilling/
 │   │   ├── doctype/
@@ -34,6 +36,7 @@ ssplbilling/                     ← Frappe app root
     │   │   └── useBilling.js    ← All billing state + side-effects
     │   ├── components/
     │   │   ├── ItemSearch.vue
+    │   │   ├── ItemCreation.vue
     │   │   ├── CustomerSearchModal.vue
     │   │   └── PrintOptionsModal.vue
     │   ├── pages/
