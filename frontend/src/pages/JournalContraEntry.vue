@@ -44,9 +44,12 @@
             </button>
             <input 
               ref="dateInput"
-              v-model="postingDate"
-              type="date"
-              class="bg-transparent text-xl font-black text-slate-800 outline-none focus:text-blue-600 w-44"
+              v-model="displayDate"
+              type="text"
+              class="bg-transparent text-xl font-black text-slate-800 outline-none focus:text-blue-600 w-44 font-mono"
+              placeholder="DD/MM/YYYY"
+              @focus="e => e.target.select()"
+              @input="onDateInput"
             />
             <button 
               @click="changeDate(1)"
@@ -258,12 +261,64 @@ watch(isContra, () => {
 })
 
 const postingDate = ref(new Date().toISOString().slice(0, 10))
+const displayDate = ref(formatDateToDisplay(postingDate.value))
 const dateInput = ref(null)
+
+function formatDateToDisplay(iso) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+function onDateInput(e) {
+  let val = e.target.value.replace(/\D/g, '') // Keep only digits
+  
+  // Smart Year Logic: If user enters 4 digits (DDMM), auto-complete the year
+  if (val.length === 4) {
+    const day = parseInt(val.slice(0, 2))
+    const month = parseInt(val.slice(2, 4))
+    
+    if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
+      const now = new Date()
+      const currentMonth = now.getMonth() + 1
+      let year = now.getFullYear()
+
+      // If month is less than current month, assume next year
+      if (month < currentMonth) {
+        year++
+      }
+      
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = month.toString().padStart(2, '0')
+      
+      postingDate.value = `${year}-${monthStr}-${dayStr}`
+      displayDate.value = `${dayStr}/${monthStr}/${year}`
+      return
+    }
+  }
+
+  // Basic formatting as user types beyond 4 digits or manual entry
+  if (val.length > 2 && val.length <= 4) {
+    val = val.slice(0, 2) + '/' + val.slice(2)
+  } else if (val.length > 4) {
+    val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4, 8)
+  }
+  displayDate.value = val
+
+  // Try to update ISO if we have a full valid date
+  if (val.length === 10) {
+    const [d, m, y] = val.split('/')
+    if (d && m && y && y.length === 4) {
+      postingDate.value = `${y}-${m}-${d}`
+    }
+  }
+}
 
 function changeDate(days) {
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = d.toISOString().slice(0, 10)
+  displayDate.value = formatDateToDisplay(postingDate.value)
 }
 
 const userRemarks = ref('')
