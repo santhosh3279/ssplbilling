@@ -1234,8 +1234,15 @@ onMounted(() => {
   fetchSeriesList()
   fetchDropdownOptions()
   
-  // Ensure item cache is populated (TTL 5 mins)
-  if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
+  // Ensure item cache is correctly populated for Purchase
+  const { lastParams: cacheLastParams } = useItemCache()
+  const needsRefresh = !cachedItems.value.length || 
+    (Date.now() - lastSync.value) > 5 * 60 * 1000 ||
+    cacheLastParams.value.searchType !== 'Purchase' ||
+    cacheLastParams.value.priceList !== priceList.value ||
+    cacheLastParams.value.warehouse !== defaultWarehouse.value
+
+  if (needsRefresh) {
     refreshItemCache('Purchase', priceList.value, defaultWarehouse.value)
   }
   

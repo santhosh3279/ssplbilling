@@ -168,7 +168,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'select'])
 
-const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, hasHistory } = useItemCache()
+const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, hasHistory, lastParams } = useItemCache()
 
 const query = ref('')
 const selectedIdx = ref(0)
@@ -177,7 +177,6 @@ const scrollContainer = ref(null)
 const showDateModal = ref(false)
 const insightData = ref(null)
 const cipherMap = ref([])
-const firstLoadDone = ref(false)
 
 // ─── Encryption Logic ────────────────────────────────────────────────────────
 
@@ -206,10 +205,18 @@ function encPrice(val) {
 // ─── Data Preloading ─────────────────────────────────────────────────────────
 
 async function preloadItems(forceRefresh = false) {
-  if (!forceRefresh && allItems.value.length > 0) return
+  const currentWarehouse = props.warehouse || null
+  const currentPriceList = props.priceList || null
+  
+  const paramsChanged = forceRefresh || 
+    lastParams.value.searchType !== props.searchType ||
+    lastParams.value.priceList !== currentPriceList ||
+    lastParams.value.warehouse !== currentWarehouse
+
+  if (!paramsChanged && allItems.value.length > 0) return
 
   try {
-    await refreshItemCache(props.searchType, props.priceList, props.warehouse || null)
+    await refreshItemCache(props.searchType, currentPriceList, currentWarehouse)
   } catch (e) {
     console.error('[ItemSearch] Preload failed:', e)
   }
@@ -339,13 +346,7 @@ watch(selectedIdx, async (idx) => {
 watch(() => props.show, (newVal) => {
   if (newVal) {
     loadCipherMap()
-    // Refresh only the first time it opens, or if cache is empty
-    if (!firstLoadDone.value) {
-      preloadItems(true)
-      firstLoadDone.value = true
-    } else {
-      preloadItems()
-    }
+    preloadItems()
     focus()
   } else {
     showDateModal.value = false

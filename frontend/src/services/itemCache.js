@@ -5,6 +5,7 @@ import { frappeGet } from '../api.js'
 const items = ref([])
 const lastSync = ref(0)
 const syncLoading = ref(false)
+const lastParams = ref({ searchType: null, priceList: null, warehouse: null })
 
 // Global cache for customer sales history
 const customerSalesHistory = ref([])
@@ -24,6 +25,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
     })
     items.value = data || []
     lastSync.value = Date.now()
+    lastParams.value = { searchType, priceList, warehouse }
     return items.value
   } catch (e) {
     console.error('[itemCache] Refresh failed:', e)
@@ -94,6 +96,7 @@ export function useItemCache() {
     items,
     lastSync,
     syncLoading,
+    lastParams,
     refreshItemCache,
     lookupItemInCache,
     // History
