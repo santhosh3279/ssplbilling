@@ -33,7 +33,7 @@ ssplbilling/                     ← Frappe app root
     │   ├── composables/
     │   │   └── useBilling.js    ← All billing state + side-effects
     │   ├── components/
-    │   │   ├── ItemSearchModal.vue
+    │   │   ├── ItemSearch.vue
     │   │   ├── CustomerSearchModal.vue
     │   │   └── PrintOptionsModal.vue
     │   ├── pages/

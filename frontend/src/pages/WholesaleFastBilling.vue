@@ -342,10 +342,13 @@
     </footer>
 
     <!-- ══ ITEM SEARCH MODAL ══════════════════════════════════════════════════ -->
-    <ItemSearchModal
-      v-model="modalOpen"
+    <ItemSearch
+      ref="itemSearchModalRef"
+      :show="modalOpen"
+      search-type="Sales"
       :price-list="DEFAULT_PRICE_LIST"
-      @selected="onModalItemSelected"
+      @close="modalOpen = false"
+      @select="onModalItemSelected"
     />
 
     <CustomerLedger
@@ -396,7 +399,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
-import ItemSearchModal from "../components/ItemSearchModal.vue";
+import ItemSearch from "../components/ItemSearch.vue";
 import CustomerSearchModal from "../components/CustomerSearchModal.vue";
 import CustomerLedger from "./CustomerLedger.vue";
 import StockLedger from "./StockLedger.vue";
