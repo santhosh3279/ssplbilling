@@ -25,12 +25,16 @@ def get_item_naming_series():
 
 @frappe.whitelist()
 def get_next_barcode(naming_series):
-	"""Get next barcode from naming series. Returns only digits."""
-	from frappe.model.naming import make_autoname
+	"""
+	Peek at the next barcode without incrementing the database counter.
+	Used for UI display/preview only.
+	"""
+	from frappe.model.naming import parse_naming_series
 	import re
-	# Note: make_autoname increments the counter in tabSeries immediately.
-	# This reserves the number to prevent duplicates.
-	res = make_autoname(naming_series)
+	
+	# parse_naming_series usually returns the next value based on current tabSeries
+	# without actually committing the increment to the database.
+	res = parse_naming_series(naming_series)
 	return re.sub(r"\D", "", res)
 
 @frappe.whitelist()
@@ -39,13 +43,21 @@ def create_item(data):
 	if isinstance(data, str):
 		data = json.loads(data)
 	
-	item = frappe.new_doc("Item")
-	
-	# Use the barcode provided by frontend
+	is_manual = data.get("is_manual_barcode")
+	naming_series = data.get("naming_series")
 	barcode = data.get("barcode")
+	
+	if not is_manual and naming_series:
+		# Server-side increment and fetch of the REAL next number
+		from frappe.model.naming import make_autoname
+		import re
+		res = make_autoname(naming_series)
+		barcode = re.sub(r"\D", "", res)
+	
 	if not barcode:
 		frappe.throw("Barcode/Item Code is required")
 		
+	item = frappe.new_doc("Item")
 	item.item_code = barcode
 	item.item_name = data.get("item_name")
 	item.item_print_name = data.get("item_print_name")
@@ -67,4 +79,7 @@ def create_item(data):
 	item.update_stock = 1
 	
 	item.insert()
-	return item.name
+	return {
+		"name": item.name,
+		"item_code": item.item_code
+	}

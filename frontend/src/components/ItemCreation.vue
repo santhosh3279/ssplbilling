@@ -194,6 +194,7 @@ const itemNameInput = ref(null)
 const isSubmitting = ref(false)
 const isFetchingBarcode = ref(false)
 const isBarcodeManual = ref(false)
+const autoBarcode = ref('')
 const selectedSeries = ref('')
 const showHSNDropdown = ref(false)
 
@@ -217,7 +218,11 @@ watch(() => form.value.item_name, (newVal) => {
 // Track manual changes and force digits only
 watch(() => form.value.barcode, (newVal, oldVal) => {
   if (oldVal !== undefined && !isFetchingBarcode.value) {
-    isBarcodeManual.value = true
+    if (newVal !== autoBarcode.value) {
+      isBarcodeManual.value = true
+    } else {
+      isBarcodeManual.value = false
+    }
   }
   if (newVal && /\D/.test(newVal)) {
     form.value.barcode = newVal.replace(/\D/g, '')
@@ -270,7 +275,8 @@ async function generateBarcode() {
   try {
     const res = await getNextBarcode(selectedSeries.value)
     form.value.barcode = res
-    // Reset manual flag since we just got a fresh one from series
+    autoBarcode.value = res
+    // Explicitly set manual to false as we just fetched a fresh preview
     nextTick(() => { isBarcodeManual.value = false })
   } catch (e) {
     console.error('Failed to generate barcode', e)
@@ -289,17 +295,18 @@ async function handleSubmit() {
   
   isSubmitting.value = true
   try {
-    const name = await createItem({
+    const res = await createItem({
       ...form.value,
-      is_manual_barcode: isBarcodeManual.value
+      is_manual_barcode: isBarcodeManual.value,
+      naming_series: selectedSeries.value
     })
-    alert(`Item ${name} created successfully!`)
+    alert(`Item ${res.name} created successfully!`)
     emit('created', {
-      item_code: form.value.barcode || name,
+      item_code: res.item_code, // Use the real barcode from server
       item_name: form.value.item_name,
       price: form.value.standard_rate,
       uom: form.value.stock_uom,
-      tax_rate: 0 // Will be fetched by search enrichment
+      tax_rate: 0
     })
     resetForm()
   } catch (e) {
@@ -322,6 +329,7 @@ function resetForm() {
     item_tax_template: ''
   }
   isBarcodeManual.value = false
+  autoBarcode.value = ''
   if (selectedSeries.value) generateBarcode()
 }
 
