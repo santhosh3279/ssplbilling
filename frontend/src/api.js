@@ -505,6 +505,37 @@ export async function searchAccounts(query = "", accountType = null) {
   })
 }
 
+// ─── Purchase Invoice Helpers ─────────────────────────────────────────
+
+/**
+ * Fetch Purchase Invoices.
+ */
+export async function fetchPurchaseInvoices(query = "", limit = 50, postingDate = "") {
+  return frappeGet("ssplbilling.api.purchase_api.get_purchase_invoices", {
+    query,
+    limit,
+    ...(postingDate && { posting_date: postingDate }),
+  });
+}
+
+/**
+ * Fetch full details of a single Purchase Invoice.
+ */
+export async function getPurchaseInvoiceDetails(invoiceName) {
+  return frappeGet("ssplbilling.api.purchase_api.get_purchase_invoice", {
+    invoice_name: invoiceName,
+  });
+}
+
+/**
+ * Submit a Draft Purchase Invoice.
+ */
+export async function submitPurchaseInvoice(invoiceName) {
+  return frappePost("ssplbilling.api.purchase_api.submit_purchase_invoice", {
+    invoice_name: invoiceName,
+  });
+}
+
 // ─── Sales Invoice ─────────────────────────────────────────────────────────────
 
 /**

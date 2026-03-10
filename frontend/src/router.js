@@ -6,6 +6,7 @@ import SalesEntry from './pages/SalesEntry.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
 import Cashierpage from './pages/Cashierpage.vue'
+import PurchaseSubmit from './pages/PurchaseSubmit.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
@@ -41,6 +42,11 @@ const routes = [
     path: '/cashier',
     name: 'Cashierpage',
     component: Cashierpage,
+  },
+  {
+    path: '/purchase-submit',
+    name: 'PurchaseSubmit',
+    component: PurchaseSubmit,
   },
   {
     path: '/ledger',

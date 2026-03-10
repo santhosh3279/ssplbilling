@@ -285,12 +285,13 @@ const tiles = [
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', iconBg: 'bg-green-50' },
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', iconBg: 'bg-amber-50' },
   { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', iconBg: 'bg-blue-50' },
+  { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', iconBg: 'bg-amber-50' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', iconBg: 'bg-purple-50' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', iconBg: 'bg-rose-50' },
   { id: 'pricelist', name: 'Price List Viewer', desc: 'View item prices', icon: '💲', shortcut: 'F7', iconBg: 'bg-green-50' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'ledger', 'pricelist', 'journal-contra']
+const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'pricelist', 'journal-contra']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = { 
@@ -311,7 +312,7 @@ function openModule(id) {
 // ==================== F-KEY SHORTCUTS ====================
 const routeMap = {
   F1: 'sales', F2: 'purchase', F3: 'payment',
-  F5: 'cashier', F6: 'ledger',
+  F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
   F7: 'pricelist', F8: 'journal-contra',
 }
 
@@ -322,6 +323,7 @@ useShortcuts({
   'F1': () => openModule('sales'),
   'F2': () => openModule('purchase'),
   'F3': () => openModule('payment'),
+  'F4': () => openModule('purchase-submit'),
   'F5': () => openModule('cashier'),
   'F6': () => openModule('ledger'),
   'F7': () => openModule('pricelist'),

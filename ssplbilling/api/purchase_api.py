@@ -339,3 +339,19 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.append("items", {"item_code": item["item_code"], "qty": float(item["qty"]), "rate": float(item["rate"]), "warehouse": item.get("warehouse")})
     pi.save()
     return {"invoice_name": pi.name, "grand_total": float(pi.grand_total)}
+
+
+@frappe.whitelist()
+def submit_purchase_invoice(invoice_name):
+    """Submit a Draft Purchase Invoice."""
+    if not invoice_name:
+        frappe.throw("Invoice Name is required")
+    
+    pi = frappe.get_doc("Purchase Invoice", invoice_name)
+    if pi.docstatus == 0:
+        pi.submit()
+        return {"name": pi.name, "status": "Submitted"}
+    elif pi.docstatus == 1:
+        return {"name": pi.name, "status": "Already Submitted"}
+    else:
+        frappe.throw(f"Invoice {invoice_name} is already cancelled")
