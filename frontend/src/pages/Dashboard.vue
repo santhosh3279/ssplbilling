@@ -377,7 +377,7 @@ async function syncSettings() {
   showSyncSuccess.value = true
   setTimeout(() => {
     showSyncSuccess.value = false
-  }, 3000)
+  }, 2000)
 }
 
 async function fetchSettings() {
