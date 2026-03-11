@@ -501,6 +501,13 @@ const discountInput = ref(null)
 const dueDateInput = ref(null)
 const bankRefInput = ref(null)
 
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
 // --- STATE ---
 const invoices = ref([])
 const selectedInvoice = ref(null)
@@ -514,7 +521,7 @@ const errorMsg = ref('')
 const successMsg = ref('')
 
 const searchQuery = ref('')
-const filterDate = ref(new Date().toISOString().slice(0, 10))
+const filterDate = ref(getTodayIST())
 const showUnpaid = ref(false)
 const showBankRefModal = ref(false)
 const bankRefNo = ref('')
@@ -601,10 +608,10 @@ function handleDueDateInput(e) {
 function getIsoDueDate() {
   if (!dueDate.value || !dueDate.value.includes('/')) {
     if (dueDate.value.match(/^\d{4}-\d{2}-\d{2}$/)) return dueDate.value
-    return new Date().toISOString().slice(0, 10)
+    return getTodayIST()
   }
   const parts = dueDate.value.split('/')
-  if (parts.length !== 3) return new Date().toISOString().slice(0, 10)
+  if (parts.length !== 3) return getTodayIST()
   const dd = parts[0]
   const mm = parts[1]
   const yyyy = parts[2]
@@ -623,6 +630,7 @@ useShortcuts(cashierpageShortcuts({
 // --- COMPUTED ---
 const todayStr = computed(() => {
   return new Date().toLocaleDateString('en-IN', { 
+    timeZone: 'Asia/Kolkata',
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 

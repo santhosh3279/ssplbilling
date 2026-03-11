@@ -266,6 +266,13 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice } from '../api.js'
 import { useShortcuts } from '../services/shortcutManager'
 
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
 // --- STATE ---
 const invoices = ref([])
 const selectedInvoice = ref(null)
@@ -276,7 +283,7 @@ const errorMsg = ref('')
 const successMsg = ref('')
 
 const searchQuery = ref('')
-const filterDate = ref(new Date().toISOString().slice(0, 10))
+const filterDate = ref(getTodayIST())
 
 // --- SHORTCUTS ---
 useShortcuts({
@@ -308,6 +315,7 @@ function navigateBills(dir) {
 // --- COMPUTED ---
 const todayStr = computed(() => {
   return new Date().toLocaleDateString('en-IN', { 
+    timeZone: 'Asia/Kolkata',
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
   })
 })

@@ -580,8 +580,15 @@ import ItemSearch from '../components/ItemSearch.vue'
 import CustomerLedger from './CustomerLedger.vue'
 import StockLedger from './StockLedger.vue'
 
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
 const router = useRouter()
-const today = new Date().toISOString().slice(0, 10)
+const today = getTodayIST()
 
 // ─── Sub-window State ─────────────────────────────────────────────────────────
 const showCustomerLedgerWindow = ref(false)

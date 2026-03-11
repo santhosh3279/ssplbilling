@@ -260,7 +260,14 @@ watch(isContra, () => {
   nextTick(() => ledgerRefs[0]?.focus())
 })
 
-const postingDate = ref(new Date().toISOString().slice(0, 10))
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
+const postingDate = ref(getTodayIST())
 const displayDate = ref(formatDateToDisplay(postingDate.value))
 const dateInput = ref(null)
 

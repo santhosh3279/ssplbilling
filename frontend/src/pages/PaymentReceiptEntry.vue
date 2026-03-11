@@ -236,9 +236,16 @@ const modes = [
 ]
 const mops = ['Cash', 'UPI', 'Bank Transfer']
 
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
 // ─── State ───────────────────────────────────────────────────────────────────
 const entryMode = ref(route.query.mode || 'Receive') // 'Receive' or 'Pay'
-const date = ref(new Date().toISOString().split('T')[0])
+const date = ref(getTodayIST())
 const party = ref('')
 const partyName = ref('')
 const showSearchModal = ref(false)

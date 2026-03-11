@@ -518,9 +518,23 @@ watch(zoomPercent, (newZoom) => {
   localStorage.setItem('wb-zoom', newZoom.toString())
 })
 
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
+function getSevenDaysAgoIST() {
+  const date = new Date(Date.now() - 7 * 86400000)
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
 // ─── Filter state ─────────────────────────────────────────────────────────────
-const today = new Date().toISOString().slice(0, 10)
-const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
+const today = getTodayIST()
+const sevenDaysAgo = getSevenDaysAgoIST()
 
 const fromDate = ref(sevenDaysAgo)
 const toDate = ref(today)

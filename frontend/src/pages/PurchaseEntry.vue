@@ -105,9 +105,13 @@
         <!-- Bill Date -->
         <div class="flex items-center gap-3 border-l border-gray-100 pl-6 whitespace-nowrap">
           <label class="text-[10px] font-bold uppercase text-gray-400">Bill Date</label>
-          <div class="text-xl font-bold text-gray-900" style="font-family: 'Poppins', sans-serif">
-            {{ fmtDate(billDate) }}
-          </div>
+          <input 
+            v-model="billDate" 
+            type="date" 
+            :disabled="billDocStatus !== 0"
+            class="rounded border border-gray-300 bg-white px-2 py-0.5 text-xl font-bold text-gray-900 outline-none focus:border-blue-500 disabled:bg-gray-50 tabular-nums"
+            style="font-family: 'Poppins', sans-serif"
+          />
         </div>
       </div>
     </div>
@@ -950,7 +954,7 @@ async function pickItem(item) {
 // ==================== MODIFY BILL ====================
 const showModifyBill = ref(false)
 const modifyQuery = ref('')
-const modifyDate = ref(new Date().toISOString().split('T')[0])
+const modifyDate = ref(getTodayIST())
 const modifyResults = ref([])
 const modifyLoading = ref(false)
 let modifySearchTimeout = null
@@ -1041,8 +1045,15 @@ function enterEditMode() {
   nextTick(() => supplierInput.value?.focus())
 }
 
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
 // ==================== BILLING ====================
-const billDate = ref(new Date().toISOString().split('T')[0])
+const billDate = ref(getTodayIST())
 const supplier = ref('')
 const billSeries = ref('')
 
@@ -1166,6 +1177,7 @@ async function saveBill() {
 function startNewBill() {
   items.value = []; selectedRow.value = -1; supplier.value = ''; suppSearch.value = ''
   discountPct.value = 0; newItemCode.value = ''; newQty.value = 1; 
+  billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedSupplierDetails.value = null
   nextTick(() => seriesSelect.value?.focus())

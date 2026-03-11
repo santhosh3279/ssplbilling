@@ -616,9 +616,23 @@ watch(zoomPercent, (newZoom) => {
   localStorage.setItem('wb-zoom', newZoom.toString())
 })
 
+function getTodayIST() {
+  const date = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
+function getNinetyDaysAgoIST() {
+  const date = new Date(Date.now() - 90 * 86400000)
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  return formatter.format(date)
+}
+
 // ─── Filter state ─────────────────────────────────────────────────────────────
-const today = new Date().toISOString().slice(0, 10)
-const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
+const today = getTodayIST()
+const ninetyDaysAgo = getNinetyDaysAgoIST()
 
 const selectedLedger = ref(null)
 const fromDate = ref(ninetyDaysAgo)
