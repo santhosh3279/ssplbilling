@@ -8,8 +8,10 @@
   "cipher_map",
   "discount_account",
   "section_break_series",
+  "column_break_raod",
   "billing_series",
-  "user_series"
+  "user_series",
+  "table_vycb"
  ],
  "fields": [
   {
@@ -45,12 +47,22 @@
    "fieldtype": "Link",
    "label": "Discount Account",
    "options": "Account"
+  },
+  {
+   "fieldname": "column_break_raod",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "table_vycb",
+   "fieldtype": "Table",
+   "label": "Printer Settings",
+   "options": "Printer and Format"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-03-06 16:17:19.036906",
- "modified_by": "Administrator",
+ "modified": "2026-03-12 02:09:40.389013",
+ "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "SSPL Billing Settings",
  "owner": "Administrator",

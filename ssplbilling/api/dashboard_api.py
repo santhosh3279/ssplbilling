@@ -145,4 +145,11 @@ def get_billing_settings():
 			}
 			for r in settings.user_series
 		],
+		"printer_settings": [
+			{
+				"printer": r.printer or "",
+				"template": r.template or "",
+			}
+			for r in (settings.table_vycb or [])
+		],
 	}
