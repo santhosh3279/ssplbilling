@@ -95,11 +95,9 @@ function formatDateToDisplay(iso) {
 
 function initDates() {
   const now = new Date()
-  
-  // Local date components
-  const y = now.getFullYear()
-  const m = now.getMonth() + 1 // Jan is 0, so +1
-  const d = now.getDate()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
+  const [y, m, d] = formatter.format(now).split('-').map(Number)
 
   // From Date: April 1st of the current fiscal year
   // If we are in Jan/Feb/March, the fiscal year started in the previous calendar year
@@ -137,8 +135,12 @@ function onInput(e, field) {
     
     if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
       const now = new Date()
-      const currentMonth = now.getMonth() + 1
-      let year = now.getFullYear()
+      const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const formatter = new Intl.DateTimeFormat('en-CA', options)
+      const [y, m] = formatter.format(now).split('-').map(Number)
+
+      const currentMonth = m
+      let year = y
 
       if (month > currentMonth) {
         year--

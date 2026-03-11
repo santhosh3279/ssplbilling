@@ -131,7 +131,7 @@
             <span class="text-sm font-bold uppercase text-gray-400 truncate">Last Inv</span>
             <span class="text-xl font-semibold text-gray-700 truncate">
               {{ results[selectedIdx].last_invoice_date
-                  ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
+                  ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: '2-digit' })
                   : 'None' }}
             </span>
           </div>
