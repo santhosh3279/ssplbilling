@@ -37,7 +37,7 @@
           <div v-if="syncing && !rawSettings" class="py-4 text-center text-xs text-gray-400">Loading...</div>
 
           <template v-if="rawSettings">
-            <!-- Discount Account & Cipher Map -->
+            <!-- Discount Account, Cipher Map & Warehouse -->
             <div class="mb-3 flex flex-col gap-1.5">
               <div class="flex justify-between text-xs">
                 <span class="text-gray-500">Discount Account</span>
@@ -46,6 +46,10 @@
               <div class="flex justify-between text-xs">
                 <span class="text-gray-500">Cipher Map</span>
                 <span class="font-mono text-gray-700">{{ rawSettings.cipher_map || '--' }}</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-gray-500">Default Warehouse</span>
+                <span class="font-medium text-gray-700">{{ rawSettings.default_warehouse || '--' }}</span>
               </div>
             </div>
 
