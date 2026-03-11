@@ -50,6 +50,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
             <input 
+              ref="dateInput"
               v-model="filterDate"
               @change="loadInvoices"
               type="date" 
@@ -500,6 +501,7 @@ const bankInput = ref(null)
 const discountInput = ref(null)
 const dueDateInput = ref(null)
 const bankRefInput = ref(null)
+const dateInput = ref(null)
 
 function getTodayIST() {
   const date = new Date()
@@ -872,11 +874,13 @@ function handleKeydown(e) {
 }
 
 onMounted(() => {
+  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   loadInvoices()
   window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.removeEventListener('keydown', handleKeydown)
 })
 </script>

@@ -75,6 +75,7 @@
         <div>
           <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">From</label>
           <input
+            ref="dateInput"
             v-model="fromDate"
             type="date"
             class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
@@ -637,6 +638,7 @@ const ninetyDaysAgo = getNinetyDaysAgoIST()
 const selectedLedger = ref(null)
 const fromDate = ref(ninetyDaysAgo)
 const toDate = ref(today)
+const dateInput = ref(null)
 
 // ─── Ledger state ─────────────────────────────────────────────────────────────
 const loading = ref(false)
@@ -844,6 +846,7 @@ function onGlobalKeydown(e) {
 }
 
 onMounted(async () => {
+  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.addEventListener('keydown', onGlobalKeydown)
 
   if (props.initialFromDate) fromDate.value = props.initialFromDate
@@ -882,6 +885,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.removeEventListener('keydown', onGlobalKeydown)
 })
 </script>

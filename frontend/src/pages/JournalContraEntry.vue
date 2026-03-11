@@ -505,6 +505,7 @@ function handleRemarksEnter() {
 }
 
 onMounted(() => {
+  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   // Mount shortcuts on pageload
   useShortcuts(journalContraShortcuts({
     switchToJournal: () => { isContra.value = false },
@@ -596,6 +597,7 @@ async function saveEntry() {
 }
 
 onUnmounted(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
 })
 </script>
 

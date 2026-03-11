@@ -115,6 +115,7 @@
           <div>
             <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Date</label>
             <input 
+              ref="dateInput"
               v-model="date" 
               type="date"
               class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base font-bold outline-none focus:border-blue-500"
@@ -263,6 +264,7 @@ const loadingOutstandings = ref(false)
 const saving = ref(false)
 
 const partyInput = ref(null)
+const dateInput = ref(null)
 const amountInput = ref(null)
 
 // ─── Computed ────────────────────────────────────────────────────────────────
@@ -411,6 +413,7 @@ function handleKeydown(e) {
 }
 
 onMounted(() => {
+  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.addEventListener('keydown', handleKeydown)
   loadUserDefaults()
   if (route.query.mode) {
@@ -426,6 +429,7 @@ watch(() => route.query.mode, (newMode) => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.removeEventListener('keydown', handleKeydown)
 })
 </script>

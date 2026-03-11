@@ -106,6 +106,7 @@
         <div class="flex items-center gap-3 border-l border-gray-100 pl-6 whitespace-nowrap">
           <label class="text-[10px] font-bold uppercase text-gray-400">Bill Date</label>
           <input 
+            ref="dateInput"
             v-model="billDate" 
             type="date" 
             :disabled="billDocStatus !== 0"
@@ -595,6 +596,7 @@ const newQtyInput = ref(null)
 const supplierInput = ref(null)
 const modifySearchInput = ref(null)
 const seriesSelect = ref(null)
+const dateInput = ref(null)
 const discountInput = ref(null)
 const saveButton = ref(null)
 const stayHereBtn = ref(null)
@@ -1248,6 +1250,7 @@ useShortcuts(purchaseEntryShortcuts({
 }))
 
 onMounted(() => {
+  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   fetchSeriesList()
   fetchDropdownOptions()
   
@@ -1268,5 +1271,9 @@ onMounted(() => {
   } else {
     nextTick(() => seriesSelect.value?.focus())
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
 })
 </script>

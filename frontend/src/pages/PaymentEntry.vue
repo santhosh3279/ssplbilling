@@ -1077,10 +1077,14 @@ function onGlobalKey(e) {
 }
 
 onMounted(() => {
+  window.addEventListener('wb-global-date-focus', () => dateRef.value?.focus());
   window.addEventListener('keydown', onGlobalKey)
   setTimeout(() => partyRef.value?.focus(), 50)
 })
-onUnmounted(() => window.removeEventListener('keydown', onGlobalKey))
+onUnmounted(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateRef.value?.focus());
+  window.removeEventListener('keydown', onGlobalKey)
+})
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(n) {

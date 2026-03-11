@@ -14,5 +14,8 @@ export const globalShortcuts = {
   // Add other shared shortcuts here (e.g., Home, Settings)
   'ALT+H': () => {
     window.dispatchEvent(new CustomEvent('wb-navigate-home'));
+  },
+  'ALT+D': () => {
+    window.dispatchEvent(new CustomEvent('wb-global-date-focus'));
   }
 };

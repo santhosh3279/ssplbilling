@@ -641,6 +641,7 @@ function onGlobalKey(e) {
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(async () => {
+  window.addEventListener('wb-global-date-focus', () => dateRef.value?.focus());
   await init();
   nextTick(() => dateRef.value?.focus());
 });
@@ -660,6 +661,10 @@ function fmtCurrency(val) {
     maximumFractionDigits: 2,
   });
 }
+
+onBeforeUnmount(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateRef.value?.focus());
+});
 </script>
 
 <style>

@@ -69,6 +69,7 @@
         <div>
           <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">From</label>
           <input
+            ref="dateInput"
             v-model="fromDate"
             type="date"
             class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
@@ -538,6 +539,7 @@ const sevenDaysAgo = getSevenDaysAgoIST()
 
 const fromDate = ref(sevenDaysAgo)
 const toDate = ref(today)
+const dateInput = ref(null)
 const selectedItem = ref(null)
 const selectedWarehouse = ref('')
 const allowedWarehouses = ref([])
@@ -746,6 +748,7 @@ function onGlobalKeydown(e) {
 }
 
 onMounted(async () => {
+  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.addEventListener('keydown', onGlobalKeydown)
 
   // Fetch allowed warehouses from billing settings
@@ -792,6 +795,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.removeEventListener('keydown', onGlobalKeydown)
 })
 </script>
