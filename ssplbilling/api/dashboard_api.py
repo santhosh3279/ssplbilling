@@ -130,6 +130,7 @@ def get_billing_settings():
 				"tax_template": r.tax_template or "",
 				"cost_center": r.cost_center or "",
 				"print_format": r.print_format or "",
+				"printer": r.printer or "",
 			}
 			for r in settings.billing_series
 		],

@@ -149,6 +149,7 @@
                       <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Tax Template</th>
                       <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Cost Center</th>
                       <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Print Format</th>
+                      <th class="whitespace-nowrap px-2 py-1.5 text-left text-gray-400">Printer</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -159,6 +160,7 @@
                       <td class="whitespace-nowrap px-2 py-1.5">{{ bs.tax_template || '--' }}</td>
                       <td class="whitespace-nowrap px-2 py-1.5">{{ bs.cost_center || '--' }}</td>
                       <td class="whitespace-nowrap px-2 py-1.5">{{ bs.print_format || '--' }}</td>
+                      <td class="whitespace-nowrap px-2 py-1.5">{{ bs.printer || '--' }}</td>
                     </tr>
                   </tbody>
                 </table>
