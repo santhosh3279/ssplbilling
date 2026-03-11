@@ -125,7 +125,7 @@
                   <tbody>
                     <tr v-for="us in visibleUserSeries" :key="us.name" class="border-t border-gray-100">
                       <td class="px-2 py-1.5 font-medium">{{ us.user || '--' }}</td>
-                      <td class="px-2 py-1.5 font-mono">{{ us.allowed_series_seperated_by_comma || '--' }}</td>
+                      <td class="px-2 py-1.5 font-mono">{{ us.allowed_series || '--' }}</td>
                       <td class="px-2 py-1.5 text-right font-mono">{{ us.zoom_value || '--' }}</td>
                       <td class="px-2 py-1.5">{{ us.cash || '--' }}</td>
                       <td class="px-2 py-1.5">{{ us.bank_account || '--' }}</td>
@@ -233,7 +233,7 @@ const visibleBillingSeries = computed(() => {
   if (isAdmin.value) return rawSettings.value.billing_series
   const row = currentUserRow.value
   if (!row) return []
-  const allowed = (row.allowed_series_seperated_by_comma || '')
+  const allowed = (row.allowed_series || '')
     .split(',').map(s => s.trim()).filter(Boolean)
   if (!allowed.length || allowed.includes('ALL')) return rawSettings.value.billing_series
   const allowedPrefixes = allowed.map(s => getAlpha(s).slice(0, 3))
