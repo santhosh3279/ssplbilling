@@ -85,7 +85,7 @@
 
           <!-- No templates -->
           <div v-else-if="!templates.length" class="rounded-lg px-3 py-2 text-xs" style="background:#450a0a;color:#f87171">
-            No Thermal Print Template found for <strong>{{ doctype }}</strong>. Create one first.
+            No Print Template found for <strong>{{ doctype }}</strong>. Create one first.
           </div>
 
           <template v-else>
@@ -205,7 +205,7 @@ async function openThermal() {
     const [p, t] = await Promise.all([
       frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
       frappeGet('frappe.client.get_list', {
-        doctype: 'Thermal Print Template',
+        doctype: 'Print Template',
         filters: JSON.stringify({ document_type: props.doctype }),
         fields: JSON.stringify(['name']),
         limit: 50,
@@ -231,16 +231,16 @@ async function sendPrint() {
   success.value = ''
   try {
     const res = await frappePost(
-      'printer_server_configuration.printer_server_configuration.api.print_thermal',
+      'printer_server_configuration.printer_server_configuration.api.print_document',
       {
-        printer:          selectedPrinter.value,
-        thermal_template: selectedTemplate.value,
-        document_type:    props.doctype,
-        document_name:    props.invoiceName,
-        title:            props.invoiceName,
+        printer:        selectedPrinter.value,
+        print_template: selectedTemplate.value,
+        document_type:  props.doctype,
+        document_name:  props.invoiceName,
+        title:          props.invoiceName,
       },
     )
-    success.value = `Sent to printer — Job ${res.job}`
+    success.value = `Sent to printer — Job ${res.cups_job_id}`
   } catch (e) {
     error.value = e.message
   } finally {
