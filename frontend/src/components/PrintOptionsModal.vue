@@ -165,14 +165,15 @@ const success        = ref('')
 
 const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
 
-watch(selectedTemplate, (newTemplate) => {
-  if (!newTemplate || !printers.value.length) return
+function syncPrinter() {
+  const template = selectedTemplate.value
+  if (!template || !printers.value.length) return
   
   let targetPrinter = ''
   try {
     const cached = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_CACHE_KEY) || 'null')
     if (cached?.data?.printer_settings) {
-      const mapping = cached.data.printer_settings.find(ps => ps.template === newTemplate)
+      const mapping = cached.data.printer_settings.find(ps => ps.template === template)
       if (mapping) targetPrinter = mapping.printer
     }
   } catch (e) {}
@@ -184,7 +185,9 @@ watch(selectedTemplate, (newTemplate) => {
     const def = printers.value.find(pr => pr.is_default) || printers.value[0]
     if (def) selectedPrinter.value = def.name
   }
-})
+}
+
+watch(selectedTemplate, () => syncPrinter())
 
 function handleKeydown(e) {
   if (e.key === 'Escape') {
@@ -243,6 +246,9 @@ async function openThermal() {
     } else if (templates.value.length) {
       selectedTemplate.value = templates.value[0].name
     }
+
+    // Explicitly sync printer after printers are loaded, in case watcher ran too early
+    syncPrinter()
   } catch (e) {
     error.value = e.message
   } finally {

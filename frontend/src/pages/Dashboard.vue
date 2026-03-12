@@ -404,6 +404,7 @@ async function fetchSettings() {
       settings = await dashboardApi.getBillingSettings()
       if (settings) {
         localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
+        localStorage.setItem(GENERAL_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
       }
     }
     
