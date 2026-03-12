@@ -33,7 +33,10 @@
           <div class="space-y-4">
             <!-- Template -->
             <div>
-              <label class="mb-1 block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Template</label>
+              <div class="mb-1 flex items-center justify-between">
+                <label class="block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Template</label>
+                <kbd class="rounded border border-gray-200 bg-white px-1 py-0.5 font-mono text-[9px] text-gray-400">F2</kbd>
+              </div>
               <select
                 ref="templateSelect"
                 v-model="selectedTemplate"
@@ -49,10 +52,7 @@
 
             <!-- Printer -->
             <div>
-              <div class="mb-1 flex items-center justify-between">
-                <label class="block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Printer</label>
-                <kbd class="rounded border border-gray-200 bg-white px-1 py-0.5 font-mono text-[9px] text-gray-400">F2</kbd>
-              </div>
+              <label class="mb-1 block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Printer</label>
               <select
                 ref="printerSelect"
                 v-model="selectedPrinter"
@@ -175,7 +175,7 @@ function handleKeydown(e) {
     }
   } else if (e.key === 'F2') {
     e.preventDefault()
-    printerSelect.value?.focus()
+    templateSelect.value?.focus()
   } else if (e.key.toLowerCase() === 'p') {
     e.preventDefault()
     openPreview()
