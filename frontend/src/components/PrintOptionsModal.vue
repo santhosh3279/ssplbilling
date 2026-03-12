@@ -143,7 +143,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 
 const props = defineProps({
@@ -164,6 +164,27 @@ const error          = ref('')
 const success        = ref('')
 
 const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
+
+watch(selectedTemplate, (newTemplate) => {
+  if (!newTemplate || !printers.value.length) return
+  
+  let targetPrinter = ''
+  try {
+    const cached = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_CACHE_KEY) || 'null')
+    if (cached?.data?.printer_settings) {
+      const mapping = cached.data.printer_settings.find(ps => ps.template === newTemplate)
+      if (mapping) targetPrinter = mapping.printer
+    }
+  } catch (e) {}
+
+  if (targetPrinter && printers.value.some(pr => pr.name === targetPrinter)) {
+    selectedPrinter.value = targetPrinter
+  } else {
+    // Fallback to default printer
+    const def = printers.value.find(pr => pr.is_default) || printers.value[0]
+    if (def) selectedPrinter.value = def.name
+  }
+})
 
 function handleKeydown(e) {
   if (e.key === 'Escape') {
@@ -216,30 +237,11 @@ async function openThermal() {
     printers.value  = p || []
     templates.value = t || []
 
-    // 1. Set Template
+    // Setting the template triggers the watcher to select the correct printer
     if (props.initialPrintFormat && templates.value.some(tmp => tmp.name === props.initialPrintFormat)) {
       selectedTemplate.value = props.initialPrintFormat
     } else if (templates.value.length) {
       selectedTemplate.value = templates.value[0].name
-    }
-
-    // 2. Set Printer from General Settings Cache or Default
-    let cachedPrinter = ''
-    try {
-      const cached = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_CACHE_KEY) || 'null')
-      if (cached && cached.data && cached.data.printer_settings) {
-        const mapping = cached.data.printer_settings.find(ps => ps.template === selectedTemplate.value)
-        if (mapping) cachedPrinter = mapping.printer
-      }
-    } catch (e) {
-      console.warn('[PrintOptionsModal] Cache read failed:', e)
-    }
-
-    if (cachedPrinter && printers.value.some(pr => pr.name === cachedPrinter)) {
-      selectedPrinter.value = cachedPrinter
-    } else {
-      const def = printers.value.find(pr => pr.is_default) || printers.value[0]
-      if (def) selectedPrinter.value = def.name
     }
   } catch (e) {
     error.value = e.message

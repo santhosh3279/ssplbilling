@@ -163,6 +163,7 @@ import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
 
 const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
+const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
 
 const props = defineProps({
   show: Boolean,
@@ -204,8 +205,9 @@ async function handleSync() {
       localStorage.setItem('wb-zoom', String(currentUserRow.value.zoom_value))
       localZoom.value = parseInt(currentUserRow.value.zoom_value)
     }
-    // Clear billing settings cache so Dashboard re-fetches fresh data
+    // Clear billing settings caches so Dashboard re-fetches fresh data
     localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
+    localStorage.removeItem(GENERAL_SETTINGS_CACHE_KEY)
   }
   emit('sync')
 }
