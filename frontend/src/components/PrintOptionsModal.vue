@@ -31,6 +31,22 @@
         <template v-else>
           <!-- Settings Selection -->
           <div class="space-y-4">
+            <!-- Template -->
+            <div>
+              <label class="mb-1 block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Template</label>
+              <select
+                ref="templateSelect"
+                v-model="selectedTemplate"
+                class="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all shadow-sm"
+                style="background:#f8fafc;border-color:#e2e8f0;color:#1e293b"
+                @focus="e => { e.target.style.borderColor='#3b82f6'; e.target.style.background='#ffffff' }"
+                @blur="e => { e.target.style.borderColor='#e2e8f0'; e.target.style.background='#f8fafc' }"
+              >
+                <option v-for="t in templates" :key="t.name" :value="t.name">{{ t.name }}</option>
+                <option v-if="!templates.length" disabled value="">No templates found</option>
+              </select>
+            </div>
+
             <!-- Printer -->
             <div>
               <div class="mb-1 flex items-center justify-between">
@@ -49,22 +65,6 @@
                   {{ p.printer_name }} — {{ p.status }}
                 </option>
                 <option v-if="!printers.length" disabled value="">No printers found</option>
-              </select>
-            </div>
-
-            <!-- Template -->
-            <div>
-              <label class="mb-1 block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Template</label>
-              <select
-                ref="templateSelect"
-                v-model="selectedTemplate"
-                class="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all shadow-sm"
-                style="background:#f8fafc;border-color:#e2e8f0;color:#1e293b"
-                @focus="e => { e.target.style.borderColor='#3b82f6'; e.target.style.background='#ffffff' }"
-                @blur="e => { e.target.style.borderColor='#e2e8f0'; e.target.style.background='#f8fafc' }"
-              >
-                <option v-for="t in templates" :key="t.name" :value="t.name">{{ t.name }}</option>
-                <option v-if="!templates.length" disabled value="">No templates found</option>
               </select>
             </div>
           </div>
@@ -162,10 +162,10 @@ function handleKeydown(e) {
 
   if (e.key === 'Enter') {
     const active = document.activeElement
-    if (active === printerSelect.value) {
+    if (active === templateSelect.value) {
       e.preventDefault()
-      templateSelect.value?.focus()
-    } else if (active === templateSelect.value) {
+      printerSelect.value?.focus()
+    } else if (active === printerSelect.value) {
       e.preventDefault()
       printNowBtn.value?.focus()
     } else {
