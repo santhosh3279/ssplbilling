@@ -453,6 +453,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="savedInvoiceName"
+      :initial-print-format="printScheme"
       @close="showPrintModal = false"
     />
 

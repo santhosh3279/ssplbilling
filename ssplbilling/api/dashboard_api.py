@@ -120,7 +120,6 @@ def get_billing_settings():
 	return {
 		"discount_account": settings.discount_account or "",
 		"cipher_map": settings.cipher_map or "",
-		"default_warehouse": settings.default_warehouse or "",
 		"user_zoom": user_zoom,
 		"user_defaults": user_defaults,
 		"billing_series": [
