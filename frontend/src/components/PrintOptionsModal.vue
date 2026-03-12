@@ -56,6 +56,7 @@
             <div>
               <label class="mb-1 block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Template</label>
               <select
+                ref="templateSelect"
                 v-model="selectedTemplate"
                 class="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all shadow-sm"
                 style="background:#f8fafc;border-color:#e2e8f0;color:#1e293b"
@@ -75,6 +76,7 @@
           <!-- Actions -->
           <div class="flex flex-col gap-3 mt-2">
             <button
+              ref="printNowBtn"
               @click="sendPrint"
               :disabled="printing || !printers.length || !templates.length"
               class="w-full rounded-xl py-3.5 text-sm font-bold tracking-wider transition-all flex items-center justify-center gap-3 shadow-md"
@@ -115,6 +117,8 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const printerSelect  = ref(null)
+const templateSelect = ref(null)
+const printNowBtn    = ref(null)
 const loading        = ref(false)
 const printers       = ref([])
 const templates      = ref([])
@@ -157,8 +161,18 @@ function handleKeydown(e) {
   }
 
   if (e.key === 'Enter') {
-    e.preventDefault()
-    sendPrint()
+    const active = document.activeElement
+    if (active === printerSelect.value) {
+      e.preventDefault()
+      templateSelect.value?.focus()
+    } else if (active === templateSelect.value) {
+      e.preventDefault()
+      printNowBtn.value?.focus()
+    } else {
+      // If none of the selects are focused, or button is already focused, print
+      e.preventDefault()
+      sendPrint()
+    }
   } else if (e.key === 'F2') {
     e.preventDefault()
     printerSelect.value?.focus()

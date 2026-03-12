@@ -1357,16 +1357,17 @@ import { salesEntryShortcuts } from '../shortcuts/salesEntryShortcuts'
 
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(salesEntryShortcuts({
-  save: () => saveBill(),
-  newCustomer: () => openCustomerSearch(),
-  searchItem: () => openSearch('', null),
+  save: () => { if (!showPrintModal.value) saveBill() },
+  newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
+  searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   deleteRow: () => {
-    if (selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
+    if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       softDelete(selectedRow.value)
     }
   },
-  focusSeries: () => seriesSelect.value?.focus(),
+  focusSeries: () => { if (!showPrintModal.value) seriesSelect.value?.focus() },
   toggleDiscountSave: () => {
+    if (showPrintModal.value) return
     if (document.activeElement === discountInput.value) {
       saveButton.value?.focus()
     } else {
