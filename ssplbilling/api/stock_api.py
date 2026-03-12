@@ -232,6 +232,22 @@ def get_stock_entry(name):
 
 
 @frappe.whitelist()
+def submit_stock_entry(name):
+    """Submit a Draft Stock Entry."""
+    if not name:
+        frappe.throw(_("Stock Entry name is required"))
+    
+    se = frappe.get_doc("Stock Entry", name)
+    if se.docstatus == 0:
+        se.submit()
+        return {"name": se.name, "status": "Submitted"}
+    elif se.docstatus == 1:
+        return {"name": se.name, "status": "Already Submitted"}
+    else:
+        frappe.throw(_("Stock Entry {0} is already cancelled").format(name))
+
+
+@frappe.whitelist()
 def get_stock_entry_purposes():
     """Get all available purposes for Stock Entry."""
     meta = frappe.get_meta("Stock Entry")

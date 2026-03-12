@@ -207,9 +207,17 @@
             <button 
               ref="saveButton" 
               @click="saveEntry" 
-              class="flex-1 rounded-xl bg-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all"
+              :disabled="entryDocStatus !== 0"
+              class="flex-1 rounded-xl bg-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-400"
             >
               {{ entryName ? 'Update Entry' : 'Save Draft (Ctrl+S)' }}
+            </button>
+            <button 
+              v-if="entryName && entryDocStatus === 0"
+              @click="submitEntry" 
+              class="h-12 rounded-xl bg-green-600 text-sm font-bold text-white shadow-lg shadow-green-100 hover:bg-green-700 active:scale-95 transition-all"
+            >
+              Submit / Post
             </button>
             <div class="flex gap-2 h-14">
               <button @click="startNewEntry" class="flex-1 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 hover:bg-gray-50 transition">Clear</button>
@@ -531,9 +539,22 @@ async function saveEntry() {
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
     entryName.value = res.name
     alert(`Entry ${res.name} saved as Draft`)
-    startNewEntry()
+    // Optionally stay on the page to allow submission
   } catch (e) {
     alert(e.message || 'Save failed')
+  }
+}
+
+async function submitEntry() {
+  if (!entryName.value) return
+  if (!confirm('Are you sure you want to SUBMIT this entry? This will update stock levels and cannot be undone.')) return
+
+  try {
+    await frappePost(`${API}.submit_stock_entry`, { name: entryName.value })
+    alert(`Entry ${entryName.value} submitted successfully`)
+    startNewEntry()
+  } catch (e) {
+    alert(e.message || 'Submission failed')
   }
 }
 
