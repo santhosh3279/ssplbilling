@@ -84,7 +84,7 @@
         </div>
 
         <div class="mt-8 flex items-center justify-center gap-6 text-xs text-gray-400">
-          <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F1</kbd> – <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F9</kbd> to quick open</span>
+          <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F1</kbd> – <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F10</kbd> to quick open</span>
           <span class="text-gray-300">|</span>
           <span><kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">Ctrl+L</kbd> Customer</span>
           <span class="text-gray-300">|</span>
@@ -213,14 +213,16 @@ const tiles = [
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', iconBg: 'bg-purple-50' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', iconBg: 'bg-rose-50' },
   { id: 'pricelist', name: 'Price List Viewer', desc: 'View item prices', icon: '💲', shortcut: 'F7', iconBg: 'bg-green-50' },
+  { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F10', iconBg: 'bg-indigo-50' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'pricelist', 'journal-contra']
+const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'pricelist', 'journal-contra', 'material-transfer']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = { 
   payment: '/payment', 
-  'journal-contra': '/journal-contra'
+  'journal-contra': '/journal-contra',
+  'material-transfer': '/material-transfer'
 }
 
 function openModule(id) {
@@ -238,6 +240,7 @@ const routeMap = {
   F1: 'sales', F2: 'purchase', F3: 'payment',
   F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
   F7: 'pricelist-update', F8: 'journal-contra', F9: 'payment',
+  F10: 'material-transfer',
 }
 
 import { useShortcuts } from '../services/shortcutManager'
@@ -253,6 +256,7 @@ useShortcuts({
   'F7': () => openModule('pricelist-update'),
   'F8': () => openModule('journal-contra'),
   'F9': () => openModule('payment'),
+  'F10': () => openModule('material-transfer'),
   'ESCAPE': () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }

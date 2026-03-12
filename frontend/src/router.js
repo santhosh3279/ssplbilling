@@ -10,6 +10,7 @@ import PurchaseSubmit from './pages/PurchaseSubmit.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
+import MaterialTransfer from './pages/MaterialTransfer.vue'
 
 const routes = [
   {
@@ -62,6 +63,11 @@ const routes = [
     path: '/payment',
     name: 'PaymentReceiptEntry',
     component: PaymentReceiptEntry,
+  },
+  {
+    path: '/material-transfer',
+    name: 'MaterialTransfer',
+    component: MaterialTransfer,
   },
 ]
 

@@ -8,11 +8,13 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		filters["is_sales_item"] = 1
 	elif search_type == "Purchase":
 		filters["is_purchase_item"] = 1
+	elif search_type == "Stock":
+		filters["is_stock_item"] = 1
 
 	items = frappe.get_all(
 		"Item",
 		filters=filters,
-		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate"],
+		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate", "valuation_rate"],
 		limit=0,
 		order_by="item_name asc",
 	)
@@ -24,6 +26,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	for i in items:
 		i["stock"] = 0.0
 		i["price"] = float(i.rate or 0)
+		i["valuation_rate"] = float(i.valuation_rate or 0)
 		i["price_lists"] = []
 
 	# 1. Batch fetch ALL rates for active price lists
