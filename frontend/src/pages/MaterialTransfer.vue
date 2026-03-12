@@ -40,9 +40,21 @@
           </select>
         </div>
 
-        <!-- From Warehouse -->
+        <!-- Purpose -->
         <div class="flex items-center gap-2 border-l border-gray-100 pl-8">
-          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">From Warehouse</label>
+          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">Type</label>
+          <select 
+            v-model="purpose" 
+            :disabled="entryDocStatus !== 0"
+            class="rounded border border-gray-300 bg-white px-2 py-1.5 text-sm font-bold text-blue-600 outline-none focus:border-blue-500 disabled:bg-gray-50 min-w-[150px]"
+          >
+            <option v-for="p in availablePurposes" :key="p" :value="p">{{ p }}</option>
+          </select>
+        </div>
+
+        <!-- From Warehouse -->
+        <div v-if="purpose !== 'Material Receipt'" class="flex items-center gap-2 border-l border-gray-100 pl-8">
+          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">From</label>
           <select 
             v-model="fromWarehouse" 
             :disabled="entryDocStatus !== 0"
@@ -54,11 +66,11 @@
         </div>
 
         <!-- Arrow -->
-        <div class="text-2xl text-gray-300">➜</div>
+        <div v-if="purpose === 'Material Transfer'" class="text-2xl text-gray-300">➜</div>
 
         <!-- To Warehouse -->
-        <div class="flex items-center gap-2">
-          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">To Warehouse</label>
+        <div v-if="purpose !== 'Material Issue'" class="flex items-center gap-2" :class="{ 'border-l border-gray-100 pl-8': purpose === 'Material Receipt' }">
+          <label class="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">To</label>
           <select 
             v-model="toWarehouse" 
             :disabled="entryDocStatus !== 0"
@@ -295,11 +307,13 @@ const entryName = ref(null)
 const entryDocStatus = ref(0)
 const entryDate = ref(new Date().toISOString().split('T')[0])
 const entrySeries = ref('')
+const purpose = ref('Material Transfer')
 const fromWarehouse = ref('')
 const toWarehouse = ref('')
 
 const availableSeries = ref([])
 const availableWarehouses = ref([])
+const availablePurposes = ref(['Material Issue', 'Material Receipt', 'Material Transfer'])
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
 
 const newPending = ref({ item_name: '', uom: '', rate: 0 })
@@ -364,6 +378,11 @@ async function fetchConfig() {
     if (availableWarehouses.value.length >= 2) {
       fromWarehouse.value = availableWarehouses.value[0]
       toWarehouse.value = availableWarehouses.value[1]
+    }
+
+    const purposes = await frappeGet(`${API}.get_stock_entry_purposes`)
+    if (purposes && purposes.length) {
+      availablePurposes.value = purposes
     }
   } catch (e) {
     console.error('Failed to fetch config', e)
@@ -487,16 +506,18 @@ function pickItem(item) {
 
 // ==================== SAVE / LOAD ====================
 async function saveEntry() {
-  if (!fromWarehouse.value || !toWarehouse.value) { alert('Select From and To warehouses'); return }
-  if (fromWarehouse.value === toWarehouse.value) { alert('Source and Target warehouses cannot be same'); return }
+  if (purpose.value !== 'Material Receipt' && !fromWarehouse.value) { alert('Select From warehouse'); return }
+  if (purpose.value !== 'Material Issue' && !toWarehouse.value) { alert('Select To warehouse'); return }
+  if (purpose.value === 'Material Transfer' && fromWarehouse.value === toWarehouse.value) { alert('Source and Target warehouses cannot be same'); return }
   if (!activeItems.value.length) { alert('Add at least one item'); return }
 
   const payload = {
     name: entryName.value,
     date: entryDate.value,
     naming_series: entrySeries.value,
-    from_warehouse: fromWarehouse.value,
-    to_warehouse: toWarehouse.value,
+    purpose: purpose.value,
+    from_warehouse: (purpose.value !== 'Material Receipt') ? fromWarehouse.value : '',
+    to_warehouse: (purpose.value !== 'Material Issue') ? toWarehouse.value : '',
     items: activeItems.value.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
@@ -552,6 +573,7 @@ async function loadEntry(name) {
     entryName.value = data.name
     entryDate.value = data.posting_date
     entrySeries.value = data.naming_series
+    purpose.value = data.purpose || 'Material Transfer'
     fromWarehouse.value = data.from_warehouse
     toWarehouse.value = data.to_warehouse
     items.value = data.items

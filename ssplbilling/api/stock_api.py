@@ -81,7 +81,7 @@ def create_stock_entry(data=None, **kwargs):
         frappe.throw(_("At least one item is required"))
 
     se = frappe.new_doc("Stock Entry")
-    se.purpose = "Material Transfer"
+    se.purpose = data.get("purpose", "Material Transfer")
     se.posting_date = data.get("date", frappe.utils.today())
     se.naming_series = data.get("naming_series", "MAT-TRA-.YYYY.-")
     
@@ -129,6 +129,7 @@ def update_stock_entry(data=None, **kwargs):
     if se.docstatus != 0:
         frappe.throw(_("Only Draft Stock Entries can be updated"))
 
+    se.purpose = data.get("purpose", se.purpose)
     se.posting_date = data.get("date", frappe.utils.today())
     
     default_from = data.get("from_warehouse")
@@ -207,6 +208,7 @@ def get_stock_entry(name):
 
     return {
         "name": se.name,
+        "purpose": se.purpose,
         "posting_date": str(se.posting_date),
         "naming_series": se.naming_series or "",
         "from_warehouse": se.from_warehouse or "",
@@ -227,3 +229,13 @@ def get_stock_entry(name):
             for item in se.items
         ],
     }
+
+
+@frappe.whitelist()
+def get_stock_entry_purposes():
+    """Get all available purposes for Stock Entry."""
+    meta = frappe.get_meta("Stock Entry")
+    options = meta.get_field("purpose").options
+    if options:
+        return [o.strip() for o in options.split("\n") if o.strip()]
+    return ["Material Issue", "Material Receipt", "Material Transfer"]
