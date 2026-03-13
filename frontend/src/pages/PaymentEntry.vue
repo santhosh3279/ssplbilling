@@ -561,11 +561,19 @@
       @select="pickItem"
       @refresh="refreshItemSearch"
     />
+
+    <!-- PRINT OPTIONS MODAL -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="printModalInvoiceName"
+      :doctype="printModalDoctype"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   searchSuppliers, searchAccounts,
@@ -577,6 +585,7 @@ import {
 import { searchCustomers } from '../customersearch.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerLedger from './CustomerLedger.vue'
 import StockLedger from './StockLedger.vue'
 
@@ -589,6 +598,17 @@ function getTodayIST() {
 
 const router = useRouter()
 const today = getTodayIST()
+
+// ─── Print Modal State ────────────────────────────────────────────────────────
+const showPrintModal = ref(false)
+const printModalInvoiceName = ref('')
+const printModalDoctype = ref('Payment Entry')
+
+function openPrintModal(name, doctype = 'Payment Entry') {
+  printModalInvoiceName.value = name
+  printModalDoctype.value = doctype
+  showPrintModal.value = true
+}
 
 // ─── Sub-window State ─────────────────────────────────────────────────────────
 const showCustomerLedgerWindow = ref(false)
@@ -996,6 +1016,7 @@ async function save() {
         remarks: form.value.remarks, invoice_name: form.value.invoiceName,
       })
       showFlash(`Receipt saved: ${result.payment_entry}`)
+      openPrintModal(result.payment_entry, 'Payment Entry')
     } else if (mode.value === 'payment') {
       result = await createPaymentEntry({
         payment_type: 'Pay', party_type: 'Supplier',
@@ -1006,6 +1027,7 @@ async function save() {
         invoice_doctype: 'Purchase Invoice',
       })
       showFlash(`Payment saved: ${result.payment_entry}`)
+      openPrintModal(result.payment_entry, 'Payment Entry')
     } else if (mode.value === 'journal') {
       result = await createJournalEntry({
         date: form.value.date, voucher_type: form.value.journalType,
@@ -1015,6 +1037,7 @@ async function save() {
           .map(r => ({ account: r.account, debit: r.debit || 0, credit: r.credit || 0 })),
       })
       showFlash(`Journal saved: ${result.journal_entry}`)
+      openPrintModal(result.journal_entry, 'Journal Entry')
     } else if (mode.value === 'contra') {
       result = await createPaymentEntry({
         payment_type: 'Internal Transfer',
@@ -1025,6 +1048,7 @@ async function save() {
         paid_to_account: form.value.toAccount,
       })
       showFlash(`Contra saved: ${result.payment_entry}`)
+      openPrintModal(result.payment_entry, 'Payment Entry')
     }
     resetForm()
     setTimeout(() => {
@@ -1044,10 +1068,11 @@ async function save() {
 function handleF9() { save() }
 
 function onGlobalKey(e) {
-  if (showCustomerSearchModal.value || showItemSearchModal.value) {
+  if (showCustomerSearchModal.value || showItemSearchModal.value || showPrintModal.value) {
     if (e.key === 'Escape') {
       if (showCustomerSearchModal.value) closeCustomerSearchModal()
       if (showItemSearchModal.value) closeItemSearch()
+      if (showPrintModal.value) showPrintModal.value = false
     }
     return
   }
@@ -1075,6 +1100,7 @@ function onGlobalKey(e) {
   else if (e.key === '3') switchMode('journal')
   else if (e.key === '4') switchMode('contra')
 }
+
 
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateRef.value?.focus());
