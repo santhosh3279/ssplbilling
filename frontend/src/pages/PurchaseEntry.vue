@@ -481,6 +481,14 @@
         </div>
       </div>
     </div>
+
+    <!-- PRINT OPTIONS MODAL -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="printModalInvoiceName"
+      :doctype="printModalDoctype"
+      @close="showPrintModal = false"
+    />
     </div>
   </div>
 </template>
@@ -493,6 +501,7 @@ import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, fr
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import { useItemCache } from '../services/itemCache.js'
 
@@ -515,6 +524,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+// ==================== PRINT MODAL ====================
+const showPrintModal = ref(false)
+const printModalInvoiceName = ref('')
+const printModalDoctype = ref('Purchase Invoice')
+
+function openPrintModal(name, doctype = 'Purchase Invoice') {
+  printModalInvoiceName.value = name
+  printModalDoctype.value = doctype
+  showPrintModal.value = true
+}
 
 // ==================== BILLING SETTINGS ====================
 const billingSeriesConfig = ref([])
@@ -1170,7 +1190,9 @@ async function saveBill() {
     billSaved.value = true
     billDocStatus.value = 0
     fetchNextBillNo()
-    alert('Bill saved successfully: ' + savedInvoiceName.value)
+    if (savedInvoiceName.value) {
+      openPrintModal(savedInvoiceName.value)
+    }
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save invoice'))
   }
@@ -1245,6 +1267,7 @@ useShortcuts(purchaseEntryShortcuts({
     if (showSupplierSearchModal.value) { closeSupplierSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showModifyBill.value) { showModifyBill.value = false; return }
+    if (showPrintModal.value) { showPrintModal.value = false; return }
     handleBack()
   }
 }))
