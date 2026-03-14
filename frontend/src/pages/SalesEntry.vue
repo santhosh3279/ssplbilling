@@ -1055,6 +1055,7 @@ async function loadInvoice(invoiceName) {
     billDocStatus.value = inv.docstatus
     // If it's already submitted or cancelled, treat as saved/read-only
     billSaved.value = true
+    fetchNextBillNo()
 
     // Set selectedCustomerDetails for display
     try {
@@ -1203,6 +1204,10 @@ async function fetchSeriesList() {
 }
 
 async function fetchNextBillNo() {
+  if (savedInvoiceName.value) {
+    nextBillNo.value = savedInvoiceName.value
+    return
+  }
   if (!billSeries.value) { nextBillNo.value = '...'; return }
   try {
     const res = await frappeGet('ssplbilling.api.SaleEntry_api.get_next_bill_no', { naming_series: billSeries.value })
