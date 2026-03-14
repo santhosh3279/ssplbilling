@@ -73,8 +73,7 @@
             :class="tile.tileBg"
             @click="openModule(tile.id)"
           >
-            <span class="absolute right-3 top-3 flex items-center gap-1.5 rounded-md border border-white/30 bg-black/20 px-2 py-1 font-mono text-xs font-bold text-white shadow-sm backdrop-blur-sm group-hover:bg-white/30 transition-all">
-              <span class="hidden text-[9px] font-medium text-white/60 md:block">PRESS</span>
+            <span class="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-white/30 bg-black/40 px-3 py-1.5 font-mono text-lg font-black text-white shadow-lg backdrop-blur-md group-hover:bg-white/30 transition-all">
               {{ tile.shortcut }}
             </span>
             <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">
