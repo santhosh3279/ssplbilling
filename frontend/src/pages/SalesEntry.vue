@@ -29,7 +29,85 @@
       </div>
     </header>
 
-    <div class="border-b border-slate-700 bg-slate-800 px-4 py-2">
+    <div class="flex flex-1 overflow-hidden">
+      <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
+        <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Modify Bills</div>
+        </div>
+        
+        <!-- Date Filter -->
+        <div class="flex items-center gap-1 border-b border-slate-700 p-1.5 bg-slate-900">
+          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
+          <input 
+            type="date" 
+            v-model="sidebarDate"
+            class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
+          />
+          <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
+        </div>
+
+        <!-- Search & Series Filters -->
+        <div class="flex flex-col gap-1.5 border-b border-slate-700 p-2 bg-slate-800/20">
+          <input 
+            type="text" 
+            v-model="sidebarSearch"
+            placeholder="Search invoice/cust..."
+            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+          />
+          <select 
+            v-model="sidebarSeries"
+            class="w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+          >
+            <option value="">All Series</option>
+            <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
+          </select>
+          <button 
+            @click="showSubmitted = !showSubmitted"
+            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
+            :class="showSubmitted ? 'bg-blue-900/40 border-blue-500 text-blue-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
+          >
+            {{ showSubmitted ? 'Showing All' : 'Drafts Only' }}
+          </button>
+        </div>
+
+        <!-- Bill List -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
+          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-slate-600 italic">No bills found</div>
+          <div 
+            v-for="inv in sidebarBills" 
+            :key="inv.name"
+            ref="sidebarBillRefs"
+            @click="loadInvoice(inv.name)"
+            class="group cursor-pointer border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
+            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
+            tabindex="0"
+            @keydown.enter="loadInvoice(inv.name)"
+          >
+            <div class="flex items-center justify-between gap-1">
+              <div class="flex items-center gap-2 truncate">
+                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
+                <span class="truncate font-mono text-2xl font-bold text-blue-400">{{ inv.name }}</span>
+              </div>
+              <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter" :class="{
+                'bg-slate-700 text-slate-300': inv.status === 'Draft',
+                'bg-green-900 text-green-300': inv.status === 'Paid',
+                'bg-blue-900 text-blue-300': inv.status === 'Submitted',
+                'bg-red-900 text-red-300': inv.status === 'Cancelled'
+              }">{{ inv.status[0] }}</span>
+            </div>
+            <div class="mt-0.5 truncate text-lg font-medium text-slate-300">{{ inv.customer_name }}</div>
+            <div class="flex items-center justify-between text-lg font-bold text-slate-200 tabular-nums">
+              <span>₹{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="text-[9px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">Click to Edit</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <div class="flex flex-1 flex-col overflow-hidden bg-slate-900">
+        <div class="border-b border-slate-700 bg-slate-800 px-4 py-2">
       <div class="flex items-center gap-6">
         <!-- Series -->
         <div class="flex items-center gap-2">
@@ -117,85 +195,6 @@
       </div>
     </div>
 
-    <div class="flex flex-1 overflow-hidden">
-      <!-- LEFT SIDE MODIFY PANEL (15% Width) -->
-      <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
-        <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Modify Bills</div>
-        </div>
-        
-        <!-- Date Filter -->
-        <div class="flex items-center gap-1 border-b border-slate-700 p-1.5 bg-slate-900">
-          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
-          <input 
-            type="date" 
-            v-model="sidebarDate"
-            class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
-          />
-          <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
-        </div>
-
-        <!-- Search & Series Filters -->
-        <div class="flex flex-col gap-1.5 border-b border-slate-700 p-2 bg-slate-800/20">
-          <input 
-            type="text" 
-            v-model="sidebarSearch"
-            placeholder="Search invoice/cust..."
-            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
-          />
-          <select 
-            v-model="sidebarSeries"
-            class="w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
-          >
-            <option value="">All Series</option>
-            <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
-          </select>
-          <button 
-            @click="showSubmitted = !showSubmitted"
-            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
-            :class="showSubmitted ? 'bg-blue-900/40 border-blue-500 text-blue-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
-          >
-            {{ showSubmitted ? 'Showing All' : 'Drafts Only' }}
-          </button>
-        </div>
-
-        <!-- Bill List -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
-          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
-          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-slate-600 italic">No bills found</div>
-          <div 
-            v-for="inv in sidebarBills" 
-            :key="inv.name"
-            ref="sidebarBillRefs"
-            @click="loadInvoice(inv.name)"
-            class="group cursor-pointer border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
-            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
-            tabindex="0"
-            @keydown.enter="loadInvoice(inv.name)"
-          >
-            <div class="flex items-center justify-between gap-1">
-              <div class="flex items-center gap-2 truncate">
-                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-2xl font-bold text-blue-400">{{ inv.name }}</span>
-              </div>
-              <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter" :class="{
-                'bg-slate-700 text-slate-300': inv.status === 'Draft',
-                'bg-green-900 text-green-300': inv.status === 'Paid',
-                'bg-blue-900 text-blue-300': inv.status === 'Submitted',
-                'bg-red-900 text-red-300': inv.status === 'Cancelled'
-              }">{{ inv.status[0] }}</span>
-            </div>
-            <div class="mt-0.5 truncate text-lg font-medium text-slate-300">{{ inv.customer_name }}</div>
-            <div class="flex items-center justify-between text-lg font-bold text-slate-200 tabular-nums">
-              <span>₹{{ inv.grand_total.toFixed(0) }}</span>
-              <span class="text-[9px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">Click to Edit</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- MAIN CONTENT -->
-      <div class="flex flex-1 flex-col overflow-hidden bg-slate-900">
         <div class="flex flex-[7] flex-col overflow-hidden">
           <div class="flex-1 overflow-y-auto">
             <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
@@ -1321,6 +1320,19 @@ async function saveBill() {
     showPrintModal.value = true
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save invoice'))
+  }
+}
+
+async function deleteBill() {
+  if (!savedInvoiceName.value) return
+  if (!confirm('Are you sure you want to delete this draft bill?')) return
+  try {
+    await apiPost('delete_sales_invoice', { invoice_name: savedInvoiceName.value })
+    alert('Bill deleted successfully')
+    startNewBill()
+    fetchSidebarBills()
+  } catch (e) {
+    alert('Error deleting bill: ' + (e.message || 'Unknown error'))
   }
 }
 
