@@ -62,6 +62,10 @@
                 <span class="font-medium text-gray-700">{{ rawSettings.discount_account || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
+                <span class="text-gray-500">Freight Account</span>
+                <span class="font-medium text-gray-700">{{ rawSettings.freight_account || '--' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
                 <span class="text-gray-500">Cipher Map</span>
                 <span class="font-mono text-gray-700">{{ rawSettings.cipher_map || '--' }}</span>
               </div>
@@ -210,8 +214,11 @@ function applyToLocalStorage(settings) {
   if (settings.user_zoom) {
     localStorage.setItem('wb-zoom', String(settings.user_zoom))
   }
-  if (settings.cipher_map) {
-    localStorage.setItem('wb-cipher', settings.cipher_map)
+  if (settings.discount_account) {
+    localStorage.setItem('wb-discount-account', settings.discount_account)
+  }
+  if (settings.freight_account) {
+    localStorage.setItem('wb_freight', settings.freight_account)
   }
   if (settings.user_defaults?.warehouse) {
     localStorage.setItem('wb-warehouse', settings.user_defaults.warehouse)
