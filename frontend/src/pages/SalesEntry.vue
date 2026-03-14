@@ -990,7 +990,7 @@ async function fetchSidebarBills() {
       query: sidebarSearch.value,
       limit: 50,
       posting_date: sidebarDate.value,
-      naming_series: sidebarSeries.value || undefined
+      naming_series: sidebarSeries.value || ''
     })
   } catch (e) {
     sidebarBills.value = []
