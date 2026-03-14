@@ -228,8 +228,17 @@ def create_sales_invoice(data=None, **kwargs):
         except Exception:
             pass
 
-    # Add Freight Charges if provided
-    if data.get("freight_amount") and data.get("freight_account"):
+    if data.get("taxes"):
+        for tax in data["taxes"]:
+            si.append("taxes", {
+                "charge_type": tax.get("charge_type", "Actual"),
+                "account_head": tax.get("account_head"),
+                "description": tax.get("description", "Taxes and Charges"),
+                "tax_amount": float(tax.get("tax_amount", 0)),
+                "cost_center": tax.get("cost_center") or data.get("cost_center") or "",
+            })
+    elif data.get("freight_amount") and data.get("freight_account"):
+        # Fallback for explicit freight fields if 'taxes' array not present
         si.append("taxes", {
             "charge_type": "Actual",
             "account_head": data["freight_account"],
@@ -351,8 +360,17 @@ def update_sales_invoice(data=None, **kwargs):
         except Exception:
             pass
 
-    # Add/Update Freight Charges if provided
-    if data.get("freight_amount") and data.get("freight_account"):
+    if data.get("taxes"):
+        for tax in data["taxes"]:
+            si.append("taxes", {
+                "charge_type": tax.get("charge_type", "Actual"),
+                "account_head": tax.get("account_head"),
+                "description": tax.get("description", "Taxes and Charges"),
+                "tax_amount": float(tax.get("tax_amount", 0)),
+                "cost_center": tax.get("cost_center") or data.get("cost_center") or "",
+            })
+    elif data.get("freight_amount") and data.get("freight_account"):
+        # Fallback for explicit freight fields if 'taxes' array not present
         si.append("taxes", {
             "charge_type": "Actual",
             "account_head": data["freight_account"],
