@@ -261,6 +261,11 @@ def create_sales_invoice(data=None, **kwargs):
 
 
 @frappe.whitelist()
+def delete_sales_invoice(invoice_name):
+    frappe.delete_doc("Sales Invoice", invoice_name)
+    return {"status": "Deleted"}
+
+@frappe.whitelist()
 def get_naming_series(doctypes=None):
     """Get available naming series for specified DocTypes. Defaults to Sales Invoice."""
     if not doctypes:
@@ -361,6 +366,8 @@ def update_sales_invoice(data=None, **kwargs):
             pass
 
     if data.get("taxes"):
+        if not data.get("tax_template"):
+            si.taxes = []
         for tax in data["taxes"]:
             si.append("taxes", {
                 "charge_type": tax.get("charge_type", "Actual"),
@@ -371,6 +378,7 @@ def update_sales_invoice(data=None, **kwargs):
             })
     elif data.get("freight_amount") and data.get("freight_account"):
         # Fallback for explicit freight fields if 'taxes' array not present
+        si.taxes = []
         si.append("taxes", {
             "charge_type": "Actual",
             "account_head": data["freight_account"],
@@ -378,6 +386,8 @@ def update_sales_invoice(data=None, **kwargs):
             "tax_amount": float(data["freight_amount"]),
             "cost_center": data.get("cost_center") or "",
         })
+    else:
+        si.taxes = []
 
     si.due_date = si.posting_date
     if si.get("payment_schedule"):
