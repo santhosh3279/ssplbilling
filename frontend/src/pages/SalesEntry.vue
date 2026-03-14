@@ -510,7 +510,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
 import CustomerLedger from './CustomerLedger.vue'
-
+import { useSubwindow } from '../services/shortcutManager'
 
 const router = useRouter()
 const route = useRoute()
@@ -530,6 +530,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+if (props.isSubWindow) useSubwindow()
 
 const showPrintModal = ref(false)
 

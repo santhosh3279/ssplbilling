@@ -525,6 +525,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
+if (props.isSubWindow) useSubwindow()
+
 // ==================== PRINT MODAL ====================
 const showPrintModal = ref(false)
 const printModalInvoiceName = ref('')
@@ -1238,7 +1240,7 @@ function handleBack() {
   }
 }
 
-import { useShortcuts } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 import { purchaseEntryShortcuts } from '../shortcuts/purchaseEntryShortcuts'
 
 useShortcuts(purchaseEntryShortcuts({

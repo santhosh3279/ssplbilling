@@ -144,6 +144,7 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import { useSubwindow } from '../services/shortcutManager'
 
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
@@ -153,6 +154,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'saved'])
+
+if (props.isSubWindow) useSubwindow()
 
 const router = useRouter()
 const route = useRoute()

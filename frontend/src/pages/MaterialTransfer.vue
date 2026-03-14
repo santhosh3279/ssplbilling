@@ -295,6 +295,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import ItemSearch from '../components/ItemSearch.vue'
+import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 
 const router = useRouter()
 const API = 'ssplbilling.api.stock_api'
@@ -305,6 +306,8 @@ const props = defineProps({
   name: String
 })
 const emit = defineEmits(['close'])
+
+if (props.isSubWindow) useSubwindow()
 
 // ==================== STATE ====================
 const items = ref([])
@@ -605,7 +608,6 @@ async function loadEntry(name) {
 }
 
 // ==================== SHORTCUTS ====================
-import { useShortcuts } from '../services/shortcutManager'
 import { materialTransferShortcuts } from '../shortcuts/materialTransferShortcuts'
 
 function handleBack() {

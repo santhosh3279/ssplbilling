@@ -3,14 +3,25 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Centralized Keyboard Shortcut Manager
  * Handles global and local (page-specific) shortcuts with priority logic.
+ *
+ * Priority (highest → lowest):
+ *   subwindow  →  local (page)  →  global
+ *
+ * When any subwindow is active (subwindowDepth > 0), local and global shortcuts
+ * are suppressed so they cannot fire "through" an open subwindow.
+ * Subwindow components call useSubwindow() to increment/decrement the depth.
  */
 
-import { onUnmounted } from 'vue';
+import { onMounted, onUnmounted } from 'vue';
 
 const registry = {
   global: new Map(),
   local: new Map(),
+  subwindow: new Map(),
 };
+
+// Tracks how many subwindows are currently mounted. Supports nested subwindows.
+let subwindowDepth = 0;
 
 /**
  * Normalizes event to a string key like "CTRL+SHIFT+S" or "F8"
@@ -20,69 +31,75 @@ function getEventKey(e) {
   if (e.ctrlKey || e.metaKey) parts.push('CTRL');
   if (e.shiftKey) parts.push('SHIFT');
   if (e.altKey) parts.push('ALT');
-  
-  // Use code for consistency (e.g., "KeyL" vs "l"), or just key.toUpperCase()
+
   const key = e.key.toUpperCase();
-  
-  // Avoid adding modifiers twice if the key itself is a modifier
+
   if (!['CONTROL', 'SHIFT', 'ALT', 'META'].includes(key)) {
     parts.push(key);
   }
-  
+
   return parts.join('+');
 }
 
 /**
- * Main Event Listener
+ * Main Event Listener — respects subwindow > local > global priority.
  */
 function handleKeyDown(e) {
   const shortcutKey = getEventKey(e);
-  
-  // 1. Check Local (Page) Shortcuts first (Priority)
-  if (registry.local.has(shortcutKey)) {
-    const action = registry.local.get(shortcutKey);
+
+  // 1. Subwindow shortcuts always fire first
+  if (registry.subwindow.has(shortcutKey)) {
     e.preventDefault();
-    action(e);
+    registry.subwindow.get(shortcutKey)(e);
     return;
   }
 
-  // 2. Check Global Shortcuts
-  if (registry.global.has(shortcutKey)) {
-    const action = registry.global.get(shortcutKey);
+  // 2. If any subwindow is active, suppress local and global shortcuts.
+  //    The subwindow's own window listener will handle the key instead.
+  if (subwindowDepth > 0) return;
+
+  // 3. Local (page) shortcuts
+  if (registry.local.has(shortcutKey)) {
     e.preventDefault();
-    action(e);
+    registry.local.get(shortcutKey)(e);
+    return;
+  }
+
+  // 4. Global shortcuts
+  if (registry.global.has(shortcutKey)) {
+    e.preventDefault();
+    registry.global.get(shortcutKey)(e);
     return;
   }
 }
 
-// Initialize listener once
+// Initialize listener once at module load time
 if (typeof window !== 'undefined') {
   window.addEventListener('keydown', handleKeyDown);
 }
 
 export const shortcutManager = {
   /**
-   * Register a shortcut
-   * @param {string} key - e.g. "CTRL+L", "F8", "ESCAPE"
-   * @param {Function} action - Callback function
-   * @param {string} level - "global" or "local"
+   * Register a shortcut.
+   * @param {string} key    - e.g. "CTRL+L", "F8", "ESCAPE"
+   * @param {Function} action
+   * @param {string} level  - "global" | "local" | "subwindow"
    */
   register(key, action, level = 'local') {
-    const normalizedKey = key.toUpperCase();
-    registry[level].set(normalizedKey, action);
+    registry[level].set(key.toUpperCase(), action);
   },
 
   /**
-   * Remove a specific shortcut
+   * Remove a specific shortcut.
    */
   unregister(key, level = 'local') {
-    const normalizedKey = key.toUpperCase();
-    registry[level].delete(normalizedKey);
+    registry[level].delete(key.toUpperCase());
   },
 
   /**
-   * Remove a shortcut only if the stored action still matches the one that was registered.
-   * This prevents a component from accidentally clearing shortcuts registered by a newer component.
+   * Remove a shortcut only if the stored action still matches the registered one.
+   * Prevents a departing component from wiping shortcuts registered by the newly-
+   * mounted component when both share the same key.
    */
   unregisterIfMatches(key, action, level = 'local') {
     const normalizedKey = key.toUpperCase();
@@ -92,32 +109,51 @@ export const shortcutManager = {
   },
 
   /**
-   * Clear all shortcuts for a specific level (usually called on unmount)
+   * Clear all shortcuts for a specific level.
    */
   clearLevel(level = 'local') {
     registry[level].clear();
-  }
+  },
+
+  /** Called when a subwindow mounts. */
+  enterSubwindow() {
+    subwindowDepth++;
+  },
+
+  /** Called when a subwindow unmounts. */
+  exitSubwindow() {
+    subwindowDepth = Math.max(0, subwindowDepth - 1);
+  },
 };
 
 /**
- * Vue Composable for easy registration in components
+ * Vue composable — register shortcuts for the current component.
+ * On unmount, only the shortcuts registered by THIS call are removed.
  */
 export function useShortcuts(shortcuts, level = 'local') {
   const entries = Object.entries(shortcuts);
 
-  // Register all
   entries.forEach(([key, action]) => {
     shortcutManager.register(key, action, level);
   });
 
-  // On unmount, only remove the shortcuts THIS call registered.
-  // Using unregisterIfMatches avoids wiping shortcuts that a newly-mounted
-  // component has already overwritten with its own handlers.
-  if (level === 'local') {
+  if (level !== 'global') {
     onUnmounted(() => {
       entries.forEach(([key, action]) => {
         shortcutManager.unregisterIfMatches(key, action, level);
       });
     });
   }
+}
+
+/**
+ * Vue composable — call this inside any component that is used as a subwindow
+ * (i.e. receives an `isSubWindow` prop and mounts over a parent page).
+ *
+ * While mounted, suppresses the parent page's local and global shortcuts so
+ * the subwindow's own keyboard handlers have exclusive access to all keys.
+ */
+export function useSubwindow() {
+  onMounted(() => shortcutManager.enterSubwindow());
+  onUnmounted(() => shortcutManager.exitSubwindow());
 }

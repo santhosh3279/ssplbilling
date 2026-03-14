@@ -458,6 +458,7 @@ import StockLedger from './StockLedger.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import { searchItems } from '../api.js'
+import { useSubwindow } from '../services/shortcutManager'
 
 const props = defineProps({
   isSubWindow: {
@@ -483,6 +484,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+if (props.isSubWindow) useSubwindow()
 
 const router = useRouter()
 const route = useRoute()
