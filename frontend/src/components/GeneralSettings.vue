@@ -76,34 +76,20 @@
                 <thead class="bg-gray-50">
                   <tr>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Series</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Price List</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Warehouse</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Tax Template</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-gray-400">Tax Rate</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cost Center</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Print Format</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Printer</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cash A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Bank A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">UPI A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Price List</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Tax Template</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="bs in visibleBillingSeries" :key="bs.series" class="border-t border-gray-100 hover:bg-gray-50">
                     <td class="whitespace-nowrap px-2 py-1.5 font-semibold text-gray-800">{{ bs.series || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.price_list || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.warehouse || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.tax_template || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-gray-600">{{ bs.tax_rate || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.cost_center || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.print_format || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.printer || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.cash_account || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.bank || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.upi || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.price_list || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.tax_template || '--' }}</td>
                   </tr>
                   <tr v-if="!visibleBillingSeries.length">
-                    <td colspan="11" class="px-2 py-3 text-center text-gray-400">No billing series configured</td>
+                    <td colspan="4" class="px-2 py-3 text-center text-gray-400">No billing series configured</td>
                   </tr>
                 </tbody>
               </table>
@@ -222,6 +208,19 @@ function applyToLocalStorage(settings) {
   }
   if (settings.cipher_map) {
     localStorage.setItem('wb-cipher', settings.cipher_map)
+  }
+  if (settings.user_defaults?.warehouse) {
+    localStorage.setItem('wb-warehouse', settings.user_defaults.warehouse)
+  }
+  if (settings.user_defaults?.cost_center) {
+    localStorage.setItem('wb-cost-center', settings.user_defaults.cost_center)
+  }
+  // Set billing defaults from the first visible series row
+  const firstSeries = (settings.billing_series || [])[0]
+  if (firstSeries) {
+    if (firstSeries.series)      localStorage.setItem('wb-series', firstSeries.series)
+    if (firstSeries.price_list)  localStorage.setItem('wb-price-list', firstSeries.price_list)
+    if (firstSeries.tax_rate)    localStorage.setItem('wb-tax-rate', String(firstSeries.tax_rate))
   }
 }
 
