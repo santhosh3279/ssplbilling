@@ -381,6 +381,7 @@
             </div>
           </div>
         </div>
+      </div>
     </div>
 
     <!-- CUSTOMER SEARCH MODAL -->
