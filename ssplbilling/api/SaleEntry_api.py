@@ -320,7 +320,7 @@ def update_sales_invoice(data=None, **kwargs):
     invoice_name = data.get("invoice_name")
     si = frappe.get_doc("Sales Invoice", invoice_name)
     si.customer = data["customer"]
-    si.posting_date = data.get("date", frappe.utils.today())
+    # Preserving original posting_date
     si.additional_discount_percentage = float(data.get("discount_percentage", 0))
     
     if data.get("cost_center"):
