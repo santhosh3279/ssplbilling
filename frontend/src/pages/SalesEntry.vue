@@ -1237,6 +1237,21 @@ async function saveBill() {
     })),
   }
 
+  if (freightAmt.value > 0) {
+    const freightAccount = localStorage.getItem('wb_freight')
+    if (freightAccount) {
+      payload.taxes = [
+        {
+          charge_type: 'Actual',
+          account_head: freightAccount,
+          description: 'Freight Charges',
+          tax_amount: freightAmt.value,
+          cost_center: costCenter.value || ''
+        }
+      ]
+    }
+  }
+
   try {
     let result
     if (savedInvoiceName.value) {
