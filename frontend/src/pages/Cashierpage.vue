@@ -28,7 +28,7 @@
           </div>
           <div class="flex flex-col text-left leading-none">
             <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Logged In</span>
-            <span class="text-sm truncate max-w-[120px]">{{ session.fullName.value || 'User' }}</span>
+            <span class="text-sm truncate max-w-[120px]">{{ (session.fullName.value || 'User').split('@')[0] }}</span>
           </div>
         </div>
       </div>

@@ -29,7 +29,7 @@
         <div class="ml-2 h-4 w-px bg-gray-300"></div>
         <div class="flex items-center gap-1.5 font-bold text-blue-600">
           <span class="text-[10px] text-gray-400 font-medium">HI</span>
-          <span class="truncate max-w-[120px] uppercase tracking-wide">{{ session.fullName.value || 'User' }}</span>
+          <span class="truncate max-w-[120px] uppercase tracking-wide">{{ (session.fullName.value || 'User').split('@')[0] }}</span>
         </div>
       </div>
     </header>
