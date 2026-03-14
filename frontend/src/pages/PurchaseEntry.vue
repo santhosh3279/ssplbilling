@@ -507,6 +507,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import { useItemCache } from '../services/itemCache.js'
+import { session } from '../session.js'
 
 
 const router = useRouter()
