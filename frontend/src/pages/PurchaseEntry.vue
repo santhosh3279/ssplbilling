@@ -1272,7 +1272,7 @@ useShortcuts(purchaseEntryShortcuts({
     if (showPrintModal.value) { showPrintModal.value = false; return }
     handleBack()
   }
-}))
+}), props.isSubWindow ? 'subwindow' : 'local')
 
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());

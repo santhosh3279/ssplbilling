@@ -265,7 +265,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice } from '../api.js'
-import { useShortcuts } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 
 function getTodayIST() {
   const date = new Date()
@@ -287,6 +287,9 @@ const searchQuery = ref('')
 const filterDate = ref(getTodayIST())
 const dateInput = ref(null)
 
+const props = defineProps({ isSubWindow: Boolean })
+if (props.isSubWindow) useSubwindow()
+
 // --- SHORTCUTS ---
 useShortcuts({
   'ARROWUP':   () => navigateBills(-1),
@@ -295,7 +298,7 @@ useShortcuts({
   'ESCAPE':    () => window.history.back(),
   'F5':        () => loadInvoices(),
   'F9':        () => { if (selectedInvoice.value && !isSubmitting.value) confirmSubmission() }
-})
+}, props.isSubWindow ? 'subwindow' : 'local')
 
 function navigateBills(dir) {
   if (!invoices.value.length) return

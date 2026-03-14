@@ -296,6 +296,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import ItemSearch from '../components/ItemSearch.vue'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import { materialTransferShortcuts } from '../shortcuts/materialTransferShortcuts'
 
 const router = useRouter()
 const API = 'ssplbilling.api.stock_api'
@@ -608,8 +609,6 @@ async function loadEntry(name) {
 }
 
 // ==================== SHORTCUTS ====================
-import { materialTransferShortcuts } from '../shortcuts/materialTransferShortcuts'
-
 function handleBack() {
   if (items.value.length && !entryName.value) {
     if (!confirm('Discard unsaved entry?')) return
@@ -627,7 +626,7 @@ useShortcuts(materialTransferShortcuts({
     if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
     handleBack()
   }
-}))
+}), props.isSubWindow ? 'subwindow' : 'local')
 
 onMounted(() => {
   fetchConfig()

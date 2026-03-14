@@ -510,7 +510,8 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
 import CustomerLedger from './CustomerLedger.vue'
-import { useSubwindow } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import { salesEntryShortcuts } from '../shortcuts/salesEntryShortcuts'
 
 const router = useRouter()
 const route = useRoute()
@@ -1354,9 +1355,6 @@ function handleBack() {
   }
 }
 
-import { useShortcuts } from '../services/shortcutManager'
-import { salesEntryShortcuts } from '../shortcuts/salesEntryShortcuts'
-
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(salesEntryShortcuts({
   save: () => { if (!showPrintModal.value) saveBill() },
@@ -1387,7 +1385,7 @@ useShortcuts(salesEntryShortcuts({
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
     handleBack()
   }
-}))
+}), props.isSubWindow ? 'subwindow' : 'local')
 
 onMounted(() => {
   // Listen for global shortcut events
