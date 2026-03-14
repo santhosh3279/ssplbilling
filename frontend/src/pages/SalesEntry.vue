@@ -75,9 +75,9 @@
           <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
           <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-slate-600 italic">No bills found</div>
           <div 
-            v-for="inv in sidebarBills" 
+            v-for="(inv, idx) in sidebarBills" 
             :key="inv.name"
-            ref="sidebarBillRefs"
+            :ref="el => setSidebarBillRef(el, idx)"
             @click="loadInvoice(inv.name)"
             class="group cursor-pointer border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
             :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
@@ -645,9 +645,10 @@ async function apiPost(method, params) {
 // ==================== INPUT REFS ====================
 const inputRefs = {}
 const rowRefs   = {}
-const sidebarBillRefs = ref([])
+const sidebarBillRefs = new Map()
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
+function setSidebarBillRef(el, idx) { if (el) sidebarBillRefs.set(idx, el); else sidebarBillRefs.delete(idx) }
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const customerInput = ref(null)
@@ -1382,9 +1383,8 @@ function handleJump(targetNo) {
 
 function focusModifyPanel() {
   nextTick(() => {
-    if (sidebarBillRefs.value && sidebarBillRefs.value.length > 0) {
-      sidebarBillRefs.value[0].focus()
-    }
+    const el = sidebarBillRefs.get(0)
+    if (el) el.focus()
   })
 }
 
