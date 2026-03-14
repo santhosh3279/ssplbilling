@@ -247,7 +247,7 @@ def create_sales_invoice(data=None, **kwargs):
             "cost_center": data.get("cost_center") or "",
         })
 
-    si.due_date = si.posting_date
+    si.due_date = frappe.utils.today()
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.insert()
@@ -385,7 +385,7 @@ def update_sales_invoice(data=None, **kwargs):
     else:
         si.taxes = []
 
-    si.due_date = si.posting_date
+    si.due_date = frappe.utils.today()
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.save()
