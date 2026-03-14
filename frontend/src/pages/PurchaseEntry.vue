@@ -200,9 +200,8 @@
               <!-- Warehouse -->
               <div class="flex items-center gap-1.5">
                 <label class="text-[10px] font-bold uppercase text-gray-500">WH</label>
-                <select v-model="defaultWarehouse" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] outline-none focus:border-blue-500 disabled:bg-gray-50 max-w-[120px]">
-                  <option value="">-- Default --</option>
-                  <option v-for="w in availableWarehouses" :key="w" :value="w">{{ w }}</option>
+                <select v-model="defaultWarehouse" disabled class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-[10px] outline-none max-w-[120px] cursor-not-allowed">
+                  <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
                 </select>
               </div>
               <!-- Price List -->
@@ -223,9 +222,8 @@
               <!-- Cost Center -->
               <div class="flex items-center gap-1.5">
                 <label class="text-[10px] font-bold uppercase text-gray-500">CC</label>
-                <select v-model="costCenter" :disabled="billDocStatus !== 0" class="rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[10px] outline-none focus:border-blue-500 disabled:bg-gray-50 min-w-[200px] max-w-[220px]">
-                  <option value="">-- Default --</option>
-                  <option v-for="cc in availableCostCenters" :key="cc" :value="cc">{{ cc }}</option>
+                <select v-model="costCenter" disabled class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-[10px] outline-none max-w-[220px] cursor-not-allowed">
+                  <option :value="costCenter">{{ costCenter || 'None' }}</option>
                 </select>
               </div>
             </div>
@@ -546,11 +544,11 @@ function openPrintModal(name, doctype = 'Purchase Invoice') {
 // ==================== BILLING SETTINGS ====================
 const billingSeriesConfig = ref([])
 const cipherMap = ref([])
-const defaultWarehouse = ref('')
+const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 const defaultTaxRate = ref(18)
 const priceList = ref('Standard Buying')
 const taxTemplate = ref('')
-const costCenter = ref('')
+const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
 
 const availableTaxTemplates = ref([])
 const availableWarehouses = ref([])
@@ -559,6 +557,25 @@ const availableCostCenters = ref([])
 const availablePriceLists = computed(() => {
   return ['Standard Buying']
 })
+
+function getSeriesConfig(series) {
+  return billingSeriesConfig.value.find(r => r.series === series) || null
+}
+
+function syncSeriesConfig(series) {
+  const cfg = getSeriesConfig(series)
+  if (!cfg) return
+  if (cfg.price_list) priceList.value = cfg.price_list
+  if (cfg.tax_template) taxTemplate.value = cfg.tax_template
+  
+  // Only override if not set in localStorage
+  if (!localStorage.getItem('wb-warehouse')) {
+    if (cfg.warehouse) defaultWarehouse.value = cfg.warehouse
+  }
+  if (!localStorage.getItem('wb-cost-center')) {
+    if (cfg.cost_center) costCenter.value = cfg.cost_center
+  }
+}
 
 async function fetchDropdownOptions() {
   try {
@@ -1096,6 +1113,11 @@ watch(billSeries, () => {
 
 async function fetchSeriesList() {
   try {
+    const settings = await fetchBillingSettings()
+    if (!localStorage.getItem('wb-warehouse')) {
+      if (settings.default_warehouse) defaultWarehouse.value = settings.default_warehouse
+    }
+
     const list = await frappeGet('ssplbilling.api.purchase_api.get_naming_series')
     if (Array.isArray(list) && list.length) {
       availableSeries.value = list
@@ -1279,8 +1301,15 @@ useShortcuts(purchaseEntryShortcuts({
   }
 }), props.isSubWindow ? 'subwindow' : 'local')
 
+function handleStorageChange(e) {
+  if (e.key === 'wb-zoom') zoomPercent.value = parseInt(e.newValue) || 150
+  if (e.key === 'wb-warehouse') defaultWarehouse.value = e.newValue || ''
+  if (e.key === 'wb-cost-center') costCenter.value = e.newValue || ''
+}
+
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
+  window.addEventListener('storage', handleStorageChange);
   fetchSeriesList()
   fetchDropdownOptions()
   
@@ -1305,5 +1334,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
+  window.removeEventListener('storage', handleStorageChange);
 })
 </script>
