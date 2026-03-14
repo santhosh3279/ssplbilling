@@ -118,10 +118,10 @@
     </div>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- LEFT SIDE MODIFY PANEL (10% Width) -->
-      <aside class="flex w-[12%] flex-col border-r border-gray-200 bg-gray-50 overflow-hidden shrink-0">
+      <!-- LEFT SIDE MODIFY PANEL (15% Width) -->
+      <aside class="flex w-[15%] flex-col border-r border-gray-200 bg-gray-50 overflow-hidden shrink-0">
         <div class="border-b border-gray-200 bg-gray-100 p-2 text-center">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Modify Bills</div>
+          <div class="text-xs font-bold uppercase tracking-wider text-gray-500">Modify Bills</div>
         </div>
         
         <!-- Date Filter -->
@@ -130,35 +130,35 @@
           <input 
             type="date" 
             v-model="sidebarDate"
-            class="w-full bg-transparent text-[11px] font-bold text-gray-700 outline-none"
+            class="w-full bg-transparent text-xs font-bold text-gray-700 outline-none"
           />
           <button @click="changeSidebarDate(1)" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&rarr;</button>
         </div>
 
         <!-- Bill List -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
-          <div v-if="sidebarLoading" class="p-4 text-center text-[10px] text-gray-400">Loading...</div>
-          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-[10px] text-gray-400 italic">No bills found</div>
+          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-gray-400">Loading...</div>
+          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-gray-400 italic">No bills found</div>
           <div 
             v-for="inv in sidebarBills" 
             :key="inv.name"
             @click="loadInvoice(inv.name)"
-            class="group cursor-pointer border-b border-gray-100 bg-white p-2 transition-colors hover:bg-blue-50"
+            class="group cursor-pointer border-b border-gray-100 bg-white p-2.5 transition-colors hover:bg-blue-50"
             :class="{ 'bg-blue-100 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
           >
             <div class="flex items-center justify-between gap-1">
-              <span class="truncate font-mono text-[11px] font-bold text-blue-700">{{ inv.name }}</span>
-              <span class="rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-tighter" :class="{
+              <span class="truncate font-mono text-sm font-bold text-blue-700">{{ inv.name }}</span>
+              <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter" :class="{
                 'bg-gray-100 text-gray-600': inv.status === 'Draft',
                 'bg-green-100 text-green-700': inv.status === 'Paid',
                 'bg-blue-100 text-blue-700': inv.status === 'Submitted',
                 'bg-red-100 text-red-700': inv.status === 'Cancelled'
               }">{{ inv.status[0] }}</span>
             </div>
-            <div class="mt-0.5 truncate text-[10px] font-medium text-gray-800">{{ inv.customer_name }}</div>
-            <div class="flex items-center justify-between text-[10px] font-bold text-gray-500 tabular-nums">
+            <div class="mt-0.5 truncate text-xs font-medium text-gray-800">{{ inv.customer_name }}</div>
+            <div class="flex items-center justify-between text-xs font-bold text-gray-500 tabular-nums">
               <span>₹{{ inv.grand_total.toFixed(0) }}</span>
-              <span class="text-[8px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">Click to Edit</span>
+              <span class="text-[9px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">Click to Edit</span>
             </div>
           </div>
         </div>
