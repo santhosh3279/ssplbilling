@@ -345,10 +345,17 @@
                 <div class="flex items-center justify-between text-lg">
                   <div class="flex items-center gap-1.5">
                     <span class="text-gray-600 font-semibold">Discount</span>
-                    <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-20 rounded border border-gray-300 px-1.5 py-1 text-right text-lg font-bold outline-none focus:border-blue-400 disabled:bg-gray-50" @keydown.enter="saveButton?.focus()" />
+                    <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-20 rounded border border-gray-300 px-1.5 py-1 text-right text-lg font-bold outline-none focus:border-blue-400 disabled:bg-gray-50" @keydown.enter="freightInput?.focus()" />
                     <span class="text-base text-gray-600 font-bold">%</span>
                   </div>
                   <span class="font-mono font-semibold text-red-500">-&#8377;{{ discountAmt.toFixed(2) }}</span>
+                </div>
+                <div class="flex items-center justify-between text-lg">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-gray-600 font-semibold">Freight</span>
+                    <input ref="freightInput" type="number" v-model.number="freightAmt" :disabled="billDocStatus !== 0" min="0" step="1" class="w-24 rounded border border-gray-300 px-1.5 py-1 text-right text-lg font-bold outline-none focus:border-blue-400 disabled:bg-gray-50" @keydown.enter="saveButton?.focus()" />
+                  </div>
+                  <span class="font-mono font-semibold text-blue-500">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</span>
                 </div>
                 <div class="flex justify-between text-lg font-semibold">
                   <span class="text-gray-600">Tax</span>
@@ -615,6 +622,7 @@ const modifySearchInput = ref(null)
 const seriesSelect = ref(null)
 const dateInput = ref(null)
 const discountInput = ref(null)
+const freightInput = ref(null)
 const saveButton = ref(null)
 const stayHereBtn = ref(null)
 const custSearchModalRef = ref(null)
@@ -987,6 +995,7 @@ async function loadInvoice(invoiceName) {
     }
     paymentMode.value = inv.payment_mode || 'Cash'
     discountPct.value = inv.discount_percentage || 0
+    freightAmt.value = inv.freight_amount || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
     items.value = inv.items.map(i => ({ ...i, discount: i.discount || 0, tax_rate: i.tax_rate ?? defaultTaxRate.value }))
@@ -1063,6 +1072,7 @@ watch(customer, async (newVal) => {
 
 const paymentMode = ref('Cash')
 const discountPct = ref(0)
+const freightAmt = ref(0)
 const availableSeries = ref([])
 const nextBillNo = ref('...')
 
@@ -1196,8 +1206,10 @@ const totalTax = computed(() => {
 })
 
 const grandTotal = computed(() => {
-  if (isInclusive.value) return grossTotal.value * (1 - discountPct.value / 100)
-  return taxableAmt.value + totalTax.value
+  const base = isInclusive.value 
+    ? grossTotal.value * (1 - discountPct.value / 100)
+    : taxableAmt.value + totalTax.value
+  return base + (freightAmt.value || 0)
 })
 
 async function saveBill() {
@@ -1210,6 +1222,7 @@ async function saveBill() {
     naming_series: billSeries.value,
     payment_mode: paymentMode.value,
     discount_percentage: discountPct.value,
+    freight_amount: freightAmt.value,
     tax_template: taxTemplate.value || '',
     cost_center: costCenter.value || '',
     items: activeItems.value.map(i => ({
@@ -1250,7 +1263,7 @@ async function saveBill() {
 
 function startNewBill() {
   items.value = []; selectedRow.value = -1; customer.value = ''; custSearch.value = ''
-  discountPct.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
+  discountPct.value = 0; freightAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedCustomerDetails.value = null
