@@ -73,7 +73,8 @@
             :class="tile.tileBg"
             @click="openModule(tile.id)"
           >
-            <span class="absolute right-3 top-3 rounded border border-white/20 bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white/70">
+            <span class="absolute right-3 top-3 flex items-center gap-1.5 rounded-md border border-white/30 bg-black/20 px-2 py-1 font-mono text-xs font-bold text-white shadow-sm backdrop-blur-sm group-hover:bg-white/30 transition-all">
+              <span class="hidden text-[9px] font-medium text-white/60 md:block">PRESS</span>
               {{ tile.shortcut }}
             </span>
             <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">
@@ -84,12 +85,19 @@
           </div>
         </div>
 
-        <div class="mt-8 flex items-center justify-center gap-6 text-xs text-slate-500">
-          <span>Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F10</kbd> to quick open</span>
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
+          <span class="flex items-center gap-1.5">
+            Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F10</kbd> 
+            <span class="text-[10px] text-slate-600">or</span>
+            <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">9</kbd>
+            to quick open
+          </span>
           <span class="text-slate-700">|</span>
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+L</kbd> Customer</span>
           <span class="text-slate-700">|</span>
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+I</kbd> Item Search</span>
+          <span class="text-slate-700">|</span>
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">ESC</kbd> Close Modals</span>
         </div>
       </div>
     </main>
@@ -209,15 +217,15 @@ const tiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
-  { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
+  { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
+  { id: 'pricelist-update', name: 'Price List Viewer', desc: 'View item prices', icon: '💲', shortcut: 'F7', tileBg: 'bg-green-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
-  { id: 'pricelist', name: 'Price List Viewer', desc: 'View item prices', icon: '💲', shortcut: 'F7', tileBg: 'bg-green-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F10', tileBg: 'bg-cyan-700' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'pricelist', 'journal-contra', 'material-transfer']
+const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'pricelist-update', 'journal-contra', 'material-transfer']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = { 
@@ -258,6 +266,15 @@ useShortcuts({
   'F8': () => openModule('journal-contra'),
   'F9': () => openModule('payment'),
   'F10': () => openModule('material-transfer'),
+  '1': () => openModule('sales'),
+  '2': () => openModule('purchase'),
+  '3': () => openModule('payment'),
+  '4': () => openModule('purchase-submit'),
+  '5': () => openModule('cashier'),
+  '6': () => openModule('ledger'),
+  '7': () => openModule('pricelist-update'),
+  '8': () => openModule('journal-contra'),
+  '9': () => openModule('material-transfer'),
   'ESCAPE': () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
