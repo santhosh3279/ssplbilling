@@ -147,7 +147,7 @@
             :class="{ 'bg-blue-100 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
           >
             <div class="flex items-center justify-between gap-1">
-              <span class="truncate font-mono text-sm font-bold text-blue-700">{{ inv.name }}</span>
+              <span class="truncate font-mono text-2xl font-bold text-blue-700">{{ inv.name }}</span>
               <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter" :class="{
                 'bg-gray-100 text-gray-600': inv.status === 'Draft',
                 'bg-green-100 text-green-700': inv.status === 'Paid',
