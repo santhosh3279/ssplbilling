@@ -7,7 +7,6 @@
         <button class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" @click="handleBack">&larr; Dashboard</button>
         <span class="text-sm text-gray-300">|</span>
         <span class="text-sm font-semibold text-gray-800">Sales Entry</span>
-        <button class="rounded border border-gray-300 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50" @click="openModifyBill">Modify Bill</button>
       </div>
       <div class="flex items-center gap-3 text-sm text-gray-600">
         <div class="flex items-center rounded border border-gray-200 bg-white shadow-sm overflow-hidden mr-4">
@@ -119,8 +118,54 @@
     </div>
 
     <div class="flex flex-1 overflow-hidden">
+      <!-- LEFT SIDE MODIFY PANEL (10% Width) -->
+      <aside class="flex w-[12%] flex-col border-r border-gray-200 bg-gray-50 overflow-hidden shrink-0">
+        <div class="border-b border-gray-200 bg-gray-100 p-2 text-center">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Modify Bills</div>
+        </div>
+        
+        <!-- Date Filter -->
+        <div class="flex items-center gap-1 border-b border-gray-200 p-1.5 bg-white">
+          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&larr;</button>
+          <input 
+            type="date" 
+            v-model="sidebarDate"
+            class="w-full bg-transparent text-[11px] font-bold text-gray-700 outline-none"
+          />
+          <button @click="changeSidebarDate(1)" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&rarr;</button>
+        </div>
+
+        <!-- Bill List -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <div v-if="sidebarLoading" class="p-4 text-center text-[10px] text-gray-400">Loading...</div>
+          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-[10px] text-gray-400 italic">No bills found</div>
+          <div 
+            v-for="inv in sidebarBills" 
+            :key="inv.name"
+            @click="loadInvoice(inv.name)"
+            class="group cursor-pointer border-b border-gray-100 bg-white p-2 transition-colors hover:bg-blue-50"
+            :class="{ 'bg-blue-100 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
+          >
+            <div class="flex items-center justify-between gap-1">
+              <span class="truncate font-mono text-[11px] font-bold text-blue-700">{{ inv.name }}</span>
+              <span class="rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-tighter" :class="{
+                'bg-gray-100 text-gray-600': inv.status === 'Draft',
+                'bg-green-100 text-green-700': inv.status === 'Paid',
+                'bg-blue-100 text-blue-700': inv.status === 'Submitted',
+                'bg-red-100 text-red-700': inv.status === 'Cancelled'
+              }">{{ inv.status[0] }}</span>
+            </div>
+            <div class="mt-0.5 truncate text-[10px] font-medium text-gray-800">{{ inv.customer_name }}</div>
+            <div class="flex items-center justify-between text-[10px] font-bold text-gray-500 tabular-nums">
+              <span>₹{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="text-[8px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">Click to Edit</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
       <!-- MAIN CONTENT -->
-      <div class="flex w-full flex-col">
+      <div class="flex flex-1 flex-col overflow-hidden">
         <div class="flex flex-[7] flex-col overflow-hidden">
           <div class="flex-1 overflow-y-auto">
             <table class="w-full text-sm border-collapse border-l border-t border-gray-300">
@@ -336,88 +381,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- =================== MODIFY BILL SUBWINDOW =================== -->
-    <div v-if="showModifyBill" class="fixed inset-0 z-50 flex justify-center bg-black/40 pt-12" @click.self="showModifyBill = false">
-      <div class="flex max-h-[85vh] w-[680px] flex-col rounded-xl bg-white shadow-2xl">
-        <!-- Header -->
-        <div class="border-b border-gray-200 px-5 py-4">
-          <div class="text-sm font-semibold text-gray-700">Modify Existing Bill</div>
-          <div class="mt-0.5 text-sm text-gray-600">Search and select a Draft invoice to edit</div>
-        </div>
-
-        <!-- Search & Date Filter -->
-        <div class="flex items-center gap-3 border-b border-gray-100 px-5 py-3">
-          <input
-            ref="modifySearchInput"
-            v-model="modifyQuery"
-            class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            placeholder="Search by invoice no. or customer name..."
-            @keydown.esc="showModifyBill = false"
-          />
-          <div class="flex items-center rounded border border-gray-300">
-            <button @click="changeModifyDate(-1)" class="px-2 py-1.5 text-gray-500 hover:bg-gray-50 border-r border-gray-300">&larr;</button>
-            <input
-              type="date"
-              v-model="modifyDate"
-              class="w-36 px-3 py-1.5 text-sm outline-none focus:border-blue-500"
-            />
-            <button @click="changeModifyDate(1)" class="px-2 py-1.5 text-gray-500 hover:bg-gray-50 border-l border-gray-300">&rarr;</button>
-          </div>
-        </div>
-
-        <!-- Results -->
-        <div class="flex-1 overflow-y-auto">
-          <div v-if="modifyLoading" class="flex items-center justify-center py-10 text-sm text-gray-600">Loading...</div>
-          <table v-else-if="modifyResults.length" class="w-full text-sm">
-            <thead>
-              <tr class="sticky top-0 bg-gray-50">
-                <th class="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Invoice No.</th>
-                <th class="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Customer</th>
-                <th class="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Date</th>
-                <th class="px-3 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-600">Amount</th>
-                <th class="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="inv in modifyResults"
-                :key="inv.name"
-                class="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
-                @click="loadInvoice(inv.name)"
-              >
-                <td class="px-4 py-2.5 font-mono text-sm font-semibold text-blue-700">{{ inv.name }}</td>
-                <td class="px-3 py-2.5">
-                  <div class="text-sm font-medium text-gray-800">{{ inv.customer_name }}</div>
-                  <div class="text-[10px] text-gray-600">{{ inv.customer }}</div>
-                </td>
-                <td class="px-3 py-2.5 text-sm text-gray-500">{{ inv.posting_date }}</td>
-                <td class="px-3 py-2.5 text-right font-mono text-sm font-semibold text-gray-800">&#8377;{{ inv.grand_total.toFixed(2) }}</td>
-                <td class="px-3 py-2.5">
-                  <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" :class="{
-                    'bg-gray-100 text-gray-600': inv.status === 'Draft',
-                    'bg-green-100 text-green-700': inv.status === 'Paid',
-                    'bg-blue-100 text-blue-700': inv.status === 'Submitted',
-                    'bg-red-100 text-red-700': inv.status === 'Cancelled'
-                  }">{{ inv.status }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="flex flex-col items-center py-10 text-sm text-gray-600">
-            <div>No draft invoices found</div>
-            <div v-if="modifyQuery" class="mt-1 text-gray-300">Try a different search term</div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-between border-t border-gray-100 px-5 py-3">
-          <span class="text-sm text-gray-600">Click a row to open it for editing</span>
-          <button class="rounded border border-gray-300 px-4 py-1.5 text-sm font-semibold text-gray-600 hover:bg-gray-50" @click="showModifyBill = false">Close</button>
-        </div>
-      </div>
     </div>
 
     <!-- CUSTOMER SEARCH MODAL -->
@@ -982,59 +945,32 @@ async function pickItem(item) {
   }
 }
 
-// ==================== MODIFY BILL ====================
-const showModifyBill = ref(false)
-const modifyQuery = ref('')
-const modifyDate = ref(getTodayIST())
-const modifyResults = ref([])
-const modifyLoading = ref(false)
-let modifySearchTimeout = null
+// ==================== SIDEBAR MODIFY PANEL ====================
+const sidebarDate = ref(getTodayIST())
+const sidebarBills = ref([])
+const sidebarLoading = ref(false)
 
-watch(modifyQuery, (q) => {
-  clearTimeout(modifySearchTimeout)
-  modifySearchTimeout = setTimeout(() => searchBills(q), 300)
-})
-
-watch(modifyDate, (d) => {
-  searchBills(modifyQuery.value)
-})
-
-function changeModifyDate(days) {
-  const d = new Date(modifyDate.value)
-  d.setDate(d.getDate() + days)
-  modifyDate.value = d.toISOString().split('T')[0]
-}
-
-function changeBillDate(days) {
-  if (billDocStatus.value !== 0) return
-  const d = new Date(billDate.value)
-  d.setDate(d.getDate() + days)
-  billDate.value = d.toISOString().split('T')[0]
-}
-
-function openModifyBill() {
-  modifyQuery.value = ''
-  modifyResults.value = []
-  showModifyBill.value = true
-  nextTick(() => {
-    modifySearchInput.value?.focus()
-    searchBills('')
-  })
-}
-
-async function searchBills(query) {
-  modifyLoading.value = true
+async function fetchSidebarBills() {
+  sidebarLoading.value = true
   try {
-    modifyResults.value = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoices', {
-      query: query || '',
-      limit: 30,
-      posting_date: modifyDate.value,
+    sidebarBills.value = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoices', {
+      query: '',
+      limit: 50,
+      posting_date: sidebarDate.value,
     })
   } catch (e) {
-    modifyResults.value = []
+    sidebarBills.value = []
   }
-  modifyLoading.value = false
+  sidebarLoading.value = false
 }
+
+function changeSidebarDate(days) {
+  const d = new Date(sidebarDate.value)
+  d.setDate(d.getDate() + days)
+  sidebarDate.value = d.toISOString().split('T')[0]
+}
+
+watch(sidebarDate, fetchSidebarBills)
 
 async function loadInvoice(invoiceName) {
   try {
@@ -1063,7 +999,6 @@ async function loadInvoice(invoiceName) {
     billDocStatus.value = inv.docstatus
     // If it's already submitted or cancelled, treat as saved/read-only
     billSaved.value = inv.docstatus !== 0
-    showModifyBill.value = false
 
     // Set selectedCustomerDetails for display
     try {
@@ -1305,6 +1240,7 @@ async function saveBill() {
     billSaved.value = true
     billDocStatus.value = 0 // Still Draft after save/update
     fetchNextBillNo()
+    fetchSidebarBills()
     showPrintModal.value = true
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save invoice'))
@@ -1392,7 +1328,6 @@ useShortcuts(salesEntryShortcuts({
     if (showPrintModal.value) { showPrintModal.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
-    if (showModifyBill.value) { showModifyBill.value = false; return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
     handleBack()
   }
@@ -1413,6 +1348,7 @@ onMounted(() => {
 
   fetchSeriesList()
   fetchDropdownOptions()
+  fetchSidebarBills()
   
   // Ensure item cache is populated (TTL 5 mins)
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
