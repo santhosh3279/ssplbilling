@@ -16,10 +16,20 @@
           {{ invoices.length }} Pending Invoices
         </span>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-6">
         <div class="text-right">
           <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Current Date</div>
           <div class="text-sm font-medium text-slate-600">{{ todayStr }}</div>
+        </div>
+        <div class="h-8 w-px bg-slate-200"></div>
+        <div class="flex items-center gap-2 font-bold text-blue-600">
+          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-600">
+            {{ userInitials }}
+          </div>
+          <div class="flex flex-col text-left leading-none">
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Logged In</span>
+            <span class="text-sm truncate max-w-[120px]">{{ session.fullName.value || 'User' }}</span>
+          </div>
         </div>
       </div>
     </header>
@@ -490,11 +500,19 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { session } from '../session'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings } from '../api.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 
 // --- REFS ---
+const { user: currentUser } = session
+
+// ==================== USER ====================
+const userInitials = computed(() => {
+  const name = String(session.fullName.value || session.user.value || 'U')
+  return name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || 'U'
+})
 const cashInput = ref(null)
 const upiInput = ref(null)
 const bankInput = ref(null)
