@@ -1,49 +1,49 @@
 <template>
-  <div class="flex min-h-screen bg-gray-50">
+  <div class="flex min-h-screen bg-slate-900">
 
     <!-- ===================== SIDEBAR ===================== -->
-    <aside class="flex w-56 flex-col border-r border-gray-200 bg-white">
+    <aside class="flex w-56 flex-col border-r border-slate-700 bg-slate-800">
       <!-- Logo -->
-      <div class="border-b border-gray-100 px-4 py-4">
-        <div class="text-base font-bold text-gray-900">Wholesale<span class="font-light text-gray-400">Billing</span></div>
-        <div class="mt-0.5 text-[10px] text-gray-400">Fast Billing System</div>
+      <div class="border-b border-slate-700 px-4 py-4">
+        <div class="text-base font-bold text-white">Wholesale<span class="font-light text-slate-400">Billing</span></div>
+        <div class="mt-0.5 text-[10px] text-slate-400">Fast Billing System</div>
       </div>
 
       <!-- User -->
-      <div class="border-b border-gray-100 px-4 py-3">
+      <div class="border-b border-slate-700 px-4 py-3">
         <div class="flex items-center gap-2">
-          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
             {{ userInitials }}
           </div>
           <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-semibold text-gray-700">{{ session.fullName.value || 'User' }}</div>
-            <div class="truncate text-[10px] text-gray-400">{{ session.user.value }}</div>
+            <div class="truncate text-sm font-semibold text-slate-200">{{ session.fullName.value || 'User' }}</div>
+            <div class="truncate text-[10px] text-slate-400">{{ session.user.value }}</div>
           </div>
         </div>
       </div>
 
       <!-- Navigation -->
       <nav class="flex-1 px-3 py-3">
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Menu</div>
+        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Menu</div>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-left text-sm font-semibold text-blue-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white"
         >
           🏠 Dashboard
         </button>
       </nav>
 
       <!-- Settings section -->
-      <div class="border-t border-gray-100 px-3 py-3">
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Settings</div>
+      <div class="border-t border-slate-700 px-3 py-3">
+        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Settings</div>
 
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="showGeneralSettings = true"
         >
           ⚙️ General
         </button>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 hover:bg-slate-700"
           @click="handleLogout"
         >
           🚪 Logout
@@ -54,11 +54,11 @@
     <!-- ===================== MAIN CONTENT ===================== -->
     <main class="flex-1">
       <!-- Top Bar -->
-      <header class="sticky top-0 z-40 border-b border-gray-200 bg-white px-6 py-3">
+      <header class="sticky top-0 z-40 border-b border-slate-700 bg-slate-800 px-6 py-3">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-lg font-bold text-gray-800">Dashboard</h1>
-            <p class="text-xs text-gray-400">{{ today }}</p>
+            <h1 class="text-lg font-bold text-white">Dashboard</h1>
+            <p class="text-xs text-slate-400">{{ today }}</p>
           </div>
         </div>
       </header>
@@ -69,26 +69,27 @@
           <div
             v-for="tile in tiles"
             :key="tile.id"
-            class="group relative cursor-pointer rounded-xl border border-gray-200 bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"
+            class="group relative cursor-pointer rounded-xl p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:brightness-110"
+            :class="tile.tileBg"
             @click="openModule(tile.id)"
           >
-            <span class="absolute right-3 top-3 rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-gray-400">
+            <span class="absolute right-3 top-3 rounded border border-white/20 bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white/70">
               {{ tile.shortcut }}
             </span>
-            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg text-xl" :class="tile.iconBg">
+            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">
               {{ tile.icon }}
             </div>
-            <div class="text-sm font-semibold text-gray-800">{{ tile.name }}</div>
-            <div class="mt-1 text-xs text-gray-400">{{ tile.desc }}</div>
+            <div class="text-sm font-semibold text-white">{{ tile.name }}</div>
+            <div class="mt-1 text-xs text-white/70">{{ tile.desc }}</div>
           </div>
         </div>
 
-        <div class="mt-8 flex items-center justify-center gap-6 text-xs text-gray-400">
-          <span>Press <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F1</kbd> – <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">F10</kbd> to quick open</span>
-          <span class="text-gray-300">|</span>
-          <span><kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">Ctrl+L</kbd> Customer</span>
-          <span class="text-gray-300">|</span>
-          <span><kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold">Ctrl+I</kbd> Item Search</span>
+        <div class="mt-8 flex items-center justify-center gap-6 text-xs text-slate-500">
+          <span>Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F10</kbd> to quick open</span>
+          <span class="text-slate-700">|</span>
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+L</kbd> Customer</span>
+          <span class="text-slate-700">|</span>
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+I</kbd> Item Search</span>
         </div>
       </div>
     </main>
@@ -147,13 +148,13 @@
     />
     <!-- SUCCESS POPUP -->
     <transition name="pop">
-      <div v-if="showSyncSuccess" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-[2px]" @click.self="showSyncSuccess = false">
-        <div class="scale-110 rounded-2xl bg-white p-8 shadow-2xl border border-emerald-100 flex flex-col items-center">
+      <div v-if="showSyncSuccess" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[2px]" @click.self="showSyncSuccess = false">
+        <div class="scale-110 rounded-2xl bg-slate-800 p-8 shadow-2xl border border-slate-600 flex flex-col items-center">
           <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl text-emerald-500 shadow-inner">
             ✅
           </div>
-          <h3 class="text-xl font-bold text-gray-900">Sync Complete</h3>
-          <p class="mt-2 text-sm text-gray-500">Settings synchronized successfully</p>
+          <h3 class="text-xl font-bold text-white">Sync Complete</h3>
+          <p class="mt-2 text-sm text-slate-400">Settings synchronized successfully</p>
           <button 
             @click="showSyncSuccess = false"
             class="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-100 transition hover:bg-emerald-700 active:scale-95"
@@ -205,15 +206,15 @@ const today = new Date().toLocaleDateString('en-IN', {
 
 // ==================== TILES ====================
 const tiles = [
-  { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', iconBg: 'bg-blue-50' },
-  { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', iconBg: 'bg-green-50' },
-  { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', iconBg: 'bg-amber-50' },
-  { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', iconBg: 'bg-blue-50' },
-  { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', iconBg: 'bg-amber-50' },
-  { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', iconBg: 'bg-purple-50' },
-  { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', iconBg: 'bg-rose-50' },
-  { id: 'pricelist', name: 'Price List Viewer', desc: 'View item prices', icon: '💲', shortcut: 'F7', iconBg: 'bg-green-50' },
-  { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F10', iconBg: 'bg-indigo-50' },
+  { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
+  { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
+  { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
+  { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
+  { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
+  { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
+  { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
+  { id: 'pricelist', name: 'Price List Viewer', desc: 'View item prices', icon: '💲', shortcut: 'F7', tileBg: 'bg-green-600' },
+  { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F10', tileBg: 'bg-cyan-700' },
 ]
 
 const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'pricelist', 'journal-contra', 'material-transfer']
