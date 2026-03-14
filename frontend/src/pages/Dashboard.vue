@@ -252,36 +252,19 @@ const routeMap = {
 }
 
 import { useShortcuts } from '../services/shortcutManager'
+import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 
 // ==================== KEYBOARD SHORTCUTS ====================
-useShortcuts({
-  'F1': () => openModule('sales'),
-  'F2': () => openModule('purchase'),
-  'F3': () => openModule('payment'),
-  'F4': () => openModule('purchase-submit'),
-  'F5': () => openModule('cashier'),
-  'F6': () => openModule('ledger'),
-  'F7': () => openModule('pricelist-update'),
-  'F8': () => openModule('journal-contra'),
-  'F9': () => openModule('payment'),
-  'F10': () => openModule('material-transfer'),
-  '1': () => openModule('sales'),
-  '2': () => openModule('purchase'),
-  '3': () => openModule('payment'),
-  '4': () => openModule('purchase-submit'),
-  '5': () => openModule('cashier'),
-  '6': () => openModule('ledger'),
-  '7': () => openModule('pricelist-update'),
-  '8': () => openModule('journal-contra'),
-  '9': () => openModule('material-transfer'),
-  'ESCAPE': () => {
+useShortcuts(dashboardShortcuts({
+  openModule,
+  handleEscape: () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
     if (showLedgerWindow.value) { showLedgerWindow.value = false; return }
     if (showStockLedgerWindow.value) { showStockLedgerWindow.value = false; return }
   }
-})
+}))
 
 const availableSeries = ref([])
 const userAllowedString = ref('')
