@@ -10,8 +10,10 @@
   "allowed_series_seperated_by_comma",
   "zoom_value",
   "cash",
-  "bank_account",
-  "upi"
+  "card",
+  "upi",
+  "warehouse",
+  "cost_center"
  ],
  "fields": [
   {
@@ -37,24 +39,36 @@
    "options": "Account"
   },
   {
-   "fieldname": "bank_account",
+   "fieldname": "upi",
+   "fieldtype": "Link",
+   "label": "UPI",
+   "options": "Account"
+  },
+  {
+   "fieldname": "card",
    "fieldtype": "Link",
    "label": "Bank Account",
    "options": "Account"
   },
   {
-   "fieldname": "upi",
+   "fieldname": "warehouse",
    "fieldtype": "Link",
-   "label": "UPI",
-   "options": "Account"
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-09 17:41:48.048372",
- "modified_by": "Administrator",
+ "modified": "2026-03-14 08:40:24.367384",
+ "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "USER SERIES",
  "owner": "Administrator",
