@@ -113,8 +113,10 @@ def get_billing_settings():
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
 	user_defaults = {
 		"cash": (user_row.cash or "") if user_row else "",
-		"bank_account": (user_row.bank_account or "") if user_row else "",
+		"bank_account": (user_row.card or "") if user_row else "",
 		"upi": (user_row.upi or "") if user_row else "",
+		"warehouse": (user_row.warehouse or "") if user_row else "",
+		"cost_center": (user_row.cost_center or "") if user_row else "",
 	}
 
 	return {
@@ -128,9 +130,13 @@ def get_billing_settings():
 				"price_list": r.price_list or "",
 				"warehouse": r.warehouse or "",
 				"tax_template": r.tax_template or "",
+				"tax_rate": r.tax_rate or "",
 				"cost_center": r.cost_center or "",
 				"print_format": r.print_format or "",
 				"printer": r.printer or "",
+				"cash_account": r.cash_account or "",
+				"bank": r.bank or "",
+				"upi": r.upi or "",
 			}
 			for r in settings.billing_series
 		],
@@ -140,8 +146,10 @@ def get_billing_settings():
 				"allowed_series": r.allowed_series_seperated_by_comma or "",
 				"zoom_value": r.zoom_value or "",
 				"cash": r.cash or "",
-				"bank_account": r.bank_account or "",
+				"bank_account": r.card or "",
 				"upi": r.upi or "",
+				"warehouse": r.warehouse or "",
+				"cost_center": r.cost_center or "",
 			}
 			for r in settings.user_series
 		],

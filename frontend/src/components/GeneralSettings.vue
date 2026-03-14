@@ -42,6 +42,14 @@
                 <span class="text-gray-500">UPI Account</span>
                 <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.upi || '--' }}</span>
               </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500">Warehouse</span>
+                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.warehouse || '--' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500">Cost Center</span>
+                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
+              </div>
             </div>
           </div>
 
@@ -71,9 +79,13 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Price List</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Warehouse</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Tax Template</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-gray-400">Tax Rate</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cost Center</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Print Format</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Printer</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cash A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Bank A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">UPI A/C</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -82,12 +94,16 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.price_list || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.warehouse || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.tax_template || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-gray-600">{{ bs.tax_rate || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.cost_center || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.print_format || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.printer || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.cash_account || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.bank || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.upi || '--' }}</td>
                   </tr>
                   <tr v-if="!visibleBillingSeries.length">
-                    <td colspan="7" class="px-2 py-3 text-center text-gray-400">No billing series configured</td>
+                    <td colspan="11" class="px-2 py-3 text-center text-gray-400">No billing series configured</td>
                   </tr>
                 </tbody>
               </table>
@@ -115,29 +131,33 @@
             </div>
           </div>
 
-          <!-- ── User Series Permissions (admin only) ── -->
+          <!-- ── User Series Permissions ── -->
           <div v-if="visibleUserSeries.length">
             <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">User Series Permissions</div>
             <div class="overflow-auto rounded-lg border border-gray-100">
               <table class="w-full text-[10px]">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-2 py-1.5 text-left font-semibold text-gray-400">User</th>
-                    <th class="px-2 py-1.5 text-left font-semibold text-gray-400">Allowed Series</th>
-                    <th class="px-2 py-1.5 text-right font-semibold text-gray-400">Zoom</th>
-                    <th class="px-2 py-1.5 text-left font-semibold text-gray-400">Cash A/C</th>
-                    <th class="px-2 py-1.5 text-left font-semibold text-gray-400">Bank A/C</th>
-                    <th class="px-2 py-1.5 text-left font-semibold text-gray-400">UPI A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">User</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Allowed Series</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-gray-400">Zoom</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cash A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Bank A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">UPI A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Warehouse</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cost Center</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="us in visibleUserSeries" :key="us.user" class="border-t border-gray-100 hover:bg-gray-50">
-                    <td class="px-2 py-1.5 font-medium text-gray-800">{{ us.user || '--' }}</td>
-                    <td class="px-2 py-1.5 font-mono text-gray-600">{{ us.allowed_series || '--' }}</td>
-                    <td class="px-2 py-1.5 text-right font-mono text-gray-600">{{ us.zoom_value || '--' }}</td>
-                    <td class="px-2 py-1.5 text-gray-600">{{ us.cash || '--' }}</td>
-                    <td class="px-2 py-1.5 text-gray-600">{{ us.bank_account || '--' }}</td>
-                    <td class="px-2 py-1.5 text-gray-600">{{ us.upi || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-gray-800">{{ us.user || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 font-mono text-gray-600">{{ us.allowed_series || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-gray-600">{{ us.zoom_value || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.cash || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.bank_account || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.upi || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.warehouse || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.cost_center || '--' }}</td>
                   </tr>
                 </tbody>
               </table>
