@@ -27,7 +27,7 @@ def _get_item_tax_rate(item_code):
     return float(sum(d.tax_rate or 0 for d in details)) / 2
 
 @frappe.whitelist()
-def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False):
+def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False, naming_series=None):
     """List Draft (and optionally Unpaid Submitted) Sales Invoices for cashiering."""
     date_filter = posting_date or frappe.utils.today()
     show_unpaid = frappe.parse_json(show_unpaid)
@@ -37,10 +37,16 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False)
         ["status", "!=", "Cancelled"]
     ]
     
+    if naming_series:
+        filters.append(["naming_series", "=", naming_series])
+    
     if show_unpaid:
         filters.append(["docstatus", "<", 2])
     else:
         filters.append(["docstatus", "=", 0])
+    
+    if query:
+        filters.append(["customer_name", "like", f"%{query}%"])
     
     invoices = frappe.get_all(
         "Sales Invoice",
@@ -58,12 +64,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False)
             inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
             result.append(inv)
             
-    if query:
-        query = query.lower()
-        result = [
-            inv for inv in result 
-            if query in inv.name.lower() or query in (inv.customer_name or "").lower()
-        ]
+
         
     return result[:int(limit)]
 
@@ -73,6 +74,7 @@ def get_sales_invoice(invoice_name):
     si = frappe.get_doc("Sales Invoice", invoice_name)
     payment_mode = si.payments[0].mode_of_payment if si.payments else "Cash"
     cost_center = si.items[0].cost_center if si.items else ""
+    freight_amount = sum(float(t.tax_amount or 0) for t in si.taxes if t.charge_type == "Actual")
 
     return {
         "name": si.name,
@@ -82,6 +84,7 @@ def get_sales_invoice(invoice_name):
         "naming_series": si.naming_series or "",
         "payment_mode": payment_mode,
         "discount_percentage": float(si.additional_discount_percentage or 0),
+        "freight_amount": freight_amount,
         "grand_total": float(si.grand_total or 0),
         "tax_template": si.taxes_and_charges or "",
         "cost_center": cost_center or "",

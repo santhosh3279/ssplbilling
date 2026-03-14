@@ -135,6 +135,23 @@
           <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
         </div>
 
+        <!-- Search & Series Filters -->
+        <div class="flex flex-col gap-1.5 border-b border-slate-700 p-2 bg-slate-800/20">
+          <input 
+            type="text" 
+            v-model="sidebarSearch"
+            placeholder="Search invoice/cust..."
+            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+          />
+          <select 
+            v-model="sidebarSeries"
+            class="w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+          >
+            <option value="">All Series</option>
+            <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
+
         <!-- Bill List -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
@@ -956,6 +973,8 @@ async function pickItem(item) {
 
 // ==================== SIDEBAR MODIFY PANEL ====================
 const sidebarDate = ref(getTodayIST())
+const sidebarSearch = ref('')
+const sidebarSeries = ref('')
 const sidebarBills = ref([])
 const sidebarLoading = ref(false)
 
@@ -963,9 +982,10 @@ async function fetchSidebarBills() {
   sidebarLoading.value = true
   try {
     sidebarBills.value = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoices', {
-      query: '',
+      query: sidebarSearch.value,
       limit: 50,
       posting_date: sidebarDate.value,
+      naming_series: sidebarSeries.value || undefined
     })
   } catch (e) {
     sidebarBills.value = []
@@ -979,7 +999,13 @@ function changeSidebarDate(days) {
   sidebarDate.value = d.toISOString().split('T')[0]
 }
 
-watch(sidebarDate, fetchSidebarBills)
+watch([sidebarDate, sidebarSeries], fetchSidebarBills)
+
+let sidebarSearchTimeout = null
+watch(sidebarSearch, () => {
+  clearTimeout(sidebarSearchTimeout)
+  sidebarSearchTimeout = setTimeout(fetchSidebarBills, 500)
+})
 
 async function loadInvoice(invoiceName) {
   try {
