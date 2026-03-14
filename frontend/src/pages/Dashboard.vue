@@ -188,6 +188,8 @@ import { fetchItemPrice, fetchItemStockForWarehouses } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
+import { useShortcuts } from '../services/shortcutManager'
+import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 
 const router = useRouter()
 
@@ -251,12 +253,11 @@ const routeMap = {
   F10: 'material-transfer',
 }
 
-import { useShortcuts } from '../services/shortcutManager'
-import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
-
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(dashboardShortcuts({
   openModule,
+  openCustomerSearch: () => openCustomerSearch('All'),
+  openItemSearch: () => openItemSearch(),
   handleEscape: () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }

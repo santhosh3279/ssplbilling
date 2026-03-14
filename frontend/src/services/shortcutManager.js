@@ -81,6 +81,17 @@ export const shortcutManager = {
   },
 
   /**
+   * Remove a shortcut only if the stored action still matches the one that was registered.
+   * This prevents a component from accidentally clearing shortcuts registered by a newer component.
+   */
+  unregisterIfMatches(key, action, level = 'local') {
+    const normalizedKey = key.toUpperCase();
+    if (registry[level].get(normalizedKey) === action) {
+      registry[level].delete(normalizedKey);
+    }
+  },
+
+  /**
    * Clear all shortcuts for a specific level (usually called on unmount)
    */
   clearLevel(level = 'local') {
@@ -92,15 +103,21 @@ export const shortcutManager = {
  * Vue Composable for easy registration in components
  */
 export function useShortcuts(shortcuts, level = 'local') {
+  const entries = Object.entries(shortcuts);
+
   // Register all
-  Object.entries(shortcuts).forEach(([key, action]) => {
+  entries.forEach(([key, action]) => {
     shortcutManager.register(key, action, level);
   });
 
-  // Automatically cleanup on unmount if local
+  // On unmount, only remove the shortcuts THIS call registered.
+  // Using unregisterIfMatches avoids wiping shortcuts that a newly-mounted
+  // component has already overwritten with its own handlers.
   if (level === 'local') {
     onUnmounted(() => {
-      shortcutManager.clearLevel('local');
+      entries.forEach(([key, action]) => {
+        shortcutManager.unregisterIfMatches(key, action, level);
+      });
     });
   }
 }

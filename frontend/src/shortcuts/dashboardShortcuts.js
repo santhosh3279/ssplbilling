@@ -26,5 +26,8 @@ export const dashboardShortcuts = (handlers) => ({
   '8': () => handlers.openModule('journal-contra'),
   '9': () => handlers.openModule('material-transfer'),
   
+  'CTRL+L': () => handlers.openCustomerSearch?.(),
+  'CTRL+I': () => handlers.openItemSearch?.(),
+
   'ESCAPE': handlers.handleEscape,
 });
