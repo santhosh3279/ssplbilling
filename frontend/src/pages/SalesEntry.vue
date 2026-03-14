@@ -489,7 +489,7 @@ import { salesEntryShortcuts } from '../shortcuts/salesEntryShortcuts'
 
 const router = useRouter()
 const route = useRoute()
-const API = '/api/method/ssplbilling.api.sales_api'
+const API = '/api/method/ssplbilling.api.SaleEntry_api'
 
 const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, fetchCustomerSalesHistory, getItemHistoryFromCache } = useItemCache()
 
@@ -606,7 +606,7 @@ function encPrice(val) {
 
 // ==================== SHARED POST HELPER ====================
 async function apiPost(method, params) {
-  return frappePost(`ssplbilling.api.sales_api.${method}`, params)
+  return frappePost(`ssplbilling.api.SaleEntry_api.${method}`, params)
 }
 
 // ==================== INPUT REFS ====================
@@ -1144,7 +1144,7 @@ async function fetchSeriesList() {
   }
 
   try {
-    const list = await frappeGet('ssplbilling.api.sales_api.get_naming_series')
+    const list = await frappeGet('ssplbilling.api.SaleEntry_api.get_naming_series')
     if (Array.isArray(list) && list.length) {
       availableSeries.value = list
       if (list.includes(billSeries.value)) { fetchNextBillNo() }
@@ -1159,7 +1159,7 @@ async function fetchSeriesList() {
 async function fetchNextBillNo() {
   if (!billSeries.value) { nextBillNo.value = '...'; return }
   try {
-    const res = await frappeGet('ssplbilling.api.sales_api.get_next_bill_no', { naming_series: billSeries.value })
+    const res = await frappeGet('ssplbilling.api.SaleEntry_api.get_next_bill_no', { naming_series: billSeries.value })
     nextBillNo.value = res || '...'
   } catch (e) { nextBillNo.value = '...' }
 }
@@ -1223,6 +1223,7 @@ async function saveBill() {
     payment_mode: paymentMode.value,
     discount_percentage: discountPct.value,
     freight_amount: freightAmt.value,
+    freight_account: localStorage.getItem('wb_freight') || '',
     tax_template: taxTemplate.value || '',
     cost_center: costCenter.value || '',
     items: activeItems.value.map(i => ({
