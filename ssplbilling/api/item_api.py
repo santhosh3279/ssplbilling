@@ -82,3 +82,18 @@ def create_item(data):
 		"name": item.name,
 		"item_code": item.item_code
 	}
+
+@frappe.whitelist()
+def print_barcodes(items):
+    if isinstance(items, str):
+        items = json.loads(items)
+
+    doc = frappe.new_doc("Barcode_Prinitng")
+    for item in items:
+        doc.append("items", {
+            "item_code": item.get("item_code"),
+            "item_name": frappe.db.get_value("Item", item.get("item_code"), "item_name"),
+            "qty": item.get("qty", 1)
+        })
+    doc.insert()
+    return doc.name

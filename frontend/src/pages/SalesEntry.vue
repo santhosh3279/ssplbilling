@@ -18,8 +18,10 @@
           <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
         </div>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate rows</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Barcode</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
+
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
         <div class="ml-2 h-4 w-px bg-slate-700"></div>
         <div class="flex items-center gap-1.5 font-bold text-blue-400">
@@ -470,6 +472,11 @@
       @jump="handleJump" 
     />
 
+    <BarcodePrintingModal
+      :show="showBarcodeModal"
+      @close="showBarcodeModal = false"
+    />
+
     <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
@@ -513,6 +520,7 @@ import { searchCustomers } from '../customersearch.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
@@ -542,6 +550,11 @@ const emit = defineEmits(['close'])
 if (props.isSubWindow) useSubwindow()
 
 const showPrintModal = ref(false)
+const showBarcodeModal = ref(false)
+
+function openBarcodePrinting() {
+  showBarcodeModal.value = true
+}
 
 // ==================== BILLING SETTINGS ====================
 const billingSeriesConfig = ref([])
@@ -1410,6 +1423,7 @@ useShortcuts(salesEntryShortcuts({
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
+  openBarcodePrinting: () => { if (!showPrintModal.value) openBarcodePrinting() },
   deleteRow: () => {
     if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       softDelete(selectedRow.value)
@@ -1429,6 +1443,7 @@ useShortcuts(salesEntryShortcuts({
     if (showJumpModal.value) { showJumpModal.value = false; return }
     if (showDiscardModal.value) { showDiscardModal.value = false; return }
     if (showPrintModal.value) { showPrintModal.value = false; return }
+    if (showBarcodeModal.value) { showBarcodeModal.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
