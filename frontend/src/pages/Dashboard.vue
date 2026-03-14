@@ -107,10 +107,8 @@
       :system-settings="systemSettings"
       :billing-series="filteredBillingSeries"
       :user-series="filteredUserSeries"
-      :default-zoom="defaultZoom"
       @close="showGeneralSettings = false"
       @sync="syncSettings"
-      @save="onSaveGeneralSettings"
     />
 
     <!-- CUSTOMER SEARCH MODAL -->
@@ -279,22 +277,6 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 const showGeneralSettings = ref(false)
 const showSyncSuccess = ref(false)
 const defaultSeries = ref(localStorage.getItem('wb-series') || '')
-const defaultZoom = ref(null) // populated from SSPL Billing Settings on load
-
-async function onSaveGeneralSettings(data) {
-  const zoom = Math.max(50, Math.min(300, data.zoom))
-  defaultZoom.value = zoom
-  localStorage.setItem('wb-zoom', String(zoom))
-  try {
-    await dashboardApi.saveDefaultZoom(zoom)
-    // Bust the settings cache so next load picks up the new zoom
-    localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
-    localStorage.removeItem(GENERAL_SETTINGS_CACHE_KEY)
-  } catch (e) {
-    console.warn('[Dashboard] saveDefaultZoom failed:', e)
-  }
-  showGeneralSettings.value = false
-}
 
 // ==================== CUSTOMER SEARCH ====================
 const showCustomerSearchModal = ref(false)
@@ -417,7 +399,9 @@ async function fetchSettings() {
     // Sync user's zoom to localStorage so Sales Entry can use it
     if (settings && settings.user_zoom) {
       localStorage.setItem('wb-zoom', settings.user_zoom)
-      defaultZoom.value = parseInt(settings.user_zoom)
+    }
+    if (settings && settings.cipher_map) {
+      localStorage.setItem('wb-cipher', settings.cipher_map)
     }
   } catch (e) {
     console.warn('[Dashboard] getBillingSettings failed:', e)
