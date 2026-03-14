@@ -403,7 +403,7 @@
                     <button class="flex-1 rounded-lg border border-red-900/50 bg-red-900/10 py-2 text-center text-sm font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
                   </div>
 
-                  <button v-if="savedInvoiceName && billDocStatus === 0" @click="deleteBill" class="w-full rounded-lg border border-red-900/50 bg-red-900/10 py-2.5 text-center text-sm font-semibold text-red-400 hover:bg-red-900/20 transition-all">Delete Bill</button>
+                  
                 </div>
               </div>
             </div>
@@ -1305,19 +1305,6 @@ async function saveBill() {
     showPrintModal.value = true
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save invoice'))
-  }
-}
-
-async function deleteBill() {
-  if (!savedInvoiceName.value) return
-  if (!confirm('Are you sure you want to delete this draft bill?')) return
-  try {
-    await apiPost('delete_sales_invoice', { invoice_name: savedInvoiceName.value })
-    alert('Bill deleted successfully')
-    startNewBill()
-    fetchSidebarBills()
-  } catch (e) {
-    alert('Error deleting bill: ' + (e.message || 'Unknown error'))
   }
 }
 

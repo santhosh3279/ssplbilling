@@ -261,10 +261,6 @@ def create_sales_invoice(data=None, **kwargs):
 
 
 @frappe.whitelist()
-def delete_sales_invoice(invoice_name):
-    frappe.delete_doc("Sales Invoice", invoice_name)
-    return {"status": "Deleted"}
-
 @frappe.whitelist()
 def get_naming_series(doctypes=None):
     """Get available naming series for specified DocTypes. Defaults to Sales Invoice."""
