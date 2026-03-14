@@ -124,6 +124,22 @@ All billing state lives in **`composables/useBilling.js`** — a Vue 3 composabl
 
 `vite build` writes to `ssplbilling/public/frontend/`. SPA served at `/frontend` (`createWebHistory('/frontend')`).
 
+## Git Workflow
+
+Before starting any task, create a checkpoint commit with the current state:
+
+```bash
+git add -A && git commit -m "chore: checkpoint before <brief description of upcoming task>"
+```
+
+After completing a task, create a commit summarising what was done:
+
+```bash
+git add -A && git commit -m "<type>: <description of what was done>"
+```
+
+Use conventional commit types: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`.
+
 ## Key Conventions
 
 - **Python style**: ruff, `line-length = 110`, tab indentation, `target-version = "py314"`, double-quote strings.
