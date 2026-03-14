@@ -166,9 +166,12 @@
           <div 
             v-for="inv in sidebarBills" 
             :key="inv.name"
+            ref="sidebarBillRefs"
             @click="loadInvoice(inv.name)"
-            class="group cursor-pointer border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800"
+            class="group cursor-pointer border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
             :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
+            tabindex="0"
+            @keydown.enter="loadInvoice(inv.name)"
           >
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-2 truncate">
@@ -643,6 +646,7 @@ async function apiPost(method, params) {
 // ==================== INPUT REFS ====================
 const inputRefs = {}
 const rowRefs   = {}
+const sidebarBillRefs = ref([])
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 const newCodeInput = ref(null)
@@ -1359,6 +1363,14 @@ function handleJump(targetNo) {
   focusRow(targetIdx)
 }
 
+function focusModifyPanel() {
+  nextTick(() => {
+    if (sidebarBillRefs.value && sidebarBillRefs.value.length > 0) {
+      sidebarBillRefs.value[0].focus()
+    }
+  })
+}
+
 function handleBack() {
   if (activeItems.value.length > 0 && !billSaved.value) {
     showDiscardModal.value = true
@@ -1380,6 +1392,7 @@ useShortcuts(salesEntryShortcuts({
   save: () => { if (!showPrintModal.value) saveBill() },
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
+  focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
   deleteRow: () => {
     if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       softDelete(selectedRow.value)

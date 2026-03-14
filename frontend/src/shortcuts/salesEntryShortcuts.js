@@ -11,6 +11,7 @@ export const salesEntryShortcuts = (handlers) => ({
   ...entryFormShortcuts(handlers),
 
   // Sales Entry specific
+  'F3':     handlers.focusModifyPanel,
   'PAGEUP': handlers.focusSeries,
   'END':    handlers.toggleDiscountSave,
   'ESCAPE': handlers.contextualBack,
