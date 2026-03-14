@@ -182,8 +182,8 @@
                 'bg-red-900 text-red-300': inv.status === 'Cancelled'
               }">{{ inv.status[0] }}</span>
             </div>
-            <div class="mt-0.5 truncate text-xs font-medium text-slate-300">{{ inv.customer_name }}</div>
-            <div class="flex items-center justify-between text-xs font-bold text-slate-500 tabular-nums">
+            <div class="mt-0.5 truncate text-lg font-medium text-slate-300">{{ inv.customer_name }}</div>
+            <div class="flex items-center justify-between text-lg font-bold text-slate-500 tabular-nums">
               <span>₹{{ inv.grand_total.toFixed(0) }}</span>
               <span class="text-[9px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">Click to Edit</span>
             </div>
