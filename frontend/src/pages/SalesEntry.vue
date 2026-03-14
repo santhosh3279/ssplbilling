@@ -150,6 +150,13 @@
             <option value="">All Series</option>
             <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
           </select>
+          <button 
+            @click="showSubmitted = !showSubmitted"
+            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
+            :class="showSubmitted ? 'bg-blue-900/40 border-blue-500 text-blue-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
+          >
+            {{ showSubmitted ? 'Showing All' : 'Drafts Only' }}
+          </button>
         </div>
 
         <!-- Bill List -->
@@ -980,6 +987,7 @@ async function pickItem(item) {
 const sidebarDate = ref(getTodayIST())
 const sidebarSearch = ref('')
 const sidebarSeries = ref('')
+const showSubmitted = ref(false)
 const sidebarBills = ref([])
 const sidebarLoading = ref(false)
 
@@ -990,7 +998,8 @@ async function fetchSidebarBills() {
       query: sidebarSearch.value,
       limit: 50,
       posting_date: sidebarDate.value,
-      naming_series: sidebarSeries.value || ''
+      naming_series: sidebarSeries.value || '',
+      show_unpaid: showSubmitted.value
     })
   } catch (e) {
     sidebarBills.value = []
@@ -1004,7 +1013,7 @@ function changeSidebarDate(days) {
   sidebarDate.value = d.toISOString().split('T')[0]
 }
 
-watch([sidebarDate, sidebarSeries], fetchSidebarBills)
+watch([sidebarDate, sidebarSeries, showSubmitted], fetchSidebarBills)
 
 let sidebarSearchTimeout = null
 watch(sidebarSearch, () => {
