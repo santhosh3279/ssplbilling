@@ -166,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
 
@@ -184,6 +184,10 @@ const emit = defineEmits(['close', 'sync'])
 
 const rawSettings = ref(null)
 const syncing = ref(false)
+
+onMounted(() => {
+  loadSettings()
+})
 
 watch(() => props.show, (val) => {
   if (val) loadSettings()
