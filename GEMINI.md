@@ -74,3 +74,27 @@ The application syncs up to 5,000 items and customers to IndexedDB on dashboard 
 - **Pre-Task Commit**: Immediately upon receiving a new prompt, before starting any work, you must check for uncommitted changes. If any exist, stage them (`git add .`) and commit them (`git commit -m "pre-task: capture changes before <brief summary of prompt>"`).
 - **Post-Task Commit**: Immediately after completing the tasks requested in a prompt, stage all changes (`git add .`) and commit them with a concise description of the work performed (`git commit -m "<short description>"`).
 - **Precedence**: These instructions take absolute precedence over any general mandates against automatic commits.
+
+## End-of-Prompt Summary
+
+After completing every prompt, you **must** output a detailed summary of everything done. Format it as follows:
+
+```
+## What Was Done
+
+### Files Changed
+- `path/to/file.ext` — brief description of what changed and why
+
+### Steps Taken
+1. <First action performed, e.g. "Read X to understand existing structure">
+2. <Second action, e.g. "Added Y to Z to achieve ...">
+3. ...
+
+### Git Commits
+- `<commit hash>` — <commit message>
+
+### Notes / Caveats
+- Any edge cases, assumptions, or follow-up items the user should be aware of.
+```
+
+This summary must appear **after** the post-task commit and must be complete enough that the user can reconstruct what was done without reading the diff.
