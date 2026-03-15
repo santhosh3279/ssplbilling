@@ -38,15 +38,8 @@
           </div>
         </div>
 
-        <!-- Row 2: Cash Account (read-only) + User (read-only) -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Cash Account</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm font-mono"
-                 :class="form.cash ? 'text-slate-200' : 'text-slate-500 italic'">
-              {{ form.cash || (loadingSettings ? 'Loading…' : 'Not configured') }}
-            </div>
-          </div>
+        <!-- Row 2: User (read-only) -->
+        <div class="grid grid-cols-1 gap-4">
           <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">User</label>
             <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-300 font-mono">
@@ -187,9 +180,16 @@ onMounted(async () => {
     form.opening_or_closing = 'Opening'
   }
 
+  // Set immediate value from General Settings cache
+  form.cash = localStorage.getItem('wb-cash') || ''
+
   try {
     const data = await frappeGet('ssplbilling.api.dashboard_api.get_billing_settings')
-    form.cash = data.user_defaults?.cash || ''
+    const userCash = data.user_defaults?.cash || ''
+    if (userCash) {
+      form.cash = userCash
+      localStorage.setItem('wb-cash', userCash)
+    }
     
     // After getting settings (and cash account), try to fetch existing record
     await fetchExistingRecord()
