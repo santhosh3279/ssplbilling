@@ -62,6 +62,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
+import { frappeGet } from '../api.js'
 
 const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
 
@@ -96,8 +97,15 @@ async function handleLogin() {
           localStorage.setItem('wb-zoom', settings.default_zoom)
         }
       }
+      
+      // Also pre-load opening_cash
+      const today = new Date().toLocaleDateString('en-CA')
+      const openingRes = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
+      if (openingRes) {
+        localStorage.setItem('opening_cash', String(openingRes.total || 0))
+      }
     } catch (e) {
-      console.warn('[Login] Failed to preload billing settings:', e)
+      console.warn('[Login] Failed to preload data:', e)
     }
     
     router.push('/')

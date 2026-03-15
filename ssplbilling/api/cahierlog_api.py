@@ -19,21 +19,12 @@ def get_cash_ledger_balance(account):
 
 
 @frappe.whitelist()
-def get_opening_total(date, cash_account):
-	"""Return the total from Cashier_Opening for a specific date, matching account and logged-in user."""
-	if not cash_account:
-		return {"total": 0.0}
-		
-	total = frappe.db.get_value(
-		"Cashier_Opening", 
-		{
-			"date": date, 
-			"opening_or_closing": "Opening", 
-			"cash": cash_account,
-			"user": frappe.session.user
-		}, 
-		"total"
-	)
+def get_opening_total(date):
+	"""Return the total from Cashier_Opening for a specific date and current user using name format date_Opening_user."""
+	user = frappe.session.user
+	doc_name = f"{date}_Opening_{user}"
+	
+	total = frappe.db.get_value("Cashier_Opening", doc_name, "total")
 	return {"total": float(total or 0.0)}
 
 
@@ -64,8 +55,8 @@ def save_cashier_opening(date, cash, cash_ledger_balance, opening_or_closing, us
 		doc = frappe.get_doc("Cashier_Opening", existing_name)
 	else:
 		doc = frappe.new_doc("Cashier_Opening")
-		# Set custom name: Date_Type (e.g., 2026-03-15_Opening)
-		doc.name = f"{date}_{opening_or_closing}"
+		# Set custom name: Date_Type_User (e.g., 2026-03-15_Opening_biller@gmail.com)
+		doc.name = f"{date}_{opening_or_closing}_{user}"
 
 	doc.date = date
 	doc.cash = cash
