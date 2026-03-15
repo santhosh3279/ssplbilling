@@ -38,8 +38,15 @@
           </div>
         </div>
 
-        <!-- Row 2: User (read-only) -->
-        <div class="grid grid-cols-1 gap-4">
+        <!-- Row 2: Cash Account + User -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Cash Account</label>
+            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm font-mono"
+                 :class="form.cash ? 'text-slate-200' : 'text-slate-500 italic'">
+              {{ form.cash || (loadingSettings ? 'Loading…' : 'Not configured') }}
+            </div>
+          </div>
           <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">User</label>
             <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-300 font-mono">
@@ -180,23 +187,39 @@ onMounted(async () => {
     form.opening_or_closing = 'Opening'
   }
 
-  // Set immediate value from General Settings cache
-  form.cash = localStorage.getItem('wb-cash') || ''
+  // 1. Immediate population from localStorage (General Settings cache)
+  const cachedCash = localStorage.getItem('wb-cash')
+  if (cachedCash) {
+    form.cash = cachedCash
+  }
 
   try {
     const data = await frappeGet('ssplbilling.api.dashboard_api.get_billing_settings')
     const userCash = data.user_defaults?.cash || ''
+    
+    // Only update if we got a value from API, or if form.cash is still empty
     if (userCash) {
       form.cash = userCash
       localStorage.setItem('wb-cash', userCash)
+    } else if (!form.cash && data.billing_series?.length > 0) {
+      // Fallback to first series cash account if user default is missing
+      const seriesCash = data.billing_series[0].cash_account
+      if (seriesCash) {
+        form.cash = seriesCash
+        localStorage.setItem('wb-cash', seriesCash)
+      }
     }
     
-    // After getting settings (and cash account), try to fetch existing record
+    // After getting settings, try to fetch existing record
     await fetchExistingRecord()
   } catch (e) {
     console.warn('[CahierEntry] Initialization failed:', e)
   } finally {
     loadingSettings.value = false
+    // If after all attempts we still don't have a balance but have an account, fetch it
+    if (!ledgerBalance.value && form.cash && !savedName.value) {
+      await fetchLedgerBalanceManual(form.cash)
+    }
   }
 })
 
@@ -210,16 +233,42 @@ async function fetchExistingRecord() {
     
     if (existing) {
       savedName.value = existing.name
-      form.cash = existing.cash
+      // Only overwrite cash account if the saved record actually has one
+      if (existing.cash) {
+        form.cash = existing.cash
+      }
       ledgerBalance.value = parseFloat(existing.cash_ledger_balance || 0)
       
       // Load denominations
       denominations.forEach(d => {
         form.denominations[d] = existing[d] ? parseInt(existing[d]) : null
       })
+    } else {
+      // No existing record: reset state
+      savedName.value = ''
+      denominations.forEach(d => {
+        form.denominations[d] = null
+      })
+      // If we have a cash account, ensure we have its current balance
+      if (form.cash) {
+        await fetchLedgerBalanceManual(form.cash)
+      }
     }
   } catch (e) {
     console.warn('[CahierEntry] fetchExistingRecord failed:', e)
+  }
+}
+
+async function fetchLedgerBalanceManual(account) {
+  if (!account) return
+  loadingBalance.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { account })
+    ledgerBalance.value = res.balance ?? 0
+  } catch (e) {
+    console.warn('[CahierEntry] get_cash_ledger_balance failed:', e)
+  } finally {
+    loadingBalance.value = false
   }
 }
 

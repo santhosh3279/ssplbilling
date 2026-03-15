@@ -45,6 +45,8 @@ def save_cashier_opening(date, cash, cash_ledger_balance, opening_or_closing, us
 		doc = frappe.get_doc("Cashier_Opening", existing_name)
 	else:
 		doc = frappe.new_doc("Cashier_Opening")
+		# Set custom name: Date_Type (e.g., 2026-03-15_Opening)
+		doc.name = f"{date}_{opening_or_closing}"
 
 	doc.date = date
 	doc.cash = cash
