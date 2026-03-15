@@ -29,7 +29,7 @@
     </nav>
 
     <!-- FLOATING ACTION ROW (BELOW NAV) -->
-    <div class="absolute top-28 left-8 z-40 flex gap-4 w-[600px]">
+    <div class="absolute top-28 left-8 z-40 flex gap-4 w-[900px]">
       <!-- Cashier Opening Action -->
       <button
         class="group relative flex-1 flex items-center justify-between overflow-hidden rounded-2xl bg-blue-600 px-6 py-5 text-left text-white shadow-2xl shadow-blue-900/40 transition-all hover:bg-blue-500 active:scale-[0.98]"
@@ -56,6 +56,21 @@
             <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">BOX Cash Total</div>
             <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
               {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cash Ledger Balance Widget -->
+      <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-sky-500/30">
+        <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500 shadow-inner">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">Ledger Balance</div>
+            <div class="font-mono text-2xl font-black text-sky-400 truncate leading-none">
+              {{ cashLedgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </div>
           </div>
         </div>
@@ -107,6 +122,7 @@ import BoxCashSubwindow from '../components/Cahier_Entry.vue'
 const router = useRouter()
 const showBoxCash = ref(false)
 const boxCashTotal = ref(Number(localStorage.getItem('opening_cash') || 0))
+const cashLedgerBalance = ref(Number(localStorage.getItem('cash_ledger_balance') || 0))
 
 onMounted(async () => {
   const today = new Date().toLocaleDateString('en-CA')
@@ -114,17 +130,39 @@ onMounted(async () => {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { 
       date: today
     })
+    
     const total = res.total || 0
+    const ledgerBal = res.cash_ledger_balance || 0
+    
     boxCashTotal.value = total
+    cashLedgerBalance.value = ledgerBal
+    
     localStorage.setItem('opening_cash', String(total))
+    localStorage.setItem('cash_ledger_balance', String(ledgerBal))
   } catch (e) {
-    console.warn('[Cahier] Failed to fetch opening total:', e)
+    console.warn('[Cahier] Failed to fetch totals:', e)
   }
 })
 
 function onBoxCashSaved(data) {
   boxCashTotal.value = data.total
-  localStorage.setItem('opening_cash', String(data.total))
+  // We need to trigger a fresh fetch to get the updated ledger balance from the saved record
+  // Or handle it if the data object already contains it. 
+  // For now, let's refresh both from the same API to ensure consistency.
+  refreshTotals()
+}
+
+async function refreshTotals() {
+  const today = new Date().toLocaleDateString('en-CA')
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
+    boxCashTotal.value = res.total || 0
+    cashLedgerBalance.value = res.cash_ledger_balance || 0
+    localStorage.setItem('opening_cash', String(res.total || 0))
+    localStorage.setItem('cash_ledger_balance', String(res.cash_ledger_balance || 0))
+  } catch (e) {
+    console.warn('[Cahier] refreshTotals failed:', e)
+  }
 }
 </script>
 

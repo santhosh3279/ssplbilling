@@ -45,7 +45,7 @@
    "fieldname": "opening_or_closing",
    "fieldtype": "Select",
    "label": "Opening or Closing",
-   "options": "Opening\nMid-Day Closing\nClosing"
+   "options": "Opening\nMid-Day-1\nMid-Day-2\nClosing"
   },
   {
    "fieldname": "user",
@@ -127,8 +127,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-15 23:42:35.308370",
- "modified_by": "biller@gmail.com",
+ "modified": "2026-03-16 00:31:33.590951",
+ "modified_by": "anagha@gmail.com",
  "module": "Ssplbilling",
  "name": "Cashier_Opening",
  "naming_rule": "Set by user",
