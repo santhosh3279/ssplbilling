@@ -28,49 +28,100 @@
       </div>
     </nav>
 
-    <!-- FLOATING ACTION ROW (BELOW NAV) -->
-    <div class="absolute top-28 left-8 z-40 flex gap-4 w-[900px]">
-      <!-- Cashier Opening Action -->
-      <button
-        class="group relative flex-1 flex items-center justify-between overflow-hidden rounded-2xl bg-blue-600 px-6 py-5 text-left text-white shadow-2xl shadow-blue-900/40 transition-all hover:bg-blue-500 active:scale-[0.98]"
-        @click="showBoxCash = true"
-      >
-        <div class="relative z-10">
-          <div class="text-[10px] font-bold uppercase tracking-widest text-blue-200 opacity-70 mb-1">Session Action</div>
-          <div class="text-lg font-black tracking-tight">Cashier Opening</div>
-        </div>
-        <div class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-2xl shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-12">
-          💰
-        </div>
-        <!-- Decorative Glow -->
-        <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-all group-hover:bg-white/20"></div>
-      </button>
-
-      <!-- BOX Cash Widget -->
-      <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
-        <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
-            <span class="text-2xl font-black">₹</span>
+    <!-- FLOATING ACTION ROWS (BELOW NAV) -->
+    <div class="absolute top-28 left-8 z-40 flex flex-col gap-6 w-[900px]">
+      
+      <!-- ROW 1: Cashier Opening -->
+      <div class="flex gap-4">
+        <!-- Cashier Opening Action -->
+        <button
+          class="group relative flex-1 flex items-center justify-between overflow-hidden rounded-2xl bg-blue-600 px-6 py-5 text-left text-white shadow-2xl shadow-blue-900/40 transition-all hover:bg-blue-500 active:scale-[0.98]"
+          @click="openModal('Cashier Opening')"
+        >
+          <div class="relative z-10">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-blue-200 opacity-70 mb-1">Session Action</div>
+            <div class="text-lg font-black tracking-tight">Cashier Opening</div>
           </div>
-          <div class="min-w-0 flex-1">
-            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">BOX Cash Total</div>
-            <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
-              {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+          <div class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-2xl shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-12">
+            💰
+          </div>
+          <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-all group-hover:bg-white/20"></div>
+        </button>
+
+        <!-- BOX Cash Widget -->
+        <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
+          <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
+              <span class="text-2xl font-black">₹</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">Opening BOX Total</div>
+              <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
+                {{ openingTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cash Ledger Balance Widget -->
+        <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-sky-500/30">
+          <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500 shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">Opening Ledger</div>
+              <div class="font-mono text-2xl font-black text-sky-400 truncate leading-none">
+                {{ openingLedger.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Cash Ledger Balance Widget -->
-      <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-sky-500/30">
-        <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500 shadow-inner">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+      <!-- ROW 2: Mid-Day-1 -->
+      <div class="flex gap-4">
+        <!-- Mid-Day-1 Action -->
+        <button
+          class="group relative flex-1 flex items-center justify-between overflow-hidden rounded-2xl bg-indigo-600 px-6 py-5 text-left text-white shadow-2xl shadow-indigo-900/40 transition-all hover:bg-indigo-500 active:scale-[0.98]"
+          @click="openModal('Mid-Day-1')"
+        >
+          <div class="relative z-10">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-indigo-200 opacity-70 mb-1">Session Action</div>
+            <div class="text-lg font-black tracking-tight">Mid-Day-1 Entry</div>
           </div>
-          <div class="min-w-0 flex-1">
-            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">Ledger Balance</div>
-            <div class="font-mono text-2xl font-black text-sky-400 truncate leading-none">
-              {{ cashLedgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+          <div class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-2xl shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-12">
+            🕒
+          </div>
+          <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-all group-hover:bg-white/20"></div>
+        </button>
+
+        <!-- Mid-Day-1 BOX Cash Widget -->
+        <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
+          <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
+              <span class="text-2xl font-black">₹</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">MD-1 BOX Total</div>
+              <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
+                {{ md1Total.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mid-Day-1 Ledger Balance Widget -->
+        <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-sky-500/30">
+          <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500 shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">MD-1 Ledger</div>
+              <div class="font-mono text-2xl font-black text-sky-400 truncate leading-none">
+                {{ md1Ledger.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              </div>
             </div>
           </div>
         </div>
@@ -78,11 +129,11 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex min-h-screen flex-col pt-60">
+    <div class="flex min-h-screen flex-col pt-[28rem]">
       <!-- Main content placeholder -->
       <main class="flex-1 overflow-y-auto p-10 custom-scrollbar">
         <div class="mx-auto max-w-5xl">
-          <div class="relative flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-slate-800 bg-slate-800/20 py-32 text-center transition-colors hover:border-slate-700">
+          <div class="relative flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-slate-800 bg-slate-800/20 py-20 text-center transition-colors hover:border-slate-700">
             <div class="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-800 text-4xl shadow-2xl">
               📂
             </div>
@@ -90,7 +141,10 @@
             <p class="mt-3 text-base text-slate-500 max-w-md mx-auto leading-relaxed">
               Your reconciliation history, cashier logs, and daily summaries will be displayed here as they are generated.
             </p>
-            <button class="mt-8 rounded-xl bg-slate-700 px-6 py-3 text-sm font-black text-slate-300 uppercase tracking-widest hover:bg-slate-600 transition-all active:scale-95 shadow-lg">
+            <button 
+              @click="refreshAll"
+              class="mt-8 rounded-xl bg-slate-700 px-6 py-3 text-sm font-black text-slate-300 uppercase tracking-widest hover:bg-slate-600 transition-all active:scale-95 shadow-lg"
+            >
               Refresh History
             </button>
           </div>
@@ -106,7 +160,7 @@
     <!-- BOX Cash Subwindow -->
     <BoxCashSubwindow
       v-if="showBoxCash"
-      title="Cashier Opening Entry"
+      :title="modalTitle"
       @close="showBoxCash = false"
       @saved="onBoxCashSaved"
     />
@@ -121,48 +175,53 @@ import BoxCashSubwindow from '../components/Cahier_Entry.vue'
 
 const router = useRouter()
 const showBoxCash = ref(false)
-const boxCashTotal = ref(Number(localStorage.getItem('opening_cash') || 0))
-const cashLedgerBalance = ref(Number(localStorage.getItem('cash_ledger_balance') || 0))
+const modalTitle = ref('Cashier Opening')
+
+// Opening Row State
+const openingTotal = ref(Number(localStorage.getItem('opening_cash') || 0))
+const openingLedger = ref(Number(localStorage.getItem('cash_ledger_balance') || 0))
+
+// Mid-Day-1 Row State
+const md1Total = ref(Number(localStorage.getItem('md1_cash') || 0))
+const md1Ledger = ref(Number(localStorage.getItem('md1_ledger_balance') || 0))
 
 onMounted(async () => {
-  const today = new Date().toLocaleDateString('en-CA')
-  try {
-    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { 
-      date: today
-    })
-    
-    const total = res.total || 0
-    const ledgerBal = res.cash_ledger_balance || 0
-    
-    boxCashTotal.value = total
-    cashLedgerBalance.value = ledgerBal
-    
-    localStorage.setItem('opening_cash', String(total))
-    localStorage.setItem('cash_ledger_balance', String(ledgerBal))
-  } catch (e) {
-    console.warn('[Cahier] Failed to fetch totals:', e)
-  }
+  await refreshAll()
 })
 
-function onBoxCashSaved(data) {
-  boxCashTotal.value = data.total
-  // We need to trigger a fresh fetch to get the updated ledger balance from the saved record
-  // Or handle it if the data object already contains it. 
-  // For now, let's refresh both from the same API to ensure consistency.
-  refreshTotals()
+function openModal(title) {
+  modalTitle.value = title
+  showBoxCash.value = true
 }
 
-async function refreshTotals() {
+async function refreshAll() {
   const today = new Date().toLocaleDateString('en-CA')
+  
+  // Fetch Opening
   try {
-    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
-    boxCashTotal.value = res.total || 0
-    cashLedgerBalance.value = res.cash_ledger_balance || 0
-    localStorage.setItem('opening_cash', String(res.total || 0))
-    localStorage.setItem('cash_ledger_balance', String(res.cash_ledger_balance || 0))
-  } catch (e) {
-    console.warn('[Cahier] refreshTotals failed:', e)
-  }
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', { 
+      date: today, op_type: 'Opening'
+    })
+    openingTotal.value = res.total || 0
+    openingLedger.value = res.cash_ledger_balance || 0
+    localStorage.setItem('opening_cash', String(openingTotal.value))
+    localStorage.setItem('cash_ledger_balance', String(openingLedger.value))
+  } catch (e) { console.warn('[Cahier] Opening fetch failed:', e) }
+
+  // Fetch Mid-Day-1
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', { 
+      date: today, op_type: 'Mid-Day-1'
+    })
+    md1Total.value = res.total || 0
+    md1Ledger.value = res.cash_ledger_balance || 0
+    localStorage.setItem('md1_cash', String(md1Total.value))
+    localStorage.setItem('md1_ledger_balance', String(md1Ledger.value))
+  } catch (e) { console.warn('[Cahier] Mid-Day-1 fetch failed:', e) }
+}
+
+async function onBoxCashSaved() {
+  await refreshAll()
 }
 </script>
 
