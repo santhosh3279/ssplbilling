@@ -1,88 +1,95 @@
 <template>
-  <div class="flex min-h-screen bg-slate-900">
+  <div class="relative min-h-screen bg-slate-900 text-slate-200 font-sans overflow-x-hidden">
 
-    <!-- Sidebar (Navigation + BOX Cash) -->
-    <aside class="flex w-64 shrink-0 flex-col border-r border-slate-700 bg-slate-800">
-      <!-- Top Bar / Navigation Panel -->
-      <div class="border-b border-slate-700 px-4 py-4">
-        <button
-          class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-600 active:scale-95"
-          @click="router.push('/')"
-        >
-          ← Dashboard
-        </button>
-      </div>
+    <!-- TOP LEFT CONTROLS (NOT A PANEL) -->
+    <div class="absolute top-6 left-6 z-40 flex flex-col gap-4 w-72">
+      <!-- Navigation Panel (Back Button) -->
+      <button
+        class="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm font-bold text-slate-300 backdrop-blur-md transition hover:bg-slate-700 hover:text-white active:scale-95 shadow-xl"
+        @click="router.push('/')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Back to Dashboard
+      </button>
 
-      <!-- Left end of screen below navigation panel -->
-      <div class="flex-1 space-y-6 px-4 py-6">
-        <!-- BOX Cash Display -->
-        <div class="space-y-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-1">BOX Cash Total</label>
-          <div class="flex items-center gap-3 rounded-xl border border-slate-600 bg-slate-900/50 px-4 py-4 shadow-inner">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
-              <span class="text-xl font-bold">₹</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="font-mono text-xl font-black text-emerald-400 truncate">
-                {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-              </div>
-              <div class="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Current Balance</div>
+      <!-- BOX Cash Widget (Below navigation) -->
+      <div class="group overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
+        <div class="flex items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
+            <span class="text-2xl font-black">₹</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">BOX Cash Total</div>
+            <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
+              {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </div>
           </div>
         </div>
-
-        <!-- Cashier Opening Button -->
-        <button
-          class="group flex w-full items-center justify-between rounded-xl bg-blue-600 p-4 text-left text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-700 active:scale-[0.98]"
-          @click="showBoxCash = true"
-        >
-          <div>
-            <div class="text-[10px] font-bold uppercase tracking-widest text-blue-200 opacity-80 mb-0.5">Operation</div>
-            <div class="text-base font-bold">Cashier Opening</div>
-          </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl transition-transform group-hover:scale-110">
-            💰
-          </div>
-        </button>
       </div>
 
-      <!-- Version/Footer (optional) -->
-      <div class="p-4 text-center">
-        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-600">SSPL Billing v1.0</div>
-      </div>
-    </aside>
+      <!-- Cashier Opening Action (Below BOX Cash) -->
+      <button
+        class="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl bg-blue-600 p-5 text-left text-white shadow-2xl shadow-blue-900/40 transition-all hover:bg-blue-500 active:scale-[0.98]"
+        @click="showBoxCash = true"
+      >
+        <div class="relative z-10">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-blue-200 opacity-70 mb-1">Session Action</div>
+          <div class="text-lg font-black tracking-tight">Cashier Opening</div>
+        </div>
+        <div class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-2xl shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-12">
+          💰
+        </div>
+        <!-- Decorative Glow -->
+        <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-all group-hover:bg-white/20"></div>
+      </button>
+    </div>
 
-    <!-- Main Content Area -->
-    <div class="flex flex-1 flex-col overflow-hidden">
-      <!-- Header / Title Bar -->
-      <header class="sticky top-0 z-40 border-b border-slate-700 bg-slate-800 px-8 py-4">
-        <div class="flex items-center justify-between">
-          <h1 class="text-xl font-black tracking-tight text-white uppercase">Cahier Management</h1>
-          <div class="flex items-center gap-2">
-            <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Session</span>
-          </div>
+    <!-- Main Content Area (Offset for controls) -->
+    <div class="flex min-h-screen flex-col pl-80">
+      <!-- Minimal Header -->
+      <header class="flex h-24 items-center justify-between px-10">
+        <div>
+          <h1 class="text-2xl font-black tracking-tighter text-white uppercase">Cahier <span class="text-slate-500 font-light">Management</span></h1>
+        </div>
+        <div class="flex items-center gap-3 rounded-full bg-slate-800/50 border border-slate-700 px-4 py-2">
+          <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">System Online</span>
         </div>
       </header>
 
       <!-- Main content placeholder -->
-      <main class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+      <main class="flex-1 overflow-y-auto p-10 custom-scrollbar">
         <div class="mx-auto max-w-5xl">
-          <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-800/50 p-20 text-center">
-            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-700 text-3xl text-slate-500">
+          <div class="relative flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-slate-800 bg-slate-800/20 py-32 text-center transition-colors hover:border-slate-700">
+            <div class="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-800 text-4xl shadow-2xl">
               📂
             </div>
-            <h2 class="text-lg font-bold text-slate-300">Cahier Ledger & Logs</h2>
-            <p class="mt-2 text-sm text-slate-500 max-w-sm mx-auto">
-              History of cashier openings, closings, and mid-day reconciliations will appear here.
+            <h2 class="text-2xl font-black text-slate-200">Session Logs & History</h2>
+            <p class="mt-3 text-base text-slate-500 max-w-md mx-auto leading-relaxed">
+              Your reconciliation history, cashier logs, and daily summaries will be displayed here as they are generated.
             </p>
-            <button class="mt-6 rounded-lg bg-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-600 transition-colors">
-              Refresh Logs
+            <button class="mt-8 rounded-xl bg-slate-700 px-6 py-3 text-sm font-black text-slate-300 uppercase tracking-widest hover:bg-slate-600 transition-all active:scale-95 shadow-lg">
+              Refresh History
             </button>
           </div>
         </div>
       </main>
+      
+      <!-- Footer Info -->
+      <footer class="p-10 text-right">
+        <span class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-700">Sundaram & Sons • ssplbilling v1.0</span>
+      </footer>
     </div>
+
+    <!-- BOX Cash Subwindow -->
+    <BoxCashSubwindow
+      v-if="showBoxCash"
+      title="Cashier Opening Entry"
+      @close="showBoxCash = false"
+      @saved="onBoxCashSaved"
+    />
+  </div>
+</template>
 
     <!-- BOX Cash Subwindow -->
     <BoxCashSubwindow
