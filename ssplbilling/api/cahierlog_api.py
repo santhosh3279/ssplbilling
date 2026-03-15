@@ -20,7 +20,7 @@ def get_cash_ledger_balance(account):
 
 @frappe.whitelist()
 def get_opening_total(date, cash_account):
-	"""Return the total from Cashier_Opening for a specific date and matching cash account."""
+	"""Return the total from Cashier_Opening for a specific date, matching account and logged-in user."""
 	if not cash_account:
 		return {"total": 0.0}
 		
@@ -29,7 +29,8 @@ def get_opening_total(date, cash_account):
 		{
 			"date": date, 
 			"opening_or_closing": "Opening", 
-			"cash": cash_account
+			"cash": cash_account,
+			"user": frappe.session.user
 		}, 
 		"total"
 	)
