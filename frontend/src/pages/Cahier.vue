@@ -92,16 +92,30 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { frappeGet } from '../api.js'
 import BoxCashSubwindow from '../components/Cahier_Entry.vue'
 
 const router = useRouter()
 const showBoxCash = ref(false)
-const boxCashTotal = ref(0)
+const boxCashTotal = ref(Number(localStorage.getItem('opening_cash') || 0))
+
+onMounted(async () => {
+  const today = new Date().toLocaleDateString('en-CA')
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
+    const total = res.total || 0
+    boxCashTotal.value = total
+    localStorage.setItem('opening_cash', String(total))
+  } catch (e) {
+    console.warn('[Cahier] Failed to fetch opening total:', e)
+  }
+})
 
 function onBoxCashSaved(data) {
   boxCashTotal.value = data.total
+  localStorage.setItem('opening_cash', String(data.total))
 }
 </script>
 

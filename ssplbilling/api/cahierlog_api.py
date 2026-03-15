@@ -19,6 +19,14 @@ def get_cash_ledger_balance(account):
 
 
 @frappe.whitelist()
+def get_opening_total(date):
+	"""Return the total from the Cashier_Opening document named date_Opening."""
+	name = f"{date}_Opening"
+	total = frappe.db.get_value("Cashier_Opening", name, "total")
+	return {"total": float(total or 0.0)}
+
+
+@frappe.whitelist()
 def get_cashier_opening(date, user, opening_or_closing):
 	"""Fetch an existing Cashier_Opening record."""
 	doc_name = frappe.db.get_value(
