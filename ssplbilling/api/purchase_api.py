@@ -181,6 +181,7 @@ def create_purchase_invoice(data=None, **kwargs):
 
     pi = frappe.new_doc("Purchase Invoice")
     pi.supplier = data["supplier"]
+    pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.naming_series = data.get("naming_series", "PINV-.YY.-")
     pi.update_stock = 1
@@ -268,11 +269,14 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
 
 
 @frappe.whitelist()
-def get_purchase_invoices(query="", limit=20, posting_date=None):
+def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=False):
     """List Purchase Invoices for modification."""
     date_filter = posting_date or frappe.utils.today()
+    filters = {"posting_date": date_filter}
+    if not frappe.utils.cint(show_submitted):
+        filters["docstatus"] = 0
     kwargs = dict(
-        filters={"posting_date": date_filter},
+        filters=filters,
         fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
         limit=int(limit),
         order_by="modified desc",
@@ -332,11 +336,17 @@ def update_purchase_invoice(data=None, **kwargs):
     invoice_name = data.get("invoice_name")
     pi = frappe.get_doc("Purchase Invoice", invoice_name)
     pi.supplier = data["supplier"]
+    pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.additional_discount_percentage = float(data.get("discount_percentage", 0))
     pi.items = []
     for item in data["items"]:
-        pi.append("items", {"item_code": item["item_code"], "qty": float(item["qty"]), "rate": float(item["rate"]), "warehouse": item.get("warehouse")})
+        pi.append("items", {
+            "item_code": item["item_code"], 
+            "qty": float(item["qty"]), 
+            "rate": float(item["rate"]), 
+            "warehouse": item.get("warehouse")
+        })
     pi.save()
     return {"invoice_name": pi.name, "grand_total": float(pi.grand_total)}
 

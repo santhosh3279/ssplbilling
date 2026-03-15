@@ -174,14 +174,8 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
 
-const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
-const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
-
 const props = defineProps({
   show: Boolean,
-  systemSettings: Object,
-  billingSeries: Array,
-  userSeries: Array,
 })
 
 const emit = defineEmits(['close', 'sync'])
@@ -236,8 +230,6 @@ function applyToLocalStorage(settings) {
 }
 
 async function handleSync() {
-  localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
-  localStorage.removeItem(GENERAL_SETTINGS_CACHE_KEY)
   await loadSettings()
   emit('sync')
 }

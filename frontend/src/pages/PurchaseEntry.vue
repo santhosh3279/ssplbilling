@@ -7,10 +7,6 @@
         <button class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" @click="handleBack">&larr; Dashboard</button>
         <span class="text-sm text-gray-300">|</span>
         <span class="text-sm font-semibold text-gray-800">Purchase Entry</span>
-        <button class="rounded border border-gray-300 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1.5" @click="openModifyBill">
-          <span>Modify Bill</span>
-          <kbd class="rounded border bg-gray-50 px-1 text-[10px] text-gray-400">F3</kbd>
-        </button>
       </div>
       <div class="flex items-center gap-3 text-sm text-gray-600">
         <div class="flex items-center rounded border border-gray-200 bg-white shadow-sm overflow-hidden mr-4">
@@ -23,7 +19,6 @@
         </div>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Up/Down</kbd> Navigate rows</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Tab</kbd> Next column</span>
-        <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">F3</kbd> Modify</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Ctrl+S</kbd> Save</span>
         <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
         <div class="ml-2 h-4 w-px bg-gray-300"></div>
@@ -107,6 +102,17 @@
           </div>
         </div>
 
+        <!-- Bill No -->
+        <div class="flex items-center gap-3 border-l border-gray-100 pl-6 whitespace-nowrap">
+          <label class="text-[10px] font-bold uppercase text-gray-400">Bill No</label>
+          <input 
+            v-model="billNo" 
+            placeholder="Supplier Bill #"
+            :disabled="billDocStatus !== 0"
+            class="w-32 rounded border border-gray-300 bg-white px-2 py-0.5 text-lg font-bold text-gray-900 outline-none focus:border-blue-500 disabled:bg-gray-50"
+          />
+        </div>
+
         <!-- Bill Date -->
         <div class="flex items-center gap-3 border-l border-gray-100 pl-6 whitespace-nowrap">
           <label class="text-[10px] font-bold uppercase text-gray-400">Bill Date</label>
@@ -123,8 +129,81 @@
     </div>
 
     <div class="flex flex-1 overflow-hidden">
+      <!-- SIDEBAR: Modify Bills -->
+      <aside class="flex w-[15%] flex-col border-r border-gray-200 bg-gray-50 overflow-hidden shrink-0">
+        <div class="border-b border-gray-200 bg-white p-2 text-center">
+          <div class="text-xs font-bold uppercase tracking-wider text-gray-500">Modify Bills</div>
+        </div>
+
+        <!-- Date Filter -->
+        <div class="flex items-center gap-1 border-b border-gray-200 p-1.5 bg-white">
+          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&larr;</button>
+          <input
+            type="date"
+            v-model="sidebarDate"
+            class="w-full bg-transparent text-xs font-bold text-gray-700 outline-none"
+          />
+          <button @click="changeSidebarDate(1)" class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">&rarr;</button>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="flex flex-col gap-1.5 border-b border-gray-200 p-2 bg-gray-50">
+          <input
+            type="text"
+            v-model="sidebarSearch"
+            placeholder="Search invoice/supplier..."
+            class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-[11px] text-gray-700 outline-none focus:border-blue-500"
+          />
+          <button
+            @click="showSubmitted = !showSubmitted"
+            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
+            :class="showSubmitted ? 'bg-blue-50 border-blue-400 text-blue-600' : 'bg-white border-gray-300 text-gray-400 hover:bg-gray-100'"
+          >
+            {{ showSubmitted ? 'Showing All' : 'Drafts Only' }}
+          </button>
+        </div>
+
+        <!-- Bill List -->
+        <div class="flex-1 overflow-y-auto">
+          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-gray-400">Loading...</div>
+          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-gray-400 italic">No bills found</div>
+          <div
+            v-for="(inv, idx) in sidebarBills"
+            :key="inv.name"
+            :ref="el => setSidebarBillRef(el, idx)"
+            @click="loadInvoice(inv.name)"
+            class="group cursor-pointer border-b border-gray-100 bg-white p-2.5 transition-colors hover:bg-blue-50 outline-none focus:bg-blue-50 focus:ring-1 focus:ring-blue-400"
+            :class="{ 'bg-blue-50 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
+            tabindex="0"
+            @keydown.enter="loadInvoice(inv.name)"
+          >
+            <div class="flex items-center justify-between gap-1">
+              <div class="flex items-center gap-2 truncate">
+                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
+                <span class="truncate font-mono text-2xl font-bold text-blue-600">{{ inv.name }}</span>
+              </div>
+              <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter" :class="{
+                'bg-gray-100 text-gray-500': inv.status === 'Draft',
+                'bg-green-100 text-green-700': inv.status === 'Paid',
+                'bg-blue-100 text-blue-700': inv.status === 'Submitted',
+                'bg-red-100 text-red-600': inv.status === 'Cancelled'
+              }">{{ inv.status[0] }}</span>
+            </div>
+            <div class="mt-0.5 truncate text-lg font-medium text-gray-600">{{ inv.supplier_name }}</div>
+            <div class="flex items-center justify-between text-lg font-bold text-gray-800 tabular-nums">
+              <span>₹{{ inv.grand_total.toFixed(0) }}</span>
+              <button
+                class="rounded px-1.5 py-0.5 text-[11px] font-bold text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-orange-50"
+                @click.stop="loadAndPrintBarcodes(inv.name)"
+                title="Print Barcodes"
+              >🏷️</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
       <!-- MAIN CONTENT -->
-      <div class="flex w-full flex-col">
+      <div class="flex flex-1 flex-col overflow-hidden">
         <div class="flex flex-[7] flex-col overflow-hidden">
           <div class="flex-1 overflow-y-auto">
             <table class="w-full text-sm border-collapse border-l border-t border-gray-300">
@@ -321,6 +400,7 @@
               </div>
 
               <div class="flex flex-col gap-2">
+                <button v-if="billSaved" @click="openBarcodePrinting" class="w-full rounded-lg bg-orange-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-orange-600 shadow-lg">🏷️ Print Barcodes</button>
                 <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded-lg border border-amber-400 bg-amber-50 py-2.5 text-center text-sm font-semibold text-amber-700 transition hover:bg-amber-100">✏ Edit Bill</button>
                 <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition shadow-lg" :class="savedInvoiceName ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
                 
@@ -330,87 +410,6 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- =================== MODIFY BILL SUBWINDOW =================== -->
-    <div v-if="showModifyBill" class="fixed inset-0 z-50 flex justify-center bg-black/40 pt-12" @click.self="showModifyBill = false">
-      <div class="flex max-h-[85vh] w-[680px] flex-col rounded-xl bg-white shadow-2xl">
-        <!-- Header -->
-        <div class="border-b border-gray-200 px-5 py-4">
-          <div class="text-sm font-semibold text-gray-700">Modify Existing Bill</div>
-          <div class="mt-0.5 text-sm text-gray-600">Search and select a Draft invoice to edit</div>
-        </div>
-
-        <!-- Search & Date Filter -->
-        <div class="flex items-center gap-3 border-b border-gray-100 px-5 py-3">
-          <input
-            ref="modifySearchInput"
-            v-model="modifyQuery"
-            class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            placeholder="Search by invoice no. or supplier name..."
-            @keydown.esc="showModifyBill = false"
-          />
-          <div class="flex items-center rounded border border-gray-300">
-            <button @click="changeModifyDate(-1)" class="px-2 py-1.5 text-gray-500 hover:bg-gray-50 border-r border-gray-300">&larr;</button>
-            <input
-              type="date"
-              v-model="modifyDate"
-              class="w-36 px-3 py-1.5 text-sm outline-none focus:border-blue-500"
-            />
-            <button @click="changeModifyDate(1)" class="px-2 py-1.5 text-gray-500 hover:bg-gray-50 border-l border-gray-300">&rarr;</button>
-          </div>
-        </div>
-
-        <!-- Results -->
-        <div class="flex-1 overflow-y-auto">
-          <div v-if="modifyLoading" class="flex items-center justify-center py-10 text-sm text-gray-600">Loading...</div>
-          <table v-else-if="modifyResults.length" class="w-full text-sm">
-            <thead>
-              <tr class="sticky top-0 bg-gray-50">
-                <th class="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Invoice No.</th>
-                <th class="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Supplier</th>
-                <th class="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Date</th>
-                <th class="px-3 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-gray-600">Amount</th>
-                <th class="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-gray-600">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="inv in modifyResults"
-                :key="inv.name"
-                class="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
-                @click="loadInvoice(inv.name)"
-              >
-                <td class="px-4 py-2.5 font-mono text-sm font-semibold text-blue-700">{{ inv.name }}</td>
-                <td class="px-3 py-2.5">
-                  <div class="text-sm font-medium text-gray-800">{{ inv.supplier_name }}</div>
-                  <div class="text-[10px] text-gray-600">{{ inv.supplier }}</div>
-                </td>
-                <td class="px-3 py-2.5 text-sm text-gray-500">{{ inv.posting_date }}</td>
-                <td class="px-3 py-2.5 text-right font-mono text-sm font-semibold text-gray-800">&#8377;{{ inv.grand_total.toFixed(2) }}</td>
-                <td class="px-3 py-2.5">
-                  <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" :class="{
-                    'bg-gray-100 text-gray-600': inv.status === 'Draft',
-                    'bg-green-100 text-green-700': inv.status === 'Paid',
-                    'bg-blue-100 text-blue-700': inv.status === 'Submitted',
-                    'bg-red-100 text-red-700': inv.status === 'Cancelled'
-                  }">{{ inv.status }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="flex flex-col items-center py-10 text-sm text-gray-600">
-            <div>No draft invoices found</div>
-            <div v-if="modifyQuery" class="mt-1 text-gray-300">Try a different search term</div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-between border-t border-gray-100 px-5 py-3">
-          <span class="text-sm text-gray-600">Click a row to open it for editing</span>
-          <button class="rounded border border-gray-300 px-4 py-1.5 text-sm font-semibold text-gray-600 hover:bg-gray-50" @click="showModifyBill = false">Close</button>
         </div>
       </div>
     </div>
@@ -486,6 +485,14 @@
     </div>
 
     <!-- PRINT OPTIONS MODAL -->
+    <BarcodePrintingModal
+      :show="showBarcodeModal"
+      :bill-no="savedInvoiceName"
+      :initial-items="barcodeInitialItems"
+      @close="showBarcodeModal = false"
+      @printed="showBarcodeModal = false"
+    />
+
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="printModalInvoiceName"
@@ -503,6 +510,7 @@ import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
@@ -634,12 +642,13 @@ async function apiPost(method, params) {
 // ==================== INPUT REFS ====================
 const inputRefs = {}
 const rowRefs   = {}
+const sidebarBillRefs = new Map()
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
+function setSidebarBillRef(el, idx) { if (el) sidebarBillRefs.set(idx, el); else sidebarBillRefs.delete(idx) }
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const supplierInput = ref(null)
-const modifySearchInput = ref(null)
 const seriesSelect = ref(null)
 const dateInput = ref(null)
 const discountInput = ref(null)
@@ -998,52 +1007,41 @@ async function pickItem(item) {
   }
 }
 
-// ==================== MODIFY BILL ====================
-const showModifyBill = ref(false)
-const modifyQuery = ref('')
-const modifyDate = ref(getTodayIST())
-const modifyResults = ref([])
-const modifyLoading = ref(false)
-let modifySearchTimeout = null
+// ==================== SIDEBAR MODIFY PANEL ====================
+const sidebarDate = ref(getTodayIST())
+const sidebarSearch = ref('')
+const showSubmitted = ref(false)
+const sidebarBills = ref([])
+const sidebarLoading = ref(false)
 
-watch(modifyQuery, (q) => {
-  clearTimeout(modifySearchTimeout)
-  modifySearchTimeout = setTimeout(() => searchBills(q), 300)
-})
-
-watch(modifyDate, (d) => {
-  searchBills(modifyQuery.value)
-})
-
-function changeModifyDate(days) {
-  const d = new Date(modifyDate.value)
-  d.setDate(d.getDate() + days)
-  modifyDate.value = d.toISOString().split('T')[0]
-}
-
-function openModifyBill() {
-  modifyQuery.value = ''
-  modifyResults.value = []
-  showModifyBill.value = true
-  nextTick(() => {
-    modifySearchInput.value?.focus()
-    searchBills('')
-  })
-}
-
-async function searchBills(query) {
-  modifyLoading.value = true
+async function fetchSidebarBills() {
+  sidebarLoading.value = true
   try {
-    modifyResults.value = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoices', {
-      query: query || '',
-      limit: 30,
-      posting_date: modifyDate.value,
+    sidebarBills.value = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoices', {
+      query: sidebarSearch.value,
+      limit: 50,
+      posting_date: sidebarDate.value,
+      show_submitted: showSubmitted.value,
     })
   } catch (e) {
-    modifyResults.value = []
+    sidebarBills.value = []
   }
-  modifyLoading.value = false
+  sidebarLoading.value = false
 }
+
+function changeSidebarDate(days) {
+  const d = new Date(sidebarDate.value)
+  d.setDate(d.getDate() + days)
+  sidebarDate.value = d.toISOString().split('T')[0]
+}
+
+watch([sidebarDate, showSubmitted], fetchSidebarBills)
+
+let sidebarSearchTimeout = null
+watch(sidebarSearch, () => {
+  clearTimeout(sidebarSearchTimeout)
+  sidebarSearchTimeout = setTimeout(fetchSidebarBills, 500)
+})
 
 async function loadInvoice(invoiceName) {
   try {
@@ -1052,6 +1050,7 @@ async function loadInvoice(invoiceName) {
 
     supplier.value = inv.supplier
     suppSearch.value = inv.supplier_name
+    billNo.value = inv.bill_no || ''
     billDate.value = inv.posting_date
     if (inv.naming_series && availableSeries.value.includes(inv.naming_series)) {
       billSeries.value = inv.naming_series
@@ -1069,7 +1068,6 @@ async function loadInvoice(invoiceName) {
     savedInvoiceName.value = inv.name
     billDocStatus.value = inv.docstatus
     billSaved.value = inv.docstatus !== 0
-    showModifyBill.value = false
 
     selectedSupplierDetails.value = {
       name: inv.supplier,
@@ -1101,8 +1099,28 @@ function getTodayIST() {
 
 // ==================== BILLING ====================
 const billDate = ref(getTodayIST())
+const billNo = ref('')
 const supplier = ref('')
 const billSeries = ref('')
+
+// ==================== BARCODE MODAL ====================
+const showBarcodeModal = ref(false)
+const barcodeInitialItems = ref([])
+
+function openBarcodePrinting() {
+  barcodeInitialItems.value = activeItems.value.map(i => ({
+    item_code: i.item_code,
+    item_name: i.item_name,
+    qty: i.qty
+  }))
+  showBarcodeModal.value = true
+}
+
+async function loadAndPrintBarcodes(invoiceName) {
+  await loadInvoice(invoiceName)
+  nextTick(() => openBarcodePrinting())
+}
+
 
 const discountPct = ref(0)
 const availableSeries = ref([])
@@ -1188,6 +1206,7 @@ async function saveBill() {
 
   const payload = {
     supplier: supplier.value,
+    bill_no: billNo.value,
     date: billDate.value,
     naming_series: billSeries.value,
     discount_percentage: discountPct.value,
@@ -1220,6 +1239,7 @@ async function saveBill() {
     billSaved.value = true
     billDocStatus.value = 0
     fetchNextBillNo()
+    fetchSidebarBills()
     if (savedInvoiceName.value) {
       openPrintModal(savedInvoiceName.value)
     }
@@ -1229,7 +1249,7 @@ async function saveBill() {
 }
 
 function startNewBill() {
-  items.value = []; selectedRow.value = -1; supplier.value = ''; suppSearch.value = ''
+  items.value = []; selectedRow.value = -1; supplier.value = ''; suppSearch.value = ''; billNo.value = ''
   discountPct.value = 0; newItemCode.value = ''; newQty.value = 1; 
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
@@ -1275,7 +1295,6 @@ useShortcuts(purchaseEntryShortcuts({
   save: () => saveBill(),
   newCustomer: () => openSupplierSearch(),
   searchItem: () => openSearch('', null),
-  openModifyBill: () => openModifyBill(),
   deleteRow: () => {
     if (selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       softDelete(selectedRow.value)
@@ -1296,7 +1315,6 @@ useShortcuts(purchaseEntryShortcuts({
     if (showPriceListUpdate.value) { showPriceListUpdate.value = false; return }
     if (showSupplierSearchModal.value) { closeSupplierSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
-    if (showModifyBill.value) { showModifyBill.value = false; return }
     if (showPrintModal.value) { showPrintModal.value = false; return }
     handleBack()
   }
@@ -1313,7 +1331,8 @@ onMounted(() => {
   window.addEventListener('storage', handleStorageChange);
   fetchSeriesList()
   fetchDropdownOptions()
-  
+  fetchSidebarBills()
+
   // Ensure item cache is correctly populated for Purchase
   const { lastParams: cacheLastParams } = useItemCache()
   const needsRefresh = !cachedItems.value.length || 

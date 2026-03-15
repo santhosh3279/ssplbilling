@@ -121,6 +121,7 @@ def get_billing_settings():
 
 	return {
 		"discount_account": settings.discount_account or "",
+		"freight_account": settings.freight or "",
 		"cipher_map": settings.cipher_map or "",
 		"user_zoom": user_zoom,
 		"user_defaults": user_defaults,

@@ -5,11 +5,17 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "items"
+  "bill_no",
+  "item"
  ],
  "fields": [
   {
-   "fieldname": "items",
+   "fieldname": "bill_no",
+   "fieldtype": "Data",
+   "label": "Bill No"
+  },
+  {
+   "fieldname": "item",
    "fieldtype": "Table",
    "label": "Items",
    "options": "Barcode_subwindow"
@@ -18,7 +24,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-14 20:02:12.637216",
+ "modified": "2026-03-15 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Barcode_Prinitng",

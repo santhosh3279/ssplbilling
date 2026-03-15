@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-14 10:05:23.891343",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "cash",
+  "cash_ledger_balance",
+  "column_break_kisa",
+  "opening_or_closing",
+  "user",
+  "difference",
+  "box_cash_denomination_section",
+  "500",
+  "200",
+  "100",
+  "50",
+  "20",
+  "10",
+  "5",
+  "2",
+  "1",
+  "column_break_yjjg",
+  "total"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "cash",
+   "fieldtype": "Link",
+   "label": "Cash",
+   "options": "Account"
+  },
+  {
+   "fieldname": "column_break_kisa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "opening_or_closing",
+   "fieldtype": "Select",
+   "label": "Opening or Closing",
+   "options": "Opening\nMid-Day Closing\nClosing"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "box_cash_denomination_section",
+   "fieldtype": "Section Break",
+   "label": "BOX Cash Denomination"
+  },
+  {
+   "fieldname": "500",
+   "fieldtype": "Data",
+   "label": "500"
+  },
+  {
+   "fieldname": "200",
+   "fieldtype": "Data",
+   "label": "200"
+  },
+  {
+   "fieldname": "100",
+   "fieldtype": "Data",
+   "label": "100"
+  },
+  {
+   "fieldname": "50",
+   "fieldtype": "Data",
+   "label": "50"
+  },
+  {
+   "fieldname": "20",
+   "fieldtype": "Data",
+   "label": "20"
+  },
+  {
+   "fieldname": "10",
+   "fieldtype": "Data",
+   "label": "10"
+  },
+  {
+   "fieldname": "5",
+   "fieldtype": "Data",
+   "label": "5"
+  },
+  {
+   "fieldname": "2",
+   "fieldtype": "Data",
+   "label": "2"
+  },
+  {
+   "fieldname": "1",
+   "fieldtype": "Data",
+   "label": "1"
+  },
+  {
+   "fieldname": "column_break_yjjg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "label": "Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cash_ledger_balance",
+   "fieldtype": "Data",
+   "label": "Cash Ledger Balance"
+  },
+  {
+   "fieldname": "difference",
+   "fieldtype": "Data",
+   "label": "Difference"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-14 10:29:26.122937",
+ "modified_by": "biller@gmail.com",
+ "module": "Ssplbilling",
+ "name": "Cashier_Opening",
+ "owner": "biller@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

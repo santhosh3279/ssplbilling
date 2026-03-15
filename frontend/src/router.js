@@ -11,6 +11,7 @@ import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import MaterialTransfer from './pages/MaterialTransfer.vue'
+import Cahier from './pages/Cahier.vue'
 
 const routes = [
   {
@@ -68,6 +69,11 @@ const routes = [
     path: '/material-transfer',
     name: 'MaterialTransfer',
     component: MaterialTransfer,
+  },
+  {
+    path: '/cahier',
+    name: 'Cahier',
+    component: Cahier,
   },
 ]
 
