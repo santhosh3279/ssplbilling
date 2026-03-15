@@ -2,50 +2,53 @@
   <div class="relative min-h-screen bg-slate-900 text-slate-200 font-sans overflow-x-hidden">
 
     <!-- TOP LEFT CONTROLS (NOT A PANEL) -->
-    <div class="absolute top-6 left-6 z-40 flex flex-col gap-4 w-72">
+    <div class="absolute top-6 left-6 z-40 flex flex-col gap-4 w-[600px]">
       <!-- Navigation Panel (Back Button) -->
       <button
-        class="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm font-bold text-slate-300 backdrop-blur-md transition hover:bg-slate-700 hover:text-white active:scale-95 shadow-xl"
+        class="flex w-fit items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm font-bold text-slate-300 backdrop-blur-md transition hover:bg-slate-700 hover:text-white active:scale-95 shadow-xl"
         @click="router.push('/')"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         Back to Dashboard
       </button>
 
-      <!-- BOX Cash Widget (Below navigation) -->
-      <div class="group overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
-        <div class="flex items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
-            <span class="text-2xl font-black">₹</span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">BOX Cash Total</div>
-            <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
-              {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+      <!-- Row for BOX Cash and Cashier Opening -->
+      <div class="flex items-stretch gap-4">
+        <!-- BOX Cash Widget -->
+        <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
+          <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
+              <span class="text-2xl font-black">₹</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">BOX Cash Total</div>
+              <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
+                {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Cashier Opening Action (Below BOX Cash) -->
-      <button
-        class="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl bg-blue-600 p-5 text-left text-white shadow-2xl shadow-blue-900/40 transition-all hover:bg-blue-500 active:scale-[0.98]"
-        @click="showBoxCash = true"
-      >
-        <div class="relative z-10">
-          <div class="text-[10px] font-bold uppercase tracking-widest text-blue-200 opacity-70 mb-1">Session Action</div>
-          <div class="text-lg font-black tracking-tight">Cashier Opening</div>
-        </div>
-        <div class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-2xl shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-12">
-          💰
-        </div>
-        <!-- Decorative Glow -->
-        <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-all group-hover:bg-white/20"></div>
-      </button>
+        <!-- Cashier Opening Action -->
+        <button
+          class="group relative flex-1 flex items-center justify-between overflow-hidden rounded-2xl bg-blue-600 px-6 py-5 text-left text-white shadow-2xl shadow-blue-900/40 transition-all hover:bg-blue-500 active:scale-[0.98]"
+          @click="showBoxCash = true"
+        >
+          <div class="relative z-10">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-blue-200 opacity-70 mb-1">Session Action</div>
+            <div class="text-lg font-black tracking-tight">Cashier Opening</div>
+          </div>
+          <div class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-2xl shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-12">
+            💰
+          </div>
+          <!-- Decorative Glow -->
+          <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-all group-hover:bg-white/20"></div>
+        </button>
+      </div>
     </div>
 
     <!-- Main Content Area (Offset for controls) -->
-    <div class="flex min-h-screen flex-col pl-80">
+    <div class="flex min-h-screen flex-col pt-40">
       <!-- Minimal Header -->
       <header class="flex h-24 items-center justify-between px-10">
         <div>
