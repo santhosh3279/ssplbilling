@@ -91,16 +91,6 @@
   </div>
 </template>
 
-    <!-- BOX Cash Subwindow -->
-    <BoxCashSubwindow
-      v-if="showBoxCash"
-      title="Cashier Opening Entry"
-      @close="showBoxCash = false"
-      @saved="onBoxCashSaved"
-    />
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
