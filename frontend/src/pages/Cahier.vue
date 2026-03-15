@@ -30,21 +30,6 @@
 
     <!-- FLOATING ACTION ROW (BELOW NAV) -->
     <div class="absolute top-28 left-8 z-40 flex gap-4 w-[600px]">
-      <!-- BOX Cash Widget -->
-      <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
-        <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
-            <span class="text-2xl font-black">₹</span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">BOX Cash Total</div>
-            <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
-              {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Cashier Opening Action -->
       <button
         class="group relative flex-1 flex items-center justify-between overflow-hidden rounded-2xl bg-blue-600 px-6 py-5 text-left text-white shadow-2xl shadow-blue-900/40 transition-all hover:bg-blue-500 active:scale-[0.98]"
@@ -60,6 +45,21 @@
         <!-- Decorative Glow -->
         <div class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-all group-hover:bg-white/20"></div>
       </button>
+
+      <!-- BOX Cash Widget -->
+      <div class="group flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/40 p-1 backdrop-blur-sm shadow-2xl transition-all hover:border-emerald-500/30">
+        <div class="flex h-full items-center gap-4 rounded-xl bg-slate-900/60 px-5 py-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
+            <span class="text-2xl font-black">₹</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">BOX Cash Total</div>
+            <div class="font-mono text-2xl font-black text-emerald-400 truncate leading-none">
+              {{ boxCashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Main Content Area -->
