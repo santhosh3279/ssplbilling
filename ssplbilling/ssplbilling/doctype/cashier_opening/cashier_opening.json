@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "prompt",
  "creation": "2026-03-14 10:05:23.891343",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -28,7 +28,7 @@
  "fields": [
   {
    "fieldname": "date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Date"
   },
   {
@@ -127,10 +127,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-14 10:29:26.122937",
+ "modified": "2026-03-15 23:42:35.308370",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "Cashier_Opening",
+ "naming_rule": "Set by user",
  "owner": "biller@gmail.com",
  "permissions": [
   {
