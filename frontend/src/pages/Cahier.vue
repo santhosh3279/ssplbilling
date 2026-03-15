@@ -103,8 +103,13 @@ const boxCashTotal = ref(Number(localStorage.getItem('opening_cash') || 0))
 
 onMounted(async () => {
   const today = new Date().toLocaleDateString('en-CA')
+  const cashAccount = localStorage.getItem('wb-cash') || ''
+  
   try {
-    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { 
+      date: today,
+      cash_account: cashAccount
+    })
     const total = res.total || 0
     boxCashTotal.value = total
     localStorage.setItem('opening_cash', String(total))
