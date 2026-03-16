@@ -4,7 +4,15 @@
 
       <!-- Header -->
       <div class="border-b border-gray-200 px-5 py-4 flex items-center justify-between">
-        <div class="text-sm font-semibold text-gray-700">⚙️ General Settings</div>
+        <div class="flex items-center gap-4">
+          <div class="text-sm font-semibold text-gray-700">⚙️ General Settings</div>
+          <button 
+            @click="showLocalVariables"
+            class="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+          >
+            DEBUG: View Local Variables
+          </button>
+        </div>
         <div class="flex items-center gap-3">
           <button
             @click="handleSync"
@@ -259,6 +267,18 @@ function applyToLocalStorage(settings) {
 async function handleSync() {
   await loadSettings()
   emit('sync')
+}
+
+function showLocalVariables() {
+  const vars = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key.startsWith('wb-') || key.startsWith('wb_')) {
+      vars.push(`${key}: ${localStorage.getItem(key)}`)
+    }
+  }
+  vars.sort()
+  alert(vars.length > 0 ? vars.join('\n') : 'No local variables found starting with wb-')
 }
 
 const currentUser = computed(() => session.user.value)
