@@ -35,8 +35,12 @@
                 <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.cash || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
+                <span class="text-gray-500">Card Account</span>
+                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.card || '--' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
                 <span class="text-gray-500">Bank Account</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.bank_account || '--' }}</span>
+                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.bank || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-500">UPI Account</span>
@@ -132,6 +136,7 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Allowed Series</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-gray-400">Zoom</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cash A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Card A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Bank A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">UPI A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Warehouse</th>
@@ -144,7 +149,8 @@
                     <td class="whitespace-nowrap px-2 py-1.5 font-mono text-gray-600">{{ us.allowed_series || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-gray-600">{{ us.zoom_value || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.cash || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.bank_account || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.card || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.bank || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.upi || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.warehouse || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.cost_center || '--' }}</td>
@@ -214,6 +220,21 @@ function applyToLocalStorage(settings) {
   if (settings.freight_account) {
     localStorage.setItem('wb_freight', settings.freight_account)
   }
+
+  // Account Defaults
+  if (settings.user_defaults?.cash) {
+    localStorage.setItem('wb-cash', settings.user_defaults.cash)
+  }
+  if (settings.user_defaults?.card) {
+    localStorage.setItem('wb-card', settings.user_defaults.card)
+  }
+  if (settings.user_defaults?.bank) {
+    localStorage.setItem('wb-bank', settings.user_defaults.bank)
+  }
+  if (settings.user_defaults?.upi) {
+    localStorage.setItem('wb-upi', settings.user_defaults.upi)
+  }
+
   if (settings.user_defaults?.warehouse) {
     localStorage.setItem('wb-warehouse', settings.user_defaults.warehouse)
   }

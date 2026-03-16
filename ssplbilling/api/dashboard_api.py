@@ -113,8 +113,10 @@ def get_billing_settings():
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
 	user_defaults = {
 		"cash": (user_row.cash or "") if user_row else "",
-		"bank_account": (user_row.card or "") if user_row else "",
+		"card": (user_row.card or "") if user_row else "",
 		"upi": (user_row.upi or "") if user_row else "",
+		"bank": (user_row.bank or "") if user_row else "",
+		"bank_account": (user_row.bank or "") if user_row else "", # Use bank field for bank_account
 		"warehouse": (user_row.warehouse or "") if user_row else "",
 		"cost_center": (user_row.cost_center or "") if user_row else "",
 	}
@@ -147,8 +149,10 @@ def get_billing_settings():
 				"allowed_series": r.allowed_series_seperated_by_comma or "",
 				"zoom_value": r.zoom_value or "",
 				"cash": r.cash or "",
-				"bank_account": r.card or "",
+				"card": r.card or "",
 				"upi": r.upi or "",
+				"bank": r.bank or "",
+				"bank_account": r.bank or "",
 				"warehouse": r.warehouse or "",
 				"cost_center": r.cost_center or "",
 			}

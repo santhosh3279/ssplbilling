@@ -164,7 +164,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	cash_account = f_cash_account or (user_row.cash if user_row else None) or _mop_account("Cash")
 	upi_account = f_upi_account or (user_row.upi if user_row else None) or _mop_account("UPI")
-	bank_account = f_bank_account or (user_row.bank_account if user_row else None) or _mop_account("Bank Transfer")
+	bank_account = f_bank_account or (user_row.get("bank") or user_row.get("bank_account") if user_row else None) or _mop_account("Bank Transfer")
 	discount_account = f_discount_account or settings.discount_account or \
 		frappe.get_cached_value("Company", company, "write_off_account") or ""
 
