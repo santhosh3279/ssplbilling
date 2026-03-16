@@ -60,8 +60,9 @@
           <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Cash Ledger Balance</label>
             <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm font-mono"
-                 :class="loadingBalance ? 'text-slate-500 italic' : 'text-sky-300'">
-              {{ loadingBalance ? 'Fetching…' : ledgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                 :class="loadingBalance ? 'text-slate-500 italic' : (ledgerBalance >= 0 ? 'text-emerald-400' : 'text-red-400')">
+              {{ loadingBalance ? 'Fetching…' : Math.abs(ledgerBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              <span v-if="!loadingBalance" class="text-[10px] ml-1">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
             </div>
           </div>
           <div>
@@ -180,11 +181,12 @@ onMounted(async () => {
   form.user = session.user.value || ''
   
   // Set opening_or_closing based on title
-  if (props.title === 'Mid-Day-1') {
+  const t = props.title || ''
+  if (t.includes('Mid-Day-1') || t.includes('Mid Day 1')) {
     form.opening_or_closing = 'Mid-Day-1'
-  } else if (props.title === 'Mid-Day-2') {
+  } else if (t.includes('Mid-Day-2') || t.includes('Mid Day 2')) {
     form.opening_or_closing = 'Mid-Day-2'
-  } else if (props.title.includes('Closing')) {
+  } else if (t.includes('Closing')) {
     form.opening_or_closing = 'Closing'
   } else {
     form.opening_or_closing = 'Opening'

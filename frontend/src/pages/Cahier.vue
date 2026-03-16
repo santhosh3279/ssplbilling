@@ -71,8 +71,12 @@
             </div>
             <div class="min-w-0 flex-1">
               <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">Opening Ledger</div>
-              <div class="font-mono text-2xl font-black text-sky-400 truncate leading-none">
-                {{ openingLedger.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              <div 
+                class="font-mono text-2xl font-black truncate leading-none"
+                :class="openingLedger >= 0 ? 'text-emerald-400' : 'text-red-400'"
+              >
+                {{ Math.abs(openingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                <span class="text-xs ml-1">{{ openingLedger >= 0 ? 'DR' : 'CR' }}</span>
               </div>
             </div>
           </div>
@@ -119,8 +123,12 @@
             </div>
             <div class="min-w-0 flex-1">
               <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">MD-1 Ledger</div>
-              <div class="font-mono text-2xl font-black text-sky-400 truncate leading-none">
-                {{ md1Ledger.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              <div 
+                class="font-mono text-2xl font-black truncate leading-none"
+                :class="md1Ledger >= 0 ? 'text-emerald-400' : 'text-red-400'"
+              >
+                {{ Math.abs(md1Ledger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                <span class="text-xs ml-1">{{ md1Ledger >= 0 ? 'DR' : 'CR' }}</span>
               </div>
             </div>
           </div>
