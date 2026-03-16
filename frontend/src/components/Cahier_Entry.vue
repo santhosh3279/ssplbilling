@@ -169,6 +169,7 @@ const ledgerBalance = ref(0)
 const saving = ref(false)
 const saveError = ref('')
 const savedName = ref('')
+const cachedMopMap = ref({})
 
 const total = computed(() =>
   denominations.reduce((s, d) => s + (Number(form.denominations[d]) || 0) * d, 0),
@@ -202,6 +203,7 @@ onMounted(async () => {
     const data = await frappeGet('ssplbilling.api.dashboard_api.get_billing_settings')
     const userCash = data.user_defaults?.cash || ''
     const mopMap = data.mop_map || {}
+    cachedMopMap.value = mopMap
     
     // Only update if we got a value from API, or if form.cash is still empty
     if (userCash) {
@@ -243,7 +245,8 @@ async function fetchExistingRecord() {
       savedName.value = existing.name
       // Only overwrite cash account if the saved record actually has one
       if (existing.cash) {
-        form.cash = existing.cash
+        // Resolve MOP name if it was stored as an old unresolved value
+        form.cash = cachedMopMap.value[existing.cash] || existing.cash
       }
       ledgerBalance.value = parseFloat(existing.cash_ledger_balance || 0)
       
