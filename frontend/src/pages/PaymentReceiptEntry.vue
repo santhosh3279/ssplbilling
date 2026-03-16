@@ -235,7 +235,7 @@ const modes = [
   { id: 'Receive', label: 'Receipt' },
   { id: 'Pay', label: 'Payment' }
 ]
-const mops = ['Cash', 'UPI', 'Bank Transfer']
+const mops = ['Cash', 'Card', 'Bank', 'UPI']
 
 function getTodayIST() {
   const date = new Date()
@@ -374,8 +374,9 @@ async function saveEntry() {
     // Resolve accounts if user defaults are available
     if (userDefaults.value) {
       const mopAcc = mop.value === 'Cash' ? userDefaults.value.cash :
+                     mop.value === 'Card' ? userDefaults.value.card :
                      mop.value === 'UPI'  ? userDefaults.value.upi :
-                     userDefaults.value.bank_account;
+                     userDefaults.value.bank; // 'Bank' or fallback
       
       if (mopAcc) {
         if (entryMode.value === 'Receive') {

@@ -76,11 +76,11 @@ def create_payment_entry(data):
     mop_account = _get_mop_account(mop)
     
     if payment_type == "Receive":
-        pe.paid_from = party_account
-        pe.paid_to = mop_account
+        pe.paid_from = data.get("paid_from") or party_account
+        pe.paid_to = data.get("paid_to") or mop_account
     else: # Pay
-        pe.paid_from = mop_account
-        pe.paid_to = party_account
+        pe.paid_from = data.get("paid_from") or mop_account
+        pe.paid_to = data.get("paid_to") or party_account
 
     # Explicitly set currencies to avoid MandatoryError
     pe.paid_from_account_currency = frappe.db.get_value("Account", pe.paid_from, "account_currency")
