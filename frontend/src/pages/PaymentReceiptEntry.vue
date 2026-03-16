@@ -137,12 +137,12 @@
           <!-- Mode of Payment -->
           <div>
             <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Payment Mode</label>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-4 gap-2">
               <button 
                 v-for="m in mops" 
                 :key="m"
                 @click="mop = m"
-                class="rounded-lg border py-2 text-xs font-bold transition-all"
+                class="rounded-lg border py-1.5 text-xs font-bold transition-all"
                 :class="mop === m ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
               >
                 {{ m }}
