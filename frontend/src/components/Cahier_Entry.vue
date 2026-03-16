@@ -178,11 +178,14 @@ const difference = computed(() => total.value - ledgerBalance.value)
 // ── Load cash account and existing record ────────────────────────────────────
 onMounted(async () => {
   form.user = session.user.value || ''
-  // Set opening_or_closing based on title if appropriate
-  if (props.title.includes('Closing')) {
+  
+  // Set opening_or_closing based on title
+  if (props.title === 'Mid-Day-1') {
+    form.opening_or_closing = 'Mid-Day-1'
+  } else if (props.title === 'Mid-Day-2') {
+    form.opening_or_closing = 'Mid-Day-2'
+  } else if (props.title.includes('Closing')) {
     form.opening_or_closing = 'Closing'
-  } else if (props.title.includes('Mid-Day')) {
-    form.opening_or_closing = 'Mid-Day Closing'
   } else {
     form.opening_or_closing = 'Opening'
   }
