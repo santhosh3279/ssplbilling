@@ -679,6 +679,7 @@ const VOUCHER_CONFIG = {
   'Journal Entry':    { label: 'JE',   cls: 'bg-gray-100 text-gray-600' },
   'Purchase Invoice': { label: 'PINV', cls: 'bg-orange-100 text-orange-700' },
   'Credit Note':      { label: 'CN',   cls: 'bg-purple-100 text-purple-700' },
+  'Expense Claim':    { label: 'EXP',  cls: 'bg-purple-100 text-purple-700' },
 }
 
 function voucherLabel(type) {
@@ -868,6 +869,9 @@ onMounted(async () => {
       } else if (targetType === 'Supplier') {
         const doc = await frappeGet('frappe.client.get', { doctype: 'Supplier', name: targetName })
         label = doc.supplier_name
+      } else if (targetType === 'Employee') {
+        const doc = await frappeGet('frappe.client.get', { doctype: 'Employee', name: targetName })
+        label = doc.employee_name
       } else {
         const doc = await frappeGet('frappe.client.get', { doctype: 'Account', name: targetName })
         label = doc.account_name

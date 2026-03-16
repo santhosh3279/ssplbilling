@@ -168,6 +168,29 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	discount_account = f_discount_account or settings.discount_account or \
 		frappe.get_cached_value("Company", company, "write_off_account") or ""
 
+	def _resolve_gl_account(name):
+		"""If name is a plain account name without company tag, resolve to full Account name."""
+		if not name:
+			return name
+		if " - " in name:
+			return name  # already fully qualified
+		# Try exact match first
+		exact = frappe.db.get_value("Account", {"name": name, "company": company, "is_group": 0}, "name")
+		if exact:
+			return exact
+		# Try by account_name field
+		by_name = frappe.db.get_value("Account", {"account_name": name, "company": company, "is_group": 0}, "name")
+		if by_name:
+			return by_name
+		# Try treating it as a Mode of Payment name
+		via_mop = _mop_account(name)
+		return via_mop or name
+
+	cash_account     = _resolve_gl_account(cash_account)
+	upi_account      = _resolve_gl_account(upi_account)
+	bank_account     = _resolve_gl_account(bank_account)
+	discount_account = _resolve_gl_account(discount_account)
+
 	def _mop_for_account(account):
 		"""Find the Mode of Payment whose default account matches, for this company."""
 		return frappe.db.get_value(

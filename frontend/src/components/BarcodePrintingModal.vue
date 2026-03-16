@@ -234,8 +234,8 @@ async function loadResources() {
       frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
       frappeGet('frappe.client.get_list', {
         doctype: 'Print Template',
-        filters: JSON.stringify({ document_type: 'Barcode_Prinitng' }),
-        fields: JSON.stringify(['name']),
+        filters: JSON.stringify({ document_type: 'Barcode_Prinitng', format_type: 'Barcode' }),
+        fields: JSON.stringify(['name', 'template_name', 'format_type']),
         limit: 50,
       }),
     ])
@@ -309,6 +309,7 @@ async function triggerPrint() {
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
       items: JSON.stringify(itemsToPrint.value),
       bill_no: props.billNo || null,
+      price_list: localStorage.getItem('wb-price-list') || 'Standard Selling',
     })
 
     if (!docName) {
@@ -345,7 +346,7 @@ function selectItem(item) {
   if (existing) {
     existing.qty++
   } else {
-    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, qty: 1 })
+    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, qty: 1, rate: item.rate || 0 })
   }
   query.value = ''
   showResults.value = false
@@ -360,7 +361,8 @@ function syncInitialItems() {
   itemsToPrint.value = (props.initialItems || []).map(i => ({
     item_code: i.item_code,
     item_name: i.item_name,
-    qty: i.qty || 1
+    qty: i.qty || 1,
+    rate: i.rate || 0,
   }))
 }
 </script>

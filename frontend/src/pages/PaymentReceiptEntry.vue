@@ -87,63 +87,89 @@
           <!-- Party Search -->
           <div>
             <div class="mb-1.5 flex items-center justify-between">
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                {{ entryMode === 'Receive' ? 'Customer' : 'Supplier' }}
-              </label>
-              <button 
-                v-if="party" 
+              <div class="flex items-center gap-2">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  {{ activePartyType }}
+                </label>
+                <!-- Customer / Supplier toggle -->
+                <div class="flex rounded border border-gray-200 overflow-hidden">
+                  <button
+                    v-for="pt in ['Customer', 'Supplier', 'Employee']"
+                    :key="pt"
+                    @click="setReceiptPartyType(pt)"
+                    class="px-2 py-0.5 text-[10px] font-bold transition-all"
+                    :class="receiptPartyType === pt ? 'bg-blue-600 text-white' : 'bg-white text-gray-400 hover:bg-gray-50'"
+                  >
+                    {{ pt }}
+                  </button>
+                </div>
+              </div>
+              <button
+                v-if="party"
                 @click="showLedgerWindow = true"
                 class="text-[10px] font-bold text-blue-600 hover:underline"
               >
                 VIEW LEDGER &rarr;
               </button>
             </div>
-            <div 
+            <div
               ref="partyInput"
               class="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg font-bold outline-none cursor-pointer hover:border-blue-400 transition-all focus:ring-4 focus:ring-blue-50"
               :class="party ? 'bg-blue-50 text-blue-800 border-blue-300' : 'text-gray-300 italic'"
               tabindex="0"
               @click="openSearch"
-              @keydown.enter.prevent="openSearch"
+              @keydown.enter.prevent="party ? nextFocus('date') : openSearch()"
               @keydown.space.prevent="openSearch"
             >
-              {{ partyName || `Select ${entryMode === 'Receive' ? 'customer' : 'supplier'}...` }}
+              {{ partyName || `Select ${activePartyType.toLowerCase()}...` }}
             </div>
           </div>
 
           <!-- Date -->
           <div>
             <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Date</label>
-            <input 
+            <input
               ref="dateInput"
-              v-model="date" 
+              v-model="date"
               type="date"
               class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base font-bold outline-none focus:border-blue-500"
+              @keydown.enter.prevent="nextFocus('amount')"
             />
           </div>
 
           <!-- Amount -->
           <div>
             <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Amount (₹)</label>
-            <input 
+            <input
               ref="amountInput"
-              v-model.number="amount" 
+              v-model.number="amount"
               type="number"
               class="w-full rounded-lg border border-gray-300 px-4 py-3 text-3xl font-black text-blue-600 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
               placeholder="0.00"
+              @keydown.enter.prevent="nextFocus('mop')"
             />
           </div>
 
           <!-- Mode of Payment -->
           <div>
-            <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Payment Mode</label>
-            <div class="grid grid-cols-4 gap-2">
-              <button 
-                v-for="m in mops" 
+            <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Payment Mode
+              <span class="ml-1 font-normal normal-case text-gray-300">← → to switch</span>
+            </label>
+            <div
+              ref="mopZoneRef"
+              tabindex="0"
+              class="grid grid-cols-4 gap-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-200"
+              @keydown.left.prevent="cycleMop(-1)"
+              @keydown.right.prevent="cycleMop(1)"
+              @keydown.enter.prevent="nextFocus('ref')"
+            >
+              <button
+                v-for="m in mops"
                 :key="m"
-                @click="mop = m"
+                @click="selectMop(m); mopZoneRef?.focus()"
                 class="rounded-lg border py-1.5 text-xs font-bold transition-all"
-                :class="mop === m ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                :class="mop === m && !selectedLedger ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
               >
                 {{ m }}
               </button>
@@ -176,24 +202,75 @@
             </div>
           </div>
 
+          <!-- Ledger Override -->
+          <div>
+            <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Ledger <span class="normal-case text-gray-300">(optional override)</span>
+            </label>
+            <div class="relative">
+              <input
+                v-model="ledgerQuery"
+                @input="onLedgerInput"
+                @keydown.escape="closeLedgerDropdown"
+                @keydown.down.prevent="ledgerHighlight = Math.min(ledgerHighlight + 1, ledgerResults.length - 1)"
+                @keydown.up.prevent="ledgerHighlight = Math.max(ledgerHighlight - 1, 0)"
+                @keydown.enter.prevent="pickLedger(ledgerResults[ledgerHighlight])"
+                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                :placeholder="selectedLedger ? selectedLedger : 'Search account name...'"
+              />
+              <button
+                v-if="selectedLedger"
+                @click="clearLedger"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-400"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              <div
+                v-if="ledgerResults.length && ledgerDropdownOpen"
+                class="absolute z-30 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden"
+              >
+                <div
+                  v-for="(acct, idx) in ledgerResults"
+                  :key="acct.name"
+                  @click="pickLedger(acct)"
+                  @mouseenter="ledgerHighlight = idx"
+                  class="cursor-pointer px-4 py-2.5 text-sm transition-colors"
+                  :class="idx === ledgerHighlight ? 'bg-blue-50 text-blue-800' : 'text-gray-700 hover:bg-gray-50'"
+                >
+                  <div class="font-bold">{{ acct.account_name }}</div>
+                  <div class="text-[10px] text-gray-400">{{ acct.name }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-if="selectedLedger" class="mt-1.5 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+              {{ selectedLedger }}
+            </div>
+          </div>
+
           <!-- Reference -->
           <div>
             <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Reference No.</label>
-            <input 
-              v-model="referenceNo" 
+            <input
+              ref="refInput"
+              v-model="referenceNo"
               class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-bold outline-none focus:border-blue-500"
               placeholder="Cheque / UTR / Txn ID"
+              @keydown.enter.prevent="nextFocus('remarks')"
             />
           </div>
 
           <!-- Remarks -->
           <div>
             <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Remarks</label>
-            <textarea 
-              v-model="remarks" 
+            <textarea
+              ref="remarksInput"
+              v-model="remarks"
               rows="2"
               class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500"
               placeholder="Internal notes..."
+              @keydown.enter.prevent="saveEntry"
             ></textarea>
           </div>
         </div>
@@ -204,7 +281,8 @@
     <CustomerSearchModal
       ref="searchModalRef"
       :show="showSearchModal"
-      :initial-type="entryMode === 'Receive' ? 'Customer' : 'Supplier'"
+      :initial-type="activePartyType"
+      :allowed-types="['Customer', 'Supplier', 'Employee']"
       :skip-date-filter="true"
       @close="showSearchModal = false"
       @select="pickParty"
@@ -214,7 +292,7 @@
       v-if="showLedgerWindow"
       :is-sub-window="true"
       :ledger-name="party"
-      :ledger-type="entryMode === 'Receive' ? 'Customer' : 'Supplier'"
+      :ledger-type="activePartyType"
       @close="showLedgerWindow = false"
     />
   </div>
@@ -223,7 +301,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { frappeGet, frappePost, fetchDashboardSettings } from '../api.js'
+import { frappeGet, frappePost, fetchDashboardSettings, searchAccounts } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import CustomerLedger from './CustomerLedger.vue'
 
@@ -263,9 +341,37 @@ const outstandings = ref([])
 const loadingOutstandings = ref(false)
 const saving = ref(false)
 
-const partyInput = ref(null)
-const dateInput = ref(null)
+const partyInput  = ref(null)
+const dateInput   = ref(null)
 const amountInput = ref(null)
+const mopZoneRef  = ref(null)
+const refInput    = ref(null)
+const remarksInput = ref(null)
+
+// ─── Receipt party type (Customer or Supplier, selectable in Receive mode) ────
+const receiptPartyType = ref(route.query.mode === 'Pay' ? 'Supplier' : 'Customer')
+
+const activePartyType = computed(() => receiptPartyType.value)
+
+function setReceiptPartyType(pt) {
+  if (receiptPartyType.value === pt) return
+  receiptPartyType.value = pt
+  // Clear party selection when type changes
+  party.value = ''
+  partyName.value = ''
+  outstandings.value = []
+  selectedInvoices.value = []
+  amount.value = 0
+  nextTick(() => partyInput.value?.focus())
+}
+
+// ─── Ledger override ──────────────────────────────────────────────────────────
+const ledgerQuery = ref('')
+const ledgerResults = ref([])
+const ledgerDropdownOpen = ref(false)
+const ledgerHighlight = ref(0)
+const selectedLedger = ref('')  // account name (full)
+let ledgerDebounceTimer = null
 
 // ─── Computed ────────────────────────────────────────────────────────────────
 const canSave = computed(() => party.value && amount.value > 0)
@@ -273,6 +379,7 @@ const canSave = computed(() => party.value && amount.value > 0)
 // ─── Methods ─────────────────────────────────────────────────────────────────
 function switchMode(m) {
   entryMode.value = m
+  receiptPartyType.value = m === 'Pay' ? 'Supplier' : 'Customer'
   resetForm()
   nextTick(() => partyInput.value?.focus())
 }
@@ -286,6 +393,9 @@ function resetForm() {
   remarks.value = ''
   selectedInvoices.value = []
   outstandings.value = []
+  selectedLedger.value = ''
+  ledgerQuery.value = ''
+  ledgerResults.value = []
 }
 
 async function loadUserDefaults() {
@@ -299,6 +409,30 @@ async function loadUserDefaults() {
   }
 }
 
+// ─── Keyboard navigation ──────────────────────────────────────────────────────
+const focusMap = {
+  date:    () => dateInput.value?.focus(),
+  amount:  () => amountInput.value?.focus(),
+  mop:     () => nextTick(() => mopZoneRef.value?.focus()),
+  ref:     () => refInput.value?.focus(),
+  remarks: () => remarksInput.value?.focus(),
+}
+
+function nextFocus(target) {
+  focusMap[target]?.()
+}
+
+function cycleMop(dir) {
+  const idx = mops.indexOf(mop.value)
+  const next = (idx + dir + mops.length) % mops.length
+  selectMop(mops[next])
+}
+
+function selectMop(m) {
+  mop.value = m
+  clearLedger()
+}
+
 function openSearch() {
   showSearchModal.value = true
   nextTick(() => {
@@ -310,6 +444,9 @@ function openSearch() {
 function pickParty(p) {
   party.value = p.name
   partyName.value = p.label || p.customer_name || p.supplier_name
+  if (p.type === 'Customer' || p.type === 'Supplier') {
+    receiptPartyType.value = p.type
+  }
   showSearchModal.value = false
   fetchOutstandings()
   nextTick(() => amountInput.value?.focus())
@@ -321,7 +458,7 @@ async function fetchOutstandings() {
   try {
     outstandings.value = await frappeGet('ssplbilling.api.ledgerentry_api.get_outstanding_invoices', {
       party: party.value,
-      party_type: entryMode.value === 'Receive' ? 'Customer' : 'Supplier'
+      party_type: activePartyType.value
     })
   } catch (e) {
     console.error(e)
@@ -361,14 +498,15 @@ async function saveEntry() {
   try {
     const payload = {
       payment_type: entryMode.value,
-      party_type: entryMode.value === 'Receive' ? 'Customer' : 'Supplier',
+      party_type: activePartyType.value,
       party: party.value,
       date: date.value,
       amount: amount.value,
       mode_of_payment: mop.value,
       reference_no: referenceNo.value,
       remarks: remarks.value,
-      references: selectedInvoices.value
+      references: selectedInvoices.value,
+      ...(selectedLedger.value && { paid_to: selectedLedger.value })
     }
 
     // Resolve specific Mode of Payment from user defaults
@@ -392,6 +530,41 @@ async function saveEntry() {
   } finally {
     saving.value = false
   }
+}
+
+function onLedgerInput() {
+  ledgerDropdownOpen.value = true
+  ledgerHighlight.value = 0
+  clearTimeout(ledgerDebounceTimer)
+  ledgerDebounceTimer = setTimeout(async () => {
+    if (!ledgerQuery.value.trim()) {
+      ledgerResults.value = []
+      ledgerDropdownOpen.value = false
+      return
+    }
+    ledgerResults.value = await searchAccounts(ledgerQuery.value)
+    ledgerDropdownOpen.value = true
+  }, 250)
+}
+
+function pickLedger(acct) {
+  if (!acct) return
+  selectedLedger.value = acct.name
+  mop.value = ''
+  ledgerQuery.value = ''
+  ledgerResults.value = []
+  ledgerDropdownOpen.value = false
+}
+
+function clearLedger() {
+  selectedLedger.value = ''
+  ledgerQuery.value = ''
+  ledgerResults.value = []
+  ledgerDropdownOpen.value = false
+}
+
+function closeLedgerDropdown() {
+  ledgerDropdownOpen.value = false
 }
 
 function handleKeydown(e) {

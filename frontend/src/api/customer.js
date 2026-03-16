@@ -101,7 +101,7 @@ export async function createCustomer(data) {
   const customer = await frappePost('frappe.client.insert', { doc: customerDoc })
 
   await Promise.all([
-    (data.address_line1 || data.city) ? createAddress(data, customer.name) : Promise.resolve(),
+    data.address_line1 ? createAddress(data, customer.name) : Promise.resolve(),
     data.whatsapp ? addWhatsAppToContact(customer.name, data.whatsapp) : Promise.resolve(),
   ])
 

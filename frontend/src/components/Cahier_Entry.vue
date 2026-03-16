@@ -149,6 +149,14 @@ const props = defineProps({
     type: String,
     default: 'Cashier Opening',
   },
+  initialLedgerBalance: {
+    type: Number,
+    default: null,
+  },
+  date: {
+    type: String,
+    default: () => new Date().toLocaleDateString('en-CA'),
+  },
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -156,20 +164,19 @@ const emit = defineEmits(['close', 'saved'])
 const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1]
 
 const form = reactive({
-  date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+  date: props.date,
   opening_or_closing: 'Opening',
   cash: '',
   user: '',
   denominations: Object.fromEntries(denominations.map(d => [d, null])),
 })
 
-const loadingSettings = ref(true)
+const loadingSettings = ref(false)
 const loadingBalance = ref(false)
 const ledgerBalance = ref(0)
 const saving = ref(false)
 const saveError = ref('')
 const savedName = ref('')
-const cachedMopMap = ref({})
 
 const total = computed(() =>
   denominations.reduce((s, d) => s + (Number(form.denominations[d]) || 0) * d, 0),
@@ -180,7 +187,7 @@ const difference = computed(() => total.value - ledgerBalance.value)
 // ── Load cash account and existing record ────────────────────────────────────
 onMounted(async () => {
   form.user = session.user.value || ''
-  
+
   // Set opening_or_closing based on title
   const t = props.title || ''
   if (t.includes('Mid-Day-1') || t.includes('Mid Day 1')) {
@@ -193,43 +200,33 @@ onMounted(async () => {
     form.opening_or_closing = 'Opening'
   }
 
-  // 1. Immediate population from localStorage (General Settings cache)
-  const cachedCash = localStorage.getItem('wb-cash')
-  if (cachedCash) {
-    form.cash = cachedCash
-  }
-
-  try {
-    const data = await frappeGet('ssplbilling.api.dashboard_api.get_billing_settings')
-    const mopMap = data.mop_map || {}
-    cachedMopMap.value = mopMap
-
-    const userCash = data.user_defaults?.cash || ''
-    
-    // Resolve MOP name to account name
-    const resolvedCash = mopMap[userCash] || userCash
-    
-    if (resolvedCash) {
-      form.cash = resolvedCash
-      localStorage.setItem('wb-cash', resolvedCash)
-    } else if (!form.cash && data.billing_series?.length > 0) {
-      // Fallback to first series cash account if user default is missing
-      const seriesCash = mopMap[data.billing_series[0].cash_account] || data.billing_series[0].cash_account
-      if (seriesCash) {
-        form.cash = seriesCash
-        localStorage.setItem('wb-cash', seriesCash)
+  // Use wb-cash — resolved GL account saved by GeneralSettings sync.
+  // If it lacks the company tag (no " - "), fetch the full account name from ERPNext.
+  let cashAccount = localStorage.getItem('wb-cash') || ''
+  if (cashAccount && !cashAccount.includes(' - ')) {
+    try {
+      const res = await frappeGet('frappe.client.get_list', {
+        doctype: 'Account',
+        filters: JSON.stringify({ account_name: cashAccount, account_type: 'Cash', is_group: 0 }),
+        fields: ['name'],
+        limit_page_length: 1,
+      })
+      if (res?.[0]?.name) {
+        cashAccount = res[0].name
+        localStorage.setItem('wb-cash', cashAccount)
       }
+    } catch (e) {
+      console.warn('[CahierEntry] Could not resolve cash account with company tag:', e)
     }
-    
-    loadingSettings.value = false
-    // After getting settings, try to fetch existing record
-    await fetchExistingRecord()
-  } catch (e) {
-    console.warn('[CahierEntry] Initialization failed:', e)
-    loadingSettings.value = false
-  } finally {
-    // If after all attempts we still don't have a balance but have an account, fetch it
-    if (!ledgerBalance.value && form.cash && !savedName.value) {
+  }
+  form.cash = cashAccount
+
+  await fetchExistingRecord()
+
+  if (!ledgerBalance.value && !savedName.value) {
+    if (form.opening_or_closing === 'Opening' && props.initialLedgerBalance !== null) {
+      ledgerBalance.value = props.initialLedgerBalance
+    } else if (form.cash) {
       await fetchLedgerBalanceManual(form.cash)
     }
   }
@@ -245,11 +242,8 @@ async function fetchExistingRecord() {
     
     if (existing) {
       savedName.value = existing.name
-      // Only overwrite cash account if the saved record actually has one
-      if (existing.cash) {
-        // Resolve MOP name if it was stored as an old unresolved value
-        form.cash = cachedMopMap.value[existing.cash] || existing.cash
-      }
+      // Always use wb-cash (resolved GL account) — never let the stored record override it
+      form.cash = localStorage.getItem('wb-cash') || existing.cash || form.cash
       ledgerBalance.value = parseFloat(existing.cash_ledger_balance || 0)
       
       // Load denominations
@@ -262,15 +256,11 @@ async function fetchExistingRecord() {
       denominations.forEach(d => {
         form.denominations[d] = null
       })
-      
-      // FALLBACK: Ensure form.cash is populated from resolved defaults if missing
-      if (!form.cash) {
-        const cached = localStorage.getItem('wb-cash')
-        if (cached) form.cash = cached
-      }
 
-      // If we have a cash account, ensure we have its current balance
-      if (form.cash) {
+      if (form.opening_or_closing === 'Opening' && props.initialLedgerBalance !== null) {
+        // Use the pre-computed opening balance (before today) passed from parent
+        ledgerBalance.value = props.initialLedgerBalance
+      } else if (form.cash) {
         await fetchLedgerBalanceManual(form.cash)
       }
     }
@@ -300,7 +290,12 @@ watch(() => form.opening_or_closing, async () => {
 
 // ── Fetch ledger balance whenever cash account is set ────────────────────────
 watch(() => form.cash, async (account) => {
-  if (!account || savedName.value) return // Don't overwrite if we already have a saved record
+  if (!account || savedName.value) return
+  // For Opening, use the pre-today opening balance passed from parent — don't fetch live
+  if (form.opening_or_closing === 'Opening' && props.initialLedgerBalance !== null) {
+    ledgerBalance.value = props.initialLedgerBalance
+    return
+  }
   loadingBalance.value = true
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { account })

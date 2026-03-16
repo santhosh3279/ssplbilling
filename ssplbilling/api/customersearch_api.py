@@ -28,7 +28,20 @@ def get_all_ledgers():
         s["type"] = "Supplier"
     ledgers.extend(suppliers)
 
-    # 3. Accounts (Ledgers)
+    # 3. Employees
+    employees = frappe.get_all(
+        "Employee",
+        filters={"status": "Active"},
+        fields=["name", "employee_name as label", "cell_number as mobile_no", "personal_email as email"],
+        limit=0,
+    )
+    for e in employees:
+        e["type"] = "Employee"
+        e["gstin"] = ""
+        e["whatsapp"] = ""
+    ledgers.extend(employees)
+
+    # 4. Accounts (Ledgers)
     accounts = frappe.get_all(
         "Account",
         filters={"disabled": 0, "is_group": 0},
@@ -570,3 +583,4 @@ def update_customer_details(customer=None, data=None):
     addr.save(ignore_permissions=True)
 
     return {"name": cust.name, "customer_name": cust.customer_name}
+

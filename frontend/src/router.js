@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard.vue'
 import SalesEntry from './pages/SalesEntry.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
+import BarcodePrintPage from './pages/BarcodePrintPage.vue'
 import Cashierpage from './pages/Cashierpage.vue'
 import PurchaseSubmit from './pages/PurchaseSubmit.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
@@ -39,6 +40,11 @@ const routes = [
     path: '/pricelist-update',
     name: 'PriceListUpdate',
     component: PriceListUpdate,
+  },
+  {
+    path: '/barcode-print',
+    name: 'BarcodePrintPage',
+    component: BarcodePrintPage,
   },
   {
     path: '/cashier',

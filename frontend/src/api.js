@@ -465,7 +465,7 @@ export async function fetchOutstandingInvoices(customer) {
  * Fetch submitted Purchase Invoices with outstanding balance for a supplier.
  */
 export async function fetchOutstandingPurchaseInvoices(supplier) {
-  return frappeGet("ssplbilling.api.ledger_api.get_outstanding_purchase_invoices", { supplier })
+  return frappeGet("ssplbilling.api.supplier_creator_api.get_outstanding_purchase_invoices", { supplier })
 }
 
 /**
@@ -490,7 +490,7 @@ export async function createJournalEntry(payload) {
  * Search suppliers by name.
  */
 export async function searchSuppliers(query = "") {
-  return frappeGet("ssplbilling.api.ledger_api.search_suppliers", { query })
+  return frappeGet("ssplbilling.api.supplier_creator_api.search_suppliers", { query })
 }
 
 /**

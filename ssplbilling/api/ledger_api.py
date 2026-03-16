@@ -3,11 +3,11 @@ import frappe
 
 @frappe.whitelist()
 def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None):
-    """Return GL Entry rows for a ledger (Customer, Supplier, or Account) with a running balance.
+    """Return GL Entry rows for a ledger (Customer, Supplier, Employee, or Account) with a running balance.
 
     Args:
         ledger_name : Name / ID of the party or account
-        ledger_type : 'Customer', 'Supplier', or 'Account'
+        ledger_type : 'Customer', 'Supplier', 'Employee', or 'Account'
         from_date   : ISO date "YYYY-MM-DD", defaults to 90 days ago
         to_date     : ISO date "YYYY-MM-DD", defaults to today
     """
@@ -26,6 +26,11 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
     elif ledger_type == "Supplier":
         label = frappe.db.get_value("Supplier", ledger_name, "supplier_name") or ledger_name
         filter_sql = "party_type = 'Supplier' AND party = %s"
+        params = (ledger_name, from_date)
+        detail_params = (ledger_name, from_date, to_date)
+    elif ledger_type == "Employee":
+        label = frappe.db.get_value("Employee", ledger_name, "employee_name") or ledger_name
+        filter_sql = "party_type = 'Employee' AND party = %s"
         params = (ledger_name, from_date)
         detail_params = (ledger_name, from_date, to_date)
     else:
@@ -235,8 +240,10 @@ def get_outstanding_invoices(customer):
 
 @frappe.whitelist()
 def get_outstanding_purchase_invoices(supplier):
-    """Return submitted Purchase Invoices with outstanding balance."""
-    return frappe.get_all("Purchase Invoice", filters={"supplier": supplier, "docstatus": 1, "outstanding_amount": [">", 0]}, fields=["name", "posting_date", "grand_total", "outstanding_amount"], limit=50)
+    """Return submitted Purchase Invoices with outstanding balance.
+    Kept here for backward compat — canonical version in supplier_creator_api.py."""
+    from ssplbilling.api.supplier_creator_api import get_outstanding_purchase_invoices as _impl
+    return _impl(supplier)
 
 @frappe.whitelist()
 def create_payment_entry(data=None, **kwargs):
@@ -256,8 +263,9 @@ def create_payment_entry(data=None, **kwargs):
 
 @frappe.whitelist()
 def search_suppliers(query=""):
-    """Search suppliers by name."""
-    return frappe.get_all("Supplier", filters=[["supplier_name", "like", f"%{query}%"]] if query else [], fields=["name", "supplier_name"], limit=30)
+    """Kept for backward compat — canonical version in supplier_creator_api.py."""
+    from ssplbilling.api.supplier_creator_api import search_suppliers as _impl
+    return _impl(query)
 
 @frappe.whitelist()
 def search_accounts(query="", account_type=None):

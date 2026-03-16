@@ -26,21 +26,26 @@ def get_outstanding_invoices(party, party_type="Customer"):
     """Fetch outstanding invoices/bills for a given party."""
     if not party:
         return []
-    
+
+    if party_type == "Employee":
+        claims = frappe.get_all(
+            "Expense Claim",
+            filters={"employee": party, "docstatus": 1, "status": ["!=", "Paid"]},
+            fields=["name", "posting_date", "total_claimed_amount as grand_total", "total_claimed_amount", "total_amount_reimbursed"],
+            order_by="posting_date desc",
+        )
+        for c in claims:
+            c["outstanding_amount"] = float(c.get("total_claimed_amount") or 0) - float(c.get("total_amount_reimbursed") or 0)
+        return [c for c in claims if c["outstanding_amount"] > 0]
+
     doctype = "Sales Invoice" if party_type == "Customer" else "Purchase Invoice"
     party_field = "customer" if party_type == "Customer" else "supplier"
-    
-    filters = {
-        party_field: party,
-        "docstatus": 1,
-        "outstanding_amount": [">", 0]
-    }
-    
+
     return frappe.get_all(
         doctype,
-        filters=filters,
+        filters={party_field: party, "docstatus": 1, "outstanding_amount": [">", 0]},
         fields=["name", "posting_date", "grand_total", "outstanding_amount"],
-        order_by="posting_date desc"
+        order_by="posting_date desc",
     )
 
 @frappe.whitelist()
@@ -95,9 +100,14 @@ def create_payment_entry(data):
     if not references and data.get("invoice_name"):
         references = [{"name": data["invoice_name"], "amount": amount}]
 
+    ref_doctype = (
+        "Sales Invoice" if pe.party_type == "Customer"
+        else "Expense Claim" if pe.party_type == "Employee"
+        else "Purchase Invoice"
+    )
     for ref in references:
         pe.append("references", {
-            "reference_doctype": "Sales Invoice" if pe.party_type == "Customer" else "Purchase Invoice",
+            "reference_doctype": ref_doctype,
             "reference_name": ref["name"],
             "allocated_amount": float(ref.get("amount") or 0)
         })

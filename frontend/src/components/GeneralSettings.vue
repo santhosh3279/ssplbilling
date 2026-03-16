@@ -230,23 +230,33 @@ function applyToLocalStorage(settings) {
   }
 
   // Account Defaults (Resolved using mop_map)
+  // wb-*-mop  = Mode of Payment name (e.g. "Cash", "HDFC Card")
+  // wb-*      = Resolved GL account  (e.g. "Cash - SSPL")
   const mopMap = settings.mop_map || {}
-  
+
   if (settings.user_defaults?.cash) {
-    const cashAcc = mopMap[settings.user_defaults.cash] || settings.user_defaults.cash
-    localStorage.setItem('wb-cash', cashAcc)
+    const mop = settings.user_defaults.cash
+    const acc = mopMap[mop] || mop
+    localStorage.setItem('wb-cash-mop', mop)
+    localStorage.setItem('wb-cash', acc)
   }
   if (settings.user_defaults?.card) {
-    const cardAcc = mopMap[settings.user_defaults.card] || settings.user_defaults.card
-    localStorage.setItem('wb-card', cardAcc)
+    const mop = settings.user_defaults.card
+    const acc = mopMap[mop] || mop
+    localStorage.setItem('wb-card-mop', mop)
+    localStorage.setItem('wb-card', acc)
   }
   if (settings.user_defaults?.bank) {
-    const bankAcc = mopMap[settings.user_defaults.bank] || settings.user_defaults.bank
-    localStorage.setItem('wb-bank', bankAcc)
+    const mop = settings.user_defaults.bank
+    const acc = mopMap[mop] || mop
+    localStorage.setItem('wb-bank-mop', mop)
+    localStorage.setItem('wb-bank', acc)
   }
   if (settings.user_defaults?.upi) {
-    const upiAcc = mopMap[settings.user_defaults.upi] || settings.user_defaults.upi
-    localStorage.setItem('wb-upi', upiAcc)
+    const mop = settings.user_defaults.upi
+    const acc = mopMap[mop] || mop
+    localStorage.setItem('wb-upi-mop', mop)
+    localStorage.setItem('wb-upi', acc)
   }
 
   if (settings.user_defaults?.warehouse) {
@@ -261,6 +271,29 @@ function applyToLocalStorage(settings) {
     if (firstSeries.series)      localStorage.setItem('wb-series', firstSeries.series)
     if (firstSeries.price_list)  localStorage.setItem('wb-price-list', firstSeries.price_list)
     if (firstSeries.tax_rate)    localStorage.setItem('wb-tax-rate', String(firstSeries.tax_rate))
+  }
+
+  // Save allowed series prefixes for today's bills query (wb-allowed-series = JSON array of prefixes)
+  // A naming series "SSPL-SI-.YYYY.-" has prefix "SSPL-SI-" (everything before the first dot)
+  const allBillingSeries = settings.billing_series || []
+  const currentUser = session.user.value
+  const userRow = (settings.user_series || []).find(r => r.user === currentUser)
+  let allowedSeries = allBillingSeries
+
+  if (userRow?.allowed_series && userRow.allowed_series.trim().toUpperCase() !== 'ALL') {
+    const allowedList = userRow.allowed_series.split(',').map(s => s.trim()).filter(Boolean)
+    const getAlpha = s => (s || '').replace(/[^A-Za-z]/g, '')
+    const allowedPrefixes = allowedList.map(s => getAlpha(s).slice(0, 3))
+    allowedSeries = allBillingSeries.filter(bs =>
+      allowedPrefixes.some(p => getAlpha(bs.series).slice(0, 3).startsWith(p))
+    )
+  }
+
+  const seriesPrefixes = allowedSeries
+    .map(bs => bs.series.split('.')[0])   // "SSPL-SI-.YYYY.-" → "SSPL-SI-"
+    .filter(Boolean)
+  if (seriesPrefixes.length) {
+    localStorage.setItem('wb-allowed-series', JSON.stringify(seriesPrefixes))
   }
 }
 

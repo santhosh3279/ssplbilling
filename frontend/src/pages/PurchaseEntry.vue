@@ -401,6 +401,7 @@
 
               <div class="flex flex-col gap-2">
                 <button v-if="billSaved" @click="openBarcodePrinting" class="w-full rounded-lg bg-orange-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-orange-600 shadow-lg">🏷️ Print Barcodes</button>
+
                 <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded-lg border border-amber-400 bg-amber-50 py-2.5 text-center text-sm font-semibold text-amber-700 transition hover:bg-amber-100">✏ Edit Bill</button>
                 <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition shadow-lg" :class="savedInvoiceName ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
                 
@@ -1108,12 +1109,19 @@ const showBarcodeModal = ref(false)
 const barcodeInitialItems = ref([])
 
 function openBarcodePrinting() {
-  barcodeInitialItems.value = activeItems.value.map(i => ({
+  const items = activeItems.value.map(i => ({
     item_code: i.item_code,
     item_name: i.item_name,
-    qty: i.qty
+    qty: i.qty,
+    rate: i.rate || 0,
   }))
-  showBarcodeModal.value = true
+  router.push({
+    path: '/barcode-print',
+    query: {
+      bill: savedInvoiceName.value || undefined,
+      items: encodeURIComponent(JSON.stringify(items)),
+    },
+  })
 }
 
 async function loadAndPrintBarcodes(invoiceName) {
@@ -1240,9 +1248,6 @@ async function saveBill() {
     billDocStatus.value = 0
     fetchNextBillNo()
     fetchSidebarBills()
-    if (savedInvoiceName.value) {
-      openPrintModal(savedInvoiceName.value)
-    }
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save invoice'))
   }

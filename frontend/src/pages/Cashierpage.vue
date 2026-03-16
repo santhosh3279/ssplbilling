@@ -787,23 +787,48 @@ async function selectInvoice(inv) {
 
 async function loadSeriesSettings(series) {
   try {
+    // Use resolved GL accounts from localStorage (set during GeneralSettings sync).
+    // These already carry the company tag (e.g. "Cash - SSPL").
+    const lsCash = localStorage.getItem('wb-cash')
+    const lsUpi  = localStorage.getItem('wb-upi')
+    const lsBank = localStorage.getItem('wb-bank')
+
+    // Fetch settings only for discount account (not stored in localStorage)
     const settings = await fetchDashboardSettings()
+    const discountAccount = settings.discount_account || 'Write Off - SSPL'
 
-    // 1. User defaults from settings (highest priority)
-    const userDefaults = settings.user_defaults || {}
-
-    // 2. Series defaults if user defaults are missing
-    const seriesConfig = (settings.billing_series || []).find(s => s.series === series)
-
-    seriesAccounts.value = {
-      cash: userDefaults.cash || seriesConfig?.cash_account || 'Cash',
-      upi: userDefaults.upi || seriesConfig?.upi || 'UPI',
-      bank: userDefaults.bank_account || seriesConfig?.bank || 'Bank',
-      discount: settings.discount_account || 'Write Off'
+    if (lsCash || lsUpi || lsBank) {
+      // Prefer localStorage-resolved accounts; fall back to series config for missing ones
+      const seriesConfig = (settings.billing_series || []).find(s => s.series === series)
+      seriesAccounts.value = {
+        cash:     lsCash || seriesConfig?.cash_account || 'Cash',
+        upi:      lsUpi  || seriesConfig?.upi          || 'UPI',
+        bank:     lsBank || seriesConfig?.bank         || 'Bank',
+        discount: discountAccount,
+      }
+    } else {
+      // Fallback: use MOP names from user_defaults (may lack company tag)
+      const userDefaults  = settings.user_defaults || {}
+      const seriesConfig  = (settings.billing_series || []).find(s => s.series === series)
+      seriesAccounts.value = {
+        cash:     userDefaults.cash         || seriesConfig?.cash_account || 'Cash',
+        upi:      userDefaults.upi          || seriesConfig?.upi          || 'UPI',
+        bank:     userDefaults.bank_account || seriesConfig?.bank         || 'Bank',
+        discount: discountAccount,
+      }
     }
   } catch (e) {
     console.warn("Could not load accounts", e)
   }
+}
+
+function initAccountsFromLocalStorage() {
+  const lsCash = localStorage.getItem('wb-cash')
+  const lsUpi  = localStorage.getItem('wb-upi')
+  const lsBank = localStorage.getItem('wb-bank')
+  if (lsCash) seriesAccounts.value.cash = lsCash
+  if (lsUpi)  seriesAccounts.value.upi  = lsUpi
+  if (lsBank) seriesAccounts.value.bank = lsBank
 }
 
 function toggleCredit() {
@@ -892,7 +917,8 @@ function handleKeydown(e) {
 }
 
 onMounted(() => {
-  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
+  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus())
+  initAccountsFromLocalStorage()
   loadInvoices()
   window.addEventListener('keydown', handleKeydown)
 })

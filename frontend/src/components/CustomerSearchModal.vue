@@ -1,7 +1,7 @@
 <template>
-  <div 
-    v-if="show" 
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 outline-none" 
+  <div
+    v-if="show"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 outline-none"
     @click.self="handleEsc"
     @keydown="handleGlobalKeydown"
     tabindex="-1"
@@ -16,8 +16,8 @@
         <div class="flex items-center gap-3">
           <!-- Quick Filter Tabs -->
           <div class="flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm mr-4 relative group">
-            <button 
-              v-for="t in availableTabs" 
+            <button
+              v-for="t in availableTabs"
               :key="t"
               @click="activeType = t"
               class="px-4 py-1.5 text-sm font-bold transition-all rounded-md"
@@ -30,22 +30,22 @@
             </div>
           </div>
 
-          <button 
-            @click="openNewForm" 
-            v-if="activeType === 'Customer'"
+          <button
+            @click="openNewForm"
+            v-if="activeType === 'Customer' || activeType === 'Supplier' || activeType === 'Employee'"
             class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
           >
-            New Customer <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F2</kbd>
+            New {{ activeType }} <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F2</kbd>
           </button>
-          <button 
-            @click="openEditForm(results[selectedIdx])" 
-            v-if="results[selectedIdx] && results[selectedIdx].type === 'Customer'"
+          <button
+            @click="openEditForm(results[selectedIdx])"
+            v-if="results[selectedIdx] && (results[selectedIdx].type === 'Customer' || results[selectedIdx].type === 'Supplier' || results[selectedIdx].type === 'Employee')"
             class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
           >
             Edit Details <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F3</kbd>
           </button>
-          <button 
-            @click="preloadLedger" 
+          <button
+            @click="preloadLedger"
             class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 transition-colors"
           >
             🔄 Refresh <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
@@ -87,11 +87,12 @@
               @click="handleSelect(c)"
             >
               <td class="px-5 py-3">
-                <span 
+                <span
                   class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
                   :class="{
                     'bg-blue-100 text-blue-700': c.type === 'Customer',
                     'bg-orange-100 text-orange-700': c.type === 'Supplier',
+                    'bg-purple-100 text-purple-700': c.type === 'Employee',
                     'bg-gray-100 text-gray-700': c.type === 'Account'
                   }"
                 >
@@ -102,7 +103,7 @@
                 <div class="font-medium text-gray-800">{{ c.label }}</div>
               </td>
               <td class="px-5 py-3 text-right">
-                <span 
+                <span
                   class="font-bold whitespace-nowrap"
                   :class="(c.balance || 0) > 0 ? 'text-green-600' : (c.balance || 0) < 0 ? 'text-red-600' : 'text-gray-400'"
                 >
@@ -122,11 +123,9 @@
         </table>
       </div>
 
-      <!-- Detail Panel (Moved to Footer) -->
+      <!-- Detail Panel -->
       <div v-if="results[selectedIdx]" class="border-t border-gray-200 bg-white px-8 py-6">
         <div class="flex items-start gap-4">
-
-          <!-- Last Invoice (Customer Only) -->
           <div class="flex flex-col shrink-0" style="width: 10%">
             <span class="text-sm font-bold uppercase text-gray-400 truncate">Last Inv</span>
             <span class="text-xl font-semibold text-gray-700 truncate">
@@ -135,39 +134,33 @@
                   : 'None' }}
             </span>
           </div>
-
-          <!-- WhatsApp -->
           <div class="flex flex-col shrink-0" style="width: 10%">
             <span class="text-sm font-bold uppercase text-gray-400 truncate">WhatsApp</span>
             <span class="text-2xl font-semibold text-gray-700 truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
           </div>
-
-          <!-- Email -->
           <div class="flex flex-col shrink-0" style="width: 20%">
             <span class="text-sm font-bold uppercase text-gray-400 truncate">Email</span>
             <span class="text-xl font-semibold text-gray-700 truncate">{{ results[selectedIdx].email || '--' }}</span>
           </div>
-
-          <!-- Address -->
           <div class="flex flex-col shrink-0" style="width: 45%">
             <span class="text-sm font-bold uppercase text-gray-400 truncate">Address</span>
             <span class="text-xl text-gray-700 line-clamp-2 leading-tight">
-              {{ getCustomerAddressFormatted(results[selectedIdx]) }}
+              {{ getAddressFormatted(results[selectedIdx]) }}
             </span>
           </div>
-
-          <!-- GSTIN (Right End) -->
           <div class="flex flex-col shrink-0" style="width: 15%">
             <span class="text-sm font-bold uppercase text-gray-400 truncate">GSTIN</span>
             <span class="text-2xl font-semibold text-gray-700 font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
           </div>
-
         </div>
       </div>
 
-      <!-- SUB-MODALS (New / Edit / Date) -->
-      <div v-if="showNewForm || showEditForm || showDateModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/40" @click.self="handleEsc">
-        
+      <!-- SUB-MODALS overlay -->
+      <div
+        v-if="showNewForm || showEditForm || showDateModal"
+        class="absolute inset-0 z-[60] flex items-center justify-center bg-black/40"
+        @click.self="handleEsc"
+      >
         <!-- Date Range Sub-window -->
         <DateFilter
           v-if="showDateModal"
@@ -177,8 +170,29 @@
           @confirm="handleDateConfirm"
         />
 
-        <!-- New / Edit Form (Customer Only) -->
-        <div v-if="showNewForm || showEditForm" class="w-[600px] rounded-xl bg-white shadow-2xl overflow-hidden">
+        <!-- Supplier Creator (New / Edit) -->
+        <SupplierCreator
+          v-else-if="(showNewForm || showEditForm) && formPartyType === 'Supplier'"
+          ref="supplierCreatorRef"
+          :show="true"
+          :is-edit="showEditForm"
+          :supplier-row="showEditForm ? results[selectedIdx] : null"
+          @close="closeSubForm"
+          @saved="onSupplierSaved"
+        />
+
+        <!-- Employee Creator (New / Edit) -->
+        <EmployeeCreator
+          v-else-if="(showNewForm || showEditForm) && formPartyType === 'Employee'"
+          :show="true"
+          :is-edit="showEditForm"
+          :employee-row="showEditForm ? results[selectedIdx] : null"
+          @close="closeSubForm"
+          @saved="onEmployeeSaved"
+        />
+
+        <!-- Customer Form (New / Edit) -->
+        <div v-else-if="showNewForm || showEditForm" class="w-[600px] rounded-xl bg-white shadow-2xl overflow-hidden">
           <div class="border-b border-gray-200 px-5 py-4 bg-gray-50">
             <div class="text-xl font-bold text-gray-700">{{ showNewForm ? 'New Customer' : 'Modify Customer Details' }}</div>
             <div class="text-sm text-gray-600 flex items-center gap-2">
@@ -191,11 +205,18 @@
               </template>
             </div>
           </div>
-          
+
           <div class="flex flex-col gap-4 px-6 py-5 max-h-[70vh] overflow-y-auto">
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer Name *</label>
-              <input ref="formNameInput" v-model="(showNewForm ? newData : editData).customer_name" class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" placeholder="Full name" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+              <input
+                ref="formNameInput"
+                v-model="(showNewForm ? newData : editData).customer_name"
+                class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                placeholder="Full name"
+                @keydown.esc.stop="handleEsc"
+                @keydown.enter.prevent="handleFormEnter"
+              />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -236,7 +257,7 @@
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
-                <select v-model="(showNewForm ? newData : editData).state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" >
+                <select v-model="(showNewForm ? newData : editData).state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter">
                   <option value="">Select State</option>
                   <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
                 </select>
@@ -246,7 +267,7 @@
 
           <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50">
             <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 transition-colors" @click="closeSubForm">Cancel</button>
-            <button class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95" :class="showNewForm ? 'bg-blue-600' : 'bg-orange-600'" @click="submitForm" :disabled="saving || editLoading">
+            <button class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95" :class="showNewForm ? 'bg-blue-600' : 'bg-orange-600'" @click="submitCustomerForm" :disabled="saving || editLoading">
               {{ saving ? (showNewForm ? 'Saving...' : 'Updating...') : (showNewForm ? 'Save & Select' : 'Update Details') }}
               <kbd class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm" :class="showNewForm ? 'border-blue-500 bg-blue-500' : 'border-orange-500 bg-orange-500'">End</kbd>
             </button>
@@ -262,73 +283,64 @@ import { ref, nextTick, watch, computed } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer } from '../api/customer.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
+import SupplierCreator from './SupplierCreator.vue'
+import EmployeeCreator from './EmployeeCreator.vue'
 
 const props = defineProps({
   show: Boolean,
-  skipDateFilter: {
-    type: Boolean,
-    default: false
-  },
-  initialType: {
-    type: String,
-    default: 'All'
-  },
-  allowedTypes: {
-    type: Array,
-    default: () => ['Customer', 'Supplier', 'Account']
-  }
+  skipDateFilter: { type: Boolean, default: false },
+  initialType: { type: String, default: 'All' },
+  allowedTypes: { type: Array, default: () => ['Customer', 'Supplier', 'Employee', 'Account'] }
 })
 
-const availableTabs = computed(() => {
-  const tabs = ['All', ...props.allowedTypes]
-  return [...new Set(tabs)] // ensure unique
-})
+const availableTabs = computed(() => [...new Set(['All', ...props.allowedTypes])])
 
 const emit = defineEmits(['close', 'select'])
 
-// Internal State
-const query = ref('')
-const allLedgers = ref([]) 
-const activeType = ref(props.initialType) 
-const selectedIdx = ref(0)
-const loading = ref(false)
-const saving = ref(false)
+// ─── State ────────────────────────────────────────────────────────────────────
+const query        = ref('')
+const allLedgers   = ref([])
+const activeType   = ref(props.initialType)
+const selectedIdx  = ref(0)
+const loading      = ref(false)
+const saving       = ref(false)
 
-const searchInput = ref(null)
-const formNameInput = ref(null)
+const searchInput     = ref(null)
+const formNameInput   = ref(null)
 const scrollContainer = ref(null)
+const supplierCreatorRef = ref(null)
 
-const showNewForm = ref(false)
-const showEditForm = ref(false)
+const showNewForm   = ref(false)
+const showEditForm  = ref(false)
 const showDateModal = ref(false)
-const editLoading = ref(false)
+const editLoading   = ref(false)
+const formPartyType = ref('Customer') // 'Customer' | 'Supplier'
 
 const indianStates = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
-  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
-  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
-  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
-  "Uttar Pradesh", "Uttarakhand", "West Bengal",
-  "Andaman and Nicobar Islands", "Chandigarh",
-  "Dadra and Nagar Haveli and Daman and Diu", "Delhi",
-  "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Andaman and Nicobar Islands', 'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
+  'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
 ]
 
-const newData = ref({ 
-  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '', 
-  address_line1: '', address_line2: '', 
-  city: 'Palakkad', pincode: '678000', state: 'Kerala' 
+const newData = ref({
+  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '',
+  address_line1: '', address_line2: '',
+  city: 'Palakkad', pincode: '678000', state: 'Kerala'
 })
 
-const editData = ref({ 
-  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '', 
-  address_line1: '', address_line2: '', 
-  city: '', pincode: '', state: '' 
+const editData = ref({
+  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '',
+  address_line1: '', address_line2: '',
+  city: '', pincode: '', state: ''
 })
 
-// ─── Data Preloading ─────────────────────────────────────────────────────────
-
+// ─── Data Preloading ──────────────────────────────────────────────────────────
 async function preloadLedger() {
   loading.value = true
   try {
@@ -341,46 +353,32 @@ async function preloadLedger() {
   }
 }
 
-// ─── Local Filtering ─────────────────────────────────────────────────────────
-
+// ─── Filtering ────────────────────────────────────────────────────────────────
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
-  let list = allLedgers.value
-
-  // Pre-filter by allowedTypes
-  list = list.filter(l => props.allowedTypes.includes(l.type))
-
-  // Type Filter
-  if (activeType.value !== 'All') {
-    list = list.filter(l => l.type === activeType.value)
-  }
-
-  // Search Filter
+  let list = allLedgers.value.filter(l => props.allowedTypes.includes(l.type))
+  if (activeType.value !== 'All') list = list.filter(l => l.type === activeType.value)
   if (!q) return list
-
-  return list.filter(l => {
-    return (l.label || '').toLowerCase().includes(q) ||
-           (l.name || '').toLowerCase().includes(q) ||
-           (l.mobile_no || '').includes(q) ||
-           (l.whatsapp || '').includes(q) ||
-           (l.gstin || '').toLowerCase().includes(q) ||
-           (l.city || '').toLowerCase().includes(q) ||
-           (l.email || '').toLowerCase().includes(q)
-  })
+  return list.filter(l =>
+    (l.label || '').toLowerCase().includes(q) ||
+    (l.name || '').toLowerCase().includes(q) ||
+    (l.mobile_no || '').includes(q) ||
+    (l.whatsapp || '').includes(q) ||
+    (l.gstin || '').toLowerCase().includes(q) ||
+    (l.city || '').toLowerCase().includes(q) ||
+    (l.email || '').toLowerCase().includes(q)
+  )
 })
 
-watch([query, activeType], () => {
-  selectedIdx.value = 0
-})
+watch([query, activeType], () => { selectedIdx.value = 0 })
 
-function getCustomerAddressFormatted(c) {
+function getAddressFormatted(c) {
   if (c.type === 'Account') return 'General Accounting Ledger'
-  const parts = [c.address_line1, c.city].filter(Boolean)
-  return parts.join(', ') || 'No address provided'
+  if (c.type === 'Employee') return 'Employee Record'
+  return [c.address_line1, c.city].filter(Boolean).join(', ') || 'No address provided'
 }
 
-// ─── Navigation & Events ─────────────────────────────────────────────────────
-
+// ─── Navigation & Events ──────────────────────────────────────────────────────
 function handleEsc() {
   if (showNewForm.value || showEditForm.value || showDateModal.value) {
     closeSubForm()
@@ -391,13 +389,12 @@ function handleEsc() {
 
 function handleGlobalKeydown(e) {
   if (showNewForm.value || showEditForm.value) {
-    if (e.key === 'End') {
+    if (formPartyType.value === 'Customer' && e.key === 'End') {
       e.preventDefault()
-      submitForm()
+      submitCustomerForm()
     }
     return
   }
-  
   if (showDateModal.value) return
 
   if (e.key === 'ArrowDown') {
@@ -408,25 +405,21 @@ function handleGlobalKeydown(e) {
     selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
   } else if (e.key === 'Enter') {
     const item = results.value[selectedIdx.value]
-    if (item) {
-      e.preventDefault()
-      handleSelect(item)
-    }
+    if (item) { e.preventDefault(); handleSelect(item) }
   } else if (e.key === 'F2') {
     e.preventDefault()
-    if (activeType.value === 'Customer') openNewForm()
+    if (activeType.value === 'Customer' || activeType.value === 'Supplier' || activeType.value === 'Employee') openNewForm()
   } else if (e.key === 'F3') {
     e.preventDefault()
     const item = results.value[selectedIdx.value]
-    if (item && item.type === 'Customer') openEditForm(item)
+    if (item && (item.type === 'Customer' || item.type === 'Supplier' || item.type === 'Employee')) openEditForm(item)
   } else if (e.key === 'F5') {
     e.preventDefault()
     preloadLedger()
   } else if (e.key === 'F7') {
     e.preventDefault()
     const types = availableTabs.value
-    const nextIdx = (types.indexOf(activeType.value) + 1) % types.length
-    activeType.value = types[nextIdx]
+    activeType.value = types[(types.indexOf(activeType.value) + 1) % types.length]
   } else if (e.key === 'PageUp') {
     e.preventDefault()
     searchInput.value?.focus()
@@ -444,15 +437,14 @@ function handleSelect(item) {
 
 function handleDateConfirm(dates) {
   const item = results.value[selectedIdx.value]
-  if (item) {
-    showDateModal.value = false
-    emit('select', item, dates)
-  }
+  if (item) { showDateModal.value = false; emit('select', item, dates) }
 }
 
 function focus() {
   nextTick(() => {
-    if (showNewForm.value || showEditForm.value) {
+    if (formPartyType.value === 'Supplier' && (showNewForm.value || showEditForm.value)) {
+      supplierCreatorRef.value?.focusFirst()
+    } else if (showNewForm.value || showEditForm.value) {
       formNameInput.value?.focus()
     } else {
       searchInput.value?.focus()
@@ -466,70 +458,78 @@ watch(selectedIdx, async (idx) => {
   await nextTick()
   const container = scrollContainer.value
   const activeRow = container?.querySelector(`tbody tr:nth-child(${idx + 1})`)
-  
   if (container && activeRow) {
     const rowTop = activeRow.offsetTop
     const rowBottom = rowTop + activeRow.offsetHeight
-    const containerScrollTop = container.scrollTop
-    const containerHeight = container.offsetHeight
     const headerHeight = container.querySelector('thead')?.offsetHeight || 50
-
-    if (rowTop < containerScrollTop + headerHeight) {
+    if (rowTop < container.scrollTop + headerHeight) {
       container.scrollTop = rowTop - headerHeight
-    } else if (rowBottom > containerScrollTop + containerHeight) {
-      container.scrollTop = rowBottom - containerHeight
+    } else if (rowBottom > container.scrollTop + container.offsetHeight) {
+      container.scrollTop = rowBottom - container.offsetHeight
     }
   }
 })
 
-watch(() => props.show, (newVal) => {
-  if (newVal) {
-    query.value = ''
-    preloadLedger()
-    focus()
-  } else {
-    closeSubForm()
-  }
+watch(() => props.show, (val) => {
+  if (val) { query.value = ''; preloadLedger(); focus() }
+  else closeSubForm()
 })
 
-// ─── Sub-Form Logic (Customer Only) ──────────────────────────────────────────
-
+// ─── Sub-Form: open / close ───────────────────────────────────────────────────
 function openNewForm() {
-  newData.value = { 
-    customer_name: query.value.trim(), mobile: '', whatsapp: '', email: '', gstin: '', 
-    address_line1: '', address_line2: '', 
-    city: 'Palakkad', pincode: '678000', state: 'Kerala' 
+  formPartyType.value = activeType.value === 'Supplier' ? 'Supplier' : activeType.value === 'Employee' ? 'Employee' : 'Customer'
+  if (formPartyType.value === 'Customer') {
+    newData.value = {
+      customer_name: query.value.trim(), mobile: '', whatsapp: '', email: '', gstin: '',
+      address_line1: '', address_line2: '',
+      city: 'Palakkad', pincode: '678000', state: 'Kerala'
+    }
   }
   showNewForm.value = true
   focus()
 }
 
 async function openEditForm(target) {
-  if (!target || target.type !== 'Customer') return
-  editData.value = {
-    name: target.name,
-    customer_name: target.label || '',
-    mobile: target.mobile_no || '',
-    whatsapp: target.whatsapp || '',
-    email: target.email || '',
-    gstin: target.gstin || '',
-    address_line1: target.address_line1 || '',
-    address_line2: '',
-    city: target.city || '',
-    pincode: target.pincode || '',
-    state: target.state || 'Kerala',
-  }
-  showEditForm.value = true
-  editLoading.value = true
-  focus()
-
-  try {
-    const full = await fetchCustomerDetails(target.name)
-    editData.value = { ...editData.value, ...full }
-  } catch (e) {
-    console.warn('[CustomerSearchModal] fetch details failed:', e)
-  } finally {
-    editLoading.value = false
+  if (!target || (target.type !== 'Customer' && target.type !== 'Supplier' && target.type !== 'Employee')) return
+  formPartyType.value = target.type
+  if (target.type === 'Customer') {
+    // Pre-fill immediately from ledger row so the form is usable while we fetch
+    editData.value = {
+      name:          target.name,
+      customer_name: target.label        || '',
+      mobile:        target.mobile_no    || '',
+      whatsapp:      target.whatsapp     || '',
+      email:         target.email        || '',
+      gstin:         target.gstin        || '',
+      address_name:  '',
+      address_line1: target.address_line1 || '',
+      address_line2: '',
+      city:          target.city         || '',
+      pincode:       target.pincode      || '',
+      state:         target.state        || '',
+    }
+    showEditForm.value = true
+    editLoading.value = true
+    focus()
+    try {
+      const full = await fetchCustomerDetails(target.name)
+      // Merge: always take address_name; for all other fields take full value
+      // only when it is non-empty, so a missing address doesn't blank out
+      // values that were already visible in the ledger row.
+      const merged = { ...editData.value }
+      for (const [k, v] of Object.entries(full)) {
+        if (k === 'address_name' || v !== '') merged[k] = v
+      }
+      editData.value = merged
+    } catch (e) {
+      console.warn('[CustomerSearchModal] fetch customer details failed:', e)
+    } finally {
+      editLoading.value = false
+    }
+  } else {
+    // Supplier / Employee — child component handles its own data loading
+    showEditForm.value = true
+    focus()
   }
 }
 
@@ -540,9 +540,35 @@ function closeSubForm() {
   focus()
 }
 
-function validateForm(data) {
+// ─── Supplier saved callback ──────────────────────────────────────────────────
+async function onSupplierSaved(result) {
+  await preloadLedger()
+  const savedName = result.name || result.supplier_name
+  const foundIdx = results.value.findIndex(c => c.name === savedName)
+  if (foundIdx !== -1) selectedIdx.value = foundIdx
+  if (showNewForm.value) {
+    handleSelect(results.value[selectedIdx.value])
+  } else {
+    closeSubForm()
+  }
+}
+
+async function onEmployeeSaved(result) {
+  await preloadLedger()
+  const savedName = result.name || result.employee_name
+  const foundIdx = results.value.findIndex(c => c.name === savedName)
+  if (foundIdx !== -1) selectedIdx.value = foundIdx
+  if (showNewForm.value) {
+    handleSelect(results.value[selectedIdx.value])
+  } else {
+    closeSubForm()
+  }
+}
+
+// ─── Customer form logic ──────────────────────────────────────────────────────
+function validateCustomer(data, isEdit = false) {
   if (!data.customer_name.trim()) { alert('Customer Name is required'); return false }
-  if (!data.mobile || !/^\d{10}$/.test(data.mobile)) { alert('Valid 10-digit Mobile required'); return false }
+  if (!isEdit && (!data.mobile || !/^\d{10}$/.test(data.mobile))) { alert('Valid 10-digit Mobile required'); return false }
   return true
 }
 
@@ -552,32 +578,25 @@ function handleFormEnter(e) {
   const focusables = Array.from(form.querySelectorAll('input, select, button'))
   const index = focusables.indexOf(e.target)
   if (index > -1 && index < focusables.length - 1) focusables[index + 1].focus()
-  else submitForm()
+  else submitCustomerForm()
 }
 
-async function submitForm() {
+async function submitCustomerForm() {
   const data = showNewForm.value ? newData.value : editData.value
-  if (!validateForm(data)) return
-
+  if (!validateCustomer(data, !showNewForm.value)) return
   saving.value = true
   try {
-    let result
-    if (showNewForm.value) {
-      result = await createCustomer(data)
-    } else {
-      result = await updateCustomer(data.name, data)
-    }
-    
+    const result = showNewForm.value
+      ? await createCustomer(data)
+      : await updateCustomer(data.name, data)
     await preloadLedger()
-    
     const savedName = result.name || result.customer_name
     const foundIdx = results.value.findIndex(c => c.name === savedName)
     if (foundIdx !== -1) selectedIdx.value = foundIdx
-
     if (showNewForm.value) {
-       handleSelect(results.value[selectedIdx.value])
+      handleSelect(results.value[selectedIdx.value])
     } else {
-       closeSubForm()
+      closeSubForm()
     }
   } catch (e) {
     alert('Failed to save customer: ' + e.message)
