@@ -221,18 +221,24 @@ function applyToLocalStorage(settings) {
     localStorage.setItem('wb_freight', settings.freight_account)
   }
 
-  // Account Defaults
+  // Account Defaults (Resolved using mop_map)
+  const mopMap = settings.mop_map || {}
+  
   if (settings.user_defaults?.cash) {
-    localStorage.setItem('wb-cash', settings.user_defaults.cash)
+    const cashAcc = mopMap[settings.user_defaults.cash] || settings.user_defaults.cash
+    localStorage.setItem('wb-cash', cashAcc)
   }
   if (settings.user_defaults?.card) {
-    localStorage.setItem('wb-card', settings.user_defaults.card)
+    const cardAcc = mopMap[settings.user_defaults.card] || settings.user_defaults.card
+    localStorage.setItem('wb-card', cardAcc)
   }
   if (settings.user_defaults?.bank) {
-    localStorage.setItem('wb-bank', settings.user_defaults.bank)
+    const bankAcc = mopMap[settings.user_defaults.bank] || settings.user_defaults.bank
+    localStorage.setItem('wb-bank', bankAcc)
   }
   if (settings.user_defaults?.upi) {
-    localStorage.setItem('wb-upi', settings.user_defaults.upi)
+    const upiAcc = mopMap[settings.user_defaults.upi] || settings.user_defaults.upi
+    localStorage.setItem('wb-upi', upiAcc)
   }
 
   if (settings.user_defaults?.warehouse) {

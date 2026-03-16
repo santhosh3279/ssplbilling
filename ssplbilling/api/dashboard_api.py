@@ -109,7 +109,13 @@ def get_billing_settings():
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 	user = frappe.session.user
 	user_row = next((r for r in settings.user_series if r.user == user), None)
-	
+
+	# Fetch Mode of Payment to Account mappings
+	mop_accounts = frappe.get_all("Mode of Payment Account", 
+		filters={"company": "Sundaram and Sons Private Ltd"}, 
+		fields=["parent", "default_account"])
+	mop_map = {r.parent: r.default_account for r in mop_accounts}
+
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
 	user_defaults = {
 		"cash": (user_row.cash or "") if user_row else "",
@@ -125,9 +131,9 @@ def get_billing_settings():
 		"discount_account": settings.discount_account or "",
 		"freight_account": settings.freight or "",
 		"cipher_map": settings.cipher_map or "",
+		"mop_map": mop_map,
 		"user_zoom": user_zoom,
-		"user_defaults": user_defaults,
-		"billing_series": [
+		"user_defaults": user_defaults,		"billing_series": [
 			{
 				"series": r.series or "",
 				"price_list": r.price_list or "",
