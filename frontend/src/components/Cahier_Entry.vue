@@ -206,27 +206,28 @@ onMounted(async () => {
 
     const userCash = data.user_defaults?.cash || ''
     
-    // Only update if we got a value from API, or if form.cash is still empty
-    if (userCash) {
-      // Resolve MOP name to account name
-      const resolvedCash = mopMap[userCash] || userCash
+    // Resolve MOP name to account name
+    const resolvedCash = mopMap[userCash] || userCash
+    
+    if (resolvedCash) {
       form.cash = resolvedCash
       localStorage.setItem('wb-cash', resolvedCash)
     } else if (!form.cash && data.billing_series?.length > 0) {
       // Fallback to first series cash account if user default is missing
-      const seriesCash = data.billing_series[0].cash_account
+      const seriesCash = mopMap[data.billing_series[0].cash_account] || data.billing_series[0].cash_account
       if (seriesCash) {
         form.cash = seriesCash
         localStorage.setItem('wb-cash', seriesCash)
       }
     }
     
+    loadingSettings.value = false
     // After getting settings, try to fetch existing record
     await fetchExistingRecord()
   } catch (e) {
     console.warn('[CahierEntry] Initialization failed:', e)
-  } finally {
     loadingSettings.value = false
+  } finally {
     // If after all attempts we still don't have a balance but have an account, fetch it
     if (!ledgerBalance.value && form.cash && !savedName.value) {
       await fetchLedgerBalanceManual(form.cash)
@@ -293,6 +294,7 @@ async function fetchLedgerBalanceManual(account) {
 
 // ── Watch for type changes ──────────────────────────────────────────────────
 watch(() => form.opening_or_closing, async () => {
+  if (loadingSettings.value) return 
   await fetchExistingRecord()
 })
 
