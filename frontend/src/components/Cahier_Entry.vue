@@ -201,9 +201,10 @@ onMounted(async () => {
 
   try {
     const data = await frappeGet('ssplbilling.api.dashboard_api.get_billing_settings')
-    const userCash = data.user_defaults?.cash || ''
     const mopMap = data.mop_map || {}
     cachedMopMap.value = mopMap
+
+    const userCash = data.user_defaults?.cash || ''
     
     // Only update if we got a value from API, or if form.cash is still empty
     if (userCash) {
@@ -260,6 +261,13 @@ async function fetchExistingRecord() {
       denominations.forEach(d => {
         form.denominations[d] = null
       })
+      
+      // FALLBACK: Ensure form.cash is populated from resolved defaults if missing
+      if (!form.cash) {
+        const cached = localStorage.getItem('wb-cash')
+        if (cached) form.cash = cached
+      }
+
       // If we have a cash account, ensure we have its current balance
       if (form.cash) {
         await fetchLedgerBalanceManual(form.cash)
