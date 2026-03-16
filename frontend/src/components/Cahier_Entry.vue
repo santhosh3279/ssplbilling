@@ -199,11 +199,14 @@ onMounted(async () => {
   try {
     const data = await frappeGet('ssplbilling.api.dashboard_api.get_billing_settings')
     const userCash = data.user_defaults?.cash || ''
+    const mopMap = data.mop_map || {}
     
     // Only update if we got a value from API, or if form.cash is still empty
     if (userCash) {
-      form.cash = userCash
-      localStorage.setItem('wb-cash', userCash)
+      // Resolve MOP name to account name
+      const resolvedCash = mopMap[userCash] || userCash
+      form.cash = resolvedCash
+      localStorage.setItem('wb-cash', resolvedCash)
     } else if (!form.cash && data.billing_series?.length > 0) {
       // Fallback to first series cash account if user default is missing
       const seriesCash = data.billing_series[0].cash_account
