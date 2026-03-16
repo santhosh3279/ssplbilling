@@ -139,6 +139,7 @@
               type="number"
               class="w-full rounded-lg border border-gray-300 px-4 py-3 text-3xl font-black text-blue-600 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
               placeholder="0.00"
+              @focus="$event.target.select()"
               @keydown.enter.prevent="nextFocus('mop')"
             />
           </div>
