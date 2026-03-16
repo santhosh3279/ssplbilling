@@ -20,13 +20,6 @@
             {{ m.label }}
           </button>
         </div>
-        <button 
-          @click="saveEntry" 
-          :disabled="saving || !canSave"
-          class="rounded-lg bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-50"
-        >
-          {{ saving ? 'Saving...' : 'Save Entry (F9)' }}
-        </button>
       </div>
     </header>
 
@@ -273,6 +266,15 @@
               @keydown.enter.prevent="saveEntry"
             ></textarea>
           </div>
+
+          <!-- Save Button -->
+          <button 
+            @click="saveEntry" 
+            :disabled="saving || !canSave"
+            class="w-full rounded-lg bg-blue-600 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ saving ? 'Saving...' : 'Save Entry (F9)' }}
+          </button>
         </div>
       </div>
     </div>
