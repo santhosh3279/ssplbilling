@@ -95,7 +95,7 @@
             <!-- Ledger Balance -->
             <div class="flex flex-col items-end leading-none border-l border-gray-100 pl-6">
               <span class="text-[8px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Ledger Bal</span>
-              <span :class="selectedSupplierDetails.balance > 0 ? 'text-red-500' : 'text-green-500'" class="text-xl font-bold tabular-nums">
+              <span :class="selectedSupplierDetails.balance > 0 ? 'text-green-500' : 'text-red-500'" class="text-xl font-bold tabular-nums">
                 &#8377;{{ Math.abs(selectedSupplierDetails.balance || 0).toFixed(2) }} <span class="text-[10px] font-bold">{{ selectedSupplierDetails.balance > 0 ? 'DR' : 'CR' }}</span>
               </span>
             </div>

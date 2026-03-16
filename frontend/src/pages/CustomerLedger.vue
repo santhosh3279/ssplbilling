@@ -106,18 +106,18 @@
         <!-- Summary chips (visible after load) -->
         <template v-if="ledgerData">
           <div class="ml-2 flex items-center gap-3 text-xl">
-            <span class="rounded bg-orange-50 px-3 py-1.5 font-semibold text-orange-700">
+            <span class="rounded bg-green-50 px-3 py-1.5 font-semibold text-green-700">
               Opening ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }} {{ ledgerData.opening_balance < 0 ? '(Cr)' : '(Dr)' }}
             </span>
-            <span class="rounded bg-red-50 px-3 py-1.5 font-semibold text-red-700">
+            <span class="rounded bg-green-50 px-3 py-1.5 font-semibold text-green-700">
               Dr ₹{{ fmt(ledgerData.total_debit) }}
             </span>
-            <span class="rounded bg-green-50 px-3 py-1.5 font-semibold text-green-700">
+            <span class="rounded bg-red-50 px-3 py-1.5 font-semibold text-red-700">
               Cr ₹{{ fmt(ledgerData.total_credit) }}
             </span>
             <span
               class="rounded px-3 py-1.5 font-bold"
-              :class="ledgerData.closing_balance >= 0 ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'"
+              :class="ledgerData.closing_balance >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'"
             >
               Balance ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
               {{ ledgerData.closing_balance < 0 ? '(Cr)' : '(Dr)' }}
@@ -169,7 +169,7 @@
                   </td>
                   <td class="px-4 text-right font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="ledgerData.opening_balance >= 0 ? 'text-orange-600' : 'text-green-600'">
+                    :class="ledgerData.opening_balance >= 0 ? 'text-green-600' : 'text-red-600'">
                     ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }}
                     <span class="ml-0.5 font-normal" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
@@ -215,16 +215,16 @@
                     </button>
                   </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span v-if="entry.debit" class="font-semibold text-red-600">₹{{ fmt(entry.debit) }}</span>
+                    <span v-if="entry.debit" class="font-semibold text-green-600">₹{{ fmt(entry.debit) }}</span>
                     <span v-else class="text-gray-300">—</span>
                   </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span v-if="entry.credit" class="font-semibold text-green-600">₹{{ fmt(entry.credit) }}</span>
+                    <span v-if="entry.credit" class="font-semibold text-red-600">₹{{ fmt(entry.credit) }}</span>
                     <span v-else class="text-gray-300">—</span>
                   </td>
                   <td class="px-4 text-right font-mono font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="entry.balance < 0 ? 'text-green-700' : 'text-gray-800'">
+                    :class="entry.balance < 0 ? 'text-red-700' : 'text-green-700'">
                     ₹{{ fmt(Math.abs(entry.balance)) }}
                     <span class="ml-0.5 font-normal text-gray-400" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
@@ -233,11 +233,11 @@
                 <!-- Closing Balance row -->
                 <tr v-if="ledgerData.entries.length" class="border-t-2 border-gray-300 bg-gray-50">
                   <td colspan="3" class="px-4 font-bold text-gray-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">Closing Balance</td>
-                  <td class="px-4 text-right font-mono font-bold text-red-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_debit) }}</td>
-                  <td class="px-4 text-right font-mono font-bold text-green-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_credit) }}</td>
+                  <td class="px-4 text-right font-mono font-bold text-green-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_debit) }}</td>
+                  <td class="px-4 text-right font-mono font-bold text-red-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_credit) }}</td>
                   <td class="px-4 text-right font-mono font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="ledgerData.closing_balance < 0 ? 'text-green-700' : 'text-orange-700'">
+                    :class="ledgerData.closing_balance < 0 ? 'text-red-700' : 'text-green-700'">
                     ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
                     <span class="ml-0.5 font-normal" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>

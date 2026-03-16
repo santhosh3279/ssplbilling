@@ -371,19 +371,15 @@ async function saveEntry() {
       references: selectedInvoices.value
     }
 
-    // Resolve accounts if user defaults are available
+    // Resolve specific Mode of Payment from user defaults
     if (userDefaults.value) {
-      const mopAcc = mop.value === 'Cash' ? userDefaults.value.cash :
-                     mop.value === 'Card' ? userDefaults.value.card :
-                     mop.value === 'UPI'  ? userDefaults.value.upi :
-                     userDefaults.value.bank; // 'Bank' or fallback
+      const specificMop = mop.value === 'Cash' ? userDefaults.value.cash :
+                          mop.value === 'Card' ? userDefaults.value.card :
+                          mop.value === 'UPI'  ? userDefaults.value.upi :
+                          userDefaults.value.bank;
       
-      if (mopAcc) {
-        if (entryMode.value === 'Receive') {
-          payload.paid_to = mopAcc;
-        } else {
-          payload.paid_from = mopAcc;
-        }
+      if (specificMop) {
+        payload.mode_of_payment = specificMop;
       }
     }
     
