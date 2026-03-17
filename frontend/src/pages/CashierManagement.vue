@@ -493,20 +493,68 @@
             </button>
           </div>
         </div>
+      </main>
       </div>
-    </div>
-  </div>
-</template>
+
+      <!-- DAY OPENING CHECK MODAL -->
+      <transition name="fade">
+      <div v-if="showOpeningRequiredModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+          <div class="bg-amber-50 p-6 flex flex-col items-center text-center">
+            <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            </div>
+            <h2 class="mb-2 text-xl font-black text-slate-900 uppercase tracking-tight">Day Opening Required</h2>
+            <p class="text-sm font-medium text-slate-600 leading-relaxed">
+              Please Update Day Opening Box Cash before processing any payments for today.
+            </p>
+          </div>
+          <div class="flex flex-col gap-2 p-6 bg-slate-50/50">
+            <button 
+              @click="$router.push('/Cashier-Management')"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-[0.98] transition-all"
+            >
+              <span>Go to Cashier Management</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+            <button 
+              @click="$router.push('/')"
+              class="w-full px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+      </transition>
+      </div>
+      </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { session } from '../session'
-import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings } from '../api.js'
+import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet } from '../api.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 
 // --- REFS ---
 const { user: currentUser } = session
+const showOpeningRequiredModal = ref(false)
+
+async function checkDayOpening() {
+  if (!session.user.value) return
+  try {
+    const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
+      date: getTodayIST(),
+      user: session.user.value
+    })
+    if (!hasOpening) {
+      showOpeningRequiredModal.value = true
+    }
+  } catch (e) {
+    console.error('[CashierManagement] Opening check failed:', e)
+  }
+}
 
 // ==================== USER ====================
 const userInitials = computed(() => {
@@ -920,6 +968,7 @@ onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus())
   initAccountsFromLocalStorage()
   loadInvoices()
+  checkDayOpening()
   window.addEventListener('keydown', handleKeydown)
 })
 

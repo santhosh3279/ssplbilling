@@ -180,6 +180,12 @@ def get_cash_ledger_entries(account, date):
 
 
 @frappe.whitelist()
+def check_cashier_opening(date, user):
+	"""Check if an 'Opening' record exists for the given date and user."""
+	return frappe.db.exists("Cashier_Opening", {"date": date, "user": user, "opening_or_closing": "Opening"})
+
+
+@frappe.whitelist()
 def get_cashier_opening(date, user, opening_or_closing):
 	"""Fetch an existing Cashier_Opening record."""
 	doc_name = frappe.db.get_value(
