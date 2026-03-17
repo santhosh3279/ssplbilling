@@ -798,6 +798,7 @@ async function refreshAll() {
     openingTotal.value = res.total || 0
     openingLedger.value = res.cash_ledger_balance || 0
     localStorage.setItem('opening_cash', String(openingTotal.value))
+    localStorage.setItem('wb-opening-box-cash', String(openingTotal.value))
     localStorage.setItem('cash_ledger_balance', String(openingLedger.value))
   } catch (e) { console.warn('[Cahier] Opening fetch failed:', e) }
 

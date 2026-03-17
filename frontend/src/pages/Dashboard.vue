@@ -183,7 +183,7 @@ import CustomerLedger from './CustomerLedger.vue'
 import StockLedger from './StockLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import GeneralSettings from '../components/GeneralSettings.vue'
-import { fetchItemPrice, fetchItemStockForWarehouses } from '../api.js'
+import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
@@ -406,6 +406,19 @@ async function fetchSettings() {
     }
   } catch (e) {
     console.warn('[Dashboard] getBillingSettings failed:', e)
+  }
+
+  // 3. Sync today's opening box cash
+  try {
+    const today = new Date().toLocaleDateString('en-CA')
+    const openingRes = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
+    if (openingRes) {
+      const boxCash = String(openingRes.total || 0)
+      localStorage.setItem('opening_cash', boxCash)
+      localStorage.setItem('wb-opening-box-cash', boxCash)
+    }
+  } catch (e) {
+    console.warn('[Dashboard] opening box cash sync failed:', e)
   }
 }
 

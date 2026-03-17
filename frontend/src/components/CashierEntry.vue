@@ -82,15 +82,20 @@
           <div class="grid grid-cols-2 gap-x-6 gap-y-2">
             <!-- Left column: denominations -->
             <div class="space-y-2">
-              <div v-for="d in denominations" :key="d" class="flex items-center gap-2">
+              <div v-for="(d, i) in denominations" :key="d" class="flex items-center gap-2">
                 <label class="w-12 shrink-0 text-right text-sm font-semibold text-slate-300">{{ d }}</label>
                 <span class="text-slate-500 text-xs">×</span>
                 <input
+                  :ref="el => { if (el) denomInputRefs[i] = el }"
                   v-model.number="form.denominations[d]"
                   type="number"
                   min="0"
                   placeholder="0"
                   class="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-1.5 text-sm text-white placeholder-slate-500 outline-none focus:border-blue-500"
+                  @keydown.enter.prevent="onDenomEnter(i)"
+                  @keydown.down.prevent="denomInputRefs[i + 1]?.focus()"
+                  @keydown.up.prevent="denomInputRefs[i - 1]?.focus()"
+                  @focus="$event.target.select()"
                 />
                 <span class="w-20 shrink-0 text-right text-xs text-slate-400 font-mono">
                   {{ ((form.denominations[d] || 0) * d).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
@@ -140,7 +145,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted, watch } from 'vue'
+import { reactive, ref, computed, onMounted, watch, onBeforeUpdate } from 'vue'
 import { session } from '../session'
 import { frappeGet, frappePost } from '../api.js'
 
@@ -162,6 +167,16 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1]
+const denomInputRefs = ref([])
+onBeforeUpdate(() => { denomInputRefs.value = [] })
+
+function onDenomEnter(index) {
+  if (index < denominations.length - 1) {
+    denomInputRefs.value[index + 1]?.focus()
+  } else {
+    handleSave()
+  }
+}
 
 const form = reactive({
   date: props.date,

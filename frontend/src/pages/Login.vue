@@ -102,7 +102,9 @@ async function handleLogin() {
       const today = new Date().toLocaleDateString('en-CA')
       const openingRes = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
       if (openingRes) {
-        localStorage.setItem('opening_cash', String(openingRes.total || 0))
+        const boxCash = String(openingRes.total || 0)
+        localStorage.setItem('opening_cash', boxCash)
+        localStorage.setItem('wb-opening-box-cash', boxCash)
       }
     } catch (e) {
       console.warn('[Login] Failed to preload data:', e)

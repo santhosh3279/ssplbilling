@@ -12,7 +12,7 @@ import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import MaterialTransfer from './pages/MaterialTransfer.vue'
-import Cashier from './pages/Cashier.vue'
+import CashierManagement from './pages/CashierManagement.vue'
 
 const routes = [
   {
@@ -50,6 +50,7 @@ const routes = [
     path: '/cashier',
     name: 'CashierDesk',
     component: CashierDesk,
+    meta: { requiresOpening: true },
   },
   {
     path: '/purchase-submit',
@@ -78,8 +79,8 @@ const routes = [
   },
   {
     path: '/Cashier-Management',
-    name: 'Cashier',
-    component: Cashier,
+    name: 'CashierManagement',
+    component: CashierManagement,
   },
 ]
 
@@ -95,11 +96,11 @@ router.beforeEach(async (to, from, next) => {
   }
   try {
     await session.init()
-    if (session.isLoggedIn.value) {
-      next()
-    } else {
+    if (!session.isLoggedIn.value) {
       next({ name: 'Login' })
+      return
     }
+    next()
   } catch (e) {
     next({ name: 'Login' })
   }
