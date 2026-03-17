@@ -176,16 +176,31 @@
         </div>
 
         <!-- Left footer: allocation summary -->
-        <div v-if="outstandings.length" class="shrink-0 border-t border-gray-800 px-6 py-3 bg-gray-900">
+        <div v-if="outstandings.length" class="shrink-0 border-t border-gray-800 px-6 py-3 bg-gray-900 space-y-2.5">
           <div class="flex items-center justify-between text-xs font-black uppercase tracking-widest">
             <span class="text-gray-500">Allocated</span>
             <span class="font-mono text-blue-400">₹{{ totalAllocated.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
           </div>
-          <div v-if="amount > 0" class="flex items-center justify-between text-xs font-black uppercase tracking-widest mt-1">
+          <div v-if="amount > 0" class="flex items-center justify-between text-xs font-black uppercase tracking-widest">
             <span class="text-gray-500">Unallocated</span>
             <span class="font-mono" :class="remainingToAllocate > 0 ? 'text-amber-400' : 'text-emerald-400'">
               ₹{{ remainingToAllocate.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </span>
+          </div>
+          
+          <!-- Party Balance summary in footer -->
+          <div class="pt-2 border-t border-gray-800/50 flex items-center justify-between">
+            <div>
+              <p class="text-[9px] font-black uppercase tracking-widest text-gray-600">{{ activePartyType }} Balance</p>
+              <p class="font-mono text-[11px] font-black text-gray-400">₹{{ ledgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+            </div>
+            <div class="text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="text-right">
+              <p class="text-[9px] font-black uppercase tracking-widest text-blue-500">New Balance</p>
+              <p class="font-mono text-[11px] font-black text-blue-400">₹{{ newBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+            </div>
           </div>
         </div>
       </div>
