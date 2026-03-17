@@ -275,6 +275,13 @@
       </div>
       <!-- end BOX Cash table card -->
 
+      <!-- Export Button -->
+      <button @click="exportToExcel" :disabled="!filteredBills.length"
+        class="flex items-center justify-center gap-2 rounded-xl border border-emerald-700/50 bg-emerald-900/20 px-4 py-3 text-xs font-black uppercase tracking-widest text-emerald-400 transition hover:bg-emerald-900/40 active:scale-95 disabled:opacity-30 disabled:grayscale shadow-lg shadow-emerald-900/20">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Today's Bills to Excel
+      </button>
+
       </div>
       <!-- end left panel -->
 
@@ -314,11 +321,6 @@
                 </label>
               </div>
             </div>
-            <button @click="exportToExcel" :disabled="!filteredBills.length"
-              class="flex items-center justify-center h-6 w-6 rounded-lg border border-slate-700 bg-slate-800 text-emerald-500 hover:text-emerald-400 hover:bg-slate-700 transition disabled:opacity-40"
-              title="Export bills to Excel">
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
             <button @click="fetchTodayBills" :disabled="billsLoading"
               class="flex items-center justify-center h-6 w-6 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition disabled:opacity-40">
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="billsLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
