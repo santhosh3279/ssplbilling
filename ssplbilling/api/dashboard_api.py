@@ -125,6 +125,7 @@ def get_billing_settings():
 		"bank_account": (user_row.bank or "") if user_row else "", # Use bank field for bank_account
 		"warehouse": (user_row.warehouse or "") if user_row else "",
 		"cost_center": (user_row.cost_center or "") if user_row else "",
+		"default_printer": (user_row.default_printer or "") if user_row else "",
 	}
 
 	return {
@@ -165,6 +166,7 @@ def get_billing_settings():
 				"cashier": r.cashier or 0,
 				"biller": r.biller or 0,
 				"allowed_windows": r.allowed_windows or "",
+				"default_printer": r.default_printer or "",
 			}
 			for r in settings.user_series
 		],

@@ -251,8 +251,13 @@ async function loadResources() {
     ])
     printers.value = p || []
     templates.value = t || []
-    const def = printers.value.find(pr => pr.is_default) || printers.value[0]
-    if (def) selectedPrinter.value = def.name
+    const userDefault = localStorage.getItem('wb-default-printer')
+    if (userDefault && printers.value.some(pr => pr.name === userDefault)) {
+      selectedPrinter.value = userDefault
+    } else {
+      const def = printers.value.find(pr => pr.is_default) || printers.value[0]
+      if (def) selectedPrinter.value = def.name
+    }
     if (templates.value.length === 1) selectedTemplate.value = templates.value[0].name
   } catch (e) {
     console.error('[BarcodePrintPage] loadResources failed', e)

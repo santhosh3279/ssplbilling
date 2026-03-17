@@ -62,6 +62,10 @@
                 <span class="text-gray-500">Cost Center</span>
                 <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
               </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500">Default Printer</span>
+                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.default_printer || '--' }}</span>
+              </div>
             </div>
           </div>
 
@@ -152,6 +156,7 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Admin</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Cashier</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Biller</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Default Printer</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Blocked Windows</th>
                   </tr>
                 </thead>
@@ -169,6 +174,7 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.admin ? '✓' : '' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.cashier ? '✓' : '' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.biller ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.default_printer || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.allowed_windows || '--' }}</td>
                   </tr>
                 </tbody>
@@ -272,6 +278,9 @@ function applyToLocalStorage(settings) {
   }
   if (settings.user_defaults?.cost_center) {
     localStorage.setItem('wb-cost-center', settings.user_defaults.cost_center)
+  }
+  if (settings.user_defaults?.default_printer) {
+    localStorage.setItem('wb-default-printer', settings.user_defaults.default_printer)
   }
 
   // Set billing defaults from the first visible series row

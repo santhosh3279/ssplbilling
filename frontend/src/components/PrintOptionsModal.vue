@@ -175,8 +175,13 @@ function syncPrinter() {
   if (targetPrinter && printers.value.some(pr => pr.name === targetPrinter)) {
     selectedPrinter.value = targetPrinter
   } else {
-    const def = printers.value.find(pr => pr.is_default) || printers.value[0]
-    if (def) selectedPrinter.value = def.name
+    const userDefault = localStorage.getItem('wb-default-printer')
+    if (userDefault && printers.value.some(pr => pr.name === userDefault)) {
+      selectedPrinter.value = userDefault
+    } else {
+      const def = printers.value.find(pr => pr.is_default) || printers.value[0]
+      if (def) selectedPrinter.value = def.name
+    }
   }
 }
 
