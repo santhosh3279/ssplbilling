@@ -348,7 +348,8 @@
                       type="text"
                       v-model="dueDate"
                       @input="handleDueDateInput"
-                      placeholder="DD/MM/YYYY"
+                      @keydown.backspace="handleDueDateKeyDown"
+                      placeholder="DDMM or DD/MM/YYYY"
                       class="w-full rounded-xl border border-rose-700/50 bg-slate-900 py-4 pl-12 pr-4 text-center font-mono font-black text-xl text-slate-100 placeholder-slate-700 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all outline-none"
                     />
                   </div>
@@ -853,6 +854,13 @@ function handleEnter(e) {
     } else if (active === discountInput.value) {
       processPayment()
     }
+  }
+}
+
+function handleDueDateKeyDown(e) {
+  if (e.key === 'Backspace' && dueDate.value) {
+    dueDate.value = ''
+    e.preventDefault()
   }
 }
 
