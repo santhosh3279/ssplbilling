@@ -314,6 +314,11 @@
                 </label>
               </div>
             </div>
+            <button @click="exportToExcel" :disabled="!filteredBills.length"
+              class="flex items-center justify-center h-6 w-6 rounded-lg border border-slate-700 bg-slate-800 text-emerald-500 hover:text-emerald-400 hover:bg-slate-700 transition disabled:opacity-40"
+              title="Export bills to Excel">
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
             <button @click="fetchTodayBills" :disabled="billsLoading"
               class="flex items-center justify-center h-6 w-6 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition disabled:opacity-40">
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="billsLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
@@ -730,6 +735,47 @@ async function fetchTodayBills() {
   } finally {
     billsLoading.value = false
   }
+}
+
+function exportToExcel() {
+  if (!filteredBills.value.length) return
+
+  const headers = ['Bill No', 'Customer', 'Total', 'Cash', 'UPI', 'Card', 'Credit']
+  const rows = filteredBills.value.map(bill => [
+    bill.name,
+    bill.customer,
+    bill.grand_total,
+    getMopAmount(bill, 'cash'),
+    getMopAmount(bill, 'upi'),
+    getMopAmount(bill, 'card'),
+    getMopAmount(bill, 'credit')
+  ])
+
+  // Add totals row
+  rows.push([
+    'TOTAL',
+    '',
+    totalSales.value,
+    billTotals.value.cash,
+    billTotals.value.upi,
+    billTotals.value.card,
+    billTotals.value.credit
+  ])
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  ].join('\n')
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', `Cashier_Bills_${currentDate.value}.csv`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 onMounted(async () => {
