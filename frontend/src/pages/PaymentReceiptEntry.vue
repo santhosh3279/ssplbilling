@@ -28,7 +28,7 @@
     <div class="flex-1 flex overflow-hidden">
 
       <!-- LEFT — Invoices panel -->
-      <div class="flex-1 flex flex-col border-r border-gray-800 overflow-hidden">
+      <div class="flex-1 flex flex-col border-r border-gray-800 overflow-hidden bg-gray-900">
         <!-- Panel header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
           <div>
