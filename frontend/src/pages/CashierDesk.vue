@@ -233,7 +233,12 @@
           <template v-else>
             <div class="space-y-3">
               <!-- Summary Mini-Card -->
-              <div class="rounded-xl bg-slate-900 border border-slate-700 p-4">
+              <div class="relative rounded-xl bg-slate-900 border border-slate-700 p-4">
+                <!-- Credit Badge -->
+                <div v-if="isCredit" class="absolute -top-2 -right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg animate-pulse ring-4 ring-slate-900">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                </div>
+
                 <div class="flex justify-between items-start mb-4">
                   <div>
                     <div class="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">Bill Amount</div>
@@ -241,16 +246,13 @@
                       ₹{{ fmt(amountToCollect) }}
                     </div>
                   </div>
-                  <button
-                    @click="toggleCredit"
-                    class="flex items-center gap-2 rounded-lg px-3 py-2 transition-all border text-xs font-black uppercase tracking-widest"
-                    :class="isCredit
-                      ? 'bg-rose-900/40 border-rose-700 text-rose-400'
-                      : 'bg-emerald-900/30 border-emerald-700 text-emerald-400'"
-                  >
-                    <div class="h-1.5 w-1.5 rounded-full animate-pulse" :class="isCredit ? 'bg-rose-500' : 'bg-emerald-500'"></div>
-                    {{ isCredit ? 'CREDIT' : 'CASH BILL' }}
-                  </button>
+                  <div class="text-right">
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">Status</div>
+                    <span class="inline-flex rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border"
+                      :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-rose-400' : 'bg-emerald-900/30 border-emerald-700 text-emerald-400'">
+                      {{ isCredit ? 'Credit' : 'Cash' }}
+                    </span>
+                  </div>
                 </div>
 
                 <div class="space-y-2 border-t border-slate-700 pt-3">
@@ -267,6 +269,26 @@
                     </span>
                   </div>
                 </div>
+              </div>
+
+              <!-- Payment Mode Selector Buttons -->
+              <div class="flex gap-2">
+                <button
+                  @click="toggleCredit(false)"
+                  class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
+                  :class="!isCredit ? 'bg-emerald-900/30 border-emerald-700 text-emerald-400 shadow-lg' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750'"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                  Cash Bill
+                </button>
+                <button
+                  @click="toggleCredit(true)"
+                  class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
+                  :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-rose-400 shadow-lg' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750'"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  Credit
+                </button>
               </div>
 
               <!-- Input Grid -->
@@ -316,18 +338,23 @@
               <!-- Credit Fields -->
               <div v-else class="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div class="rounded-xl border border-rose-800/60 bg-rose-900/20 p-4">
-                  <label class="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-2">Promise Date (Due Date)</label>
-                  <input
-                    ref="dueDateInput"
-                    type="text"
-                    v-model="dueDate"
-                    @input="handleDueDateInput"
-                    placeholder="DD/MM/YYYY"
-                    class="w-full rounded-lg border border-rose-700/50 bg-slate-900 py-3 px-4 text-center font-mono font-bold text-slate-200 placeholder-slate-700 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all outline-none"
-                  />
-                  <div class="mt-2 flex items-center gap-2 text-[10px] font-bold text-rose-500">
+                  <label class="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-2 ml-1">Promise Date (Due Date)</label>
+                  <div class="relative group">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-rose-500 group-focus-within:text-rose-400 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    </div>
+                    <input
+                      ref="dueDateInput"
+                      type="text"
+                      v-model="dueDate"
+                      @input="handleDueDateInput"
+                      placeholder="DD/MM/YYYY"
+                      class="w-full rounded-xl border border-rose-700/50 bg-slate-900 py-4 pl-12 pr-4 text-center font-mono font-black text-xl text-slate-100 placeholder-slate-700 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all outline-none"
+                    />
+                  </div>
+                  <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-500/80 bg-rose-900/30 rounded-lg p-2 border border-rose-800/40">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m5 15 7 7 7-7"/></svg>
-                    Credit Ledger Posting
+                    Credit Ledger Posting Enabled
                   </div>
                 </div>
               </div>
@@ -694,9 +721,14 @@ function initAccountsFromLocalStorage() {
   if (lsBank) seriesAccounts.value.bank = lsBank
 }
 
-function toggleCredit() {
-  isCredit.value = !isCredit.value
+function toggleCredit(val) {
+  isCredit.value = (val !== undefined && typeof val === 'boolean') ? val : !isCredit.value
   payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
+  if (isCredit.value) {
+    nextTick(() => dueDateInput.value?.focus())
+  } else {
+    nextTick(() => cashInput.value?.focus())
+  }
 }
 
 function printPlaceholder() {
@@ -827,6 +859,16 @@ function handleEnter(e) {
 function handleDueDateInput(e) {
   let raw = e.target.value.replace(/\D/g, '')
   if (raw.length > 8) raw = raw.slice(0, 8)
+  
+  // Quick entry for ddmm (4 digits)
+  if (raw.length === 4) {
+    const day = raw.slice(0, 2)
+    const month = raw.slice(2, 4)
+    const year = new Date().getFullYear()
+    dueDate.value = `${day}/${month}/${year}`
+    return
+  }
+
   let formatted = raw
   if (raw.length >= 5) {
     formatted = raw.slice(0, 2) + '/' + raw.slice(2, 4) + '/' + raw.slice(4)
