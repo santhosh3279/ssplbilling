@@ -6,13 +6,13 @@ import SalesEntry from './pages/SalesEntry.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
 import BarcodePrintPage from './pages/BarcodePrintPage.vue'
-import Cashierpage from './pages/Cashierpage.vue'
+import CashierManagement from './pages/CashierManagement.vue'
 import PurchaseSubmit from './pages/PurchaseSubmit.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
 import PaymentReceiptEntry from './pages/PaymentReceiptEntry.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import MaterialTransfer from './pages/MaterialTransfer.vue'
-import Cahier from './pages/Cahier.vue'
+import Cashier from './pages/Cashier.vue'
 
 const routes = [
   {
@@ -48,8 +48,8 @@ const routes = [
   },
   {
     path: '/cashier',
-    name: 'Cashierpage',
-    component: Cashierpage,
+    name: 'CashierManagement',
+    component: CashierManagement,
   },
   {
     path: '/purchase-submit',
@@ -77,9 +77,9 @@ const routes = [
     component: MaterialTransfer,
   },
   {
-    path: '/cahier',
-    name: 'Cahier',
-    component: Cahier,
+    path: '/CahierManagement',
+    name: 'Cashier',
+    component: Cashier,
   },
 ]
 

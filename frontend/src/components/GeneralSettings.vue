@@ -149,6 +149,10 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">UPI A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Warehouse</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cost Center</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Admin</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Cashier</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Biller</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Blocked Windows</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -162,6 +166,10 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.upi || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.warehouse || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.cost_center || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.admin ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.cashier ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.biller ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.allowed_windows || '--' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -265,6 +273,7 @@ function applyToLocalStorage(settings) {
   if (settings.user_defaults?.cost_center) {
     localStorage.setItem('wb-cost-center', settings.user_defaults.cost_center)
   }
+
   // Set billing defaults from the first visible series row
   const firstSeries = (settings.billing_series || [])[0]
   if (firstSeries) {
@@ -278,6 +287,16 @@ function applyToLocalStorage(settings) {
   const allBillingSeries = settings.billing_series || []
   const currentUser = session.user.value
   const userRow = (settings.user_series || []).find(r => r.user === currentUser)
+
+  // Role flags and blocked windows from user_series row
+  if (userRow) {
+    localStorage.setItem('wb-role-admin', userRow.admin ? '1' : '0')
+    localStorage.setItem('wb-role-cashier', userRow.cashier ? '1' : '0')
+    localStorage.setItem('wb-role-biller', userRow.biller ? '1' : '0')
+    if (userRow.allowed_windows) {
+      localStorage.setItem('wb-blocked-windows', userRow.allowed_windows)
+    }
+  }
   let allowedSeries = allBillingSeries
 
   if (userRow?.allowed_series && userRow.allowed_series.trim().toUpperCase() !== 'ALL') {

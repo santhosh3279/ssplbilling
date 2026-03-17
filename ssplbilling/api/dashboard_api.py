@@ -161,6 +161,10 @@ def get_billing_settings():
 				"bank_account": r.bank or "",
 				"warehouse": r.warehouse or "",
 				"cost_center": r.cost_center or "",
+				"admin": r.admin or 0,
+				"cashier": r.cashier or 0,
+				"biller": r.biller or 0,
+				"allowed_windows": r.allowed_windows or "",
 			}
 			for r in settings.user_series
 		],

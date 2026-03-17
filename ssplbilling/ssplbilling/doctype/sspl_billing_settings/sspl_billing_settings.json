@@ -8,6 +8,10 @@
   "cipher_map",
   "discount_account",
   "freight",
+  "column_break_gcal",
+  "admin",
+  "cashier",
+  "allowed_windows",
   "section_break_series",
   "column_break_raod",
   "billing_series",
@@ -64,11 +68,32 @@
    "fieldtype": "Link",
    "label": "Freight",
    "options": "Account"
+  },
+  {
+   "fieldname": "column_break_gcal",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "admin",
+   "fieldtype": "Check",
+   "label": "Admin"
+  },
+  {
+   "default": "0",
+   "fieldname": "cashier",
+   "fieldtype": "Check",
+   "label": "Cashier"
+  },
+  {
+   "fieldname": "allowed_windows",
+   "fieldtype": "Data",
+   "label": "Allowed Windows"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-03-14 09:54:50.265086",
+ "modified": "2026-03-17 08:32:29.022565",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "SSPL Billing Settings",

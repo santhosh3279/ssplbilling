@@ -14,7 +14,11 @@
   "upi",
   "bank",
   "warehouse",
-  "cost_center"
+  "cost_center",
+  "admin",
+  "cashier",
+  "biller",
+  "allowed_windows"
  ],
  "fields": [
   {
@@ -68,13 +72,36 @@
    "fieldtype": "Link",
    "label": "Bank",
    "options": "Mode of Payment"
+  },
+  {
+   "default": "0",
+   "fieldname": "admin",
+   "fieldtype": "Check",
+   "label": "Admin"
+  },
+  {
+   "default": "0",
+   "fieldname": "cashier",
+   "fieldtype": "Check",
+   "label": "Cashier"
+  },
+  {
+   "default": "0",
+   "fieldname": "biller",
+   "fieldtype": "Check",
+   "label": "Biller"
+  },
+  {
+   "fieldname": "allowed_windows",
+   "fieldtype": "Data",
+   "label": "Blocked Windows"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-16 08:11:05.020757",
+ "modified": "2026-03-17 08:37:02.526070",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "USER SERIES",

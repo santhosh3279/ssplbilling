@@ -32,7 +32,7 @@
         </button>
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
-          @click="router.push('/cahier')"
+          @click="router.push('/CahierManagement')"
         >
           📓 Cahier
         </button>
