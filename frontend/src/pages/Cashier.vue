@@ -17,7 +17,7 @@
 
         <!-- Page Title -->
         <h1 class="text-xl font-black tracking-tighter text-white uppercase">
-          Cahier <span class="text-slate-500 font-light">Management</span>
+          Cashier <span class="text-slate-500 font-light">Management</span>
         </h1>
       </div>
 
