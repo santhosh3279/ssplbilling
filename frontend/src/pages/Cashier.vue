@@ -520,6 +520,8 @@ import { session } from '../session.js'
 import BoxCashSubwindow from '../components/Cahier_Entry.vue'
 import CahierContraModal from '../components/CahierContraModal.vue'
 
+import { generateCashierReport } from '../services/cashierReportExport.js'
+
 const router = useRouter()
 const localStorage = window.localStorage
 const showBoxCash = ref(false)
@@ -741,15 +743,6 @@ async function fetchTodayBills() {
 }
 
 async function exportToExcel() {
-  const xmlEscape = (str) => {
-    if (typeof str !== 'string') return str
-    return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&apos;')
-  }
-
   const types = ['Opening', 'Mid-Day-1', 'Mid-Day-2', 'Closing']
   const docs = {}
   
@@ -764,212 +757,20 @@ async function exportToExcel() {
     } catch (e) { console.warn(`[Cahier] Export ${t} fetch failed:`, e) }
   }))
 
-  const denoms = ['500', '200', '100', '50', '20', '10', '5', '2', '1']
-
-  // ── SHEET 1: DAILY CASH SUMMARY (Side-by-Side) ───────────────────
-  const billerName = xmlEscape(session.fullName.value || session.user.value || '')
-  const warehouse = xmlEscape(localStorage.getItem('wb-warehouse') || '')
-  const cashAccount = xmlEscape(localStorage.getItem('wb-cash') || '')
-  const costCenter = xmlEscape(localStorage.getItem('wb-cost-center') || '')
-
-  let summaryXML = `
-    <Worksheet ss:Name="Daily Cash Summary">
-      <Table>
-        <!-- Session Columns (A to P) -->
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <!-- Metadata Columns (Q to T) -->
-        <Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="100"/><Column ss:Width="150"/>
-        
-        <Row ss:Height="20">
-          ${types.map(t => `<Cell ss:MergeAcross="2" ss:StyleID="sHeader"><Data ss:Type="String">${t.toUpperCase()}</Data></Cell><Cell></Cell>`).join('')}
-          <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Biller Name:</Data></Cell>
-          <Cell><Data ss:Type="String">${billerName}</Data></Cell>
-        </Row>
-        <Row>
-          ${types.map(() => `<Cell ss:StyleID="sLabel"><Data ss:Type="String">Denom</Data></Cell><Cell ss:StyleID="sLabel"><Data ss:Type="String">Count</Data></Cell><Cell ss:StyleID="sLabel"><Data ss:Type="String">Value</Data></Cell><Cell></Cell>`).join('')}
-          <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Warehouse:</Data></Cell>
-          <Cell><Data ss:Type="String">${warehouse}</Data></Cell>
-        </Row>`
-
-  // Data Rows
-  denoms.forEach((d, idx) => {
-    summaryXML += `<Row>`
-    types.forEach(t => {
-      const doc = docs[t]
-      const count = doc ? Number(doc[d] || 0) : 0
-      const val = count * Number(d)
-      summaryXML += `
-        <Cell><Data ss:Type="Number">${d}</Data></Cell>
-        <Cell><Data ss:Type="Number">${count}</Data></Cell>
-        <Cell><Data ss:Type="Number">${val}</Data></Cell>
-        <Cell></Cell>`
-    })
-    
-    // Add Metadata side-by-side in Column Q
-    if (idx === 0) {
-      summaryXML += `
-        <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Cash Account:</Data></Cell>
-        <Cell><Data ss:Type="String">${cashAccount}</Data></Cell>`
-    } else if (idx === 1) {
-      summaryXML += `
-        <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Cost Center:</Data></Cell>
-        <Cell><Data ss:Type="String">${costCenter}</Data></Cell>`
-    }
-    
-    summaryXML += `</Row>`
+  generateCashierReport({
+    date: currentDate.value,
+    docs,
+    bills: filteredBills.value,
+    ledgerEntries: cashLedgerEntries.value,
+    ledgerOpening: cashLedgerOpening.value,
+    metadata: {
+      billerName: session.fullName.value || session.user.value || '',
+      warehouse: localStorage.getItem('wb-warehouse') || '',
+      cashAccount: localStorage.getItem('wb-cash') || '',
+      costCenter: localStorage.getItem('wb-cost-center') || ''
+    },
+    getMopAmount
   })
-
-  summaryXML += `<Row ss:Height="10"></Row>` // Spacer
-
-  // Total BOX row
-  summaryXML += `<Row>
-    ${types.map(t => {
-      const doc = docs[t]
-      return `<Cell ss:StyleID="sLabel"><Data ss:Type="String">TOTAL BOX</Data></Cell><Cell></Cell><Cell ss:StyleID="sLabel"><Data ss:Type="Number">${doc?.total || 0}</Data></Cell><Cell></Cell>`
-    }).join('')}
-  </Row>`
-
-  // Ledger Balance row
-  summaryXML += `<Row>
-    ${types.map(t => {
-      const doc = docs[t]
-      return `<Cell ss:StyleID="sLabel"><Data ss:Type="String">LEDGER BAL</Data></Cell><Cell></Cell><Cell ss:StyleID="sLabel"><Data ss:Type="Number">${doc?.cash_ledger_balance || 0}</Data></Cell><Cell></Cell>`
-    }).join('')}
-  </Row>`
-
-  // Difference and Status row
-  summaryXML += `<Row>
-    ${types.map(t => {
-      const doc = docs[t]
-      const diff = Number(doc?.difference || 0)
-      const status = diff === 0 ? 'Tally' : (diff > 0 ? 'Excess' : 'Short')
-      const style = diff >= 0 ? 'sGreen' : 'sRed'
-      return `
-        <Cell ss:StyleID="sLabel"><Data ss:Type="String">DIFFERENCE</Data></Cell>
-        <Cell></Cell>
-        <Cell ss:StyleID="${style}"><Data ss:Type="Number">${diff}</Data></Cell>
-        <Cell ss:StyleID="${style}"><Data ss:Type="String">${status}</Data></Cell>`
-    }).join('')}
-  </Row>`
-
-  summaryXML += `</Table></Worksheet>`
-
-  // ── SHEET 2: TODAY'S BILLS ─────────────────────────────────
-  let billsXML = `
-    <Worksheet ss:Name="Today Bills">
-      <Table>
-        <Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="80"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="60"/>
-        <Row ss:Height="18">
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Bill No</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Customer</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Total</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Cash</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">UPI</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Card</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Credit</Data></Cell>
-        </Row>`
-  filteredBills.value.forEach(bill => {
-    billsXML += `<Row>
-      <Cell><Data ss:Type="String">${xmlEscape(bill.name)}</Data></Cell>
-      <Cell><Data ss:Type="String">${xmlEscape(bill.customer)}</Data></Cell>
-      <Cell><Data ss:Type="Number">${bill.grand_total}</Data></Cell>
-      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'cash')}</Data></Cell>
-      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'upi')}</Data></Cell>
-      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'card')}</Data></Cell>
-      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'credit')}</Data></Cell>
-    </Row>`
-  })
-  billsXML += `<Row ss:Height="18">
-    <Cell ss:StyleID="sLabel"><Data ss:Type="String">TOTAL</Data></Cell>
-    <Cell></Cell>
-    <Cell ss:StyleID="sLabel"><Data ss:Type="Number">${totalSales.value}</Data></Cell>
-    <Cell ss:StyleID="sLabel"><Data ss:Type="Number">${billTotals.value.cash}</Data></Cell>
-    <Cell ss:StyleID="sLabel"><Data ss:Type="Number">${billTotals.value.upi}</Data></Cell>
-    <Cell ss:StyleID="sLabel"><Data ss:Type="Number">${billTotals.value.card}</Data></Cell>
-    <Cell ss:StyleID="sLabel"><Data ss:Type="Number">${billTotals.value.credit}</Data></Cell>
-  </Row>`
-  billsXML += `</Table></Worksheet>`
-
-  // ── SHEET 3: CASH LEDGER ───────────────────────────────────
-  let ledgerXML = `
-    <Worksheet ss:Name="Cash Ledger">
-      <Table>
-        <Column ss:Width="80"/><Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="100"/>
-        <Row ss:Height="18">
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Time</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Voucher No</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Party</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Debit (DR)</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Credit (CR)</Data></Cell>
-          <Cell ss:StyleID="sHeader"><Data ss:Type="String">Balance</Data></Cell>
-        </Row>
-        <Row>
-          <Cell></Cell>
-          <Cell ss:MergeAcross="3" ss:StyleID="sLabel"><Data ss:Type="String">OPENING BALANCE</Data></Cell>
-          <Cell ss:StyleID="sLabel"><Data ss:Type="Number">${cashLedgerOpening.value}</Data></Cell>
-        </Row>`
-  cashLedgerEntries.value.forEach(entry => {
-    ledgerXML += `<Row>
-      <Cell><Data ss:Type="String">${xmlEscape(entry.time)}</Data></Cell>
-      <Cell><Data ss:Type="String">${xmlEscape(entry.voucher_no)}</Data></Cell>
-      <Cell><Data ss:Type="String">${xmlEscape(entry.party || '')}</Data></Cell>
-      <Cell><Data ss:Type="Number">${entry.debit || 0}</Data></Cell>
-      <Cell><Data ss:Type="Number">${entry.credit || 0}</Data></Cell>
-      <Cell><Data ss:Type="Number">${entry.balance || 0}</Data></Cell>
-    </Row>`
-  })
-  ledgerXML += `</Table></Worksheet>`
-
-  // Assemble the SpreadsheetML
-  const finalXML = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
- <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-  <Author>Gemini CLI</Author>
-  <Created>${new Date().toISOString()}</Created>
- </DocumentProperties>
- <Styles>
-  <Style ss:ID="sHeader">
-   <Font ss:Bold="1" ss:Size="11" ss:Color="#FFFFFF"/>
-   <Interior ss:Color="#1e293b" ss:Pattern="Solid"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-   <Borders>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="sLabel">
-   <Font ss:Bold="1"/>
-  </Style>
-  <Style ss:ID="sRed">
-   <Font ss:Color="#FF0000" ss:Bold="1"/>
-   <Alignment ss:Horizontal="Right"/>
-  </Style>
-  <Style ss:ID="sGreen">
-   <Font ss:Color="#10b981" ss:Bold="1"/>
-   <Alignment ss:Horizontal="Right"/>
-  </Style>
- </Styles>
- ${summaryXML}
- ${billsXML}
- ${ledgerXML}
-</Workbook>`
-
-  const blob = new Blob([finalXML], { type: 'application/vnd.ms-excel' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.setAttribute('href', url)
-  link.setAttribute('download', `Cashier_Report_${currentDate.value}.xls`)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
 }
 
 onMounted(async () => {
