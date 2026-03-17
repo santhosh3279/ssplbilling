@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "feather-icons": "^4.28.0",
     "frappe-ui": "^0.0.105",
     "nord": "^0.2.1",
