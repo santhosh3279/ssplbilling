@@ -211,14 +211,16 @@
             <div class="flex items-center gap-6 border-l border-gray-800 pl-8">
               <div class="space-y-1">
                 <p class="text-[9px] font-black uppercase tracking-widest text-gray-500">{{ mop }} Balance</p>
-                <p class="font-mono text-xs font-black text-gray-300">{{ formatBalance(mopBalance) }}</p>
+                <p class="font-mono text-xs font-black text-gray-300">{{ formatBalance(allMopInfo[mop]?.balance) }}</p>
               </div>
               <div class="text-gray-800">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </div>
               <div class="space-y-1">
                 <p class="text-[9px] font-black uppercase tracking-widest text-emerald-400">Projected</p>
-                <p class="font-mono text-xs font-black text-emerald-400">{{ formatBalance(newMopBalance) }}</p>
+                <p class="font-mono text-xs font-black text-emerald-400">
+                  {{ formatBalance((allMopInfo[mop]?.balance || 0) + (entryMode === 'Receive' ? (amount || 0) : -(amount || 0))) }}
+                </p>
               </div>
             </div>
           </div>
@@ -315,9 +317,9 @@
                   : 'border-gray-700 bg-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-300'"
               >
                 <span>{{ m }}</span>
-                <span v-if="allMopBalances[m] !== undefined" class="text-[8px] font-mono mt-0.5 opacity-80"
-                  :class="mop === m && !selectedLedger ? 'text-blue-100' : 'text-gray-400'">
-                  {{ formatBalance(allMopBalances[m]).replace('₹', '') }}
+                <span v-if="allMopInfo[m]" class="text-[7px] font-bold mt-0.5 opacity-80 leading-tight px-1 text-center truncate w-full"
+                  :class="mop === m && !selectedLedger ? 'text-blue-100' : 'text-gray-500'">
+                  {{ allMopInfo[m].account }}
                 </span>
               </button>
             </div>
@@ -526,8 +528,7 @@ const date = ref(getTodayIST())
 const party = ref('')
 const partyName = ref('')
 const ledgerBalance = ref(0)
-const mopBalance = ref(0)
-const allMopBalances = ref({})
+const allMopInfo = ref({})
 const amount = ref(0)
 const mop = ref('Cash')
 const referenceNo = ref('')
@@ -593,16 +594,6 @@ const newBalance = computed(() => {
     return ledgerBalance.value - (amount.value || 0)
   } else {
     return ledgerBalance.value + (amount.value || 0)
-  }
-})
-
-const newMopBalance = computed(() => {
-  // If receiving (Receipt), MoP balance increases (Debit to MoP account)
-  // If paying (Payment), MoP balance reduces (Credit to MoP account)
-  if (entryMode.value === 'Receive') {
-    return mopBalance.value + (amount.value || 0)
-  } else {
-    return mopBalance.value - (amount.value || 0)
   }
 })
 
@@ -752,12 +743,12 @@ function removeInvoice(idx) {
   selectedInvoices.value.splice(idx, 1)
 }
 
-async function fetchAllMopBalances() {
+async function fetchAllMopInfo() {
   try {
-    allMopBalances.value = await frappeGet('ssplbilling.api.ledgerentry_api.get_mop_balances', {
+    allMopInfo.value = await frappeGet('ssplbilling.api.ledgerentry_api.get_mop_info', {
       mops: JSON.stringify(mops)
     })
-  } catch (e) { console.error('Failed to fetch all MoP balances:', e) }
+  } catch (e) { console.error('Failed to fetch all MoP info:', e) }
 }
 
 async function saveEntry() {
@@ -787,7 +778,7 @@ async function saveEntry() {
     await frappePost('ssplbilling.api.ledgerentry_api.create_payment_entry', { data: payload })
     alert('Entry saved successfully!')
     resetForm()
-    fetchAllMopBalances()
+    fetchAllMopInfo()
     nextTick(() => partyInput.value?.focus())
   } catch (e) { alert('Failed to save: ' + e.message) } finally { saving.value = false }
 }
@@ -827,7 +818,7 @@ function handleKeydown(e) {
 
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus())
-  window.addEventListener('keydown', handleKeydown); loadUserDefaults(); fetchAllMopBalances()
+  window.addEventListener('keydown', handleKeydown); loadUserDefaults(); fetchAllMopInfo()
   if (route.query.mode) entryMode.value = route.query.mode
   nextTick(() => partyInput.value?.focus())
 })
