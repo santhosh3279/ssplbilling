@@ -734,6 +734,7 @@ function handleKeydown(e) {
     if (showAllocationModal.value) { e.preventDefault(); showAllocationModal.value = false }
     else if (showLedgerWindow.value) { e.preventDefault(); showLedgerWindow.value = false }
     else if (showSearchModal.value) { e.preventDefault(); showSearchModal.value = false }
+    else { router.push('/') }
   }
 }
 
