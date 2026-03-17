@@ -22,10 +22,10 @@ def _get_mop_account(mode_of_payment):
     return account
 
 @frappe.whitelist()
-def get_outstanding_invoices(party, party_type="Customer"):
-    """Fetch outstanding invoices/bills for a given party, including current balance."""
+def get_outstanding_invoices(party, party_type="Customer", mop=None):
+    """Fetch outstanding invoices/bills for a given party, including current balance and MoP balance."""
     if not party:
-        return {"invoices": [], "balance": 0}
+        return {"invoices": [], "balance": 0, "mop_balance": 0}
 
     # Fetch ledger balance
     balance = 0
@@ -53,6 +53,22 @@ def get_outstanding_invoices(party, party_type="Customer"):
         )
         balance = float(balance_row[0].balance or 0) if balance_row else 0.0
 
+    # Fetch MoP Balance
+    mop_balance = 0
+    if mop:
+        mop_account = _get_mop_account(mop)
+        if mop_account:
+            mop_bal_row = frappe.db.sql(
+                """
+                SELECT COALESCE(SUM(debit) - SUM(credit), 0) as balance
+                FROM `tabGL Entry`
+                WHERE account = %s AND is_cancelled = 0
+                """,
+                (mop_account,),
+                as_dict=True,
+            )
+            mop_balance = float(mop_bal_row[0].balance or 0) if mop_bal_row else 0.0
+
     if party_type == "Employee":
         claims = frappe.get_all(
             "Expense Claim",
@@ -64,7 +80,7 @@ def get_outstanding_invoices(party, party_type="Customer"):
             c["outstanding_amount"] = float(c.get("total_claimed_amount") or 0) - float(c.get("total_amount_reimbursed") or 0)
         
         invoices = [c for c in claims if c["outstanding_amount"] > 0]
-        return {"invoices": invoices, "balance": balance}
+        return {"invoices": invoices, "balance": balance, "mop_balance": mop_balance}
 
     doctype = "Sales Invoice" if party_type == "Customer" else "Purchase Invoice"
     party_field = "customer" if party_type == "Customer" else "supplier"
@@ -76,7 +92,7 @@ def get_outstanding_invoices(party, party_type="Customer"):
         order_by="posting_date desc",
     )
     
-    return {"invoices": invoices, "balance": balance}
+    return {"invoices": invoices, "balance": balance, "mop_balance": mop_balance}
 
 @frappe.whitelist()
 def create_payment_entry(data):

@@ -254,17 +254,35 @@
           </div>
 
           <!-- Balance Summary (only if party is selected) -->
-          <div v-if="party" class="flex items-center justify-between rounded-xl bg-gray-800/50 border border-gray-700/50 px-5 py-2.5 transition-all">
-            <div class="space-y-1">
-              <p class="text-[9px] font-black uppercase tracking-widest text-gray-500">Current Bal</p>
-              <p class="font-mono text-xs font-black text-gray-200">₹{{ ledgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+          <div v-if="party" class="space-y-2">
+            <!-- Party Balance -->
+            <div class="flex items-center justify-between rounded-xl bg-gray-800/50 border border-gray-700/50 px-5 py-2.5 transition-all">
+              <div class="space-y-1">
+                <p class="text-[9px] font-black uppercase tracking-widest text-gray-500">{{ activePartyType }} Bal</p>
+                <p class="font-mono text-xs font-black text-gray-200">₹{{ ledgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+              </div>
+              <div class="text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </div>
+              <div class="text-right space-y-1">
+                <p class="text-[9px] font-black uppercase tracking-widest text-blue-400">New Bal</p>
+                <p class="font-mono text-xs font-black text-blue-300">₹{{ newBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+              </div>
             </div>
-            <div class="text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </div>
-            <div class="text-right space-y-1">
-              <p class="text-[9px] font-black uppercase tracking-widest text-blue-400">New Bal</p>
-              <p class="font-mono text-xs font-black text-blue-300">₹{{ newBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+
+            <!-- MoP Balance -->
+            <div class="flex items-center justify-between rounded-xl bg-gray-800/50 border border-gray-700/50 px-5 py-2.5 transition-all">
+              <div class="space-y-1">
+                <p class="text-[9px] font-black uppercase tracking-widest text-gray-500">{{ mop }} Bal</p>
+                <p class="font-mono text-xs font-black text-gray-200">₹{{ mopBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+              </div>
+              <div class="text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </div>
+              <div class="text-right space-y-1">
+                <p class="text-[9px] font-black uppercase tracking-widest text-emerald-400">New Bal</p>
+                <p class="font-mono text-xs font-black text-emerald-400">₹{{ newMopBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+              </div>
             </div>
           </div>
 
@@ -499,6 +517,7 @@ const date = ref(getTodayIST())
 const party = ref('')
 const partyName = ref('')
 const ledgerBalance = ref(0)
+const mopBalance = ref(0)
 const amount = ref(0)
 const mop = ref('Cash')
 const referenceNo = ref('')
@@ -564,6 +583,16 @@ const newBalance = computed(() => {
     return ledgerBalance.value - (amount.value || 0)
   } else {
     return ledgerBalance.value + (amount.value || 0)
+  }
+})
+
+const newMopBalance = computed(() => {
+  // If receiving (Receipt), MoP balance increases (Debit to MoP account)
+  // If paying (Payment), MoP balance reduces (Credit to MoP account)
+  if (entryMode.value === 'Receive') {
+    return mopBalance.value + (amount.value || 0)
+  } else {
+    return mopBalance.value - (amount.value || 0)
   }
 })
 
@@ -679,7 +708,7 @@ function cycleMop(dir) {
   selectMop(mops[(idx + dir + mops.length) % mops.length])
 }
 
-function selectMop(m) { mop.value = m; clearLedger() }
+function selectMop(m) { mop.value = m; clearLedger(); fetchOutstandings() }
 
 function openSearch() {
   showSearchModal.value = true
@@ -698,10 +727,11 @@ async function fetchOutstandings() {
   loadingOutstandings.value = true
   try {
     const res = await frappeGet('ssplbilling.api.ledgerentry_api.get_outstanding_invoices', {
-      party: party.value, party_type: activePartyType.value
+      party: party.value, party_type: activePartyType.value, mop: mop.value
     })
     outstandings.value = res.invoices || []
     ledgerBalance.value = res.balance || 0
+    mopBalance.value = res.mop_balance || 0
     allocations.value = {}
   } catch (e) { console.error(e) } finally { loadingOutstandings.value = false }
 }
