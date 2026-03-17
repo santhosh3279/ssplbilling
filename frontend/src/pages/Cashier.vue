@@ -775,37 +775,27 @@ async function exportToExcel() {
   let summaryXML = `
     <Worksheet ss:Name="Daily Cash Summary">
       <Table>
-        <!-- Metadata Columns -->
+        <!-- Session Columns (A to P) -->
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
+        <!-- Metadata Columns (Q to T) -->
         <Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="100"/><Column ss:Width="150"/>
-        <!-- Session Columns -->
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
         
-        <Row ss:Height="18">
-          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Biller Name:</Data></Cell>
-          <Cell><Data ss:Type="String">${billerName}</Data></Cell>
-          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Warehouse:</Data></Cell>
-          <Cell><Data ss:Type="String">${warehouse}</Data></Cell>
-        </Row>
-        <Row ss:Height="18">
-          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Cash Account:</Data></Cell>
-          <Cell><Data ss:Type="String">${cashAccount}</Data></Cell>
-          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Cost Center:</Data></Cell>
-          <Cell><Data ss:Type="String">${costCenter}</Data></Cell>
-        </Row>
-        <Row ss:Height="10"></Row>
-
         <Row ss:Height="20">
           ${types.map(t => `<Cell ss:MergeAcross="2" ss:StyleID="sHeader"><Data ss:Type="String">${t.toUpperCase()}</Data></Cell><Cell></Cell>`).join('')}
+          <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Biller Name:</Data></Cell>
+          <Cell><Data ss:Type="String">${billerName}</Data></Cell>
         </Row>
         <Row>
           ${types.map(() => `<Cell ss:StyleID="sLabel"><Data ss:Type="String">Denom</Data></Cell><Cell ss:StyleID="sLabel"><Data ss:Type="String">Count</Data></Cell><Cell ss:StyleID="sLabel"><Data ss:Type="String">Value</Data></Cell><Cell></Cell>`).join('')}
+          <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Warehouse:</Data></Cell>
+          <Cell><Data ss:Type="String">${warehouse}</Data></Cell>
         </Row>`
 
   // Data Rows
-  denoms.forEach(d => {
+  denoms.forEach((d, idx) => {
     summaryXML += `<Row>`
     types.forEach(t => {
       const doc = docs[t]
@@ -817,6 +807,18 @@ async function exportToExcel() {
         <Cell><Data ss:Type="Number">${val}</Data></Cell>
         <Cell></Cell>`
     })
+    
+    // Add Metadata side-by-side in Column Q
+    if (idx === 0) {
+      summaryXML += `
+        <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Cash Account:</Data></Cell>
+        <Cell><Data ss:Type="String">${cashAccount}</Data></Cell>`
+    } else if (idx === 1) {
+      summaryXML += `
+        <Cell ss:Index="17" ss:StyleID="sLabel"><Data ss:Type="String">Cost Center:</Data></Cell>
+        <Cell><Data ss:Type="String">${costCenter}</Data></Cell>`
+    }
+    
     summaryXML += `</Row>`
   })
 
