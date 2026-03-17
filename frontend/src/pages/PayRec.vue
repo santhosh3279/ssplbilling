@@ -292,10 +292,14 @@ const searchInitialType = computed(() => {
 })
 
 const searchFilterList = computed(() => {
-  // Only filter accounts in the second row (or beyond) if they are supposed to be Cash/Bank accounts from settings
-  if (activeRowIdx.value > 0 && userSettings.value?.user_defaults) {
-    const defaults = userSettings.value.user_defaults
-    return [defaults.cash, defaults.bank, defaults.upi, defaults.card].filter(Boolean)
+  // Only filter accounts in the second row (or beyond)
+  if (activeRowIdx.value > 0) {
+    return [
+      localStorage.getItem('wb-cash'),
+      localStorage.getItem('wb-card'),
+      localStorage.getItem('wb-upi'),
+      localStorage.getItem('wb-bank')
+    ].filter(Boolean)
   }
   return null
 })
@@ -410,12 +414,10 @@ function fmt(val) {
 }
 
 function getResolvedLabel(accountName) {
-  if (!userSettings.value?.user_defaults) return null
-  const d = userSettings.value.user_defaults
-  if (accountName === d.cash) return 'CASH'
-  if (accountName === d.bank || accountName === d.bank_account) return 'BANK'
-  if (accountName === d.upi) return 'UPI'
-  if (accountName === d.card) return 'CARD'
+  if (accountName === localStorage.getItem('wb-cash')) return localStorage.getItem('wb-cash-mop') || 'CASH'
+  if (accountName === localStorage.getItem('wb-bank')) return localStorage.getItem('wb-bank-mop') || 'BANK'
+  if (accountName === localStorage.getItem('wb-upi')) return localStorage.getItem('wb-upi-mop') || 'UPI'
+  if (accountName === localStorage.getItem('wb-card')) return localStorage.getItem('wb-card-mop') || 'CARD'
   return null
 }
 
