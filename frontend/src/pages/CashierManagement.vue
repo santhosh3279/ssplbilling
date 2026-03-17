@@ -477,27 +477,27 @@
               />
             </div>
           </div>
-          <div class="flex gap-3 pt-2">
-            <button 
-              @click="showBankRefModal = false"
-              class="flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="confirmBankRef"
-              :disabled="!bankRefNo"
-              class="flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-700 shadow-lg shadow-sky-100 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              Confirm & Post
-            </button>
+            <div class="flex gap-3 pt-2">
+              <button 
+                @click="showBankRefModal = false"
+                class="flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95"
+              >
+                Cancel
+              </button>
+              <button 
+                @click="confirmBankRef"
+                :disabled="!bankRefNo"
+                class="flex-1 rounded-2xl py-4 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-700 shadow-lg shadow-sky-100 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                Confirm & Post
+              </button>
+            </div>
           </div>
         </div>
-      </main>
       </div>
 
-      <!-- DAY OPENING CHECK MODAL -->
-      <transition name="fade">
+    <!-- DAY OPENING CHECK MODAL -->
+    <transition name="fade">
       <div v-if="showOpeningRequiredModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
         <div class="w-full max-w-md overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
           <div class="bg-amber-50 p-6 flex flex-col items-center text-center">
@@ -526,9 +526,9 @@
           </div>
         </div>
       </div>
-      </transition>
-      </div>
-      </template>
+    </transition>
+  </div>
+</template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
