@@ -23,9 +23,35 @@ def _get_mop_account(mode_of_payment):
 
 @frappe.whitelist()
 def get_outstanding_invoices(party, party_type="Customer"):
-    """Fetch outstanding invoices/bills for a given party."""
+    """Fetch outstanding invoices/bills for a given party, including current balance."""
     if not party:
-        return []
+        return {"invoices": [], "balance": 0}
+
+    # Fetch ledger balance
+    balance = 0
+    if party_type in ["Customer", "Supplier", "Employee"]:
+        balance_row = frappe.db.sql(
+            """
+            SELECT COALESCE(SUM(debit) - SUM(credit), 0) as balance
+            FROM `tabGL Entry`
+            WHERE party_type = %s AND party = %s AND is_cancelled = 0
+            """,
+            (party_type, party),
+            as_dict=True,
+        )
+        balance = float(balance_row[0].balance or 0) if balance_row else 0.0
+    else:
+        # Fallback for Account type if needed
+        balance_row = frappe.db.sql(
+            """
+            SELECT COALESCE(SUM(debit) - SUM(credit), 0) as balance
+            FROM `tabGL Entry`
+            WHERE account = %s AND (party IS NULL OR party = '') AND is_cancelled = 0
+            """,
+            (party,),
+            as_dict=True,
+        )
+        balance = float(balance_row[0].balance or 0) if balance_row else 0.0
 
     if party_type == "Employee":
         claims = frappe.get_all(
@@ -36,17 +62,21 @@ def get_outstanding_invoices(party, party_type="Customer"):
         )
         for c in claims:
             c["outstanding_amount"] = float(c.get("total_claimed_amount") or 0) - float(c.get("total_amount_reimbursed") or 0)
-        return [c for c in claims if c["outstanding_amount"] > 0]
+        
+        invoices = [c for c in claims if c["outstanding_amount"] > 0]
+        return {"invoices": invoices, "balance": balance}
 
     doctype = "Sales Invoice" if party_type == "Customer" else "Purchase Invoice"
     party_field = "customer" if party_type == "Customer" else "supplier"
 
-    return frappe.get_all(
+    invoices = frappe.get_all(
         doctype,
         filters={party_field: party, "docstatus": 1, "outstanding_amount": [">", 0]},
         fields=["name", "posting_date", "grand_total", "outstanding_amount"],
         order_by="posting_date desc",
     )
+    
+    return {"invoices": invoices, "balance": balance}
 
 @frappe.whitelist()
 def create_payment_entry(data):

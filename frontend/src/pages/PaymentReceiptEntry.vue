@@ -32,7 +32,12 @@
         <!-- Panel header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
           <div>
-            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Outstanding Invoices</p>
+            <div class="flex items-center gap-2">
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Outstanding Invoices</p>
+              <span v-if="party" class="px-2 py-0.5 rounded-full bg-blue-950 text-blue-400 text-[10px] font-black font-mono border border-blue-900/50">
+                Bal: ₹{{ ledgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+              </span>
+            </div>
             <p v-if="party" class="text-sm font-black text-white mt-0.5">{{ partyName }}</p>
             <p v-else class="text-sm font-bold text-gray-600 italic mt-0.5">No party selected</p>
           </div>
@@ -143,9 +148,9 @@
 
               <!-- Outstanding amount -->
               <div class="text-right shrink-0">
-                <div class="text-xs font-mono font-black text-gray-600">₹{{ inv.outstanding_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</div>
+                <div class="text-xs font-mono font-black" :class="allocations[inv.name] > 0 ? 'text-gray-400' : 'text-gray-600'">₹{{ inv.outstanding_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</div>
                 <div v-if="allocations[inv.name] > 0" class="text-[10px] font-mono font-black text-blue-400 mt-0.5">
-                  −₹{{ Number(allocations[inv.name]).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                  Final: ₹{{ (inv.outstanding_amount - Number(allocations[inv.name])).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </div>
               </div>
 
@@ -478,6 +483,7 @@ const entryMode = ref(route.query.mode || 'Receive')
 const date = ref(getTodayIST())
 const party = ref('')
 const partyName = ref('')
+const ledgerBalance = ref(0)
 const amount = ref(0)
 const mop = ref('Cash')
 const referenceNo = ref('')
@@ -666,9 +672,11 @@ async function fetchOutstandings() {
   if (!party.value) return
   loadingOutstandings.value = true
   try {
-    outstandings.value = await frappeGet('ssplbilling.api.ledgerentry_api.get_outstanding_invoices', {
+    const res = await frappeGet('ssplbilling.api.ledgerentry_api.get_outstanding_invoices', {
       party: party.value, party_type: activePartyType.value
     })
+    outstandings.value = res.invoices || []
+    ledgerBalance.value = res.balance || 0
     allocations.value = {}
   } catch (e) { console.error(e) } finally { loadingOutstandings.value = false }
 }
