@@ -276,7 +276,7 @@
       <!-- end BOX Cash table card -->
 
       <!-- Export Button -->
-      <button @click="exportToExcel" :disabled="!filteredBills.length"
+      <button @click="exportToExcel"
         class="flex items-center justify-center gap-2 rounded-xl border border-emerald-700/50 bg-emerald-900/20 px-4 py-3 text-xs font-black uppercase tracking-widest text-emerald-400 transition hover:bg-emerald-900/40 active:scale-95 disabled:opacity-30 disabled:grayscale shadow-lg shadow-emerald-900/20">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export Today's Bills to Excel
@@ -516,6 +516,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+import { session } from '../session.js'
 import BoxCashSubwindow from '../components/Cahier_Entry.vue'
 import CahierContraModal from '../components/CahierContraModal.vue'
 
@@ -739,41 +740,128 @@ async function fetchTodayBills() {
   }
 }
 
-function exportToExcel() {
-  if (!filteredBills.value.length) return
+async function exportToExcel() {
+  // Fetch opening doc for denominations
+  let openingDoc = null
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cashier_opening', {
+      date: currentDate.value,
+      user: session.user.value,
+      opening_or_closing: 'Opening'
+    })
+    openingDoc = res?.message || res
+  } catch (e) { console.warn('[Cahier] Export opening fetch failed:', e) }
 
-  const headers = ['Bill No', 'Customer', 'Total', 'Cash', 'UPI', 'Card', 'Credit']
-  const rows = filteredBills.value.map(bill => [
-    bill.name,
-    bill.customer,
-    bill.grand_total,
-    getMopAmount(bill, 'cash'),
-    getMopAmount(bill, 'upi'),
-    getMopAmount(bill, 'card'),
-    getMopAmount(bill, 'credit')
-  ])
+  // ── SHEET 1: OPENING DENOMINATIONS ─────────────────────────
+  const denoms = ['500', '200', '100', '50', '20', '10', '5', '2', '1']
+  let openingXML = `
+    <Worksheet ss:Name="Opening Denominations">
+      <Table>
+        <Row><Cell><Data ss:Type="String">Denomination</Data></Cell><Cell><Data ss:Type="String">Count</Data></Cell><Cell><Data ss:Type="String">Value</Data></Cell></Row>`
+  if (openingDoc) {
+    denoms.forEach(d => {
+      const count = Number(openingDoc[d] || 0)
+      const val = count * Number(d)
+      openingXML += `<Row>
+        <Cell><Data ss:Type="Number">${d}</Data></Cell>
+        <Cell><Data ss:Type="Number">${count}</Data></Cell>
+        <Cell><Data ss:Type="Number">${val}</Data></Cell>
+      </Row>`
+    })
+    openingXML += `<Row><Cell></Cell><Cell><Data ss:Type="String">TOTAL BOX</Data></Cell><Cell><Data ss:Type="Number">${openingDoc.total || 0}</Data></Cell></Row>`
+    openingXML += `<Row><Cell></Cell><Cell><Data ss:Type="String">LEDGER BALANCE</Data></Cell><Cell><Data ss:Type="Number">${openingDoc.cash_ledger_balance || 0}</Data></Cell></Row>`
+    openingXML += `<Row><Cell></Cell><Cell><Data ss:Type="String">DIFFERENCE</Data></Cell><Cell><Data ss:Type="Number">${openingDoc.difference || 0}</Data></Cell></Row>`
+  } else {
+    openingXML += `<Row><Cell ss:MergeAcross="2"><Data ss:Type="String">No opening record found for this date/user.</Data></Cell></Row>`
+  }
+  openingXML += `</Table></Worksheet>`
 
-  // Add totals row
-  rows.push([
-    'TOTAL',
-    '',
-    totalSales.value,
-    billTotals.value.cash,
-    billTotals.value.upi,
-    billTotals.value.card,
-    billTotals.value.credit
-  ])
+  // ── SHEET 2: TODAY'S BILLS ─────────────────────────────────
+  let billsXML = `
+    <Worksheet ss:Name="Today Bills">
+      <Table>
+        <Row>
+          <Cell><Data ss:Type="String">Bill No</Data></Cell>
+          <Cell><Data ss:Type="String">Customer</Data></Cell>
+          <Cell><Data ss:Type="String">Total</Data></Cell>
+          <Cell><Data ss:Type="String">Cash</Data></Cell>
+          <Cell><Data ss:Type="String">UPI</Data></Cell>
+          <Cell><Data ss:Type="String">Card</Data></Cell>
+          <Cell><Data ss:Type="String">Credit</Data></Cell>
+        </Row>`
+  filteredBills.value.forEach(bill => {
+    billsXML += `<Row>
+      <Cell><Data ss:Type="String">${bill.name}</Data></Cell>
+      <Cell><Data ss:Type="String">${bill.customer}</Data></Cell>
+      <Cell><Data ss:Type="Number">${bill.grand_total}</Data></Cell>
+      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'cash')}</Data></Cell>
+      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'upi')}</Data></Cell>
+      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'card')}</Data></Cell>
+      <Cell><Data ss:Type="Number">${getMopAmount(bill, 'credit')}</Data></Cell>
+    </Row>`
+  })
+  billsXML += `<Row>
+    <Cell><Data ss:Type="String">TOTAL</Data></Cell>
+    <Cell></Cell>
+    <Cell><Data ss:Type="Number">${totalSales.value}</Data></Cell>
+    <Cell><Data ss:Type="Number">${billTotals.value.cash}</Data></Cell>
+    <Cell><Data ss:Type="Number">${billTotals.value.upi}</Data></Cell>
+    <Cell><Data ss:Type="Number">${billTotals.value.card}</Data></Cell>
+    <Cell><Data ss:Type="Number">${billTotals.value.credit}</Data></Cell>
+  </Row>`
+  billsXML += `</Table></Worksheet>`
 
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-  ].join('\n')
+  // ── SHEET 3: CASH LEDGER ───────────────────────────────────
+  let ledgerXML = `
+    <Worksheet ss:Name="Cash Ledger">
+      <Table>
+        <Row>
+          <Cell><Data ss:Type="String">Time</Data></Cell>
+          <Cell><Data ss:Type="String">Voucher No</Data></Cell>
+          <Cell><Data ss:Type="String">Party</Data></Cell>
+          <Cell><Data ss:Type="String">Debit (DR)</Data></Cell>
+          <Cell><Data ss:Type="String">Credit (CR)</Data></Cell>
+          <Cell><Data ss:Type="String">Balance</Data></Cell>
+        </Row>
+        <Row>
+          <Cell></Cell>
+          <Cell ss:MergeAcross="3"><Data ss:Type="String">OPENING BALANCE</Data></Cell>
+          <Cell><Data ss:Type="Number">${cashLedgerOpening.value}</Data></Cell>
+        </Row>`
+  cashLedgerEntries.value.forEach(entry => {
+    ledgerXML += `<Row>
+      <Cell><Data ss:Type="String">${entry.time}</Data></Cell>
+      <Cell><Data ss:Type="String">${entry.voucher_no}</Data></Cell>
+      <Cell><Data ss:Type="String">${entry.party || ''}</Data></Cell>
+      <Cell><Data ss:Type="Number">${entry.debit || 0}</Data></Cell>
+      <Cell><Data ss:Type="Number">${entry.credit || 0}</Data></Cell>
+      <Cell><Data ss:Type="Number">${entry.balance || 0}</Data></Cell>
+    </Row>`
+  })
+  ledgerXML += `</Table></Worksheet>`
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  // Assemble the SpreadsheetML
+  const finalXML = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>Gemini CLI</Author>
+  <Created>${new Date().toISOString()}</Created>
+ </DocumentProperties>
+ ${openingXML}
+ ${billsXML}
+ ${ledgerXML}
+</Workbook>`
+
+  const blob = new Blob([finalXML], { type: 'application/vnd.ms-excel' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.setAttribute('href', url)
-  link.setAttribute('download', `Cashier_Bills_${currentDate.value}.csv`)
+  link.setAttribute('download', `Cashier_Report_${currentDate.value}.xls`)
   link.style.visibility = 'hidden'
   document.body.appendChild(link)
   link.click()
