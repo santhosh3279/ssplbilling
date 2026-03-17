@@ -758,9 +758,30 @@ async function exportToExcel() {
   const denoms = ['500', '200', '100', '50', '20', '10', '5', '2', '1']
 
   // ── SHEET 1: DAILY CASH SUMMARY (Side-by-Side) ───────────────────
+  const billerName = session.fullName.value || session.user.value || ''
+  const warehouse = localStorage.getItem('wb-warehouse') || ''
+  const cashAccount = localStorage.getItem('wb-cash') || ''
+  const costCenter = localStorage.getItem('wb-cost-center') || ''
+
   let summaryXML = `
     <Worksheet ss:Name="Daily Cash Summary">
       <Table>
+        <Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="100"/><Column ss:Width="150"/>
+        
+        <Row ss:Height="18">
+          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Biller Name:</Data></Cell>
+          <Cell><Data ss:Type="String">${billerName}</Data></Cell>
+          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Warehouse:</Data></Cell>
+          <Cell><Data ss:Type="String">${warehouse}</Data></Cell>
+        </Row>
+        <Row ss:Height="18">
+          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Cash Account:</Data></Cell>
+          <Cell><Data ss:Type="String">${cashAccount}</Data></Cell>
+          <Cell ss:StyleID="sLabel"><Data ss:Type="String">Cost Center:</Data></Cell>
+          <Cell><Data ss:Type="String">${costCenter}</Data></Cell>
+        </Row>
+        <Row ss:Height="10"></Row>
+
         <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
         <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
         <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
