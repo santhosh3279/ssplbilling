@@ -541,30 +541,6 @@ import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 const { user: currentUser } = session
 const showOpeningRequiredModal = ref(false)
 
-async function checkDayOpening() {
-  if (!session.user.value) return
-  // Only check and show modal if we are on Today
-  if (filterDate.value !== getTodayIST()) {
-    showOpeningRequiredModal.value = false
-    return
-  }
-
-  try {
-    const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
-      date: getTodayIST(),
-      user: session.user.value
-    })
-    showOpeningRequiredModal.value = !hasOpening
-  } catch (e) {
-    console.error('[CashierManagement] Opening check failed:', e)
-  }
-}
-
-// Watch filterDate to re-check opening requirement
-watch(filterDate, () => {
-  checkDayOpening()
-})
-
 // ==================== USER ====================
 const userInitials = computed(() => {
   const name = String(session.fullName.value || session.user.value || 'U')
@@ -615,6 +591,30 @@ const seriesAccounts = ref({
   upi: '',
   bank: '',
   discount: ''
+})
+
+async function checkDayOpening() {
+  if (!session.user.value) return
+  // Only check and show modal if we are on Today
+  if (filterDate.value !== getTodayIST()) {
+    showOpeningRequiredModal.value = false
+    return
+  }
+
+  try {
+    const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
+      date: getTodayIST(),
+      user: session.user.value
+    })
+    showOpeningRequiredModal.value = !hasOpening
+  } catch (e) {
+    console.error('[CashierManagement] Opening check failed:', e)
+  }
+}
+
+// Watch filterDate to re-check opening requirement
+watch(filterDate, () => {
+  checkDayOpening()
 })
 
 // --- SHORTCUT HANDLERS ---
