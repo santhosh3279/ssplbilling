@@ -914,7 +914,8 @@ async function processPayment() {
     } catch (e) { console.error(e) }
   }
 
-  // If bank transfer is used but no ref number, ask for it  if (Number(payments.value.bank) > 0.01 && !bankRefNo.value) {
+  // If bank transfer is used but no ref number, ask for it
+  if (Number(payments.value.bank) > 0.01 && !bankRefNo.value) {
     showBankRefModal.value = true
     nextTick(() => bankRefInput.value?.focus())
     return
