@@ -242,6 +242,7 @@
       :show="showSearchModal"
       :allowed-types="['Account', 'Customer', 'Supplier', 'Employee']"
       :initial-type="searchInitialType"
+      :filter-list="searchFilterList"
       :skip-date-filter="true"
       @close="showSearchModal = false"
       @select="selectLedger"
@@ -256,11 +257,13 @@ import { frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { useShortcuts } from '../services/shortcutManager'
 import { payrecShortcuts } from '../shortcuts/payrecShortcuts'
+import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
 
 // --- STATE ---
 const isReceipt = ref(true)
+const userSettings = ref(null)
 
 watch(isReceipt, () => {
   rows.value = [
@@ -271,8 +274,22 @@ watch(isReceipt, () => {
 })
 
 const searchInitialType = computed(() => {
-  if (activeRowIdx.value === 0) return 'Account'
-  return isReceipt.value ? 'Customer' : 'Supplier'
+  if (isReceipt.value) {
+    if (activeRowIdx.value === 0) return 'Customer'
+    return 'Account'
+  }
+  // Payment Mode
+  if (activeRowIdx.value === 0) return 'Supplier'
+  return 'Account'
+})
+
+const searchFilterList = computed(() => {
+  // Only filter accounts in the second row (or beyond) if they are supposed to be Cash/Bank accounts from settings
+  if (activeRowIdx.value > 0 && userSettings.value?.user_defaults) {
+    const defaults = userSettings.value.user_defaults
+    return [defaults.cash, defaults.bank, defaults.upi, defaults.card].filter(Boolean)
+  }
+  return null
 })
 
 function getTodayIST() {
@@ -481,6 +498,12 @@ function moveNext(idx, field) {
     const el = creditRefs[idx]
     if (el) { el.focus(); el.select() }
   } else if (field === 'credit') {
+    if (idx === 0 && Number(rows.value[0].credit) > 0.005) {
+      if (rows.value.length < 2) addRow()
+      activeRowIdx.value = 1
+      openLedgerSearch(1)
+      return
+    }
     if (idx === rows.value.length - 1) addRow()
     else activeRowIdx.value = idx + 1
     nextTick(() => ledgerRefs[activeRowIdx.value]?.focus())
@@ -491,8 +514,16 @@ function handleRemarksEnter() {
   saveButton.value?.focus()
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
+  
+  // Load settings for allowed accounts
+  try {
+    userSettings.value = await dashboardApi.getBillingSettings()
+  } catch (e) {
+    console.warn('Failed to load user settings:', e)
+  }
+
   useShortcuts(payrecShortcuts({
     switchToReceipt: () => { isReceipt.value = true },
     switchToPayment: () => { isReceipt.value = false },

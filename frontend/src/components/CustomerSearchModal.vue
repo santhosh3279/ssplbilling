@@ -290,7 +290,8 @@ const props = defineProps({
   show: Boolean,
   skipDateFilter: { type: Boolean, default: false },
   initialType: { type: String, default: 'All' },
-  allowedTypes: { type: Array, default: () => ['Customer', 'Supplier', 'Employee', 'Account'] }
+  allowedTypes: { type: Array, default: () => ['Customer', 'Supplier', 'Employee', 'Account'] },
+  filterList: { type: Array, default: null }
 })
 
 const availableTabs = computed(() => [...new Set(['All', ...props.allowedTypes])])
@@ -357,6 +358,12 @@ async function preloadLedger() {
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
   let list = allLedgers.value.filter(l => props.allowedTypes.includes(l.type))
+  
+  // Filter by allowed names if filterList is provided
+  if (props.filterList && props.filterList.length > 0) {
+    list = list.filter(l => props.filterList.includes(l.name))
+  }
+
   if (activeType.value !== 'All') list = list.filter(l => l.type === activeType.value)
   if (!q) return list
   return list.filter(l =>
