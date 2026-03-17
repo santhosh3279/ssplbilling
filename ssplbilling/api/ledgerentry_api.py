@@ -95,6 +95,30 @@ def get_outstanding_invoices(party, party_type="Customer", mop=None):
     return {"invoices": invoices, "balance": balance, "mop_balance": mop_balance}
 
 @frappe.whitelist()
+def get_mop_balances(mops):
+    """Fetch current ledger balances for a list of modes of payment."""
+    if isinstance(mops, str):
+        mops = json.loads(mops)
+    
+    balances = {}
+    for m in mops:
+        account = _get_mop_account(m)
+        if account:
+            bal_row = frappe.db.sql(
+                """
+                SELECT COALESCE(SUM(debit) - SUM(credit), 0) as balance
+                FROM `tabGL Entry`
+                WHERE account = %s AND is_cancelled = 0
+                """,
+                (account,),
+                as_dict=True,
+            )
+            balances[m] = float(bal_row[0].balance or 0) if bal_row else 0.0
+        else:
+            balances[m] = 0.0
+    return balances
+
+@frappe.whitelist()
 def create_payment_entry(data):
     """Create and submit a Payment Entry."""
     if isinstance(data, str):

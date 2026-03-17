@@ -309,12 +309,16 @@
                 v-for="m in mops"
                 :key="m"
                 @click="selectMop(m); mopZoneRef?.focus()"
-                class="rounded-xl border-2 py-2.5 text-xs font-black uppercase tracking-widest transition-all"
+                class="flex flex-col items-center justify-center rounded-xl border-2 py-1.5 text-xs font-black uppercase tracking-widest transition-all"
                 :class="mop === m && !selectedLedger
                   ? 'border-blue-500 bg-blue-600 text-white'
                   : 'border-gray-700 bg-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-300'"
               >
-                {{ m }}
+                <span>{{ m }}</span>
+                <span v-if="allMopBalances[m] !== undefined" class="text-[8px] font-mono mt-0.5 opacity-80"
+                  :class="mop === m && !selectedLedger ? 'text-blue-100' : 'text-gray-400'">
+                  {{ formatBalance(allMopBalances[m]).replace('₹', '') }}
+                </span>
               </button>
             </div>
           </div>
@@ -523,6 +527,7 @@ const party = ref('')
 const partyName = ref('')
 const ledgerBalance = ref(0)
 const mopBalance = ref(0)
+const allMopBalances = ref({})
 const amount = ref(0)
 const mop = ref('Cash')
 const referenceNo = ref('')
@@ -747,6 +752,14 @@ function removeInvoice(idx) {
   selectedInvoices.value.splice(idx, 1)
 }
 
+async function fetchAllMopBalances() {
+  try {
+    allMopBalances.value = await frappeGet('ssplbilling.api.ledgerentry_api.get_mop_balances', {
+      mops: JSON.stringify(mops)
+    })
+  } catch (e) { console.error('Failed to fetch all MoP balances:', e) }
+}
+
 async function saveEntry() {
   if (!canSave.value || saving.value) return
   saving.value = true
@@ -774,6 +787,7 @@ async function saveEntry() {
     await frappePost('ssplbilling.api.ledgerentry_api.create_payment_entry', { data: payload })
     alert('Entry saved successfully!')
     resetForm()
+    fetchAllMopBalances()
     nextTick(() => partyInput.value?.focus())
   } catch (e) { alert('Failed to save: ' + e.message) } finally { saving.value = false }
 }
@@ -813,7 +827,7 @@ function handleKeydown(e) {
 
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus())
-  window.addEventListener('keydown', handleKeydown); loadUserDefaults()
+  window.addEventListener('keydown', handleKeydown); loadUserDefaults(); fetchAllMopBalances()
   if (route.query.mode) entryMode.value = route.query.mode
   nextTick(() => partyInput.value?.focus())
 })
