@@ -17,6 +17,13 @@ export async function generateCashierReport(data) {
   const types = ['Opening', 'Mid-Day-1', 'Mid-Day-2', 'Closing']
   const denoms = ['500', '200', '100', '50', '20', '10', '5', '2', '1']
 
+  const thinBorder = {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' }
+  }
+
   // Session Headers (Row 1)
   types.forEach((t, i) => {
     const col = i * 4 + 1
@@ -26,6 +33,10 @@ export async function generateCashierReport(data) {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
     cell.alignment = { horizontal: 'center' }
+    // Apply borders to merged range
+    for (let c = col; c <= col + 2; c++) {
+      summarySheet.getCell(1, c).border = thinBorder
+    }
   })
 
   // Sub Headers (Row 2)
@@ -37,7 +48,7 @@ export async function generateCashierReport(data) {
       cell.value = sh
       cell.font = { bold: true }
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
-      cell.border = { bottom: { style: 'thin' } }
+      cell.border = thinBorder
     })
   })
 
@@ -49,9 +60,15 @@ export async function generateCashierReport(data) {
       const doc = docs[t]
       const count = doc ? Number(doc[d] || 0) : 0
       const val = count * Number(d)
-      summarySheet.getCell(row, col).value = Number(d)
-      summarySheet.getCell(row, col + 1).value = count
-      summarySheet.getCell(row, col + 2).value = val
+      const c1 = summarySheet.getCell(row, col)
+      c1.value = Number(d)
+      c1.border = thinBorder
+      const c2 = summarySheet.getCell(row, col + 1)
+      c2.value = count
+      c2.border = thinBorder
+      const c3 = summarySheet.getCell(row, col + 2)
+      c3.value = val
+      c3.border = thinBorder
     })
   })
 
@@ -65,26 +82,40 @@ export async function generateCashierReport(data) {
     const totalCellLabel = summarySheet.getCell(footerStart, col)
     totalCellLabel.value = 'TOTAL BOX'
     totalCellLabel.font = { bold: true }
-    summarySheet.getCell(footerStart, col + 2).value = doc?.total || 0
-    summarySheet.getCell(footerStart, col + 2).font = { bold: true }
+    totalCellLabel.border = thinBorder
+    summarySheet.getCell(footerStart, col + 1).border = thinBorder
+    const totalValCell = summarySheet.getCell(footerStart, col + 2)
+    totalValCell.value = doc?.total || 0
+    totalValCell.font = { bold: true }
+    totalValCell.border = thinBorder
 
     // LEDGER BAL
-    summarySheet.getCell(footerStart + 1, col).value = 'LEDGER BAL'
-    summarySheet.getCell(footerStart + 1, col + 2).value = doc?.cash_ledger_balance || 0
+    const ledgerCellLabel = summarySheet.getCell(footerStart + 1, col)
+    ledgerCellLabel.value = 'LEDGER BAL'
+    ledgerCellLabel.border = thinBorder
+    summarySheet.getCell(footerStart + 1, col + 1).border = thinBorder
+    const ledgerValCell = summarySheet.getCell(footerStart + 1, col + 2)
+    ledgerValCell.value = doc?.cash_ledger_balance || 0
+    ledgerValCell.border = thinBorder
 
     // DIFFERENCE
     const diff = Number(doc?.difference || 0)
     const status = diff === 0 ? 'Tally' : (diff > 0 ? 'Excess' : 'Short')
     const color = diff >= 0 ? 'FF10B981' : 'FFFF0000'
 
-    summarySheet.getCell(footerStart + 2, col).value = 'DIFFERENCE'
+    const diffCellLabel = summarySheet.getCell(footerStart + 2, col)
+    diffCellLabel.value = 'DIFFERENCE'
+    diffCellLabel.border = thinBorder
+    summarySheet.getCell(footerStart + 2, col + 1).border = thinBorder
     const diffValCell = summarySheet.getCell(footerStart + 2, col + 2)
     diffValCell.value = diff
     diffValCell.font = { bold: true, color: { argb: color } }
+    diffValCell.border = thinBorder
 
     const statusCell = summarySheet.getCell(footerStart + 2, col + 3)
     statusCell.value = status
     statusCell.font = { bold: true, color: { argb: color } }
+    statusCell.border = thinBorder
   })
 
   // ── METADATA (Column Q Headings (17), Column R Values (18)) ───────
@@ -101,10 +132,14 @@ export async function generateCashierReport(data) {
     labelCell.value = item.label
     labelCell.font = { bold: true }
     labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }
+    labelCell.border = thinBorder
     
-    const valCell = summarySheet.getCell(row, 18)
-    valCell.value = item.value
     summarySheet.mergeCells(row, 18, row, 20)
+    for (let c = 18; c <= 20; c++) {
+      const cell = summarySheet.getCell(row, c)
+      if (c === 18) cell.value = item.value
+      cell.border = thinBorder
+    }
   })
 
   // Column Widths Sheet 1
@@ -129,6 +164,7 @@ export async function generateCashierReport(data) {
   // Header Style
   billsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   billsSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+  billsSheet.getRow(1).eachCell((cell) => { cell.border = thinBorder })
 
   let totalSales = 0
   const totalsMop = { cash: 0, upi: 0, card: 0, credit: 0 }
@@ -144,7 +180,7 @@ export async function generateCashierReport(data) {
     totalsMop.card += card
     totalsMop.credit += credit
 
-    billsSheet.addRow({
+    const row = billsSheet.addRow({
       name: bill.name,
       customer: bill.customer,
       total: bill.grand_total,
@@ -153,6 +189,7 @@ export async function generateCashierReport(data) {
       card,
       credit
     })
+    row.eachCell((cell) => { cell.border = thinBorder })
   })
 
   const billsTotalRow = billsSheet.addRow({
@@ -166,6 +203,7 @@ export async function generateCashierReport(data) {
   })
   billsTotalRow.font = { bold: true }
   billsTotalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
+  billsTotalRow.eachCell((cell) => { cell.border = thinBorder })
 
   // ── SHEET 3: CASH LEDGER ──────────────────────────────────────────
   const ledgerSheet = workbook.addWorksheet('Cash Ledger')
@@ -180,18 +218,21 @@ export async function generateCashierReport(data) {
 
   ledgerSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   ledgerSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+  ledgerSheet.getRow(1).eachCell((cell) => { cell.border = thinBorder })
 
-  ledgerSheet.addRow({
+  const openingRow = ledgerSheet.addRow({
     time: '',
     voucher_no: 'OPENING BALANCE',
     party: '',
     debit: '',
     credit: '',
     balance: ledgerOpening
-  }).font = { italic: true }
+  })
+  openingRow.font = { italic: true }
+  openingRow.eachCell((cell) => { cell.border = thinBorder })
 
   ledgerEntries.forEach(entry => {
-    ledgerSheet.addRow({
+    const row = ledgerSheet.addRow({
       time: entry.time,
       voucher_no: entry.voucher_no,
       party: entry.party || '',
@@ -199,6 +240,7 @@ export async function generateCashierReport(data) {
       credit: entry.credit || 0,
       balance: entry.balance || 0
     })
+    row.eachCell((cell) => { cell.border = thinBorder })
   })
 
   // Final Balance Styling
