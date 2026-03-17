@@ -16,8 +16,8 @@
         <div class="h-8 w-px bg-slate-800"></div>
 
         <!-- Page Title -->
-        <h1 class="text-xl font-black tracking-tighter text-white uppercase">
-          Cashier <span class="text-slate-500 font-light">Management</span>
+        <h1 class="text-xl font-black tracking-tighter uppercase">
+          <span class="text-emerald-400">Cashier</span> <span class="text-slate-500 font-light">Management</span>
         </h1>
       </div>
 
