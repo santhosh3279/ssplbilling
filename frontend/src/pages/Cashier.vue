@@ -517,8 +517,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session.js'
-import BoxCashSubwindow from '../components/Cahier_Entry.vue'
-import CahierContraModal from '../components/CahierContraModal.vue'
+import BoxCashSubwindow from '../components/CashierEntry.vue'
+import CahierContraModal from '../components/CashierContraModal.vue'
 
 import { generateCashierReport } from '../services/cashierReportExport.js'
 

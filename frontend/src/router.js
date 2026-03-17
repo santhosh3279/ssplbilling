@@ -77,7 +77,7 @@ const routes = [
     component: MaterialTransfer,
   },
   {
-    path: '/CahierManagement',
+    path: '/Cashier-Management',
     name: 'Cashier',
     component: Cashier,
   },
