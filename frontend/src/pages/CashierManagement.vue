@@ -543,18 +543,27 @@ const showOpeningRequiredModal = ref(false)
 
 async function checkDayOpening() {
   if (!session.user.value) return
+  // Only check and show modal if we are on Today
+  if (filterDate.value !== getTodayIST()) {
+    showOpeningRequiredModal.value = false
+    return
+  }
+
   try {
     const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
       date: getTodayIST(),
       user: session.user.value
     })
-    if (!hasOpening) {
-      showOpeningRequiredModal.value = true
-    }
+    showOpeningRequiredModal.value = !hasOpening
   } catch (e) {
     console.error('[CashierManagement] Opening check failed:', e)
   }
 }
+
+// Watch filterDate to re-check opening requirement
+watch(filterDate, () => {
+  checkDayOpening()
+})
 
 // ==================== USER ====================
 const userInitials = computed(() => {
@@ -890,9 +899,22 @@ function printPlaceholder() {
 
 async function processPayment() {
   if (!canSubmit.value) return
-  
-  // If bank transfer is used but no ref number, ask for it
-  if (Number(payments.value.bank) > 0.01 && !bankRefNo.value) {
+
+  // Safety check for Day Opening if posting for Today
+  if (filterDate.value === getTodayIST()) {
+    try {
+      const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
+        date: getTodayIST(),
+        user: session.user.value
+      })
+      if (!hasOpening) {
+        showOpeningRequiredModal.value = true
+        return
+      }
+    } catch (e) { console.error(e) }
+  }
+
+  // If bank transfer is used but no ref number, ask for it  if (Number(payments.value.bank) > 0.01 && !bankRefNo.value) {
     showBankRefModal.value = true
     nextTick(() => bankRefInput.value?.focus())
     return
