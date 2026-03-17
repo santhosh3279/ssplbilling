@@ -248,9 +248,10 @@
     <CustomerSearchModal
       ref="ledgerSearchModal"
       :show="showSearchModal"
-      :allowed-types="['Account', 'Customer', 'Supplier', 'Employee']"
+      :allowed-types="searchAllowedTypes"
       :initial-type="searchInitialType"
       :filter-list="searchFilterList"
+      :override-ledgers="activeRowIdx > 0 ? mopLedgers : null"
       :skip-date-filter="true"
       @close="showSearchModal = false"
       @select="selectLedger"
@@ -261,7 +262,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { frappePost } from '../api.js'
+import { frappePost, frappeGet } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { useShortcuts } from '../services/shortcutManager'
 import { payrecShortcuts } from '../shortcuts/payrecShortcuts'
@@ -272,6 +273,7 @@ const router = useRouter()
 // --- STATE ---
 const isReceipt = ref(true)
 const userSettings = ref(null)
+const mopLedgers = ref(null)
 
 watch(isReceipt, () => {
   rows.value = [
@@ -292,16 +294,23 @@ const searchInitialType = computed(() => {
 })
 
 const searchFilterList = computed(() => {
-  // Only filter accounts in the second row (or beyond)
   if (activeRowIdx.value > 0) {
+    if (!userSettings.value) return null
+    const mopMap = userSettings.value.mop_map || {}
+    const d = userSettings.value.user_defaults || {}
     return [
-      localStorage.getItem('wb-cash'),
-      localStorage.getItem('wb-card'),
-      localStorage.getItem('wb-upi'),
-      localStorage.getItem('wb-bank')
+      mopMap[d.cash] || d.cash,
+      mopMap[d.card] || d.card,
+      mopMap[d.upi] || d.upi,
+      mopMap[d.bank] || d.bank,
     ].filter(Boolean)
   }
   return null
+})
+
+const searchAllowedTypes = computed(() => {
+  if (activeRowIdx.value > 0) return ['Account']
+  return ['Account', 'Customer', 'Supplier', 'Employee']
 })
 
 function getTodayIST() {
@@ -537,11 +546,16 @@ function handleRemarksEnter() {
 onMounted(async () => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   
-  // Load settings for allowed accounts
+  // Load settings and MOP ledgers for row 2+
   try {
     userSettings.value = await dashboardApi.getBillingSettings()
   } catch (e) {
     console.warn('Failed to load user settings:', e)
+  }
+  try {
+    mopLedgers.value = await frappeGet('ssplbilling.api.customersearch_api.get_user_mop_ledgers')
+  } catch (e) {
+    console.warn('Failed to load MOP ledgers:', e)
   }
 
   useShortcuts(payrecShortcuts({
@@ -549,8 +563,8 @@ onMounted(async () => {
     switchToPayment: () => { isReceipt.value = false },
     addRow: addRow,
     saveEntry: saveEntry,
-    navigateUp: () => { if (activeRowIdx.value > 0) activeRowIdx.value-- },
-    navigateDown: () => { if (activeRowIdx.value < rows.value.length - 1) activeRowIdx.value++ },
+    navigateUp: () => { if (showSearchModal.value) return; if (activeRowIdx.value > 0) activeRowIdx.value-- },
+    navigateDown: () => { if (showSearchModal.value) return; if (activeRowIdx.value < rows.value.length - 1) activeRowIdx.value++ },
     focusDate: () => dateInput.value?.focus(),
     focusLastRow: () => {
       activeRowIdx.value = rows.value.length - 1

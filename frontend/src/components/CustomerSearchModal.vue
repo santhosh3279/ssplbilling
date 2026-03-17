@@ -291,7 +291,8 @@ const props = defineProps({
   skipDateFilter: { type: Boolean, default: false },
   initialType: { type: String, default: 'All' },
   allowedTypes: { type: Array, default: () => ['Customer', 'Supplier', 'Employee', 'Account'] },
-  filterList: { type: Array, default: null }
+  filterList: { type: Array, default: null },
+  overrideLedgers: { type: Array, default: null }
 })
 
 const availableTabs = computed(() => [...new Set(['All', ...props.allowedTypes])])
@@ -357,8 +358,18 @@ async function preloadLedger() {
 // ─── Filtering ────────────────────────────────────────────────────────────────
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
+
+  // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
+  if (props.overrideLedgers) {
+    if (!q) return props.overrideLedgers
+    return props.overrideLedgers.filter(l =>
+      (l.label || '').toLowerCase().includes(q) ||
+      (l.name || '').toLowerCase().includes(q)
+    )
+  }
+
   let list = allLedgers.value.filter(l => props.allowedTypes.includes(l.type))
-  
+
   // Filter by allowed names if filterList is provided
   if (props.filterList && props.filterList.length > 0) {
     list = list.filter(l => props.filterList.includes(l.name))
@@ -378,6 +389,8 @@ const results = computed(() => {
 })
 
 watch([query, activeType], () => { selectedIdx.value = 0 })
+
+watch(() => props.initialType, (val) => { activeType.value = val })
 
 function getAddressFormatted(c) {
   if (c.type === 'Account') return 'General Accounting Ledger'
@@ -478,7 +491,7 @@ watch(selectedIdx, async (idx) => {
 })
 
 watch(() => props.show, (val) => {
-  if (val) { query.value = ''; preloadLedger(); focus() }
+  if (val) { query.value = ''; activeType.value = props.initialType; if (!props.overrideLedgers) preloadLedger(); focus() }
   else closeSubForm()
 })
 
