@@ -253,6 +253,21 @@
             </div>
           </div>
 
+          <!-- Balance Summary (only if party is selected) -->
+          <div v-if="party" class="flex items-center justify-between rounded-xl bg-gray-800/50 border border-gray-700/50 px-5 py-2.5 transition-all">
+            <div class="space-y-1">
+              <p class="text-[9px] font-black uppercase tracking-widest text-gray-500">Current Bal</p>
+              <p class="font-mono text-xs font-black text-gray-200">₹{{ ledgerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+            </div>
+            <div class="text-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="text-right space-y-1">
+              <p class="text-[9px] font-black uppercase tracking-widest text-blue-400">New Bal</p>
+              <p class="font-mono text-xs font-black text-blue-300">₹{{ newBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</p>
+            </div>
+          </div>
+
           <!-- Mode of Payment -->
           <div class="space-y-1.5">
             <label class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">
@@ -540,6 +555,16 @@ const canSave = computed(() => party.value && amount.value > 0)
 
 const totalAllocated = computed(() => {
   return Object.values(allocations.value).reduce((sum, val) => sum + (Number(val) || 0), 0)
+})
+
+const newBalance = computed(() => {
+  // If receiving (Receipt), balance reduces (Credit to party)
+  // If paying (Payment), balance increases (Debit to party)
+  if (entryMode.value === 'Receive') {
+    return ledgerBalance.value - (amount.value || 0)
+  } else {
+    return ledgerBalance.value + (amount.value || 0)
+  }
 })
 
 const remainingToAllocate = computed(() => {
