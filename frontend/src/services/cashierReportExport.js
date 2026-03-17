@@ -143,27 +143,34 @@ export async function generateCashierReport(data) {
   })
 
   // Column Widths Sheet 1
+  summarySheet.columns = Array(20).fill({ width: 10 })
   for (let i = 1; i <= 16; i++) {
-    summarySheet.getColumn(i).width = (i % 4 === 0) ? 2 : 10
+    summarySheet.getColumn(i).width = (i % 4 === 0) ? 2 : 12
   }
-  summarySheet.getColumn(17).width = 15
-  summarySheet.getColumn(18).width = 30
+  summarySheet.getColumn(17).width = 18 // Q
+  summarySheet.getColumn(18).width = 40 // R
 
   // ── SHEET 2: TODAY'S BILLS ────────────────────────────────────────
   const billsSheet = workbook.addWorksheet('Today Bills')
+  
+  // Dynamic width calculation
+  const maxCustomerLen = Math.max(15, ...bills.map(b => b.customer?.length || 0))
+
   billsSheet.columns = [
-    { header: 'Bill No', key: 'name', width: 20 },
-    { header: 'Customer', key: 'customer', width: 35 },
-    { header: 'Total', key: 'total', width: 12 },
-    { header: 'Cash', key: 'cash', width: 10 },
-    { header: 'UPI', key: 'upi', width: 10 },
-    { header: 'Card', key: 'card', width: 10 },
-    { header: 'Credit', key: 'credit', width: 10 }
+    { header: 'Bill No', key: 'name', width: 22 },
+    { header: 'Customer', key: 'customer', width: maxCustomerLen + 5 },
+    { header: 'Total', key: 'total', width: 15 },
+    { header: 'Cash', key: 'cash', width: 12 },
+    { header: 'UPI', key: 'upi', width: 12 },
+    { header: 'Card', key: 'card', width: 12 },
+    { header: 'Credit', key: 'credit', width: 12 }
   ]
 
   // Header Style
+  billsSheet.getRow(1).height = 20
   billsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   billsSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+  billsSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }
   billsSheet.getRow(1).eachCell((cell) => { cell.border = thinBorder })
 
   let totalSales = 0
@@ -189,7 +196,10 @@ export async function generateCashierReport(data) {
       card,
       credit
     })
-    row.eachCell((cell) => { cell.border = thinBorder })
+    row.eachCell((cell, colNum) => { 
+      cell.border = thinBorder 
+      if (colNum >= 3) cell.alignment = { horizontal: 'right' }
+    })
   })
 
   const billsTotalRow = billsSheet.addRow({
@@ -203,21 +213,29 @@ export async function generateCashierReport(data) {
   })
   billsTotalRow.font = { bold: true }
   billsTotalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
-  billsTotalRow.eachCell((cell) => { cell.border = thinBorder })
+  billsTotalRow.eachCell((cell, colNum) => { 
+    cell.border = thinBorder 
+    if (colNum >= 3) cell.alignment = { horizontal: 'right' }
+  })
 
   // ── SHEET 3: CASH LEDGER ──────────────────────────────────────────
   const ledgerSheet = workbook.addWorksheet('Cash Ledger')
+  
+  const maxPartyLen = Math.max(15, ...ledgerEntries.map(e => e.party?.length || 0))
+
   ledgerSheet.columns = [
-    { header: 'Time', key: 'time', width: 12 },
-    { header: 'Voucher No', key: 'voucher_no', width: 20 },
-    { header: 'Party', key: 'party', width: 35 },
-    { header: 'Debit (DR)', key: 'debit', width: 12 },
-    { header: 'Credit (CR)', key: 'credit', width: 12 },
-    { header: 'Balance', key: 'balance', width: 15 }
+    { header: 'Time', key: 'time', width: 15 },
+    { header: 'Voucher No', key: 'voucher_no', width: 25 },
+    { header: 'Party', key: 'party', width: maxPartyLen + 5 },
+    { header: 'Debit (DR)', key: 'debit', width: 15 },
+    { header: 'Credit (CR)', key: 'credit', width: 15 },
+    { header: 'Balance', key: 'balance', width: 18 }
   ]
 
+  ledgerSheet.getRow(1).height = 20
   ledgerSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   ledgerSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+  ledgerSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }
   ledgerSheet.getRow(1).eachCell((cell) => { cell.border = thinBorder })
 
   const openingRow = ledgerSheet.addRow({
@@ -228,8 +246,11 @@ export async function generateCashierReport(data) {
     credit: '',
     balance: ledgerOpening
   })
-  openingRow.font = { italic: true }
-  openingRow.eachCell((cell) => { cell.border = thinBorder })
+  openingRow.font = { italic: true, bold: true }
+  openingRow.eachCell((cell, colNum) => { 
+    cell.border = thinBorder 
+    if (colNum >= 4) cell.alignment = { horizontal: 'right' }
+  })
 
   ledgerEntries.forEach(entry => {
     const row = ledgerSheet.addRow({
@@ -240,7 +261,10 @@ export async function generateCashierReport(data) {
       credit: entry.credit || 0,
       balance: entry.balance || 0
     })
-    row.eachCell((cell) => { cell.border = thinBorder })
+    row.eachCell((cell, colNum) => { 
+      cell.border = thinBorder 
+      if (colNum >= 4) cell.alignment = { horizontal: 'right' }
+    })
   })
 
   // Final Balance Styling
@@ -248,7 +272,9 @@ export async function generateCashierReport(data) {
     const lastRow = ledgerSheet.getRow(ledgerSheet.rowCount)
     lastRow.font = { bold: true }
     lastRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
+    lastRow.eachCell((cell) => { cell.border = thinBorder })
   }
+
 
   // Generate and Download
   const buffer = await workbook.xlsx.writeBuffer()
