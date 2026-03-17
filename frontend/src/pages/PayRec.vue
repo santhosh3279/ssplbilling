@@ -98,7 +98,15 @@
                     class="w-full rounded-lg border border-transparent px-3 py-0.5 text-2xl font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
                     :class="row.account ? 'text-slate-900' : 'text-slate-300 italic'"
                   >
-                    <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
+                    <div class="flex items-center gap-2 truncate">
+                      <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
+                      <span 
+                        v-if="row.account && getResolvedLabel(row.account)"
+                        class="shrink-0 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-tighter"
+                      >
+                        {{ getResolvedLabel(row.account) }}
+                      </span>
+                    </div>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover/input:text-blue-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
@@ -399,6 +407,16 @@ function fmt(val) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })
+}
+
+function getResolvedLabel(accountName) {
+  if (!userSettings.value?.user_defaults) return null
+  const d = userSettings.value.user_defaults
+  if (accountName === d.cash) return 'CASH'
+  if (accountName === d.bank || accountName === d.bank_account) return 'BANK'
+  if (accountName === d.upi) return 'UPI'
+  if (accountName === d.card) return 'CARD'
+  return null
 }
 
 function addRow() {
