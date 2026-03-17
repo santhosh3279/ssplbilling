@@ -741,6 +741,15 @@ async function fetchTodayBills() {
 }
 
 async function exportToExcel() {
+  const xmlEscape = (str) => {
+    if (typeof str !== 'string') return str
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&apos;')
+  }
+
   const types = ['Opening', 'Mid-Day-1', 'Mid-Day-2', 'Closing']
   const docs = {}
   
@@ -758,15 +767,21 @@ async function exportToExcel() {
   const denoms = ['500', '200', '100', '50', '20', '10', '5', '2', '1']
 
   // ── SHEET 1: DAILY CASH SUMMARY (Side-by-Side) ───────────────────
-  const billerName = session.fullName.value || session.user.value || ''
-  const warehouse = localStorage.getItem('wb-warehouse') || ''
-  const cashAccount = localStorage.getItem('wb-cash') || ''
-  const costCenter = localStorage.getItem('wb-cost-center') || ''
+  const billerName = xmlEscape(session.fullName.value || session.user.value || '')
+  const warehouse = xmlEscape(localStorage.getItem('wb-warehouse') || '')
+  const cashAccount = xmlEscape(localStorage.getItem('wb-cash') || '')
+  const costCenter = xmlEscape(localStorage.getItem('wb-cost-center') || '')
 
   let summaryXML = `
     <Worksheet ss:Name="Daily Cash Summary">
       <Table>
+        <!-- Metadata Columns -->
         <Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="100"/><Column ss:Width="150"/>
+        <!-- Session Columns -->
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
+        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
         
         <Row ss:Height="18">
           <Cell ss:StyleID="sLabel"><Data ss:Type="String">Biller Name:</Data></Cell>
@@ -782,11 +797,6 @@ async function exportToExcel() {
         </Row>
         <Row ss:Height="10"></Row>
 
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        <Column ss:Width="60"/><Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="20"/>
-        
         <Row ss:Height="20">
           ${types.map(t => `<Cell ss:MergeAcross="2" ss:StyleID="sHeader"><Data ss:Type="String">${t.toUpperCase()}</Data></Cell><Cell></Cell>`).join('')}
         </Row>
@@ -849,6 +859,7 @@ async function exportToExcel() {
   let billsXML = `
     <Worksheet ss:Name="Today Bills">
       <Table>
+        <Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="80"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="60"/><Column ss:Width="60"/>
         <Row ss:Height="18">
           <Cell ss:StyleID="sHeader"><Data ss:Type="String">Bill No</Data></Cell>
           <Cell ss:StyleID="sHeader"><Data ss:Type="String">Customer</Data></Cell>
@@ -860,8 +871,8 @@ async function exportToExcel() {
         </Row>`
   filteredBills.value.forEach(bill => {
     billsXML += `<Row>
-      <Cell><Data ss:Type="String">${bill.name}</Data></Cell>
-      <Cell><Data ss:Type="String">${bill.customer}</Data></Cell>
+      <Cell><Data ss:Type="String">${xmlEscape(bill.name)}</Data></Cell>
+      <Cell><Data ss:Type="String">${xmlEscape(bill.customer)}</Data></Cell>
       <Cell><Data ss:Type="Number">${bill.grand_total}</Data></Cell>
       <Cell><Data ss:Type="Number">${getMopAmount(bill, 'cash')}</Data></Cell>
       <Cell><Data ss:Type="Number">${getMopAmount(bill, 'upi')}</Data></Cell>
@@ -884,6 +895,7 @@ async function exportToExcel() {
   let ledgerXML = `
     <Worksheet ss:Name="Cash Ledger">
       <Table>
+        <Column ss:Width="80"/><Column ss:Width="100"/><Column ss:Width="150"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="100"/>
         <Row ss:Height="18">
           <Cell ss:StyleID="sHeader"><Data ss:Type="String">Time</Data></Cell>
           <Cell ss:StyleID="sHeader"><Data ss:Type="String">Voucher No</Data></Cell>
@@ -899,9 +911,9 @@ async function exportToExcel() {
         </Row>`
   cashLedgerEntries.value.forEach(entry => {
     ledgerXML += `<Row>
-      <Cell><Data ss:Type="String">${entry.time}</Data></Cell>
-      <Cell><Data ss:Type="String">${entry.voucher_no}</Data></Cell>
-      <Cell><Data ss:Type="String">${entry.party || ''}</Data></Cell>
+      <Cell><Data ss:Type="String">${xmlEscape(entry.time)}</Data></Cell>
+      <Cell><Data ss:Type="String">${xmlEscape(entry.voucher_no)}</Data></Cell>
+      <Cell><Data ss:Type="String">${xmlEscape(entry.party || '')}</Data></Cell>
       <Cell><Data ss:Type="Number">${entry.debit || 0}</Data></Cell>
       <Cell><Data ss:Type="Number">${entry.credit || 0}</Data></Cell>
       <Cell><Data ss:Type="Number">${entry.balance || 0}</Data></Cell>
