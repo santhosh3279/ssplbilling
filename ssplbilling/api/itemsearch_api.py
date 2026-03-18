@@ -1,5 +1,47 @@
 import frappe
 
+
+@frappe.whitelist()
+def get_pricing_rules(price_list=None):
+	"""Fetch active selling pricing rules with their applicable item codes."""
+	today = frappe.utils.today()
+
+	rules = frappe.get_all(
+		"Pricing Rule",
+		filters={"selling": 1, "disable": 0, "price_or_product_discount": "Price"},
+		fields=[
+			"name", "apply_on", "min_qty", "max_qty",
+			"rate_or_discount", "discount_percentage", "discount_amount", "rate",
+			"priority", "applicable_for", "customer", "customer_group",
+			"valid_from", "valid_upto", "for_price_list",
+		],
+		order_by="priority asc",
+	)
+
+	result = []
+	for rule in rules:
+		if rule.valid_from and str(rule.valid_from) > today:
+			continue
+		if rule.valid_upto and str(rule.valid_upto) < today:
+			continue
+		if rule.for_price_list and price_list and rule.for_price_list != price_list:
+			continue
+
+		rule["item_codes"] = []
+		if rule.apply_on == "Item Code":
+			rows = frappe.get_all("Pricing Rule Item Code", filters={"parent": rule.name}, fields=["item_code"])
+			rule["item_codes"] = [r.item_code for r in rows]
+
+		rule["min_qty"] = float(rule.min_qty or 0)
+		rule["max_qty"] = float(rule.max_qty or 0)
+		rule["discount_percentage"] = float(rule.discount_percentage or 0)
+		rule["discount_amount"] = float(rule.discount_amount or 0)
+		rule["rate"] = float(rule.rate or 0)
+		result.append(rule)
+
+	return result
+
+
 @frappe.whitelist()
 def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None):
 	"""Fetch all items with price, stock, and ALL price lists in bulk for local caching."""

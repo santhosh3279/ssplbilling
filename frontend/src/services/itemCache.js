@@ -7,6 +7,9 @@ const lastSync = ref(0)
 const syncLoading = ref(false)
 const lastParams = ref({ searchType: null, priceList: null, warehouse: null })
 
+// Global pricing rules cache
+const pricingRules = ref([])
+
 // Global cache for customer sales history
 const customerSalesHistory = ref([])
 const currentCustomerForHistory = ref(null)
@@ -14,16 +17,23 @@ const historyLoading = ref(false)
 
 /**
  * Fetch all items with details from the backend and update the global cache.
+ * Also syncs pricing rules in parallel.
  */
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null) {
   syncLoading.value = true
   try {
-    const data = await frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
-      search_type: searchType,
-      price_list: priceList,
-      warehouse: warehouse
-    })
+    const [data, rules] = await Promise.all([
+      frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
+        search_type: searchType,
+        price_list: priceList,
+        warehouse: warehouse
+      }),
+      frappeGet('ssplbilling.api.itemsearch_api.get_pricing_rules', {
+        price_list: priceList || ''
+      }).catch(() => [])
+    ])
     items.value = data || []
+    pricingRules.value = rules || []
     lastSync.value = Date.now()
     lastParams.value = { searchType, priceList, warehouse }
     return items.value
@@ -33,6 +43,36 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
   } finally {
     syncLoading.value = false
   }
+}
+
+/**
+ * Apply the best matching pricing rule for an item.
+ * Returns { discount_percentage, rate } or null if no rule matches.
+ */
+export function applyPricingRule(item_code, qty = 1, customer = null) {
+  if (!pricingRules.value.length) return null
+
+  const matching = pricingRules.value.filter(rule => {
+    // Item code filter
+    if (rule.apply_on === 'Item Code' && rule.item_codes.length && !rule.item_codes.includes(item_code)) return false
+    // Qty range
+    if (rule.min_qty > 0 && qty < rule.min_qty) return false
+    if (rule.max_qty > 0 && qty > rule.max_qty) return false
+    // Customer filter
+    if (rule.applicable_for === 'Customer' && rule.customer && rule.customer !== customer) return false
+    return true
+  })
+
+  if (!matching.length) return null
+
+  const rule = matching[0] // highest priority (already sorted asc)
+  if (rule.rate_or_discount === 'Discount Percentage' && rule.discount_percentage > 0) {
+    return { discount_percentage: rule.discount_percentage, rate: null }
+  }
+  if (rule.rate_or_discount === 'Rate' && rule.rate > 0) {
+    return { discount_percentage: 0, rate: rule.rate }
+  }
+  return null
 }
 
 /**
@@ -99,6 +139,9 @@ export function useItemCache() {
     lastParams,
     refreshItemCache,
     lookupItemInCache,
+    // Pricing rules
+    pricingRules,
+    applyPricingRule,
     // History
     customerSalesHistory,
     currentCustomerForHistory,
