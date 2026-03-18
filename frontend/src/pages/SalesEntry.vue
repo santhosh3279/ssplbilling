@@ -268,6 +268,10 @@
               <span>{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</span>
               
               <div class="h-4 w-px bg-slate-700 mx-2"></div>
+              <button @click="exportItems" class="px-1 py-0.5 hover:text-blue-400 font-bold uppercase transition-colors">Export</button>
+              <button @click="openImportModal" class="px-1 py-0.5 hover:text-blue-400 font-bold uppercase transition-colors">Import</button>
+
+              <div class="h-4 w-px bg-slate-700 mx-2"></div>
 
               <!-- Warehouse -->
               <div class="flex items-center gap-1.5">
@@ -477,6 +481,40 @@
       @close="showBarcodeModal = false"
     />
 
+    <!-- IMPORT OPTIONS MODAL -->
+    <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showImportModal = false">
+      <div class="w-[400px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
+        <div class="bg-blue-900/20 px-6 py-4 border-b border-blue-900/30">
+          <div class="text-xl font-bold text-slate-100">Import Items</div>
+        </div>
+        <div class="p-6">
+          <p class="text-sm text-slate-400 mb-4">Choose where to pull the Rate and Discount from:</p>
+          <div class="flex flex-col gap-3">
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="radio" v-model="importOption" value="Master" class="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 focus:ring-blue-500" />
+              <div class="flex flex-col">
+                <span class="text-slate-200 font-semibold group-hover:text-blue-400">Master (Price List)</span>
+                <span class="text-[10px] text-slate-500">Pull current rates and discounts from ERPNext Price List</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="radio" v-model="importOption" value="File" class="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 focus:ring-blue-500" />
+              <div class="flex flex-col">
+                <span class="text-slate-200 font-semibold group-hover:text-blue-400">Import File</span>
+                <span class="text-[10px] text-slate-500">Keep rates and discounts exactly as specified in the file</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 border-t border-slate-800 bg-slate-800/50 px-6 py-4">
+          <button @click="showImportModal = false" class="rounded-xl border border-slate-600 bg-slate-800 px-6 py-2 text-sm font-bold text-slate-300 hover:bg-slate-700 transition-all">Cancel</button>
+          <button @click="openFilePicker" class="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white hover:bg-blue-700 shadow-md transition-all">Select File</button>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" ref="fileInput" class="hidden" @change="handleImportFile" accept=".csv,.xlsx,.xls" />
+
     <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
@@ -527,6 +565,7 @@ import { useItemCache } from '../services/itemCache.js'
 import CustomerLedger from './CustomerLedger.vue'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 import { salesEntryShortcuts } from '../shortcuts/salesEntryShortcuts'
+import * as XLSX from 'xlsx'
 
 const router = useRouter()
 const route = useRoute()
@@ -551,9 +590,20 @@ if (props.isSubWindow) useSubwindow()
 
 const showPrintModal = ref(false)
 const showBarcodeModal = ref(false)
+const showImportModal = ref(false)
+const importOption = ref('Master')
+const fileInput = ref(null)
 
 function openBarcodePrinting() {
   showBarcodeModal.value = true
+}
+
+function openImportModal() {
+  showImportModal.value = true
+}
+
+function openFilePicker() {
+  fileInput.value?.click()
 }
 
 // ==================== BILLING SETTINGS ====================
@@ -1001,6 +1051,86 @@ async function pickItem(item) {
     newPending.value = { item_name: item.item_name, uom: item.uom, rate: finalRate }
     nextTick(() => focusNewQty())
   }
+}
+
+async function handleImportFile(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    const data = new Uint8Array(e.target.result)
+    const workbook = XLSX.read(data, { type: 'array' })
+    const sheetName = workbook.SheetNames[0]
+    const sheet = workbook.Sheets[sheetName]
+    const jsonData = XLSX.utils.sheet_to_json(sheet)
+
+    for (const row of jsonData) {
+      const itemCode = String(row['Item Code'] || row['item_code'] || '').trim()
+      const qty = parseFloat(row['Qty'] || row['qty'] || 1)
+      if (!itemCode) continue
+
+      let rate = parseFloat(row['Rate'] || row['rate'] || 0)
+      let discount = parseFloat(row['Discount %'] || row['Discount'] || row['discount'] || 0)
+      let itemName = row['Item Name'] || row['item_name'] || ''
+      let uom = row['UOM'] || row['uom'] || ''
+      let taxRate = parseFloat(row['Tax %'] || row['tax_rate'] || defaultTaxRate.value)
+
+      if (importOption.value === 'Master') {
+        const master = await lookupItem(itemCode)
+        if (master) {
+          rate = master.rate
+          discount = 0 
+          itemName = master.item_name
+          uom = master.uom
+          taxRate = master.tax_rate ?? defaultTaxRate.value
+        }
+      }
+
+      const existing = items.value.findIndex(i => i.item_code === itemCode && !i.deleted)
+      if (existing >= 0) {
+        items.value[existing].qty += qty
+        if (importOption.value === 'File') {
+          items.value[existing].rate = rate
+          items.value[existing].discount = discount
+        }
+      } else {
+        items.value.push({
+          item_code: itemCode,
+          item_name: itemName,
+          uom: uom,
+          qty: qty,
+          rate: rate,
+          discount: discount,
+          tax_rate: taxRate,
+          warehouse: defaultWarehouse.value,
+          deleted: false
+        })
+      }
+    }
+    showImportModal.value = false
+    event.target.value = '' 
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+function exportItems() {
+  const data = activeItems.value.map((i, idx) => ({
+    '#': idx + 1,
+    'Item Code': i.item_code,
+    'Item Name': i.item_name,
+    'Qty': i.qty,
+    'UOM': i.uom,
+    'Rate': i.rate,
+    'Discount %': i.discount || 0,
+    'Tax %': i.tax_rate,
+    'Amount': (i.qty * i.rate * (1 - (i.discount || 0) / 100)).toFixed(2)
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Items')
+  XLSX.writeFile(wb, `Sales_Items_${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
 // ==================== SIDEBAR MODIFY PANEL ====================
@@ -1480,6 +1610,7 @@ useShortcuts(salesEntryShortcuts({
     if (showDiscardModal.value) { showDiscardModal.value = false; return }
     if (showPrintModal.value) { showPrintModal.value = false; return }
     if (showBarcodeModal.value) { showBarcodeModal.value = false; return }
+    if (showImportModal.value) { showImportModal.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
