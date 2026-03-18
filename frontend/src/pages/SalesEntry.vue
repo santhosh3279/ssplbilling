@@ -1180,8 +1180,8 @@ async function fetchSidebarBills() {
   try {
     sidebarBills.value = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoices', {
       query: sidebarSearch.value,
-      limit: 50,
-      posting_date: sidebarDate.value,
+      limit: showSubmitted.value ? 100 : 50,
+      posting_date: showSubmitted.value ? '' : sidebarDate.value,
       naming_series: sidebarSeries.value || '',
       show_unpaid: showSubmitted.value
     })

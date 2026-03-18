@@ -29,19 +29,17 @@ def _get_item_tax_rate(item_code):
 @frappe.whitelist()
 def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False, naming_series=None):
     """List Draft (and optionally Unpaid Submitted) Sales Invoices for cashiering."""
-    date_filter = posting_date or frappe.utils.today()
     show_unpaid = frappe.parse_json(show_unpaid)
-    
-    filters = [
-        ["posting_date", "=", date_filter],
-        ["status", "!=", "Cancelled"]
-    ]
+
+    filters = [["status", "!=", "Cancelled"]]
+    if not show_unpaid:
+        filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
     
     if naming_series:
         filters.append(["naming_series", "=", naming_series])
     
     if show_unpaid:
-        filters.append(["docstatus", "<", 2])
+        filters.append(["docstatus", "=", 1])
     else:
         filters.append(["docstatus", "=", 0])
     
@@ -103,6 +101,15 @@ def get_sales_invoice(invoice_name):
                 "deleted": False,
             }
             for item in si.items
+        ],
+        "incentive_system": [
+            {
+                "employee": row.employee,
+                "employee_name": frappe.db.get_value("Employee", row.employee, "employee_name") if row.employee else "",
+                "role": row.role,
+                "points": float(row.points or 0),
+            }
+            for row in (si.incentive_system or [])
         ],
     }
 
