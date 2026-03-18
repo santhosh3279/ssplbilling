@@ -1455,7 +1455,7 @@ const grandTotal = computed(() => {
 })
 
 async function saveBill() {
-  if (!customer.value.trim()) { alert('Please enter a customer'); return }
+  if (!customer.value.trim()) { openCustomerSearch(); return }
   if (!activeItems.value.length) { alert('Add at least one item'); return }
 
   const payload = {
