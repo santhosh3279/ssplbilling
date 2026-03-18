@@ -41,6 +41,45 @@ def get_pricing_rules(price_list=None):
 
 
 @frappe.whitelist()
+def create_pricing_rule(apply_on="Item Code", item_codes=None, rate_or_discount="Discount Percentage",
+		discount_percentage=0, rate=0, discount_amount=0, min_qty=0, max_qty=0,
+		valid_from=None, valid_upto=None, applicable_for=None, customer=None,
+		customer_group=None, for_price_list=None, priority=1):
+	"""Create a new selling Pricing Rule."""
+	import json
+	if isinstance(item_codes, str):
+		item_codes = json.loads(item_codes) if item_codes.startswith("[") else [item_codes]
+
+	doc = frappe.new_doc("Pricing Rule")
+	doc.selling = 1
+	doc.buying = 0
+	doc.apply_on = apply_on
+	doc.price_or_product_discount = "Price"
+	doc.rate_or_discount = rate_or_discount
+	doc.discount_percentage = float(discount_percentage or 0)
+	doc.rate = float(rate or 0)
+	doc.discount_amount = float(discount_amount or 0)
+	doc.min_qty = float(min_qty or 0)
+	doc.max_qty = float(max_qty or 0)
+	doc.valid_from = valid_from or None
+	doc.valid_upto = valid_upto or None
+	doc.applicable_for = applicable_for or ""
+	doc.customer = customer or ""
+	doc.customer_group = customer_group or ""
+	doc.for_price_list = for_price_list or ""
+	doc.priority = int(priority or 1)
+	doc.currency = frappe.db.get_single_value("Global Defaults", "default_currency") or "INR"
+
+	if apply_on == "Item Code" and item_codes:
+		for code in item_codes:
+			if code.strip():
+				doc.append("items", {"item_code": code.strip()})
+
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+@frappe.whitelist()
 def save_pricing_rule(name, discount_percentage=None, rate=None, discount_amount=None,
 		min_qty=None, max_qty=None, valid_from=None, valid_upto=None, disable=None):
 	"""Update editable fields of a Pricing Rule."""
