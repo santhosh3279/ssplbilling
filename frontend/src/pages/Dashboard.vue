@@ -36,6 +36,12 @@
         >
           📓 <span class="font-bold text-white">Cashier</span>
         </button>
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          @click="router.push('/pricing-rules')"
+        >
+          🏷️ <span class="font-bold text-white">Pricing Rules</span>
+        </button>
       </nav>
 
       <!-- Settings section -->
@@ -219,21 +225,19 @@ const tiles = [
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
   { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
-  { id: 'pricing-rules', name: 'Pricing Rules', desc: 'Sync and view pricing rules', icon: '🏷️', shortcut: '', tileBg: 'bg-pink-700' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
   { id: 'barcode-print', name: 'Print Barcode', desc: 'Print item barcodes', icon: '🏷️', shortcut: 'F7', tileBg: 'bg-green-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'barcode-print', 'journal-contra', 'material-transfer', 'pricing-rules']
+const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'barcode-print', 'journal-contra', 'material-transfer']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
   payment: '/payment',
   'journal-contra': '/journal-contra',
   'material-transfer': '/material-transfer',
-  'pricing-rules': '/pricing-rules',
 }
 
 function openModule(id) {
