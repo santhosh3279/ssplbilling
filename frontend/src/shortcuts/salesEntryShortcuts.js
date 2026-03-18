@@ -15,5 +15,7 @@ export const salesEntryShortcuts = (handlers) => ({
   'F4':     handlers.openBarcodePrinting,
   'PAGEUP': handlers.focusSeries,
   'END':    handlers.toggleDiscountSave,
+  'HOME':   handlers.jumpToFirstRow,
+  'INSERT': handlers.openIncentive,
   'ESCAPE': handlers.contextualBack,
 });

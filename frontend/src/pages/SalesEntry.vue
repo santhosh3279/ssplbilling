@@ -20,6 +20,7 @@
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate rows</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Barcode</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ins</kbd> Incentive</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
 
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
@@ -420,6 +421,10 @@
                     <button class="flex-1 rounded-lg border border-slate-600 bg-slate-800 py-2 text-center text-sm font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
                     <button class="flex-1 rounded-lg border border-red-900/50 bg-red-900/10 py-2 text-center text-sm font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
                   </div>
+                  <button
+                    @click="showIncentiveModal = true"
+                    class="w-full rounded-lg border border-indigo-700/50 bg-indigo-900/20 py-2 text-center text-sm font-semibold text-indigo-400 hover:bg-indigo-900/40 transition"
+                  >👥 Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
 
                   
                 </div>
@@ -429,6 +434,16 @@
         </div>
       </div>
     </div>
+
+    <!-- INCENTIVE ENTRY MODAL -->
+    <IncentiveEntry
+      :show="showIncentiveModal"
+      doctype="Sales Invoice"
+      :docname="savedInvoiceName || ''"
+      :initial-rows="incentiveRows"
+      @close="showIncentiveModal = false"
+      @update:rows="rows => { incentiveRows = rows; showIncentiveModal = false }"
+    />
 
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
@@ -560,6 +575,7 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
+import IncentiveEntry from '../components/IncentiveEntry.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
 import CustomerLedger from './CustomerLedger.vue'
@@ -589,6 +605,8 @@ const emit = defineEmits(['close'])
 if (props.isSubWindow) useSubwindow()
 
 const showPrintModal = ref(false)
+const showIncentiveModal = ref(false)
+const incentiveRows = ref([])
 const showBarcodeModal = ref(false)
 const showImportModal = ref(false)
 const importOption = ref('Master')
@@ -1199,6 +1217,10 @@ async function loadInvoice(invoiceName) {
     billDocStatus.value = inv.docstatus
     // If it's already submitted or cancelled, treat as saved/read-only
     billSaved.value = true
+    incentiveRows.value = (inv.incentive_system || []).map(r => ({
+      employee: r.employee || '', employee_name: r.employee_name || '',
+      role: r.role || '', points: parseFloat(r.points) || 0,
+    }))
     fetchNextBillNo()
 
     // Set selectedCustomerDetails for display
@@ -1430,6 +1452,11 @@ async function saveBill() {
       warehouse: i.warehouse || defaultWarehouse.value,
       cost_center: costCenter.value || '',
     })),
+    incentive_system: incentiveRows.value.map(r => ({
+      employee: r.employee,
+      role: r.role,
+      points: r.points || 0,
+    })),
   }
 
   if (freightAmt.value > 0) {
@@ -1560,50 +1587,42 @@ useShortcuts(salesEntryShortcuts({
     }
   },
   focusSeries: () => { if (!showPrintModal.value) seriesSelect.value?.focus() },
+  openIncentive: () => { showIncentiveModal.value = true },
   toggleDiscountSave: () => {
     if (showPrintModal.value) return
     const activeEl = document.activeElement
 
-    // 1. If in existing items table
-    if (selectedRow.value !== -1) {
-      const rowIdx = selectedRow.value
-      const lastFieldInRow = inputRefs[`discount-${rowIdx}`]
-      
-      if (activeEl !== lastFieldInRow) {
-        // Go to end of current row
-        focusField('discount', rowIdx)
-      } else {
-        // Already at end of current row, jump to last row (New Entry row)
-        selectedRow.value = -1
-        focusNewCode()
-      }
+    // Global summary inputs take priority
+    if (activeEl === discountInput.value) {
+      freightInput.value?.focus()
+      freightInput.value?.select()
+      return
+    }
+    if (activeEl === freightInput.value) {
+      saveBill()
       return
     }
 
-    // 2. If in new entry row (the "last row")
-    if (activeEl === newCodeInput.value || activeEl === newQtyInput.value) {
-      if (activeEl === newCodeInput.value) {
-        newQtyInput.value?.focus()
-        newQtyInput.value?.select()
+    // If in existing items table
+    if (selectedRow.value !== -1) {
+      const lastActiveIdx = items.value.reduce((acc, item, i) => (!item.deleted ? i : acc), -1)
+      if (selectedRow.value < lastActiveIdx) {
+        // Jump to last active row
+        selectRow(lastActiveIdx)
       } else {
-        // At end of last row, go to global discount
+        // Already on last row → go to global discount
         discountInput.value?.focus()
         discountInput.value?.select()
       }
       return
     }
 
-    // 3. Global summary inputs
-    if (activeEl === discountInput.value) {
-      freightInput.value?.focus()
-      freightInput.value?.select()
-    } else if (activeEl === freightInput.value) {
-      saveBill()
-    } else {
-      // 4. From anywhere else, jump to last row (New Entry row)
-      selectedRow.value = -1
-      focusNewCode()
-    }
+    // From new entry row or anywhere else → go to global discount
+    discountInput.value?.focus()
+    discountInput.value?.select()
+  },
+  jumpToFirstRow: () => {
+    if (activeItems.value.length) selectRow(items.value.findIndex(i => !i.deleted))
   },
   contextualBack: () => {
     if (showJumpModal.value) { showJumpModal.value = false; return }
