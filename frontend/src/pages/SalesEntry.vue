@@ -61,6 +61,7 @@
             ref="sidebarSeriesSelect"
             v-model="sidebarSeries"
             class="w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+            @keydown.enter.prevent="focusFirstSidebarBill"
           >
             <option value="">All Series</option>
             <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
@@ -737,6 +738,10 @@ function setSidebarBillRef(el, idx) { if (el) sidebarBillRefs.set(idx, el); else
 function navigateSidebarBill(idx, dir) {
   const target = sidebarBillRefs.get(idx + dir)
   if (target) { target.focus(); target.scrollIntoView({ block: 'nearest' }) }
+}
+function focusFirstSidebarBill() {
+  const first = sidebarBillRefs.get(0)
+  if (first) { first.focus(); first.scrollIntoView({ block: 'nearest' }) }
 }
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
