@@ -370,12 +370,16 @@ watch(selectedIdx, async (idx) => {
   }
 })
 
-watch(() => props.show, (newVal) => {
+watch(() => props.show, async (newVal) => {
   if (newVal) {
-    query.value = props.initialQuery || ''
+    query.value = ''
     loadCipherMap()
-    preloadItems()
+    await preloadItems()
     focus()
+    if (props.initialQuery) {
+      const idx = results.value.findIndex(i => i.item_code === props.initialQuery)
+      if (idx >= 0) selectedIdx.value = idx
+    }
   } else {
     showDateModal.value = false
     showCreationModal.value = false

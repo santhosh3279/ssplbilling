@@ -1029,13 +1029,15 @@ let itemSearchTargetRow = null
 
 async function openSearch(prefill = '', rowIdx = null) {
   itemSearchTargetRow = rowIdx
-  // Pre-fill with provided code, or fall back to the selected row's item code
+  // Determine which item to highlight (search box stays empty)
   if (prefill) {
     itemSearchInitialQuery.value = prefill
   } else if (selectedRow.value >= 0 && items.value[selectedRow.value]) {
     itemSearchInitialQuery.value = items.value[selectedRow.value].item_code || ''
   } else {
-    itemSearchInitialQuery.value = ''
+    // New entry row: highlight the last active item
+    const lastItem = [...items.value].reverse().find(i => !i.deleted)
+    itemSearchInitialQuery.value = lastItem?.item_code || ''
   }
   showItemSearchModal.value = true
   nextTick(() => {
