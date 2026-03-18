@@ -1307,9 +1307,39 @@ useShortcuts(purchaseEntryShortcuts({
   },
   focusSeries: () => seriesSelect.value?.focus(),
   toggleDiscountSave: () => {
-    if (document.activeElement === discountInput.value) {
-      saveButton.value?.focus()
+    const activeEl = document.activeElement
+
+    // 1. If in existing items table
+    if (selectedRow.value !== -1) {
+      const rowIdx = selectedRow.value
+      const lastFieldInRow = inputRefs[`discount-${rowIdx}`]
+      
+      if (activeEl !== lastFieldInRow) {
+        focusField('discount', rowIdx)
+      } else {
+        discountInput.value?.focus()
+        discountInput.value?.select()
+      }
+      return
+    }
+
+    // 2. If in new entry row
+    if (activeEl === newCodeInput.value || activeEl === newQtyInput.value) {
+      if (activeEl === newCodeInput.value) {
+        newQtyInput.value?.focus()
+        newQtyInput.value?.select()
+      } else {
+        discountInput.value?.focus()
+        discountInput.value?.select()
+      }
+      return
+    }
+
+    // 3. Global summary inputs
+    if (activeEl === discountInput.value) {
+      saveBill()
     } else {
+      // Default: jump to discount if anywhere else
       discountInput.value?.focus()
       discountInput.value?.select()
     }
