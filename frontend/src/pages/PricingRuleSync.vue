@@ -42,8 +42,17 @@
           <h2 class="text-base font-bold text-slate-200">New Pricing Rule</h2>
           <button @click="showNewModal = false" class="text-slate-500 hover:text-slate-300">✕</button>
         </div>
-        <div class="space-y-3">
+        <div class="max-h-[70vh] overflow-y-auto space-y-3 pr-1">
+
+          <!-- Row 1: Price/Product + Apply On -->
           <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Discount Type</label>
+              <select v-model="newRule.price_or_product_discount" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
+                <option value="Price">Price</option>
+                <option value="Product">Product</option>
+              </select>
+            </div>
             <div>
               <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Apply On</label>
               <select v-model="newRule.apply_on" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
@@ -53,36 +62,41 @@
                 <option>Transaction</option>
               </select>
             </div>
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Type</label>
-              <select v-model="newRule.rate_or_discount" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
-                <option>Discount Percentage</option>
-                <option>Rate</option>
-                <option>Discount Amount</option>
-              </select>
-            </div>
           </div>
 
+          <!-- Item codes -->
           <div v-if="newRule.apply_on === 'Item Code'">
             <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Item Codes (comma-separated)</label>
             <input v-model="newRule.item_codes_raw" type="text" placeholder="e.g. ITEM-001, ITEM-002"
               class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
           </div>
 
+          <!-- Row 2: Rate/Discount type + value + priority (only for Price) -->
+          <div v-if="newRule.price_or_product_discount === 'Price'" class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Rate / Discount</label>
+              <select v-model="newRule.rate_or_discount" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
+                <option>Discount Percentage</option>
+                <option>Rate</option>
+                <option>Discount Amount</option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">
+                {{ newRule.rate_or_discount === 'Discount Percentage' ? 'Discount %' : newRule.rate_or_discount === 'Rate' ? 'Rate ₹' : 'Discount Amt ₹' }}
+              </label>
+              <input
+                v-model.number="newRule.rate_or_discount === 'Discount Percentage' ? newRule.discount_percentage : newRule.rate_or_discount === 'Rate' ? newRule.rate : newRule.discount_amount"
+                type="number" min="0" step="0.01"
+                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
+            </div>
+          </div>
+
+          <!-- Row 3: Warehouse + Priority -->
           <div class="grid grid-cols-2 gap-3">
-            <div v-if="newRule.rate_or_discount === 'Discount Percentage'">
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Discount %</label>
-              <input v-model.number="newRule.discount_percentage" type="number" min="0" max="100" step="0.5"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-            <div v-else-if="newRule.rate_or_discount === 'Rate'">
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Rate ₹</label>
-              <input v-model.number="newRule.rate" type="number" min="0" step="0.01"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-            <div v-else>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Discount Amount ₹</label>
-              <input v-model.number="newRule.discount_amount" type="number" min="0" step="0.01"
+            <div>
+              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Warehouse</label>
+              <input v-model="newRule.warehouse" type="text" placeholder="Leave blank for all"
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
             </div>
             <div>
@@ -92,6 +106,7 @@
             </div>
           </div>
 
+          <!-- Row 4: Qty range -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Min Qty</label>
@@ -105,6 +120,7 @@
             </div>
           </div>
 
+          <!-- Row 5: Validity -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Valid From</label>
@@ -117,6 +133,30 @@
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
             </div>
           </div>
+
+          <!-- Row 6: Party / Applicable For -->
+          <div class="border-t border-slate-700 pt-3">
+            <div class="mb-2 text-xs font-bold uppercase text-slate-500">Party Information</div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Applicable For</label>
+                <select v-model="newRule.applicable_for" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
+                  <option value="">— All —</option>
+                  <option value="Customer">Customer</option>
+                  <option value="Customer Group">Customer Group</option>
+                  <option value="Territory">Territory</option>
+                  <option value="Sales Partner">Sales Partner</option>
+                  <option value="Campaign">Campaign</option>
+                </select>
+              </div>
+              <div v-if="newRule.applicable_for">
+                <label class="mb-1 block text-xs font-bold uppercase text-slate-500">{{ newRule.applicable_for }}</label>
+                <input v-model="newRule.party_value" type="text" :placeholder="'Enter ' + newRule.applicable_for"
+                  class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <div class="mt-5 flex justify-end gap-3">
@@ -319,17 +359,21 @@ const dirty = reactive({})
 const search = ref('')
 
 const defaultNewRule = () => ({
+  price_or_product_discount: 'Price',
   apply_on: 'Item Code',
   item_codes_raw: '',
   rate_or_discount: 'Discount Percentage',
   discount_percentage: 0,
   rate: 0,
   discount_amount: 0,
+  warehouse: '',
   min_qty: 0,
   max_qty: 0,
   valid_from: '',
   valid_upto: '',
   priority: 1,
+  applicable_for: '',
+  party_value: '',
 })
 const newRule = ref(defaultNewRule())
 
@@ -395,18 +439,32 @@ async function createRule() {
   try {
     const item_codes = newRule.value.item_codes_raw
       .split(',').map(s => s.trim()).filter(Boolean)
+    // Map applicable_for to the correct party field
+    const partyFields = {}
+    if (newRule.value.applicable_for && newRule.value.party_value) {
+      const fieldMap = {
+        'Customer': 'customer', 'Customer Group': 'customer_group',
+        'Territory': 'territory', 'Sales Partner': 'sales_partner', 'Campaign': 'campaign',
+      }
+      const field = fieldMap[newRule.value.applicable_for]
+      if (field) partyFields[field] = newRule.value.party_value
+    }
     await frappePost('ssplbilling.api.itemsearch_api.create_pricing_rule', {
+      price_or_product_discount: newRule.value.price_or_product_discount,
       apply_on: newRule.value.apply_on,
       item_codes: JSON.stringify(item_codes),
       rate_or_discount: newRule.value.rate_or_discount,
       discount_percentage: newRule.value.discount_percentage,
       rate: newRule.value.rate,
       discount_amount: newRule.value.discount_amount,
+      warehouse: newRule.value.warehouse || '',
       min_qty: newRule.value.min_qty,
       max_qty: newRule.value.max_qty,
       valid_from: newRule.value.valid_from || '',
       valid_upto: newRule.value.valid_upto || '',
       priority: newRule.value.priority,
+      applicable_for: newRule.value.applicable_for || '',
+      ...partyFields,
     })
     showNewModal.value = false
     newRule.value = defaultNewRule()
