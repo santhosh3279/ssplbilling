@@ -1440,20 +1440,23 @@ useShortcuts(salesEntryShortcuts({
       const lastFieldInRow = inputRefs[`discount-${rowIdx}`]
       
       if (activeEl !== lastFieldInRow) {
+        // Go to end of current row
         focusField('discount', rowIdx)
       } else {
-        discountInput.value?.focus()
-        discountInput.value?.select()
+        // Already at end of current row, jump to last row (New Entry row)
+        selectedRow.value = -1
+        focusNewCode()
       }
       return
     }
 
-    // 2. If in new entry row
+    // 2. If in new entry row (the "last row")
     if (activeEl === newCodeInput.value || activeEl === newQtyInput.value) {
       if (activeEl === newCodeInput.value) {
         newQtyInput.value?.focus()
         newQtyInput.value?.select()
       } else {
+        // At end of last row, go to global discount
         discountInput.value?.focus()
         discountInput.value?.select()
       }
@@ -1467,9 +1470,9 @@ useShortcuts(salesEntryShortcuts({
     } else if (activeEl === freightInput.value) {
       saveBill()
     } else {
-      // Default: jump to discount if anywhere else
-      discountInput.value?.focus()
-      discountInput.value?.select()
+      // 4. From anywhere else, jump to last row (New Entry row)
+      selectedRow.value = -1
+      focusNewCode()
     }
   },
   contextualBack: () => {
