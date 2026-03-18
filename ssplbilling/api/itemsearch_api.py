@@ -8,10 +8,11 @@ def get_pricing_rules(price_list=None):
 
 	rules = frappe.get_all(
 		"Pricing Rule",
-		filters={"selling": 1, "disable": 0, "price_or_product_discount": "Price"},
+		filters={"selling": 1},
 		fields=[
-			"name", "apply_on", "min_qty", "max_qty",
-			"rate_or_discount", "discount_percentage", "discount_amount", "rate",
+			"name", "apply_on", "min_qty", "max_qty", "disable",
+			"price_or_product_discount", "rate_or_discount",
+			"discount_percentage", "discount_amount", "rate",
 			"priority", "applicable_for", "customer", "customer_group",
 			"valid_from", "valid_upto", "for_price_list",
 		],
@@ -20,10 +21,6 @@ def get_pricing_rules(price_list=None):
 
 	result = []
 	for rule in rules:
-		if rule.valid_from and str(rule.valid_from) > today:
-			continue
-		if rule.valid_upto and str(rule.valid_upto) < today:
-			continue
 		if rule.for_price_list and price_list and rule.for_price_list != price_list:
 			continue
 
@@ -37,6 +34,7 @@ def get_pricing_rules(price_list=None):
 		rule["discount_percentage"] = float(rule.discount_percentage or 0)
 		rule["discount_amount"] = float(rule.discount_amount or 0)
 		rule["rate"] = float(rule.rate or 0)
+		rule["disable"] = int(rule.disable or 0)
 		result.append(rule)
 
 	return result

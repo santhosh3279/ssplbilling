@@ -53,6 +53,8 @@ export function applyPricingRule(item_code, qty = 1, customer = null) {
   if (!pricingRules.value.length) return null
 
   const matching = pricingRules.value.filter(rule => {
+    // Skip disabled rules
+    if (rule.disable) return false
     // Item code filter
     if (rule.apply_on === 'Item Code' && rule.item_codes.length && !rule.item_codes.includes(item_code)) return false
     // Qty range
