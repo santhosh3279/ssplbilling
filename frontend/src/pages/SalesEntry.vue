@@ -996,22 +996,17 @@ async function addNewItem() {
   const finalRate = (pRule?.rate != null) ? pRule.rate : r.rate
   const finalDiscount = pRule?.discount_percentage ?? 0
 
-  const ei = items.value.findIndex(i => i.item_code === code && !i.deleted)
-  if (ei >= 0) {
-    items.value[ei].qty += newQty.value
-  } else {
-    items.value.push({
-      item_code: r.item_code || code,
-      item_name: r.item_name,
-      uom: r.uom,
-      qty: newQty.value,
-      rate: finalRate,
-      discount: finalDiscount,
-      tax_rate: r.tax_rate ?? defaultTaxRate.value,
-      warehouse: r.warehouse || defaultWarehouse.value,
-      deleted: false
-    })
-  }
+  items.value.push({
+    item_code: r.item_code || code,
+    item_name: r.item_name,
+    uom: r.uom,
+    qty: newQty.value,
+    rate: finalRate,
+    discount: finalDiscount,
+    tax_rate: r.tax_rate ?? defaultTaxRate.value,
+    warehouse: r.warehouse || defaultWarehouse.value,
+    deleted: false
+  })
   
   newItemCode.value = ''; 
   newQty.value = 1; 
