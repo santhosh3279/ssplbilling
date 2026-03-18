@@ -19,7 +19,7 @@
         </div>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate rows</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Barcode</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Edit</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ins</kbd> Incentive</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
 
@@ -1586,7 +1586,7 @@ useShortcuts(salesEntryShortcuts({
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
-  openBarcodePrinting: () => { if (!showPrintModal.value) openBarcodePrinting() },
+  enterEditMode: () => { if (billSaved.value) enterEditMode() },
   deleteRow: () => {
     if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       softDelete(selectedRow.value)
