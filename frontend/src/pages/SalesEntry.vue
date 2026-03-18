@@ -476,6 +476,7 @@
       :price-list="priceList"
       :warehouse="defaultWarehouse"
       :skip-date-filter="true"
+      :initial-query="itemSearchInitialQuery"
       @close="closeItemSearch"
       @select="pickItem"
     />
@@ -1023,10 +1024,19 @@ function restoreItem(idx) { items.value[idx].deleted = false }
 // ==================== ITEM SEARCH MODAL ====================
 const showItemSearchModal = ref(false)
 const itemSearchModalRef = ref(null)
+const itemSearchInitialQuery = ref('')
 let itemSearchTargetRow = null
 
 async function openSearch(prefill = '', rowIdx = null) {
   itemSearchTargetRow = rowIdx
+  // Pre-fill with provided code, or fall back to the selected row's item code
+  if (prefill) {
+    itemSearchInitialQuery.value = prefill
+  } else if (selectedRow.value >= 0 && items.value[selectedRow.value]) {
+    itemSearchInitialQuery.value = items.value[selectedRow.value].item_code || ''
+  } else {
+    itemSearchInitialQuery.value = ''
+  }
   showItemSearchModal.value = true
   nextTick(() => {
     itemSearchModalRef.value?.focus()

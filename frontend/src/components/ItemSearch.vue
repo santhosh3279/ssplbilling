@@ -177,6 +177,10 @@ const props = defineProps({
   skipDateFilter: {
     type: Boolean,
     default: false
+  },
+  initialQuery: {
+    type: String,
+    default: ''
   }
 })
 
@@ -368,6 +372,7 @@ watch(selectedIdx, async (idx) => {
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
+    query.value = props.initialQuery || ''
     loadCipherMap()
     preloadItems()
     focus()
