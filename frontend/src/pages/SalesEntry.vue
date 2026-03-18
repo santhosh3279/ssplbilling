@@ -19,7 +19,7 @@
         </div>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate rows</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Edit</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Series</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ins</kbd> Incentive</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
 
@@ -57,7 +57,8 @@
             placeholder="Search invoice/cust..."
             class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
           />
-          <select 
+          <select
+            ref="sidebarSeriesSelect"
             v-model="sidebarSeries"
             class="w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
           >
@@ -743,6 +744,7 @@ const customerInput = ref(null)
 const searchInput = ref(null)
 const modifySearchInput = ref(null)
 const seriesSelect = ref(null)
+const sidebarSeriesSelect = ref(null)
 const dateInput = ref(null)
 const discountInput = ref(null)
 const freightInput = ref(null)
@@ -1599,6 +1601,7 @@ useShortcuts(salesEntryShortcuts({
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
   enterEditMode: () => { if (billSaved.value) enterEditMode() },
+  focusSidebarSeries: () => { sidebarSeriesSelect.value?.focus() },
   deleteRow: () => {
     if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       softDelete(selectedRow.value)
