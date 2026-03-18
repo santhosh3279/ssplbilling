@@ -13,8 +13,7 @@ export const dashboardShortcuts = (handlers) => ({
   'F6': () => handlers.openModule('ledger'),
   'F7': () => handlers.openModule('barcode-print'),
   'F8': () => handlers.openModule('journal-contra'),
-  'F9': () => handlers.openModule('payment'),
-  'F10': () => handlers.openModule('material-transfer'),
+  'F9': () => handlers.openModule('material-transfer'),
   
   'CTRL+L': () => handlers.openCustomerSearch?.(),
   'CTRL+I': () => handlers.openItemSearch?.(),

@@ -92,7 +92,7 @@
 
         <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
           <span class="flex items-center gap-1.5">
-            Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F10</kbd>
+            Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F9</kbd>
             to quick open
           </span>
           <span class="text-slate-700">|</span>
@@ -222,7 +222,7 @@ const tiles = [
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
   { id: 'barcode-print', name: 'Print Barcode', desc: 'Print item barcodes', icon: '🏷️', shortcut: 'F7', tileBg: 'bg-green-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
-  { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F10', tileBg: 'bg-cyan-700' },
+  { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
 ]
 
 const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'barcode-print', 'journal-contra', 'material-transfer']
@@ -248,8 +248,7 @@ function openModule(id) {
 const routeMap = {
   F1: 'sales', F2: 'purchase', F3: 'payment',
   F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
-  F7: 'barcode-print', F8: 'journal-contra', F9: 'payment',
-  F10: 'material-transfer',
+  F7: 'barcode-print', F8: 'journal-contra', F9: 'material-transfer',
 }
 
 // ==================== KEYBOARD SHORTCUTS ====================
