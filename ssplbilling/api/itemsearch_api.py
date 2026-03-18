@@ -41,7 +41,7 @@ def get_pricing_rules(price_list=None):
 
 
 @frappe.whitelist()
-def create_pricing_rule(apply_on="Item Code", item_codes=None, price_or_product_discount="Price",
+def create_pricing_rule(title=None, apply_on="Item Code", item_codes=None, price_or_product_discount="Price",
 		rate_or_discount="Discount Percentage", discount_percentage=0, rate=0, discount_amount=0,
 		warehouse=None, min_qty=0, max_qty=0, valid_from=None, valid_upto=None,
 		applicable_for=None, customer=None, customer_group=None, territory=None,
@@ -52,6 +52,7 @@ def create_pricing_rule(apply_on="Item Code", item_codes=None, price_or_product_
 		item_codes = json.loads(item_codes) if item_codes.startswith("[") else [item_codes]
 
 	doc = frappe.new_doc("Pricing Rule")
+	doc.title = title or ""
 	doc.selling = 1
 	doc.buying = 0
 	doc.apply_on = apply_on

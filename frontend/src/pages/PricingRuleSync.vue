@@ -44,6 +44,13 @@
         </div>
         <div class="max-h-[70vh] overflow-y-auto space-y-3 pr-1">
 
+          <!-- Title -->
+          <div>
+            <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Title <span class="text-red-400">*</span></label>
+            <input v-model="newRule.title" type="text" placeholder="Rule title"
+              class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
+          </div>
+
           <!-- Row 1: Price/Product + Apply On -->
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -367,6 +374,7 @@ const dirty = reactive({})
 const search = ref('')
 
 const defaultNewRule = () => ({
+  title: '',
   price_or_product_discount: 'Price',
   apply_on: 'Item Code',
   item_codes_raw: '',
@@ -457,7 +465,9 @@ async function createRule() {
       const field = fieldMap[newRule.value.applicable_for]
       if (field) partyFields[field] = newRule.value.party_value
     }
+    if (!newRule.value.title.trim()) { alert('Title is required'); return }
     await frappePost('ssplbilling.api.itemsearch_api.create_pricing_rule', {
+      title: newRule.value.title,
       price_or_product_discount: newRule.value.price_or_product_discount,
       apply_on: newRule.value.apply_on,
       item_codes: JSON.stringify(item_codes),
