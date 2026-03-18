@@ -43,6 +43,31 @@ def get_pricing_rules(price_list=None):
 
 
 @frappe.whitelist()
+def save_pricing_rule(name, discount_percentage=None, rate=None, discount_amount=None,
+		min_qty=None, max_qty=None, valid_from=None, valid_upto=None, disable=None):
+	"""Update editable fields of a Pricing Rule."""
+	doc = frappe.get_doc("Pricing Rule", name)
+	if discount_percentage is not None:
+		doc.discount_percentage = float(discount_percentage)
+	if rate is not None:
+		doc.rate = float(rate)
+	if discount_amount is not None:
+		doc.discount_amount = float(discount_amount)
+	if min_qty is not None:
+		doc.min_qty = float(min_qty)
+	if max_qty is not None:
+		doc.max_qty = float(max_qty)
+	if valid_from is not None:
+		doc.valid_from = valid_from or None
+	if valid_upto is not None:
+		doc.valid_upto = valid_upto or None
+	if disable is not None:
+		doc.disable = int(frappe.parse_json(disable))
+	doc.save(ignore_permissions=True)
+	return {"success": True}
+
+
+@frappe.whitelist()
 def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None):
 	"""Fetch all items with price, stock, and ALL price lists in bulk for local caching."""
 	filters = {"disabled": 0}

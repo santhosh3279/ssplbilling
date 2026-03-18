@@ -6,39 +6,33 @@
         <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700" @click="router.push('/')">&larr; Dashboard</button>
         <span class="text-slate-600">|</span>
         <span class="text-sm font-semibold text-slate-200">Pricing Rules</span>
+        <span v-if="dirtyCount" class="rounded-full bg-amber-600 px-2 py-0.5 text-xs font-bold text-white">{{ dirtyCount }} unsaved</span>
       </div>
       <div class="flex items-center gap-3">
         <span v-if="lastSync" class="text-xs text-slate-500">Last sync: {{ lastSyncLabel }}</span>
         <button
-          @click="syncRules"
+          v-if="dirtyCount"
+          @click="saveAll"
+          :disabled="saving"
+          class="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+        >
+          <span v-if="saving" class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+          {{ saving ? 'Saving...' : 'Save All' }}
+        </button>
+        <button
+          @click="fetchRules"
           :disabled="loading"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
         >
           <span v-if="loading" class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
           <span v-else>🔄</span>
-          {{ loading ? 'Syncing...' : 'Sync Now' }}
+          {{ loading ? 'Loading...' : 'Refresh' }}
         </button>
       </div>
     </header>
 
     <!-- Content -->
-    <div class="mx-auto max-w-6xl px-6 py-6">
-
-      <!-- Stats -->
-      <div class="mb-6 grid grid-cols-3 gap-4">
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-4">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Rules</div>
-          <div class="mt-1 text-3xl font-bold text-blue-400">{{ rules.length }}</div>
-        </div>
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-4">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Discount Rules</div>
-          <div class="mt-1 text-3xl font-bold text-amber-400">{{ rules.filter(r => r.rate_or_discount === 'Discount Percentage').length }}</div>
-        </div>
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-4">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Rate Override Rules</div>
-          <div class="mt-1 text-3xl font-bold text-emerald-400">{{ rules.filter(r => r.rate_or_discount === 'Rate').length }}</div>
-        </div>
-      </div>
+    <div class="px-6 py-6">
 
       <!-- Filter -->
       <div class="mb-4 flex items-center gap-3">
@@ -48,73 +42,158 @@
           placeholder="Search by rule name or item code..."
           class="w-80 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
         />
-        <span class="text-sm text-slate-500">{{ filteredRules.length }} rule{{ filteredRules.length !== 1 ? 's' : '' }}</span>
+        <span class="text-sm text-slate-500">{{ filteredRules.length }} of {{ rules.length }} rule{{ rules.length !== 1 ? 's' : '' }}</span>
       </div>
 
       <!-- Table -->
-      <div class="overflow-hidden rounded-xl border border-slate-700">
+      <div class="overflow-x-auto rounded-xl border border-slate-700">
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-slate-700 bg-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400">
-              <th class="px-4 py-3 text-left">Rule Name</th>
-              <th class="px-4 py-3 text-left">Apply On</th>
-              <th class="px-4 py-3 text-left">Items</th>
-              <th class="px-4 py-3 text-left">Customer</th>
-              <th class="px-4 py-3 text-left">Qty Range</th>
-              <th class="px-4 py-3 text-left">Type</th>
-              <th class="px-4 py-3 text-right">Value</th>
-              <th class="px-4 py-3 text-left">Valid Until</th>
+              <th class="px-3 py-3 text-left">Rule Name</th>
+              <th class="px-3 py-3 text-left">Apply On / Items</th>
+              <th class="px-3 py-3 text-left">Customer</th>
+              <th class="px-3 py-3 text-center">Type</th>
+              <th class="px-3 py-3 text-right">Discount %</th>
+              <th class="px-3 py-3 text-right">Rate ₹</th>
+              <th class="px-3 py-3 text-center">Min Qty</th>
+              <th class="px-3 py-3 text-center">Max Qty</th>
+              <th class="px-3 py-3 text-center">Valid From</th>
+              <th class="px-3 py-3 text-center">Valid Until</th>
+              <th class="px-3 py-3 text-center">Active</th>
+              <th class="px-3 py-3 text-center">Save</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading && !rules.length">
-              <td colspan="8" class="px-4 py-8 text-center text-slate-500">Syncing pricing rules...</td>
+              <td colspan="12" class="px-4 py-8 text-center text-slate-500">Loading pricing rules...</td>
             </tr>
             <tr v-else-if="!filteredRules.length">
-              <td colspan="8" class="px-4 py-8 text-center text-slate-500">{{ rules.length ? 'No rules match search' : 'No pricing rules found. Click Sync Now.' }}</td>
+              <td colspan="12" class="px-4 py-8 text-center text-slate-500">
+                {{ rules.length ? 'No rules match search' : 'No pricing rules found. Click Refresh.' }}
+              </td>
             </tr>
             <tr
               v-for="rule in filteredRules"
               :key="rule.name"
-              class="border-b border-slate-800 transition-colors hover:bg-slate-800/50"
+              class="border-b border-slate-800 transition-colors"
+              :class="dirty[rule.name] ? 'bg-amber-900/10' : 'hover:bg-slate-800/40'"
             >
-              <td class="px-4 py-3 font-medium text-slate-200">{{ rule.name }}</td>
-              <td class="px-4 py-3 text-slate-400">{{ rule.apply_on }}</td>
-              <td class="px-4 py-3">
+              <!-- Rule Name -->
+              <td class="px-3 py-2 font-medium text-slate-200 max-w-[180px]">
+                <div class="truncate" :title="rule.name">{{ rule.name }}</div>
+              </td>
+
+              <!-- Apply On / Items -->
+              <td class="px-3 py-2">
+                <div class="text-xs text-slate-500 mb-0.5">{{ rule.apply_on }}</div>
                 <div v-if="rule.item_codes && rule.item_codes.length" class="flex flex-wrap gap-1">
-                  <span
-                    v-for="code in rule.item_codes.slice(0, 3)"
-                    :key="code"
-                    class="rounded bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300"
-                  >{{ code }}</span>
-                  <span v-if="rule.item_codes.length > 3" class="text-xs text-slate-500">+{{ rule.item_codes.length - 3 }} more</span>
+                  <span v-for="code in rule.item_codes.slice(0, 2)" :key="code"
+                    class="rounded bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">{{ code }}</span>
+                  <span v-if="rule.item_codes.length > 2" class="text-[10px] text-slate-500">+{{ rule.item_codes.length - 2 }}</span>
                 </div>
                 <span v-else class="text-xs text-slate-600">All Items</span>
               </td>
-              <td class="px-4 py-3 text-slate-400">
+
+              <!-- Customer -->
+              <td class="px-3 py-2 text-xs text-slate-400">
                 <span v-if="rule.applicable_for === 'Customer' && rule.customer">{{ rule.customer }}</span>
                 <span v-else-if="rule.applicable_for === 'Customer Group' && rule.customer_group">{{ rule.customer_group }}</span>
-                <span v-else class="text-slate-600">All</span>
+                <span v-else class="text-slate-600">—</span>
               </td>
-              <td class="px-4 py-3 text-slate-400 tabular-nums">
-                <span v-if="rule.min_qty || rule.max_qty">
-                  {{ rule.min_qty || 0 }} – {{ rule.max_qty || '∞' }}
-                </span>
-                <span v-else class="text-slate-600">Any</span>
-              </td>
-              <td class="px-4 py-3">
-                <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" :class="{
+
+              <!-- Type badge -->
+              <td class="px-3 py-2 text-center">
+                <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase whitespace-nowrap" :class="{
                   'bg-amber-900/50 text-amber-300': rule.rate_or_discount === 'Discount Percentage',
                   'bg-emerald-900/50 text-emerald-300': rule.rate_or_discount === 'Rate',
                   'bg-blue-900/50 text-blue-300': rule.rate_or_discount === 'Discount Amount',
                 }">{{ rule.rate_or_discount }}</span>
               </td>
-              <td class="px-4 py-3 text-right font-mono font-bold">
-                <span v-if="rule.rate_or_discount === 'Discount Percentage'" class="text-amber-400">{{ rule.discount_percentage }}%</span>
-                <span v-else-if="rule.rate_or_discount === 'Rate'" class="text-emerald-400">₹{{ rule.rate }}</span>
-                <span v-else class="text-blue-400">₹{{ rule.discount_amount }}</span>
+
+              <!-- Discount % -->
+              <td class="px-3 py-2 text-right">
+                <input
+                  v-if="rule.rate_or_discount === 'Discount Percentage'"
+                  type="number" min="0" max="100" step="0.5"
+                  v-model.number="rule.discount_percentage"
+                  @input="markDirty(rule.name)"
+                  class="w-20 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-amber-300 outline-none focus:border-amber-500"
+                />
+                <span v-else class="text-slate-600">—</span>
               </td>
-              <td class="px-4 py-3 text-slate-400">{{ rule.valid_upto || '—' }}</td>
+
+              <!-- Rate -->
+              <td class="px-3 py-2 text-right">
+                <input
+                  v-if="rule.rate_or_discount === 'Rate'"
+                  type="number" min="0" step="0.01"
+                  v-model.number="rule.rate"
+                  @input="markDirty(rule.name)"
+                  class="w-24 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-emerald-300 outline-none focus:border-emerald-500"
+                />
+                <span v-else class="text-slate-600">—</span>
+              </td>
+
+              <!-- Min Qty -->
+              <td class="px-3 py-2 text-center">
+                <input
+                  type="number" min="0" step="1"
+                  v-model.number="rule.min_qty"
+                  @input="markDirty(rule.name)"
+                  class="w-16 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-center font-mono text-slate-300 outline-none focus:border-blue-500"
+                />
+              </td>
+
+              <!-- Max Qty -->
+              <td class="px-3 py-2 text-center">
+                <input
+                  type="number" min="0" step="1"
+                  v-model.number="rule.max_qty"
+                  @input="markDirty(rule.name)"
+                  class="w-16 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-center font-mono text-slate-300 outline-none focus:border-blue-500"
+                />
+              </td>
+
+              <!-- Valid From -->
+              <td class="px-3 py-2 text-center">
+                <input
+                  type="date"
+                  v-model="rule.valid_from"
+                  @input="markDirty(rule.name)"
+                  class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-300 outline-none focus:border-blue-500"
+                />
+              </td>
+
+              <!-- Valid Until -->
+              <td class="px-3 py-2 text-center">
+                <input
+                  type="date"
+                  v-model="rule.valid_upto"
+                  @input="markDirty(rule.name)"
+                  class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-300 outline-none focus:border-blue-500"
+                />
+              </td>
+
+              <!-- Active toggle -->
+              <td class="px-3 py-2 text-center">
+                <button
+                  @click="toggleDisable(rule)"
+                  class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase transition-colors"
+                  :class="rule.disable ? 'bg-red-900/50 text-red-400 hover:bg-red-900/70' : 'bg-green-900/50 text-green-400 hover:bg-green-900/70'"
+                >{{ rule.disable ? 'Off' : 'On' }}</button>
+              </td>
+
+              <!-- Save button -->
+              <td class="px-3 py-2 text-center">
+                <button
+                  v-if="dirty[rule.name]"
+                  @click="saveRule(rule)"
+                  :disabled="savingRow[rule.name]"
+                  class="rounded bg-amber-600 px-2 py-1 text-xs font-bold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                >{{ savingRow[rule.name] ? '...' : 'Save' }}</button>
+                <span v-else class="text-slate-700">—</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -124,22 +203,27 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { frappeGet } from '../api.js'
+import { frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
-const { pricingRules, refreshItemCache, lastSync, syncLoading } = useItemCache()
+const { pricingRules, refreshItemCache, lastSync } = useItemCache()
 
 const rules = ref([])
 const loading = ref(false)
+const saving = ref(false)
+const savingRow = reactive({})
+const dirty = reactive({})
 const search = ref('')
 
 const lastSyncLabel = computed(() => {
   if (!lastSync.value) return ''
   return new Date(lastSync.value).toLocaleTimeString()
 })
+
+const dirtyCount = computed(() => Object.values(dirty).filter(Boolean).length)
 
 const filteredRules = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -151,24 +235,65 @@ const filteredRules = computed(() => {
   )
 })
 
-async function syncRules() {
+function markDirty(name) {
+  dirty[name] = true
+}
+
+function toggleDisable(rule) {
+  rule.disable = rule.disable ? 0 : 1
+  markDirty(rule.name)
+}
+
+async function saveRule(rule) {
+  savingRow[rule.name] = true
+  try {
+    await frappePost('ssplbilling.api.itemsearch_api.save_pricing_rule', {
+      name: rule.name,
+      discount_percentage: rule.discount_percentage,
+      rate: rule.rate,
+      discount_amount: rule.discount_amount,
+      min_qty: rule.min_qty,
+      max_qty: rule.max_qty,
+      valid_from: rule.valid_from || '',
+      valid_upto: rule.valid_upto || '',
+      disable: rule.disable,
+    })
+    dirty[rule.name] = false
+  } catch (e) {
+    alert('Save failed: ' + (e?.message || e))
+  } finally {
+    savingRow[rule.name] = false
+  }
+}
+
+async function saveAll() {
+  saving.value = true
+  const dirtyRules = rules.value.filter(r => dirty[r.name])
+  await Promise.all(dirtyRules.map(saveRule))
+  saving.value = false
+  // Refresh item cache so runtime rules are up to date
+  await refreshItemCache('Sales')
+}
+
+async function fetchRules() {
   loading.value = true
   try {
     const data = await frappeGet('ssplbilling.api.itemsearch_api.get_pricing_rules')
-    rules.value = data || []
-    // Also refresh the item cache so runtime applyPricingRule is up to date
-    await refreshItemCache('Sales')
+    rules.value = (data || []).map(r => ({ ...r }))
+    Object.keys(dirty).forEach(k => delete dirty[k])
+    // Sync into item cache
+    pricingRules.value = rules.value
   } catch (e) {
-    console.error('Pricing rule sync failed:', e)
+    console.error('Pricing rule fetch failed:', e)
   } finally {
     loading.value = false
   }
 }
 
-// Load on mount from cache if available, else fetch
+// Load on mount
 if (pricingRules.value.length) {
-  rules.value = pricingRules.value
+  rules.value = pricingRules.value.map(r => ({ ...r }))
 } else {
-  syncRules()
+  fetchRules()
 }
 </script>
