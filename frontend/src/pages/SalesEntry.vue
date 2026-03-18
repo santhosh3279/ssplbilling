@@ -84,7 +84,7 @@
             :key="inv.name"
             :ref="el => setSidebarBillRef(el, idx)"
             @click="loadInvoice(inv.name)"
-            class="group cursor-pointer border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
+            class="group cursor-pointer border-b border-slate-800 bg-slate-900 px-2 py-1 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
             :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
             tabindex="0"
             @keydown.enter="loadInvoice(inv.name)"
@@ -92,22 +92,13 @@
             @keydown.down.prevent="navigateSidebarBill(idx, 1)"
           >
             <div class="flex items-center justify-between gap-1">
-              <div class="flex items-center gap-2 truncate">
-                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-2xl font-bold text-blue-400">{{ inv.name }}</span>
+              <div class="flex items-center gap-1.5 truncate min-w-0">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
+                <span class="truncate font-mono text-xs font-bold text-blue-400">{{ inv.name }}</span>
               </div>
-              <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter" :class="{
-                'bg-slate-700 text-slate-300': inv.status === 'Draft',
-                'bg-green-900 text-green-300': inv.status === 'Paid',
-                'bg-blue-900 text-blue-300': inv.status === 'Submitted',
-                'bg-red-900 text-red-300': inv.status === 'Cancelled'
-              }">{{ inv.status[0] }}</span>
+              <span class="shrink-0 font-mono text-xs font-bold text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="mt-0.5 truncate text-lg font-medium text-slate-300">{{ inv.customer_name }}</div>
-            <div class="flex items-center justify-between text-lg font-bold text-slate-200 tabular-nums">
-              <span>₹{{ inv.grand_total.toFixed(0) }}</span>
-              <span class="text-[9px] font-normal opacity-0 group-hover:opacity-100 transition-opacity">Click to Edit</span>
-            </div>
+            <div class="truncate text-[11px] text-slate-400">{{ inv.customer_name }}</div>
           </div>
         </div>
       </aside>
