@@ -86,6 +86,8 @@
             :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
             tabindex="0"
             @keydown.enter="loadInvoice(inv.name)"
+            @keydown.up.prevent="navigateSidebarBill(idx, -1)"
+            @keydown.down.prevent="navigateSidebarBill(idx, 1)"
           >
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-2 truncate">
@@ -730,6 +732,10 @@ const sidebarBillRefs = new Map()
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 function setSidebarBillRef(el, idx) { if (el) sidebarBillRefs.set(idx, el); else sidebarBillRefs.delete(idx) }
+function navigateSidebarBill(idx, dir) {
+  const target = sidebarBillRefs.get(idx + dir)
+  if (target) { target.focus(); target.scrollIntoView({ block: 'nearest' }) }
+}
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const customerInput = ref(null)
