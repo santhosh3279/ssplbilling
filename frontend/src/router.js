@@ -13,6 +13,7 @@ import PayRec from './pages/PayRec.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import MaterialTransfer from './pages/MaterialTransfer.vue'
 import CashierManagement from './pages/CashierManagement.vue'
+import PricingRuleSync from './pages/PricingRuleSync.vue'
 
 const routes = [
   {
@@ -81,6 +82,11 @@ const routes = [
     path: '/Cashier-Management',
     name: 'CashierManagement',
     component: CashierManagement,
+  },
+  {
+    path: '/pricing-rules',
+    name: 'PricingRuleSync',
+    component: PricingRuleSync,
   },
 ]
 

@@ -219,19 +219,21 @@ const tiles = [
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
   { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
+  { id: 'pricing-rules', name: 'Pricing Rules', desc: 'Sync and view pricing rules', icon: '🏷️', shortcut: '', tileBg: 'bg-pink-700' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
   { id: 'barcode-print', name: 'Print Barcode', desc: 'Print item barcodes', icon: '🏷️', shortcut: 'F7', tileBg: 'bg-green-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'barcode-print', 'journal-contra', 'material-transfer']
+const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'barcode-print', 'journal-contra', 'material-transfer', 'pricing-rules']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
-const routeAliases = { 
-  payment: '/payment', 
+const routeAliases = {
+  payment: '/payment',
   'journal-contra': '/journal-contra',
-  'material-transfer': '/material-transfer'
+  'material-transfer': '/material-transfer',
+  'pricing-rules': '/pricing-rules',
 }
 
 function openModule(id) {
