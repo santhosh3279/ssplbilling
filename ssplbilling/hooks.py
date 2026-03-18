@@ -6,7 +6,13 @@ app_email = "santhosh.sundaran007@gmail.com"
 app_license = "mit"
 
 fixtures = [
-	{"dt": "Custom Field", "filters": [["dt", "=", "Item"], ["fieldname", "=", "item_print_name"]]}
+	{
+		"dt": "Custom Field",
+		"filters": [
+			["dt", "in", ["Item", "Sales Invoice", "Purchase Invoice", "Stock Entry"]],
+			["fieldname", "in", ["item_print_name", "incentive_section", "incentive_system"]],
+		],
+	}
 ]
 
 # Apps
@@ -136,13 +142,17 @@ fixtures = [
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Sales Invoice": {
+		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
+	},
+	"Purchase Invoice": {
+		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
+	},
+	"Stock Entry": {
+		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
+	},
+}
 
 # Scheduled Tasks
 # ---------------
