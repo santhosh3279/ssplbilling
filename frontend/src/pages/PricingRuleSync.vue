@@ -85,8 +85,16 @@
               <label class="mb-1 block text-xs font-bold uppercase text-slate-500">
                 {{ newRule.rate_or_discount === 'Discount Percentage' ? 'Discount %' : newRule.rate_or_discount === 'Rate' ? 'Rate ₹' : 'Discount Amt ₹' }}
               </label>
-              <input
-                v-model.number="newRule.rate_or_discount === 'Discount Percentage' ? newRule.discount_percentage : newRule.rate_or_discount === 'Rate' ? newRule.rate : newRule.discount_amount"
+              <input v-if="newRule.rate_or_discount === 'Discount Percentage'"
+                v-model.number="newRule.discount_percentage"
+                type="number" min="0" max="100" step="0.5"
+                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
+              <input v-else-if="newRule.rate_or_discount === 'Rate'"
+                v-model.number="newRule.rate"
+                type="number" min="0" step="0.01"
+                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
+              <input v-else
+                v-model.number="newRule.discount_amount"
                 type="number" min="0" step="0.01"
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
             </div>
