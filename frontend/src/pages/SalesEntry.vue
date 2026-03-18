@@ -1591,8 +1591,9 @@ useShortcuts(salesEntryShortcuts({
   toggleDiscountSave: () => {
     if (showPrintModal.value) return
     const activeEl = document.activeElement
+    const isUpdateMode = !!savedInvoiceName.value  // discount/freight disabled in update mode
 
-    // Global summary inputs take priority
+    // Global summary inputs take priority (only reachable in new-bill mode)
     if (activeEl === discountInput.value) {
       freightInput.value?.focus()
       freightInput.value?.select()
@@ -1609,17 +1610,24 @@ useShortcuts(salesEntryShortcuts({
       if (selectedRow.value < lastActiveIdx) {
         // Jump to last active row
         selectRow(lastActiveIdx)
+      } else if (isUpdateMode) {
+        // Update mode: discount/freight disabled → save directly
+        saveBill()
       } else {
-        // Already on last row → go to global discount
+        // New bill: already on last row → go to global discount
         discountInput.value?.focus()
         discountInput.value?.select()
       }
       return
     }
 
-    // From new entry row or anywhere else → go to global discount
-    discountInput.value?.focus()
-    discountInput.value?.select()
+    // From new entry row or anywhere else
+    if (isUpdateMode) {
+      saveBill()
+    } else {
+      discountInput.value?.focus()
+      discountInput.value?.select()
+    }
   },
   jumpToFirstRow: () => {
     if (activeItems.value.length) selectRow(items.value.findIndex(i => !i.deleted))
