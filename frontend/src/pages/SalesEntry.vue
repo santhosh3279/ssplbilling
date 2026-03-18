@@ -484,7 +484,7 @@
       v-if="showPrintModal"
       :invoice-name="savedInvoiceName"
       :initial-print-format="printScheme"
-      @close="showPrintModal = false"
+      @close="showPrintModal = false; startNewBill()"
     />
 
     <JumpToRowModal 
@@ -1641,7 +1641,7 @@ useShortcuts(salesEntryShortcuts({
   contextualBack: () => {
     if (showJumpModal.value) { showJumpModal.value = false; return }
     if (showDiscardModal.value) { showDiscardModal.value = false; return }
-    if (showPrintModal.value) { showPrintModal.value = false; return }
+    if (showPrintModal.value) { showPrintModal.value = false; startNewBill(); return }
     if (showBarcodeModal.value) { showBarcodeModal.value = false; return }
     if (showImportModal.value) { showImportModal.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
