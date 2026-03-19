@@ -1,0 +1,7 @@
+{
+  "name": "ssplbilling",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && yarn install && yarn build"
+  }
+}
