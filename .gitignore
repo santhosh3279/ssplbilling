@@ -53,4 +53,9 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
-ssplbilling/public/frontend/
+
+# Ignore all contents of frontend directory
+ssplbilling/public/frontend/*
+
+# But keep the directory itself
+!ssplbilling/public/frontend/.gitkeep
