@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
+import fs from 'fs'
 import { getProxyOptions } from 'frappe-ui/src/utils/vite-dev-server'
 
 // Try to load site config, fallback to defaults if not available
@@ -8,9 +9,9 @@ let webserver_port = 8000
 let socketio_port = 9000
 
 try {
-  const siteConfig = await import('../../../sites/common_site_config.json', { assert: { type: 'json' } })
-  webserver_port = siteConfig.default.webserver_port || 8000
-  socketio_port = siteConfig.default.socketio_port || 9000
+  const siteConfig = JSON.parse(fs.readFileSync('../../../sites/common_site_config.json', 'utf-8'))
+  webserver_port = siteConfig.webserver_port || 8000
+  socketio_port = siteConfig.socketio_port || 9000
 } catch (e) {
   // Use defaults if config doesn't exist (e.g., during Docker build)
   console.log('Using default ports (site config not found)')
