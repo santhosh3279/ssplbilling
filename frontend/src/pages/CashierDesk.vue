@@ -294,7 +294,7 @@
               <!-- Input Grid -->
               <div v-if="!isCredit" class="space-y-2">
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-blue-400 transition-colors uppercase">Cash</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-blue-400 transition-colors uppercase">{{ cashLabel }}</div>
                   <input
                     ref="cashInput"
                     type="number"
@@ -304,7 +304,7 @@
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-teal-400 transition-colors uppercase">UPI</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-teal-400 transition-colors uppercase">{{ upiLabel }}</div>
                   <input
                     ref="upiInput"
                     type="number"
@@ -314,17 +314,17 @@
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-sky-400 transition-colors uppercase">Bank</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-sky-400 transition-colors uppercase">{{ cardLabel }}</div>
                   <input
-                    ref="bankInput"
+                    ref="cardInput"
                     type="number"
-                    v-model="payments.bank"
+                    v-model="payments.card"
                     @focus="$event.target.select()"
                     class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-16 pr-4 text-right font-mono font-black text-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-amber-400 transition-colors uppercase">Disc</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-amber-400 transition-colors uppercase">{{ discountLabel }}</div>
                   <input
                     ref="discountInput"
                     type="number"
@@ -394,37 +394,37 @@
       </aside>
     </div>
 
-    <!-- BANK REFERENCE MODAL -->
-    <div v-if="showBankRefModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+    <!-- CARD REFERENCE MODAL -->
+    <div v-if="showCardRefModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
       <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700 animate-in fade-in zoom-in duration-200">
         <div class="p-5 border-b border-slate-700 flex justify-between items-center">
           <h3 class="text-sm font-bold uppercase tracking-widest text-slate-300 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-            Bank Transfer Reference
+            Card / {{ cardLabel }} Reference
           </h3>
-          <button @click="showBankRefModal = false" class="text-slate-600 hover:text-slate-300 transition-colors">
+          <button @click="showCardRefModal = false" class="text-slate-600 hover:text-slate-300 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
         <div class="p-6 space-y-5">
           <div class="rounded-lg bg-sky-900/30 border border-sky-700/50 p-3">
-            <p class="text-[11px] font-bold text-sky-400 leading-relaxed uppercase tracking-wider">Enter the UTR or Reference Number for the bank transfer.</p>
+            <p class="text-[11px] font-bold text-sky-400 leading-relaxed uppercase tracking-wider">Enter the authorization or reference number for the card payment.</p>
           </div>
           <input
-            ref="bankRefInput"
-            v-model="bankRefNo"
-            @keydown.enter="confirmBankRef"
+            ref="cardRefInput"
+            v-model="cardRefNo"
+            @keydown.enter="confirmCardRef"
             class="w-full rounded-xl border border-slate-700 bg-slate-900 py-4 px-5 font-mono font-black text-slate-200 placeholder-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all outline-none"
-            placeholder="Enter bank reference..."
+            placeholder="Enter card reference..."
           />
           <div class="flex gap-3">
             <button
-              @click="showBankRefModal = false"
+              @click="showCardRefModal = false"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-slate-500 bg-slate-700 hover:bg-slate-600 transition-all active:scale-95"
             >Cancel</button>
             <button
-              @click="confirmBankRef"
-              :disabled="!bankRefNo"
+              @click="confirmCardRef"
+              :disabled="!cardRefNo"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >Confirm & Post</button>
           </div>
@@ -487,8 +487,8 @@ function getTodayIST() {
 const filterDate = ref(getTodayIST())
 const searchQuery = ref('')
 const showUnpaid = ref(false)
-const showBankRefModal = ref(false)
-const bankRefNo = ref('')
+const showCardRefModal = ref(false)
+const cardRefNo = ref('')
 const showOpeningRequiredModal = ref(false)
 
 const invoices = ref([])
@@ -505,24 +505,24 @@ const successMsg = ref('')
 const payments = ref({
   cash: 0,
   upi: 0,
-  bank: 0,
+  card: 0,
   discount: 0
 })
 
 const seriesAccounts = ref({
   cash: '',
   upi: '',
-  bank: '',
+  card: '',
   discount: ''
 })
 
 // DOM Refs
 const cashInput = ref(null)
 const upiInput = ref(null)
-const bankInput = ref(null)
+const cardInput = ref(null)
 const discountInput = ref(null)
 const dueDateInput = ref(null)
-const bankRefInput = ref(null)
+const cardRefInput = ref(null)
 const dateInput = ref(null)
 
 // ==================== COMPUTED ====================
@@ -530,6 +530,15 @@ const userInitials = computed(() => {
   const name = String(session.fullName.value || session.user.value || 'U')
   return name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || 'U'
 })
+
+function glLabel(key, fallback) {
+  const acc = localStorage.getItem(key) || ''
+  return acc ? acc.split(' - ')[0].trim() : fallback
+}
+const cashLabel     = computed(() => glLabel('wb-cash',             'Cash'))
+const upiLabel      = computed(() => glLabel('wb-upi',              'UPI'))
+const cardLabel     = computed(() => glLabel('wb-card',             'Card'))
+const discountLabel = computed(() => glLabel('wb-discount-account', 'Disc'))
 
 const todayStr = computed(() => {
   return new Date().toLocaleDateString('en-IN', { 
@@ -549,9 +558,9 @@ const amountToCollect = computed(() => {
 })
 
 const totalPaid = computed(() => {
-  const sum = (Number(payments.value.cash) || 0) + 
-              (Number(payments.value.upi) || 0) + 
-              (Number(payments.value.bank) || 0) + 
+  const sum = (Number(payments.value.cash) || 0) +
+              (Number(payments.value.upi) || 0) +
+              (Number(payments.value.card) || 0) +
               (Number(payments.value.discount) || 0)
   return parseFloat(sum.toFixed(2))
 })
@@ -562,9 +571,9 @@ const balance = computed(() => {
 })
 
 const changeAmount = computed(() => {
-  const actualMoney = (Number(payments.value.cash) || 0) + 
-                      (Number(payments.value.upi) || 0) + 
-                      (Number(payments.value.bank) || 0)
+  const actualMoney = (Number(payments.value.cash) || 0) +
+                      (Number(payments.value.upi) || 0) +
+                      (Number(payments.value.card) || 0)
   const netToPay = amountToCollect.value - (Number(payments.value.discount) || 0)
   const change = actualMoney - netToPay
   return change > 0.005 ? parseFloat(change.toFixed(2)) : 0
@@ -665,15 +674,15 @@ async function selectInvoice(inv) {
   errorMsg.value = ''
   successMsg.value = ''
   isCredit.value = false
-  bankRefNo.value = ''
+  cardRefNo.value = ''
   
-  payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
+  payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
   
   try {
     const details = await getInvoiceDetails(inv.name)
     selectedInvoice.value = details
     previewItems.value = details.items || []
-    payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
+    payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
     await loadSeriesSettings(details.naming_series)
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
@@ -686,16 +695,16 @@ async function loadSeriesSettings(series) {
   try {
     const lsCash = localStorage.getItem('wb-cash')
     const lsUpi  = localStorage.getItem('wb-upi')
-    const lsBank = localStorage.getItem('wb-bank')
+    const lsCard = localStorage.getItem('wb-card')
     const settings = await fetchDashboardSettings()
     const discountAccount = settings.discount_account || 'Write Off - SSPL'
 
-    if (lsCash || lsUpi || lsBank) {
+    if (lsCash || lsUpi || lsCard) {
       const seriesConfig = (settings.billing_series || []).find(s => s.series === series)
       seriesAccounts.value = {
         cash:     lsCash || seriesConfig?.cash_account || 'Cash',
         upi:      lsUpi  || seriesConfig?.upi          || 'UPI',
-        bank:     lsBank || seriesConfig?.bank         || 'Bank',
+        card:     lsCard || seriesConfig?.card         || 'Card',
         discount: discountAccount,
       }
     } else {
@@ -704,7 +713,7 @@ async function loadSeriesSettings(series) {
       seriesAccounts.value = {
         cash:     userDefaults.cash         || seriesConfig?.cash_account || 'Cash',
         upi:      userDefaults.upi          || seriesConfig?.upi          || 'UPI',
-        bank:     userDefaults.bank_account || seriesConfig?.bank         || 'Bank',
+        card:     userDefaults.card          || seriesConfig?.card         || 'Card',
         discount: discountAccount,
       }
     }
@@ -716,15 +725,15 @@ async function loadSeriesSettings(series) {
 function initAccountsFromLocalStorage() {
   const lsCash = localStorage.getItem('wb-cash')
   const lsUpi  = localStorage.getItem('wb-upi')
-  const lsBank = localStorage.getItem('wb-bank')
+  const lsCard = localStorage.getItem('wb-card')
   if (lsCash) seriesAccounts.value.cash = lsCash
   if (lsUpi)  seriesAccounts.value.upi  = lsUpi
-  if (lsBank) seriesAccounts.value.bank = lsBank
+  if (lsCard) seriesAccounts.value.card = lsCard
 }
 
 function toggleCredit(val) {
   isCredit.value = (val !== undefined && typeof val === 'boolean') ? val : !isCredit.value
-  payments.value = { cash: 0, upi: 0, bank: 0, discount: 0 }
+  payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
   if (isCredit.value) {
     nextTick(() => dueDateInput.value?.focus())
   } else {
@@ -752,40 +761,40 @@ async function processPayment() {
     } catch (e) { console.error(e) }
   }
 
-  if (Number(payments.value.bank) > 0.01 && !bankRefNo.value) {
-    showBankRefModal.value = true
-    nextTick(() => bankRefInput.value?.focus())
+  if (Number(payments.value.card) > 0.01 && !cardRefNo.value) {
+    showCardRefModal.value = true
+    nextTick(() => cardRefInput.value?.focus())
     return
   }
 
   isSubmitting.value = true
   errorMsg.value = ''
   successMsg.value = ''
-  
+
   try {
     const bill = amountToCollect.value
-    const upi = Number(payments.value.upi) || 0
-    const bank = Number(payments.value.bank) || 0
+    const upi  = Number(payments.value.upi)  || 0
+    const card = Number(payments.value.card) || 0
     const disc = Number(payments.value.discount) || 0
     let cash = Number(payments.value.cash) || 0
 
-    const total = cash + upi + bank + disc
+    const total = cash + upi + card + disc
     if (total > bill + 0.005) {
-      cash = bill - upi - bank - disc
+      cash = bill - upi - card - disc
     }
 
     const payload = {
       invoice_name: selectedInvoice.value.name,
       cash_amount: cash,
       upi_amount: upi,
-      bank_amount: bank,
+      card_amount: card,
       discount_amount: disc,
       is_credit: isCredit.value,
       due_date: getIsoDueDate(),
-      bank_ref_no: bankRefNo.value,
+      card_ref_no: cardRefNo.value,
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
-      bank_account: seriesAccounts.value.bank,
+      card_account: seriesAccounts.value.card,
       discount_account: seriesAccounts.value.discount
     }
     
@@ -808,9 +817,9 @@ async function processPayment() {
   }
 }
 
-async function confirmBankRef() {
-  if (!bankRefNo.value) return
-  showBankRefModal.value = false
+async function confirmCardRef() {
+  if (!cardRefNo.value) return
+  showCardRefModal.value = false
   await processPayment()
 }
 

@@ -228,6 +228,13 @@ def create_sales_invoice(data=None, **kwargs):
         except Exception:
             pass
 
+    for row in data.get("incentive_system") or []:
+        si.append("incentive_system", {
+            "employee": row.get("employee"),
+            "role": row.get("role"),
+            "points": row.get("points") or 0,
+        })
+
     si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []
@@ -305,7 +312,15 @@ def update_sales_invoice(data=None, **kwargs):
     si.items = []
     for item in data["items"]:
         si.append("items", {"item_code": item["item_code"], "qty": float(item["qty"]), "rate": float(item["rate"]), "warehouse": item.get("warehouse")})
-    
+
+    si.set("incentive_system", [])
+    for row in data.get("incentive_system") or []:
+        si.append("incentive_system", {
+            "employee": row.get("employee"),
+            "role": row.get("role"),
+            "points": row.get("points") or 0,
+        })
+
     si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []

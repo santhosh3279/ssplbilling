@@ -7,6 +7,37 @@
   "label": "Item Print Name"
  },
  {
+  "dt": "Employee",
+  "fieldname": "incentive_section",
+  "fieldtype": "Section Break",
+  "insert_after": "create_user_permission",
+  "label": "Incentive"
+ },
+ {
+  "dt": "Employee",
+  "fieldname": "total_incentive",
+  "fieldtype": "Float",
+  "insert_after": "incentive_section",
+  "label": "Total",
+  "read_only": 1
+ },
+ {
+  "dt": "Employee",
+  "fieldname": "redeemed_incentive",
+  "fieldtype": "Float",
+  "insert_after": "total_incentive",
+  "label": "Redeemed",
+  "read_only": 1
+ },
+ {
+  "dt": "Employee",
+  "fieldname": "balance_incentive",
+  "fieldtype": "Float",
+  "insert_after": "redeemed_incentive",
+  "label": "Balance",
+  "read_only": 1
+ },
+ {
   "dt": "Sales Invoice",
   "fieldname": "incentive_section",
   "fieldtype": "Section Break",

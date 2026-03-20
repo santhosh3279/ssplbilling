@@ -1,19 +1,19 @@
 <template>
   <div 
     v-if="show" 
-    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
     @click.self="$emit('close')"
   >
-    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
-      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+      <div class="px-6 py-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
         <div>
-          <h3 class="text-xl font-bold text-slate-800">Create New Item</h3>
-          <p class="text-sm text-slate-500">Add a new item to the system</p>
+          <h3 class="text-xl font-bold text-slate-100">Create New Item</h3>
+          <p class="text-sm text-slate-400">Add a new item to the system</p>
         </div>
-        <button 
-          @click="$emit('close')" 
-          class="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-100 rounded-full"
+        <button
+          @click="$emit('close')"
+          class="text-slate-500 hover:text-slate-300 transition-colors p-2 hover:bg-slate-700 rounded-full"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
@@ -25,11 +25,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-1.5 md:col-span-2">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Item Name *</label>
-            <input 
+            <input
               ref="itemNameInput"
               v-model="form.item_name"
               type="text"
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-lg font-medium outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-lg font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="Enter full item name..."
               @keydown.enter.prevent="itemPrintNameInput?.focus()"
             />
@@ -37,11 +37,11 @@
 
           <div class="space-y-1.5 md:col-span-2">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Item Print Name</label>
-            <input 
+            <input
               ref="itemPrintNameInput"
               v-model="form.item_print_name"
               type="text"
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-lg font-medium outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-lg font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="Name as shown on printouts..."
               @keydown.enter.prevent="barcodeInput?.focus()"
             />
@@ -50,11 +50,11 @@
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Barcode / Code</label>
             <div class="relative">
-              <input 
+              <input
                 ref="barcodeInput"
                 v-model="form.barcode"
                 type="text"
-                class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 font-mono text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 font-mono text-base text-slate-200 outline-none focus:border-blue-500 transition-all"
                 placeholder="Enter alphanumeric barcode..."
                 @focus="e => e.target.select()"
                 @keydown.enter.prevent="itemGroupInput?.focus()"
@@ -67,10 +67,10 @@
 
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Item Group *</label>
-            <select 
+            <select
               ref="itemGroupInput"
               v-model="form.item_group"
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-base text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
               @keydown.enter.prevent="hsnInput?.focus()"
             >
               <option value="">Select Group...</option>
@@ -80,35 +80,35 @@
 
           <div class="space-y-1.5 relative">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">HSN/SAC Code</label>
-            <input 
+            <input
               ref="hsnInput"
               v-model="form.hsn_sac"
               type="text"
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-base text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="Search code..."
               @focus="showHSNDropdown = true"
               @blur="setTimeout(() => showHSNDropdown = false, 200)"
               @keydown.enter.prevent="onHSNEnter"
             />
-            <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-xl bg-white p-1 shadow-xl border border-slate-100">
+            <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 p-1 shadow-xl">
               <button
                 v-for="res in filteredHSNCodes"
                 :key="res.name"
-                class="w-full rounded-lg px-4 py-2 text-left hover:bg-blue-50 transition-colors group flex flex-col gap-0.5"
+                class="w-full rounded-lg px-4 py-2 text-left hover:bg-blue-900/30 transition-colors group flex flex-col gap-0.5"
                 @click="selectHSN(res.name)"
               >
-                <span class="text-sm font-bold text-slate-700 group-hover:text-blue-600">{{ res.name }}</span>
-                <span v-if="res.description" class="text-[10px] text-slate-400 truncate line-clamp-1 italic">{{ res.description }}</span>
+                <span class="text-sm font-bold text-slate-200 group-hover:text-blue-400">{{ res.name }}</span>
+                <span v-if="res.description" class="text-[10px] text-slate-500 truncate line-clamp-1 italic">{{ res.description }}</span>
               </button>
             </div>
           </div>
 
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Default UOM *</label>
-            <select 
+            <select
               ref="uomInput"
               v-model="form.stock_uom"
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-base text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
               @keydown.enter.prevent="rateInput?.focus()"
             >
               <option v-for="u in metadata.uoms" :key="u.name" :value="u.name">{{ u.name }}</option>
@@ -118,12 +118,12 @@
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Standard Rate (Selling)</label>
             <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
-              <input 
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-500">₹</span>
+              <input
                 ref="rateInput"
                 v-model.number="form.standard_rate"
                 type="number"
-                class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-right font-mono text-lg font-bold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 pl-8 pr-4 text-right font-mono text-lg font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all"
                 placeholder="0.00"
                 @keydown.enter.prevent="safetyStockInput?.focus()"
               />
@@ -132,11 +132,11 @@
 
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Safety Stock</label>
-            <input 
+            <input
               ref="safetyStockInput"
               v-model.number="form.safety_stock"
               type="number"
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-right font-mono text-lg text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-right font-mono text-lg text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="0"
               @keydown.enter.prevent="taxTemplateInput?.focus()"
             />
@@ -144,10 +144,10 @@
 
           <div class="space-y-1.5 md:col-span-2">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Tax Template</label>
-            <select 
+            <select
               ref="taxTemplateInput"
               v-model="form.item_tax_template"
-              class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-base outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-base text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
               @keydown.enter.prevent="handleSubmit"
             >
               <option value="">No Tax / Exempt</option>
@@ -158,18 +158,18 @@
       </div>
 
       <!-- Footer Actions -->
-      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex gap-3">
-        <button 
+      <div class="px-6 py-4 bg-slate-800 border-t border-slate-700 flex gap-3">
+        <button
           @click="$emit('close')"
-          class="flex-1 rounded-xl py-3 text-sm font-bold uppercase tracking-widest text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+          class="flex-1 rounded-xl py-3 text-sm font-bold uppercase tracking-widest text-slate-400 bg-slate-700 border border-slate-600 hover:bg-slate-600 transition-all active:scale-95"
         >
           Cancel
         </button>
-        <button 
+        <button
           @click="handleSubmit"
           :disabled="isSubmitting || !canSubmit"
-          class="flex-[2] rounded-xl py-3 text-sm font-bold uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
-          :class="canSubmit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300'"
+          class="flex-[2] rounded-xl py-3 text-sm font-bold uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg flex items-center justify-center gap-2"
+          :class="canSubmit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-700'"
         >
           <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
           <span v-else>Create Item</span>

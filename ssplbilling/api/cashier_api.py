@@ -124,23 +124,23 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	invoice_name = data.get("invoice_name")
 	cash_amount = float(data.get("cash_amount") or 0)
 	upi_amount = float(data.get("upi_amount") or 0)
-	bank_amount = float(data.get("bank_amount") or 0)
+	card_amount = float(data.get("card_amount") or 0)
 	discount_amount = float(data.get("discount_amount") or 0)
 	is_credit = bool(data.get("is_credit"))
 
 	# Explicit accounts passed from frontend
 	f_cash_account = data.get("cash_account")
 	f_upi_account = data.get("upi_account")
-	f_bank_account = data.get("bank_account")
+	f_card_account = data.get("card_account")
 	f_discount_account = data.get("discount_account")
-	bank_ref_no = data.get("bank_ref_no")
+	card_ref_no = data.get("card_ref_no")
 
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	grand_total = float(si.grand_total)
 	company = si.company
 
 	if not is_credit:
-		total_payment = cash_amount + upi_amount + bank_amount + discount_amount
+		total_payment = cash_amount + upi_amount + card_amount + discount_amount
 		target_amount = float(si.outstanding_amount if si.docstatus == 1 else grand_total)
 		if total_payment < target_amount - 0.01:
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
@@ -171,7 +171,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	cash_account = f_cash_account or (user_row.cash if user_row else None) or _mop_account("Cash")
 	upi_account = f_upi_account or (user_row.upi if user_row else None) or _mop_account("UPI")
-	bank_account = f_bank_account or (user_row.get("bank") or user_row.get("bank_account") if user_row else None) or _mop_account("Bank Transfer")
+	card_account = f_card_account or (user_row.card if user_row else None) or _mop_account("Credit Card")
 	discount_account = f_discount_account or settings.discount_account or \
 		frappe.get_cached_value("Company", company, "write_off_account") or ""
 
@@ -195,7 +195,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	cash_account     = _resolve_gl_account(cash_account)
 	upi_account      = _resolve_gl_account(upi_account)
-	bank_account     = _resolve_gl_account(bank_account)
+	card_account     = _resolve_gl_account(card_account)
 	discount_account = _resolve_gl_account(discount_account)
 
 	def _mop_for_account(account):
@@ -208,6 +208,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	def _create_pe(amount, paid_to_account, ref_no=None):
 		if amount <= 0 or not paid_to_account: return None
+		outstanding = frappe.db.get_value("Sales Invoice", si.name, "outstanding_amount") or 0
+		allocated = min(amount, outstanding)
 		mop = _mop_for_account(paid_to_account)
 		pe = frappe.new_doc("Payment Entry")
 		pe.payment_type = "Receive"
@@ -223,7 +225,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		if ref_no:
 			pe.reference_no = ref_no
 			pe.reference_date = today
-		pe.append("references", {"reference_doctype": "Sales Invoice", "reference_name": si.name, "allocated_amount": amount})
+		if allocated > 0:
+			pe.append("references", {"reference_doctype": "Sales Invoice", "reference_name": si.name, "allocated_amount": allocated})
 		pe.insert(); pe.submit()
 		return pe.name
 
@@ -245,8 +248,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		pe_name = _create_pe(upi_amount, upi_account)
 		if pe_name: payment_entries.append(pe_name)
 
-	if bank_amount > 0.01:
-		pe_name = _create_pe(bank_amount, bank_account, ref_no=bank_ref_no)
+	if card_amount > 0.01:
+		pe_name = _create_pe(card_amount, card_account, ref_no=card_ref_no)
 		if pe_name: payment_entries.append(pe_name)
 
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}

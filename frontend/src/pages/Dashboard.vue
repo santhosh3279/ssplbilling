@@ -162,7 +162,7 @@
     <transition name="pop">
       <div v-if="showSyncSuccess" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[2px]" @click.self="showSyncSuccess = false">
         <div class="scale-110 rounded-2xl bg-slate-800 p-8 shadow-2xl border border-slate-600 flex flex-col items-center">
-          <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl text-emerald-500 shadow-inner">
+          <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-900/20 text-3xl text-emerald-400 shadow-inner">
             ✅
           </div>
           <h3 class="text-xl font-bold text-white">Sync Complete</h3>

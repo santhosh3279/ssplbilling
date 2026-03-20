@@ -9,8 +9,19 @@ fixtures = [
 	{
 		"dt": "Custom Field",
 		"filters": [
-			["dt", "in", ["Item", "Sales Invoice", "Purchase Invoice", "Stock Entry"]],
-			["fieldname", "in", ["item_print_name", "incentive_section", "incentive_system"]],
+			["dt", "in", ["Item", "Employee", "Sales Invoice", "Purchase Invoice", "Stock Entry"]],
+			[
+				"fieldname",
+				"in",
+				[
+					"item_print_name",
+					"incentive_section",
+					"incentive_system",
+					"total_incentive",
+					"redeemed_incentive",
+					"balance_incentive",
+				],
+			],
 		],
 	}
 ]
@@ -145,12 +156,15 @@ fixtures = [
 doc_events = {
 	"Sales Invoice": {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
+		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
 	},
 	"Purchase Invoice": {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
+		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
 	},
 	"Stock Entry": {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
+		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
 	},
 }
 

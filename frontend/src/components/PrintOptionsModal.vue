@@ -1,28 +1,25 @@
 <template>
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
     @click.self="$emit('close')"
   >
     <div
-      class="overflow-hidden rounded-2xl shadow-2xl flex transition-all duration-300"
-      :style="previewUrl ? 'width:900px;height:88vh;background:#ffffff;color:#1e293b' : 'width:400px;background:#ffffff;color:#1e293b'"
+      class="overflow-hidden rounded-2xl border border-slate-700 shadow-2xl flex transition-all duration-300 bg-slate-900 text-slate-200"
+      :style="previewUrl ? 'width:900px;height:88vh' : 'width:400px'"
     >
 
       <!-- Left panel: controls (always visible) -->
-      <div class="flex flex-col" :style="previewUrl ? 'width:340px;min-width:340px;border-right:1px solid #f1f5f9' : 'width:100%'">
+      <div class="flex flex-col" :style="previewUrl ? 'width:340px;min-width:340px;border-right:1px solid #334155' : 'width:100%'">
 
         <!-- Header -->
-        <div class="flex items-center justify-between border-b px-6 py-4" style="border-color:#f1f5f9">
+        <div class="flex items-center justify-between border-b border-slate-700 px-6 py-4 bg-slate-800">
           <div>
-            <div class="text-[10px] uppercase tracking-widest font-bold" style="color:#94a3b8">Bill Saved</div>
-            <div class="font-mono text-xl font-bold" style="color:#16a34a">{{ invoiceName }}</div>
+            <div class="text-[10px] uppercase tracking-widest font-bold text-slate-500">Bill Saved</div>
+            <div class="font-mono text-xl font-bold text-green-400">{{ invoiceName }}</div>
           </div>
           <button
             @click="$emit('close')"
-            class="rounded-lg px-3 py-1.5 text-xs transition-colors border"
-            style="background:#f8fafc;color:#64748b;border-color:#e2e8f0"
-            @mouseenter="e => { e.currentTarget.style.background='#f1f5f9'; e.currentTarget.style.color='#1e293b' }"
-            @mouseleave="e => { e.currentTarget.style.background='#f8fafc'; e.currentTarget.style.color='#64748b' }"
+            class="rounded-lg px-3 py-1.5 text-xs transition-colors border border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-slate-100"
           >
             ✕ Close
           </button>
@@ -30,7 +27,7 @@
 
         <!-- ── Combined Print Options ── -->
         <div class="flex flex-col gap-5 p-6 overflow-y-auto flex-1">
-          <div v-if="loading" class="py-6 text-center text-xs font-medium" style="color:#94a3b8">
+          <div v-if="loading" class="py-6 text-center text-xs font-medium text-slate-500">
             Loading printers &amp; templates…
           </div>
 
@@ -40,16 +37,13 @@
               <!-- Template -->
               <div>
                 <div class="mb-1 flex items-center justify-between">
-                  <label class="block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Template</label>
-                  <kbd class="rounded border border-gray-200 bg-white px-1 py-0.5 font-mono text-[9px] text-gray-400">F2</kbd>
+                  <label class="block text-[10px] uppercase tracking-wider font-bold text-slate-500">Template</label>
+                  <kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-400">F2</kbd>
                 </div>
                 <select
                   ref="templateSelect"
                   v-model="selectedTemplate"
-                  class="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all shadow-sm"
-                  style="background:#f8fafc;border-color:#e2e8f0;color:#1e293b"
-                  @focus="e => { e.target.style.borderColor='#3b82f6'; e.target.style.background='#ffffff' }"
-                  @blur="e => { e.target.style.borderColor='#e2e8f0'; e.target.style.background='#f8fafc' }"
+                  class="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none transition-all shadow-sm focus:border-blue-500"
                 >
                   <option v-for="t in templates" :key="t.name" :value="t.name">{{ t.name }}</option>
                   <option v-if="!templates.length" disabled value="">No templates found</option>
@@ -58,14 +52,11 @@
 
               <!-- Printer -->
               <div>
-                <label class="mb-1 block text-[10px] uppercase tracking-wider font-bold" style="color:#94a3b8">Printer</label>
+                <label class="mb-1 block text-[10px] uppercase tracking-wider font-bold text-slate-500">Printer</label>
                 <select
                   ref="printerSelect"
                   v-model="selectedPrinter"
-                  class="w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all shadow-sm"
-                  style="background:#f8fafc;border-color:#e2e8f0;color:#1e293b"
-                  @focus="e => { e.target.style.borderColor='#3b82f6'; e.target.style.background='#ffffff' }"
-                  @blur="e => { e.target.style.borderColor='#e2e8f0'; e.target.style.background='#f8fafc' }"
+                  class="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none transition-all shadow-sm focus:border-blue-500"
                 >
                   <option v-for="p in printers" :key="p.name" :value="p.name">
                     {{ p.printer_name }} — {{ p.status }}
@@ -76,8 +67,8 @@
             </div>
 
             <!-- Error / success -->
-            <div v-if="error" class="rounded-lg px-3 py-2 text-xs font-medium border" style="background:#fef2f2;color:#ef4444;border-color:#fee2e2">{{ error }}</div>
-            <div v-if="success" class="rounded-lg px-3 py-2 text-xs font-medium border" style="background:#f0fdf4;color:#16a34a;border-color:#dcfce7">{{ success }}</div>
+            <div v-if="error" class="rounded-lg px-3 py-2 text-xs font-medium border bg-red-900/20 text-red-400 border-red-700">{{ error }}</div>
+            <div v-if="success" class="rounded-lg px-3 py-2 text-xs font-medium border bg-green-900/20 text-green-400 border-green-700">{{ success }}</div>
 
             <!-- Actions -->
             <div class="flex flex-col gap-3 mt-2">
@@ -86,9 +77,9 @@
                 @click="sendPrint"
                 :disabled="printing || !printers.length || !templates.length"
                 class="w-full rounded-xl py-3.5 text-sm font-bold tracking-wider transition-all flex items-center justify-center gap-3 shadow-md"
-                :style="(!printing && printers.length && templates.length)
-                  ? 'background:#2563eb;color:#fff;cursor:pointer'
-                  : 'background:#f1f5f9;color:#94a3b8;cursor:not-allowed'"
+                :class="(!printing && printers.length && templates.length)
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'"
               >
                 <span class="text-lg">🖨</span>
                 {{ printing ? 'Sending to printer…' : 'Print Now' }}
@@ -99,13 +90,13 @@
                 @click="openPreview"
                 :disabled="previewing || !templates.length"
                 class="w-full rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                :style="previewUrl
-                  ? 'background:#eff6ff;color:#2563eb;border-color:#bfdbfe'
-                  : 'border-color:#e2e8f0;color:#475569;background:#f8fafc'"
+                :class="previewUrl
+                  ? 'bg-blue-900/20 text-blue-400 border-blue-700'
+                  : 'border-slate-600 text-slate-300 bg-slate-800 hover:bg-slate-700'"
               >
                 <span class="text-lg">📄</span>
                 {{ previewing ? 'Generating…' : previewUrl ? 'Refresh Preview' : 'Print Preview' }}
-                <kbd v-if="!previewing" class="rounded border border-gray-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-gray-400">P</kbd>
+                <kbd v-if="!previewing" class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">P</kbd>
               </button>
             </div>
           </template>
@@ -113,12 +104,12 @@
       </div>
 
       <!-- Right panel: inline PDF preview -->
-      <div v-if="previewUrl" class="flex flex-col flex-1 bg-gray-100">
-        <div class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2">
-          <span class="text-xs font-semibold text-gray-500">Preview — {{ selectedTemplate }}</span>
+      <div v-if="previewUrl" class="flex flex-col flex-1 bg-slate-800">
+        <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2">
+          <span class="text-xs font-semibold text-slate-400">Preview — {{ selectedTemplate }}</span>
           <button
             @click="closePreview"
-            class="rounded px-2 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            class="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-700 hover:text-slate-300"
           >✕ Close Preview</button>
         </div>
         <iframe

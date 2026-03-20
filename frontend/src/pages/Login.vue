@@ -1,27 +1,27 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gray-50">
+  <div class="flex min-h-screen items-center justify-center bg-slate-900">
     <div class="w-full max-w-sm">
       <!-- Logo -->
       <div class="mb-8 text-center">
-        <div class="mb-2 text-3xl font-bold text-gray-900">SSPL<span class="font-light text-gray-400">Billing</span></div>
-        <p class="text-sm text-gray-500">Sign in to your account</p>
+        <div class="mb-2 text-3xl font-bold text-slate-100">SSPL<span class="font-light text-slate-400">Billing</span></div>
+        <p class="text-sm text-slate-500">Sign in to your account</p>
       </div>
 
       <!-- Login Card -->
-      <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-sm">
         <!-- Error -->
-        <div v-if="errorMsg" class="mb-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+        <div v-if="errorMsg" class="mb-4 rounded-lg bg-red-900/20 px-4 py-2.5 text-sm text-red-400">
           {{ errorMsg }}
         </div>
 
         <!-- Email -->
         <div class="mb-4 flex flex-col gap-1.5">
-          <label class="text-xs font-semibold text-gray-600">Email or Username</label>
+          <label class="text-xs font-semibold text-slate-400">Email or Username</label>
           <input
             ref="emailInput"
             v-model="email"
             type="text"
-            class="rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 outline-none transition focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500"
             placeholder="user@company.com"
             @keydown.enter="focusPassword"
           />
@@ -29,12 +29,12 @@
 
         <!-- Password -->
         <div class="mb-6 flex flex-col gap-1.5">
-          <label class="text-xs font-semibold text-gray-600">Password</label>
+          <label class="text-xs font-semibold text-slate-400">Password</label>
           <input
             ref="passwordInput"
             v-model="password"
             type="password"
-            class="rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 outline-none transition focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500"
             placeholder="••••••••"
             @keydown.enter="handleLogin"
           />
@@ -50,7 +50,7 @@
         </button>
       </div>
 
-      <p class="mt-6 text-center text-xs text-gray-400">
+      <p class="mt-6 text-center text-xs text-slate-500">
         Powered by ERPNext
       </p>
     </div>

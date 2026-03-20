@@ -1,16 +1,16 @@
 <template>
   <div
     v-if="show"
-    class="w-[640px] rounded-xl bg-white shadow-2xl overflow-hidden"
+    class="w-[640px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden"
     @keydown="handleKeydown"
   >
     <!-- Header -->
-    <div class="border-b border-gray-200 px-5 py-4 bg-gray-50 flex items-start justify-between">
+    <div class="border-b border-slate-700 px-5 py-4 bg-slate-800 flex items-start justify-between">
       <div>
-        <div class="text-xl font-bold text-gray-700">
+        <div class="text-xl font-bold text-slate-200">
           {{ isEdit ? 'Edit Employee' : 'New Employee' }}
         </div>
-        <div class="text-sm text-gray-600 flex items-center gap-2 mt-0.5">
+        <div class="text-sm text-slate-400 flex items-center gap-2 mt-0.5">
           <template v-if="isEdit && loading">
             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent"></span>
             Loading from ERPNext…
@@ -20,7 +20,7 @@
           </template>
         </div>
       </div>
-      <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 text-xl leading-none mt-0.5">✕</button>
+      <button @click="$emit('close')" class="text-slate-500 hover:text-slate-300 text-xl leading-none mt-0.5">✕</button>
     </div>
 
     <!-- Form -->
@@ -29,22 +29,22 @@
       <!-- First Name / Last Name -->
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">First Name *</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">First Name *</label>
           <input
             ref="firstNameInput"
             v-model="form.first_name"
-            class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base font-semibold text-slate-200 outline-none focus:border-blue-500"
             placeholder="First name"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Last Name</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Last Name</label>
           <input
             ref="lastNameInput"
             v-model="form.last_name"
-            class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base font-semibold text-slate-200 outline-none focus:border-blue-500"
             placeholder="Last name"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -55,27 +55,27 @@
       <!-- Gender / Date of Joining -->
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Gender *</label>
-          <div class="flex rounded border border-gray-300 overflow-hidden">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Gender *</label>
+          <div class="flex rounded border border-slate-600 overflow-hidden">
             <button
               v-for="g in ['Male', 'Female']"
               :key="g"
               type="button"
               @click="form.gender = g"
               class="flex-1 py-2 text-sm font-bold transition-all"
-              :class="form.gender === g ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'"
+              :class="form.gender === g ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'"
             >
               {{ g }}
             </button>
           </div>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Date of Joining *</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Date of Joining *</label>
           <input
             ref="dojInput"
             v-model="form.date_of_joining"
             type="date"
-            class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500"
+            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
           />
@@ -84,12 +84,12 @@
 
       <!-- Date of Birth -->
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Date of Birth</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Date of Birth</label>
         <input
           ref="dobInput"
           v-model="form.date_of_birth"
           type="date"
-          class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500"
+          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="focusNext"
         />
@@ -98,11 +98,11 @@
       <!-- Mobile / Email -->
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile Number</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number</label>
           <input
             ref="mobileInput"
             v-model="form.mobile"
-            class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500"
+            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
             placeholder="10-digit mobile"
             maxlength="10"
             @keydown.esc.stop="$emit('close')"
@@ -110,12 +110,12 @@
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</label>
           <input
             ref="emailInput"
             v-model="form.email"
             type="email"
-            class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500"
+            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
             placeholder="email@example.com"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -125,12 +125,12 @@
 
       <!-- Current Address -->
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Current Address</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Current Address</label>
         <textarea
           ref="addressInput"
           v-model="form.current_address"
           rows="3"
-          class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500 resize-none"
+          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500 resize-none"
           placeholder="Street, Area, City, Pincode"
           @keydown.esc.stop="$emit('close')"
         ></textarea>
@@ -138,9 +138,9 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50">
+    <div class="flex justify-end gap-3 border-t border-slate-700 px-6 py-4 bg-slate-800">
       <button
-        class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+        class="rounded border border-slate-600 bg-slate-700 px-5 py-2 font-semibold text-slate-300 transition-colors hover:bg-slate-600"
         @click="$emit('close')"
       >
         Cancel

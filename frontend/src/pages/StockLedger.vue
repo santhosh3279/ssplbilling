@@ -1,57 +1,57 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-white' : 'flex min-h-screen flex-col bg-gray-50'">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'flex min-h-screen flex-col bg-slate-900'">
     <div class="flex h-full flex-col">
     <!-- ═══════ HEADER ═══════ -->
-    <header class="sticky top-0 z-40 border-b border-gray-200 bg-white px-6 py-3">
+    <header class="sticky top-0 z-40 border-b border-slate-700 bg-slate-800 px-6 py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button
             @click="handleBack"
-            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-200"
           >
             ← {{ isSubWindow ? 'Close' : 'Dashboard' }}
           </button>
-          <span class="text-gray-300">|</span>
-          <h1 class="text-sm font-bold text-gray-800">Stock Ledger</h1>
-          <span v-if="ledgerData" class="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+          <span class="text-slate-600">|</span>
+          <h1 class="text-sm font-bold text-slate-100">Stock Ledger</h1>
+          <span v-if="ledgerData" class="rounded bg-blue-900/20 px-2 py-0.5 text-[10px] font-semibold text-blue-400">
             {{ ledgerData.entries.length }} entries
           </span>
         </div>
 
         <!-- Shortcut info for sub-window -->
-        <div v-if="isSubWindow" class="flex items-center gap-4 text-[10px] text-gray-400">
-          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Ctrl+I</kbd> Item Search</span>
-          <span><kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Esc</kbd> Close</span>
+        <div v-if="isSubWindow" class="flex items-center gap-4 text-[10px] text-slate-400">
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Ctrl+I</kbd> Item Search</span>
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> Close</span>
         </div>
 
         <!-- Zoom Controls -->
-        <div class="flex items-center rounded border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-gray-500 hover:bg-gray-100">&minus;</button>
-          <div class="flex flex-col items-center justify-center border-x border-gray-200 bg-gray-50 px-3 min-w-[50px]">
-            <span class="text-[9px] font-bold uppercase tracking-tight text-gray-400 leading-none">Zoom</span>
-            <span class="text-[11px] font-bold text-gray-600 leading-tight">{{ zoomPercent }}%</span>
+        <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden">
+          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
+          <div class="flex flex-col items-center justify-center border-x border-slate-700 bg-slate-800 px-3 min-w-[50px]">
+            <span class="text-[9px] font-bold uppercase tracking-tight text-slate-500 leading-none">Zoom</span>
+            <span class="text-[11px] font-bold text-slate-300 leading-tight">{{ zoomPercent }}%</span>
           </div>
-          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-gray-500 hover:bg-gray-100">&plus;</button>
+          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
         </div>
       </div>
     </header>
 
     <!-- ═══════ FILTER BAR ═══════ -->
-    <div class="border-b border-gray-200 bg-white px-6 py-3">
+    <div class="border-b border-slate-700 bg-slate-800 px-6 py-3">
       <div class="flex flex-wrap items-end gap-3">
 
         <!-- Item search -->
         <div class="relative w-80">
-          <label class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+          <label class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             <span>Item</span>
             <span class="font-normal opacity-70">
-              <kbd class="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[9px]">Ctrl+I</kbd> Search
+              <kbd class="rounded border border-slate-600 bg-slate-700 px-1 font-mono text-[9px] text-slate-300">Ctrl+I</kbd> Search
             </span>
           </label>
-          <div 
+          <div
             @click="openItemSearch"
-            class="w-full cursor-pointer rounded border border-gray-300 px-3 py-2 text-sm outline-none transition-colors hover:border-blue-400"
-            :class="selectedItem ? 'bg-blue-50 font-semibold text-blue-800' : 'bg-white text-gray-400'"
+            class="w-full cursor-pointer rounded border px-3 py-2 text-sm outline-none transition-colors hover:border-blue-500"
+            :class="selectedItem ? 'border-blue-500 bg-blue-900/20 font-semibold text-blue-300' : 'border-slate-600 bg-slate-800 text-slate-500'"
           >
             {{ selectedItem ? `${selectedItem.item_code} - ${selectedItem.item_name}` : 'Select an item...' }}
           </div>
@@ -59,7 +59,7 @@
           <button
             v-if="selectedItem"
             @click="clearItem"
-            class="absolute right-2 top-7 text-gray-400 hover:text-gray-600"
+            class="absolute right-2 top-7 text-slate-400 hover:text-slate-200"
           >
             ✕
           </button>
@@ -67,31 +67,31 @@
 
         <!-- From date -->
         <div>
-          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">From</label>
+          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">From</label>
           <input
             ref="dateInput"
             v-model="fromDate"
             type="date"
-            class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
           />
         </div>
 
         <!-- To date -->
         <div>
-          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">To</label>
+          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">To</label>
           <input
             v-model="toDate"
             type="date"
-            class="rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
           />
         </div>
 
         <!-- Warehouse filter -->
         <div class="w-48">
-          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">Warehouse</label>
+          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Warehouse</label>
           <select
             v-model="selectedWarehouse"
-            class="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
           >
             <option value="">All Warehouses</option>
             <option v-for="w in allowedWarehouses" :key="w" :value="w">{{ w }}</option>
@@ -104,7 +104,7 @@
           class="rounded-lg px-5 py-2 text-sm font-semibold transition-colors"
           :class="selectedItem && !loading
             ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+            : 'bg-slate-700 text-slate-500 cursor-not-allowed'"
         >
           {{ loading ? 'Loading...' : 'Load Ledger' }}
         </button>
@@ -112,21 +112,21 @@
         <!-- Summary chips -->
         <template v-if="ledgerData">
           <div class="ml-2 flex items-center gap-2">
-            <div class="flex flex-col rounded bg-orange-50 px-3 py-1 border border-orange-100">
-              <span class="text-[9px] font-bold uppercase text-orange-400 leading-none">Opening</span>
-              <span class="text-sm font-bold text-orange-700 leading-tight">{{ ledgerData.opening_balance }}</span>
+            <div class="flex flex-col rounded bg-amber-900/20 px-3 py-1 border border-amber-800">
+              <span class="text-[9px] font-bold uppercase text-amber-400 leading-none">Opening</span>
+              <span class="text-sm font-bold text-amber-300 leading-tight">{{ ledgerData.opening_balance }}</span>
             </div>
-            <div class="flex flex-col rounded bg-green-50 px-3 py-1 border border-green-100">
+            <div class="flex flex-col rounded bg-green-900/20 px-3 py-1 border border-green-800">
               <span class="text-[9px] font-bold uppercase text-green-400 leading-none">Purchase (In)</span>
-              <span class="text-sm font-bold text-green-700 leading-tight">+{{ ledgerData.total_in }}</span>
+              <span class="text-sm font-bold text-green-300 leading-tight">+{{ ledgerData.total_in }}</span>
             </div>
-            <div class="flex flex-col rounded bg-red-50 px-3 py-1 border border-red-100">
+            <div class="flex flex-col rounded bg-red-900/20 px-3 py-1 border border-red-800">
               <span class="text-[9px] font-bold uppercase text-red-400 leading-none">Sale (Out)</span>
-              <span class="text-sm font-bold text-red-700 leading-tight">-{{ ledgerData.total_out }}</span>
+              <span class="text-sm font-bold text-red-300 leading-tight">-{{ ledgerData.total_out }}</span>
             </div>
-            <div class="flex flex-col rounded bg-blue-50 px-3 py-1 border border-blue-100">
+            <div class="flex flex-col rounded bg-blue-900/20 px-3 py-1 border border-blue-800">
               <span class="text-[9px] font-bold uppercase text-blue-400 leading-none">Closing</span>
-              <span class="text-sm font-bold text-blue-700 leading-tight">{{ ledgerData.closing_balance }}</span>
+              <span class="text-sm font-bold text-blue-300 leading-tight">{{ ledgerData.closing_balance }}</span>
             </div>
           </div>
         </template>
@@ -140,36 +140,36 @@
       <div class="flex flex-1 flex-col overflow-hidden">
 
         <!-- Empty / loading state -->
-        <div v-if="!ledgerData && !loading && !error" class="flex flex-1 flex-col items-center justify-center gap-2 text-gray-400">
+        <div v-if="!ledgerData && !loading && !error" class="flex flex-1 flex-col items-center justify-center gap-2 text-slate-500">
           <div class="text-4xl">📦</div>
           <div class="text-sm font-semibold">Select an item and load the stock ledger</div>
         </div>
 
-        <div v-else-if="loading" class="flex flex-1 items-center justify-center text-sm text-gray-400">
+        <div v-else-if="loading" class="flex flex-1 items-center justify-center text-sm text-slate-400">
           Loading ledger...
         </div>
 
-        <div v-else-if="error" class="m-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div v-else-if="error" class="m-6 rounded-lg border border-red-700 bg-red-900/20 px-4 py-3 text-sm text-red-400">
           {{ error }}
         </div>
 
         <template v-else-if="ledgerData">
           <div class="flex-1 overflow-y-auto">
             <table class="w-full border-collapse" :style="{ fontSize: dynamicRowStyle.fontSize }">
-              <thead class="sticky top-0 z-10 bg-gray-50">
-                <tr class="border-b border-gray-200">
-                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Date</th>
-                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Type</th>
-                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Voucher No</th>
-                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-gray-400">Warehouse</th>
-                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Qty</th>
-                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-gray-400">Balance</th>
+              <thead class="sticky top-0 z-10 bg-slate-800">
+                <tr class="border-b border-slate-700">
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Date</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Type</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Voucher No</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Warehouse</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-slate-400">Qty</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-slate-400">Balance</th>
                 </tr>
               </thead>
               <tbody ref="tableBodyRef">
                 <!-- No entries message -->
                 <tr v-if="!ledgerData.entries.length">
-                  <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+                  <td colspan="6" class="px-4 py-12 text-center text-slate-500">
                     No stock transactions found for the selected period.
                   </td>
                 </tr>
@@ -181,14 +181,14 @@
                   :data-idx="idx"
                   @click="onRowClick(entry, idx)"
                   @mouseenter="onRowMouseEnter(entry, idx)"
-                  class="cursor-pointer border-b border-gray-100 transition-colors"
+                  class="cursor-pointer border-b border-slate-700 transition-colors"
                   :class="focusedIdx === idx
-                    ? 'bg-blue-100 outline outline-1 outline-blue-300'
+                    ? 'bg-blue-900/30 outline outline-1 outline-blue-500'
                     : selectedEntry === entry
-                      ? 'bg-blue-50'
-                      : 'hover:bg-gray-50'"
+                      ? 'bg-blue-900/20'
+                      : 'hover:bg-slate-800/40'"
                 >
-                  <td class="px-4 text-gray-600" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ fmtDate(entry.date) }}</td>
+                  <td class="px-4 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ fmtDate(entry.date) }}</td>
                   <td class="px-4" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span
                       class="rounded px-1.5 py-0.5 font-bold"
@@ -201,22 +201,22 @@
                   <td class="px-4" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button
                       @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
-                      class="font-mono text-blue-600 hover:underline"
+                      class="font-mono text-blue-400 hover:underline"
                     >
                       {{ entry.voucher_no }}
                     </button>
                   </td>
-                  <td class="px-4 text-gray-500" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                  <td class="px-4 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     {{ entry.warehouse }}
                   </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span :class="entry.actual_qty > 0 ? 'font-semibold text-green-600' : 'font-semibold text-red-600'">
+                    <span :class="entry.actual_qty > 0 ? 'font-semibold text-green-400' : 'font-semibold text-red-400'">
                       {{ entry.actual_qty > 0 ? '+' : '' }}{{ entry.actual_qty }}
                     </span>
                   </td>
                   <td class="px-4 text-right font-mono font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="entry.balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                    :class="entry.balance >= 0 ? 'text-green-400' : 'text-red-400'">
                     {{ entry.balance }}
                   </td>
                 </tr>
@@ -230,65 +230,65 @@
       <transition name="slide">
         <div
           v-if="selectedEntry"
-          class="flex w-96 shrink-0 flex-col border-l border-gray-200 bg-white"
+          class="flex w-96 shrink-0 flex-col border-l border-slate-700 bg-slate-800"
         >
           <!-- Panel header -->
-          <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+          <div class="flex items-center justify-between border-b border-slate-700 px-4 py-3">
             <div class="flex items-center gap-2">
               <span class="rounded px-2 py-0.5 text-[10px] font-bold" :class="voucherBadgeClass(selectedEntry.voucher_type)">
                 {{ voucherLabel(selectedEntry.voucher_type) }}
               </span>
-              <span class="font-mono text-sm font-bold text-gray-800">{{ selectedEntry.voucher_no }}</span>
+              <span class="font-mono text-sm font-bold text-slate-100">{{ selectedEntry.voucher_no }}</span>
             </div>
             <div class="flex items-center gap-2">
               <button
                 v-if="selectedEntry.voucher_type === 'Sales Invoice'"
                 @click="openInternalSalesEntry(selectedEntry.voucher_no)"
-                class="rounded px-2 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50"
+                class="rounded px-2 py-1 text-[10px] font-semibold text-blue-400 hover:bg-blue-900/20"
               >
                 View / Edit
               </button>
               <button
                 @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
-                class="rounded px-2 py-1 text-[10px] font-semibold text-gray-500 hover:bg-gray-100"
+                class="rounded px-2 py-1 text-[10px] font-semibold text-slate-400 hover:bg-slate-700"
                 title="Open in ERPNext"
               >
                 ERPNext ↗
               </button>
-              <button @click="closeDetail" class="rounded p-1 text-gray-400 hover:bg-gray-100">✕</button>
+              <button @click="closeDetail" class="rounded p-1 text-slate-400 hover:bg-slate-700">✕</button>
             </div>
           </div>
 
           <!-- Loading detail -->
-          <div v-if="loadingDetail" class="flex flex-1 items-center justify-center text-sm text-gray-400">
+          <div v-if="loadingDetail" class="flex flex-1 items-center justify-center text-sm text-slate-400">
             Loading...
           </div>
 
           <div v-else-if="voucherDetail" class="flex-1 overflow-y-auto p-4">
 
             <!-- Key fields -->
-            <div class="mb-4 space-y-2 rounded-lg bg-gray-50 p-3 text-xs">
+            <div class="mb-4 space-y-2 rounded-lg bg-slate-700 p-3 text-xs">
               <div class="flex justify-between">
-                <span class="text-gray-500">Date</span>
-                <span class="font-semibold">{{ fmtDate(voucherDetail.posting_date) }}</span>
+                <span class="text-slate-400">Date</span>
+                <span class="font-semibold text-slate-200">{{ fmtDate(voucherDetail.posting_date) }}</span>
               </div>
               <div v-if="voucherDetail.party_name || voucherDetail.party" class="flex justify-between">
-                <span class="text-gray-500">Party</span>
-                <span class="font-semibold text-right">{{ voucherDetail.party_name || voucherDetail.party }}</span>
+                <span class="text-slate-400">Party</span>
+                <span class="font-semibold text-slate-200 text-right">{{ voucherDetail.party_name || voucherDetail.party }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-500">Amount</span>
-                <span class="font-bold text-gray-800">₹{{ fmt(voucherDetail.total_amount) }}</span>
+                <span class="text-slate-400">Amount</span>
+                <span class="font-bold text-slate-100">₹{{ fmt(voucherDetail.total_amount) }}</span>
               </div>
               <div v-if="voucherDetail.remarks" class="pt-1">
-                <span class="text-gray-500">Remarks</span>
-                <p class="mt-0.5 text-gray-700">{{ voucherDetail.remarks }}</p>
+                <span class="text-slate-400">Remarks</span>
+                <p class="mt-0.5 text-slate-300">{{ voucherDetail.remarks }}</p>
               </div>
             </div>
 
             <!-- Line items -->
             <div v-if="voucherDetail.items?.length">
-              <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Items
               </div>
 
@@ -296,22 +296,22 @@
               <template v-if="['Sales Invoice', 'Purchase Invoice', 'Credit Note', 'Stock Entry', 'Delivery Note', 'Purchase Receipt'].includes(voucherDetail.voucher_type)">
                 <table class="w-full text-xs">
                   <thead>
-                    <tr class="border-b border-gray-200 text-[10px] text-gray-400">
+                    <tr class="border-b border-slate-700 text-[10px] text-slate-400">
                       <th class="pb-1.5 text-left font-normal">Item</th>
                       <th class="pb-1.5 text-right font-normal">Qty</th>
                       <th class="pb-1.5 text-right font-normal">Rate</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(item, i) in voucherDetail.items" :key="i" class="border-b border-gray-100">
+                    <tr v-for="(item, i) in voucherDetail.items" :key="i" class="border-b border-slate-700">
                       <td class="py-1.5">
-                        <div class="font-semibold text-gray-800" :class="{ 'text-blue-600': item.item_code === selectedItem?.item_code }">
+                        <div class="font-semibold text-slate-200" :class="{ 'text-blue-400': item.item_code === selectedItem?.item_code }">
                           {{ item.item_code }}
                         </div>
-                        <div class="text-[10px] text-gray-500">{{ item.item_name }}</div>
+                        <div class="text-[10px] text-slate-400">{{ item.item_name }}</div>
                       </td>
-                      <td class="py-1.5 text-right text-gray-600">{{ item.qty }} {{ item.uom }}</td>
-                      <td class="py-1.5 text-right font-mono text-gray-600">₹{{ fmt(item.rate) }}</td>
+                      <td class="py-1.5 text-right text-slate-300">{{ item.qty }} {{ item.uom }}</td>
+                      <td class="py-1.5 text-right font-mono text-slate-300">₹{{ fmt(item.rate) }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -578,18 +578,18 @@ function fmtDate(d) {
 }
 
 const VOUCHER_CONFIG = {
-  'Sales Invoice':    { label: 'SINV', cls: 'bg-blue-100 text-blue-700' },
-  'Purchase Invoice': { label: 'PINV', cls: 'bg-orange-100 text-orange-700' },
-  'Stock Entry':      { label: 'SE',   cls: 'bg-purple-100 text-purple-700' },
-  'Delivery Note':    { label: 'DN',   cls: 'bg-green-100 text-green-700' },
-  'Purchase Receipt': { label: 'PR',   cls: 'bg-amber-100 text-amber-700' },
+  'Sales Invoice':    { label: 'SINV', cls: 'bg-blue-900/20 text-blue-400' },
+  'Purchase Invoice': { label: 'PINV', cls: 'bg-orange-900/20 text-orange-400' },
+  'Stock Entry':      { label: 'SE',   cls: 'bg-purple-900/20 text-purple-400' },
+  'Delivery Note':    { label: 'DN',   cls: 'bg-green-900/20 text-green-400' },
+  'Purchase Receipt': { label: 'PR',   cls: 'bg-amber-900/20 text-amber-400' },
 }
 
 function voucherLabel(type) {
   return VOUCHER_CONFIG[type]?.label ?? type?.slice(0, 4).toUpperCase() ?? '?'
 }
 function voucherBadgeClass(type) {
-  return VOUCHER_CONFIG[type]?.cls ?? 'bg-gray-100 text-gray-600'
+  return VOUCHER_CONFIG[type]?.cls ?? 'bg-slate-700 text-slate-400'
 }
 
 function openInErpNext(voucherType, voucherNo) {

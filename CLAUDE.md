@@ -126,17 +126,19 @@ All billing state lives in **`composables/useBilling.js`** — a Vue 3 composabl
 
 ## Git Workflow
 
-Before starting any task, create a checkpoint commit with the current state:
+**Before starting any task**, commit the current state with a description of what is about to be done:
 
 ```bash
 git add -A && git commit -m "chore: checkpoint before <brief description of upcoming task>"
 ```
 
-After completing a task, create a commit summarising what was done:
+**After completing a task**, commit with a description of what was done:
 
 ```bash
 git add -A && git commit -m "<type>: <description of what was done>"
 ```
+
+Both commits are required for every task — the before-commit captures the baseline, the after-commit records the change.
 
 Use conventional commit types: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`.
 

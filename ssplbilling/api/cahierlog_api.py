@@ -19,6 +19,12 @@ def get_cash_ledger_balance(account):
 
 
 @frappe.whitelist()
+def get_opening_total(date):
+	"""Return the Opening cash total for the current user on a given date."""
+	return get_cahier_totals(date, op_type="Opening")
+
+
+@frappe.whitelist()
 def get_cahier_totals(date, op_type="Opening"):
 	"""Return the total and cash_ledger_balance from Cashier_Opening for a specific date, user and type."""
 	user = frappe.session.user

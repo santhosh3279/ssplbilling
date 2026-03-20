@@ -40,50 +40,6 @@ def get_pricing_rules(price_list=None):
 	return result
 
 
-@frappe.whitelist()
-def create_pricing_rule(title=None, apply_on="Item Code", item_codes=None, price_or_product_discount="Price",
-		rate_or_discount="Discount Percentage", discount_percentage=0, rate=0, discount_amount=0,
-		warehouse=None, min_qty=0, max_qty=0, valid_from=None, valid_upto=None,
-		applicable_for=None, customer=None, customer_group=None, territory=None,
-		sales_partner=None, campaign=None, for_price_list=None, priority=1):
-	"""Create a new selling Pricing Rule."""
-	import json
-	if isinstance(item_codes, str):
-		item_codes = json.loads(item_codes) if item_codes.startswith("[") else [item_codes]
-
-	doc = frappe.new_doc("Pricing Rule")
-	doc.title = title or ""
-	doc.selling = 1
-	doc.buying = 0
-	doc.apply_on = apply_on
-	doc.price_or_product_discount = price_or_product_discount or "Price"
-	doc.rate_or_discount = rate_or_discount
-	doc.discount_percentage = float(discount_percentage or 0)
-	doc.rate = float(rate or 0)
-	doc.discount_amount = float(discount_amount or 0)
-	doc.min_qty = float(min_qty or 0)
-	doc.max_qty = float(max_qty or 0)
-	doc.valid_from = valid_from or None
-	doc.valid_upto = valid_upto or None
-	doc.warehouse = warehouse or ""
-	doc.applicable_for = applicable_for or ""
-	doc.customer = customer or ""
-	doc.customer_group = customer_group or ""
-	doc.territory = territory or ""
-	doc.sales_partner = sales_partner or ""
-	doc.campaign = campaign or ""
-	doc.for_price_list = for_price_list or ""
-	doc.priority = int(priority or 1)
-	doc.currency = frappe.db.get_single_value("Global Defaults", "default_currency") or "INR"
-
-	if apply_on == "Item Code" and item_codes:
-		for code in item_codes:
-			if code.strip():
-				doc.append("items", {"item_code": code.strip()})
-
-	doc.insert(ignore_permissions=True)
-	return doc.name
-
 
 @frappe.whitelist()
 def save_pricing_rule(name, discount_percentage=None, rate=None, discount_amount=None,

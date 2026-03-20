@@ -42,19 +42,19 @@
    "fieldname": "cash",
    "fieldtype": "Link",
    "label": "Cash",
-   "options": "Mode of Payment"
+   "options": "Account"
   },
   {
    "fieldname": "upi",
    "fieldtype": "Link",
    "label": "UPI",
-   "options": "Mode of Payment"
+   "options": "Account"
   },
   {
    "fieldname": "card",
    "fieldtype": "Link",
    "label": "Card",
-   "options": "Mode of Payment"
+   "options": "Account"
   },
   {
    "fieldname": "warehouse",
@@ -72,7 +72,7 @@
    "fieldname": "bank",
    "fieldtype": "Link",
    "label": "Bank",
-   "options": "Mode of Payment"
+   "options": "Account"
   },
   {
    "default": "0",
@@ -108,7 +108,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-17 22:33:07.530390",
+ "modified": "2026-03-19 08:00:53.486600",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "USER SERIES",

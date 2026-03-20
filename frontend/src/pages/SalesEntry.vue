@@ -583,7 +583,7 @@ const router = useRouter()
 const route = useRoute()
 const API = '/api/method/ssplbilling.api.SaleEntry_api'
 
-const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, fetchCustomerSalesHistory, getItemHistoryFromCache, applyPricingRule } = useItemCache()
+const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, fetchCustomerSalesHistory, getItemHistoryFromCache } = useItemCache()
 
 const props = defineProps({
   isSubWindow: {
@@ -992,17 +992,13 @@ async function addNewItem() {
 
   if (!r) { openSearch(code, null); return }
 
-  const pRule = applyPricingRule(r.item_code || code, newQty.value, customer.value || null)
-  const finalRate = (pRule?.rate != null) ? pRule.rate : r.rate
-  const finalDiscount = pRule?.discount_percentage ?? 0
-
   items.value.push({
     item_code: r.item_code || code,
     item_name: r.item_name,
     uom: r.uom,
     qty: newQty.value,
-    rate: finalRate,
-    discount: finalDiscount,
+    rate: r.rate,
+    discount: 0,
     tax_rate: r.tax_rate ?? defaultTaxRate.value,
     warehouse: r.warehouse || defaultWarehouse.value,
     deleted: false
@@ -1068,17 +1064,13 @@ async function pickItem(item) {
     }
   } catch (e) {}
 
-  const pRule = applyPricingRule(item.item_code, 1, customer.value || null)
-  if (pRule?.rate != null) finalRate = pRule.rate
-  const finalDiscount = pRule?.discount_percentage ?? 0
-
   if (itemSearchTargetRow !== null) {
     const row = items.value[itemSearchTargetRow]
     row.item_code = item.item_code
     row.item_name = item.item_name
     row.uom = item.uom
     row.rate = finalRate
-    row.discount = finalDiscount
+    row.discount = row.discount || 0
     row.tax_rate = finalTax
     row.warehouse = finalWh
     row.deleted = false
@@ -1662,6 +1654,9 @@ useShortcuts(salesEntryShortcuts({
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
+    // First Esc: clear active bill; Second Esc (bill already empty): exit
+    const hasBillContent = activeItems.value.length > 0 || customer.value || savedInvoiceName.value
+    if (hasBillContent) { startNewBill(); return }
     handleBack()
   }
 }), props.isSubWindow ? 'subwindow' : 'local')

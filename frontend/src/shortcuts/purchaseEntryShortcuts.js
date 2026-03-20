@@ -13,5 +13,6 @@ export const purchaseEntryShortcuts = (handlers) => ({
   // Purchase Entry specific
   'PAGEUP': handlers.focusSeries,
   'END':    handlers.toggleDiscountSave,
+  'INSERT': handlers.openIncentive,
   'ESCAPE': handlers.contextualBack,
 });

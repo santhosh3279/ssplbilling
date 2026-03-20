@@ -1,59 +1,59 @@
 <template>
-  <div class="flex h-screen flex-col bg-slate-50 font-sans text-slate-900">
+  <div class="flex h-screen flex-col bg-slate-900 font-sans text-slate-100">
     <!-- HEADER -->
-    <header class="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm">
+    <header class="flex h-14 shrink-0 items-center justify-between border-b border-slate-700 bg-slate-800 px-6 shadow-sm">
       <div class="flex items-center gap-4">
-        <button 
+        <button
           @click="$router.push('/')"
-          class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+          class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-100 transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-lg font-bold tracking-tight text-slate-900">{{ isContra ? 'CONTRA ENTRY' : 'JOURNAL ENTRY' }}</h1>
-        <div class="h-4 w-px bg-slate-200 mx-2"></div>
-        <div class="flex rounded-lg bg-slate-100 p-1">
-          <button 
+        <h1 class="text-lg font-bold tracking-tight text-slate-100">{{ isContra ? 'CONTRA ENTRY' : 'JOURNAL ENTRY' }}</h1>
+        <div class="h-4 w-px bg-slate-600 mx-2"></div>
+        <div class="flex rounded-lg bg-slate-700 p-1">
+          <button
             @click="isContra = false"
             class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="!isContra ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            :class="!isContra ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
           >
             <span>Journal</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="!isContra ? 'border-blue-200 bg-blue-50' : 'border-slate-300 bg-slate-50'">F2</kbd>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="!isContra ? 'border-blue-500 bg-blue-900/20' : 'border-slate-600 bg-slate-700'">F2</kbd>
           </button>
-          <button 
+          <button
             @click="isContra = true"
             class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="isContra ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            :class="isContra ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
           >
             <span>Contra</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="isContra ? 'border-emerald-200 bg-emerald-50' : 'border-slate-300 bg-slate-50'">F3</kbd>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="isContra ? 'border-emerald-600 bg-emerald-900/20' : 'border-slate-600 bg-slate-700'">F3</kbd>
           </button>
         </div>
       </div>
 
       <div class="flex items-center gap-4">
-        <div class="flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-3 bg-slate-700 px-4 py-1.5 rounded-xl border border-slate-600 shadow-sm">
           <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">Posting Date</label>
           <div class="flex items-center gap-1">
-            <button 
+            <button
               @click="changeDate(-1)"
-              class="p-1 hover:bg-white rounded-md text-slate-400 hover:text-blue-600 transition-all hover:shadow-sm"
+              class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all"
               tabindex="-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
-            <input 
+            <input
               ref="dateInput"
               v-model="displayDate"
               type="text"
-              class="bg-transparent text-xl font-black text-slate-800 outline-none focus:text-blue-600 w-44 font-mono"
+              class="bg-transparent text-xl font-black text-slate-200 outline-none focus:text-blue-400 w-44 font-mono"
               placeholder="DD/MM/YYYY"
               @focus="e => e.target.select()"
               @input="onDateInput"
             />
-            <button 
+            <button
               @click="changeDate(1)"
-              class="p-1 hover:bg-white rounded-md text-slate-400 hover:text-blue-600 transition-all hover:shadow-sm"
+              class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all"
               tabindex="-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -64,12 +64,12 @@
     </header>
 
     <div class="flex-1 overflow-hidden p-6">
-      <div class="h-full flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="h-full flex flex-col bg-slate-800 rounded-2xl shadow-sm border border-slate-700 overflow-hidden">
         <!-- TABLE -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <table class="w-full border-collapse">
-            <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr class="text-xs font-bold uppercase tracking-wider text-slate-500 text-left">
+            <thead class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
+              <tr class="text-xs font-bold uppercase tracking-wider text-slate-400 text-left">
                 <th class="px-4 py-2 w-12 text-center">#</th>
                 <th class="px-2 py-2 min-w-[300px]">Ledger</th>
                 <th class="px-4 py-2 w-80 text-right">Balance</th>
@@ -79,31 +79,31 @@
                 <th class="px-4 py-2 w-12"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr 
-                v-for="(row, idx) in rows" 
+            <tbody class="divide-y divide-slate-700">
+              <tr
+                v-for="(row, idx) in rows"
                 :key="idx"
-                class="group hover:bg-slate-50/50 transition-colors"
-                :class="{ 'bg-blue-50/30': activeRowIdx === idx }"
+                class="group hover:bg-slate-800/40 transition-colors"
+                :class="{ 'bg-blue-900/20': activeRowIdx === idx }"
               >
-                <td class="px-4 py-0.5 text-center text-sm font-bold text-slate-400">
+                <td class="px-4 py-0.5 text-center text-sm font-bold text-slate-500">
                   {{ idx + 1 }}
                 </td>
                 <td class="px-2 py-0.5">
-                  <div 
+                  <div
                     :ref="el => { if (el) ledgerRefs[idx] = el }"
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-2xl font-bold cursor-pointer hover:border-slate-300 hover:bg-white transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-blue-500"
-                    :class="row.account ? 'text-slate-900' : 'text-slate-300 italic'"
+                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-2xl font-bold cursor-pointer hover:border-slate-600 hover:bg-slate-700 transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-700 focus:border-blue-500"
+                    :class="row.account ? 'text-slate-100' : 'text-slate-600 italic'"
                   >
                     <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover/input:text-blue-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600 group-hover/input:text-blue-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
                 <td class="px-2 py-0 text-right">
-                  <div v-if="row.account" class="text-2xl font-bold text-slate-500 font-mono whitespace-nowrap">
+                  <div v-if="row.account" class="text-2xl font-bold text-slate-400 font-mono whitespace-nowrap">
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
@@ -117,8 +117,8 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:bg-white transition-all disabled:opacity-20"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'border-rose-500 bg-rose-50 animate-blink' : 'border-transparent focus:border-blue-500'"
+                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-100 outline-none focus:bg-slate-700 transition-all disabled:opacity-20"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'border-rose-500 bg-red-900/20 animate-blink' : 'border-transparent focus:border-blue-500'"
                     placeholder="0.00"
                   />
                 </td>
@@ -132,20 +132,20 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-900 outline-none focus:bg-white transition-all disabled:opacity-20"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'border-rose-500 bg-rose-50 animate-blink' : 'border-transparent focus:border-blue-500'"
+                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-100 outline-none focus:bg-slate-700 transition-all disabled:opacity-20"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'border-rose-500 bg-red-900/20 animate-blink' : 'border-transparent focus:border-blue-500'"
                     placeholder="0.00"
                   />
                 </td>
                 <td class="px-2 py-0 text-right">
-                  <div v-if="row.account" class="text-2xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-600' : 'text-slate-400'">
+                  <div v-if="row.account" class="text-2xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-400' : 'text-slate-400'">
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
                 <td class="px-4 py-1 text-center">
-                  <button 
+                  <button
                     @click="removeRow(idx)"
-                    class="text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                    class="text-slate-600 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
                     tabindex="-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
@@ -154,11 +154,11 @@
               </tr>
             </tbody>
           </table>
-          
+
           <div class="p-2">
-            <button 
+            <button
               @click="addRow"
-              class="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-2 text-xs font-bold text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center"
+              class="flex items-center gap-2 rounded-xl border border-dashed border-slate-600 px-4 py-2 text-xs font-bold text-slate-500 hover:border-blue-500 hover:text-blue-400 hover:bg-blue-900/20 transition-all w-full justify-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               Add New Row (INS)
@@ -167,9 +167,9 @@
         </div>
 
         <!-- FOOTER: TOTALS -->
-        <div class="shrink-0 bg-slate-50 border-t border-slate-200 p-6 flex flex-col gap-4">
+        <div class="shrink-0 bg-slate-800 border-t border-slate-700 p-6 flex flex-col gap-4">
           <!-- ERROR ALERT -->
-          <div v-if="validationError" class="flex items-center gap-2 bg-rose-50 text-rose-600 px-4 py-2 rounded-lg border border-rose-100 text-xs font-bold" :class="errorBlink ? 'animate-blink' : ''">
+          <div v-if="validationError" class="flex items-center gap-2 bg-red-900/20 text-red-400 px-4 py-2 rounded-lg border border-red-700 text-xs font-bold" :class="errorBlink ? 'animate-blink' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
             {{ validationError }}
           </div>
@@ -183,7 +183,7 @@
                   v-model="userRemarks"
                   @keydown.enter.prevent="handleRemarksEnter"
                   rows="2"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-2xl font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                  class="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-2xl font-bold text-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all shadow-sm"
                   placeholder="Internal notes..."
                 ></textarea>
               </div>
@@ -191,28 +191,28 @@
             <div class="flex gap-12 ml-12">
               <div class="text-right">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Debit</div>
-                <div class="text-2xl font-black text-slate-900 font-mono">₹ {{ fmt(totalDebit) }}</div>
+                <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalDebit) }}</div>
               </div>
               <div class="text-right">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Credit</div>
-                <div class="text-2xl font-black text-slate-900 font-mono">₹ {{ fmt(totalCredit) }}</div>
+                <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalCredit) }}</div>
               </div>
-              <div class="text-right border-l border-slate-200 pl-12">
+              <div class="text-right border-l border-slate-700 pl-12">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
-                <div 
+                <div
                   class="text-2xl font-black font-mono"
-                  :class="Math.abs(difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600'"
+                  :class="Math.abs(difference) < 0.01 ? 'text-emerald-400' : 'text-rose-400'"
                 >
                   ₹ {{ fmt(difference) }}
                 </div>
                 <!-- SAVE BUTTON -->
                 <div class="mt-4 flex justify-end">
-                  <button 
+                  <button
                     ref="saveButton"
                     @click="saveEntry"
                     @keydown.enter="saveEntry"
                     :disabled="isSubmitting || !canSave"
-                    class="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3 text-base font-bold text-white shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    class="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3 text-base font-bold text-white shadow-lg shadow-blue-900/50 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <span v-if="isSubmitting" class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-1"></span>
                     <span>Save Entry</span>
@@ -619,11 +619,11 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #475569;
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #64748b;
 }
 
 input::-webkit-outer-spin-button,

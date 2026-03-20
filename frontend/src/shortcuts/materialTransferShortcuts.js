@@ -12,5 +12,6 @@ export const materialTransferShortcuts = (handlers) => ({
 
   // Material Transfer specific
   'PAGEUP': handlers.focusSeries,
+  'INSERT': handlers.openIncentive,
   'ESCAPE': handlers.contextualBack,
 });

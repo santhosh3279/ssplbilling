@@ -1,65 +1,65 @@
 <template>
   <div
     v-if="show"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 outline-none"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
     @click.self="handleEsc"
     @keydown="handleGlobalKeydown"
     tabindex="-1"
   >
-    <div class="flex h-[90vh] w-[95vw] flex-col rounded-xl bg-white shadow-2xl overflow-hidden relative">
+    <div class="flex h-[90vh] w-[95vw] flex-col rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden relative">
       <!-- Header -->
-      <div class="border-b border-gray-200 px-5 py-4 flex items-center justify-between bg-gray-50">
+      <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800">
         <div>
-          <div class="text-2xl font-semibold text-gray-700">Detailed Ledger Search</div>
-          <div class="text-lg text-gray-500">Search Customers, Suppliers, and Accounting Ledgers</div>
+          <div class="text-2xl font-semibold text-slate-200">Detailed Ledger Search</div>
+          <div class="text-lg text-slate-400">Search Customers, Suppliers, and Accounting Ledgers</div>
         </div>
         <div class="flex items-center gap-3">
           <!-- Quick Filter Tabs -->
-          <div class="flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm mr-4 relative group">
+          <div class="flex rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-sm mr-4 relative group">
             <button
               v-for="t in availableTabs"
               :key="t"
               @click="activeType = t"
               class="px-4 py-1.5 text-sm font-bold transition-all rounded-md"
-              :class="activeType === t ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'"
+              :class="activeType === t ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700'"
             >
               {{ t }}
             </button>
             <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <kbd class="rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-gray-400 whitespace-nowrap shadow-sm">Cycle: F7</kbd>
+              <kbd class="rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 whitespace-nowrap shadow-sm">Cycle: F7</kbd>
             </div>
           </div>
 
           <button
             @click="openNewForm"
             v-if="activeType === 'Customer' || activeType === 'Supplier' || activeType === 'Employee'"
-            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
+            class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-lg font-semibold text-slate-200 shadow-sm transition-colors hover:bg-slate-600"
           >
-            New {{ activeType }} <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F2</kbd>
+            New {{ activeType }} <kbd class="ml-1 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-400">F2</kbd>
           </button>
           <button
             @click="openEditForm(results[selectedIdx])"
             v-if="results[selectedIdx] && (results[selectedIdx].type === 'Customer' || results[selectedIdx].type === 'Supplier' || results[selectedIdx].type === 'Employee')"
-            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-lg font-semibold text-gray-700 shadow-sm transition-colors"
+            class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-lg font-semibold text-slate-200 shadow-sm transition-colors hover:bg-slate-600"
           >
-            Edit Details <kbd class="ml-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 font-mono text-xs text-gray-400">F3</kbd>
+            Edit Details <kbd class="ml-1 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-400">F3</kbd>
           </button>
           <button
             @click="preloadLedger"
-            class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-lg font-semibold text-blue-600 transition-colors"
+            class="flex items-center gap-2 rounded-lg border border-blue-700 bg-blue-900/20 px-4 py-2 text-lg font-semibold text-blue-400 transition-colors"
           >
-            🔄 Refresh <kbd class="ml-1 rounded border border-blue-200 bg-white px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
+            🔄 Refresh <kbd class="ml-1 rounded border border-blue-700 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
           </button>
-          <button @click="$emit('close')" class="text-2xl text-gray-400">✕</button>
+          <button @click="$emit('close')" class="text-2xl text-slate-500 hover:text-slate-300">✕</button>
         </div>
       </div>
 
       <!-- Search input -->
-      <div class="border-b border-gray-100 p-4 relative">
+      <div class="border-b border-slate-800 p-4 relative">
         <input
           ref="searchInput"
           v-model="query"
-          class="w-full rounded border border-gray-300 px-4 py-3 text-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          class="w-full rounded border border-slate-600 bg-slate-800 px-4 py-3 text-2xl text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           placeholder="Search by Name, Mobile, WhatsApp, GST, City..."
           @keydown.esc.stop="handleEsc"
         />
@@ -71,41 +71,41 @@
       <!-- Results Table -->
       <div ref="scrollContainer" class="flex-1 overflow-y-auto">
         <table class="w-full text-2xl">
-          <thead class="sticky top-0 bg-white shadow-sm z-10">
-            <tr class="text-lg font-bold uppercase tracking-wider text-gray-600 border-b bg-gray-50">
+          <thead class="sticky top-0 bg-slate-800 shadow-sm z-10">
+            <tr class="text-lg font-bold uppercase tracking-wider text-slate-400 border-b border-slate-700">
               <th class="px-5 py-3 text-left w-24">Type</th>
               <th class="px-5 py-3 text-left" style="padding-left: 10%">Ledger Name</th>
               <th class="px-5 py-3 text-right">Balance</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
+          <tbody class="divide-y divide-slate-800">
             <tr
               v-for="(c, idx) in results"
               :key="c.name"
               class="cursor-pointer transition-colors"
-              :class="{ 'bg-blue-200': selectedIdx === idx, 'hover:bg-gray-50': selectedIdx !== idx }"
+              :class="{ 'bg-blue-900/30': selectedIdx === idx, 'hover:bg-slate-800/40': selectedIdx !== idx }"
               @click="handleSelect(c)"
             >
               <td class="px-5 py-3">
                 <span
                   class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
                   :class="{
-                    'bg-blue-100 text-blue-700': c.type === 'Customer',
-                    'bg-orange-100 text-orange-700': c.type === 'Supplier',
-                    'bg-purple-100 text-purple-700': c.type === 'Employee',
-                    'bg-gray-100 text-gray-700': c.type === 'Account'
+                    'bg-blue-900/40 text-blue-400': c.type === 'Customer',
+                    'bg-orange-900/40 text-orange-400': c.type === 'Supplier',
+                    'bg-purple-900/40 text-purple-400': c.type === 'Employee',
+                    'bg-slate-700 text-slate-400': c.type === 'Account'
                   }"
                 >
                   {{ c.type }}
                 </span>
               </td>
               <td class="px-5 py-3" style="padding-left: 10%">
-                <div class="font-medium text-gray-800">{{ c.label }}</div>
+                <div class="font-medium text-slate-200">{{ c.label }}</div>
               </td>
               <td class="px-5 py-3 text-right">
                 <span
                   class="font-bold whitespace-nowrap"
-                  :class="(c.balance || 0) > 0 ? 'text-green-600' : (c.balance || 0) < 0 ? 'text-red-600' : 'text-gray-400'"
+                  :class="(c.balance || 0) > 0 ? 'text-green-400' : (c.balance || 0) < 0 ? 'text-red-400' : 'text-slate-500'"
                 >
                   {{ Math.abs(c.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   <span class="text-xs font-normal uppercase ml-0.5">
@@ -115,7 +115,7 @@
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
-              <td colspan="3" class="px-5 py-12 text-center text-gray-400 text-xl italic">
+              <td colspan="3" class="px-5 py-12 text-center text-slate-500 text-xl italic">
                 No ledgers found matching "{{ query }}"
               </td>
             </tr>
@@ -124,33 +124,33 @@
       </div>
 
       <!-- Detail Panel -->
-      <div v-if="results[selectedIdx]" class="border-t border-gray-200 bg-white px-8 py-6">
+      <div v-if="results[selectedIdx]" class="border-t border-slate-700 bg-slate-800 px-8 py-6">
         <div class="flex items-start gap-4">
           <div class="flex flex-col shrink-0" style="width: 10%">
-            <span class="text-sm font-bold uppercase text-gray-400 truncate">Last Inv</span>
-            <span class="text-xl font-semibold text-gray-700 truncate">
+            <span class="text-sm font-bold uppercase text-slate-500 truncate">Last Inv</span>
+            <span class="text-xl font-semibold text-slate-200 truncate">
               {{ results[selectedIdx].last_invoice_date
                   ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: '2-digit' })
                   : 'None' }}
             </span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 10%">
-            <span class="text-sm font-bold uppercase text-gray-400 truncate">WhatsApp</span>
-            <span class="text-2xl font-semibold text-gray-700 truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
+            <span class="text-sm font-bold uppercase text-slate-500 truncate">WhatsApp</span>
+            <span class="text-2xl font-semibold text-slate-200 truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 20%">
-            <span class="text-sm font-bold uppercase text-gray-400 truncate">Email</span>
-            <span class="text-xl font-semibold text-gray-700 truncate">{{ results[selectedIdx].email || '--' }}</span>
+            <span class="text-sm font-bold uppercase text-slate-500 truncate">Email</span>
+            <span class="text-xl font-semibold text-slate-200 truncate">{{ results[selectedIdx].email || '--' }}</span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 45%">
-            <span class="text-sm font-bold uppercase text-gray-400 truncate">Address</span>
-            <span class="text-xl text-gray-700 line-clamp-2 leading-tight">
+            <span class="text-sm font-bold uppercase text-slate-500 truncate">Address</span>
+            <span class="text-xl text-slate-200 line-clamp-2 leading-tight">
               {{ getAddressFormatted(results[selectedIdx]) }}
             </span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 15%">
-            <span class="text-sm font-bold uppercase text-gray-400 truncate">GSTIN</span>
-            <span class="text-2xl font-semibold text-gray-700 font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
+            <span class="text-sm font-bold uppercase text-slate-500 truncate">GSTIN</span>
+            <span class="text-2xl font-semibold text-slate-200 font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
           </div>
         </div>
       </div>
@@ -158,7 +158,7 @@
       <!-- SUB-MODALS overlay -->
       <div
         v-if="showNewForm || showEditForm || showDateModal"
-        class="absolute inset-0 z-[60] flex items-center justify-center bg-black/40"
+        class="absolute inset-0 z-[60] flex items-center justify-center bg-black/70"
         @click.self="handleEsc"
       >
         <!-- Date Range Sub-window -->
@@ -192,10 +192,10 @@
         />
 
         <!-- Customer Form (New / Edit) -->
-        <div v-else-if="showNewForm || showEditForm" class="w-[600px] rounded-xl bg-white shadow-2xl overflow-hidden">
-          <div class="border-b border-gray-200 px-5 py-4 bg-gray-50">
-            <div class="text-xl font-bold text-gray-700">{{ showNewForm ? 'New Customer' : 'Modify Customer Details' }}</div>
-            <div class="text-sm text-gray-600 flex items-center gap-2">
+        <div v-else-if="showNewForm || showEditForm" class="w-[600px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
+          <div class="border-b border-slate-700 px-5 py-4 bg-slate-800">
+            <div class="text-xl font-bold text-slate-200">{{ showNewForm ? 'New Customer' : 'Modify Customer Details' }}</div>
+            <div class="text-sm text-slate-400 flex items-center gap-2">
               <template v-if="showEditForm && editLoading">
                 <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent"></span>
                 Loading from ERPNext…
@@ -208,11 +208,11 @@
 
           <div class="flex flex-col gap-4 px-6 py-5 max-h-[70vh] overflow-y-auto">
             <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Customer Name *</label>
+              <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Name *</label>
               <input
                 ref="formNameInput"
                 v-model="(showNewForm ? newData : editData).customer_name"
-                class="rounded border border-gray-300 px-3 py-2 text-base font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base font-semibold text-slate-200 outline-none focus:border-blue-500"
                 placeholder="Full name"
                 @keydown.esc.stop="handleEsc"
                 @keydown.enter.prevent="handleFormEnter"
@@ -221,43 +221,43 @@
 
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mobile Number *</label>
-                <input v-model="(showNewForm ? newData : editData).mobile" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number *</label>
+                <input v-model="(showNewForm ? newData : editData).mobile" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">WhatsApp Number</label>
-                <input v-model="(showNewForm ? newData : editData).whatsapp" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">WhatsApp Number</label>
+                <input v-model="(showNewForm ? newData : editData).whatsapp" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Email</label>
-                <input v-model="(showNewForm ? newData : editData).email" type="email" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</label>
+                <input v-model="(showNewForm ? newData : editData).email" type="email" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">GSTIN</label>
-                <input v-model="(showNewForm ? newData : editData).gstin" class="rounded border border-gray-300 px-3 py-2 font-mono text-base uppercase outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">GSTIN</label>
+                <input v-model="(showNewForm ? newData : editData).gstin" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 font-mono text-base uppercase text-slate-200 outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Address Line 1</label>
-              <input v-model="(showNewForm ? newData : editData).address_line1" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+              <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
+              <input v-model="(showNewForm ? newData : editData).address_line1" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
             </div>
 
             <div class="grid grid-cols-3 gap-4">
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">City</label>
-                <input v-model="(showNewForm ? newData : editData).city" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="City" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">City</label>
+                <input v-model="(showNewForm ? newData : editData).city" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="City" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pincode</label>
-                <input v-model="(showNewForm ? newData : editData).pincode" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" placeholder="678XXX" maxlength="6" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pincode</label>
+                <input v-model="(showNewForm ? newData : editData).pincode" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="678XXX" maxlength="6" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
               </div>
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">State</label>
-                <select v-model="(showNewForm ? newData : editData).state" class="rounded border border-gray-300 px-3 py-2 text-base outline-none focus:border-blue-500" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter">
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">State</label>
+                <select v-model="(showNewForm ? newData : editData).state" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter">
                   <option value="">Select State</option>
                   <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
                 </select>
@@ -265,9 +265,9 @@
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 bg-gray-50">
-            <button class="rounded border border-gray-300 bg-white px-5 py-2 font-semibold text-gray-600 transition-colors" @click="closeSubForm">Cancel</button>
-            <button class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95" :class="showNewForm ? 'bg-blue-600' : 'bg-orange-600'" @click="submitCustomerForm" :disabled="saving || editLoading">
+          <div class="flex justify-end gap-3 border-t border-slate-700 px-6 py-4 bg-slate-800">
+            <button class="rounded border border-slate-600 bg-slate-700 px-5 py-2 font-semibold text-slate-300 transition-colors hover:bg-slate-600" @click="closeSubForm">Cancel</button>
+            <button class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95" :class="showNewForm ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'" @click="submitCustomerForm" :disabled="saving || editLoading">
               {{ saving ? (showNewForm ? 'Saving...' : 'Updating...') : (showNewForm ? 'Save & Select' : 'Update Details') }}
               <kbd class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm" :class="showNewForm ? 'border-blue-500 bg-blue-500' : 'border-orange-500 bg-orange-500'">End</kbd>
             </button>

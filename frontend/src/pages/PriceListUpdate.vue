@@ -1,111 +1,111 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4' : 'min-h-screen bg-gray-50 flex flex-col'">
-    <div :class="isSubWindow ? 'flex h-[70vh] w-[70vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl' : 'flex flex-1 flex-col'">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4' : 'min-h-screen bg-slate-900 flex flex-col'">
+    <div :class="isSubWindow ? 'flex h-[70vh] w-[70vw] flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl' : 'flex flex-1 flex-col'">
       <!-- Header -->
-      <header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+      <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-4">
         <div class="flex items-center gap-4">
-          <button 
+          <button
             v-if="isSubWindow"
-            class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" 
+            class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700"
             @click="$emit('close')"
           >
             &larr; Back to Entry
           </button>
-          <button 
+          <button
             v-else
-            class="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" 
+            class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700"
             @click="router.push('/')"
           >
             &larr; Dashboard
           </button>
-          <h1 class="text-xl font-bold text-gray-800">Update Item Prices</h1>
-          <div v-if="itemCode" class="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-600">
+          <h1 class="text-xl font-bold text-slate-100">Update Item Prices</h1>
+          <div v-if="itemCode" class="rounded-full bg-blue-900/20 px-3 py-1 text-sm font-bold text-blue-400">
             {{ itemCode }}
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-xs text-gray-400">
-            <kbd class="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">F8</kbd> Save All
-            <kbd class="ml-2 rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono">Esc</kbd> Close
+          <span class="text-xs text-slate-400">
+            <kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">F8</kbd> Save All
+            <kbd class="ml-2 rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> Close
           </span>
         </div>
       </header>
 
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto p-6">
-        <div class="mx-auto max-w-4xl rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div class="mx-auto max-w-4xl rounded-xl border border-slate-700 bg-slate-800 shadow-sm overflow-hidden">
           <div v-if="loading" class="flex items-center justify-center py-20">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
           </div>
-          
+
           <div v-else-if="!itemCode && !isSubWindow" class="p-10 text-center">
-            <div class="mb-4 text-gray-400">Please provide an item code to update prices.</div>
-            <input 
-              v-model="manualItemCode" 
-              class="rounded border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
+            <div class="mb-4 text-slate-400">Please provide an item code to update prices.</div>
+            <input
+              v-model="manualItemCode"
+              class="rounded border border-slate-600 bg-slate-800 px-4 py-2 text-slate-200 outline-none focus:border-blue-500"
               placeholder="Enter Item Code..."
               @keydown.enter="loadPrices(manualItemCode)"
             />
           </div>
 
           <table v-else class="w-full text-left border-collapse">
-            <thead class="bg-gray-50 border-b border-gray-200">
+            <thead class="bg-slate-800 border-b border-slate-700">
               <tr>
-                <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Price List</th>
-                <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Type</th>
-                <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Current Rate</th>
-                <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">New Rate</th>
-                <th v-if="selectedPriceList" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Disc %</th>
+                <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Price List</th>
+                <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
+                <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Current Rate</th>
+                <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">New Rate</th>
+                <th v-if="selectedPriceList" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Disc %</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr 
-                v-for="(p, idx) in prices" 
-                :key="p.price_list" 
-                class="hover:bg-gray-50 transition-colors"
-                :class="{ 'bg-blue-50/50': activeRow === idx }"
+            <tbody class="divide-y divide-slate-700">
+              <tr
+                v-for="(p, idx) in prices"
+                :key="p.price_list"
+                class="hover:bg-slate-800/40 transition-colors"
+                :class="{ 'bg-blue-900/30': activeRow === idx }"
                 @click="activeRow = idx"
               >
                 <td class="px-6 py-4">
-                  <div class="font-semibold text-gray-800">{{ p.price_list }}</div>
-                  <div v-if="p.price_list === selectedPriceList" class="text-[10px] font-bold text-blue-500 uppercase">Selected in entry</div>
+                  <div class="font-semibold text-slate-100">{{ p.price_list }}</div>
+                  <div v-if="p.price_list === selectedPriceList" class="text-[10px] font-bold text-blue-400 uppercase">Selected in entry</div>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex gap-2">
-                    <span v-if="p.buying" class="rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-bold text-green-600">BUYING</span>
-                    <span v-if="p.selling" class="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">SELLING</span>
+                    <span v-if="p.buying" class="rounded bg-green-900/20 px-1.5 py-0.5 text-[10px] font-bold text-green-400">BUYING</span>
+                    <span v-if="p.selling" class="rounded bg-blue-900/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-400">SELLING</span>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-right font-mono text-gray-500">
+                <td class="px-6 py-4 text-right font-mono text-slate-400">
                   &#8377;{{ p.original_rate.toFixed(2) }}
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <input 
+                  <input
                     :ref="el => inputRefs[`rate-${idx}`] = el"
-                    type="number" 
-                    v-model.number="p.rate" 
+                    type="number"
+                    v-model.number="p.rate"
                     step="0.01"
-                    class="w-32 rounded border border-gray-300 px-3 py-1.5 text-right font-mono font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    class="w-32 rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-right font-mono font-bold text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     @keydown.enter.prevent="onRateEnter(idx)"
                     @keydown.up.prevent="moveVertical(idx, -1)"
                     @keydown.down.prevent="moveVertical(idx, 1)"
                   />
                 </td>
                 <td v-if="selectedPriceList" class="px-6 py-4 text-right">
-                  <input 
+                  <input
                     v-if="p.price_list === selectedPriceList"
                     :ref="el => inputRefs[`disc-${idx}`] = el"
-                    type="number" 
-                    v-model.number="discount" 
+                    type="number"
+                    v-model.number="discount"
                     step="0.5"
                     min="0"
                     max="100"
-                    class="w-20 rounded border border-blue-300 bg-blue-50 px-3 py-1.5 text-right font-mono font-bold text-blue-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    class="w-20 rounded border border-blue-500 bg-blue-900/20 px-3 py-1.5 text-right font-mono font-bold text-blue-300 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     @keydown.enter.prevent="onDiscEnter(idx)"
                     @keydown.up.prevent="moveVertical(idx, -1)"
                     @keydown.down.prevent="moveVertical(idx, 1)"
                   />
-                  <span v-else class="text-gray-300">--</span>
+                  <span v-else class="text-slate-600">--</span>
                 </td>
               </tr>
             </tbody>
@@ -114,19 +114,19 @@
       </main>
 
       <!-- Footer -->
-      <footer class="border-t border-gray-200 bg-gray-50 px-6 py-4">
+      <footer class="border-t border-slate-700 bg-slate-800 px-6 py-4">
         <div class="mx-auto max-w-4xl flex items-center justify-between">
-          <div class="text-sm text-gray-500">
-            Total Price Lists: <span class="font-bold">{{ prices.length }}</span>
+          <div class="text-sm text-slate-400">
+            Total Price Lists: <span class="font-bold text-slate-200">{{ prices.length }}</span>
           </div>
           <div class="flex gap-3">
-            <button 
-              class="rounded-lg border border-gray-300 bg-white px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            <button
+              class="rounded-lg border border-slate-600 bg-slate-700 px-6 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-600"
               @click="isSubWindow ? $emit('close') : router.push('/')"
             >
               Cancel
             </button>
-            <button 
+            <button
               class="rounded-lg bg-blue-600 px-8 py-2 text-sm font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95"
               @click="saveAll"
               :disabled="saving"

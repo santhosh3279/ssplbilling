@@ -3,7 +3,7 @@ from frappe.utils import flt
 
 
 def calculate_incentive_points(doc, method=None):
-	"""Auto-populate points in the Incentive System child table on submit."""
+	"""Calculate and persist points in Incentive System child table on submit."""
 	if not getattr(doc, "incentive_system", None):
 		return
 
@@ -13,14 +13,12 @@ def calculate_incentive_points(doc, method=None):
 		return
 
 	rule = frappe.get_single("Incentive Rule")
-
-	doctype = doc.doctype
-	percentage = _get_percentage(doc, doctype, rule)
+	percentage = _get_percentage(doc, rule)
 
 	if not percentage:
 		return
 
-	amount = _get_amount(doc, doctype)
+	amount = _get_amount(doc)
 	if not amount:
 		return
 
@@ -29,23 +27,56 @@ def calculate_incentive_points(doc, method=None):
 	biller_row = next((r for r in rows if r.role == "Biller"), None)
 
 	if biller_row and n > 1:
-		biller_points = total_points / (2 * n)
+		biller_points = flt(total_points / (2 * n), 2)
 		remaining = total_points - biller_points
-		others_each = remaining / (n - 1)
+		others_each = flt(remaining / (n - 1), 2)
 
 		for row in rows:
-			if row.role == "Biller":
-				row.points = flt(biller_points, 2)
-			else:
-				row.points = flt(others_each, 2)
+			points = biller_points if row.role == "Biller" else others_each
+			row.points = points
+			frappe.db.set_value("Incentive System", row.name, "points", points)
 	else:
-		# No biller distinction or only one row — distribute equally
-		per_person = total_points / n
+		per_person = flt(total_points / n, 2)
 		for row in rows:
-			row.points = flt(per_person, 2)
+			row.points = per_person
+			frappe.db.set_value("Incentive System", row.name, "points", per_person)
+
+	_update_employee_totals(doc, multiplier=1)
 
 
-def _get_percentage(doc, doctype, rule):
+def reverse_incentive_points(doc, method=None):
+	"""Reverse employee incentive totals on document cancellation."""
+	if not getattr(doc, "incentive_system", None):
+		return
+	if not doc.incentive_system:
+		return
+	_update_employee_totals(doc, multiplier=-1)
+
+
+def _update_employee_totals(doc, multiplier):
+	"""Add or subtract points from each employee's total and recompute balance."""
+	for row in doc.incentive_system:
+		if not row.employee or not flt(row.points):
+			continue
+
+		current = frappe.db.get_value(
+			"Employee", row.employee, ["total_incentive", "redeemed_incentive"], as_dict=True
+		)
+		if not current:
+			continue
+
+		new_total = flt(current.total_incentive) + multiplier * flt(row.points)
+		new_balance = new_total - flt(current.redeemed_incentive)
+
+		frappe.db.set_value(
+			"Employee",
+			row.employee,
+			{"total_incentive": flt(new_total, 2), "balance_incentive": flt(new_balance, 2)},
+		)
+
+
+def _get_percentage(doc, rule):
+	doctype = doc.doctype
 	if doctype == "Sales Invoice":
 		wholesale_lists = {
 			rule.wholesale_pricelist_1,
@@ -65,7 +96,8 @@ def _get_percentage(doc, doctype, rule):
 	return None
 
 
-def _get_amount(doc, doctype):
+def _get_amount(doc):
+	doctype = doc.doctype
 	if doctype in ("Sales Invoice", "Purchase Invoice"):
 		return doc.grand_total
 	if doctype == "Stock Entry":

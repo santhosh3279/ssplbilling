@@ -7,8 +7,15 @@ const lastSync = ref(0)
 const syncLoading = ref(false)
 const lastParams = ref({ searchType: null, priceList: null, warehouse: null })
 
-// Global pricing rules cache
-const pricingRules = ref([])
+// Global pricing rules cache — persisted to localStorage
+const PRICING_RULES_KEY = 'sspl-pricing-rules'
+function loadPricingRulesFromStorage() {
+  try { return JSON.parse(localStorage.getItem(PRICING_RULES_KEY) || '[]') } catch { return [] }
+}
+function savePricingRulesToStorage(rules) {
+  try { localStorage.setItem(PRICING_RULES_KEY, JSON.stringify(rules)) } catch {}
+}
+const pricingRules = ref(loadPricingRulesFromStorage())
 
 // Global cache for customer sales history
 const customerSalesHistory = ref([])
@@ -34,6 +41,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
     ])
     items.value = data || []
     pricingRules.value = rules || []
+    savePricingRulesToStorage(pricingRules.value)
     lastSync.value = Date.now()
     lastParams.value = { searchType, priceList, warehouse }
     return items.value
@@ -52,11 +60,17 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
 export function applyPricingRule(item_code, qty = 1, customer = null) {
   if (!pricingRules.value.length) return null
 
+  const today = new Date().toISOString().slice(0, 10)
+
   const matching = pricingRules.value.filter(rule => {
     // Skip disabled rules
     if (rule.disable) return false
+    // Date validity
+    if (rule.valid_from && today < rule.valid_from) return false
+    if (rule.valid_upto && today > rule.valid_upto) return false
     // Item code filter
-    if (rule.apply_on === 'Item Code' && rule.item_codes.length && !rule.item_codes.includes(item_code)) return false
+    const codes = rule.item_codes || []
+    if (rule.apply_on === 'Item Code' && codes.length && !codes.includes(item_code)) return false
     // Qty range
     if (rule.min_qty > 0 && qty < rule.min_qty) return false
     if (rule.max_qty > 0 && qty > rule.max_qty) return false
@@ -144,6 +158,7 @@ export function useItemCache() {
     // Pricing rules
     pricingRules,
     applyPricingRule,
+    savePricingRulesToStorage,
     // History
     customerSalesHistory,
     currentCustomerForHistory,

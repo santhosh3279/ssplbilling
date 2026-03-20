@@ -1,12 +1,12 @@
 <template>
-  <div class="flex min-h-screen flex-col bg-gray-50" @keydown.f9.prevent="handleF9">
+  <div class="flex min-h-screen flex-col bg-slate-900" @keydown.f9.prevent="handleF9">
 
     <!-- ═══════ HEADER / MODE TABS ═══════ -->
-    <header class="sticky top-0 z-40 flex h-12 items-stretch border-b border-gray-200 bg-white">
+    <header class="sticky top-0 z-40 flex h-12 items-stretch border-b border-slate-700 bg-slate-800">
 
       <button
         @click="$router.push('/')"
-        class="flex items-center gap-1 border-r border-gray-200 px-4 text-xs text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+        class="flex items-center gap-1 border-r border-slate-700 px-4 text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-200"
       >
         ← Dashboard
       </button>
@@ -16,10 +16,10 @@
         v-for="m in MODES"
         :key="m.id"
         @click="switchMode(m.id)"
-        class="relative flex items-center gap-2 border-r border-gray-200 px-6 text-sm font-semibold transition-colors focus:outline-none"
+        class="relative flex items-center gap-2 border-r border-slate-700 px-6 text-sm font-semibold transition-colors focus:outline-none"
         :class="mode === m.id
-          ? 'bg-white text-blue-700 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-600'
-          : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700'"
+          ? 'bg-slate-800 text-blue-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-500'
+          : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'"
       >
         <span>{{ m.icon }}</span>
         <span>{{ m.label }}</span>
@@ -42,10 +42,10 @@
       <button
         @click="save"
         :disabled="!canSave || saving"
-        class="flex items-center gap-2 border-l border-gray-200 px-6 text-sm font-bold transition-colors"
+        class="flex items-center gap-2 border-l border-slate-700 px-6 text-sm font-bold transition-colors"
         :class="canSave && !saving
-          ? 'text-green-700 hover:bg-green-50 cursor-pointer'
-          : 'text-gray-300 cursor-not-allowed'"
+          ? 'text-green-400 hover:bg-green-900/20 cursor-pointer'
+          : 'text-slate-600 cursor-not-allowed'"
       >
         {{ saving ? 'Saving…' : 'Save' }}
         <kbd class="rounded border border-current px-1.5 py-0.5 font-mono text-[10px] opacity-60">F9</kbd>
@@ -61,24 +61,24 @@
         <!-- RECEIPT / PAYMENT: outstanding list -->
         <template v-if="mode === 'receipt' || mode === 'payment'">
           <div class="mb-3 flex items-center gap-3">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Outstanding {{ mode === 'receipt' ? 'Invoices' : 'Bills' }}
             </span>
-            <span v-if="form.partyName" class="rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+            <span v-if="form.partyName" class="rounded bg-blue-900/20 px-2 py-0.5 text-xs font-semibold text-blue-400">
               {{ form.partyName }}
             </span>
           </div>
 
-          <div v-if="!form.party" class="flex flex-col items-center justify-center py-20 text-gray-300">
+          <div v-if="!form.party" class="flex flex-col items-center justify-center py-20 text-slate-500">
             <div class="mb-3 text-5xl">{{ mode === 'receipt' ? '👤' : '🏭' }}</div>
             <div class="text-sm">Select a {{ mode === 'receipt' ? 'customer' : 'supplier' }} →</div>
           </div>
 
-          <div v-else-if="loadingInvoices" class="py-10 text-center text-sm text-gray-400">
+          <div v-else-if="loadingInvoices" class="py-10 text-center text-sm text-slate-400">
             Loading…
           </div>
 
-          <div v-else-if="!outstandingList.length" class="py-10 text-center text-sm text-gray-400">
+          <div v-else-if="!outstandingList.length" class="py-10 text-center text-sm text-slate-400">
             No outstanding {{ mode === 'receipt' ? 'invoices' : 'bills' }}.
           </div>
 
@@ -89,17 +89,17 @@
               @click="selectInvoice(inv)"
               class="cursor-pointer rounded-xl border p-4 transition-all"
               :class="form.invoiceName === inv.name
-                ? 'border-blue-400 bg-blue-50 shadow-sm'
-                : 'border-gray-200 bg-white hover:border-blue-200 hover:bg-gray-50'"
+                ? 'border-blue-500 bg-blue-900/30 shadow-sm'
+                : 'border-slate-700 bg-slate-800 hover:border-blue-600 hover:bg-slate-800/40'"
             >
-              <div class="mb-1 font-mono text-sm font-bold text-gray-800">{{ inv.name }}</div>
-              <div class="text-[11px] text-gray-400">{{ fmtDate(inv.posting_date) }}</div>
+              <div class="mb-1 font-mono text-sm font-bold text-slate-100">{{ inv.name }}</div>
+              <div class="text-[11px] text-slate-400">{{ fmtDate(inv.posting_date) }}</div>
               <div class="mt-2 flex items-end justify-between">
                 <div>
-                  <div class="text-[10px] text-gray-400">Outstanding</div>
-                  <div class="text-lg font-bold text-red-600">₹{{ fmt(inv.outstanding_amount) }}</div>
+                  <div class="text-[10px] text-slate-400">Outstanding</div>
+                  <div class="text-lg font-bold text-red-400">₹{{ fmt(inv.outstanding_amount) }}</div>
                 </div>
-                <div class="text-right text-[10px] text-gray-400">
+                <div class="text-right text-[10px] text-slate-400">
                   of ₹{{ fmt(inv.grand_total) }}
                 </div>
               </div>
@@ -110,17 +110,17 @@
         <!-- JOURNAL: account rows table -->
         <template v-else-if="mode === 'journal'">
           <div class="mb-3 flex items-center justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Account Rows</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Account Rows</span>
             <button
               @click="addJournalRow"
-              class="rounded border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+              class="rounded border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700"
             >
               + Add Row
             </button>
           </div>
 
           <!-- Header -->
-          <div class="mb-1 grid grid-cols-[2fr_1fr_1fr_28px] gap-2 px-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+          <div class="mb-1 grid grid-cols-[2fr_1fr_1fr_28px] gap-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
             <div>Account</div>
             <div class="text-right">Debit (Dr)</div>
             <div class="text-right">Credit (Cr)</div>
@@ -142,22 +142,22 @@
                   @blur="() => setTimeout(() => { row.accountOpen = false }, 150)"
                   :placeholder="`Account ${idx + 1}`"
                   autocomplete="off"
-                  class="w-full rounded border px-2 py-1.5 text-sm outline-none transition-colors focus:border-blue-500"
-                  :class="row.account ? 'border-blue-300 bg-blue-50 text-blue-800' : 'border-gray-300'"
+                  class="w-full rounded border px-2 py-1.5 text-sm outline-none transition-colors focus:border-blue-500 bg-slate-800 text-slate-200"
+                  :class="row.account ? 'border-blue-500 bg-blue-900/20 text-blue-300' : 'border-slate-600'"
                 />
                 <ul
                   v-if="row.accountOpen && row.accountOptions.length"
-                  class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg"
+                  class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-slate-700 bg-slate-800 shadow-lg"
                 >
                   <li
                     v-for="(opt, i) in row.accountOptions"
                     :key="opt.name"
                     @mousedown.prevent="setRowAccount(idx, opt)"
                     class="cursor-pointer px-3 py-1.5 text-xs"
-                    :class="row.accountCursor === i ? 'bg-blue-50' : 'hover:bg-gray-50'"
+                    :class="row.accountCursor === i ? 'bg-blue-900/30' : 'hover:bg-slate-700'"
                   >
-                    <span class="font-semibold text-gray-800">{{ opt.account_name }}</span>
-                    <span class="ml-2 text-[10px] text-gray-400">{{ opt.account_type }}</span>
+                    <span class="font-semibold text-slate-200">{{ opt.account_name }}</span>
+                    <span class="ml-2 text-[10px] text-slate-400">{{ opt.account_type }}</span>
                   </li>
                 </ul>
               </div>
@@ -168,7 +168,7 @@
                 min="0"
                 placeholder="0.00"
                 @focus="row.credit = null"
-                class="rounded border border-gray-300 px-2 py-1.5 text-right text-sm outline-none focus:border-blue-500"
+                class="rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-right text-sm text-slate-200 outline-none focus:border-blue-500"
               />
               <!-- Credit -->
               <input
@@ -177,27 +177,27 @@
                 min="0"
                 placeholder="0.00"
                 @focus="row.debit = null"
-                class="rounded border border-gray-300 px-2 py-1.5 text-right text-sm outline-none focus:border-blue-500"
+                class="rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-right text-sm text-slate-200 outline-none focus:border-blue-500"
               />
               <!-- Delete -->
               <button
                 @click="removeJournalRow(idx)"
                 :disabled="form.rows.length <= 2"
-                class="flex h-7 w-7 items-center justify-center rounded text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-20"
+                class="flex h-7 w-7 items-center justify-center rounded text-slate-500 transition-colors hover:bg-red-900/20 hover:text-red-400 disabled:opacity-20"
               >✕</button>
             </div>
           </div>
 
           <!-- Totals -->
-          <div class="mt-3 grid grid-cols-[2fr_1fr_1fr_28px] gap-2 border-t-2 border-gray-200 pt-3 px-2">
-            <div class="text-xs font-bold text-gray-500">Total</div>
+          <div class="mt-3 grid grid-cols-[2fr_1fr_1fr_28px] gap-2 border-t-2 border-slate-700 pt-3 px-2">
+            <div class="text-xs font-bold text-slate-400">Total</div>
             <div
               class="text-right text-sm font-bold font-mono"
-              :class="journalBalanced ? 'text-gray-700' : 'text-red-600'"
+              :class="journalBalanced ? 'text-slate-200' : 'text-red-400'"
             >₹{{ fmt(journalTotalDr) }}</div>
             <div
               class="text-right text-sm font-bold font-mono"
-              :class="journalBalanced ? 'text-gray-700' : 'text-red-600'"
+              :class="journalBalanced ? 'text-slate-200' : 'text-red-400'"
             >₹{{ fmt(journalTotalCr) }}</div>
             <div class="flex items-center justify-center text-sm">
               {{ journalBalanced ? '✓' : '⚠' }}
@@ -210,32 +210,32 @@
           <div class="flex flex-col items-center justify-center py-12">
             <div
               class="w-72 rounded-xl border-2 px-6 py-5 text-center transition-all"
-              :class="form.fromAccount ? 'border-orange-300 bg-orange-50' : 'border-dashed border-gray-300 bg-white'"
+              :class="form.fromAccount ? 'border-orange-600 bg-orange-900/20' : 'border-dashed border-slate-600 bg-slate-800'"
             >
-              <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">From Account</div>
-              <div class="mt-2 text-base font-bold" :class="form.fromAccount ? 'text-orange-800' : 'text-gray-300'">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">From Account</div>
+              <div class="mt-2 text-base font-bold" :class="form.fromAccount ? 'text-orange-300' : 'text-slate-600'">
                 {{ form.fromAccountName || '—' }}
               </div>
             </div>
 
-            <div class="my-5 flex flex-col items-center gap-1 text-gray-400">
-              <div class="h-8 w-px bg-gray-300"></div>
+            <div class="my-5 flex flex-col items-center gap-1 text-slate-400">
+              <div class="h-8 w-px bg-slate-600"></div>
               <div
                 class="rounded-full px-4 py-1.5 text-sm font-bold transition-all"
-                :class="form.amount ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'"
+                :class="form.amount ? 'bg-blue-900/20 text-blue-400' : 'bg-slate-700 text-slate-400'"
               >
                 ₹{{ fmt(form.amount || 0) }}
               </div>
-              <div class="h-8 w-px bg-gray-300"></div>
+              <div class="h-8 w-px bg-slate-600"></div>
               <div class="text-xl">↓</div>
             </div>
 
             <div
               class="w-72 rounded-xl border-2 px-6 py-5 text-center transition-all"
-              :class="form.toAccount ? 'border-green-300 bg-green-50' : 'border-dashed border-gray-300 bg-white'"
+              :class="form.toAccount ? 'border-green-600 bg-green-900/20' : 'border-dashed border-slate-600 bg-slate-800'"
             >
-              <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">To Account</div>
-              <div class="mt-2 text-base font-bold" :class="form.toAccount ? 'text-green-800' : 'text-gray-300'">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">To Account</div>
+              <div class="mt-2 text-base font-bold" :class="form.toAccount ? 'text-green-300' : 'text-slate-600'">
                 {{ form.toAccountName || '—' }}
               </div>
             </div>
@@ -245,7 +245,7 @@
       </div>
 
       <!-- ── RIGHT PANEL: keyboard form ── -->
-      <div class="flex w-80 shrink-0 flex-col overflow-y-auto border-l border-gray-200 bg-white">
+      <div class="flex w-80 shrink-0 flex-col overflow-y-auto border-l border-slate-700 bg-slate-800">
         <div class="flex-1 p-5">
 
           <!-- Date -->
@@ -275,26 +275,26 @@
                 :placeholder="`Search ${mode === 'receipt' ? 'customer' : 'supplier'}…`"
                 autocomplete="off"
                 class="field-inp pr-7"
-                :class="form.party ? '!border-blue-400 bg-blue-50 font-semibold text-blue-800' : ''"
+                :class="form.party ? '!border-blue-500 bg-blue-900/20 font-semibold text-blue-300' : ''"
               />
               <button
                 v-if="form.party"
                 @click="clearParty"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-200"
               >✕</button>
               <ul
                 v-if="partyDropdownOpen && partyOptions.length"
-                class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg"
+                class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-slate-700 bg-slate-800 shadow-lg"
               >
                 <li
                   v-for="(c, i) in partyOptions"
                   :key="c.name"
                   @mousedown.prevent="pickParty(c)"
                   class="cursor-pointer px-3 py-2 text-xs"
-                  :class="partyCursor === i ? 'bg-blue-50' : 'hover:bg-gray-50'"
+                  :class="partyCursor === i ? 'bg-blue-900/30' : 'hover:bg-slate-700'"
                 >
-                  <div class="font-semibold text-gray-800">{{ c.customer_name || c.supplier_name }}</div>
-                  <div class="font-mono text-[10px] text-gray-400">{{ c.name }}</div>
+                  <div class="font-semibold text-slate-200">{{ c.customer_name || c.supplier_name }}</div>
+                  <div class="font-mono text-[10px] text-slate-400">{{ c.name }}</div>
                 </li>
               </ul>
             </div>
@@ -310,7 +310,7 @@
               min="0"
               step="0.01"
               placeholder="0.00"
-              class="w-full rounded border border-gray-300 px-3 py-2 text-right text-2xl font-bold tracking-tight outline-none transition-colors focus:border-blue-500"
+              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-right text-2xl font-bold tracking-tight text-slate-100 outline-none transition-colors focus:border-blue-500"
             />
           </div>
 
@@ -325,7 +325,7 @@
                 class="flex-1 rounded border py-2 text-xs font-bold transition-colors"
                 :class="form.mop === m.id
                   ? 'border-blue-500 bg-blue-600 text-white'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                  : 'border-slate-600 text-slate-400 hover:bg-slate-700'"
               >
                 {{ m.label }}
               </button>
@@ -336,7 +336,7 @@
           <div v-if="(mode === 'receipt' || mode === 'payment') && outstandingList.length" class="mb-4">
             <label class="field-lbl">
               Link Invoice
-              <span class="ml-1 font-normal text-gray-400">optional</span>
+              <span class="ml-1 font-normal text-slate-500">optional</span>
             </label>
             <select v-model="form.invoiceName" class="field-inp">
               <option value="">None (unlinked)</option>
@@ -362,21 +362,21 @@
                 placeholder="Cash / Bank account…"
                 autocomplete="off"
                 class="field-inp"
-                :class="form.fromAccount ? '!border-orange-400 bg-orange-50 text-orange-800' : ''"
+                :class="form.fromAccount ? '!border-orange-500 bg-orange-900/20 text-orange-300' : ''"
               />
               <ul
                 v-if="fromDropdownOpen && fromOptions.length"
-                class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg"
+                class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-slate-700 bg-slate-800 shadow-lg"
               >
                 <li
                   v-for="(a, i) in fromOptions"
                   :key="a.name"
                   @mousedown.prevent="pickFromAccount(a)"
                   class="cursor-pointer px-3 py-1.5 text-xs"
-                  :class="fromCursor === i ? 'bg-blue-50' : 'hover:bg-gray-50'"
+                  :class="fromCursor === i ? 'bg-blue-900/30' : 'hover:bg-slate-700'"
                 >
-                  <span class="font-semibold">{{ a.account_name }}</span>
-                  <span class="ml-2 text-[10px] text-gray-400">{{ a.account_type }}</span>
+                  <span class="font-semibold text-slate-200">{{ a.account_name }}</span>
+                  <span class="ml-2 text-[10px] text-slate-400">{{ a.account_type }}</span>
                 </li>
               </ul>
             </div>
@@ -398,21 +398,21 @@
                 placeholder="Cash / Bank account…"
                 autocomplete="off"
                 class="field-inp"
-                :class="form.toAccount ? '!border-green-400 bg-green-50 text-green-800' : ''"
+                :class="form.toAccount ? '!border-green-500 bg-green-900/20 text-green-300' : ''"
               />
               <ul
                 v-if="toDropdownOpen && toOptions.length"
-                class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow-lg"
+                class="absolute z-50 mt-0.5 max-h-44 w-full overflow-y-auto rounded border border-slate-700 bg-slate-800 shadow-lg"
               >
                 <li
                   v-for="(a, i) in toOptions"
                   :key="a.name"
                   @mousedown.prevent="pickToAccount(a)"
                   class="cursor-pointer px-3 py-1.5 text-xs"
-                  :class="toCursor === i ? 'bg-blue-50' : 'hover:bg-gray-50'"
+                  :class="toCursor === i ? 'bg-blue-900/30' : 'hover:bg-slate-700'"
                 >
-                  <span class="font-semibold">{{ a.account_name }}</span>
-                  <span class="ml-2 text-[10px] text-gray-400">{{ a.account_type }}</span>
+                  <span class="font-semibold text-slate-200">{{ a.account_name }}</span>
+                  <span class="ml-2 text-[10px] text-slate-400">{{ a.account_type }}</span>
                 </li>
               </ul>
             </div>
@@ -432,17 +432,17 @@
           </div>
 
           <!-- Journal totals summary -->
-          <div v-if="mode === 'journal'" class="mb-4 rounded-lg bg-gray-50 p-3">
+          <div v-if="mode === 'journal'" class="mb-4 rounded-lg bg-slate-700 p-3">
             <div class="mb-1 flex justify-between text-xs">
-              <span class="text-gray-400">Total Dr</span>
-              <span class="font-mono font-bold text-red-600">₹{{ fmt(journalTotalDr) }}</span>
+              <span class="text-slate-400">Total Dr</span>
+              <span class="font-mono font-bold text-red-400">₹{{ fmt(journalTotalDr) }}</span>
             </div>
             <div class="mb-1 flex justify-between text-xs">
-              <span class="text-gray-400">Total Cr</span>
-              <span class="font-mono font-bold text-green-600">₹{{ fmt(journalTotalCr) }}</span>
+              <span class="text-slate-400">Total Cr</span>
+              <span class="font-mono font-bold text-green-400">₹{{ fmt(journalTotalCr) }}</span>
             </div>
-            <div class="flex justify-between border-t border-gray-200 pt-1 text-xs">
-              <span class="font-semibold text-gray-600">Difference</span>
+            <div class="flex justify-between border-t border-slate-600 pt-1 text-xs">
+              <span class="font-semibold text-slate-300">Difference</span>
               <span
                 class="font-mono font-bold"
                 :class="journalBalanced ? 'text-green-600' : 'text-red-600'"
@@ -456,19 +456,19 @@
           <div v-if="mode !== 'journal'" class="mb-4">
             <label class="field-lbl">
               Reference No
-              <span class="ml-1 font-normal text-gray-400">optional</span>
+              <span class="ml-1 font-normal text-slate-500">optional</span>
             </label>
             <div class="flex gap-2">
               <input
                 v-model="form.referenceNo"
                 type="text"
                 placeholder="Cheque / UTR / Txn ID"
-                class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                class="flex-1 rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
               />
               <input
                 v-model="form.referenceDate"
                 type="date"
-                class="w-32 rounded border border-gray-300 px-2 py-2 text-xs outline-none focus:border-blue-500"
+                class="w-32 rounded border border-slate-600 bg-slate-800 px-2 py-2 text-xs text-slate-200 outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -477,20 +477,20 @@
           <div class="mb-5">
             <label class="field-lbl">
               Remarks
-              <span class="ml-1 font-normal text-gray-400">optional</span>
+              <span class="ml-1 font-normal text-slate-500">optional</span>
             </label>
             <textarea
               v-model="form.remarks"
               rows="2"
               placeholder="Optional note…"
-              class="w-full resize-none rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              class="w-full resize-none rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
             />
           </div>
 
           <!-- Error -->
           <div
             v-if="errorMsg"
-            class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+            class="mb-3 rounded-lg border border-red-700 bg-red-900/20 px-3 py-2 text-xs text-red-400"
           >
             {{ errorMsg }}
           </div>
@@ -502,21 +502,21 @@
             class="w-full rounded-xl py-3 text-sm font-bold transition-colors"
             :class="canSave && !saving
               ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+              : 'bg-slate-700 text-slate-500 cursor-not-allowed'"
           >
             {{ saving ? 'Saving…' : `Save ${MODES.find(m => m.id === mode)?.label}` }}
             <kbd v-if="canSave" class="ml-2 rounded border border-current px-1.5 py-0.5 font-mono text-[10px] opacity-60">F9</kbd>
           </button>
 
           <!-- Status hint -->
-          <div class="mt-2 text-center text-[10px] text-gray-400">
+          <div class="mt-2 text-center text-[10px] text-slate-500">
             <span v-if="mode === 'receipt' && !form.party">Select a customer to start</span>
             <span v-else-if="mode === 'payment' && !form.party">Select a supplier to start</span>
             <span v-else-if="mode === 'contra' && !form.fromAccount">Select from account</span>
             <span v-else-if="mode === 'contra' && !form.toAccount">Select to account</span>
             <span v-else-if="mode !== 'journal' && !(form.amount > 0)">Enter an amount</span>
             <span v-else-if="mode === 'journal' && !journalBalanced">Dr and Cr totals must match</span>
-            <span v-else class="text-green-600 font-semibold">Ready — press F9 to save</span>
+            <span v-else class="text-green-400 font-semibold">Ready — press F9 to save</span>
           </div>
 
         </div>
@@ -1124,9 +1124,9 @@ function fmtDate(d) {
 
 <style scoped>
 .field-lbl {
-  @apply mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-400;
+  @apply mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400;
 }
 .field-inp {
-  @apply w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none transition-colors focus:border-blue-500;
+  @apply w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-blue-500;
 }
 </style>

@@ -3,27 +3,15 @@ import frappe
 
 @frappe.whitelist()
 def get_user_mop_ledgers():
-	"""Return GL ledger entries for the current user's Mode of Payment accounts."""
+	"""Return GL ledger entries for the current user's direct GL accounts (cash/card/upi/bank)."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 	user = frappe.session.user
 	user_row = next((r for r in settings.user_series if r.user == user), None)
 	if not user_row:
 		return []
 
-	mop_names = [m for m in [user_row.cash, user_row.card, user_row.upi, user_row.bank] if m]
-	if not mop_names:
-		return []
-
-	company = frappe.db.get_single_value("Global Defaults", "default_company") or ""
-
-	mop_accounts = frappe.get_all(
-		"Mode of Payment Account",
-		filters={"parent": ["in", mop_names], "company": company},
-		fields=["parent as mop", "default_account"],
-	)
-
-	# Fetch balances in one query
-	account_names = [r.default_account for r in mop_accounts if r.default_account]
+	# Direct GL accounts — no MOP resolution needed
+	account_names = [a for a in [user_row.cash, user_row.card, user_row.upi, user_row.bank] if a]
 	if not account_names:
 		return []
 
@@ -39,7 +27,6 @@ def get_user_mop_ledgers():
 	)
 	bal_map = {b.name: float(b.balance or 0) for b in balances}
 
-	# Build label map (account_name without company suffix)
 	acc_labels = frappe.get_all(
 		"Account",
 		filters={"name": ["in", account_names]},
@@ -47,24 +34,10 @@ def get_user_mop_ledgers():
 	)
 	label_map = {a.name: a.account_name for a in acc_labels}
 
-	# Preserve user's MOP order: cash, card, upi, bank
-	mop_order = [user_row.cash, user_row.card, user_row.upi, user_row.bank]
-	mop_to_account = {r.mop: r.default_account for r in mop_accounts}
-
-	result = []
-	for mop in mop_order:
-		acc = mop_to_account.get(mop)
-		if not acc:
-			continue
-		result.append({
-			"name": acc,
-			"label": label_map.get(acc, acc),
-			"type": "Account",
-			"balance": bal_map.get(acc, 0.0),
-			"mop": mop,
-		})
-
-	return result
+	return [
+		{"name": acc, "label": label_map.get(acc, acc), "type": "Account", "balance": bal_map.get(acc, 0.0)}
+		for acc in account_names
+	]
 
 
 @frappe.whitelist()

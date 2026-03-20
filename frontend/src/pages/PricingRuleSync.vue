@@ -20,10 +20,6 @@
           {{ saving ? 'Saving...' : 'Save All' }}
         </button>
         <button
-          @click="showNewModal = true"
-          class="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-        >+ New Rule</button>
-        <button
           @click="fetchRules"
           :disabled="loading"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
@@ -34,155 +30,6 @@
         </button>
       </div>
     </header>
-
-    <!-- New Rule Modal -->
-    <div v-if="showNewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" @click.self="showNewModal = false">
-      <div class="w-[500px] rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-2xl">
-        <div class="mb-4 flex items-center justify-between">
-          <h2 class="text-base font-bold text-slate-200">New Pricing Rule</h2>
-          <button @click="showNewModal = false" class="text-slate-500 hover:text-slate-300">✕</button>
-        </div>
-        <div class="max-h-[70vh] overflow-y-auto space-y-3 pr-1">
-
-          <!-- Title -->
-          <div>
-            <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Title <span class="text-red-400">*</span></label>
-            <input v-model="newRule.title" type="text" placeholder="Rule title"
-              class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-          </div>
-
-          <!-- Row 1: Price/Product + Apply On -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Discount Type</label>
-              <select v-model="newRule.price_or_product_discount" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
-                <option value="Price">Price</option>
-                <option value="Product">Product</option>
-              </select>
-            </div>
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Apply On</label>
-              <select v-model="newRule.apply_on" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
-                <option>Item Code</option>
-                <option>Item Group</option>
-                <option>Brand</option>
-                <option>Transaction</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Item codes -->
-          <div v-if="newRule.apply_on === 'Item Code'">
-            <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Item Codes (comma-separated)</label>
-            <input v-model="newRule.item_codes_raw" type="text" placeholder="e.g. ITEM-001, ITEM-002"
-              class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-          </div>
-
-          <!-- Row 2: Rate/Discount type + value + priority (only for Price) -->
-          <div v-if="newRule.price_or_product_discount === 'Price'" class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Rate / Discount</label>
-              <select v-model="newRule.rate_or_discount" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
-                <option>Discount Percentage</option>
-                <option>Rate</option>
-                <option>Discount Amount</option>
-              </select>
-            </div>
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">
-                {{ newRule.rate_or_discount === 'Discount Percentage' ? 'Discount %' : newRule.rate_or_discount === 'Rate' ? 'Rate ₹' : 'Discount Amt ₹' }}
-              </label>
-              <input v-if="newRule.rate_or_discount === 'Discount Percentage'"
-                v-model.number="newRule.discount_percentage"
-                type="number" min="0" max="100" step="0.5"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-              <input v-else-if="newRule.rate_or_discount === 'Rate'"
-                v-model.number="newRule.rate"
-                type="number" min="0" step="0.01"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-              <input v-else
-                v-model.number="newRule.discount_amount"
-                type="number" min="0" step="0.01"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-          </div>
-
-          <!-- Row 3: Warehouse + Priority -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Warehouse</label>
-              <input v-model="newRule.warehouse" type="text" placeholder="Leave blank for all"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Priority</label>
-              <input v-model.number="newRule.priority" type="number" min="1"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-          </div>
-
-          <!-- Row 4: Qty range -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Min Qty</label>
-              <input v-model.number="newRule.min_qty" type="number" min="0"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Max Qty</label>
-              <input v-model.number="newRule.max_qty" type="number" min="0"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-          </div>
-
-          <!-- Row 5: Validity -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Valid From</label>
-              <input v-model="newRule.valid_from" type="date"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-            <div>
-              <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Valid Until</label>
-              <input v-model="newRule.valid_upto" type="date"
-                class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-            </div>
-          </div>
-
-          <!-- Row 6: Party / Applicable For -->
-          <div class="border-t border-slate-700 pt-3">
-            <div class="mb-2 text-xs font-bold uppercase text-slate-500">Party Information</div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="mb-1 block text-xs font-bold uppercase text-slate-500">Applicable For</label>
-                <select v-model="newRule.applicable_for" class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500">
-                  <option value="">— All —</option>
-                  <option value="Customer">Customer</option>
-                  <option value="Customer Group">Customer Group</option>
-                  <option value="Territory">Territory</option>
-                  <option value="Sales Partner">Sales Partner</option>
-                  <option value="Campaign">Campaign</option>
-                </select>
-              </div>
-              <div v-if="newRule.applicable_for">
-                <label class="mb-1 block text-xs font-bold uppercase text-slate-500">{{ newRule.applicable_for }}</label>
-                <input v-model="newRule.party_value" type="text" :placeholder="'Enter ' + newRule.applicable_for"
-                  class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500" />
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="mt-5 flex justify-end gap-3">
-          <button @click="showNewModal = false" class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">Cancel</button>
-          <button @click="createRule" :disabled="creating"
-            class="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50">
-            {{ creating ? 'Creating...' : 'Create Rule' }}
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- Content -->
     <div class="px-6 py-6">
@@ -362,36 +209,14 @@ import { frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
-const { pricingRules, refreshItemCache, lastSync } = useItemCache()
+const { pricingRules, refreshItemCache, lastSync, savePricingRulesToStorage } = useItemCache()
 
 const rules = ref([])
 const loading = ref(false)
 const saving = ref(false)
-const creating = ref(false)
-const showNewModal = ref(false)
 const savingRow = reactive({})
 const dirty = reactive({})
 const search = ref('')
-
-const defaultNewRule = () => ({
-  title: '',
-  price_or_product_discount: 'Price',
-  apply_on: 'Item Code',
-  item_codes_raw: '',
-  rate_or_discount: 'Discount Percentage',
-  discount_percentage: 0,
-  rate: 0,
-  discount_amount: 0,
-  warehouse: '',
-  min_qty: 0,
-  max_qty: 0,
-  valid_from: '',
-  valid_upto: '',
-  priority: 1,
-  applicable_for: '',
-  party_value: '',
-})
-const newRule = ref(defaultNewRule())
 
 const lastSyncLabel = computed(() => {
   if (!lastSync.value) return ''
@@ -434,6 +259,7 @@ async function saveRule(rule) {
       disable: rule.disable,
     })
     dirty[rule.name] = false
+    savePricingRulesToStorage(rules.value)
   } catch (e) {
     alert('Save failed: ' + (e?.message || e))
   } finally {
@@ -450,49 +276,6 @@ async function saveAll() {
   await refreshItemCache('Sales')
 }
 
-async function createRule() {
-  creating.value = true
-  try {
-    const item_codes = newRule.value.item_codes_raw
-      .split(',').map(s => s.trim()).filter(Boolean)
-    // Map applicable_for to the correct party field
-    const partyFields = {}
-    if (newRule.value.applicable_for && newRule.value.party_value) {
-      const fieldMap = {
-        'Customer': 'customer', 'Customer Group': 'customer_group',
-        'Territory': 'territory', 'Sales Partner': 'sales_partner', 'Campaign': 'campaign',
-      }
-      const field = fieldMap[newRule.value.applicable_for]
-      if (field) partyFields[field] = newRule.value.party_value
-    }
-    if (!newRule.value.title.trim()) { alert('Title is required'); return }
-    await frappePost('ssplbilling.api.itemsearch_api.create_pricing_rule', {
-      title: newRule.value.title,
-      price_or_product_discount: newRule.value.price_or_product_discount,
-      apply_on: newRule.value.apply_on,
-      item_codes: JSON.stringify(item_codes),
-      rate_or_discount: newRule.value.rate_or_discount,
-      discount_percentage: newRule.value.discount_percentage,
-      rate: newRule.value.rate,
-      discount_amount: newRule.value.discount_amount,
-      warehouse: newRule.value.warehouse || '',
-      min_qty: newRule.value.min_qty,
-      max_qty: newRule.value.max_qty,
-      valid_from: newRule.value.valid_from || '',
-      valid_upto: newRule.value.valid_upto || '',
-      priority: newRule.value.priority,
-      applicable_for: newRule.value.applicable_for || '',
-      ...partyFields,
-    })
-    showNewModal.value = false
-    newRule.value = defaultNewRule()
-    await fetchRules()
-  } catch (e) {
-    alert('Create failed: ' + (e?.message || e))
-  } finally {
-    creating.value = false
-  }
-}
 
 async function fetchRules() {
   loading.value = true
@@ -500,8 +283,9 @@ async function fetchRules() {
     const data = await frappeGet('ssplbilling.api.itemsearch_api.get_pricing_rules')
     rules.value = (data || []).map(r => ({ ...r }))
     Object.keys(dirty).forEach(k => delete dirty[k])
-    // Sync into item cache
+    // Sync into item cache + localStorage
     pricingRules.value = rules.value
+    savePricingRulesToStorage(rules.value)
   } catch (e) {
     console.error('Pricing rule fetch failed:', e)
   } finally {

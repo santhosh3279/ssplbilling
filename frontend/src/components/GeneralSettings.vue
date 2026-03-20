@@ -1,14 +1,14 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="$emit('close')">
-    <div class="w-[720px] rounded-xl bg-white shadow-2xl">
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="$emit('close')">
+    <div class="w-[720px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl">
 
       <!-- Header -->
-      <div class="border-b border-gray-200 px-5 py-4 flex items-center justify-between">
+      <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800">
         <div class="flex items-center gap-4">
-          <div class="text-sm font-semibold text-gray-700">⚙️ General Settings</div>
-          <button 
+          <div class="text-sm font-semibold text-slate-200">⚙️ General Settings</div>
+          <button
             @click="showLocalVariables"
-            class="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            class="rounded-md border border-slate-600 bg-slate-700 px-2 py-1 text-[10px] font-bold text-slate-400 hover:bg-slate-600 hover:text-slate-200 transition-colors"
           >
             DEBUG: View Local Variables
           </button>
@@ -17,99 +17,99 @@
           <button
             @click="handleSync"
             :disabled="syncing"
-            class="text-[10px] font-bold text-blue-600 hover:underline disabled:opacity-50"
+            class="text-[10px] font-bold text-blue-400 hover:underline disabled:opacity-50"
           >{{ syncing ? 'SYNCING...' : 'SYNC NOW' }}</button>
-          <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">✕</button>
+          <button @click="$emit('close')" class="text-slate-500 hover:text-slate-300">✕</button>
         </div>
       </div>
 
       <div class="flex max-h-[78vh] flex-col gap-4 overflow-y-auto px-5 py-4">
 
         <!-- Loading -->
-        <div v-if="syncing && !rawSettings" class="py-8 text-center text-xs text-gray-400">Loading settings…</div>
+        <div v-if="syncing && !rawSettings" class="py-8 text-center text-xs text-slate-500">Loading settings…</div>
 
         <template v-if="rawSettings">
 
           <!-- ── Your Settings ── -->
-          <div class="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+          <div class="rounded-lg border border-blue-800 bg-blue-900/20 px-4 py-3">
             <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-blue-400">Your Settings</div>
             <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Default Zoom</span>
-                <span class="font-mono font-semibold text-gray-800">{{ rawSettings.user_zoom || '--' }}%</span>
+                <span class="text-slate-400">Default Zoom</span>
+                <span class="font-mono font-semibold text-slate-200">{{ rawSettings.user_zoom || '--' }}%</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Cash Account</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.cash || '--' }}</span>
+                <span class="text-slate-400">Cash Account</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.cash || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Card Account</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.card || '--' }}</span>
+                <span class="text-slate-400">Card Account</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.card || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Bank Account</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.bank || '--' }}</span>
+                <span class="text-slate-400">Bank Account</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.bank || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">UPI Account</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.upi || '--' }}</span>
+                <span class="text-slate-400">UPI Account</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.upi || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Warehouse</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.warehouse || '--' }}</span>
+                <span class="text-slate-400">Warehouse</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.warehouse || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Cost Center</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
+                <span class="text-slate-400">Cost Center</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Default Printer</span>
-                <span class="font-medium text-gray-800">{{ rawSettings.user_defaults?.default_printer || '--' }}</span>
+                <span class="text-slate-400">Default Printer</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.default_printer || '--' }}</span>
               </div>
             </div>
           </div>
 
           <!-- ── System Configuration ── -->
           <div>
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">System Configuration</div>
-            <div class="flex flex-col gap-1.5 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 text-xs">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">System Configuration</div>
+            <div class="flex flex-col gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-xs">
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Discount Account</span>
-                <span class="font-medium text-gray-700">{{ rawSettings.discount_account || '--' }}</span>
+                <span class="text-slate-400">Discount Account</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.discount_account || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Freight Account</span>
-                <span class="font-medium text-gray-700">{{ rawSettings.freight_account || '--' }}</span>
+                <span class="text-slate-400">Freight Account</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.freight_account || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-gray-500">Cipher Map</span>
-                <span class="font-mono text-gray-700">{{ rawSettings.cipher_map || '--' }}</span>
+                <span class="text-slate-400">Cipher Map</span>
+                <span class="font-mono text-slate-200">{{ rawSettings.cipher_map || '--' }}</span>
               </div>
             </div>
           </div>
 
           <!-- ── Billing Series ── -->
           <div>
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Billing Series</div>
-            <div class="overflow-auto rounded-lg border border-gray-100">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Billing Series</div>
+            <div class="overflow-auto rounded-lg border border-slate-700">
               <table class="w-full text-[10px]">
-                <thead class="bg-gray-50">
+                <thead class="bg-slate-800">
                   <tr>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Series</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Print Format</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Price List</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Tax Template</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Series</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Print Format</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Price List</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Tax Template</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="bs in visibleBillingSeries" :key="bs.series" class="border-t border-gray-100 hover:bg-gray-50">
-                    <td class="whitespace-nowrap px-2 py-1.5 font-semibold text-gray-800">{{ bs.series || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.print_format || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.price_list || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ bs.tax_template || '--' }}</td>
+                  <tr v-for="bs in visibleBillingSeries" :key="bs.series" class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-2 py-1.5 font-semibold text-slate-200">{{ bs.series || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.print_format || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.price_list || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.tax_template || '--' }}</td>
                   </tr>
                   <tr v-if="!visibleBillingSeries.length">
-                    <td colspan="4" class="px-2 py-3 text-center text-gray-400">No billing series configured</td>
+                    <td colspan="4" class="px-2 py-3 text-center text-slate-500">No billing series configured</td>
                   </tr>
                 </tbody>
               </table>
@@ -118,19 +118,19 @@
 
           <!-- ── Printer Settings ── -->
           <div v-if="rawSettings.printer_settings?.length">
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Printer Settings</div>
-            <div class="overflow-auto rounded-lg border border-gray-100">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Printer Settings</div>
+            <div class="overflow-auto rounded-lg border border-slate-700">
               <table class="w-full text-[10px]">
-                <thead class="bg-gray-50">
+                <thead class="bg-slate-800">
                   <tr>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Printer</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Print Template</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Printer</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Print Template</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="ps in rawSettings.printer_settings" :key="ps.printer + ps.template" class="border-t border-gray-100 hover:bg-gray-50">
-                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-gray-800">{{ ps.printer || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ ps.template || '--' }}</td>
+                  <tr v-for="ps in rawSettings.printer_settings" :key="ps.printer + ps.template" class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-slate-200">{{ ps.printer || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ ps.template || '--' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -139,43 +139,43 @@
 
           <!-- ── User Series Permissions ── -->
           <div v-if="visibleUserSeries.length">
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">User Series Permissions</div>
-            <div class="overflow-auto rounded-lg border border-gray-100">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">User Series Permissions</div>
+            <div class="overflow-auto rounded-lg border border-slate-700">
               <table class="w-full text-[10px]">
-                <thead class="bg-gray-50">
+                <thead class="bg-slate-800">
                   <tr>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">User</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Allowed Series</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-gray-400">Zoom</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cash A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Card A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Bank A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">UPI A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Warehouse</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Cost Center</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Admin</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Cashier</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-gray-400">Biller</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Default Printer</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-gray-400">Blocked Windows</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">User</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Allowed Series</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-slate-400">Zoom</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Cash A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Card A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Bank A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">UPI A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Warehouse</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Cost Center</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Admin</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Cashier</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Biller</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Default Printer</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Blocked Windows</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="us in visibleUserSeries" :key="us.user" class="border-t border-gray-100 hover:bg-gray-50">
-                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-gray-800">{{ us.user || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 font-mono text-gray-600">{{ us.allowed_series || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-gray-600">{{ us.zoom_value || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.cash || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.card || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.bank || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.upi || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.warehouse || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.cost_center || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.admin ? '✓' : '' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.cashier ? '✓' : '' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-gray-600">{{ us.biller ? '✓' : '' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.default_printer || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-gray-600">{{ us.allowed_windows || '--' }}</td>
+                  <tr v-for="us in visibleUserSeries" :key="us.user" class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-slate-200">{{ us.user || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 font-mono text-slate-400">{{ us.allowed_series || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-slate-400">{{ us.zoom_value || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.cash || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.card || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.bank || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.upi || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.warehouse || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.cost_center || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.admin ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.cashier ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.biller ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.default_printer || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.allowed_windows || '--' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -186,9 +186,9 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex justify-end border-t border-gray-200 px-5 py-3">
+      <div class="flex justify-end border-t border-slate-700 px-5 py-3 bg-slate-800">
         <button
-          class="rounded bg-gray-100 px-4 py-1.5 text-sm font-semibold text-gray-600 hover:bg-gray-200"
+          class="rounded bg-slate-700 px-4 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-600"
           @click="$emit('close')"
         >Close</button>
       </div>
@@ -243,35 +243,13 @@ function applyToLocalStorage(settings) {
     localStorage.setItem('wb_freight', settings.freight_account)
   }
 
-  // Account Defaults (Resolved using mop_map)
-  // wb-*-mop  = Mode of Payment name (e.g. "Cash", "HDFC Card")
-  // wb-*      = Resolved GL account  (e.g. "Cash - SSPL")
-  const mopMap = settings.mop_map || {}
-
-  if (settings.user_defaults?.cash) {
-    const mop = settings.user_defaults.cash
-    const acc = mopMap[mop] || mop
-    localStorage.setItem('wb-cash-mop', mop)
-    localStorage.setItem('wb-cash', acc)
-  }
-  if (settings.user_defaults?.card) {
-    const mop = settings.user_defaults.card
-    const acc = mopMap[mop] || mop
-    localStorage.setItem('wb-card-mop', mop)
-    localStorage.setItem('wb-card', acc)
-  }
-  if (settings.user_defaults?.bank) {
-    const mop = settings.user_defaults.bank
-    const acc = mopMap[mop] || mop
-    localStorage.setItem('wb-bank-mop', mop)
-    localStorage.setItem('wb-bank', acc)
-  }
-  if (settings.user_defaults?.upi) {
-    const mop = settings.user_defaults.upi
-    const acc = mopMap[mop] || mop
-    localStorage.setItem('wb-upi-mop', mop)
-    localStorage.setItem('wb-upi', acc)
-  }
+  // Account Defaults — direct GL accounts from SSPL Billing Settings
+  // Remove legacy MOP keys if they exist
+  ;['wb-cash-mop', 'wb-card-mop', 'wb-bank-mop', 'wb-upi-mop'].forEach(k => localStorage.removeItem(k))
+  if (settings.user_defaults?.cash)  localStorage.setItem('wb-cash',  settings.user_defaults.cash)
+  if (settings.user_defaults?.card)  localStorage.setItem('wb-card',  settings.user_defaults.card)
+  if (settings.user_defaults?.bank)  localStorage.setItem('wb-bank',  settings.user_defaults.bank)
+  if (settings.user_defaults?.upi)   localStorage.setItem('wb-upi',   settings.user_defaults.upi)
 
   if (settings.user_defaults?.warehouse) {
     localStorage.setItem('wb-warehouse', settings.user_defaults.warehouse)
