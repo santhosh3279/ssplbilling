@@ -18,9 +18,15 @@ try {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: '/assets/ssplbilling/frontend/',
+export default defineConfig(({ command }) => ({
+  // Dev server serves from root; production assets live under Frappe's asset path
+  base: command === 'build' ? '/assets/ssplbilling/frontend/' : '/',
   plugins: [vue()],
+  define: {
+    __VUE_OPTIONS_API__: true,
+    __VUE_PROD_DEVTOOLS__: false,
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
+  },
   server: {
     port: 8080,
     host: true,
@@ -49,6 +55,6 @@ export default defineConfig({
     target: 'es2020',
   },
   optimizeDeps: {
-    include: ['frappe-ui > feather-icons', 'showdown', 'engine.io-client', 'exceljs'],
+    include: ['frappe-ui > feather-icons', 'showdown', 'engine.io-client', 'exceljs', 'debug'],
   },
-})
+}))
