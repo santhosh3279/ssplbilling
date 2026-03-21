@@ -19,6 +19,7 @@ try {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/assets/ssplbilling/frontend/',
   plugins: [vue()],
   server: {
     port: 8080,
