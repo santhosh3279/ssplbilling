@@ -6,5 +6,5 @@ import './index.css'
 
 const app = createApp(App)
 app.use(router)
-app.use(FrappeUI)
+app.use(FrappeUI, { socketio: false })
 app.mount('#app')
