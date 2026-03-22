@@ -409,10 +409,37 @@
                     <td class="py-1">
                       <div class="flex items-center gap-1.5">
                         <span class="text-slate-400 font-semibold">Freight</span>
-                        <input ref="freightInput" type="number" v-model.number="freightAmt" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:9ch" class="rounded border border-slate-600 bg-slate-800 px-1 text-right font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @keydown.enter="saveButton?.focus()" />
+                        <input ref="freightInput" type="number" v-model.number="freightAmt" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:9ch" class="rounded border border-slate-600 bg-slate-800 px-1 text-right font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @keydown.enter="packingInput?.focus()" />
                       </div>
                     </td>
                     <td class="py-1 text-right font-mono font-semibold text-blue-400">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
+                  </tr>
+                  <tr class="border-b border-slate-800">
+                    <td class="py-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-semibold">Packing</span>
+                        <input ref="packingInput" type="number" v-model.number="packingAmt" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:9ch" class="rounded border border-slate-600 bg-slate-800 px-1 text-right font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @keydown.enter="loadingInput?.focus()" />
+                      </div>
+                    </td>
+                    <td class="py-1 text-right font-mono font-semibold text-blue-400">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
+                  </tr>
+                  <tr class="border-b border-slate-800">
+                    <td class="py-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-semibold">Loading</span>
+                        <input ref="loadingInput" type="number" v-model.number="loadingAmt" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:9ch" class="rounded border border-slate-600 bg-slate-800 px-1 text-right font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @keydown.enter="otherChargesInput?.focus()" />
+                      </div>
+                    </td>
+                    <td class="py-1 text-right font-mono font-semibold text-blue-400">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
+                  </tr>
+                  <tr class="border-b border-slate-800">
+                    <td class="py-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-semibold">Other</span>
+                        <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:9ch" class="rounded border border-slate-600 bg-slate-800 px-1 text-right font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @keydown.enter="saveButton?.focus()" />
+                      </div>
+                    </td>
+                    <td class="py-1 text-right font-mono font-semibold text-blue-400">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
                   </tr>
                   <tr class="border-b border-slate-800">
                     <td class="py-1 text-slate-400 font-semibold">Tax</td>
@@ -781,6 +808,9 @@ const dateInput = ref(null)
 const discountInput = ref(null)
 const discountAmtInput = ref(null)
 const freightInput = ref(null)
+const packingInput = ref(null)
+const loadingInput = ref(null)
+const otherChargesInput = ref(null)
 const saveButton = ref(null)
 const stayHereBtn = ref(null)
 const custSearchModalRef = ref(null)
@@ -1266,6 +1296,9 @@ async function loadInvoice(invoiceName) {
     paymentMode.value = inv.payment_mode || 'Cash'
     discountPct.value = inv.discount_percentage || 0
     freightAmt.value = inv.freight_amount || 0
+    packingAmt.value = inv.packing_amount || 0
+    loadingAmt.value = inv.loading_amount || 0
+    otherChargesAmt.value = inv.other_charges_amount || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
     if (inv.price_list) priceList.value = inv.price_list
@@ -1370,6 +1403,9 @@ const paymentMode = ref('Cash')
 const discountPct = ref(0)
 const discountInputMode = ref(null) // null | 'pct' | 'amt'
 const freightAmt = ref(0)
+const packingAmt = ref(0)
+const loadingAmt = ref(0)
+const otherChargesAmt = ref(0)
 const availableSeries = ref([])
 const nextBillNo = ref('...')
 
@@ -1510,7 +1546,7 @@ const grandTotal = computed(() => {
   const base = isInclusive.value 
     ? grossTotal.value * (1 - discountPct.value / 100)
     : taxableAmt.value + totalTax.value
-  return base + (freightAmt.value || 0)
+  return base + (freightAmt.value || 0) + (packingAmt.value || 0) + (loadingAmt.value || 0) + (otherChargesAmt.value || 0)
 })
 
 async function saveBill() {
@@ -1543,20 +1579,22 @@ async function saveBill() {
     })),
   }
 
-  if (freightAmt.value > 0) {
-    const freightAccount = localStorage.getItem('wb_freight')
-    if (freightAccount) {
-      payload.taxes = [
-        {
-          charge_type: 'Actual',
-          account_head: freightAccount,
-          description: 'Freight Charges',
-          tax_amount: freightAmt.value,
-          cost_center: costCenter.value || ''
-        }
-      ]
-    }
-  }
+  const chargeDefs = [
+    { amt: freightAmt.value,       key: 'wb_freight',        desc: 'Freight Charges' },
+    { amt: packingAmt.value,       key: 'wb-packing',        desc: 'Packing Charges' },
+    { amt: loadingAmt.value,       key: 'wb-loading',        desc: 'Loading Charges' },
+    { amt: otherChargesAmt.value,  key: 'wb-other-charges',  desc: 'Other Charges'   },
+  ]
+  const taxRows = chargeDefs
+    .filter(c => c.amt > 0 && localStorage.getItem(c.key))
+    .map(c => ({
+      charge_type: 'Actual',
+      account_head: localStorage.getItem(c.key),
+      description: c.desc,
+      tax_amount: c.amt,
+      cost_center: costCenter.value || '',
+    }))
+  if (taxRows.length) payload.taxes = taxRows
 
   try {
     let result
@@ -1598,7 +1636,7 @@ async function deleteBill() {
 
 function startNewBill() {
   items.value = []; selectedRow.value = -1; customer.value = ''; custSearch.value = ''
-  discountPct.value = 0; discountInputMode.value = null; freightAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
+  discountPct.value = 0; discountInputMode.value = null; freightAmt.value = 0; packingAmt.value = 0; loadingAmt.value = 0; otherChargesAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedCustomerDetails.value = null

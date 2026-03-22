@@ -72,7 +72,17 @@ def get_sales_invoice(invoice_name):
     si = frappe.get_doc("Sales Invoice", invoice_name)
     payment_mode = si.payments[0].mode_of_payment if si.payments else "Cash"
     cost_center = si.items[0].cost_center if si.items else ""
-    freight_amount = sum(float(t.tax_amount or 0) for t in si.taxes if t.charge_type == "Actual")
+
+    def _actual_charge(keyword):
+        for t in si.taxes:
+            if t.charge_type == "Actual" and keyword.lower() in (t.description or "").lower():
+                return float(t.tax_amount or 0)
+        return 0.0
+
+    freight_amount = _actual_charge("freight")
+    packing_amount = _actual_charge("packing")
+    loading_amount = _actual_charge("loading")
+    other_charges_amount = _actual_charge("other")
 
     return {
         "name": si.name,
@@ -83,6 +93,9 @@ def get_sales_invoice(invoice_name):
         "payment_mode": payment_mode,
         "discount_percentage": float(si.additional_discount_percentage or 0),
         "freight_amount": freight_amount,
+        "packing_amount": packing_amount,
+        "loading_amount": loading_amount,
+        "other_charges_amount": other_charges_amount,
         "grand_total": float(si.grand_total or 0),
         "tax_template": si.taxes_and_charges or "",
         "cost_center": cost_center or "",

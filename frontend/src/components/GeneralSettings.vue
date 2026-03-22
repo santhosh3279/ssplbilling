@@ -268,6 +268,15 @@ function applyToLocalStorage(settings) {
   if (settings.freight_account) {
     localStorage.setItem('wb_freight', settings.freight_account)
   }
+  if (settings.packing_charge) {
+    localStorage.setItem('wb-packing', settings.packing_charge)
+  }
+  if (settings.loading) {
+    localStorage.setItem('wb-loading', settings.loading)
+  }
+  if (settings.other_charges) {
+    localStorage.setItem('wb-other-charges', settings.other_charges)
+  }
 
   // Account Defaults — direct GL accounts from SSPL Billing Settings
   // Remove legacy MOP keys if they exist

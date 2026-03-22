@@ -242,6 +242,17 @@ def create_sales_invoice(data=None, **kwargs):
         except Exception:
             pass
 
+    for tax_row in data.get("taxes") or []:
+        if not tax_row.get("account_head") or not float(tax_row.get("tax_amount") or 0):
+            continue
+        si.append("taxes", {
+            "charge_type": "Actual",
+            "account_head": tax_row["account_head"],
+            "description": tax_row.get("description", ""),
+            "tax_amount": float(tax_row["tax_amount"]),
+            "cost_center": tax_row.get("cost_center") or data.get("cost_center") or "",
+        })
+
     for row in data.get("incentive_system") or []:
         si.append("incentive_system", {
             "employee": row.get("employee"),
@@ -336,6 +347,19 @@ def update_sales_invoice(data=None, **kwargs):
             "employee": row.get("employee"),
             "role": row.get("role"),
             "points": row.get("points") or 0,
+        })
+
+    # Replace Actual-charge tax rows with current values; keep template-based rows
+    si.taxes = [t for t in si.taxes if t.charge_type != "Actual"]
+    for tax_row in data.get("taxes") or []:
+        if not tax_row.get("account_head") or not float(tax_row.get("tax_amount") or 0):
+            continue
+        si.append("taxes", {
+            "charge_type": "Actual",
+            "account_head": tax_row["account_head"],
+            "description": tax_row.get("description", ""),
+            "tax_amount": float(tax_row["tax_amount"]),
+            "cost_center": tax_row.get("cost_center") or data.get("cost_center") or "",
         })
 
     si.ignore_pricing_rule = 1
