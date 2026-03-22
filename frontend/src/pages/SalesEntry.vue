@@ -181,14 +181,18 @@
         <!-- Bill Date -->
         <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
           <label class="text-[10px] font-bold uppercase text-slate-500">Bill Date</label>
-          <input 
+          <input
             ref="dateInput"
-            v-model="billDate" 
-            type="date" 
+            v-model="billDate"
+            type="date"
             :disabled="billDocStatus !== 0 || billSaved"
             class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
             style="font-family: 'Poppins', sans-serif"
           />
+          <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
+            <input type="checkbox" v-model="ignoreDiscountRule" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
+            <span class="text-slate-500 text-[10px]">Ignore Discount Rule</span>
+          </label>
         </div>
       </div>
     </div>
@@ -457,14 +461,6 @@
                   <tr class="border-b border-slate-800/60">
                     <td class="py-1 text-slate-500">Tax</td>
                     <td class="py-1 text-right font-mono text-slate-300">+&#8377;{{ totalTax.toFixed(2) }}</td>
-                  </tr>
-                  <tr>
-                    <td class="pt-1.5" colspan="2">
-                      <label class="flex items-center gap-1.5 cursor-pointer select-none">
-                        <input type="checkbox" v-model="ignoreDiscountRule" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
-                        <span class="text-slate-500 text-[10px]">Ignore Discount Rule</span>
-                      </label>
-                    </td>
                   </tr>
                 </tbody>
               </table>
