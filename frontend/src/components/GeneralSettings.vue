@@ -72,19 +72,45 @@
           <!-- ── System Configuration ── -->
           <div>
             <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">System Configuration</div>
-            <div class="flex flex-col gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="text-slate-400">Discount Account</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.discount_account || '--' }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-400">Freight Account</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.freight_account || '--' }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-400">Cipher Map</span>
-                <span class="font-mono text-slate-200">{{ rawSettings.cipher_map || '--' }}</span>
-              </div>
+            <div class="overflow-auto rounded-lg border border-slate-700">
+              <table class="w-full text-xs">
+                <thead class="bg-slate-800">
+                  <tr>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Field</th>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Discount Account</td>
+                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.discount_account || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Freight Account</td>
+                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.freight_account || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Tax Paid on Purchase</td>
+                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.tax_paid_on_purchase || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Packing Charge</td>
+                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.packing_charge || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Loading</td>
+                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.loading || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Other Charges</td>
+                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.other_charges || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Cipher Map</td>
+                    <td class="px-3 py-1.5 font-mono text-slate-200">{{ rawSettings.cipher_map || '--' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 

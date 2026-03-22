@@ -131,6 +131,10 @@ def get_billing_settings():
 	return {
 		"discount_account": settings.discount_account or "",
 		"freight_account": settings.freight or "",
+		"tax_paid_on_purchase": settings.tax_paid_on_purchase or "",
+		"packing_charge": settings.packing_charge or "",
+		"loading": settings.loading or "",
+		"other_charges": settings.other_charges or "",
 		"cipher_map": settings.cipher_map or "",
 		"mop_map": mop_map,
 		"user_zoom": user_zoom,
