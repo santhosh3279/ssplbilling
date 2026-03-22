@@ -924,6 +924,8 @@ async function loadCustomerPricing(cust) {
   try {
     const data = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust })
     customerPricing.value = data || {}
+    // Re-apply to items already in the list (fetch may arrive after items were added)
+    items.value.forEach((_, idx) => applyCustomerPricingForRow(idx))
   } catch (e) {
     customerPricing.value = {}
   }
