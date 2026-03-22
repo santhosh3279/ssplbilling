@@ -38,14 +38,15 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
   }
 
   function _itemMatchesScope(rule, itemCode) {
+    const code = (itemCode || '').toLowerCase()
     if (rule.applies_to === 'Item Code') {
-      const codes = (rule.items || []).map(i => i.item_code)
-      return codes.includes(itemCode)
+      const codes = (rule.items || []).map(i => (i.item_code || '').toLowerCase())
+      return codes.includes(code)
     }
     if (rule.applies_to === 'Product Group') {
       const cached = lookupItemInCache(itemCode)
       if (!cached?.item_group || !rule.product_group) return false
-      return cached.item_group === rule.product_group
+      return cached.item_group.toLowerCase() === rule.product_group.toLowerCase()
     }
     return false
   }
