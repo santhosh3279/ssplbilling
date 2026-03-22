@@ -153,14 +153,23 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
                 "discount": float(r.discount or 0),
             })
 
-    price_lists = frappe.get_all(
+    selling_pls = frappe.get_all(
         "Item Price",
         filters={"item_code": item_code, "selling": 1},
         fields=["price_list as name", "price_list_rate as rate", "currency"],
         order_by="price_list_rate asc",
     )
-    for pl in price_lists:
-        pl["rate"] = float(pl["rate"] or 0)
+    buying_pls = frappe.get_all(
+        "Item Price",
+        filters={"item_code": item_code, "buying": 1},
+        fields=["price_list as name", "price_list_rate as rate", "currency"],
+        order_by="price_list_rate asc",
+    )
+    price_lists = []
+    for pl in buying_pls:
+        price_lists.append({"name": pl["name"], "rate": float(pl["rate"] or 0), "currency": pl["currency"], "type": "buying"})
+    for pl in selling_pls:
+        price_lists.append({"name": pl["name"], "rate": float(pl["rate"] or 0), "currency": pl["currency"], "type": "selling"})
 
     return {
         "item_name": item_info.get("item_name"),

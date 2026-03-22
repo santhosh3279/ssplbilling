@@ -350,12 +350,18 @@
                 </div>
                 <div class="flex-1">
                   <div class="mb-1 text-[10px] font-bold uppercase text-slate-500">Prices</div>
-                  <div class="flex flex-wrap gap-3">
-                    <span v-for="pl in selectedItemData.priceLists" :key="pl.name" class="rounded bg-slate-800 px-2.5 py-1 text-lg">
-                      <span class="text-slate-500">{{ pl.name }}:</span>
-                      <span class="ml-1 font-mono font-bold text-amber-500">&#8377;{{ encPrice(pl.rate || 0) }}</span>
-                    </span>
-                  </div>
+                  <table v-if="selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full text-xs border-collapse">
+                    <tbody>
+                      <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="border-b border-slate-800 last:border-0">
+                        <td class="py-0.5 pr-2">
+                          <span class="rounded px-1 py-0.5 text-[9px] font-bold uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
+                        </td>
+                        <td class="py-0.5 pr-2 text-slate-400 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
+                        <td class="py-0.5 text-right font-mono font-bold text-amber-400">&#8377;{{ encPrice(pl.rate || 0) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div v-else class="text-sm text-slate-600">--</div>
                 </div>
               </div>
             </template>
