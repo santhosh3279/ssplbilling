@@ -1243,6 +1243,9 @@ async function loadInvoice(invoiceName) {
       // Reconstruct the original list-price rate so reapplyAllDiscountRules
       // doesn't compound the discount on top of the already-discounted saved rate.
       const originalRate = disc > 0 ? Math.round((i.rate / (1 - disc / 100)) * 100) / 100 : null
+      // Rate=0 rows were saved as product-discount free items. Mark them so
+      // reapplyAllDiscountRules strips and re-adds them correctly (no duplicates).
+      const isFreeRow = (i.rate === 0 || i.rate === '0') && disc === 0
       return {
         ...i,
         discount: disc,
@@ -1250,6 +1253,7 @@ async function loadInvoice(invoiceName) {
         _rowKey: makeRowKey(),
         _original_rate: originalRate,
         _rule_pct: disc > 0 ? disc : null,
+        _is_free: isFreeRow,
       }
     })
     selectedRow.value = -1
