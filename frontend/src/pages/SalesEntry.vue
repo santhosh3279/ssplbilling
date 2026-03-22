@@ -1,39 +1,6 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen flex flex-col bg-slate-900'">
-    <div class="flex h-full flex-col">
-    <!-- Top Bar -->
-    <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5">
-      <div class="flex items-center gap-3">
-        <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700" @click="handleBack">&larr; Dashboard</button>
-        <span class="text-sm text-slate-600">|</span>
-        <span class="text-sm font-semibold text-slate-200">Sales Entry</span>
-      </div>
-      <div class="flex items-center gap-3 text-sm text-slate-400">
-        <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden mr-4">
-          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
-          <div class="flex flex-col items-center justify-center border-x border-slate-700 bg-slate-900 px-3 min-w-[50px]">
-            <span class="text-[9px] font-bold uppercase tracking-tight text-slate-500 leading-none">Zoom</span>
-            <span class="text-[11px] font-bold text-slate-300 leading-tight">{{ zoomPercent }}%</span>
-          </div>
-          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
-        </div>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate rows</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Series</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ins</kbd> Incentive</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
-
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
-        <div class="ml-2 h-4 w-px bg-slate-700"></div>
-        <div class="flex items-center gap-1.5 font-bold text-blue-400">
-          <span class="text-[10px] text-slate-500 font-medium">HI</span>
-          <span class="truncate max-w-[120px] uppercase tracking-wide">{{ (session.fullName.value || 'User').split('@')[0] }}</span>
-        </div>
-      </div>
-    </header>
-
-    <div class="flex flex-1 overflow-hidden">
-      <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex">
+    <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
         <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
           <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Modify Bills</div>
         </div>
@@ -105,6 +72,36 @@
 
       <!-- MAIN CONTENT -->
       <div class="flex flex-1 flex-col overflow-hidden bg-slate-900">
+        <!-- Nav bar: Dashboard link + title + zoom + shortcuts + user -->
+        <div class="flex items-center justify-between border-b border-slate-700/60 bg-slate-800/60 px-4 py-1">
+          <div class="flex items-center gap-3">
+            <button class="rounded px-2 py-0.5 text-xs text-slate-400 hover:bg-slate-700" @click="handleBack">&larr; Dashboard</button>
+            <span class="text-slate-600 text-xs">|</span>
+            <span class="text-xs font-semibold text-slate-300">Sales Entry</span>
+          </div>
+          <div class="flex items-center gap-3 text-[10px] text-slate-400">
+            <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden">
+              <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-5 w-6 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
+              <div class="flex items-center border-x border-slate-700 bg-slate-900 px-2 gap-1">
+                <span class="text-[9px] font-bold uppercase text-slate-500">Zoom</span>
+                <span class="text-[10px] font-bold text-slate-300">{{ zoomPercent }}%</span>
+              </div>
+              <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-5 w-6 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
+            </div>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Up/Down</kbd> Nav</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Tab</kbd> Col</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F4</kbd> Series</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ins</kbd> Incentive</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ctrl+S</kbd> Save</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
+            <div class="h-3 w-px bg-slate-700"></div>
+            <div class="flex items-center gap-1 font-bold text-blue-400">
+              <span class="text-[9px] text-slate-500 font-medium">HI</span>
+              <span class="truncate max-w-[100px] uppercase tracking-wide text-[10px]">{{ (session.fullName.value || 'User').split('@')[0] }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Series / Customer / Date bar -->
         <div class="border-b border-slate-700 bg-slate-800 px-4 py-2">
       <div class="flex items-center gap-6">
         <!-- Series -->
@@ -626,8 +623,6 @@
           </button>
         </div>
       </div>
-    </div>
-    </div>
   </div>
 </template>
 
