@@ -1130,9 +1130,10 @@ async function onCodeEnter(idx) {
   const code = items.value[idx].item_code.trim(); if (!code) return; items.value[idx].item_code = code
   const r = await lookupItem(code)
   if (r) {
+    items.value[idx].item_code = r.item_code || code  // use canonical case from lookup
     items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
     if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
-    loadItemInsight(code, r.item_name, r.uom)
+    loadItemInsight(r.item_code || code, r.item_name, r.uom)
     applyDiscountRuleForRow(idx)
     applyCustomerPricingForRow(idx)
     focusField('qty', idx)
@@ -1153,7 +1154,11 @@ async function onNewCodeEnter() {
   }
   emptyCodeEnters = 0
   const r = await lookupItem(code)
-  if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }; focusNewQty() }
+  if (r) {
+    if (r.item_code) newItemCode.value = r.item_code  // normalize to canonical case
+    newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
+    focusNewQty()
+  }
   else openSearch(code, null)
 }
 

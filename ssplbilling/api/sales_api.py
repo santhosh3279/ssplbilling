@@ -41,7 +41,12 @@ def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
         item_code = barcode_item
 
     if not frappe.db.exists("Item", item_code):
-        return {"found": False, "item_code": item_code}
+        # Case-insensitive fallback
+        canonical = frappe.db.get_value("Item", {"item_code": ["like", item_code]}, "item_code")
+        if canonical:
+            item_code = canonical
+        else:
+            return {"found": False, "item_code": item_code}
 
     item = frappe.get_cached_doc("Item", item_code)
     wh = warehouse or frappe.db.get_single_value("Stock Settings", "default_warehouse") or ""
