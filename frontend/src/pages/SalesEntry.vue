@@ -366,8 +366,7 @@
           <div class="flex flex-1 max-w-[600px] bg-slate-800/50 p-4">
             <!-- Summary Left: Calculations -->
             <div class="flex-1 pr-6 border-r border-slate-700">
-              <div class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Calculations</div>
-              <div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2">
                 <div class="flex justify-between text-lg">
                   <span class="text-slate-400 font-semibold">Item Discount</span>
                   <span class="font-mono font-semibold text-red-400">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</span>
