@@ -314,7 +314,7 @@
                 </select>
               </div>
             </div>
-            <span class="font-mono font-semibold text-slate-500">Grid Subtotal: &#8377;{{ subtotal.toFixed(2) }}</span>
+            <span class="font-mono font-semibold text-slate-400">Gross: &#8377;{{ totalBeforeItemDiscount.toFixed(2) }}</span>
           </div>
         </div>
 
@@ -368,10 +368,6 @@
             <div class="flex-1 pr-6 border-r border-slate-700">
               <div class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Calculations</div>
               <div class="flex flex-col gap-2">
-                <div class="flex justify-between text-lg font-semibold">
-                  <span class="text-slate-400">Total (Gross)</span>
-                  <span class="font-mono text-slate-200">&#8377;{{ totalBeforeItemDiscount.toFixed(2) }}</span>
-                </div>
                 <div class="flex justify-between text-lg">
                   <span class="text-slate-400 font-semibold">Item Discount</span>
                   <span class="font-mono font-semibold text-red-400">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</span>
