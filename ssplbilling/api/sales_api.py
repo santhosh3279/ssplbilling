@@ -235,6 +235,7 @@ def create_sales_invoice(data=None, **kwargs):
             "points": row.get("points") or 0,
         })
 
+    si.ignore_pricing_rule = 1
     si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []
@@ -321,6 +322,7 @@ def update_sales_invoice(data=None, **kwargs):
             "points": row.get("points") or 0,
         })
 
+    si.ignore_pricing_rule = 1
     si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []
