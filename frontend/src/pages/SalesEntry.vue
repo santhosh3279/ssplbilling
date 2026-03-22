@@ -1578,6 +1578,7 @@ function startNewBill() {
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedCustomerDetails.value = null
+  syncSeriesConfig(billSeries.value) // Restore price list and other settings from general settings
   fetchCustomerSalesHistory(null) // Clear history cache
   nextTick(() => seriesSelect.value?.focus())
 }
