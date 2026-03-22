@@ -371,20 +371,30 @@
                   <span class="text-slate-400 font-semibold">Item Discount</span>
                   <span class="font-mono font-semibold text-red-400">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</span>
                 </div>
-                <div class="flex justify-between text-xl border-t border-slate-700 pt-1">
-                  <span class="text-slate-300 font-bold">Subtotal</span>
-                  <span class="font-mono font-bold text-slate-100">&#8377;{{ subtotal.toFixed(2) }}</span>
-                </div>
                 <div class="flex items-center justify-between text-lg">
                   <div class="flex items-center gap-1.5">
                     <span class="text-slate-400 font-semibold">Discount</span>
-                    <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0 || billSaved" min="0" max="100" step="0.5" style="width:3.5ch;padding:0" class="rounded border border-slate-600 bg-slate-800 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @keydown.enter="discountAmtInput?.focus()" />
+                    <input ref="discountInput" type="number" v-model.number="discountPct"
+                      :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
+                      min="0" max="100" step="0.5" style="width:3.5ch;padding:0"
+                      class="rounded border border-slate-600 bg-slate-800 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null }"
+                      @keydown.enter="discountAmtInput?.focus()" />
                     <span class="text-base text-slate-400 font-bold">%</span>
                     <span class="text-slate-600 mx-0.5">|</span>
                     <span class="text-base text-slate-400 font-bold">&#8377;</span>
-                    <input ref="discountAmtInput" type="number" :value="discountAmt.toFixed(2)" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:7ch;padding:0" class="rounded border border-slate-600 bg-slate-800 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @change="e => { const v = parseFloat(e.target.value) || 0; discountPct = subtotal > 0 ? Math.round((v / subtotal) * 10000) / 100 : 0 }" @keydown.enter="freightInput?.focus()" />
+                    <input ref="discountAmtInput" type="number" :value="discountAmt.toFixed(2)"
+                      :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'pct'"
+                      min="0" step="1" style="width:7ch;padding:0"
+                      class="rounded border border-slate-600 bg-slate-800 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      @change="e => { const v = parseFloat(e.target.value) || 0; discountInputMode = v > 0 ? 'amt' : null; discountPct = subtotal > 0 ? Math.round((v / subtotal) * 10000) / 100 : 0 }"
+                      @keydown.enter="freightInput?.focus()" />
                   </div>
                   <span class="font-mono font-semibold text-red-400">-&#8377;{{ discountAmt.toFixed(2) }}</span>
+                </div>
+                <div class="flex justify-between text-xl border-t border-slate-700 pt-1">
+                  <span class="text-slate-300 font-bold">Subtotal</span>
+                  <span class="font-mono font-bold text-slate-100">&#8377;{{ subtotal.toFixed(2) }}</span>
                 </div>
                 <div class="flex items-center gap-2 text-sm">
                   <label class="flex items-center gap-1.5 cursor-pointer select-none">
@@ -1344,6 +1354,7 @@ watch(customer, async (newVal) => {
 
 const paymentMode = ref('Cash')
 const discountPct = ref(0)
+const discountInputMode = ref(null) // null | 'pct' | 'amt'
 const freightAmt = ref(0)
 const availableSeries = ref([])
 const nextBillNo = ref('...')
@@ -1573,7 +1584,7 @@ async function deleteBill() {
 
 function startNewBill() {
   items.value = []; selectedRow.value = -1; customer.value = ''; custSearch.value = ''
-  discountPct.value = 0; freightAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
+  discountPct.value = 0; discountInputMode.value = null; freightAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedCustomerDetails.value = null
