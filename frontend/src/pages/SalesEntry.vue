@@ -1238,7 +1238,20 @@ async function loadInvoice(invoiceName) {
     freightAmt.value = inv.freight_amount || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
-    items.value = inv.items.map(i => ({ ...i, discount: i.discount || 0, tax_rate: i.tax_rate ?? defaultTaxRate.value, _rowKey: makeRowKey() }))
+    items.value = inv.items.map(i => {
+      const disc = i.discount || 0
+      // Reconstruct the original list-price rate so reapplyAllDiscountRules
+      // doesn't compound the discount on top of the already-discounted saved rate.
+      const originalRate = disc > 0 ? Math.round((i.rate / (1 - disc / 100)) * 100) / 100 : null
+      return {
+        ...i,
+        discount: disc,
+        tax_rate: i.tax_rate ?? defaultTaxRate.value,
+        _rowKey: makeRowKey(),
+        _original_rate: originalRate,
+        _rule_pct: disc > 0 ? disc : null,
+      }
+    })
     selectedRow.value = -1
     newItemCode.value = ''
     newQty.value = 1
