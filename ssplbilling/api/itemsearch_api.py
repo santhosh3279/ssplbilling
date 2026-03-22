@@ -157,7 +157,7 @@ def get_customer_sales_history(customer):
 		ORDER BY si.posting_date DESC, si.creation DESC
 		LIMIT 5000
 		""",
-		(customer),
+		(customer,),
 		as_dict=True,
 	)
 
