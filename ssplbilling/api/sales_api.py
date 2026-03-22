@@ -2,6 +2,11 @@ import json
 import frappe
 
 
+def enforce_ignore_pricing_rule(doc, method=None):
+	"""Always keep ignore_pricing_rule=1 on Sales Invoice before save."""
+	doc.ignore_pricing_rule = 1
+
+
 def _get_item_tax_rate(item_code):
     """Return the effective tax rate (%) for an item from its Item Tax Template."""
     today = frappe.utils.today()
@@ -236,10 +241,12 @@ def create_sales_invoice(data=None, **kwargs):
         })
 
     si.ignore_pricing_rule = 1
+    si.flags.ignore_pricing_rule = True
     si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.insert()
+    si.db_set("ignore_pricing_rule", 1, update_modified=False)
 
     return {
         "invoice_name": si.name,
@@ -323,8 +330,10 @@ def update_sales_invoice(data=None, **kwargs):
         })
 
     si.ignore_pricing_rule = 1
+    si.flags.ignore_pricing_rule = True
     si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.save()
+    si.db_set("ignore_pricing_rule", 1, update_modified=False)
     return {"invoice_name": si.name, "grand_total": float(si.grand_total)}

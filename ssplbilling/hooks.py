@@ -155,6 +155,8 @@ fixtures = [
 
 doc_events = {
 	"Sales Invoice": {
+		"before_insert": "ssplbilling.api.sales_api.enforce_ignore_pricing_rule",
+		"before_save": "ssplbilling.api.sales_api.enforce_ignore_pricing_rule",
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
 		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
 	},
