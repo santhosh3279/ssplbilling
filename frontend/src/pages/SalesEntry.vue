@@ -383,11 +383,11 @@
                 <div class="flex items-center justify-between text-lg">
                   <div class="flex items-center gap-1.5">
                     <span class="text-slate-400 font-semibold">Discount</span>
-                    <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0 || billSaved" min="0" max="100" step="0.5" style="width:3.5ch" class="rounded border border-slate-600 bg-slate-800 px-1.5 py-1 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900" @keydown.enter="discountAmtInput?.focus()" />
+                    <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0 || billSaved" min="0" max="100" step="0.5" style="width:3.5ch;padding:0" class="rounded border border-slate-600 bg-slate-800 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @keydown.enter="discountAmtInput?.focus()" />
                     <span class="text-base text-slate-400 font-bold">%</span>
                     <span class="text-slate-600 mx-0.5">|</span>
                     <span class="text-base text-slate-400 font-bold">&#8377;</span>
-                    <input ref="discountAmtInput" type="number" :value="discountAmt.toFixed(2)" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:7ch" class="rounded border border-slate-600 bg-slate-800 px-1.5 py-1 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900" @change="e => { const v = parseFloat(e.target.value) || 0; discountPct = subtotal > 0 ? Math.round((v / subtotal) * 10000) / 100 : 0 }" @keydown.enter="freightInput?.focus()" />
+                    <input ref="discountAmtInput" type="number" :value="discountAmt.toFixed(2)" :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:7ch;padding:0" class="rounded border border-slate-600 bg-slate-800 text-right text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" @change="e => { const v = parseFloat(e.target.value) || 0; discountPct = subtotal > 0 ? Math.round((v / subtotal) * 10000) / 100 : 0 }" @keydown.enter="freightInput?.focus()" />
                   </div>
                   <span class="font-mono font-semibold text-red-400">-&#8377;{{ discountAmt.toFixed(2) }}</span>
                 </div>
