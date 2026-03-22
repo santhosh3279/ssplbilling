@@ -168,7 +168,6 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
 
       const { freeRows, discount } = _buildResult(row, rule)
       _applyDiscount(row, discount)
-      if (discount === 0 && row._rule_discount === 0) _clearRuleDiscount(row)  // 0% → clear flag too
       if (freeRows.length) {
         items.value.splice(newIdx + 1, 0, ...freeRows.map(r => ({ ...r, _free_parent_key: key })))
       }
@@ -208,6 +207,7 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
 
   // ── watchers ──────────────────────────────────────────────────────────────
 
+  // Re-apply when qty or item_code changes on regular rows
   const _regularItemSig = computed(() =>
     items.value
       .filter(i => !i._is_free && !i.deleted)
@@ -219,6 +219,20 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
     if (_applyingDiscount || ignoreDiscountRule.value) return
     clearTimeout(_discountTimer)
     _discountTimer = setTimeout(reapplyAllDiscountRules, 350)
+  })
+
+  // Re-apply when discount rules finish loading (async fetch)
+  watch(discountRules, () => {
+    if (_applyingDiscount || ignoreDiscountRule.value) return
+    clearTimeout(_discountTimer)
+    _discountTimer = setTimeout(reapplyAllDiscountRules, 50)
+  })
+
+  // Re-apply when price list changes (billing settings load after mount)
+  watch(priceList, () => {
+    if (_applyingDiscount || ignoreDiscountRule.value) return
+    clearTimeout(_discountTimer)
+    _discountTimer = setTimeout(reapplyAllDiscountRules, 50)
   })
 
   watch(ignoreDiscountRule, (ignored) => {
