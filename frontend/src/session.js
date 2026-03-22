@@ -41,12 +41,24 @@ const userInfoResource = createResource({
   },
 })
 
+async function refreshCsrfToken() {
+  try {
+    const res = await fetch('/api/method/ssplbilling.api.auth_api.get_csrf_token')
+    if (res.ok) {
+      const json = await res.json()
+      if (json.message) window.csrf_token = json.message
+    }
+  } catch (e) {
+    console.warn('[session] Could not refresh CSRF token:', e)
+  }
+}
+
 async function init() {
   if (initialized) return
   initialized = true
   await userResource.fetch()
   if (isLoggedIn.value) {
-    await userInfoResource.fetch()
+    await Promise.all([userInfoResource.fetch(), refreshCsrfToken()])
   }
 }
 
@@ -56,10 +68,11 @@ async function login(usr, pwd) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ usr, pwd }),
   })
+  const data = await res.json()
   if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err.message || 'Login failed')
+    throw new Error(data.message || 'Login failed')
   }
+  if (data.csrf_token) window.csrf_token = data.csrf_token
   // Refresh session
   initialized = false
   await init()
