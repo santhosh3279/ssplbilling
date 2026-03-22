@@ -7,15 +7,15 @@ const lastSync = ref(0)
 const syncLoading = ref(false)
 const lastParams = ref({ searchType: null, priceList: null, warehouse: null })
 
-// Global pricing rules cache — persisted to localStorage
-const PRICING_RULES_KEY = 'sspl-pricing-rules'
-function loadPricingRulesFromStorage() {
-  try { return JSON.parse(localStorage.getItem(PRICING_RULES_KEY) || '[]') } catch { return [] }
+// Discount Rules cache (custom Discount Rule doctype) — persisted to localStorage
+const DISCOUNT_RULES_KEY = 'sspl-discount-rules'
+function loadDiscountRulesFromStorage() {
+  try { return JSON.parse(localStorage.getItem(DISCOUNT_RULES_KEY) || '[]') } catch { return [] }
 }
-function savePricingRulesToStorage(rules) {
-  try { localStorage.setItem(PRICING_RULES_KEY, JSON.stringify(rules)) } catch {}
+export function saveDiscountRulesToStorage(rules) {
+  try { localStorage.setItem(DISCOUNT_RULES_KEY, JSON.stringify(rules)) } catch {}
 }
-const pricingRules = ref(loadPricingRulesFromStorage())
+const discountRules = ref(loadDiscountRulesFromStorage())
 
 // Global cache for customer sales history
 const customerSalesHistory = ref([])
@@ -24,24 +24,22 @@ const historyLoading = ref(false)
 
 /**
  * Fetch all items with details from the backend and update the global cache.
- * Also syncs pricing rules in parallel.
+ * Also syncs discount rules in parallel.
  */
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null) {
   syncLoading.value = true
   try {
-    const [data, rules] = await Promise.all([
+    const [data, discRules] = await Promise.all([
       frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
         search_type: searchType,
         price_list: priceList,
         warehouse: warehouse
       }),
-      frappeGet('ssplbilling.api.itemsearch_api.get_pricing_rules', {
-        price_list: priceList || ''
-      }).catch(() => [])
+      frappeGet('ssplbilling.api.sales_api.get_discount_rules').catch(() => [])
     ])
     items.value = data || []
-    pricingRules.value = rules || []
-    savePricingRulesToStorage(pricingRules.value)
+    discountRules.value = discRules || []
+    saveDiscountRulesToStorage(discountRules.value)
     lastSync.value = Date.now()
     lastParams.value = { searchType, priceList, warehouse }
     return items.value
@@ -54,41 +52,18 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
 }
 
 /**
- * Apply the best matching pricing rule for an item.
- * Returns { discount_percentage, rate } or null if no rule matches.
+ * Refresh only the Discount Rules cache from the backend.
  */
-export function applyPricingRule(item_code, qty = 1, customer = null) {
-  if (!pricingRules.value.length) return null
-
-  const today = new Date().toISOString().slice(0, 10)
-
-  const matching = pricingRules.value.filter(rule => {
-    // Skip disabled rules
-    if (rule.disable) return false
-    // Date validity
-    if (rule.valid_from && today < rule.valid_from) return false
-    if (rule.valid_upto && today > rule.valid_upto) return false
-    // Item code filter
-    const codes = rule.item_codes || []
-    if (rule.apply_on === 'Item Code' && codes.length && !codes.includes(item_code)) return false
-    // Qty range
-    if (rule.min_qty > 0 && qty < rule.min_qty) return false
-    if (rule.max_qty > 0 && qty > rule.max_qty) return false
-    // Customer filter
-    if (rule.applicable_for === 'Customer' && rule.customer && rule.customer !== customer) return false
-    return true
-  })
-
-  if (!matching.length) return null
-
-  const rule = matching[0] // highest priority (already sorted asc)
-  if (rule.rate_or_discount === 'Discount Percentage' && rule.discount_percentage > 0) {
-    return { discount_percentage: rule.discount_percentage, rate: null }
+export async function refreshDiscountRuleCache() {
+  try {
+    const data = await frappeGet('ssplbilling.api.sales_api.get_discount_rules')
+    discountRules.value = data || []
+    saveDiscountRulesToStorage(discountRules.value)
+    return discountRules.value
+  } catch (e) {
+    console.warn('[itemCache] Discount rule refresh failed:', e)
+    return discountRules.value
   }
-  if (rule.rate_or_discount === 'Rate' && rule.rate > 0) {
-    return { discount_percentage: 0, rate: rule.rate }
-  }
-  return null
 }
 
 /**
@@ -100,7 +75,7 @@ export async function fetchCustomerSalesHistory(customer) {
     currentCustomerForHistory.value = null
     return
   }
-  
+
   if (currentCustomerForHistory.value === customer) return
 
   historyLoading.value = true
@@ -124,9 +99,7 @@ export async function fetchCustomerSalesHistory(customer) {
 export function lookupItemInCache(code) {
   if (!code) return null
   const cleanCode = code.trim().toLowerCase()
-  
-  // Try direct match
-  return items.value.find(i => 
+  return items.value.find(i =>
     (i.item_code || '').toLowerCase() === cleanCode
   ) || null
 }
@@ -155,10 +128,10 @@ export function useItemCache() {
     lastParams,
     refreshItemCache,
     lookupItemInCache,
-    // Pricing rules
-    pricingRules,
-    applyPricingRule,
-    savePricingRulesToStorage,
+    // Discount Rules (custom doctype)
+    discountRules,
+    refreshDiscountRuleCache,
+    saveDiscountRulesToStorage,
     // History
     customerSalesHistory,
     currentCustomerForHistory,

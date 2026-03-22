@@ -1,0 +1,44 @@
+{
+ "actions": [],
+ "creation": "2026-03-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "min_quantity",
+  "nos",
+  "percentage"
+ ],
+ "fields": [
+  {
+   "fieldname": "min_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Min Quantity",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nos",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Nos"
+  },
+  {
+   "fieldname": "percentage",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Percentage"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-03-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "Discount Rule Custom Logic",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

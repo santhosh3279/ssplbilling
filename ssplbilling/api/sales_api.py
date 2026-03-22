@@ -337,3 +337,33 @@ def update_sales_invoice(data=None, **kwargs):
     si.save()
     si.db_set("ignore_pricing_rule", 1, update_modified=False)
     return {"invoice_name": si.name, "grand_total": float(si.grand_total)}
+
+
+@frappe.whitelist()
+def get_discount_rules():
+	"""Fetch all enabled Discount Rule entries with their child lines."""
+	rules = frappe.get_all(
+		"Discount Rule",
+		filters={"enabled": 1},
+		fields=[
+			"name", "rule_name", "price_list", "discount_type", "applies_to",
+			"product_group", "min_quantity", "free_quantity", "recursive",
+			"percentage_discount", "custom_logic_type", "start_date", "end_date", "enabled",
+		],
+		order_by="rule_name asc",
+	)
+	for rule in rules:
+		rule["items"] = frappe.get_all(
+			"Discount Rule Item",
+			filters={"parent": rule["name"]},
+			fields=["item_code", "item_name", "uom"],
+			order_by="idx asc",
+		) if rule.get("applies_to") == "Item Code" else []
+
+		rule["custom_logic_rows"] = frappe.get_all(
+			"Discount Rule Custom Logic",
+			filters={"parent": rule["name"]},
+			fields=["min_quantity", "nos", "percentage"],
+			order_by="idx asc",
+		) if rule.get("discount_type") == "Custom Logic" else []
+	return rules
