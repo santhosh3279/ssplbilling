@@ -1703,9 +1703,7 @@ onMounted(() => {
     refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
   }
   // Always refresh discount rules for every new invoice session
-  if (!discountRules.value.length) {
-    refreshDiscountRuleCache()
-  }
+  refreshDiscountRuleCache()
   
   const targetInvoice = props.isSubWindow ? props.invoiceName : route.query.invoice
   if (targetInvoice) {
