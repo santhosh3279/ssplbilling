@@ -213,7 +213,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
+                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-purple-900/20 border-l-2 border-l-purple-500': !item._is_free && item._rule_discount == null && item._customer_pricing && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && !item._customer_pricing && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved || item._is_free" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-0.5 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
@@ -226,11 +226,11 @@
                   </td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :class="item.deleted ? 'text-slate-600' : ''" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
                   <td class="px-2 border-r border-slate-700 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
                   </td>
                   <td class="px-2 border-r border-slate-700 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onDiscountFocus(idx)" @blur="onDiscountBlur(idx)" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
                   </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
@@ -594,6 +594,22 @@
 
     <input type="file" ref="fileInput" class="hidden" @change="handleImportFile" accept=".csv,.xlsx,.xls" />
 
+    <!-- SAVE CUSTOMER PRICE POPUP -->
+    <div v-if="savePricePopup.show" class="fixed bottom-6 right-6 z-[200] w-80 rounded-xl border border-purple-500/40 bg-slate-900 shadow-2xl">
+      <div class="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
+        <span class="text-base">💜</span>
+        <span class="text-sm font-semibold text-slate-200">Save Customer Price?</span>
+      </div>
+      <div class="px-4 py-3 text-xs text-slate-400">
+        <div class="mb-1 font-medium text-slate-300">{{ savePricePopup.item_name || savePricePopup.item_code }}</div>
+        <div>Save <span class="font-mono text-purple-400">{{ savePricePopup.discount_percentage.toFixed(2) }}%</span> discount for <span class="text-slate-300">{{ customer }}</span>?</div>
+      </div>
+      <div class="flex gap-2 px-4 pb-3">
+        <button @click="confirmSavePrice" class="flex-1 rounded-lg bg-purple-600 py-1.5 text-xs font-bold text-white hover:bg-purple-700">Yes, Save</button>
+        <button @click="dismissSavePrice" class="flex-1 rounded-lg bg-slate-700 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600">No</button>
+      </div>
+    </div>
+
     <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
@@ -900,6 +916,82 @@ const { ignoreDiscountRule, makeRowKey, applyDiscountRuleForRow, reapplyAllDisco
   lookupItemInCache,
 })
 
+// ==================== CUSTOMER PRICING ====================
+const customerPricing = ref({}) // { item_code: discount_percentage }
+
+async function loadCustomerPricing(cust) {
+  if (!cust) { customerPricing.value = {}; return }
+  try {
+    const data = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust })
+    customerPricing.value = data || {}
+  } catch (e) {
+    customerPricing.value = {}
+  }
+}
+
+function applyCustomerPricingForRow(idx) {
+  const item = items.value[idx]
+  if (!item || item.deleted || item._is_free || item._rule_discount != null) return
+  const disc = customerPricing.value[item.item_code]
+  if (disc != null && disc > 0) {
+    item.discount = disc
+    item._customer_pricing = true
+  }
+}
+
+// Save-price popup
+const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', discount_percentage: 0 })
+let _rateAtFocus = null
+let _discAtFocus = null
+
+function onRateFocus(idx) { _rateAtFocus = items.value[idx]?.rate ?? null }
+function onDiscountFocus(idx) { _discAtFocus = items.value[idx]?.discount ?? null }
+
+function onRateBlur(idx) {
+  const item = items.value[idx]
+  if (!item || !customer.value || item._rule_discount != null) { _rateAtFocus = null; return }
+  const newRate = item.rate
+  if (_rateAtFocus === null || newRate === _rateAtFocus) { _rateAtFocus = null; return }
+  // Compute discount vs cached list price
+  const cached = lookupItemInCache(item.item_code)
+  const listRate = (cached?.price || cached?.rate) || _rateAtFocus
+  const discPct = listRate > 0 ? Math.max(0, Math.round(((listRate - newRate) / listRate) * 10000) / 100) : 0
+  _rateAtFocus = null
+  if (discPct >= 0) _triggerSavePricePopup(idx, discPct)
+}
+
+function onDiscountBlur(idx) {
+  const item = items.value[idx]
+  if (!item || !customer.value || item._rule_discount != null) { _discAtFocus = null; return }
+  if (_discAtFocus === null || item.discount === _discAtFocus) { _discAtFocus = null; return }
+  _discAtFocus = null
+  _triggerSavePricePopup(idx, item.discount || 0)
+}
+
+function _triggerSavePricePopup(idx, discPct) {
+  const item = items.value[idx]
+  if (!item?.item_code) return
+  savePricePopup.value = { show: true, idx, item_code: item.item_code, item_name: item.item_name, discount_percentage: discPct }
+}
+
+async function confirmSavePrice() {
+  const { item_code, discount_percentage, idx } = savePricePopup.value
+  try {
+    await frappePost('ssplbilling.api.customer_pricing_api.save_customer_item_price', {
+      customer: customer.value,
+      item_code,
+      discount_percentage,
+    })
+    customerPricing.value[item_code] = discount_percentage
+    if (idx != null && items.value[idx]) items.value[idx]._customer_pricing = true
+  } catch (e) {
+    console.error('[CustomerPricing] save failed', e)
+  }
+  savePricePopup.value.show = false
+}
+
+function dismissSavePrice() { savePricePopup.value.show = false }
+
 // ==================== API RESOURCES ====================
 const itemLookup = createResource({ url: `${API}.get_item_details` })
 const itemSearchResource = createResource({ url: `${API}.search_items` })
@@ -1040,6 +1132,7 @@ async function onCodeEnter(idx) {
     if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
     loadItemInsight(code, r.item_name, r.uom)
     applyDiscountRuleForRow(idx)
+    applyCustomerPricingForRow(idx)
     focusField('qty', idx)
   }
   else openSearch(code, idx)
@@ -1085,6 +1178,7 @@ async function addNewItem() {
     _rowKey: makeRowKey(),
   })
   applyDiscountRuleForRow(items.value.length - 1)
+  applyCustomerPricingForRow(items.value.length - 1)
 
   newItemCode.value = '';
   newQty.value = 1;
@@ -1159,6 +1253,7 @@ async function pickItem(item) {
     if (!row._rowKey) row._rowKey = makeRowKey()
     selectedRow.value = itemSearchTargetRow
     applyDiscountRuleForRow(itemSearchTargetRow)
+    applyCustomerPricingForRow(itemSearchTargetRow)
     focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
@@ -1386,11 +1481,13 @@ const billSeries = ref('')
 watch(customer, async (newVal) => {
   if (!newVal) {
     fetchCustomerSalesHistory(null)
+    loadCustomerPricing(null)
     return
   }
-  
-  // Fetch sales history in bulk
+
+  // Fetch sales history and customer pricing in bulk
   fetchCustomerSalesHistory(newVal)
+  loadCustomerPricing(newVal)
 
   if (!selectedCustomerDetails.value) return
   try {

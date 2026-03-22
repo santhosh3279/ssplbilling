@@ -8,6 +8,11 @@
   "cipher_map",
   "discount_account",
   "freight",
+  "tax_paid_on_purchase",
+  "column_break_ygme",
+  "packing_charge",
+  "loading",
+  "other_charges",
   "section_break_series",
   "column_break_raod",
   "billing_series",
@@ -64,12 +69,40 @@
    "fieldtype": "Link",
    "label": "Freight",
    "options": "Account"
+  },
+  {
+   "fieldname": "tax_paid_on_purchase",
+   "fieldtype": "Link",
+   "label": "Tax Paid on Purchase",
+   "options": "Account"
+  },
+  {
+   "fieldname": "column_break_ygme",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "packing_charge",
+   "fieldtype": "Link",
+   "label": "Packing Charge",
+   "options": "Account"
+  },
+  {
+   "fieldname": "loading",
+   "fieldtype": "Link",
+   "label": "Loading",
+   "options": "Account"
+  },
+  {
+   "fieldname": "other_charges",
+   "fieldtype": "Link",
+   "label": "Other Charges",
+   "options": "Account"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-03-18 14:53:39.301648",
- "modified_by": "Administrator",
+ "modified": "2026-03-23 00:08:43.572287",
+ "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "SSPL Billing Settings",
  "owner": "Administrator",
