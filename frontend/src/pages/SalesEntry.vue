@@ -1245,6 +1245,7 @@ async function loadInvoice(invoiceName) {
     freightAmt.value = inv.freight_amount || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
+    if (inv.price_list) priceList.value = inv.price_list
     items.value = inv.items.map(i => {
       const disc = i.discount || 0
       // ERPNext returns the effective (discounted) rate. Reconstruct the list price

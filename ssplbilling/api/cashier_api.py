@@ -86,6 +86,7 @@ def get_sales_invoice(invoice_name):
         "grand_total": float(si.grand_total or 0),
         "tax_template": si.taxes_and_charges or "",
         "cost_center": cost_center or "",
+        "price_list": si.selling_price_list or "",
         "docstatus": si.docstatus,
         "status": si.status,
         "items": [
@@ -95,6 +96,7 @@ def get_sales_invoice(invoice_name):
                 "uom": item.uom or item.stock_uom or "",
                 "qty": float(item.qty),
                 "rate": float(item.rate),
+                "discount": float(item.discount_percentage or 0),
                 "warehouse": item.warehouse or "",
                 "cost_center": item.cost_center or "",
                 "tax_rate": _get_item_tax_rate(item.item_code),
