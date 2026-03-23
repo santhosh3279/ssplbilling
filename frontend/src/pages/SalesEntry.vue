@@ -320,7 +320,7 @@
           </div>
 
           <!-- Settings Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto" style="min-width:140px;max-width:160px">
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:140px;max-width:160px;scrollbar-width:none">
             <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-800">Settings</div>
             <div class="flex flex-col gap-2 p-2">
               <div class="flex gap-1">
