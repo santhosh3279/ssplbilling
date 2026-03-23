@@ -267,59 +267,9 @@
               </tbody>
             </table>
           </div>
-          <div class="flex items-center justify-between border-t border-slate-700 bg-slate-800 px-4 py-1 text-[10px] text-slate-400">
-            <div class="flex items-center gap-6">
-              <span>{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</span>
-              
-              <div class="h-4 w-px bg-slate-700 mx-2"></div>
-              <button @click="exportItems" class="px-1 py-0.5 hover:text-blue-400 font-bold uppercase transition-colors">Export</button>
-              <button @click="openImportModal" class="px-1 py-0.5 hover:text-blue-400 font-bold uppercase transition-colors">Import</button>
-
-              <div class="h-4 w-px bg-slate-700 mx-2"></div>
-
-              <!-- Warehouse -->
-              <div class="flex items-center gap-1.5">
-                <label class="text-[10px] font-bold uppercase text-slate-500">WH</label>
-                <select v-model="defaultWarehouse" disabled class="rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[10px] text-slate-400 outline-none max-w-[120px] cursor-not-allowed">
-                  <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
-                </select>
-              </div>
-              <!-- Price List -->
-              <div class="flex items-center gap-1.5">
-                <label class="text-[10px] font-bold uppercase text-slate-500">Price</label>
-                <select v-model="priceList" :disabled="billDocStatus !== 0 || billSaved" class="rounded border border-slate-600 bg-slate-900 px-1.5 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800 max-w-[120px]">
-                  <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
-                </select>
-              </div>
-              <!-- Tax Template -->
-              <div class="flex items-center gap-1.5">
-                <label class="text-[10px] font-bold uppercase text-slate-500">Tax</label>
-                <select v-model="taxTemplate" :disabled="billDocStatus !== 0 || billSaved" class="rounded border border-slate-600 bg-slate-900 px-1.5 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800 min-w-[200px] max-w-[220px]">
-                  <option value="">-- None --</option>
-                  <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
-                </select>
-              </div>
-              <!-- Cost Center -->
-              <div class="flex items-center gap-1.5">
-                <label class="text-[10px] font-bold uppercase text-slate-500">CC</label>
-                <select v-model="costCenter" disabled class="rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[10px] text-slate-400 outline-none max-w-[220px] cursor-not-allowed">
-                  <option :value="costCenter">{{ costCenter || 'None' }}</option>
-                </select>
-              </div>
-              <!-- Print Format -->
-              <div class="flex items-center gap-1.5">
-                <label class="text-[10px] font-bold uppercase text-slate-500">Print</label>
-                <select v-model="printScheme" class="rounded border border-slate-600 bg-slate-900 px-1.5 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 shadow-sm max-w-[150px]">
-                  <option value="">-- Default --</option>
-                  <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
-                </select>
-              </div>
-            </div>
-            <span class="font-mono font-semibold text-slate-400">Gross: &#8377;{{ totalBeforeItemDiscount.toFixed(2) }}</span>
-          </div>
         </div>
 
-        <!-- BOTTOM PANEL (Insight + Calculation) -->
+        <!-- BOTTOM PANEL (Insight + Settings + Calculation) -->
         <div class="flex flex-[4] border-t border-slate-700 bg-slate-900 overflow-hidden">
           <!-- Left Column: Item Insight -->
           <div class="flex-1 overflow-y-auto px-4 py-3 border-r border-slate-800">
@@ -367,6 +317,49 @@
               </div>
             </template>
             <div v-else class="py-2 text-sm text-slate-600">Click a row to see stock, last purchase &amp; prices</div>
+          </div>
+
+          <!-- Settings Panel -->
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto" style="min-width:140px;max-width:160px">
+            <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-800">Settings</div>
+            <div class="flex flex-col gap-2 p-2">
+              <div class="flex gap-1">
+                <button @click="exportItems" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Export</button>
+                <button @click="openImportModal" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Import</button>
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <label class="text-[9px] font-bold uppercase text-slate-600">Warehouse</label>
+                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                  <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <label class="text-[9px] font-bold uppercase text-slate-600">Price List</label>
+                <select v-model="priceList" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
+                  <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <label class="text-[9px] font-bold uppercase text-slate-600">Tax</label>
+                <select v-model="taxTemplate" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
+                  <option value="">-- None --</option>
+                  <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <label class="text-[9px] font-bold uppercase text-slate-600">Cost Center</label>
+                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                  <option :value="costCenter">{{ costCenter || 'None' }}</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <label class="text-[9px] font-bold uppercase text-slate-600">Print Format</label>
+                <select v-model="printScheme" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500">
+                  <option value="">-- Default --</option>
+                  <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- Right Column: Bill Summary as full table -->
