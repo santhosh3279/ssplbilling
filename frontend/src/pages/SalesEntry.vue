@@ -388,16 +388,16 @@
                           :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
                           min="0" max="100" step="0.5" style="width:3.5ch;padding:0"
                           class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null }"
+                          @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null; discountDirectAmt = 0 }"
                           @keydown.enter="discountAmtInput?.focus()" />
                         <span class="text-slate-600">%</span>
                         <span class="text-slate-700">|</span>
                         <span class="text-slate-600">&#8377;</span>
-                        <input ref="discountAmtInput" type="number" :value="discountAmt.toFixed(2)"
+                        <input ref="discountAmtInput" type="number" v-model.number="discountDirectAmt"
                           :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'pct'"
                           min="0" step="1" style="width:7ch;padding:0"
                           class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          @change="e => { const v = parseFloat(e.target.value) || 0; discountDirectAmt = v; discountInputMode = v > 0 ? 'amt' : null; discountPct = subtotal > 0 ? Math.round((v / subtotal) * 10000) / 100 : 0 }"
+                          @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'amt' : null; discountPct = 0 }"
                           @keydown.enter="freightInput?.focus()" />
                         <span class="font-mono text-red-400 min-w-[4ch] text-right">-&#8377;{{ discountAmt.toFixed(2) }}</span>
                       </span>
@@ -1402,8 +1402,8 @@ async function loadInvoice(invoiceName) {
     paymentMode.value = inv.payment_mode || 'Cash'
     if (inv.additional_discount_amount > 0) {
       discountDirectAmt.value = inv.additional_discount_amount
+      discountPct.value = 0
       discountInputMode.value = 'amt'
-      discountPct.value = subtotal.value > 0 ? Math.round((inv.additional_discount_amount / subtotal.value) * 10000) / 100 : 0
     } else {
       discountPct.value = inv.discount_percentage || 0
       discountDirectAmt.value = 0
@@ -1645,7 +1645,11 @@ const subtotal = computed(() => {
   return grossTotal.value
 })
 
-const discountAmt = computed(() => subtotal.value * (discountPct.value / 100))
+const discountAmt = computed(() =>
+  discountInputMode.value === 'amt'
+    ? discountDirectAmt.value
+    : subtotal.value * (discountPct.value / 100)
+)
 const taxableAmt = computed(() => subtotal.value - discountAmt.value)
 
 const totalTax = computed(() => {
