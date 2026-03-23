@@ -21,10 +21,10 @@
           </span>
         </div>
 
-        <!-- Shortcut info for sub-window -->
-        <div v-if="isSubWindow" class="flex items-center gap-4 text-[10px] text-slate-400">
+        <!-- Shortcut info -->
+        <div class="flex items-center gap-4 text-[10px] text-slate-400">
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Ctrl+L</kbd> Search</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> Close</span>
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> {{ isSubWindow ? 'Close' : 'Back' }}</span>
         </div>
 
         <!-- Zoom Controls -->
