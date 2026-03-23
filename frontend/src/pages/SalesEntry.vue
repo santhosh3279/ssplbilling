@@ -386,7 +386,7 @@
               <tr>
                 <td class="px-2 text-slate-500 border border-slate-700">Item Discount</td>
                 <td class="p-0 border border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-red-400 text-lg border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
                     <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Payable</div>
@@ -426,12 +426,12 @@
                       @keydown.enter="freightInput?.focus()" />
                   </span>
                 </td>
-                <td class="px-2 text-right font-mono text-red-400 text-lg border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
               </tr>
               <tr class="bg-slate-800/40">
                 <td class="px-2 font-semibold text-slate-300 border border-slate-600">Subtotal</td>
                 <td class="px-2 border border-slate-600"></td>
-                <td class="px-2 text-right font-mono font-semibold text-slate-100 text-lg border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono font-semibold text-slate-100 text-2xl border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-slate-500 border border-slate-700">Freight</td>
@@ -441,7 +441,7 @@
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.packingInput?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-lg border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-slate-500 border border-slate-700">Packing</td>
@@ -451,7 +451,7 @@
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.loadingInput?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-lg border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-slate-500 border border-slate-700">Loading</td>
@@ -461,7 +461,7 @@
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.otherChargesInput?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-lg border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-slate-500 border border-slate-700">Other</td>
@@ -471,12 +471,12 @@
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="saveButton?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-lg border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-slate-500 border border-slate-700">Tax</td>
                 <td class="p-0 border border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-slate-300 text-lg border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
               </tr>
             </tbody>
           </table>
