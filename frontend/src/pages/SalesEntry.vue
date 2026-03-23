@@ -408,23 +408,26 @@
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Discount</td>
                 <td class="p-0 border border-slate-700">
-                  <span class="inline-flex items-center gap-1">
-                    <input ref="discountInput" type="number" v-model.number="discountPct"
-                      :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
-                      min="0" max="100" step="0.5" style="width:3.5ch;padding:0"
-                      class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null; discountDirectAmt = 0 }"
-                      @keydown.enter="discountAmtInput?.focus()" />
-                    <span class="text-slate-600">%</span>
-                    <span class="text-slate-700">|</span>
-                    <span class="text-slate-600">&#8377;</span>
-                    <input ref="discountAmtInput" type="number" v-model.number="discountDirectAmt"
-                      :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'pct'"
-                      min="0" step="1" style="width:6ch;padding:0"
-                      class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'amt' : null; discountPct = 0 }"
-                      @keydown.enter="freightInput?.focus()" />
-                  </span>
+                  <div class="flex h-full">
+                    <div class="flex flex-1 items-center border-r border-slate-700">
+                      <input ref="discountInput" type="number" v-model.number="discountPct"
+                        :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
+                        min="0" max="100" step="0.5" style="width:100%;height:100%;padding:0 2px"
+                        class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null; discountDirectAmt = 0 }"
+                        @keydown.enter="discountAmtInput?.focus()" />
+                      <span class="shrink-0 px-1 text-slate-500 text-xs">%</span>
+                    </div>
+                    <div class="flex flex-1 items-center">
+                      <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
+                      <input ref="discountAmtInput" type="number" v-model.number="discountDirectAmt"
+                        :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'pct'"
+                        min="0" step="1" style="width:100%;height:100%;padding:0 2px"
+                        class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'amt' : null; discountPct = 0 }"
+                        @keydown.enter="freightInput?.focus()" />
+                    </div>
+                  </div>
                 </td>
                 <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
               </tr>
