@@ -507,9 +507,12 @@ watch(() => props.show, async (newVal) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (props.show) {
-    loadMetadata()
+    await loadMetadata()
+    if (isEditMode.value) {
+      await loadForEdit(props.editItemCode)
+    }
     nextTick(() => itemNameInput.value?.focus())
   }
 })
