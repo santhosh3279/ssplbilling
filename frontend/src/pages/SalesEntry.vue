@@ -385,7 +385,7 @@
             <tbody>
               <tr>
                 <td class="py-1 px-2 text-slate-500 border border-slate-700">Item Discount</td>
-                <td class="py-1 px-2 border border-slate-700"></td>
+                <td class="p-0 border border-slate-700"></td>
                 <td class="py-1 px-2 text-right font-mono text-red-400 border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
@@ -407,7 +407,7 @@
               </tr>
               <tr>
                 <td class="py-1 px-2 text-slate-500 border border-slate-700">Discount</td>
-                <td class="py-1 px-2 border border-slate-700">
+                <td class="p-0 border border-slate-700">
                   <span class="inline-flex items-center gap-1">
                     <input ref="discountInput" type="number" v-model.number="discountPct"
                       :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
@@ -435,7 +435,7 @@
               </tr>
               <tr>
                 <td class="py-1 px-2 text-slate-500 border border-slate-700">Freight</td>
-                <td class="py-1 px-2 border border-slate-700">
+                <td class="p-0 border border-slate-700">
                   <input ref="freightInput" type="number" v-model.number="freightAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                     class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -445,7 +445,7 @@
               </tr>
               <tr>
                 <td class="py-1 px-2 text-slate-500 border border-slate-700">Packing</td>
-                <td class="py-1 px-2 border border-slate-700">
+                <td class="p-0 border border-slate-700">
                   <input ref="packingInput" type="number" v-model.number="packingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                     class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -455,7 +455,7 @@
               </tr>
               <tr>
                 <td class="py-1 px-2 text-slate-500 border border-slate-700">Loading</td>
-                <td class="py-1 px-2 border border-slate-700">
+                <td class="p-0 border border-slate-700">
                   <input ref="loadingInput" type="number" v-model.number="loadingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                     class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -465,7 +465,7 @@
               </tr>
               <tr>
                 <td class="py-1 px-2 text-slate-500 border border-slate-700">Other</td>
-                <td class="py-1 px-2 border border-slate-700">
+                <td class="p-0 border border-slate-700">
                   <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                     class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -475,7 +475,7 @@
               </tr>
               <tr>
                 <td class="py-1 px-2 text-slate-500 border border-slate-700">Tax</td>
-                <td class="py-1 px-2 border border-slate-700"></td>
+                <td class="p-0 border border-slate-700"></td>
                 <td class="py-1 px-2 text-right font-mono text-slate-300 border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
               </tr>
             </tbody>
