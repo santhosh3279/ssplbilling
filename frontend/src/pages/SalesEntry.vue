@@ -437,8 +437,8 @@
                 <td class="px-2 text-slate-500 border border-slate-700">Freight</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="freightInput" type="number" v-model.number="freightAmt"
-                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
-                    class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
+                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.packingInput?.focus()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
@@ -447,8 +447,8 @@
                 <td class="px-2 text-slate-500 border border-slate-700">Packing</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="packingInput" type="number" v-model.number="packingAmt"
-                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
-                    class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
+                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.loadingInput?.focus()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
@@ -457,8 +457,8 @@
                 <td class="px-2 text-slate-500 border border-slate-700">Loading</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="loadingInput" type="number" v-model.number="loadingAmt"
-                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
-                    class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
+                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.otherChargesInput?.focus()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
@@ -467,8 +467,8 @@
                 <td class="px-2 text-slate-500 border border-slate-700">Other</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt"
-                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
-                    class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
+                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="saveButton?.focus()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
