@@ -826,11 +826,9 @@ function onGlobalKeydown(e) {
       closeDetail()
       return
     }
-    if (props.isSubWindow) {
-      e.preventDefault()
-      handleBack()
-      return
-    }
+    e.preventDefault()
+    handleBack()
+    return
   }
 
   if (e.ctrlKey && e.key === 'l') {
