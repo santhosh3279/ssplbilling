@@ -373,24 +373,24 @@
           <div class="flex flex-1 max-w-[600px] bg-slate-800/50 p-4">
             <!-- Summary Left: Calculations -->
             <div class="flex-1 pr-6 border-r border-slate-700">
-              <table class="w-full border-collapse text-xs">
+              <table class="w-full border-collapse text-xs border border-slate-700">
                 <colgroup><col style="width:34%"><col style="width:40%"><col style="width:26%"></colgroup>
                 <thead>
-                  <tr class="border-b border-slate-700">
-                    <th class="py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-600">Description</th>
-                    <th class="py-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-600">Entry</th>
-                    <th class="py-0.5 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-600">Amount</th>
+                  <tr class="bg-slate-800">
+                    <th class="py-0.5 px-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Description</th>
+                    <th class="py-0.5 px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Entry</th>
+                    <th class="py-0.5 px-2 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Item Discount</td>
-                    <td></td>
-                    <td class="py-1 text-right font-mono text-red-400">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
+                  <tr>
+                    <td class="py-1 px-2 text-slate-500 border border-slate-700">Item Discount</td>
+                    <td class="py-1 px-2 border border-slate-700"></td>
+                    <td class="py-1 px-2 text-right font-mono text-red-400 border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
                   </tr>
-                  <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Discount</td>
-                    <td class="py-1">
+                  <tr>
+                    <td class="py-1 px-2 text-slate-500 border border-slate-700">Discount</td>
+                    <td class="py-1 px-2 border border-slate-700">
                       <span class="inline-flex items-center gap-1">
                         <input ref="discountInput" type="number" v-model.number="discountPct"
                           :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
@@ -409,57 +409,57 @@
                           @keydown.enter="freightInput?.focus()" />
                       </span>
                     </td>
-                    <td class="py-1 text-right font-mono text-red-400">-&#8377;{{ discountAmt.toFixed(2) }}</td>
+                    <td class="py-1 px-2 text-right font-mono text-red-400 border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
                   </tr>
-                  <tr class="border-y border-slate-600 bg-slate-800/40">
-                    <td class="py-1.5 font-semibold text-slate-300">Subtotal</td>
-                    <td></td>
-                    <td class="py-1.5 text-right font-mono font-semibold text-slate-100">&#8377;{{ subtotal.toFixed(2) }}</td>
+                  <tr class="bg-slate-800/40">
+                    <td class="py-1.5 px-2 font-semibold text-slate-300 border border-slate-600">Subtotal</td>
+                    <td class="py-1.5 px-2 border border-slate-600"></td>
+                    <td class="py-1.5 px-2 text-right font-mono font-semibold text-slate-100 border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
                   </tr>
-                  <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Freight</td>
-                    <td class="py-1">
+                  <tr>
+                    <td class="py-1 px-2 text-slate-500 border border-slate-700">Freight</td>
+                    <td class="py-1 px-2 border border-slate-700">
                       <input ref="freightInput" type="number" v-model.number="freightAmt"
                         :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                         class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @keydown.enter="$refs.packingInput?.focus()" />
                     </td>
-                    <td class="py-1 text-right font-mono text-blue-400">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
+                    <td class="py-1 px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
                   </tr>
-                  <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Packing</td>
-                    <td class="py-1">
+                  <tr>
+                    <td class="py-1 px-2 text-slate-500 border border-slate-700">Packing</td>
+                    <td class="py-1 px-2 border border-slate-700">
                       <input ref="packingInput" type="number" v-model.number="packingAmt"
                         :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                         class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @keydown.enter="$refs.loadingInput?.focus()" />
                     </td>
-                    <td class="py-1 text-right font-mono text-blue-400">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
+                    <td class="py-1 px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
                   </tr>
-                  <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Loading</td>
-                    <td class="py-1">
+                  <tr>
+                    <td class="py-1 px-2 text-slate-500 border border-slate-700">Loading</td>
+                    <td class="py-1 px-2 border border-slate-700">
                       <input ref="loadingInput" type="number" v-model.number="loadingAmt"
                         :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                         class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @keydown.enter="$refs.otherChargesInput?.focus()" />
                     </td>
-                    <td class="py-1 text-right font-mono text-blue-400">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
+                    <td class="py-1 px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
                   </tr>
-                  <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Other</td>
-                    <td class="py-1">
+                  <tr>
+                    <td class="py-1 px-2 text-slate-500 border border-slate-700">Other</td>
+                    <td class="py-1 px-2 border border-slate-700">
                       <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt"
                         :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;padding:0 2px"
                         class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @keydown.enter="saveButton?.focus()" />
                     </td>
-                    <td class="py-1 text-right font-mono text-blue-400">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
+                    <td class="py-1 px-2 text-right font-mono text-blue-400 border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
                   </tr>
-                  <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Tax</td>
-                    <td></td>
-                    <td class="py-1 text-right font-mono text-slate-300">+&#8377;{{ totalTax.toFixed(2) }}</td>
+                  <tr>
+                    <td class="py-1 px-2 text-slate-500 border border-slate-700">Tax</td>
+                    <td class="py-1 px-2 border border-slate-700"></td>
+                    <td class="py-1 px-2 text-right font-mono text-slate-300 border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
                   </tr>
                 </tbody>
               </table>
