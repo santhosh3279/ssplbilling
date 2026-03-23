@@ -61,9 +61,9 @@
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 truncate min-w-0">
                 <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-xs font-bold text-blue-400">{{ inv.name }}</span>
+                <span class="truncate font-mono text-[15px] font-bold text-blue-400">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono text-xs font-bold text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono text-[20px] font-bold text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
             </div>
             <div class="truncate text-[11px] text-slate-400">{{ inv.customer_name }}</div>
           </div>
@@ -93,7 +93,9 @@
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F4</kbd> Series</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ins</kbd> Incentive</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ctrl+S</kbd> Save</span>
-            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F2</kbd> New Bill</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F5</kbd> Print</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Esc</kbd> Back</span>
             <div class="h-3 w-px bg-slate-700"></div>
             <div class="flex items-center gap-1 font-bold text-blue-400">
               <span class="text-[9px] text-slate-500 font-medium">HI</span>
@@ -107,10 +109,10 @@
         <!-- Series -->
         <div class="flex items-center gap-2">
           <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Series</label>
-          <select 
-            ref="seriesSelect" 
-            v-model="billSeries" 
-            :disabled="billDocStatus !== 0 || billSaved" 
+          <select
+            ref="seriesSelect"
+            v-model="billSeries"
+            :disabled="billDocStatus !== 0 || !!savedInvoiceName"
             class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-sm font-bold text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500"
             @keydown.enter.prevent="openCustomerSearch"
           >
@@ -215,22 +217,22 @@
               <tbody>
                 <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-purple-900/20 border-l-2 border-l-purple-500': !item._is_free && item._rule_discount == null && item._customer_pricing && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && !item._customer_pricing && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
-                  <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved || item._is_free" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-0.5 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                  <td class="p-0 border-r border-slate-700">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved || item._is_free" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
                   <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : 'text-slate-200'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item._is_free" class="ml-1 rounded bg-green-900/60 px-1 py-0.5 font-bold text-green-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">FREE</span><span v-else-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
-                  <td class="px-2 border-r border-slate-700 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0 || billSaved || item._is_free" min="1" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                  <td class="px-2 py-0 border-r border-slate-700 text-right">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0 || billSaved || item._is_free" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :class="item.deleted ? 'text-slate-600' : ''" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
-                  <td class="px-2 border-r border-slate-700 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                  <td class="px-2 py-0 border-r border-slate-700 text-right">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
                   </td>
-                  <td class="px-2 border-r border-slate-700 text-right" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onDiscountFocus(idx)" @blur="onDiscountBlur(idx)" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                  <td class="px-2 py-0 border-r border-slate-700 text-right">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0 || billSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onDiscountFocus(idx)" @blur="onDiscountBlur(idx)" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
                   </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
@@ -250,9 +252,9 @@
                 <!-- NEW ENTRY ROW -->
                 <tr v-if="billDocStatus === 0 && !billSaved" class="border-b border-slate-700" :class="selectedRow === -1 ? 'bg-blue-900/20' : 'bg-slate-800/30'" :style="{ fontSize: dynamicRowStyle.fontSize }">
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 font-bold text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
-                  <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
+                  <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding-left:0;padding-right:0;" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
-                  <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-14 rounded border border-slate-600 bg-slate-800 px-1 py-1 text-right font-mono text-slate-200 outline-none focus:border-blue-500" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" /></td>
+                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.uom || '--' }}</td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="newPending.rate" class="font-mono text-slate-300">{{ newPending.rate.toFixed(2) }}</span>
@@ -271,56 +273,81 @@
 
         <!-- BOTTOM PANEL (Insight + Settings + Calculation) -->
         <div class="flex flex-[4] border-t border-slate-700 bg-slate-900 overflow-hidden">
-          <!-- Left Column: Item Insight -->
-          <div class="flex-1 overflow-y-auto px-4 py-3 border-r border-slate-800">
-            <div class="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">Item Insight <span v-if="selectedItemData" class="ml-2 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-            <template v-if="selectedItemData">
-              <div class="flex gap-6">
-                <div class="flex-1">
-                  <div class="mb-1 text-[10px] font-bold uppercase text-slate-500">Stock</div>
-                  <div v-if="selectedItemData.stock.length">
-                    <div v-for="s in selectedItemData.stock" :key="s.warehouse" class="flex justify-between text-sm">
-                      <span class="text-slate-400">{{ s.warehouse }}</span>
-                      <span class="rounded-full px-2 py-0.5 font-bold" :class="s.actual_qty > 20 ? 'bg-green-900/30 text-green-400' : s.actual_qty > 0 ? 'bg-amber-900/30 text-amber-400' : 'bg-red-900/30 text-red-400'">{{ s.actual_qty }}</span>
-                    </div>
-                  </div>
-                  <div v-else class="text-sm text-slate-600">No stock data</div>
-                </div>
-                <div class="flex-1">
-                  <div class="mb-1 text-[10px] font-bold uppercase text-slate-500">Previous Sales</div>
-                  <div v-if="selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="flex flex-col">
-                    <div v-for="p in selectedItemData.previousPurchases" :key="p.name" class="flex items-center gap-2 border-b border-slate-800 py-0.5 text-[11px] last:border-0">
-                      <span class="w-24 truncate font-medium text-blue-400" :title="p.name">{{ p.name }}</span>
-                      <span class="text-slate-500">{{ p.date }}</span>
-                      <span class="font-mono font-bold text-slate-300">&#8377;{{ p.rate.toFixed(2) }}</span>
-                      <span class="text-slate-500">x{{ p.qty }}</span>
-                      <span v-if="p.discount > 0" class="font-bold text-red-400">-{{ p.discount }}%</span>
-                    </div>
-                  </div>
-                  <div v-else class="text-sm text-slate-600">--</div>
-                </div>
-                <div class="flex-1">
-                  <div class="mb-1 text-[10px] font-bold uppercase text-slate-500">Prices</div>
-                  <table v-if="selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full text-xs border-collapse">
-                    <tbody>
-                      <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="border-b border-slate-800 last:border-0">
-                        <td class="py-0.5 pr-2">
-                          <span class="rounded px-1 py-0.5 text-[9px] font-bold uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
-                        </td>
-                        <td class="py-0.5 pr-2 text-slate-400 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
-                        <td class="py-0.5 text-right font-mono font-bold text-amber-400">&#8377;{{ encPrice(pl.rate || 0) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <div v-else class="text-sm text-slate-600">--</div>
-                </div>
-              </div>
-            </template>
-            <div v-else class="py-2 text-sm text-slate-600">Click a row to see stock, last purchase &amp; prices</div>
+          <!-- Stock Panel -->
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:260px;max-width:320px;scrollbar-width:none">
+            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+            <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
+              <colgroup>
+                <col style="width:70%"><col style="width:30%">
+              </colgroup>
+              <thead>
+                <tr class="bg-slate-800">
+                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Warehouse</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Actual</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
+                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono font-bold border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No stock data' : 'Select a row to see stock' }}</div>
+          </div>
+
+          <!-- Price List Panel -->
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:170px;max-width:200px;scrollbar-width:none">
+            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+            <table v-if="selectedItemData && selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full border-collapse text-[10px]">
+              <thead>
+                <tr class="bg-slate-800">
+                  <th class="px-1 py-0.5 text-center font-semibold text-slate-500 border border-slate-700">T</th>
+                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">List</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="hover:bg-slate-800/40">
+                  <td class="px-1 py-0.5 text-center border border-slate-700">
+                    <span class="rounded px-1 py-0.5 text-[9px] font-bold uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
+                  </td>
+                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono font-bold text-amber-400 border border-slate-700 text-base">&#8377;{{ encPrice(pl.rate || 0) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
+          </div>
+
+          <!-- Previous Sales Panel -->
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:200px;max-width:240px;scrollbar-width:none">
+            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Sales<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+            <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
+              <thead>
+                <tr class="bg-slate-800">
+                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
+                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Qty</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Disc%</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
+                  <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
+                  <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono font-bold text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
+                  <td class="px-1 py-0.5 text-right font-bold border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous sales' : 'Select a row to see history' }}</div>
           </div>
 
           <!-- Settings Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:140px;max-width:160px;scrollbar-width:none">
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:210px;max-width:240px;scrollbar-width:none">
 <div class="flex flex-col gap-2 p-2">
               <div class="flex gap-1">
                 <button @click="exportItems" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Export</button>
@@ -362,7 +389,7 @@
           </div>
 
           <!-- Right Column: Bill Summary as full table -->
-          <table class="flex-1 max-w-[600px] bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
+          <table class="flex-1 bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
             <colgroup>
               <col style="width:21%"><col style="width:18%"><col style="width:20%"><col style="width:41%">
             </colgroup>
@@ -388,7 +415,7 @@
                       <span class="font-bold">{{ savedInvoiceName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
-                    <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Edit Bill</button>
+                    <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify Bill</button>
                     <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedInvoiceName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
                     <div class="flex gap-1">
                       <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-1.5 text-center text-xs font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
@@ -408,7 +435,8 @@
                         min="0" max="100" step="0.5" style="width:100%;height:100%;padding:0 2px"
                         class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null; discountDirectAmt = 0 }"
-                        @keydown.enter="discountAmtInput?.focus()" />
+                        @keydown.enter="discountAmtInput?.focus(); discountAmtInput?.select()"
+                        @keydown.tab.prevent="discountAmtInput?.focus(); discountAmtInput?.select()" />
                       <span class="shrink-0 px-1 text-slate-500 text-xs">%</span>
                     </div>
                     <div class="flex flex-1 items-center">
@@ -418,7 +446,8 @@
                         min="0" step="1" style="width:100%;height:100%;padding:0 2px"
                         class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'amt' : null; discountPct = 0 }"
-                        @keydown.enter="freightInput?.focus()" />
+                        @keydown.enter="freightInput?.focus(); freightInput?.select()"
+                        @keydown.tab.prevent="freightInput?.focus(); freightInput?.select()" />
                     </div>
                   </div>
                 </td>
@@ -435,7 +464,8 @@
                   <input ref="freightInput" type="number" v-model.number="freightAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    @keydown.enter="$refs.packingInput?.focus()" />
+                    @keydown.enter="$refs.packingInput?.focus(); $refs.packingInput?.select()"
+                    @keydown.tab.prevent="$refs.packingInput?.focus(); $refs.packingInput?.select()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
               </tr>
@@ -445,7 +475,8 @@
                   <input ref="packingInput" type="number" v-model.number="packingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    @keydown.enter="$refs.loadingInput?.focus()" />
+                    @keydown.enter="$refs.loadingInput?.focus(); $refs.loadingInput?.select()"
+                    @keydown.tab.prevent="$refs.loadingInput?.focus(); $refs.loadingInput?.select()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
               </tr>
@@ -455,7 +486,8 @@
                   <input ref="loadingInput" type="number" v-model.number="loadingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    @keydown.enter="$refs.otherChargesInput?.focus()" />
+                    @keydown.enter="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()"
+                    @keydown.tab.prevent="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
               </tr>
@@ -465,7 +497,8 @@
                   <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
                     class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    @keydown.enter="saveButton?.focus()" />
+                    @keydown.enter="saveButton?.focus()"
+                    @keydown.tab.prevent="saveButton?.focus()" />
                 </td>
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
               </tr>
@@ -479,6 +512,19 @@
         </div>
       </div>
     </div>
+
+    <!-- SHORTCUT REFERENCE -->
+    <ShortcutPage
+      :show="showShortcutPage"
+      extra-title="Sales Entry"
+      :extra="[
+        { key: 'F3', desc: 'Focus modify panel (sidebar)' },
+        { key: 'F4', desc: 'Focus sidebar series' },
+        { key: 'Page Up', desc: 'Focus series selector' },
+        { key: 'Insert', desc: 'Open incentive entry' },
+      ]"
+      @close="showShortcutPage = false"
+    />
 
     <!-- INCENTIVE ENTRY MODAL -->
     <IncentiveEntry
@@ -528,7 +574,7 @@
       v-if="showPrintModal"
       :invoice-name="savedInvoiceName"
       :initial-print-format="printScheme"
-      @close="showPrintModal = false; startNewBill()"
+      @close="showPrintModal = false; if (printModalAfterSave) startNewBill()"
     />
 
     <JumpToRowModal 
@@ -636,6 +682,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
+import ShortcutPage from '../components/ShortcutPage.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
@@ -666,7 +713,9 @@ const emit = defineEmits(['close'])
 if (props.isSubWindow) useSubwindow()
 
 const showPrintModal = ref(false)
+const printModalAfterSave = ref(false)
 const showIncentiveModal = ref(false)
+const showShortcutPage = ref(false)
 const incentiveRows = ref([])
 const showBarcodeModal = ref(false)
 const showImportModal = ref(false)
@@ -1427,8 +1476,11 @@ async function loadInvoice(invoiceName) {
 
     savedInvoiceName.value = inv.name
     billDocStatus.value = inv.docstatus
-    // If it's already submitted or cancelled, treat as saved/read-only
     billSaved.value = true
+    // Auto-enter edit mode for draft invoices
+    if (inv.docstatus === 0) {
+      billSaved.value = false
+    }
     incentiveRows.value = (inv.incentive_system || []).map(r => ({
       employee: r.employee || '', employee_name: r.employee_name || '',
       role: r.role || '', points: parseFloat(r.points) || 0,
@@ -1720,6 +1772,7 @@ async function saveBill() {
     billDocStatus.value = 0 // Still Draft after save/update
     fetchNextBillNo()
     fetchSidebarBills()
+    printModalAfterSave.value = true
     showPrintModal.value = true
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save invoice'))
@@ -1750,7 +1803,11 @@ function startNewBill() {
   nextTick(() => seriesSelect.value?.focus())
 }
 
-function printBill() { alert('Print preview coming soon') }
+function printBill() {
+  if (!savedInvoiceName.value) { alert('Save the bill first before printing.'); return }
+  printModalAfterSave.value = false
+  showPrintModal.value = true
+}
 function cancelBill() { startNewBill() }
 
 function handleJump(targetNo) {
@@ -1804,7 +1861,10 @@ function handleBack() {
 
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(salesEntryShortcuts({
+  openShortcuts: () => { showShortcutPage.value = !showShortcutPage.value },
   save: () => { if (!showPrintModal.value) saveBill() },
+  newBill: () => { if (!showPrintModal.value) cancelBill() },
+  print: () => { if (!showPrintModal.value) printBill() },
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
@@ -1820,15 +1880,12 @@ useShortcuts(salesEntryShortcuts({
   toggleDiscountSave: () => {
     if (showPrintModal.value) return
     const activeEl = document.activeElement
-    const isUpdateMode = !!savedInvoiceName.value  // discount/freight disabled in update mode
+    const isEditMode = !!savedInvoiceName.value && !billSaved.value  // modifying existing draft
+    const isNewBill = !savedInvoiceName.value
 
-    // Global summary inputs take priority (only reachable in new-bill mode)
-    if (activeEl === discountInput.value) {
-      freightInput.value?.focus()
-      freightInput.value?.select()
-      return
-    }
-    if (activeEl === freightInput.value) {
+    // If focused on any charge input → End triggers save/update
+    const chargeInputs = [discountInput.value, discountAmtInput.value, freightInput.value, packingInput.value, loadingInput.value, otherChargesInput.value]
+    if (chargeInputs.includes(activeEl)) {
       saveBill()
       return
     }
@@ -1837,26 +1894,14 @@ useShortcuts(salesEntryShortcuts({
     if (selectedRow.value !== -1) {
       const lastActiveIdx = items.value.reduce((acc, item, i) => (!item.deleted ? i : acc), -1)
       if (selectedRow.value < lastActiveIdx) {
-        // Jump to last active row
         selectRow(lastActiveIdx)
-      } else if (isUpdateMode) {
-        // Update mode: discount/freight disabled → save directly
-        saveBill()
-      } else {
-        // New bill: already on last row → go to global discount
-        discountInput.value?.focus()
-        discountInput.value?.select()
+        return
       }
-      return
     }
 
-    // From new entry row or anywhere else
-    if (isUpdateMode) {
-      saveBill()
-    } else {
-      discountInput.value?.focus()
-      discountInput.value?.select()
-    }
+    // From last row or new entry row: go to discount %
+    discountInput.value?.focus()
+    discountInput.value?.select()
   },
   jumpToFirstRow: () => {
     if (activeItems.value.length) selectRow(items.value.findIndex(i => !i.deleted))
@@ -1915,3 +1960,15 @@ onUnmounted(() => {
   window.removeEventListener('storage', handleStorageChange);
 })
 </script>
+
+<style scoped>
+/* Hide number input spinners across all browsers */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+</style>

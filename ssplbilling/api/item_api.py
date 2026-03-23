@@ -72,16 +72,141 @@ def create_item(data):
 	item.append("barcodes", {
 		"barcode": barcode
 	})
-	
+
+	# Add supplier mapping
+	if data.get("supplier"):
+		item.append("supplier_items", {
+			"supplier": data["supplier"],
+			"supplier_part_no": data.get("supplier_part_no") or "",
+		})
+
 	item.is_sales_item = 1
 	item.is_purchase_item = 1
 	item.update_stock = 1
-	
+
 	item.insert()
 	return {
 		"name": item.name,
 		"item_code": item.item_code
 	}
+
+@frappe.whitelist()
+def get_item_for_edit(item_code):
+	"""Fetch all editable fields for an existing item."""
+	if not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+
+	item = frappe.get_doc("Item", item_code)
+
+	# Standard selling rate from Item Price
+	standard_rate = frappe.db.get_value(
+		"Item Price",
+		{"item_code": item_code, "selling": 1},
+		"price_list_rate",
+	) or item.standard_rate or 0
+
+	# Active item tax template
+	item_tax_template = ""
+	if item.taxes:
+		item_tax_template = item.taxes[0].item_tax_template or ""
+
+	# First barcode (the item's own barcode code)
+	barcode = item_code  # fallback to item_code itself
+	if item.barcodes:
+		barcode = item.barcodes[0].barcode or item_code
+
+	# Supplier mapping (first entry)
+	supplier = ""
+	supplier_part_no = ""
+	if item.supplier_items:
+		supplier = item.supplier_items[0].supplier or ""
+		supplier_part_no = item.supplier_items[0].supplier_part_no or ""
+
+	return {
+		"item_code": item.item_code,
+		"item_name": item.item_name,
+		"item_print_name": item.item_print_name or "",
+		"barcode": barcode,
+		"item_group": item.item_group or "",
+		"hsn_sac": item.gst_hsn_code or "",
+		"stock_uom": item.stock_uom or "Nos",
+		"standard_rate": float(standard_rate),
+		"safety_stock": float(item.safety_stock or 0),
+		"item_tax_template": item_tax_template,
+		"supplier": supplier,
+		"supplier_part_no": supplier_part_no,
+	}
+
+
+@frappe.whitelist()
+def update_item(data):
+	"""Update an existing item's editable fields."""
+	if isinstance(data, str):
+		data = json.loads(data)
+
+	item_code = data.get("item_code")
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw("Item not found")
+
+	item = frappe.get_doc("Item", item_code)
+	item.item_name = data.get("item_name") or item.item_name
+	item.item_print_name = data.get("item_print_name") or ""
+	item.item_group = data.get("item_group") or item.item_group
+	item.stock_uom = data.get("stock_uom") or item.stock_uom
+	item.safety_stock = float(data.get("safety_stock") or 0)
+	if data.get("hsn_sac"):
+		item.gst_hsn_code = data["hsn_sac"]
+
+	# Update tax template
+	item.taxes = []
+	if data.get("item_tax_template"):
+		item.append("taxes", {"item_tax_template": data["item_tax_template"]})
+
+	# Update supplier items (replace first entry)
+	item.supplier_items = []
+	if data.get("supplier"):
+		item.append("supplier_items", {
+			"supplier": data["supplier"],
+			"supplier_part_no": data.get("supplier_part_no") or "",
+		})
+
+	item.flags.ignore_permissions = True
+	item.save()
+
+	# Update selling price
+	if data.get("standard_rate") is not None:
+		rate = float(data["standard_rate"])
+		price_name = frappe.db.get_value(
+			"Item Price",
+			{"item_code": item_code, "selling": 1},
+			"name",
+		)
+		if price_name:
+			frappe.db.set_value("Item Price", price_name, "price_list_rate", rate)
+		else:
+			price_doc = frappe.new_doc("Item Price")
+			price_doc.item_code = item_code
+			price_doc.price_list = "Standard Selling"
+			price_doc.price_list_rate = rate
+			price_doc.selling = 1
+			price_doc.flags.ignore_permissions = True
+			price_doc.insert()
+
+	return {"item_code": item.item_code, "item_name": item.item_name}
+
+
+@frappe.whitelist()
+def search_suppliers(query="", limit=20):
+	"""Search suppliers by name for the item creation form."""
+	results = frappe.get_all(
+		"Supplier",
+		filters=[["disabled", "=", 0], ["supplier_name", "like", f"%{query}%"]],
+		fields=["name", "supplier_name"],
+		order_by="supplier_name asc",
+		limit_page_length=int(limit),
+	)
+	return [{"name": r.name, "label": r.supplier_name} for r in results]
+
 
 @frappe.whitelist()
 def print_barcodes(items, bill_no=None):

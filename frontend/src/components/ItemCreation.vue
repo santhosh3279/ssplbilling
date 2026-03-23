@@ -8,8 +8,8 @@
       <!-- Header -->
       <div class="px-6 py-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
         <div>
-          <h3 class="text-xl font-bold text-slate-100">Create New Item</h3>
-          <p class="text-sm text-slate-400">Add a new item to the system</p>
+          <h3 class="text-xl font-bold text-slate-100">{{ isEditMode ? 'Edit Item' : 'Create New Item' }}</h3>
+          <p class="text-sm text-slate-400">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
         </div>
         <button
           @click="$emit('close')"
@@ -54,7 +54,8 @@
                 ref="barcodeInput"
                 v-model="form.barcode"
                 type="text"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 font-mono text-base text-slate-200 outline-none focus:border-blue-500 transition-all"
+                :disabled="isEditMode"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 font-mono text-base text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter alphanumeric barcode..."
                 @focus="e => e.target.select()"
                 @keydown.enter.prevent="itemGroupInput?.focus()"
@@ -148,11 +149,67 @@
               ref="taxTemplateInput"
               v-model="form.item_tax_template"
               class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-base text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
-              @keydown.enter.prevent="handleSubmit"
+              @keydown.enter.prevent="supplierInput?.focus()"
             >
               <option value="">No Tax / Exempt</option>
               <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
             </select>
+          </div>
+
+          <!-- Supplier -->
+          <div class="space-y-1.5 md:col-span-2 relative">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Supplier</label>
+            <div class="relative">
+              <input
+                ref="supplierInput"
+                :value="supplierSearch"
+                type="text"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 text-base text-slate-200 outline-none focus:border-blue-500 transition-all"
+                :class="form.supplier ? 'border-emerald-600' : ''"
+                placeholder="Search supplier..."
+                autocomplete="off"
+                @input="onSupplierInput"
+                @focus="showSupplierDropdown = true"
+                @blur="setTimeout(() => { showSupplierDropdown = false }, 200)"
+                @keydown.enter.prevent="supplierOptions.length ? selectSupplier(supplierOptions[0]) : null"
+                @keydown.escape="clearSupplier"
+              />
+              <button
+                v-if="form.supplier"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-red-400 transition-colors"
+                @click.prevent="clearSupplier"
+                tabindex="-1"
+              >&times;</button>
+              <div
+                v-if="showSupplierDropdown && supplierOptions.length"
+                class="absolute left-0 right-0 top-full z-10 mt-1 max-h-52 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 p-1 shadow-xl"
+              >
+                <button
+                  v-for="opt in supplierOptions"
+                  :key="opt.name"
+                  class="w-full rounded-lg px-4 py-2 text-left hover:bg-blue-900/30 transition-colors flex flex-col gap-0.5"
+                  @mousedown.prevent="selectSupplier(opt)"
+                >
+                  <span class="text-sm font-bold text-slate-200">{{ opt.label }}</span>
+                  <span class="text-[10px] text-slate-500">{{ opt.name }}</span>
+                </button>
+              </div>
+            </div>
+            <p v-if="form.supplier" class="text-[10px] text-emerald-400 px-1">Mapped: {{ form.supplier }}</p>
+          </div>
+
+          <!-- Supplier Part No -->
+          <div class="space-y-1.5 md:col-span-2">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Supplier Part No <span class="normal-case font-normal text-slate-600">(optional)</span></label>
+            <input
+              ref="supplierPartNoInput"
+              v-model="form.supplier_part_no"
+              type="text"
+              :disabled="!form.supplier"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-3 px-4 font-mono text-base text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              placeholder="Supplier's part / SKU number..."
+              @keydown.enter.prevent="handleSubmit"
+            />
           </div>
         </div>
       </div>
@@ -172,7 +229,7 @@
           :class="canSubmit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-700'"
         >
           <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-          <span v-else>Create Item</span>
+          <span v-else>{{ isEditMode ? 'Update Item' : 'Create Item' }}</span>
           <svg v-if="!isSubmitting" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </button>
       </div>
@@ -182,13 +239,38 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, frappeGet } from '../api.js'
 
 const props = defineProps({
-  show: Boolean
+  show: Boolean,
+  editItemCode: { type: String, default: '' },  // when set → edit mode
 })
 
 const emit = defineEmits(['close', 'created'])
+
+const isEditMode = computed(() => !!props.editItemCode)
+
+async function loadForEdit(itemCode) {
+  try {
+    const data = await getItemForEdit(itemCode)
+    form.value.item_name        = data.item_name        || ''
+    form.value.item_print_name  = data.item_print_name  || ''
+    form.value.barcode           = data.barcode           || itemCode
+    form.value.item_group        = data.item_group        || ''
+    form.value.hsn_sac           = data.hsn_sac           || ''
+    form.value.stock_uom         = data.stock_uom         || 'Nos'
+    form.value.standard_rate     = data.standard_rate     || 0
+    form.value.safety_stock      = data.safety_stock      || 0
+    form.value.item_tax_template = data.item_tax_template || ''
+    form.value.supplier          = data.supplier          || ''
+    form.value.supplier_part_no  = data.supplier_part_no  || ''
+    supplierSearch.value = data.supplier || ''
+    autoBarcode.value = ''
+    isBarcodeManual.value = true
+  } catch (e) {
+    console.error('[ItemCreation] loadForEdit failed:', e)
+  }
+}
 
 const itemNameInput = ref(null)
 const itemPrintNameInput = ref(null)
@@ -199,6 +281,8 @@ const uomInput = ref(null)
 const rateInput = ref(null)
 const safetyStockInput = ref(null)
 const taxTemplateInput = ref(null)
+const supplierInput = ref(null)
+const supplierPartNoInput = ref(null)
 
 const isSubmitting = ref(false)
 const isFetchingBarcode = ref(false)
@@ -216,8 +300,43 @@ const form = ref({
   stock_uom: 'Nos',
   standard_rate: 0,
   safety_stock: 0,
-  item_tax_template: ''
+  item_tax_template: '',
+  supplier: '',
+  supplier_part_no: '',
 })
+
+// ── Supplier search state ──────────────────────────────────────────────────
+const supplierSearch = ref('')          // display label
+const supplierOptions = ref([])
+const showSupplierDropdown = ref(false)
+let supplierSearchTimeout = null
+
+async function onSupplierInput(e) {
+  const q = e.target.value
+  supplierSearch.value = q
+  form.value.supplier = ''             // clear until a match is selected
+  clearTimeout(supplierSearchTimeout)
+  if (!q.trim()) { supplierOptions.value = []; return }
+  supplierSearchTimeout = setTimeout(async () => {
+    try {
+      supplierOptions.value = await frappeGet('ssplbilling.api.item_api.search_suppliers', { query: q, limit: 15 })
+    } catch (_) { supplierOptions.value = [] }
+  }, 250)
+}
+
+function selectSupplier(opt) {
+  form.value.supplier = opt.name
+  supplierSearch.value = opt.label
+  supplierOptions.value = []
+  showSupplierDropdown.value = false
+  nextTick(() => supplierPartNoInput.value?.focus())
+}
+
+function clearSupplier() {
+  form.value.supplier = ''
+  supplierSearch.value = ''
+  supplierOptions.value = []
+}
 
 // Sync Item Print Name from Item Name by default
 watch(() => form.value.item_name, (newVal) => {
@@ -226,6 +345,11 @@ watch(() => form.value.item_name, (newVal) => {
 
 // Track manual changes
 watch(() => form.value.barcode, (newVal, oldVal) => {
+  // Strip leading zeros (e.g. "00123" → "123"), leave "0" alone
+  if (newVal && /^0\d/.test(newVal)) {
+    form.value.barcode = newVal.replace(/^0+(\d)/, '$1')
+    return
+  }
   if (oldVal !== undefined && !isFetchingBarcode.value) {
     if (newVal !== autoBarcode.value) {
       isBarcodeManual.value = true
@@ -282,8 +406,9 @@ async function generateBarcode() {
   isFetchingBarcode.value = true
   try {
     const res = await getNextBarcode(series)
-    form.value.barcode = res
-    autoBarcode.value = res
+    const stripped = String(res).replace(/^0+(\d)/, '$1')
+    form.value.barcode = stripped
+    autoBarcode.value = stripped
     nextTick(() => { isBarcodeManual.value = false })
   } catch (e) {
     console.error('Failed to generate barcode', e)
@@ -308,25 +433,44 @@ function onHSNEnter() {
 
 async function handleSubmit() {
   if (!canSubmit.value || isSubmitting.value) return
-  
+
   isSubmitting.value = true
   try {
-    const res = await createItem({
-      ...form.value,
-      is_manual_barcode: isBarcodeManual.value,
-      naming_series: selectedSeries.value
-    })
-    alert(`Item ${res.name} created successfully!`)
-    emit('created', {
-      item_code: res.item_code, // Use the real barcode from server
-      item_name: form.value.item_name,
-      price: form.value.standard_rate,
-      uom: form.value.stock_uom,
-      tax_rate: 0
-    })
-    resetForm()
+    if (isEditMode.value) {
+      const res = await updateItem({
+        ...form.value,
+        item_code: props.editItemCode,
+        supplier: form.value.supplier || '',
+        supplier_part_no: form.value.supplier_part_no || '',
+      })
+      alert(`Item ${res.item_code} updated successfully!`)
+      emit('created', {
+        item_code: res.item_code,
+        item_name: res.item_name,
+        price: form.value.standard_rate,
+        uom: form.value.stock_uom,
+        tax_rate: 0
+      })
+    } else {
+      const res = await createItem({
+        ...form.value,
+        is_manual_barcode: isBarcodeManual.value,
+        naming_series: selectedSeries.value,
+        supplier: form.value.supplier || '',
+        supplier_part_no: form.value.supplier_part_no || '',
+      })
+      alert(`Item ${res.name} created successfully!`)
+      emit('created', {
+        item_code: res.item_code,
+        item_name: form.value.item_name,
+        price: form.value.standard_rate,
+        uom: form.value.stock_uom,
+        tax_rate: 0
+      })
+      resetForm()
+    }
   } catch (e) {
-    alert('Failed to create item: ' + e.message)
+    alert(`Failed to ${isEditMode.value ? 'update' : 'create'} item: ` + e.message)
   } finally {
     isSubmitting.value = false
   }
@@ -342,16 +486,23 @@ function resetForm() {
     stock_uom: 'Nos',
     standard_rate: 0,
     safety_stock: 0,
-    item_tax_template: ''
+    item_tax_template: '',
+    supplier: '',
+    supplier_part_no: '',
   }
+  supplierSearch.value = ''
+  supplierOptions.value = []
   isBarcodeManual.value = false
   autoBarcode.value = ''
   if (selectedSeries.value) generateBarcode()
 }
 
-watch(() => props.show, (newVal) => {
+watch(() => props.show, async (newVal) => {
   if (newVal) {
-    loadMetadata()
+    await loadMetadata()
+    if (isEditMode.value) {
+      await loadForEdit(props.editItemCode)
+    }
     nextTick(() => itemNameInput.value?.focus())
   }
 })

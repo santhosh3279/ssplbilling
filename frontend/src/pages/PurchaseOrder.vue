@@ -6,7 +6,7 @@
       <div class="flex items-center gap-3">
         <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700" @click="handleBack">&larr; Dashboard</button>
         <span class="text-sm text-slate-600">|</span>
-        <span class="text-sm font-semibold text-slate-200">Purchase Entry</span>
+        <span class="text-sm font-semibold text-slate-200">Purchase Order</span>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden mr-4">
@@ -20,7 +20,7 @@
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate rows</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Bill' : 'Back' }}</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Order' : 'Back' }}</span>
         <div class="ml-2 h-4 w-px bg-slate-700"></div>
         <div class="flex items-center gap-1.5 font-bold text-blue-400">
           <span class="text-[10px] text-slate-500 font-medium">HI</span>
@@ -30,10 +30,10 @@
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- SIDEBAR: Modify Bills -->
+      <!-- SIDEBAR: Modify Orders -->
       <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
         <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Modify Bills</div>
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Purchase Orders</div>
         </div>
 
         <!-- Date Filter -->
@@ -52,7 +52,7 @@
           <input
             type="text"
             v-model="sidebarSearch"
-            placeholder="Search invoice/supplier..."
+            placeholder="Search order/supplier..."
             class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
           />
           <button
@@ -64,41 +64,34 @@
           </button>
         </div>
 
-        <!-- Bill List -->
+        <!-- Order List -->
         <div class="flex-1 overflow-y-auto">
           <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
-          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-slate-600 italic">No bills found</div>
+          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-slate-600 italic">No orders found</div>
           <div
             v-for="(inv, idx) in sidebarBills"
             :key="inv.name"
             :ref="el => setSidebarBillRef(el, idx)"
-            @click="loadInvoice(inv.name)"
+            @click="loadOrder(inv.name)"
             class="group cursor-pointer border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
-            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
+            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedOrderName === inv.name }"
             tabindex="0"
-            @keydown.enter="loadInvoice(inv.name)"
+            @keydown.enter="loadOrder(inv.name)"
           >
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-2 truncate">
                 <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-2xl font-bold text-blue-400">{{ inv.name }}</span>
+                <span class="truncate font-mono text-[15px] font-bold text-blue-400">{{ inv.name }}</span>
               </div>
               <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter" :class="{
                 'bg-slate-700 text-slate-400': inv.status === 'Draft',
-                'bg-green-900/40 text-green-400': inv.status === 'Paid',
+                'bg-green-900/40 text-green-400': inv.status === 'To Receive and Bill',
                 'bg-blue-900/40 text-blue-400': inv.status === 'Submitted',
                 'bg-red-900/40 text-red-400': inv.status === 'Cancelled'
-              }">{{ inv.status[0] }}</span>
+              }">{{ (inv.status || 'Draft')[0] }}</span>
             </div>
-            <div class="mt-0.5 truncate text-lg font-medium text-slate-400">{{ inv.supplier_name }}</div>
-            <div class="flex items-center justify-between text-lg font-bold text-slate-200 tabular-nums">
-              <span>₹{{ inv.grand_total.toFixed(0) }}</span>
-              <button
-                class="rounded px-1.5 py-0.5 text-[11px] font-bold text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-orange-900/30"
-                @click.stop="loadAndPrintBarcodes(inv.name)"
-                title="Print Barcodes"
-              >🏷️</button>
-            </div>
+            <div class="mt-0.5 truncate text-sm font-medium text-slate-400">{{ inv.supplier_name }}</div>
+            <div class="text-[20px] font-bold text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</div>
           </div>
         </div>
       </aside>
@@ -122,11 +115,11 @@
               </select>
             </div>
 
-            <!-- Bill No -->
+            <!-- Order No -->
             <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
-              <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Bill No</label>
+              <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">PO No</label>
               <div class="text-xl font-bold text-slate-100 tabular-nums" style="font-family: 'Poppins', sans-serif">
-                {{ nextBillNo }}
+                {{ nextOrderNo }}
               </div>
             </div>
 
@@ -147,22 +140,13 @@
                   {{ suppSearch || 'Not Selected' }}
                 </div>
                 <div v-if="selectedSupplierDetails" class="flex items-center gap-3 min-w-0">
-                  <span v-if="selectedSupplierDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedSupplierDetails.address_line1">
+                  <span v-if="selectedSupplierDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none">
                     {{ selectedSupplierDetails.address_line1 }}{{ selectedSupplierDetails.city ? ', ' + selectedSupplierDetails.city : '' }}
-                  </span>
-                  <span v-if="selectedSupplierDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 font-bold leading-none">
-                    PH: {{ selectedSupplierDetails.mobile_no }}
                   </span>
                 </div>
               </div>
               <div v-if="selectedSupplierDetails" class="flex items-center gap-6 ml-auto mr-6">
-                <div v-if="selectedSupplierDetails.last_invoice_date" class="flex flex-col items-end leading-none">
-                  <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Last Inv</span>
-                  <span class="text-sm text-slate-300 font-medium">
-                    {{ new Date(selectedSupplierDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
-                  </span>
-                </div>
-                <div class="flex flex-col items-end leading-none border-l border-slate-700 pl-6">
+                <div v-if="selectedSupplierDetails.balance !== undefined" class="flex flex-col items-end leading-none border-l border-slate-700 pl-6">
                   <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Ledger Bal</span>
                   <span :class="selectedSupplierDetails.balance > 0 ? 'text-green-400' : 'text-red-400'" class="text-xl font-bold tabular-nums">
                     &#8377;{{ Math.abs(selectedSupplierDetails.balance || 0).toFixed(2) }} <span class="text-[10px] font-bold">{{ selectedSupplierDetails.balance > 0 ? 'DR' : 'CR' }}</span>
@@ -171,25 +155,24 @@
               </div>
             </div>
 
-            <!-- Supplier Bill No -->
+            <!-- Order Date -->
             <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
-              <label class="text-[10px] font-bold uppercase text-slate-500">Bill No</label>
-              <input
-                ref="billNoInput"
-                v-model="billNo"
-                placeholder="Supplier Bill #"
-                :disabled="billDocStatus !== 0"
-                class="w-32 rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-lg font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500"
-                @keydown.enter.prevent="focusNewCode"
-              />
-            </div>
-
-            <!-- Bill Date -->
-            <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
-              <label class="text-[10px] font-bold uppercase text-slate-500">Bill Date</label>
+              <label class="text-[10px] font-bold uppercase text-slate-500">Order Date</label>
               <input
                 ref="dateInput"
                 v-model="billDate"
+                type="date"
+                :disabled="billDocStatus !== 0"
+                class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
+                style="font-family: 'Poppins', sans-serif"
+              />
+            </div>
+
+            <!-- Delivery Date -->
+            <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
+              <label class="text-[10px] font-bold uppercase text-slate-500">Delivery</label>
+              <input
+                v-model="scheduleDate"
                 type="date"
                 :disabled="billDocStatus !== 0"
                 class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
@@ -211,7 +194,6 @@
                   <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">UOM</th>
                   <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Rate</th>
                   <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Disc %</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Tax %</th>
                   <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Amount</th>
                   <th class="w-8 border-b border-slate-700"></th>
                 </tr>
@@ -237,9 +219,6 @@
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
-                  </td>
                   <td class="px-2 text-right border-r border-slate-700 font-mono font-semibold" :class="item.deleted ? 'text-slate-600 line-through' : 'text-slate-200'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : (item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
                   <td class="px-2 text-center" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button v-if="!item.deleted" class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" :style="{ fontSize: dynamicRowStyle.fontSize }" @click.stop="softDelete(idx)">&times;</button>
@@ -258,7 +237,6 @@
                     <span v-else class="text-slate-600">--</span>
                   </td>
                   <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">0</td>
-                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ isExempted ? 0 : defaultTaxRate }}</td>
                   <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '--' }}</td>
                   <td class="border-slate-700"></td>
                 </tr>
@@ -304,20 +282,20 @@
               <tbody>
                 <tr v-for="pl in selectedItemData.priceLists" :key="pl.name" class="hover:bg-slate-800/40">
                   <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold text-amber-400 border border-slate-700 text-base">&#8377;{{ encPrice(pl.rate || 0) }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono font-bold text-amber-400 border border-slate-700 text-base">&#8377;{{ (pl.rate || 0).toFixed(2) }}</td>
                 </tr>
               </tbody>
             </table>
             <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
           </div>
 
-          <!-- Previous Purchases Panel -->
+          <!-- Previous Orders Panel -->
           <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:200px;max-width:240px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Purchases<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Orders<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
             <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
               <thead>
                 <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
+                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Order</th>
                   <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
                   <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
                   <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Qty</th>
@@ -334,7 +312,7 @@
                 </tr>
               </tbody>
             </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous purchases' : 'Select a row to see history' }}</div>
+            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous orders' : 'Select a row to see history' }}</div>
           </div>
 
           <!-- Settings Panel -->
@@ -354,13 +332,6 @@
                 <label class="text-[9px] font-bold uppercase text-slate-600">Price List</label>
                 <select v-model="priceList" :disabled="billDocStatus !== 0" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
                   <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
-                </select>
-              </div>
-              <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Tax</label>
-                <select v-model="taxTemplate" :disabled="billDocStatus !== 0" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
-                  <option value="">-- None --</option>
-                  <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
@@ -390,22 +361,20 @@
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Item Discount</td>
                 <td class="p-0 border-y border-slate-700"></td>
                 <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
-                <td class="border border-slate-700 px-2" rowspan="11">
+                <td class="border border-slate-700 px-2" rowspan="8">
                   <div class="flex flex-col gap-2 h-full py-2">
                     <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
                     <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Payable</div>
                     <div class="font-mono text-4xl font-bold text-blue-500 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>
                     <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
-                      <span class="font-bold">{{ savedInvoiceName }}</span>
+                      <span class="font-bold">{{ savedOrderName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
-                    <button v-if="billSaved" @click="openBarcodePrinting" class="w-full rounded border border-orange-600/50 bg-orange-900/20 py-1.5 text-center text-xs font-bold text-orange-400 transition hover:bg-orange-900/30">🏷️ Print Barcodes</button>
-                    <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Edit Bill</button>
-                    <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedInvoiceName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
+                    <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Edit Order</button>
+                    <button v-else-if="!billSaved" ref="saveButton" @click="saveOrder" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedOrderName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedOrderName ? 'Update Order' : 'Save Order (Ctrl+S)' }}</button>
                     <div class="flex gap-1">
-                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-1.5 text-center text-xs font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
+                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-1.5 text-center text-xs font-semibold text-red-400 hover:bg-red-900/20" @click="cancelOrder">{{ billSaved ? 'New Order' : 'Cancel' }}</button>
                     </div>
-                    <button v-if="savedInvoiceName" @click="showIncentiveModal = true" class="w-full rounded border border-indigo-700/50 bg-indigo-900/20 py-1.5 text-center text-xs font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">👥 Incentive</button>
                   </div>
                 </td>
               </tr>
@@ -419,12 +388,12 @@
                 <td class="p-0 border-y border-slate-700">
                   <div class="flex h-full">
                     <div class="flex flex-1 items-center border-r border-slate-700">
-                      <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'pct'; discountDirectAmt = 0" @keydown.enter="saveButton?.focus()" />
+                      <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'pct'; discountDirectAmt = 0" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
                       <span class="shrink-0 px-1 text-slate-500 text-xs">%</span>
                     </div>
                     <div class="flex flex-1 items-center">
                       <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
-                      <input type="number" v-model.number="discountDirectAmt" :disabled="billDocStatus !== 0" min="0" step="0.5" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'amt'; discountPct = 0" @keydown.enter="saveButton?.focus()" />
+                      <input type="number" v-model.number="discountDirectAmt" :disabled="billDocStatus !== 0" min="0" step="0.5" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'amt'; discountPct = 0" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
                     </div>
                   </div>
                 </td>
@@ -456,19 +425,12 @@
                 <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-lg text-amber-400/80 border border-slate-700">Tax Paid on Purchase</td>
-                <td class="p-0 border-y border-slate-700">
-                  <div class="flex h-full items-center px-1">
-                    <input type="number" v-model.number="taxPaidAmt" :disabled="billDocStatus !== 0" min="0" step="0.01" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="width:100%;height:100%;display:block;padding:0 2px" />
-                    <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
-                  </div>
-                </td>
-                <td class="px-2 text-right font-mono text-amber-400 text-2xl border border-slate-700">&#8377;{{ (Number(taxPaidAmt) || 0).toFixed(2) }}</td>
-              </tr>
-              <tr>
                 <td class="px-2 text-lg text-slate-200/80 font-bold border border-slate-700">Grand Total</td>
                 <td class="p-0 border-y border-slate-700"></td>
                 <td class="px-2 text-right font-mono font-bold text-blue-400 text-2xl border border-slate-700">&#8377;{{ grandTotal.toFixed(2) }}</td>
+              </tr>
+              <tr>
+                <td class="border border-slate-700 bg-transparent" colspan="3"></td>
               </tr>
             </tbody>
           </table>
@@ -476,25 +438,16 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- SHORTCUT REFERENCE -->
     <ShortcutPage
       :show="showShortcutPage"
-      extra-title="Purchase Entry"
+      extra-title="Purchase Order"
       :extra="[
         { key: 'Page Up', desc: 'Focus series selector' },
-        { key: 'Insert', desc: 'Open incentive entry' },
       ]"
       @close="showShortcutPage = false"
-    />
-
-    <!-- INCENTIVE ENTRY MODAL -->
-    <IncentiveEntry
-      :show="showIncentiveModal"
-      doctype="Purchase Invoice"
-      :docname="savedInvoiceName"
-      @close="showIncentiveModal = false"
-      @saved="showIncentiveModal = false"
     />
 
     <!-- SUPPLIER SEARCH MODAL -->
@@ -517,23 +470,6 @@
       :skip-date-filter="true"
       @close="closeItemSearch"
       @select="pickItem"
-    />
-
-    <JumpToRowModal
-      v-model:show="showJumpModal"
-      :max-rows="items.length"
-      @jump="handleJump"
-    />
-
-    <!-- PRICE LIST UPDATE SUB-WINDOW -->
-    <PriceListUpdate
-      v-if="showPriceListUpdate"
-      :is-sub-window="true"
-      :item-code="priceListItemCode"
-      :selected-price-list="priceList"
-      :initial-discount="priceListUpdateDiscount"
-      @close="closePriceListUpdate"
-      @saved="onPriceListSaved"
     />
 
     <!-- IMPORT OPTIONS MODAL -->
@@ -570,14 +506,14 @@
 
     <input type="file" ref="fileInput" class="hidden" @change="handleImportFile" accept=".csv,.xlsx,.xls" />
 
-    <!-- DISCARD BILL MODAL -->
+    <!-- DISCARD ORDER MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
         <div class="bg-amber-900/20 px-6 py-6 flex items-center gap-4 border-b border-amber-900/30">
           <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-900/40 text-2xl text-amber-500">⚠️</div>
           <div>
-            <div class="text-xl font-bold text-slate-100">Discard Unsaved Bill?</div>
-            <div class="text-sm text-amber-400">You have unsaved items in this bill.</div>
+            <div class="text-xl font-bold text-slate-100">Discard Unsaved Order?</div>
+            <div class="text-sm text-amber-400">You have unsaved items in this order.</div>
           </div>
         </div>
         <div class="p-6">
@@ -600,82 +536,42 @@
         </div>
       </div>
     </div>
-
-    <!-- PRINT OPTIONS MODAL -->
-    <BarcodePrintingModal
-      :show="showBarcodeModal"
-      :bill-no="savedInvoiceName"
-      :initial-items="barcodeInitialItems"
-      @close="showBarcodeModal = false"
-      @printed="showBarcodeModal = false"
-    />
-
-    <PrintOptionsModal
-      v-if="showPrintModal"
-      :invoice-name="printModalInvoiceName"
-      :doctype="printModalDoctype"
-      @close="showPrintModal = false"
-    />
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
-import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
-import JumpToRowModal from '../components/JumpToRowModal.vue'
-import PrintOptionsModal from '../components/PrintOptionsModal.vue'
-import PriceListUpdate from './PriceListUpdate.vue'
-import IncentiveEntry from '../components/IncentiveEntry.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import { useItemCache } from '../services/itemCache.js'
 import { session } from '../session.js'
+import { useShortcuts } from '../services/shortcutManager'
+import { purchaseOrderShortcuts } from '../shortcuts/purchaseOrderShortcuts'
 import * as XLSX from 'xlsx'
 
-
 const router = useRouter()
-const route = useRoute()
-const API = '/api/method/ssplbilling.api.purchase_api'
+const API_BASE = 'ssplbilling.api.purchase_order_api'
 
 const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync } = useItemCache()
 
 const props = defineProps({
-  isSubWindow: {
-    type: Boolean,
-    default: false
-  },
-  invoiceName: {
-    type: String,
-    default: ''
-  }
+  isSubWindow: { type: Boolean, default: false },
+  orderName: { type: String, default: '' }
 })
-
 const emit = defineEmits(['close'])
 
-if (props.isSubWindow) useSubwindow()
-
-// ==================== PRINT MODAL ====================
-const showPrintModal = ref(false)
-const showIncentiveModal = ref(false)
+// ==================== SHORTCUT PAGE ====================
 const showShortcutPage = ref(false)
+
+// ==================== IMPORT / EXPORT ====================
 const showImportModal = ref(false)
 const importOption = ref('Master')
 const fileInput = ref(null)
-const printModalInvoiceName = ref('')
-const printModalDoctype = ref('Purchase Invoice')
 
-function openPrintModal(name, doctype = 'Purchase Invoice') {
-  printModalInvoiceName.value = name
-  printModalDoctype.value = doctype
-  showPrintModal.value = true
-}
-
-// ==================== IMPORT / EXPORT ====================
 function openImportModal() { showImportModal.value = true }
 function openFilePicker() { fileInput.value?.click() }
 
@@ -688,13 +584,12 @@ function exportItems() {
     'UOM': i.uom,
     'Rate': i.rate,
     'Discount %': i.discount || 0,
-    'Tax %': i.tax_rate || 0,
     'Amount': (i.qty * i.rate * (1 - (i.discount || 0) / 100)).toFixed(2)
   }))
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Items')
-  XLSX.writeFile(wb, `Purchase_Items_${new Date().toISOString().slice(0, 10)}.xlsx`)
+  XLSX.writeFile(wb, `PurchaseOrder_Items_${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
 async function handleImportFile(event) {
@@ -714,17 +609,16 @@ async function handleImportFile(event) {
       let discount = parseFloat(row['Discount %'] || row['Discount'] || row['discount'] || 0)
       let itemName = row['Item Name'] || row['item_name'] || ''
       let uom = row['UOM'] || row['uom'] || ''
-      let taxRate = parseFloat(row['Tax %'] || row['tax_rate'] || defaultTaxRate.value)
       if (importOption.value === 'Master') {
         const master = await lookupItem(itemCode)
-        if (master) { rate = master.rate; discount = 0; itemName = master.item_name; uom = master.uom; taxRate = master.tax_rate ?? defaultTaxRate.value }
+        if (master) { rate = master.rate; discount = 0; itemName = master.item_name; uom = master.uom }
       }
       const existing = items.value.findIndex(i => i.item_code === itemCode && !i.deleted)
       if (existing >= 0) {
         items.value[existing].qty += qty
         if (importOption.value === 'File') { items.value[existing].rate = rate; items.value[existing].discount = discount }
       } else {
-        items.value.push({ item_code: itemCode, item_name: itemName, uom, qty, rate, discount, tax_rate: taxRate, warehouse: defaultWarehouse.value, deleted: false })
+        items.value.push({ item_code: itemCode, item_name: itemName, uom, qty, rate, discount, tax_rate: defaultTaxRate.value, warehouse: defaultWarehouse.value, deleted: false })
       }
     }
     showImportModal.value = false
@@ -734,137 +628,50 @@ async function handleImportFile(event) {
 }
 
 // ==================== BILLING SETTINGS ====================
-const billingSeriesConfig = ref([])
-const cipherMap = ref([])
 const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 const defaultTaxRate = ref(18)
 const priceList = ref('Standard Buying')
-const taxTemplate = ref('')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
 
-const availableTaxTemplates = ref([])
-const availableWarehouses = ref([])
-const availableCostCenters = ref([])
+const availablePriceLists = computed(() => ['Standard Buying'])
 
-const availablePriceLists = computed(() => {
-  return ['Standard Buying']
-})
-
-function getSeriesConfig(series) {
-  return billingSeriesConfig.value.find(r => r.series === series) || null
-}
-
-function syncSeriesConfig(series) {
-  const cfg = getSeriesConfig(series)
-  if (!cfg) return
-  if (cfg.price_list) priceList.value = cfg.price_list
-  if (cfg.tax_template) taxTemplate.value = cfg.tax_template
-  
-  // Only override if not set in localStorage
-  if (!localStorage.getItem('wb-warehouse')) {
-    if (cfg.warehouse) defaultWarehouse.value = cfg.warehouse
-  }
-  if (!localStorage.getItem('wb-cost-center')) {
-    if (cfg.cost_center) costCenter.value = cfg.cost_center
-  }
-}
-
-async function fetchDropdownOptions() {
-  try {
-    const [templates, warehouses, costCenters] = await Promise.all([
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Purchase Taxes and Charges Template',
-        fields: ['name'],
-        filters: [['disabled', '=', 0]],
-        limit_page_length: 100,
-      }),
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Warehouse',
-        fields: ['name'],
-        filters: [['is_group', '=', 0], ['disabled', '=', 0]],
-        limit_page_length: 100,
-      }),
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Cost Center',
-        fields: ['name'],
-        filters: [['is_group', '=', 0], ['disabled', '=', 0]],
-        limit_page_length: 100,
-      }),
-    ])
-
-    availableTaxTemplates.value = templates.map(r => r.name)
-    availableWarehouses.value = warehouses.map(r => r.name)
-    availableCostCenters.value = costCenters.map(r => r.name)
-  } catch (e) {
-    console.warn('[PurchaseEntry] fetchDropdownOptions failed:', e)
-  }
-}
-
-// ==================== PRICE FORMATTING ====================
+// ==================== HELPERS ====================
 function fmtPrice(val) {
   const n = Number(val || 0)
   return n % 1 === 0 ? String(n) : n.toFixed(2)
 }
 
-function fmtDate(d) {
-  if (!d) return ''
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  })
-}
-
-function encPrice(val) {
-  return fmtPrice(val)
-}
-
-// ==================== SHARED POST HELPER ====================
 async function apiPost(method, params) {
-  return frappePost(`ssplbilling.api.purchase_api.${method}`, params)
+  return frappePost(`${API_BASE}.${method}`, params)
 }
 
-// ==================== INPUT REFS ====================
+function getTodayIST() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + days)
+  return d.toISOString().split('T')[0]
+}
+
+// ==================== REFS ====================
 const inputRefs = {}
-const rowRefs   = {}
+const rowRefs = {}
 const sidebarBillRefs = new Map()
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
-function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
+function setRowRef(el, idx) { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 function setSidebarBillRef(el, idx) { if (el) sidebarBillRefs.set(idx, el); else sidebarBillRefs.delete(idx) }
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const supplierInput = ref(null)
-const billNoInput = ref(null)
 const seriesSelect = ref(null)
 const dateInput = ref(null)
 const discountInput = ref(null)
 const saveButton = ref(null)
 const stayHereBtn = ref(null)
 const suppSearchModalRef = ref(null)
-
-// ==================== SUPPLIER SEARCH ====================
-const suppSearch = ref('')
-const showSupplierSearchModal = ref(false)
-const selectedSupplierDetails = ref(null)
-
-function openSupplierSearch() {
-  showSupplierSearchModal.value = true
-  suppSearch.value = ''
-  nextTick(() => {
-    suppSearchModalRef.value?.closeSubForm()
-    suppSearchModalRef.value?.focus()
-  })
-}
-
-function pickSupp(s) {
-  supplier.value = s.name; 
-  suppSearch.value = s.label || s.supplier_name; 
-  showSupplierSearchModal.value = false; 
-  selectedSupplierDetails.value = s;
-  nextTick(() => billNoInput.value?.focus())
-}
-
-function closeSupplierSearchModal() {
-  showSupplierSearchModal.value = false
-}
+const itemSearchModalRef = ref(null)
 
 // ==================== STATE ====================
 const items = ref([])
@@ -872,9 +679,8 @@ const selectedRow = ref(-1)
 const newItemCode = ref('')
 const newQty = ref(1)
 const billSaved = ref(false)
-const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
-const showJumpModal = ref(false)
-const savedInvoiceName = ref(null)
+const billDocStatus = ref(0)
+const savedOrderName = ref(null)
 const showDiscardModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
 const dynamicRowStyle = computed(() => ({
@@ -886,14 +692,45 @@ const dynamicRowStyle = computed(() => ({
 const activeItems = computed(() => items.value.filter(i => !i.deleted))
 const deletedCount = computed(() => items.value.filter(i => i.deleted).length)
 
-// ==================== API RESOURCES ====================
-const itemLookup = createResource({ url: `${API}.get_item_details` })
-const insightResource = createResource({ url: `${API}.get_item_insight` })
+// ==================== SERIES ====================
+const availableSeries = ref([])
+const nextOrderNo = ref('...')
+const billSeries = ref('')
+const billDate = ref(getTodayIST())
+const scheduleDate = ref(addDays(getTodayIST(), 7))
 
+watch(billSeries, fetchNextOrderNo)
+
+async function fetchSeriesList() {
+  try {
+    const settings = await fetchBillingSettings()
+    if (!localStorage.getItem('wb-warehouse') && settings.default_warehouse) {
+      defaultWarehouse.value = settings.default_warehouse
+    }
+    const list = await frappeGet(`${API_BASE}.get_naming_series`)
+    if (Array.isArray(list) && list.length) {
+      availableSeries.value = list
+      if (!list.includes(billSeries.value)) billSeries.value = list[0]
+      else fetchNextOrderNo()
+    }
+  } catch (e) {}
+  fetchNextOrderNo()
+}
+
+async function fetchNextOrderNo() {
+  if (!billSeries.value) { nextOrderNo.value = '...'; return }
+  try {
+    const res = await frappeGet(`${API_BASE}.get_next_bill_no`, { naming_series: billSeries.value })
+    nextOrderNo.value = res || '...'
+  } catch (e) { nextOrderNo.value = '...' }
+}
+
+// ==================== ITEM LOOKUP ====================
+const itemLookup = createResource({ url: `${API_BASE}.get_item_details` })
 const newPending = ref({ item_name: '', uom: '', rate: null })
+const selectedItemData = ref(null)
 
 async function lookupItem(code) {
-  // 1. Try local cache first
   const cached = lookupItemInCache(code)
   if (cached) {
     return {
@@ -907,8 +744,6 @@ async function lookupItem(code) {
       warehouse: cached.warehouse
     }
   }
-
-  // 2. Fallback to API if not found or cache empty
   try {
     await itemLookup.submit({ item_code: code, price_list: priceList.value, warehouse: defaultWarehouse.value })
     const d = itemLookup.data?.message || itemLookup.data
@@ -918,7 +753,8 @@ async function lookupItem(code) {
 
 let lookupTimeout = null
 watch(newItemCode, (val) => {
-  clearTimeout(lookupTimeout); const code = val.trim()
+  clearTimeout(lookupTimeout)
+  const code = val.trim()
   if (code.length < 2) { newPending.value = { item_name: '', uom: '', rate: null }; return }
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
@@ -926,33 +762,24 @@ watch(newItemCode, (val) => {
   }, 300)
 })
 
-watch(showDiscardModal, (val) => {
-  if (val) {
-    nextTick(() => {
-      stayHereBtn.value?.focus()
-    })
-  }
-})
-
-const selectedItemData = ref(null)
-
 async function loadItemInsight(code, itemName = '', uom = '') {
-  if (!code) {
-    selectedItemData.value = null
-    return
-  }
-
-  // 1. Fetch from local cache (Instant)
+  if (!code) { selectedItemData.value = null; return }
   const cached = lookupItemInCache(code)
-  
   selectedItemData.value = {
     item_code: code,
     item_name: itemName || cached?.item_name || '',
     uom: uom || cached?.uom || '',
     stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
-    previousPurchases: [], // Historical lookup not yet cached for Purchase
+    previousPurchases: [],
     priceLists: cached?.price_lists || [],
   }
+  // Fetch full insight async
+  try {
+    const r = await frappeGet(`${API_BASE}.get_item_insight`, { item_code: code, price_list: priceList.value, warehouse: defaultWarehouse.value })
+    if (r && selectedItemData.value?.item_code === code) {
+      selectedItemData.value = { ...selectedItemData.value, ...r }
+    }
+  } catch (e) {}
 }
 
 watch(selectedRow, async (idx) => {
@@ -964,36 +791,10 @@ watch(selectedRow, async (idx) => {
   }
 })
 
-// Re-price all active items when price list changes
-watch(priceList, (newList) => {
-  const getPrice = (itemCode) => {
-    const cached = lookupItemInCache(itemCode)
-    if (cached?.price_lists) {
-      const pl = cached.price_lists.find(p => p.name === newList)
-      return pl ? pl.rate : 0
-    }
-    return 0
-  }
-
-  // Update active items in grid
-  items.value.forEach(item => {
-    if (!item.deleted && item.item_code) {
-      const price = getPrice(item.item_code)
-      if (price > 0) item.rate = price
-    }
-  })
-
-  // Update pending item
-  if (newItemCode.value.trim() && newPending.value.rate !== null) {
-    const price = getPrice(newItemCode.value.trim())
-    if (price > 0) newPending.value.rate = price
-  }
-})
-
 // ==================== FOCUS ====================
 function focusField(f, idx) { nextTick(() => { const el = inputRefs[`${f}-${idx}`]; if (el) { el.focus(); el.select() } }) }
-function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
-function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
+function focusRow(idx) { nextTick(() => rowRefs[idx]?.focus()) }
+function focusNewCode() { nextTick(() => newCodeInput.value?.focus()) }
 function focusNewQty() {
   if (newItemCode.value.trim() && newPending.value.item_name) {
     loadItemInsight(newItemCode.value.trim(), newPending.value.item_name, newPending.value.uom)
@@ -1010,9 +811,9 @@ function goToNextRow(from) { const n = findNextActiveRow(from, 1); if (n !== nul
 function enterRow(idx) { if (!items.value[idx]?.deleted && billDocStatus.value === 0) focusField('code', idx) }
 function onRowKeydown(e, idx) {
   if (e.target !== e.currentTarget) return
-  if (e.key === 'ArrowDown')  { e.preventDefault(); moveRow(idx, 1) }
-  else if (e.key === 'ArrowUp')   { e.preventDefault(); moveRow(idx, -1) }
-  else if (e.key === 'Enter')     { e.preventDefault(); enterRow(idx) }
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveRow(idx, 1) }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveRow(idx, -1) }
+  else if (e.key === 'Enter') { e.preventDefault(); enterRow(idx) }
 }
 
 // ==================== ITEM ENTRY ====================
@@ -1020,11 +821,11 @@ async function onCodeEnter(idx) {
   const code = items.value[idx].item_code.trim(); if (!code) return; items.value[idx].item_code = code
   const r = await lookupItem(code)
   if (r) {
-    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
+    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].rate = r.rate
+    items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false
     loadItemInsight(code, r.item_name, r.uom)
     focusField('qty', idx)
-  }
-  else openSearch(code, idx)
+  } else openSearch(code, idx)
 }
 
 let emptyCodeEnters = 0
@@ -1032,10 +833,7 @@ async function onNewCodeEnter() {
   const code = newItemCode.value.trim()
   if (!code) {
     emptyCodeEnters++
-    if (emptyCodeEnters >= 2) {
-      emptyCodeEnters = 0
-      openSearch('', null)
-    }
+    if (emptyCodeEnters >= 2) { emptyCodeEnters = 0; openSearch('', null) }
     return
   }
   emptyCodeEnters = 0
@@ -1048,110 +846,39 @@ async function addNewItem() {
   const code = newItemCode.value.trim(); if (!code) return
   const r = await lookupItem(code)
   if (!r) { openSearch(code, null); return }
-  
-  // Show Price List Update BEFORE adding to grid and resetting
-  priceListUpdateTargetIdx.value = -1
-  priceListItemCode.value = r.item_code
-  priceListUpdateDiscount.value = 0 // Default for new item
-  showPriceListUpdate.value = true
-}
-
-/** Triggered when Enter is pressed on Qty field of an existing row */
-function onQtyEnter(idx) {
-  priceListUpdateTargetIdx.value = idx
-  priceListItemCode.value = items.value[idx].item_code
-  priceListUpdateDiscount.value = items.value[idx].discount || 0
-  showPriceListUpdate.value = true
-}
-
-/** Called after PriceListUpdate is closed */
-function finalizeAddItem() {
-  const code = newItemCode.value.trim()
-  const r = newPending.value
   const ei = items.value.findIndex(i => i.item_code === code && !i.deleted)
-  if (ei >= 0) { 
-    items.value[ei].qty += newQty.value; 
-  } else { 
-    items.value.push({ 
-      item_code: code, 
-      item_name: r.item_name, 
-      uom: r.uom, 
-      qty: newQty.value, 
-      rate: r.rate, 
-      discount: priceListUpdateDiscount.value, 
-      tax_rate: r.tax_rate ?? defaultTaxRate.value, 
-      warehouse: r.warehouse, 
-      deleted: false 
-    }); 
+  if (ei >= 0) {
+    items.value[ei].qty += newQty.value
+  } else {
+    items.value.push({
+      item_code: code, item_name: newPending.value.item_name, uom: newPending.value.uom,
+      qty: newQty.value, rate: newPending.value.rate || r.rate, discount: 0,
+      tax_rate: r.tax_rate ?? defaultTaxRate.value, warehouse: r.warehouse, deleted: false
+    })
   }
-  newItemCode.value = ''; 
-  newQty.value = 1; 
-  newPending.value = { item_name: '', uom: '', rate: null }; 
-  priceListUpdateDiscount.value = 0;
-  selectedRow.value = -1; // Reset selection so we stay in "new entry" mode
-  focusNewCode()
+  newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', rate: null }
+  selectedRow.value = -1; focusNewCode()
 }
+
+function onQtyEnter(idx) { goToNextRow(idx) }
 
 function softDelete(idx) { items.value[idx].deleted = true }
 function restoreItem(idx) { items.value[idx].deleted = false }
 
-// ==================== PRICE LIST UPDATE ====================
-const showPriceListUpdate = ref(false)
-const priceListItemCode = ref('')
-const priceListUpdateDiscount = ref(0)
-const priceListUpdateTargetIdx = ref(null) // null = none, -1 = new row, 0+ = existing row
-
-function closePriceListUpdate() {
-  const targetIdx = priceListUpdateTargetIdx.value
-  showPriceListUpdate.value = false
-  
-  if (targetIdx === -1) {
-    finalizeAddItem()
-  } else if (targetIdx !== null && targetIdx >= 0) {
-    focusField('rate', targetIdx)
-  }
-  priceListUpdateTargetIdx.value = null
-}
-
-function onPriceListSaved(data) {
-  const { changedPrices, discount: newDisc } = data
-  
-  // Update local discount ref first
-  priceListUpdateDiscount.value = newDisc
-
-  // If the current price list was updated, sync its rate back to the entry
-  const current = changedPrices.find(p => p.price_list === priceList.value)
-  
-  const targetIdx = priceListUpdateTargetIdx.value
-  if (targetIdx === -1) {
-    if (current) newPending.value.rate = current.rate
-    // finalizeAddItem will pick up priceListUpdateDiscount.value
-  } else if (targetIdx !== null && targetIdx >= 0) {
-    if (current) items.value[targetIdx].rate = current.rate
-    items.value[targetIdx].discount = newDisc
-  }
-}
-
-// ==================== ITEM SEARCH MODAL ====================
+// ==================== ITEM SEARCH ====================
 const showItemSearchModal = ref(false)
-const itemSearchModalRef = ref(null)
 let itemSearchTargetRow = null
 
-async function openSearch(prefill = '', rowIdx = null) {
+function openSearch(prefill = '', rowIdx = null) {
   itemSearchTargetRow = rowIdx
   showItemSearchModal.value = true
-  nextTick(() => {
-    itemSearchModalRef.value?.focus()
-  })
+  nextTick(() => itemSearchModalRef.value?.focus())
 }
 
 function closeItemSearch() {
   showItemSearchModal.value = false
-  if (itemSearchTargetRow !== null) {
-    focusField('code', itemSearchTargetRow)
-  } else {
-    focusNewCode()
-  }
+  if (itemSearchTargetRow !== null) focusField('code', itemSearchTargetRow)
+  else focusNewCode()
 }
 
 async function pickItem(item) {
@@ -1161,37 +888,42 @@ async function pickItem(item) {
   let finalWh = item.warehouse || defaultWarehouse.value
   let finalName = item.item_name
   let finalUom = item.uom
-  
   try {
     const r = await lookupItem(item.item_code)
-    if (r) {
-      finalRate = r.rate
-      finalTax = r.tax_rate ?? defaultTaxRate.value
-      finalWh = r.warehouse || defaultWarehouse.value
-      finalName = r.item_name
-      finalUom = r.uom
-    }
+    if (r) { finalRate = r.rate; finalTax = r.tax_rate ?? defaultTaxRate.value; finalWh = r.warehouse || defaultWarehouse.value; finalName = r.item_name; finalUom = r.uom }
   } catch (e) {}
-
   if (itemSearchTargetRow !== null) {
     const row = items.value[itemSearchTargetRow]
-    row.item_code = item.item_code
-    row.item_name = finalName
-    row.uom = finalUom
-    row.rate = finalRate
-    row.tax_rate = finalTax
-    row.warehouse = finalWh
-    row.deleted = false
-    selectedRow.value = itemSearchTargetRow
-    focusField('qty', itemSearchTargetRow)
+    row.item_code = item.item_code; row.item_name = finalName; row.uom = finalUom; row.rate = finalRate; row.tax_rate = finalTax; row.warehouse = finalWh; row.deleted = false
+    selectedRow.value = itemSearchTargetRow; focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
-    newPending.value = { item_name: finalName, uom: finalUom, rate: finalRate, tax_rate: finalTax, warehouse: finalWh }
+    newPending.value = { item_name: finalName, uom: finalUom, rate: finalRate }
     nextTick(() => focusNewQty())
   }
 }
 
-// ==================== SIDEBAR MODIFY PANEL ====================
+// ==================== SUPPLIER SEARCH ====================
+const suppSearch = ref('')
+const supplier = ref('')
+const showSupplierSearchModal = ref(false)
+const selectedSupplierDetails = ref(null)
+
+function openSupplierSearch() {
+  showSupplierSearchModal.value = true
+  nextTick(() => { suppSearchModalRef.value?.closeSubForm(); suppSearchModalRef.value?.focus() })
+}
+
+function pickSupp(s) {
+  supplier.value = s.name
+  suppSearch.value = s.label || s.supplier_name
+  showSupplierSearchModal.value = false
+  selectedSupplierDetails.value = s
+}
+
+function closeSupplierSearchModal() { showSupplierSearchModal.value = false }
+
+// ==================== SIDEBAR ====================
 const sidebarDate = ref(getTodayIST())
 const sidebarSearch = ref('')
 const showSubmitted = ref(false)
@@ -1201,15 +933,13 @@ const sidebarLoading = ref(false)
 async function fetchSidebarBills() {
   sidebarLoading.value = true
   try {
-    sidebarBills.value = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoices', {
+    sidebarBills.value = await frappeGet(`${API_BASE}.get_purchase_orders`, {
       query: sidebarSearch.value,
       limit: 50,
-      posting_date: sidebarDate.value,
+      transaction_date: sidebarDate.value,
       show_submitted: showSubmitted.value,
     })
-  } catch (e) {
-    sidebarBills.value = []
-  }
+  } catch (e) { sidebarBills.value = [] }
   sidebarLoading.value = false
 }
 
@@ -1227,278 +957,126 @@ watch(sidebarSearch, () => {
   sidebarSearchTimeout = setTimeout(fetchSidebarBills, 500)
 })
 
-async function loadInvoice(invoiceName) {
+async function loadOrder(orderName) {
   try {
-    const inv = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoice', { invoice_name: invoiceName })
-    if (!inv) { alert('Could not load invoice'); return }
-
-    supplier.value = inv.supplier
-    suppSearch.value = inv.supplier_name
-    billNo.value = inv.bill_no || ''
-    billDate.value = inv.posting_date
-    if (inv.naming_series && availableSeries.value.includes(inv.naming_series)) {
-      billSeries.value = inv.naming_series
-    }
-    discountPct.value = inv.discount_percentage || 0
-    if (inv.tax_template) taxTemplate.value = inv.tax_template
-    if (inv.cost_center) costCenter.value = inv.cost_center
-    items.value = inv.items.map(i => ({ ...i, discount: i.discount || 0, tax_rate: i.tax_rate ?? defaultTaxRate.value }))
-    selectedRow.value = -1
-    newItemCode.value = ''
-    newQty.value = 1
-    newPending.value = { item_name: '', uom: '', rate: null }
-    selectedItemData.value = null
-
-    savedInvoiceName.value = inv.name
-    billDocStatus.value = inv.docstatus
-    billSaved.value = inv.docstatus !== 0
-
-    selectedSupplierDetails.value = {
-      name: inv.supplier,
-      supplier_name: inv.supplier_name,
-      balance: 0,
-    }
-
+    const po = await frappeGet(`${API_BASE}.get_purchase_order`, { order_name: orderName })
+    if (!po) { alert('Could not load purchase order'); return }
+    supplier.value = po.supplier
+    suppSearch.value = po.supplier_name
+    billDate.value = po.transaction_date
+    if (po.schedule_date) scheduleDate.value = po.schedule_date
+    if (po.naming_series && availableSeries.value.includes(po.naming_series)) billSeries.value = po.naming_series
+    discountPct.value = po.discount_percentage || 0
+    discountDirectAmt.value = po.additional_discount_amount || 0
+    discountInputMode.value = po.additional_discount_amount > 0 ? 'amt' : po.discount_percentage > 0 ? 'pct' : null
+    freightAmt.value = po.freight_amount || 0
+    loadingAmt.value = po.loading_amount || 0
+    items.value = po.items.map(i => ({ ...i, tax_rate: i.tax_rate ?? defaultTaxRate.value }))
+    selectedRow.value = -1; newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', rate: null }; selectedItemData.value = null
+    savedOrderName.value = po.name
+    billDocStatus.value = po.docstatus
+    billSaved.value = po.docstatus !== 0
+    selectedSupplierDetails.value = { name: po.supplier, supplier_name: po.supplier_name, balance: 0 }
     nextTick(() => supplierInput.value?.focus())
-  } catch (e) {
-    alert('Error loading invoice: ' + (e.message || 'Unknown error'))
-  }
+  } catch (e) { alert('Error loading order: ' + (e.message || 'Unknown error')) }
 }
 
 function enterEditMode() {
-  if (billDocStatus.value !== 0) {
-    alert('Cannot edit a submitted/cancelled invoice.')
-    return
-  }
+  if (billDocStatus.value !== 0) { alert('Cannot edit a submitted or cancelled order.'); return }
   billSaved.value = false
   nextTick(() => supplierInput.value?.focus())
 }
 
-function getTodayIST() {
-  const date = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
-  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
-  return formatter.format(date)
-}
-
-// ==================== BILLING ====================
-const billDate = ref(getTodayIST())
-const billNo = ref('')
-const supplier = ref('')
-const billSeries = ref('')
-
-// ==================== BARCODE MODAL ====================
-const showBarcodeModal = ref(false)
-const barcodeInitialItems = ref([])
-
-function openBarcodePrinting() {
-  const items = activeItems.value.map(i => ({
-    item_code: i.item_code,
-    item_name: i.item_name,
-    qty: i.qty,
-    rate: i.rate || 0,
-  }))
-  router.push({
-    path: '/barcode-print',
-    query: {
-      bill: savedInvoiceName.value || undefined,
-      items: encodeURIComponent(JSON.stringify(items)),
-    },
-  })
-}
-
-async function loadAndPrintBarcodes(invoiceName) {
-  await loadInvoice(invoiceName)
-  nextTick(() => openBarcodePrinting())
-}
-
-
+// ==================== CALCULATIONS ====================
 const discountPct = ref(0)
 const discountDirectAmt = ref(0)
-const discountInputMode = ref(null) // 'pct' | 'amt'
+const discountInputMode = ref(null)
 const freightAmt = ref(0)
 const loadingAmt = ref(0)
-const taxPaidAmt = ref(0)
-const taxPaidAccount = ref('')
-const availableSeries = ref([])
-const nextBillNo = ref('...')
 
-watch(billSeries, () => {
-  fetchNextBillNo()
-})
-
-async function fetchSeriesList() {
-  try {
-    const settings = await fetchBillingSettings()
-    if (!localStorage.getItem('wb-warehouse')) {
-      if (settings.default_warehouse) defaultWarehouse.value = settings.default_warehouse
-    }
-    if (settings.tax_paid_on_purchase) taxPaidAccount.value = settings.tax_paid_on_purchase
-
-    const list = await frappeGet('ssplbilling.api.purchase_api.get_naming_series')
-    if (Array.isArray(list) && list.length) {
-      availableSeries.value = list
-      if (list.includes(billSeries.value)) { fetchNextBillNo() }
-      else { billSeries.value = list[0] }
-    }
-  } catch (e) {}
-
-  fetchNextBillNo()
-}
-
-async function fetchNextBillNo() {
-  if (!billSeries.value) { nextBillNo.value = '...'; return }
-  try {
-    const res = await frappeGet('ssplbilling.api.purchase_api.get_next_bill_no', { naming_series: billSeries.value })
-    nextBillNo.value = res || '...'
-  } catch (e) { nextBillNo.value = '...' }
-}
-
-const isExempted = computed(() => taxTemplate.value.toLowerCase().includes('exempt'))
-const isInclusive = computed(() => taxTemplate.value.toLowerCase().includes('inclusive'))
-
-const grossTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
-)
-
-const totalBeforeItemDiscount = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0)
-)
-
-const itemDiscountTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0)
-)
-
-const subtotal = computed(() => {
-  if (isInclusive.value) {
-    return activeItems.value.reduce((s, i) => {
-      const amt = i.qty * i.rate * (1 - (i.discount || 0) / 100)
-      return s + amt / (1 + (i.tax_rate || 0) / 100)
-    }, 0)
-  }
-  return grossTotal.value
-})
-
-const discountAmt = computed(() => {
-  if (discountInputMode.value === 'amt') return Number(discountDirectAmt.value) || 0
-  return subtotal.value * ((Number(discountPct.value) || 0) / 100)
-})
+const grossTotal = computed(() => activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0))
+const itemDiscountTotal = computed(() => activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0))
+const subtotal = computed(() => grossTotal.value)
+const discountAmt = computed(() => discountInputMode.value === 'amt' ? Number(discountDirectAmt.value) || 0 : subtotal.value * ((Number(discountPct.value) || 0) / 100))
 const taxableAmt = computed(() => subtotal.value - discountAmt.value)
-
-const totalTax = computed(() => {
-  if (isExempted.value) return 0
-  if (isInclusive.value) {
-    return (grossTotal.value - subtotal.value) * (1 - (Number(discountPct.value) || 0) / 100)
-  }
-  return activeItems.value.reduce((s, i) => {
+const totalTax = computed(() =>
+  activeItems.value.reduce((s, i) => {
     const a = i.qty * i.rate * (1 - (i.discount || 0) / 100)
-    return s + (a - a * ((Number(discountPct.value) || 0) / 100)) * (i.tax_rate / 100)
+    return s + (a - a * ((Number(discountPct.value) || 0) / 100)) * ((i.tax_rate || 0) / 100)
   }, 0)
-})
+)
+const grandTotal = computed(() => taxableAmt.value + totalTax.value + (Number(freightAmt.value) || 0) + (Number(loadingAmt.value) || 0))
 
-const grandTotal = computed(() => {
-  const charges = (Number(freightAmt.value) || 0) + (Number(loadingAmt.value) || 0)
-  if (isInclusive.value) return grossTotal.value * (1 - (Number(discountPct.value) || 0) / 100) + charges
-  return taxableAmt.value + totalTax.value + charges
-})
-
-async function saveBill() {
-  if (!supplier.value.trim()) { alert('Please enter a supplier'); return }
+// ==================== SAVE ====================
+async function saveOrder() {
+  if (!supplier.value.trim()) { alert('Please select a supplier'); return }
   if (!activeItems.value.length) { alert('Add at least one item'); return }
 
   const payload = {
     supplier: supplier.value,
-    bill_no: billNo.value,
     date: billDate.value,
+    schedule_date: scheduleDate.value,
     naming_series: billSeries.value,
     discount_percentage: discountInputMode.value === 'amt' ? 0 : (discountPct.value || 0),
     additional_discount_amount: discountInputMode.value === 'amt' ? (discountDirectAmt.value || 0) : 0,
-    tax_template: taxTemplate.value || '',
-    cost_center: costCenter.value || '',
     taxes: [
       ...(freightAmt.value > 0 ? [{ charge_type: 'Actual', account_head: '', description: 'Freight Charges', tax_amount: freightAmt.value }] : []),
       ...(loadingAmt.value > 0 ? [{ charge_type: 'Actual', account_head: '', description: 'Loading Charges', tax_amount: loadingAmt.value }] : []),
-      ...(taxPaidAmt.value > 0 ? [{ charge_type: 'Actual', account_head: taxPaidAccount.value || '', description: 'Tax Paid on Purchase', tax_amount: taxPaidAmt.value }] : []),
     ],
     items: activeItems.value.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
       price_list_rate: i.rate,
-      discount_percentage: i.discount || 0,
       rate: i.rate * (1 - (i.discount || 0) / 100),
+      discount_percentage: i.discount || 0,
       warehouse: i.warehouse || defaultWarehouse.value,
-      cost_center: costCenter.value || '',
     })),
   }
 
   try {
     let result
-    if (savedInvoiceName.value) {
-      result = await apiPost('update_purchase_invoice', {
-        data: JSON.stringify({ ...payload, invoice_name: savedInvoiceName.value }),
-      })
+    if (savedOrderName.value) {
+      result = await apiPost('update_purchase_order', { data: JSON.stringify({ ...payload, order_name: savedOrderName.value }) })
     } else {
-      result = await apiPost('create_purchase_invoice', {
-        data: JSON.stringify(payload),
-      })
-      savedInvoiceName.value = result?.invoice_name || null
+      result = await apiPost('create_purchase_order', { data: JSON.stringify(payload) })
+      savedOrderName.value = result?.order_name || null
     }
-
     billSaved.value = true
     billDocStatus.value = 0
-    fetchNextBillNo()
+    fetchNextOrderNo()
     fetchSidebarBills()
   } catch (e) {
-    alert('Error: ' + (e?.message || 'Failed to save invoice'))
+    alert('Error: ' + (e?.message || 'Failed to save purchase order'))
   }
 }
 
-function startNewBill() {
-  items.value = []; selectedRow.value = -1; supplier.value = ''; suppSearch.value = ''; billNo.value = ''
-  discountPct.value = 0; discountDirectAmt.value = 0; discountInputMode.value = null; freightAmt.value = 0; loadingAmt.value = 0; taxPaidAmt.value = 0; newItemCode.value = ''; newQty.value = 1;
-  billDate.value = getTodayIST()
-  billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
+function startNewOrder() {
+  items.value = []; selectedRow.value = -1; supplier.value = ''; suppSearch.value = ''
+  discountPct.value = 0; discountDirectAmt.value = 0; discountInputMode.value = null
+  freightAmt.value = 0; loadingAmt.value = 0; newItemCode.value = ''; newQty.value = 1
+  billDate.value = getTodayIST(); scheduleDate.value = addDays(getTodayIST(), 7)
+  billSaved.value = false; billDocStatus.value = 0; savedOrderName.value = null; selectedItemData.value = null
   selectedSupplierDetails.value = null
   nextTick(() => seriesSelect.value?.focus())
 }
 
-function cancelBill() { startNewBill() }
-
-function handleJump(targetNo) {
-  if (items.value.length === 0) return
-  let targetIdx = targetNo - 1
-  if (targetIdx >= items.value.length) targetIdx = items.value.length - 1
-  if (items.value[targetIdx].deleted) {
-    const prev = findNextActiveRow(targetIdx, -1)
-    if (prev !== null) targetIdx = prev
-    else {
-      const next = findNextActiveRow(targetIdx, 1)
-      if (next !== null) targetIdx = next
-      else return
-    }
-  }
-  selectedRow.value = targetIdx
-  focusRow(targetIdx)
-}
+function cancelOrder() { startNewOrder() }
 
 function handleBack() {
   if (activeItems.value.length > 0 && !billSaved.value) {
     showDiscardModal.value = true
   } else {
-    if (props.isSubWindow) {
-      emit('close')
-      return
-    }
+    if (props.isSubWindow) { emit('close'); return }
     router.push('/')
   }
 }
 
-import { useShortcuts, useSubwindow } from '../services/shortcutManager'
-import { purchaseEntryShortcuts } from '../shortcuts/purchaseEntryShortcuts'
+watch(showDiscardModal, (val) => { if (val) nextTick(() => stayHereBtn.value?.focus()) })
 
-useShortcuts(purchaseEntryShortcuts({
+// ==================== SHORTCUTS ====================
+useShortcuts(purchaseOrderShortcuts({
   openShortcuts: () => { showShortcutPage.value = !showShortcutPage.value },
-  save: () => saveBill(),
+  save: () => saveOrder(),
   newCustomer: () => openSupplierSearch(),
   searchItem: () => openSearch('', null),
   deleteRow: () => {
@@ -1507,62 +1085,29 @@ useShortcuts(purchaseEntryShortcuts({
     }
   },
   focusSeries: () => seriesSelect.value?.focus(),
-  openIncentive: () => { if (savedInvoiceName.value) showIncentiveModal.value = true },
   toggleDiscountSave: () => {
     const activeEl = document.activeElement
-
-    // 1. If in existing items table
     if (selectedRow.value !== -1) {
-      const rowIdx = selectedRow.value
-      const lastFieldInRow = inputRefs[`discount-${rowIdx}`]
-      
-      if (activeEl !== lastFieldInRow) {
-        // Go to end of current row
-        focusField('discount', rowIdx)
-      } else {
-        // Already at end of current row, jump to last row (New Entry row)
-        selectedRow.value = -1
-        focusNewCode()
-      }
+      const lastField = inputRefs[`discount-${selectedRow.value}`]
+      if (activeEl !== lastField) { focusField('discount', selectedRow.value) }
+      else { selectedRow.value = -1; focusNewCode() }
       return
     }
-
-    // 2. If in new entry row (the "last row")
-    if (activeEl === newCodeInput.value || activeEl === newQtyInput.value) {
-      if (activeEl === newCodeInput.value) {
-        newQtyInput.value?.focus()
-        newQtyInput.value?.select()
-      } else {
-        // At end of last row, go to global discount
-        discountInput.value?.focus()
-        discountInput.value?.select()
-      }
-      return
-    }
-
-    // 3. Global summary inputs
-    if (activeEl === discountInput.value) {
-      saveBill()
-    } else {
-      // 4. From anywhere else, jump to last row (New Entry row)
-      selectedRow.value = -1
-      focusNewCode()
-    }
+    if (activeEl === newCodeInput.value) { newQtyInput.value?.focus(); newQtyInput.value?.select(); return }
+    if (activeEl === newQtyInput.value) { discountInput.value?.focus(); discountInput.value?.select(); return }
+    if (activeEl === discountInput.value) { saveOrder(); return }
+    selectedRow.value = -1; focusNewCode()
   },
   contextualBack: () => {
-    if (showJumpModal.value) { showJumpModal.value = false; return }
     if (showDiscardModal.value) { showDiscardModal.value = false; return }
-    if (showPriceListUpdate.value) { showPriceListUpdate.value = false; return }
+    if (showImportModal.value) { showImportModal.value = false; return }
     if (showSupplierSearchModal.value) { closeSupplierSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
-    if (showPrintModal.value) { showPrintModal.value = false; startNewBill(); return }
-    if (showImportModal.value) { showImportModal.value = false; return }
-    // First Esc: clear active bill; Second Esc (bill already empty): exit
-    const hasBillContent = activeItems.value.length > 0 || supplier.value || savedInvoiceName.value
-    if (hasBillContent) { startNewBill(); return }
+    const hasBillContent = activeItems.value.length > 0 || supplier.value || savedOrderName.value
+    if (hasBillContent) { startNewOrder(); return }
     handleBack()
   }
-}), props.isSubWindow ? 'subwindow' : 'local')
+}))
 
 function handleStorageChange(e) {
   if (e.key === 'wb-zoom') zoomPercent.value = parseInt(e.newValue) || 150
@@ -1571,34 +1116,22 @@ function handleStorageChange(e) {
 }
 
 onMounted(() => {
-  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
-  window.addEventListener('storage', handleStorageChange);
+  window.addEventListener('storage', handleStorageChange)
   fetchSeriesList()
-  fetchDropdownOptions()
   fetchSidebarBills()
 
-  // Ensure item cache is correctly populated for Purchase
   const { lastParams: cacheLastParams } = useItemCache()
-  const needsRefresh = !cachedItems.value.length || 
+  const needsRefresh = !cachedItems.value.length ||
     (Date.now() - lastSync.value) > 5 * 60 * 1000 ||
-    cacheLastParams.value.searchType !== 'Purchase' ||
-    cacheLastParams.value.priceList !== priceList.value ||
-    cacheLastParams.value.warehouse !== defaultWarehouse.value
+    cacheLastParams.value.searchType !== 'Purchase'
+  if (needsRefresh) refreshItemCache('Purchase', priceList.value, defaultWarehouse.value)
 
-  if (needsRefresh) {
-    refreshItemCache('Purchase', priceList.value, defaultWarehouse.value)
-  }
-  
-  if (props.invoiceName) {
-    loadInvoice(props.invoiceName)
-  } else {
-    nextTick(() => seriesSelect.value?.focus())
-  }
+  if (props.orderName) loadOrder(props.orderName)
+  else nextTick(() => seriesSelect.value?.focus())
 })
 
 onUnmounted(() => {
-  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
-  window.removeEventListener('storage', handleStorageChange);
+  window.removeEventListener('storage', handleStorageChange)
 })
 </script>
 

@@ -559,6 +559,14 @@ export async function createItem(data) {
   return frappePost("ssplbilling.api.item_api.create_item", { data });
 }
 
+export async function getItemForEdit(itemCode) {
+  return frappeGet("ssplbilling.api.item_api.get_item_for_edit", { item_code: itemCode });
+}
+
+export async function updateItem(data) {
+  return frappePost("ssplbilling.api.item_api.update_item", { data });
+}
+
 // ─── Sales Invoice ─────────────────────────────────────────────────────────────
 
 /**

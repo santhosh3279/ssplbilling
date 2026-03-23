@@ -42,6 +42,12 @@
         >
           🏷️ <span class="font-bold text-white">Pricing Rules</span>
         </button>
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          @click="router.push('/barcode-print')"
+        >
+          🔖 <span class="font-bold text-white">Print Barcodes</span>
+        </button>
       </nav>
 
       <!-- Settings section -->
@@ -226,16 +232,17 @@ const tiles = [
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
   { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
-  { id: 'barcode-print', name: 'Print Barcode', desc: 'Print item barcodes', icon: '🏷️', shortcut: 'F7', tileBg: 'bg-green-600' },
+  { id: 'purchase-order', name: 'Purchase Order', desc: 'Create & manage purchase orders', icon: '📋', shortcut: 'F7', tileBg: 'bg-sky-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'barcode-print', 'journal-contra', 'material-transfer']
+const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'journal-contra', 'material-transfer']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
   payment: '/payment',
+  'purchase-order': '/purchase-order',
   'journal-contra': '/journal-contra',
   'material-transfer': '/material-transfer',
 }
@@ -254,7 +261,7 @@ function openModule(id) {
 const routeMap = {
   F1: 'sales', F2: 'purchase', F3: 'payment',
   F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
-  F7: 'barcode-print', F8: 'journal-contra', F9: 'material-transfer',
+  F7: 'purchase-order', F8: 'journal-contra', F9: 'material-transfer',
 }
 
 // ==================== KEYBOARD SHORTCUTS ====================

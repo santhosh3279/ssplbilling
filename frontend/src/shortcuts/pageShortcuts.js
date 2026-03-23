@@ -9,6 +9,7 @@
  * Common entry form shortcuts (Save, New Row, etc.)
  */
 export const entryFormShortcuts = (handlers) => ({
+  'F1':     handlers.openShortcuts || (() => {}),
   'F8':     handlers.save,
   'CTRL+S': handlers.save,
   'F2':     handlers.newCustomer || (() => {}),

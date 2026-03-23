@@ -14,6 +14,7 @@ import JournalContraEntry from './pages/JournalContraEntry.vue'
 import MaterialTransfer from './pages/MaterialTransfer.vue'
 import CashierManagement from './pages/CashierManagement.vue'
 import PricingRuleSync from './pages/PricingRuleSync.vue'
+import PurchaseOrder from './pages/PurchaseOrder.vue'
 
 const routes = [
   {
@@ -87,6 +88,11 @@ const routes = [
     path: '/pricing-rules',
     name: 'PricingRuleSync',
     component: PricingRuleSync,
+  },
+  {
+    path: '/purchase-order',
+    name: 'PurchaseOrder',
+    component: PurchaseOrder,
   },
 ]
 

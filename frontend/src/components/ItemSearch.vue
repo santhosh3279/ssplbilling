@@ -15,6 +15,13 @@
         </div>
         <div class="flex items-center gap-3">
           <button
+            v-if="results[selectedIdx]"
+            @click="openEditModal"
+            class="flex items-center gap-2 rounded-lg border border-violet-700 bg-violet-900/20 px-4 py-2 text-lg font-semibold text-violet-400 transition-colors"
+          >
+            <span>✏️</span> Edit Item <kbd class="ml-1 rounded border border-violet-700 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-violet-400">F3</kbd>
+          </button>
+          <button
             @click="showCreationModal = true"
             class="flex items-center gap-2 rounded-lg border border-amber-700 bg-amber-900/20 px-4 py-2 text-lg font-semibold text-amber-400 transition-colors"
           >
@@ -134,6 +141,7 @@
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">↑↓</kbd> Navigate</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Enter</kbd> Select</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F2</kbd> New Item</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F3</kbd> Edit Item</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F5</kbd> Refresh</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> Close</span>
       </div>
@@ -151,6 +159,14 @@
         :show="showCreationModal"
         @close="showCreationModal = false"
         @created="handleItemCreated"
+      />
+
+      <ItemCreation
+        v-if="showEditModal"
+        :show="showEditModal"
+        :edit-item-code="editItemCode"
+        @close="showEditModal = false; focus()"
+        @created="handleItemUpdated"
       />
     </div>
   </div>
@@ -194,6 +210,8 @@ const searchInput = ref(null)
 const scrollContainer = ref(null)
 const showDateModal = ref(false)
 const showCreationModal = ref(false)
+const showEditModal = ref(false)
+const editItemCode = ref('')
 const insightData = ref(null)
 const cipherMap = ref([])
 
@@ -286,8 +304,21 @@ watch([selectedIdx, results], () => {
 
 // ─── Navigation & Events ─────────────────────────────────────────────────────
 
+function openEditModal() {
+  const item = results.value[selectedIdx.value]
+  if (!item) return
+  editItemCode.value = item.item_code
+  showEditModal.value = true
+}
+
+function handleItemUpdated() {
+  showEditModal.value = false
+  preloadItems(true)
+  focus()
+}
+
 function handleGlobalKeydown(e) {
-  if (showDateModal.value || showCreationModal.value) return
+  if (showDateModal.value || showCreationModal.value || showEditModal.value) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -311,6 +342,9 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'F2') {
     e.preventDefault()
     showCreationModal.value = true
+  } else if (e.key === 'F3') {
+    e.preventDefault()
+    openEditModal()
   }
 }
 
@@ -341,6 +375,7 @@ function focus() {
 function closeSubForm() {
   showDateModal.value = false
   showCreationModal.value = false
+  showEditModal.value = false
   focus()
 }
 
@@ -383,6 +418,7 @@ watch(() => props.show, async (newVal) => {
   } else {
     showDateModal.value = false
     showCreationModal.value = false
+    showEditModal.value = false
   }
 })
 
