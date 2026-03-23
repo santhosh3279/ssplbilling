@@ -372,7 +372,7 @@
           <!-- Right Column: Bill Summary as full table -->
           <table class="flex-1 max-w-[600px] bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
             <colgroup>
-              <col style="width:28%"><col style="width:18%"><col style="width:16%"><col style="width:38%">
+              <col style="width:28%"><col style="width:18%"><col style="width:20%"><col style="width:34%">
             </colgroup>
             <thead>
               <tr class="bg-slate-800">
