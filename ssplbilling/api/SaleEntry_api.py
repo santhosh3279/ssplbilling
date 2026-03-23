@@ -193,7 +193,7 @@ def create_sales_invoice(data=None, **kwargs):
         si.cost_center = data["cost_center"]
 
     if float(data.get("additional_discount_amount") or 0) > 0:
-        si.additional_discount_amount = float(data["additional_discount_amount"])
+        si.discount_amount = float(data["additional_discount_amount"])
         si.apply_discount_on = "Net Total"
     elif data.get("discount_percentage"):
         si.additional_discount_percentage = float(data["discount_percentage"])
@@ -330,11 +330,11 @@ def update_sales_invoice(data=None, **kwargs):
     si.customer = data["customer"]
     # Preserving original posting_date
     if float(data.get("additional_discount_amount") or 0) > 0:
-        si.additional_discount_amount = float(data["additional_discount_amount"])
+        si.discount_amount = float(data["additional_discount_amount"])
         si.additional_discount_percentage = 0
         si.apply_discount_on = "Net Total"
     else:
-        si.additional_discount_amount = 0
+        si.discount_amount = 0
         si.additional_discount_percentage = float(data.get("discount_percentage", 0))
     
     if data.get("cost_center"):

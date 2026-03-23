@@ -92,7 +92,7 @@ def get_sales_invoice(invoice_name):
         "naming_series": si.naming_series or "",
         "payment_mode": payment_mode,
         "discount_percentage": float(si.additional_discount_percentage or 0),
-        "additional_discount_amount": float(si.additional_discount_amount or 0),
+        "additional_discount_amount": float(si.discount_amount or 0),
         "freight_amount": freight_amount,
         "packing_amount": packing_amount,
         "loading_amount": loading_amount,
