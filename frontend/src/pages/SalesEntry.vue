@@ -397,7 +397,7 @@
                           :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'pct'"
                           min="0" step="1" style="width:7ch;padding:0"
                           class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          @change="e => { const v = parseFloat(e.target.value) || 0; discountInputMode = v > 0 ? 'amt' : null; discountPct = subtotal > 0 ? Math.round((v / subtotal) * 10000) / 100 : 0 }"
+                          @change="e => { const v = parseFloat(e.target.value) || 0; discountDirectAmt = v; discountInputMode = v > 0 ? 'amt' : null; discountPct = subtotal > 0 ? Math.round((v / subtotal) * 10000) / 100 : 0 }"
                           @keydown.enter="freightInput?.focus()" />
                         <span class="font-mono text-red-400 min-w-[4ch] text-right">-&#8377;{{ discountAmt.toFixed(2) }}</span>
                       </span>
@@ -1400,7 +1400,15 @@ async function loadInvoice(invoiceName) {
       billSeries.value = inv.naming_series
     }
     paymentMode.value = inv.payment_mode || 'Cash'
-    discountPct.value = inv.discount_percentage || 0
+    if (inv.additional_discount_amount > 0) {
+      discountDirectAmt.value = inv.additional_discount_amount
+      discountInputMode.value = 'amt'
+      discountPct.value = subtotal.value > 0 ? Math.round((inv.additional_discount_amount / subtotal.value) * 10000) / 100 : 0
+    } else {
+      discountPct.value = inv.discount_percentage || 0
+      discountDirectAmt.value = 0
+      discountInputMode.value = inv.discount_percentage > 0 ? 'pct' : null
+    }
     freightAmt.value = inv.freight_amount || 0
     packingAmt.value = inv.packing_amount || 0
     loadingAmt.value = inv.loading_amount || 0
@@ -1509,6 +1517,7 @@ watch(customer, async (newVal) => {
 
 const paymentMode = ref('Cash')
 const discountPct = ref(0)
+const discountDirectAmt = ref(0)
 const discountInputMode = ref(null) // null | 'pct' | 'amt'
 const freightAmt = ref(0)
 const packingAmt = ref(0)
@@ -1666,7 +1675,9 @@ async function saveBill() {
     date: billDate.value,
     naming_series: billSeries.value,
     payment_mode: paymentMode.value,
-    discount_percentage: discountPct.value,
+    ...(discountInputMode.value === 'amt'
+      ? { additional_discount_amount: discountDirectAmt.value, discount_percentage: 0 }
+      : { discount_percentage: discountPct.value, additional_discount_amount: 0 }),
     freight_amount: freightAmt.value,
     freight_account: localStorage.getItem('wb_freight') || '',
     tax_template: taxTemplate.value || '',
@@ -1744,7 +1755,7 @@ async function deleteBill() {
 
 function startNewBill() {
   items.value = []; selectedRow.value = -1; customer.value = ''; custSearch.value = ''
-  discountPct.value = 0; discountInputMode.value = null; freightAmt.value = 0; packingAmt.value = 0; loadingAmt.value = 0; otherChargesAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
+  discountPct.value = 0; discountDirectAmt.value = 0; discountInputMode.value = null; freightAmt.value = 0; packingAmt.value = 0; loadingAmt.value = 0; otherChargesAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
   selectedCustomerDetails.value = null
