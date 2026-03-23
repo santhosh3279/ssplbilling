@@ -15,6 +15,7 @@ import MaterialTransfer from './pages/MaterialTransfer.vue'
 import CashierManagement from './pages/CashierManagement.vue'
 import PricingRuleSync from './pages/PricingRuleSync.vue'
 import PurchaseOrder from './pages/PurchaseOrder.vue'
+import IncentiveLedger from './pages/IncentiveLedger.vue'
 
 const routes = [
   {
@@ -93,6 +94,11 @@ const routes = [
     path: '/purchase-order',
     name: 'PurchaseOrder',
     component: PurchaseOrder,
+  },
+  {
+    path: '/incentive-ledger',
+    name: 'IncentiveLedger',
+    component: IncentiveLedger,
   },
 ]
 
