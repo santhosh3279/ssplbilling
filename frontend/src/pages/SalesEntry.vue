@@ -384,7 +384,7 @@
             </thead>
             <tbody>
               <tr>
-                <td class="px-2 text-slate-500 border border-slate-700">Item Discount</td>
+                <td class="px-2 text-lg text-slate-500/80 border border-slate-700">Item Discount</td>
                 <td class="p-0 border border-slate-700"></td>
                 <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
@@ -406,7 +406,7 @@
                 </td>
               </tr>
               <tr>
-                <td class="px-2 text-slate-500 border border-slate-700">Discount</td>
+                <td class="px-2 text-lg text-slate-500/80 border border-slate-700">Discount</td>
                 <td class="p-0 border border-slate-700">
                   <span class="inline-flex items-center gap-1">
                     <input ref="discountInput" type="number" v-model.number="discountPct"
@@ -429,12 +429,12 @@
                 <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
               </tr>
               <tr class="bg-slate-800/40">
-                <td class="px-2 font-semibold text-slate-300 border border-slate-600">Subtotal</td>
+                <td class="px-2 text-lg font-semibold text-slate-300/80 border border-slate-600">Subtotal</td>
                 <td class="px-2 border border-slate-600"></td>
                 <td class="px-2 text-right font-mono font-semibold text-slate-100 text-2xl border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-slate-500 border border-slate-700">Freight</td>
+                <td class="px-2 text-lg text-slate-500/80 border border-slate-700">Freight</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="freightInput" type="number" v-model.number="freightAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
@@ -444,7 +444,7 @@
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-slate-500 border border-slate-700">Packing</td>
+                <td class="px-2 text-lg text-slate-500/80 border border-slate-700">Packing</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="packingInput" type="number" v-model.number="packingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
@@ -454,7 +454,7 @@
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-slate-500 border border-slate-700">Loading</td>
+                <td class="px-2 text-lg text-slate-500/80 border border-slate-700">Loading</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="loadingInput" type="number" v-model.number="loadingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
@@ -464,7 +464,7 @@
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-slate-500 border border-slate-700">Other</td>
+                <td class="px-2 text-lg text-slate-500/80 border border-slate-700">Other</td>
                 <td class="p-0 border border-slate-700">
                   <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
@@ -474,7 +474,7 @@
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-slate-500 border border-slate-700">Tax</td>
+                <td class="px-2 text-lg text-slate-500/80 border border-slate-700">Tax</td>
                 <td class="p-0 border border-slate-700"></td>
                 <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
               </tr>
