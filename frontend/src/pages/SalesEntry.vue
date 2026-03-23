@@ -381,9 +381,9 @@
                     <td class="py-1 text-right font-mono text-red-400">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
                   </tr>
                   <tr class="border-b border-slate-800/60">
-                    <td class="py-1 text-slate-500">Discount</td>
-                    <td class="py-1 text-right">
-                      <span class="inline-flex items-center gap-1 justify-end">
+                    <td class="py-1">
+                      <span class="inline-flex items-center gap-1">
+                        <span class="text-slate-500">Discount</span>
                         <input ref="discountInput" type="number" v-model.number="discountPct"
                           :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
                           min="0" max="100" step="0.5" style="width:3.5ch;padding:0"
@@ -399,9 +399,9 @@
                           class="rounded border border-slate-700 bg-slate-800/80 text-right font-mono text-slate-200 outline-none focus:border-blue-500 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'amt' : null; discountPct = 0 }"
                           @keydown.enter="freightInput?.focus()" />
-                        <span class="font-mono text-red-400 min-w-[4ch] text-right">-&#8377;{{ discountAmt.toFixed(2) }}</span>
                       </span>
                     </td>
+                    <td class="py-1 text-right font-mono text-red-400">-&#8377;{{ discountAmt.toFixed(2) }}</td>
                   </tr>
                   <tr class="border-y border-slate-600 bg-slate-800/40">
                     <td class="py-1.5 font-semibold text-slate-300">Subtotal</td>
