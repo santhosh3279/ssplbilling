@@ -4,16 +4,16 @@
     <div class="absolute inset-0 rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)] pointer-events-none"></div>
 
     <svg viewBox="0 0 100 100" class="h-full w-full">
-      <!-- Hour markers (Roman Numerals) -->
-      <g v-for="(num, i) in romanNumerals" :key="num">
+      <!-- Hour markers (Standard Numbers) -->
+      <g v-for="n in 12" :key="n">
         <text
           x="50"
           y="18"
           text-anchor="middle"
-          class="text-[8px] font-serif font-bold fill-black select-none"
-          :transform="`rotate(${ (i+1) * 30} 50 50)`"
+          class="text-[9px] font-sans font-bold fill-black select-none"
+          :transform="`rotate(${ n * 30} 50 50)`"
         >
-          <tspan :transform="`rotate(${-(i+1) * 30} 50 15)`">{{ num }}</tspan>
+          <tspan :transform="`rotate(${ -n * 30} 50 15)`">{{ n }}</tspan>
         </text>
       </g>
       
@@ -56,8 +56,6 @@ const hourDeg = ref(0)
 const minuteDeg = ref(0)
 const secondDeg = ref(0)
 let timer = null
-
-const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
 
 function updateClock() {
   const now = new Date()
