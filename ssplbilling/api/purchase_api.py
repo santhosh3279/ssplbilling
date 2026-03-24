@@ -207,6 +207,8 @@ def create_purchase_invoice(data=None, **kwargs):
         cost_center = item.get("cost_center") or data.get("cost_center") or ""
         if cost_center:
             row["cost_center"] = cost_center
+        if item.get("expense_account"):
+            row["expense_account"] = item["expense_account"]
         pi.append("items", row)
 
     if data.get("tax_template"):
@@ -341,12 +343,15 @@ def update_purchase_invoice(data=None, **kwargs):
     pi.additional_discount_percentage = float(data.get("discount_percentage", 0))
     pi.items = []
     for item in data["items"]:
-        pi.append("items", {
-            "item_code": item["item_code"], 
-            "qty": float(item["qty"]), 
-            "rate": float(item["rate"]), 
-            "warehouse": item.get("warehouse")
-        })
+        row = {
+            "item_code": item["item_code"],
+            "qty": float(item["qty"]),
+            "rate": float(item["rate"]),
+            "warehouse": item.get("warehouse"),
+        }
+        if item.get("expense_account"):
+            row["expense_account"] = item["expense_account"]
+        pi.append("items", row)
     pi.save()
     return {"invoice_name": pi.name, "grand_total": float(pi.grand_total)}
 

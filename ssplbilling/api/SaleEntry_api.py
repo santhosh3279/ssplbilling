@@ -214,6 +214,8 @@ def create_sales_invoice(data=None, **kwargs):
         cost_center = item.get("cost_center") or data.get("cost_center") or ""
         if cost_center:
             row["cost_center"] = cost_center
+        if item.get("income_account"):
+            row["income_account"] = item["income_account"]
         si.append("items", row)
 
     if data.get("tax_template"):
@@ -357,6 +359,8 @@ def update_sales_invoice(data=None, **kwargs):
         cost_center = item.get("cost_center") or data.get("cost_center") or ""
         if cost_center:
             row["cost_center"] = cost_center
+        if item.get("income_account"):
+            row["income_account"] = item["income_account"]
         si.append("items", row)
 
     if data.get("tax_template"):

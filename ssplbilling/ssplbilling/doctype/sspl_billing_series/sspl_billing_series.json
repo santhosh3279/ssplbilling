@@ -11,7 +11,8 @@
   "column_break_1",
   "price_list",
   "tax_template",
-  "income_account"
+  "income_account",
+  "expense_account"
  ],
  "fields": [
   {
@@ -50,6 +51,12 @@
    "fieldname": "income_account",
    "fieldtype": "Link",
    "label": "Income Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "expense_account",
+   "fieldtype": "Link",
+   "label": "Expense Account",
    "options": "Account"
   }
  ],

@@ -743,6 +743,7 @@ const priceList = ref('Standard Selling')
 const printScheme = ref('')
 const taxTemplate = ref('')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
+const incomeAccount = ref('')
 
 const availableTaxTemplates = ref([])
 const availableWarehouses = ref([])
@@ -768,7 +769,8 @@ function syncSeriesConfig(series) {
   if (cfg.price_list) priceList.value = cfg.price_list
   if (cfg.print_format) printScheme.value = cfg.print_format
   if (cfg.tax_template) taxTemplate.value = cfg.tax_template
-  
+  incomeAccount.value = cfg.income_account || ''
+
   // Only override if not set in localStorage
   if (!localStorage.getItem('wb-warehouse')) {
     if (cfg.warehouse) defaultWarehouse.value = cfg.warehouse
@@ -1728,6 +1730,7 @@ async function saveBill() {
       rate: i.rate * (1 - (i.discount || 0) / 100),
       warehouse: i.warehouse || defaultWarehouse.value,
       cost_center: costCenter.value || '',
+      income_account: incomeAccount.value || '',
     })),
     incentive_system: incentiveRows.value.map(r => ({
       employee: r.employee,

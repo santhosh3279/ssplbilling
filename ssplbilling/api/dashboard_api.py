@@ -151,6 +151,8 @@ def get_billing_settings():
 				"cash_account": r.cash_account or "",
 				"bank": r.bank or "",
 				"upi": r.upi or "",
+				"income_account": r.income_account or "",
+				"expense_account": r.expense_account or "",
 			}
 			for r in settings.billing_series
 		],
