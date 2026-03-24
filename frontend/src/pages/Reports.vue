@@ -16,37 +16,59 @@
             <p class="text-xs text-slate-400">Business reports and analytics</p>
           </div>
         </div>
-
-        <!-- Report buttons -->
-        <div class="flex items-center gap-2">
-          <button
-            class="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 active:scale-95 transition-all"
-            @click="openModal('invoice')"
-          >
-            📊 Sales Tax Register
-          </button>
-          <button
-            class="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 active:scale-95 transition-all"
-            @click="openModal('order')"
-          >
-            📋 Sales Order Tax Register
-          </button>
-          <button
-            class="flex items-center gap-2 rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 active:scale-95 transition-all"
-            @click="openModal('quotation')"
-          >
-            📄 Quotation Tax Register
-          </button>
-        </div>
       </div>
     </header>
 
-    <!-- Body placeholder -->
-    <div class="flex flex-1 items-center justify-center">
-      <div class="text-center text-slate-500">
-        <div class="mb-3 text-5xl">📊</div>
-        <p class="text-sm">Select a report from the top bar to get started.</p>
-      </div>
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar with Buttons -->
+      <aside class="w-80 border-r border-slate-700 bg-slate-800/30 p-6 space-y-4">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Available Reports</h3>
+        <div class="flex flex-col gap-3">
+          <button
+            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-violet-600/20 hover:border-violet-500/50 hover:text-white transition-all active:scale-[0.98]"
+            @click="openModal('invoice')"
+          >
+            <span class="text-xl">📊</span>
+            <div class="text-left">
+              <div class="font-semibold">Sales Tax Register</div>
+              <div class="text-xs text-slate-500">Submitted Sales Invoices</div>
+            </div>
+          </button>
+
+          <button
+            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-sky-600/20 hover:border-sky-500/50 hover:text-white transition-all active:scale-[0.98]"
+            @click="openModal('order')"
+          >
+            <span class="text-xl">📋</span>
+            <div class="text-left">
+              <div class="font-semibold">Sales Order Register</div>
+              <div class="text-xs text-slate-500">Submitted Sales Orders</div>
+            </div>
+          </button>
+
+          <button
+            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-700/50 hover:border-slate-500 hover:text-white transition-all active:scale-[0.98]"
+            @click="openModal('quotation')"
+          >
+            <span class="text-xl">📄</span>
+            <div class="text-left">
+              <div class="font-semibold">Quotation Register</div>
+              <div class="text-xs text-slate-500">All Quotations</div>
+            </div>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Body placeholder -->
+      <main class="flex-1 flex items-center justify-center p-12">
+        <div class="text-center text-slate-500 max-w-sm">
+          <div class="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-800 text-4xl shadow-inner border border-slate-700">
+            📈
+          </div>
+          <h2 class="text-xl font-bold text-slate-300 mb-2">Ready to analyze?</h2>
+          <p class="text-sm leading-relaxed">Select a report from the sidebar on the left to generate and download your data.</p>
+        </div>
+      </main>
     </div>
 
     <!-- ====== SHARED MODAL ====== -->
