@@ -16,6 +16,16 @@
           <tspan :transform="`rotate(${ -n * 30} 50 15)`">{{ n }}</tspan>
         </text>
       </g>
+
+      <!-- Brand/Logo Text -->
+      <text
+        x="50"
+        y="40"
+        text-anchor="middle"
+        class="text-[7px] font-sans font-black fill-slate-800 select-none tracking-widest"
+      >
+        CTR
+      </text>
       
       <!-- Minute markers (ticks) -->
       <line v-for="n in 60" :key="'m'+n" 
