@@ -224,7 +224,7 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 		fields=[
 			"name",
 			"transaction_date",
-			"customer",
+			"party_name",
 			"customer_name",
 			"net_total",
 			"total_taxes_and_charges",
@@ -266,7 +266,7 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 			{
 				"quotation_no": qt.name,
 				"date": str(qt.transaction_date),
-				"customer": qt.customer,
+				"customer": qt.party_name,
 				"customer_name": qt.customer_name,
 				"taxable_amount": float(qt.net_total or 0),
 				"cgst_rate": cgst_rate,
