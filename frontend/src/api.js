@@ -341,12 +341,12 @@ export async function fetchDashboardSettings() {
  * @param {boolean} [showUnpaid]
  * @returns {Promise<Array<{name,customer,customer_name,posting_date,grand_total,outstanding_amount,docstatus}>>}
  */
-export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "", showUnpaid = false) {
+export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "") {
   return frappeGet("ssplbilling.api.cashier_api.get_sales_invoices", {
     query,
     limit,
     ...(postingDate && { posting_date: postingDate }),
-    show_unpaid: showUnpaid
+    draft_only: true
   });
 }
 

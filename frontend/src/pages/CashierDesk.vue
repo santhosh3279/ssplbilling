@@ -606,7 +606,7 @@ async function checkDayOpening() {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, false)
+    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value)
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
