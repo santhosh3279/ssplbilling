@@ -22,7 +22,7 @@
         x="50"
         y="72"
         text-anchor="middle"
-        class="text-[18px] font-sans font-black fill-blue-600 select-none tracking-widest"
+        class="text-[13.5px] font-sans font-black fill-blue-600 select-none tracking-widest"
       >
         CTR
       </text>
