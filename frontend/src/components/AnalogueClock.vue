@@ -1,40 +1,50 @@
 <template>
-  <div class="relative flex items-center justify-center h-48 w-48 rounded-full border-4 border-slate-600 bg-slate-800 shadow-2xl">
+  <div class="relative flex items-center justify-center h-48 w-48 rounded-full border-4 border-slate-700 bg-[#F5F5DC] shadow-2xl overflow-hidden">
+    <!-- Subtle Inner Shadow Overlay -->
+    <div class="absolute inset-0 rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)] pointer-events-none"></div>
+
     <svg viewBox="0 0 100 100" class="h-full w-full">
-      <!-- Outer circle -->
-      <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700" />
+      <!-- Hour markers (Roman Numerals) -->
+      <g v-for="(num, i) in romanNumerals" :key="num">
+        <text
+          x="50"
+          y="18"
+          text-anchor="middle"
+          class="text-[8px] font-serif font-bold fill-black select-none"
+          :transform="`rotate(${ (i+1) * 30} 50 50)`"
+        >
+          <tspan :transform="`rotate(${-(i+1) * 30} 50 15)`">{{ num }}</tspan>
+        </text>
+      </g>
       
-      <!-- Hour markers -->
-      <line v-for="n in 12" :key="'h'+n" 
-        x1="50" y1="10" x2="50" y2="15" 
-        stroke="currentColor" stroke-width="2" 
-        class="text-slate-500"
-        :transform="`rotate(${n * 30} 50 50)`" 
+      <!-- Minute markers (ticks) -->
+      <line v-for="n in 60" :key="'m'+n" 
+        x1="50" y1="5" x2="50" y2="7" 
+        stroke="black" stroke-width="0.5" 
+        :transform="`rotate(${n * 6} 50 50)`" 
       />
 
       <!-- Hour hand -->
-      <line x1="50" y1="50" x2="50" y2="28" 
-        stroke="currentColor" stroke-width="4" stroke-linecap="round"
-        class="text-slate-300"
+      <line x1="50" y1="50" x2="50" y2="30" 
+        stroke="black" stroke-width="3" stroke-linecap="round"
         :transform="`rotate(${hourDeg} 50 50)`" 
       />
       
       <!-- Minute hand -->
-      <line x1="50" y1="50" x2="50" y2="20" 
-        stroke="currentColor" stroke-width="3" stroke-linecap="round"
-        class="text-slate-400"
+      <line x1="50" y1="50" x2="50" y2="15" 
+        stroke="black" stroke-width="2" stroke-linecap="round"
         :transform="`rotate(${minuteDeg} 50 50)`" 
       />
       
       <!-- Second hand -->
-      <line x1="50" y1="50" x2="50" y2="15" 
-        stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-        class="text-red-500"
+      <line x1="50" y1="50" x2="50" y2="10" 
+        stroke="#DC2626" stroke-width="1" stroke-linecap="round"
         :transform="`rotate(${secondDeg} 50 50)`" 
       />
 
       <!-- Center dot -->
-      <circle cx="50" cy="50" r="3" fill="currentColor" class="text-slate-300" />
+      <circle cx="50" cy="50" r="2.5" fill="black" />
+      <circle cx="50" cy="50" r="1" fill="#F5F5DC" />
     </svg>
   </div>
 </template>
@@ -46,6 +56,8 @@ const hourDeg = ref(0)
 const minuteDeg = ref(0)
 const secondDeg = ref(0)
 let timer = null
+
+const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
 
 function updateClock() {
   const now = new Date()
