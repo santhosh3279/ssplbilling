@@ -223,7 +223,7 @@ async function loadSettings() {
       frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
       frappeGet('frappe.client.get_list', {
         doctype: 'Print Template',
-        filters: JSON.stringify({ document_type: props.doctype }),
+        filters: JSON.stringify(props.doctype ? { document_type: props.doctype } : { document_type: ['is', 'not set'] }),
         fields: JSON.stringify(['name']),
         limit: 50,
       }),

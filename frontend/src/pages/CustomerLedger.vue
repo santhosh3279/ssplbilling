@@ -24,8 +24,19 @@
         <!-- Shortcut info -->
         <div class="flex items-center gap-4 text-[10px] text-slate-400">
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Ctrl+L</kbd> Search</span>
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Ctrl+P</kbd> Print</span>
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> {{ isSubWindow ? 'Close' : 'Back' }}</span>
         </div>
+
+        <!-- Print Button -->
+        <button
+          v-if="ledgerData"
+          @click="showPrintModal = true"
+          class="flex items-center gap-1.5 rounded border border-slate-600 bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-600 hover:text-slate-100"
+          title="Print Ledger (Ctrl+P)"
+        >
+          🖨 Print
+        </button>
 
         <!-- Zoom Controls -->
         <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden">
@@ -426,6 +437,14 @@
       @close="showStockLedgerWindow = false"
     />
 
+    <!-- PRINT MODAL -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="printKey"
+      :doctype="''"
+      @close="showPrintModal = false"
+    />
+
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
       ref="ledgerCustSearchModalRef"
@@ -457,6 +476,7 @@ import SalesEntry from './SalesEntry.vue'
 import StockLedger from './StockLedger.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import { searchItems } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 
@@ -607,6 +627,13 @@ function clearLedger() {
   ledgerData.value = null
   error.value = ''
 }
+
+// ─── Print ────────────────────────────────────────────────────────────────────
+const showPrintModal = ref(false)
+const printKey = computed(() => {
+  if (!selectedLedger.value) return ''
+  return `${selectedLedger.value.name}||${fromDate.value}||${toDate.value}||${selectedLedger.value.type || 'Account'}`
+})
 
 // ─── Zoom ─────────────────────────────────────────────────────────────────────
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
@@ -840,6 +867,12 @@ function onGlobalKeydown(e) {
   if (e.ctrlKey && e.key === 'i') {
     e.preventDefault()
     openItemSearch()
+    return
+  }
+
+  if (e.ctrlKey && e.key === 'p' && ledgerData.value) {
+    e.preventDefault()
+    showPrintModal.value = true
     return
   }
 
