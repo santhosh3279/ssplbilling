@@ -56,6 +56,17 @@
               <div class="text-xs text-slate-500">All Quotations</div>
             </div>
           </button>
+
+          <button
+            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-emerald-600/20 hover:border-emerald-500/50 hover:text-white transition-all active:scale-[0.98]"
+            @click="openModal('hsn')"
+          >
+            <span class="text-xl">📋</span>
+            <div class="text-left">
+              <div class="font-semibold">HSN Summary</div>
+              <div class="text-xs text-slate-500">Sales HSN-wise summary</div>
+            </div>
+          </button>
         </div>
       </aside>
 
@@ -163,7 +174,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
-import { getSalesTaxRegister, getSalesOrderTaxRegister, getSalesOrderSeries, getQuotationTaxRegister, getQuotationSeries } from '../api.js'
+import { getSalesTaxRegister, getSalesOrderTaxRegister, getSalesOrderSeries, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
@@ -241,6 +252,18 @@ const modalConfig = computed(() => {
       docLabel: 'Quotation No',
     }
   }
+  if (reportType.value === 'hsn') {
+    return {
+      title: 'HSN Summary',
+      subtitle: 'HSN-wise summary of submitted sales invoices',
+      seriesLabel: 'Invoice Series',
+      btnClass: 'bg-emerald-600 hover:bg-emerald-700',
+      sheetName: 'HSN Summary',
+      filePrefix: 'HSNSummary',
+      noDataMsg: 'No HSN data found for the selected criteria.',
+      docLabel: 'HSN Code',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -288,6 +311,8 @@ async function generateReport() {
       rows = await getSalesOrderTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'quotation') {
       rows = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+    } else if (reportType.value === 'hsn') {
+      rows = await getHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else {
       rows = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     }
@@ -297,7 +322,11 @@ async function generateReport() {
       return
     }
 
-    buildExcel(rows)
+    if (reportType.value === 'hsn') {
+      buildHSNExcel(rows)
+    } else {
+      buildExcel(rows)
+    }
     showModal.value = false
   } catch (e) {
     modalError.value = e.message || 'Failed to fetch report data.'
@@ -309,6 +338,48 @@ async function generateReport() {
 // ── Excel builder ─────────────────────────────────────────────────────────────
 function fmt(n) {
   return Number(Number(n || 0).toFixed(2))
+}
+
+function buildHSNExcel(rows) {
+  const headers = [
+    'HSN Code', 'Quantity', 'Taxable Value', 'CGST Amount', 'SGST Amount', 'IGST Amount', 'Total Tax', 'Total Value'
+  ]
+
+  const data = rows.map(r => [
+    r.hsn_code,
+    fmt(r.total_qty),
+    fmt(r.total_taxable_value),
+    fmt(r.total_cgst),
+    fmt(r.total_sgst),
+    fmt(r.total_igst),
+    fmt(r.total_tax),
+    fmt(r.total_value),
+  ])
+
+  const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
+  const totals = [
+    'TOTAL',
+    fmt(sum('total_qty')),
+    fmt(sum('total_taxable_value')),
+    fmt(sum('total_cgst')),
+    fmt(sum('total_sgst')),
+    fmt(sum('total_igst')),
+    fmt(sum('total_tax')),
+    fmt(sum('total_value')),
+  ]
+
+  const wb = utils.book_new()
+  const ws = utils.aoa_to_sheet([headers, ...data, totals])
+  ws['!cols'] = [
+    { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+  ]
+
+  utils.book_append_sheet(wb, ws, 'HSN Summary')
+
+  const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
+  const from = fromDate.value || 'all'
+  const to = toDate.value || 'all'
+  writeFile(wb, `HSNSummary_${series}_${from}_to_${to}.xlsx`)
 }
 
 function buildExcel(rows) {
