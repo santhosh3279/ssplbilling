@@ -32,8 +32,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
     show_unpaid = frappe.parse_json(show_unpaid)
 
     filters = [["status", "!=", "Cancelled"]]
-    if not show_unpaid:
-        filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
+    filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
     
     if naming_series:
         filters.append(["naming_series", "=", naming_series])
