@@ -84,6 +84,7 @@
             <h1 class="text-lg font-bold text-white">Dashboard</h1>
             <p class="text-xs text-slate-400">{{ today }}</p>
           </div>
+          <AnalogueClock />
         </div>
       </header>
 
@@ -201,6 +202,7 @@ import CustomerLedger from './CustomerLedger.vue'
 import StockLedger from './StockLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import GeneralSettings from '../components/GeneralSettings.vue'
+import AnalogueClock from '../components/AnalogueClock.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
