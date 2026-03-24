@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex items-center justify-center h-24 w-24 rounded-full border-2 border-slate-600 bg-slate-800 shadow-2xl">
+  <div class="relative flex items-center justify-center h-48 w-48 rounded-full border-4 border-slate-600 bg-slate-800 shadow-2xl">
     <svg viewBox="0 0 100 100" class="h-full w-full">
       <!-- Outer circle -->
       <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700" />
