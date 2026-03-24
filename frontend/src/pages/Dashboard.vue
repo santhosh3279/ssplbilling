@@ -110,7 +110,7 @@
 
         <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
           <span class="flex items-center gap-1.5">
-            Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F9</kbd>
+            Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F10</kbd>
             to quick open
           </span>
           <span class="text-slate-700">|</span>
@@ -233,6 +233,7 @@ const today = new Date().toLocaleDateString('en-IN', {
 // ==================== TILES ====================
 const tiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
+  { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-slate-600' },
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
@@ -245,7 +246,7 @@ const tiles = [
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'reports']
+const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'reports']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {

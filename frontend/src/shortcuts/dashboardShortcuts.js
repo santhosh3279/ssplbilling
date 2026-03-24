@@ -14,6 +14,7 @@ export const dashboardShortcuts = (handlers) => ({
   'F7': () => handlers.openModule('barcode-print'),
   'F8': () => handlers.openModule('journal-contra'),
   'F9': () => handlers.openModule('material-transfer'),
+  'F10': () => handlers.openModule('quotation'),
   
   'CTRL+L': () => handlers.openCustomerSearch?.(),
   'CTRL+I': () => handlers.openItemSearch?.(),

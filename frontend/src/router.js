@@ -3,6 +3,7 @@ import { session } from './session'
 import Login from './pages/Login.vue'
 import Dashboard from './pages/Dashboard.vue'
 import SalesEntry from './pages/SalesEntry.vue'
+import QuotationEntry from './pages/QuotationEntry.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
 import BarcodePrintPage from './pages/BarcodePrintPage.vue'
@@ -35,6 +36,11 @@ const routes = [
     path: '/sales',
     name: 'SalesEntry',
     component: SalesEntry,
+  },
+  {
+    path: '/quotation',
+    name: 'QuotationEntry',
+    component: QuotationEntry,
   },
   {
     path: '/purchase',

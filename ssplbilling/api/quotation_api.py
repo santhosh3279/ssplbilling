@@ -68,6 +68,50 @@ def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
 
 
 @frappe.whitelist()
+def search_items(query, price_list="Standard Selling"):
+	"""Search items by code, name, or barcode. Returns list of matches."""
+	if not query or len(query) < 1:
+		return []
+
+	barcode_item = frappe.db.get_value("Item Barcode", {"barcode": query}, "parent")
+	if barcode_item:
+		return [get_item_details(barcode_item, price_list)]
+
+	items = frappe.get_all(
+		"Item",
+		or_filters={
+			"item_code": ["like", f"%{query}%"],
+			"item_name": ["like", f"%{query}%"],
+		},
+		filters={"disabled": 0, "is_sales_item": 1},
+		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate"],
+		limit=20,
+		order_by="item_name asc",
+	)
+
+	wh = frappe.db.get_single_value("Stock Settings", "default_warehouse") or ""
+	for item in items:
+		item["rate"] = float(
+			frappe.db.get_value(
+				"Item Price",
+				{"item_code": item["item_code"], "price_list": price_list, "selling": 1},
+				"price_list_rate",
+			)
+			or item.get("standard_rate")
+			or 0
+		)
+		item["stock_qty"] = float(
+			frappe.db.get_value("Bin", {"item_code": item["item_code"], "warehouse": wh}, "actual_qty")
+			or 0
+		) if wh else 0
+		item["warehouse"] = wh
+		item["found"] = True
+		item["tax_rate"] = _get_item_tax_rate(item["item_code"])
+
+	return items
+
+
+@frappe.whitelist()
 def get_item_insight(item_code, price_list="Standard Selling", warehouse=None):
 	"""Return stock across all warehouses + selling price lists + previous quotations."""
 	if not item_code or not frappe.db.exists("Item", item_code):
