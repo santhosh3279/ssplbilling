@@ -141,6 +141,15 @@
               </div>
             </div>
 
+            <div class="flex justify-start">
+              <button
+                class="text-xs font-medium text-violet-400 hover:text-violet-300 transition-colors"
+                @click="setLastMonth"
+              >
+                📅 Set Last Month
+              </button>
+            </div>
+
             <!-- Error -->
             <p v-if="modalError" class="text-xs text-red-400">{{ modalError }}</p>
           </div>
@@ -208,6 +217,23 @@ function defaultDates() {
     from: `${fy}-04-01`,
     to: today.toISOString().slice(0, 10),
   }
+}
+
+function setLastMonth() {
+  const today = new Date()
+  const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+  const lastDayPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0)
+
+  // Use local timezone format (YYYY-MM-DD)
+  const fmt = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  fromDate.value = fmt(firstDayPrevMonth)
+  toDate.value = fmt(lastDayPrevMonth)
 }
 
 // ── Modal state ───────────────────────────────────────────────────────────────
