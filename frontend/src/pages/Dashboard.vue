@@ -84,12 +84,16 @@
             <h1 class="text-lg font-bold text-white">Dashboard</h1>
             <p class="text-xs text-slate-400">{{ today }}</p>
           </div>
-          <AnalogueClock />
         </div>
       </header>
 
       <!-- Tiles -->
       <div class="mx-auto max-w-4xl px-6 py-8">
+        <!-- Clock Container -->
+        <div class="flex justify-end mb-6">
+           <AnalogueClock />
+        </div>
+
         <div class="grid grid-cols-3 gap-4">
           <div
             v-for="tile in tiles"
