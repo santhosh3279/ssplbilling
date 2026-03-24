@@ -27,24 +27,25 @@ def _get_item_tax_rate(item_code):
     return float(sum(d.tax_rate or 0 for d in details)) / 2
 
 @frappe.whitelist()
-def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False, naming_series=None):
-    """List Draft (and optionally Unpaid Submitted) Sales Invoices for cashiering."""
-    show_unpaid = frappe.parse_json(show_unpaid)
+def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False, naming_series=None, draft_only=False):
+    """List Sales Invoices for the sidebar bill panel.
 
-    filters = [["status", "!=", "Cancelled"]]
-    filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
-    
+    draft_only=True  → only Draft invoices (docstatus=0).
+    draft_only=False → all non-cancelled invoices for the date (paid, unpaid, draft).
+    """
+    draft_only = frappe.parse_json(draft_only)
+
+    filters = [["docstatus", "!=", 2], ["posting_date", "=", posting_date or frappe.utils.today()]]
+
+    if draft_only:
+        filters.append(["docstatus", "=", 0])
+
     if naming_series:
         filters.append(["naming_series", "=", naming_series])
-    
-    if show_unpaid:
-        filters.append(["docstatus", "=", 1])
-    else:
-        filters.append(["docstatus", "=", 0])
-    
+
     if query:
         filters.append(["customer_name", "like", f"%{query}%"])
-    
+
     invoices = frappe.get_all(
         "Sales Invoice",
         filters=filters,
@@ -52,18 +53,14 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
         limit=int(limit),
         order_by="modified desc",
     )
-    
-    # Filter out submitted invoices that are fully paid if show_unpaid is True
+
     result = []
     for inv in invoices:
-        if inv.docstatus == 0 or (inv.docstatus == 1 and float(inv.outstanding_amount or 0) > 0.01):
-            inv["grand_total"] = float(inv["grand_total"] or 0)
-            inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
-            result.append(inv)
-            
+        inv["grand_total"] = float(inv["grand_total"] or 0)
+        inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
+        result.append(inv)
 
-        
-    return result[:int(limit)]
+    return result
 
 @frappe.whitelist()
 def get_sales_invoice(invoice_name):

@@ -33,12 +33,12 @@
             <option value="">All Series</option>
             <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
           </select>
-          <button 
-            @click="showSubmitted = !showSubmitted"
+          <button
+            @click="draftOnly = !draftOnly"
             class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
-            :class="showSubmitted ? 'bg-blue-900/40 border-blue-500 text-blue-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
+            :class="draftOnly ? 'bg-amber-900/40 border-amber-500 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
           >
-            {{ showSubmitted ? 'Showing All' : 'Drafts Only' }}
+            {{ draftOnly ? 'Drafts Only' : 'All Bills' }}
           </button>
         </div>
 
@@ -1386,7 +1386,7 @@ function exportItems() {
 const sidebarDate = ref(getTodayIST())
 const sidebarSearch = ref('')
 const sidebarSeries = ref('')
-const showSubmitted = ref(false)
+const draftOnly = ref(false)
 const sidebarBills = ref([])
 const sidebarLoading = ref(false)
 
@@ -1395,10 +1395,10 @@ async function fetchSidebarBills() {
   try {
     sidebarBills.value = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoices', {
       query: sidebarSearch.value,
-      limit: showSubmitted.value ? 100 : 50,
+      limit: 100,
       posting_date: sidebarDate.value,
       naming_series: sidebarSeries.value || '',
-      show_unpaid: showSubmitted.value
+      draft_only: draftOnly.value
     })
   } catch (e) {
     sidebarBills.value = []
@@ -1412,7 +1412,7 @@ function changeSidebarDate(days) {
   sidebarDate.value = d.toISOString().split('T')[0]
 }
 
-watch([sidebarDate, sidebarSeries, showSubmitted], fetchSidebarBills)
+watch([sidebarDate, sidebarSeries, draftOnly], fetchSidebarBills)
 
 let sidebarSearchTimeout = null
 watch(sidebarSearch, () => {
