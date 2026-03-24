@@ -1,7 +1,7 @@
 <template>
-  <div class="relative flex items-center justify-center h-24 w-24 rounded-full border-2 border-slate-700 bg-[#F5F5DC] shadow-xl overflow-hidden">
+  <div class="relative flex items-center justify-center h-48 w-48 rounded-full border-4 border-slate-700 bg-[#F5F5DC] shadow-2xl overflow-hidden">
     <!-- Subtle Inner Shadow Overlay -->
-    <div class="absolute inset-0 rounded-full shadow-[inset_0_1px_5px_rgba(0,0,0,0.2)] pointer-events-none"></div>
+    <div class="absolute inset-0 rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)] pointer-events-none"></div>
 
     <svg viewBox="0 0 100 100" class="h-full w-full">
       <!-- Hour markers (Standard Numbers) -->
@@ -10,7 +10,7 @@
           x="50"
           y="18"
           text-anchor="middle"
-          class="text-[10px] font-sans font-bold fill-black select-none"
+          class="text-[12px] font-sans font-bold fill-black select-none"
           :transform="`rotate(${ n * 30} 50 50)`"
         >
           <tspan :transform="`rotate(${ -n * 30} 50 15)`">{{ n }}</tspan>
@@ -22,7 +22,7 @@
         x="50"
         y="72"
         text-anchor="middle"
-        class="text-[12px] font-sans font-black fill-blue-600 select-none tracking-widest"
+        class="text-[18px] font-sans font-black fill-blue-600 select-none tracking-widest"
       >
         CTR
       </text>
