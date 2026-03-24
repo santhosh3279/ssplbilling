@@ -36,17 +36,6 @@
           </button>
 
           <button
-            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-sky-600/20 hover:border-sky-500/50 hover:text-white transition-all active:scale-[0.98]"
-            @click="openModal('order')"
-          >
-            <span class="text-xl">📋</span>
-            <div class="text-left">
-              <div class="font-semibold">Sales Order Register</div>
-              <div class="text-xs text-slate-500">Submitted Sales Orders</div>
-            </div>
-          </button>
-
-          <button
             class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-700/50 hover:border-slate-500 hover:text-white transition-all active:scale-[0.98]"
             @click="openModal('quotation')"
           >
@@ -185,14 +174,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
-import { getSalesTaxRegister, getSalesOrderTaxRegister, getSalesOrderSeries, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport } from '../api.js'
+import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
 
 // ── Series data ───────────────────────────────────────────────────────────────
 const invoiceSeriesList = ref([])
-const orderSeriesList = ref([])
 const quotationSeriesList = ref([])
 
 onMounted(async () => {
@@ -202,13 +190,6 @@ onMounted(async () => {
     invoiceSeriesList.value = d.allowed_series || []
   } catch {
     invoiceSeriesList.value = []
-  }
-
-  // Sales Order series (from doctype meta)
-  try {
-    orderSeriesList.value = await getSalesOrderSeries() || []
-  } catch {
-    orderSeriesList.value = []
   }
 
   // Quotation series (from doctype meta)
@@ -239,18 +220,6 @@ const generating = ref(false)
 const modalError = ref('')
 
 const modalConfig = computed(() => {
-  if (reportType.value === 'order') {
-    return {
-      title: 'Sales Order Tax Register',
-      subtitle: 'GST-wise summary of submitted sales orders',
-      seriesLabel: 'Order Series',
-      btnClass: 'bg-sky-600 hover:bg-sky-700',
-      sheetName: 'SO Tax Register',
-      filePrefix: 'SOTaxRegister',
-      noDataMsg: 'No submitted sales orders found for the selected criteria.',
-      docLabel: 'Order No',
-    }
-  }
   if (reportType.value === 'quotation') {
     return {
       title: 'Quotation Tax Register',
@@ -300,7 +269,6 @@ const modalConfig = computed(() => {
 })
 
 const currentSeriesList = computed(() => {
-  if (reportType.value === 'order') return orderSeriesList.value
   if (reportType.value === 'quotation' || reportType.value === 'quotation_hsn') return quotationSeriesList.value
   return invoiceSeriesList.value
 })
@@ -309,8 +277,7 @@ function openModal(type) {
   reportType.value = type
   modalError.value = ''
   let list = []
-  if (type === 'order') list = orderSeriesList.value
-  else if (type === 'quotation' || type === 'quotation_hsn') list = quotationSeriesList.value
+  if (type === 'quotation' || type === 'quotation_hsn') list = quotationSeriesList.value
   else list = invoiceSeriesList.value
 
   selectedSeries.value = list.length ? list[0] : ''
@@ -330,9 +297,7 @@ async function generateReport() {
   generating.value = true
   try {
     let rows = []
-    if (reportType.value === 'order') {
-      rows = await getSalesOrderTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
-    } else if (reportType.value === 'quotation') {
+    if (reportType.value === 'quotation') {
       rows = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'hsn') {
       rows = await getHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)

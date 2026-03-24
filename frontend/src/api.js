@@ -637,24 +637,6 @@ export async function getSalesTaxRegister(series, fromDate, toDate) {
 }
 
 /**
- * Fetch Sales Tax Register rows for Sales Orders.
- */
-export async function getSalesOrderTaxRegister(series, fromDate, toDate) {
-  return frappeGet("ssplbilling.api.reports_api.get_sales_order_tax_register", {
-    series,
-    from_date: fromDate,
-    to_date: toDate,
-  });
-}
-
-/**
- * Fetch naming series options for Sales Order doctype.
- */
-export async function getSalesOrderSeries() {
-  return frappeGet("ssplbilling.api.reports_api.get_sales_order_series", {});
-}
-
-/**
  * Fetch naming series options for Quotation doctype.
  */
 export async function getQuotationSeries() {
