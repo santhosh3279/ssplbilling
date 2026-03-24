@@ -67,6 +67,17 @@
               <div class="text-xs text-slate-500">Sales HSN-wise summary</div>
             </div>
           </button>
+
+          <button
+            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-teal-600/20 hover:border-teal-500/50 hover:text-white transition-all active:scale-[0.98]"
+            @click="openModal('quotation_hsn')"
+          >
+            <span class="text-xl">📊</span>
+            <div class="text-left">
+              <div class="font-semibold">Quotation HSN Summary</div>
+              <div class="text-xs text-slate-500">Quotation HSN-wise summary</div>
+            </div>
+          </button>
         </div>
       </aside>
 
@@ -174,7 +185,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
-import { getSalesTaxRegister, getSalesOrderTaxRegister, getSalesOrderSeries, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport } from '../api.js'
+import { getSalesTaxRegister, getSalesOrderTaxRegister, getSalesOrderSeries, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
@@ -264,6 +275,18 @@ const modalConfig = computed(() => {
       docLabel: 'HSN Code',
     }
   }
+  if (reportType.value === 'quotation_hsn') {
+    return {
+      title: 'Quotation HSN Summary',
+      subtitle: 'HSN-wise summary of quotations (Draft & Submitted)',
+      seriesLabel: 'Quotation Series',
+      btnClass: 'bg-teal-600 hover:bg-teal-700',
+      sheetName: 'Quotation HSN Summary',
+      filePrefix: 'QuotationHSNSummary',
+      noDataMsg: 'No HSN data found for the selected criteria.',
+      docLabel: 'HSN Code',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -278,7 +301,7 @@ const modalConfig = computed(() => {
 
 const currentSeriesList = computed(() => {
   if (reportType.value === 'order') return orderSeriesList.value
-  if (reportType.value === 'quotation') return quotationSeriesList.value
+  if (reportType.value === 'quotation' || reportType.value === 'quotation_hsn') return quotationSeriesList.value
   return invoiceSeriesList.value
 })
 
@@ -287,7 +310,7 @@ function openModal(type) {
   modalError.value = ''
   let list = []
   if (type === 'order') list = orderSeriesList.value
-  else if (type === 'quotation') list = quotationSeriesList.value
+  else if (type === 'quotation' || type === 'quotation_hsn') list = quotationSeriesList.value
   else list = invoiceSeriesList.value
 
   selectedSeries.value = list.length ? list[0] : ''
@@ -313,6 +336,8 @@ async function generateReport() {
       rows = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'hsn') {
       rows = await getHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+    } else if (reportType.value === 'quotation_hsn') {
+      rows = await getQuotationHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else {
       rows = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     }
@@ -322,7 +347,7 @@ async function generateReport() {
       return
     }
 
-    if (reportType.value === 'hsn') {
+    if (reportType.value === 'hsn' || reportType.value === 'quotation_hsn') {
       buildHSNExcel(rows)
     } else {
       buildExcel(rows)
@@ -374,12 +399,12 @@ function buildHSNExcel(rows) {
     { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
   ]
 
-  utils.book_append_sheet(wb, ws, 'HSN Summary')
+  utils.book_append_sheet(wb, ws, modalConfig.value.sheetName)
 
   const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
   const from = fromDate.value || 'all'
   const to = toDate.value || 'all'
-  writeFile(wb, `HSNSummary_${series}_${from}_to_${to}.xlsx`)
+  writeFile(wb, `${modalConfig.value.filePrefix}_${series}_${from}_to_${to}.xlsx`)
 }
 
 function buildExcel(rows) {

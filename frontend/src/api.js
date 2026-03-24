@@ -682,3 +682,14 @@ export async function getHsnSummaryReport(series, fromDate, toDate) {
     to_date: toDate,
   });
 }
+
+/**
+ * Fetch HSN Summary Report for Quotations.
+ */
+export async function getQuotationHsnSummaryReport(series, fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_quotation_hsn_summary_report", {
+    series,
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}

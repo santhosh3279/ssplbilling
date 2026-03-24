@@ -370,3 +370,57 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 		result.append(r)
 
 	return result
+
+
+@frappe.whitelist()
+def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
+	"""Return HSN Summary Report for Quotations for the given naming series and date range.
+	Includes both Draft and Submitted quotations. Group by HSN code.
+	"""
+	query_filters = [series]
+	date_condition = ""
+	if from_date:
+		date_condition += " AND qt.transaction_date >= %s"
+		query_filters.append(from_date)
+	if to_date:
+		date_condition += " AND qt.transaction_date <= %s"
+		query_filters.append(to_date)
+
+	rows = frappe.db.sql(f"""
+		SELECT 
+			it.gst_hsn_code as hsn_code,
+			SUM(it.qty) as total_qty,
+			SUM(it.taxable_value) as total_taxable_value,
+			SUM(it.cgst_amount) as total_cgst,
+			SUM(it.sgst_amount) as total_sgst,
+			SUM(it.igst_amount) as total_igst
+		FROM 
+			`tabQuotation` qt
+		JOIN 
+			`tabQuotation Item` it ON it.parent = qt.name
+		WHERE 
+			qt.naming_series = %s 
+			AND qt.docstatus IN (0, 1)
+			{date_condition}
+		GROUP BY 
+			it.gst_hsn_code
+	""", tuple(query_filters), as_dict=1)
+	
+	result = []
+	for row in rows:
+		r = dict(row)
+		if not r.get("hsn_code"):
+			r["hsn_code"] = "N/A"
+		
+		r["total_tax"] = float(r.get("total_cgst") or 0) + float(r.get("total_sgst") or 0) + float(r.get("total_igst") or 0)
+		r["total_value"] = float(r.get("total_taxable_value") or 0) + r["total_tax"]
+		
+		r["total_qty"] = float(r.get("total_qty") or 0)
+		r["total_taxable_value"] = float(r.get("total_taxable_value") or 0)
+		r["total_cgst"] = float(r.get("total_cgst") or 0)
+		r["total_sgst"] = float(r.get("total_sgst") or 0)
+		r["total_igst"] = float(r.get("total_igst") or 0)
+		
+		result.append(r)
+
+	return result
