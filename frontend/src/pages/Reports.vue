@@ -12,7 +12,7 @@
             ← Back
           </button>
           <div>
-            <h1 class="text-lg font-bold text-white uppercase tracking-wider">TAX REPORT</h1>
+            <h1 class="text-lg font-bold text-white uppercase tracking-wider">REPORT</h1>
             <p class="text-xs text-slate-400">Business reports and analytics</p>
           </div>
         </div>
