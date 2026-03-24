@@ -653,3 +653,21 @@ export async function getSalesOrderTaxRegister(series, fromDate, toDate) {
 export async function getSalesOrderSeries() {
   return frappeGet("ssplbilling.api.reports_api.get_sales_order_series", {});
 }
+
+/**
+ * Fetch naming series options for Quotation doctype.
+ */
+export async function getQuotationSeries() {
+  return frappeGet("ssplbilling.api.reports_api.get_quotation_series", {});
+}
+
+/**
+ * Fetch Quotation Tax Register data.
+ */
+export async function getQuotationTaxRegister(series, fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_quotation_tax_register", {
+    series,
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}

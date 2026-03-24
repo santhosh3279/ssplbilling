@@ -31,6 +31,12 @@
           >
             📋 Sales Order Tax Register
           </button>
+          <button
+            class="flex items-center gap-2 rounded-lg bg-slate-600 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 active:scale-95 transition-all"
+            @click="openModal('quotation')"
+          >
+            📄 Quotation Tax Register
+          </button>
         </div>
       </div>
     </header>
@@ -135,7 +141,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
-import { getSalesTaxRegister, getSalesOrderTaxRegister, getSalesOrderSeries } from '../api.js'
+import { getSalesTaxRegister, getSalesOrderTaxRegister, getSalesOrderSeries, getQuotationTaxRegister, getQuotationSeries } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
@@ -143,6 +149,7 @@ const router = useRouter()
 // ── Series data ───────────────────────────────────────────────────────────────
 const invoiceSeriesList = ref([])
 const orderSeriesList = ref([])
+const quotationSeriesList = ref([])
 
 onMounted(async () => {
   // Invoice series (from billing settings)
@@ -159,6 +166,13 @@ onMounted(async () => {
   } catch {
     orderSeriesList.value = []
   }
+
+  // Quotation series (from doctype meta)
+  try {
+    quotationSeriesList.value = await getQuotationSeries() || []
+  } catch {
+    quotationSeriesList.value = []
+  }
 })
 
 // ── Date defaults (current FY) ────────────────────────────────────────────────
@@ -173,7 +187,7 @@ function defaultDates() {
 
 // ── Modal state ───────────────────────────────────────────────────────────────
 const showModal = ref(false)
-const reportType = ref('invoice') // 'invoice' | 'order'
+const reportType = ref('invoice') // 'invoice' | 'order' | 'quotation'
 const selectedSeries = ref('')
 const fromDate = ref('')
 const toDate = ref('')
@@ -193,6 +207,18 @@ const modalConfig = computed(() => {
       docLabel: 'Order No',
     }
   }
+  if (reportType.value === 'quotation') {
+    return {
+      title: 'Quotation Tax Register',
+      subtitle: 'GST-wise summary of quotations (Draft & Submitted)',
+      seriesLabel: 'Quotation Series',
+      btnClass: 'bg-slate-600 hover:bg-slate-700',
+      sheetName: 'Quotation Tax Register',
+      filePrefix: 'QuotationTaxRegister',
+      noDataMsg: 'No quotations found for the selected criteria.',
+      docLabel: 'Quotation No',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -205,14 +231,20 @@ const modalConfig = computed(() => {
   }
 })
 
-const currentSeriesList = computed(() =>
-  reportType.value === 'order' ? orderSeriesList.value : invoiceSeriesList.value
-)
+const currentSeriesList = computed(() => {
+  if (reportType.value === 'order') return orderSeriesList.value
+  if (reportType.value === 'quotation') return quotationSeriesList.value
+  return invoiceSeriesList.value
+})
 
 function openModal(type) {
   reportType.value = type
   modalError.value = ''
-  const list = type === 'order' ? orderSeriesList.value : invoiceSeriesList.value
+  let list = []
+  if (type === 'order') list = orderSeriesList.value
+  else if (type === 'quotation') list = quotationSeriesList.value
+  else list = invoiceSeriesList.value
+
   selectedSeries.value = list.length ? list[0] : ''
   const d = defaultDates()
   fromDate.value = d.from
@@ -229,9 +261,14 @@ async function generateReport() {
   }
   generating.value = true
   try {
-    const rows = reportType.value === 'order'
-      ? await getSalesOrderTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
-      : await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+    let rows = []
+    if (reportType.value === 'order') {
+      rows = await getSalesOrderTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+    } else if (reportType.value === 'quotation') {
+      rows = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+    } else {
+      rows = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+    }
 
     if (!rows || rows.length === 0) {
       modalError.value = modalConfig.value.noDataMsg
@@ -254,7 +291,7 @@ function fmt(n) {
 
 function buildExcel(rows) {
   const docLabel = modalConfig.value.docLabel
-  const isOrder = reportType.value === 'order'
+  const rType = reportType.value
 
   const headers = [
     docLabel, 'Date', 'Customer Code', 'Customer Name',
@@ -266,7 +303,7 @@ function buildExcel(rows) {
   ]
 
   const data = rows.map(r => [
-    isOrder ? r.order_no : r.invoice_no,
+    rType === 'order' ? r.order_no : (rType === 'quotation' ? r.quotation_no : r.invoice_no),
     r.date,
     r.customer,
     r.customer_name,
