@@ -20,9 +20,9 @@
       <!-- Brand/Logo Text -->
       <text
         x="50"
-        y="40"
+        y="42"
         text-anchor="middle"
-        class="text-[7px] font-sans font-black fill-slate-800 select-none tracking-widest"
+        class="text-[14px] font-sans font-black fill-slate-800 select-none tracking-widest"
       >
         CTR
       </text>
