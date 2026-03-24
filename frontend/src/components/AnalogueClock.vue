@@ -20,7 +20,7 @@
       <!-- Brand/Logo Text -->
       <text
         x="50"
-        y="42"
+        y="70"
         text-anchor="middle"
         class="text-[14px] font-sans font-black fill-blue-600 select-none tracking-widest"
       >
