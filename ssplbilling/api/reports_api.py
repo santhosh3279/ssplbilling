@@ -315,3 +315,48 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 		result.append(r)
 
 	return result
+
+
+@frappe.whitelist()
+def get_item_summary_report(series, from_date=None, to_date=None):
+	"""Return Item Sales Summary Report for Sales Invoices for the given naming series and date range.
+	Group by Item Code.
+	"""
+	query_filters = [series]
+	date_condition = ""
+	if from_date:
+		date_condition += " AND inv.posting_date >= %s"
+		query_filters.append(from_date)
+	if to_date:
+		date_condition += " AND inv.posting_date <= %s"
+		query_filters.append(to_date)
+
+	rows = frappe.db.sql(f"""
+		SELECT 
+			it.item_code,
+			it.item_name,
+			it.stock_uom,
+			SUM(it.qty) as total_qty,
+			SUM(it.taxable_value) as total_taxable_value
+		FROM 
+			`tabSales Invoice` inv
+		JOIN 
+			`tabSales Invoice Item` it ON it.parent = inv.name
+		WHERE 
+			inv.naming_series = %s 
+			AND inv.docstatus = 1
+			{date_condition}
+		GROUP BY 
+			it.item_code, it.item_name, it.stock_uom
+		ORDER BY 
+			it.item_name ASC
+	""", tuple(query_filters), as_dict=1)
+	
+	result = []
+	for row in rows:
+		r = dict(row)
+		r["total_qty"] = float(r.get("total_qty") or 0)
+		r["total_taxable_value"] = float(r.get("total_taxable_value") or 0)
+		result.append(r)
+
+	return result

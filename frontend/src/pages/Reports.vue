@@ -67,6 +67,17 @@
               <div class="text-xs text-slate-500">Quotation HSN-wise summary</div>
             </div>
           </button>
+
+          <button
+            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-amber-600/20 hover:border-amber-500/50 hover:text-white transition-all active:scale-[0.98]"
+            @click="openModal('item_summary')"
+          >
+            <span class="text-xl">📦</span>
+            <div class="text-left">
+              <div class="font-semibold">Item Sales Summary</div>
+              <div class="text-xs text-slate-500">Total items sold by code</div>
+            </div>
+          </button>
         </div>
       </aside>
 
@@ -183,7 +194,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
-import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport } from '../api.js'
+import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
@@ -282,6 +293,18 @@ const modalConfig = computed(() => {
       docLabel: 'HSN Code',
     }
   }
+  if (reportType.value === 'item_summary') {
+    return {
+      title: 'Item Sales Summary',
+      subtitle: 'Consolidated sales by item code',
+      seriesLabel: 'Invoice Series',
+      btnClass: 'bg-amber-600 hover:bg-amber-700',
+      sheetName: 'Item Sales Summary',
+      filePrefix: 'ItemSalesSummary',
+      noDataMsg: 'No sales data found for the selected criteria.',
+      docLabel: 'Item Code',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -329,6 +352,8 @@ async function generateReport() {
       rows = await getHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'quotation_hsn') {
       rows = await getQuotationHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+    } else if (reportType.value === 'item_summary') {
+      rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else {
       rows = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     }
@@ -340,6 +365,8 @@ async function generateReport() {
 
     if (reportType.value === 'hsn' || reportType.value === 'quotation_hsn') {
       buildHSNExcel(rows)
+    } else if (reportType.value === 'item_summary') {
+      buildItemSummaryExcel(rows)
     } else {
       buildExcel(rows)
     }
@@ -354,6 +381,40 @@ async function generateReport() {
 // ── Excel builder ─────────────────────────────────────────────────────────────
 function fmt(n) {
   return Number(Number(n || 0).toFixed(2))
+}
+
+function buildItemSummaryExcel(rows) {
+  const headers = [
+    'Item Code', 'Item Name', 'UOM', 'Total Quantity', 'Total Taxable Value'
+  ]
+
+  const data = rows.map(r => [
+    r.item_code,
+    r.item_name,
+    r.stock_uom,
+    fmt(r.total_qty),
+    fmt(r.total_taxable_value),
+  ])
+
+  const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
+  const totals = [
+    'TOTAL', '', '',
+    fmt(sum('total_qty')),
+    fmt(sum('total_taxable_value')),
+  ]
+
+  const wb = utils.book_new()
+  const ws = utils.aoa_to_sheet([headers, ...data, totals])
+  ws['!cols'] = [
+    { wch: 20 }, { wch: 35 }, { wch: 10 }, { wch: 15 }, { wch: 20 }
+  ]
+
+  utils.book_append_sheet(wb, ws, 'Item Summary')
+
+  const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
+  const from = fromDate.value || 'all'
+  const to = toDate.value || 'all'
+  writeFile(wb, `ItemSalesSummary_${series}_${from}_to_${to}.xlsx`)
 }
 
 function buildHSNExcel(rows) {
