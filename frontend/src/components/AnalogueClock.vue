@@ -4,16 +4,15 @@
     <div class="absolute inset-0 rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)] pointer-events-none"></div>
 
     <svg viewBox="0 0 100 100" class="h-full w-full">
-      <!-- Hour markers (Standard Numbers) -->
+      <!-- Hour markers (Standard Numbers, Horizontally Aligned) -->
       <g v-for="n in 12" :key="n">
         <text
-          x="50"
-          y="18"
+          :x="50 + 35 * Math.sin(n * 30 * Math.PI / 180)"
+          :y="50 - 35 * Math.cos(n * 30 * Math.PI / 180) + 3.5"
           text-anchor="middle"
           class="text-[12px] font-sans font-bold fill-black select-none"
-          :transform="`rotate(${ n * 30} 50 50)`"
         >
-          <tspan :transform="`rotate(${ -n * 30} 50 15)`">{{ n }}</tspan>
+          {{ n }}
         </text>
       </g>
 
