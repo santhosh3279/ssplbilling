@@ -52,19 +52,6 @@
               </button>
             </div>
 
-            <!-- Type Toggle -->
-            <div class="flex items-center gap-1 rounded-xl bg-slate-800 p-1 border border-slate-700">
-              <button
-                @click="showUnpaid = false; loadInvoices()"
-                class="flex-1 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all"
-                :class="!showUnpaid ? 'bg-slate-700 text-blue-400 shadow-lg' : 'text-slate-500 hover:text-slate-400'"
-              >Drafts</button>
-              <button
-                @click="showUnpaid = true; loadInvoices()"
-                class="flex-1 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all"
-                :class="showUnpaid ? 'bg-slate-700 text-rose-400 shadow-lg' : 'text-slate-500 hover:text-slate-400'"
-              >Unpaid</button>
-            </div>
           </div>
 
           <!-- Search Bar -->
@@ -486,7 +473,7 @@ function getTodayIST() {
 // Define all refs first to avoid ReferenceErrors in functions or watchers
 const filterDate = ref(getTodayIST())
 const searchQuery = ref('')
-const showUnpaid = ref(false)
+
 const showCardRefModal = ref(false)
 const cardRefNo = ref('')
 const showOpeningRequiredModal = ref(false)
@@ -619,7 +606,7 @@ async function checkDayOpening() {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, showUnpaid.value)
+    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, false)
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
@@ -654,10 +641,6 @@ function adjustDate(days) {
   loadInvoices()
 }
 
-function toggleUnpaid() {
-  showUnpaid.value = !showUnpaid.value
-  loadInvoices()
-}
 
 let searchTimeout = null
 function debouncedSearch() {
