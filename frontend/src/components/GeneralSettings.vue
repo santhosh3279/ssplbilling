@@ -125,6 +125,8 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Print Format</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Price List</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Tax Template</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Income Account</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Expense Account</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -133,9 +135,11 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.print_format || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.price_list || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.tax_template || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.income_account || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.expense_account || '--' }}</td>
                   </tr>
                   <tr v-if="!visibleBillingSeries.length">
-                    <td colspan="4" class="px-2 py-3 text-center text-slate-500">No billing series configured</td>
+                    <td colspan="6" class="px-2 py-3 text-center text-slate-500">No billing series configured</td>
                   </tr>
                 </tbody>
               </table>
