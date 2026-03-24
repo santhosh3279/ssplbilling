@@ -22,7 +22,7 @@
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar with Buttons -->
       <aside class="w-80 border-r border-slate-700 bg-slate-800/30 p-6 space-y-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Available Reports</h3>
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Tax Register</h3>
         <div class="flex flex-col gap-3">
           <button
             class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-violet-600/20 hover:border-violet-500/50 hover:text-white transition-all active:scale-[0.98]"
