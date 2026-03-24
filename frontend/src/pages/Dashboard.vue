@@ -87,32 +87,36 @@
         </div>
       </header>
 
-      <!-- Clock Container (Extreme Right) -->
-      <div class="flex justify-end px-8 py-4">
-         <AnalogueClock />
-      </div>
-
-      <!-- Tiles -->
-      <div class="mx-auto max-w-4xl px-6 py-2">
-        <div class="grid grid-cols-3 gap-4">
-          <div
-            v-for="tile in tiles"
-            :key="tile.id"
-            class="group relative cursor-pointer rounded-xl p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:brightness-110"
-            :class="tile.tileBg"
-            @click="openModule(tile.id)"
-          >
-            <span v-if="tile.shortcut" class="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-white/30 bg-black/40 px-3 py-1.5 font-mono text-lg font-black text-white shadow-lg backdrop-blur-md group-hover:bg-white/30 transition-all">
-              {{ tile.shortcut }}
-            </span>
-            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">
-              {{ tile.icon }}
+      <div class="flex flex-row items-start justify-between gap-8 px-10 py-10">
+        <!-- Left: Tiles -->
+        <div class="flex-1 max-w-5xl">
+          <div class="grid grid-cols-3 gap-6">
+            <div
+              v-for="tile in tiles"
+              :key="tile.id"
+              class="group relative cursor-pointer rounded-xl p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:brightness-110"
+              :class="tile.tileBg"
+              @click="openModule(tile.id)"
+            >
+              <span v-if="tile.shortcut" class="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-white/30 bg-black/40 px-3 py-1.5 font-mono text-lg font-black text-white shadow-lg backdrop-blur-md group-hover:bg-white/30 transition-all">
+                {{ tile.shortcut }}
+              </span>
+              <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">
+                {{ tile.icon }}
+              </div>
+              <div class="text-sm font-semibold text-white">{{ tile.name }}</div>
+              <div class="mt-1 text-xs text-white/70">{{ tile.desc }}</div>
             </div>
-            <div class="text-sm font-semibold text-white">{{ tile.name }}</div>
-            <div class="mt-1 text-xs text-white/70">{{ tile.desc }}</div>
           </div>
         </div>
 
+        <!-- Right: Clock -->
+        <div class="flex-shrink-0 pt-2">
+          <AnalogueClock />
+        </div>
+      </div>
+
+      <div class="mx-auto max-w-4xl px-6 pb-12">
         <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
           <span class="flex items-center gap-1.5">
             Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F10</kbd>
