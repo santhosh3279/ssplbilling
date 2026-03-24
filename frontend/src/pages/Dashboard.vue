@@ -82,7 +82,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-lg font-bold text-white">Dashboard</h1>
-            <p class="text-xs text-slate-400">{{ today }}</p>
+            <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
           </div>
         </div>
       </header>
@@ -111,8 +111,9 @@
         </div>
 
         <!-- Right: Clock -->
-        <div class="flex-shrink-0 flex flex-col items-center gap-2 pt-2">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ today }}</div>
+        <div class="flex-shrink-0 flex flex-col items-center gap-1 pt-2 bg-slate-800/20 p-6 rounded-3xl border border-white/5 backdrop-blur-sm shadow-xl">
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{{ todayDate }}</div>
+          <div class="text-lg font-black text-white uppercase tracking-wider mb-2 drop-shadow-sm">{{ todayDay }}</div>
           <AnalogueClock />
         </div>
       </div>
@@ -236,10 +237,22 @@ async function handleLogout() {
 }
 
 // ==================== DATE ====================
-const today = new Date().toLocaleDateString('en-IN', {
-  timeZone: 'Asia/Kolkata',
-  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+const todayDate = computed(() => {
+  return new Date().toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  })
 })
+
+const todayDay = computed(() => {
+  return new Date().toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long'
+  })
+})
+
 
 // ==================== TILES ====================
 const tiles = [
