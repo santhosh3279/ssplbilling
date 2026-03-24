@@ -97,7 +97,7 @@
             :class="tile.tileBg"
             @click="openModule(tile.id)"
           >
-            <span class="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-white/30 bg-black/40 px-3 py-1.5 font-mono text-lg font-black text-white shadow-lg backdrop-blur-md group-hover:bg-white/30 transition-all">
+            <span v-if="tile.shortcut" class="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-white/30 bg-black/40 px-3 py-1.5 font-mono text-lg font-black text-white shadow-lg backdrop-blur-md group-hover:bg-white/30 transition-all">
               {{ tile.shortcut }}
             </span>
             <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">
@@ -241,16 +241,20 @@ const tiles = [
   { id: 'purchase-order', name: 'Purchase Order', desc: 'Create & manage purchase orders', icon: '📋', shortcut: 'F7', tileBg: 'bg-sky-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
+  { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
+  { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
 
-const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'journal-contra', 'material-transfer']
+const readyModules = ['sales', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'reports']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
   payment: '/payment',
   'purchase-order': '/purchase-order',
+  'sales-order': '/sales-order',
   'journal-contra': '/journal-contra',
   'material-transfer': '/material-transfer',
+  reports: '/reports',
 }
 
 function openModule(id) {
