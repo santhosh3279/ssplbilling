@@ -34,15 +34,15 @@
         :transform="`rotate(${n * 6} 50 50)`" 
       />
 
-      <!-- Hour hand -->
-      <line x1="50" y1="50" x2="50" y2="30" 
-        stroke="black" stroke-width="3" stroke-linecap="round"
+      <!-- Hour hand (Designer) -->
+      <path d="M50 50 L48 48 L48 35 L50 30 L52 35 L52 48 Z" 
+        fill="black" stroke="black" stroke-width="1" stroke-linejoin="round"
         :transform="`rotate(${hourDeg} 50 50)`" 
       />
       
-      <!-- Minute hand -->
-      <line x1="50" y1="50" x2="50" y2="15" 
-        stroke="black" stroke-width="2" stroke-linecap="round"
+      <!-- Minute hand (Designer) -->
+      <path d="M50 50 L49 48 L49 20 L50 15 L51 20 L51 48 Z" 
+        fill="black" stroke="black" stroke-width="1" stroke-linejoin="round"
         :transform="`rotate(${minuteDeg} 50 50)`" 
       />
       
