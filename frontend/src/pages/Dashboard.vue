@@ -111,7 +111,8 @@
         </div>
 
         <!-- Right: Clock -->
-        <div class="flex-shrink-0 pt-2">
+        <div class="flex-shrink-0 flex flex-col items-center gap-2 pt-2">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ today }}</div>
           <AnalogueClock />
         </div>
       </div>
