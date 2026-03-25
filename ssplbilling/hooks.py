@@ -9,7 +9,7 @@ fixtures = [
 	{
 		"dt": "Custom Field",
 		"filters": [
-			["dt", "in", ["Item", "Employee", "Sales Invoice", "Purchase Invoice", "Stock Entry"]],
+			["dt", "in", ["Item", "Employee", "Sales Invoice", "Purchase Invoice", "Stock Entry", "Customer", "Supplier"]],
 			[
 				"fieldname",
 				"in",
@@ -20,11 +20,14 @@ fixtures = [
 					"total_incentive",
 					"redeemed_incentive",
 					"balance_incentive",
+					"customer_print_name",
+					"supplier_print_name",
 				],
 			],
 		],
 	}
 ]
+
 
 # Apps
 # ------------------
@@ -107,11 +110,12 @@ fixtures = [
 # ------------
 
 # before_install = "ssplbilling.install.before_install"
-# after_install = "ssplbilling.install.after_install"
+after_install = "ssplbilling.setup.after_install"
 
 # Uninstallation
 # ------------
 
+after_migrate = ["ssplbilling.setup.after_migrate"]
 # before_uninstall = "ssplbilling.uninstall.before_uninstall"
 # after_uninstall = "ssplbilling.uninstall.after_uninstall"
 
