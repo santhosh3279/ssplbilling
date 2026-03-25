@@ -30,7 +30,7 @@ function postHeaders() {
   };
 }
 
-/** Parse Frappe's exc field into a human-readable string */
+/** Parse Frappe's exc field into a human-readable string (last line only) */
 function parseExc(exc) {
   if (!exc) return "Unknown server error";
   try {
@@ -41,6 +41,22 @@ function parseExc(exc) {
   } catch {
     return String(exc).split("\n").filter(Boolean).pop() ?? "Unknown error";
   }
+}
+
+/** Parse Frappe's exc field into the full traceback string */
+function parseExcFull(exc) {
+  if (!exc) return "Unknown server error";
+  try {
+    const lines = JSON.parse(exc);
+    return Array.isArray(lines) ? lines.join("\n") : String(lines);
+  } catch {
+    return String(exc);
+  }
+}
+
+/** Show full error traceback in a browser alert */
+function alertPostError(context, fullTrace) {
+  window.alert(`POST ERROR — ${context}\n\n${fullTrace}`);
 }
 
 /**
@@ -64,16 +80,47 @@ export async function frappeGet(method, params = {}) {
 
 /**
  * POST to a Frappe whitelisted method.
+ * On any error the full traceback is shown in a browser alert before throwing.
  */
 export async function frappePost(method, body = {}) {
-  const res = await fetch(`/api/method/${method}`, {
-    method: "POST",
-    headers: postHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+  let res;
+  try {
+    res = await fetch(`/api/method/${method}`, {
+      method: "POST",
+      headers: postHeaders(),
+      body: JSON.stringify(body),
+    });
+  } catch (networkErr) {
+    const msg = `Network error: ${networkErr.message}`;
+    alertPostError(method, msg);
+    throw new Error(msg);
+  }
+
+  if (!res.ok) {
+    let detail = `HTTP ${res.status} — ${res.statusText}`;
+    try {
+      const errJson = await res.clone().json();
+      if (errJson.exc) {
+        detail += "\n\n" + parseExcFull(errJson.exc);
+      } else if (errJson.message) {
+        detail += "\n\n" + JSON.stringify(errJson.message, null, 2);
+      } else {
+        detail += "\n\n" + JSON.stringify(errJson, null, 2);
+      }
+    } catch {
+      try { detail += "\n\n" + (await res.text()); } catch { /* ignore */ }
+    }
+    alertPostError(method, detail);
+    throw new Error(detail);
+  }
+
   const json = await res.json();
-  if (json.exc) throw new Error(parseExc(json.exc));
+  if (json.exc) {
+    const fullTrace = parseExcFull(json.exc);
+    const shortMsg = parseExc(json.exc);
+    alertPostError(method, fullTrace);
+    throw new Error(shortMsg);
+  }
   return json.message ?? json;
 }
 
