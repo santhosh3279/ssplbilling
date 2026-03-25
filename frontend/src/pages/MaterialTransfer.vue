@@ -27,21 +27,8 @@
 
     <div class="border-b border-slate-700 bg-slate-800 px-4 py-3">
       <div class="flex items-center gap-8">
-        <!-- Series -->
-        <div class="flex items-center gap-2">
-          <label class="text-[10px] font-bold uppercase text-slate-400 whitespace-nowrap">Series</label>
-          <select
-            ref="seriesSelect"
-            v-model="entrySeries"
-            :disabled="entryDocStatus !== 0"
-            class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-sm font-bold text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500"
-          >
-            <option v-for="s in availableSeries" :key="s">{{ s }}</option>
-          </select>
-        </div>
-
         <!-- Purpose -->
-        <div class="flex items-center gap-2 border-l border-slate-800 pl-8">
+        <div class="flex items-center gap-2">
           <label class="text-[10px] font-bold uppercase text-slate-400 whitespace-nowrap">Type</label>
           <select
             v-model="purpose"
@@ -290,6 +277,44 @@
       </div>
     </div>
 
+    <!-- SERIES SUBWINDOW -->
+    <div
+      v-if="showSeriesDropdown"
+      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      @click.self="showSeriesDropdown = false"
+      @keydown.escape.capture="showSeriesDropdown = false"
+    >
+      <div class="w-[360px] overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+        <div class="border-b border-slate-700 bg-slate-800 px-5 py-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Series</div>
+          <div class="mt-0.5 text-[10px] text-slate-600">↑ ↓ navigate · Enter select · 1–9 quick pick</div>
+        </div>
+        <div class="p-3 flex flex-col gap-2">
+          <button
+            v-for="(s, idx) in availableSeries"
+            :key="s"
+            class="flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus:outline-none"
+            :class="idx === seriesHighlightIdx
+              ? 'border-blue-500 bg-blue-600/30 text-white ring-1 ring-blue-500'
+              : s === entrySeries
+                ? 'border-blue-700 bg-blue-900/20 text-blue-300'
+                : 'border-slate-700 bg-slate-800 text-slate-200'"
+            @click="selectSeries(s)"
+            @mouseenter="seriesHighlightIdx = idx"
+          >
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm font-black text-slate-300">
+              {{ idx + 1 }}
+            </span>
+            <span class="font-bold tracking-wide">{{ s }}</span>
+            <span v-if="s === entrySeries" class="ml-auto text-[10px] font-bold text-blue-400">ACTIVE</span>
+          </button>
+        </div>
+        <div class="border-t border-slate-700 bg-slate-800/50 px-5 py-2 text-[10px] text-slate-600 text-center">
+          Esc to close
+        </div>
+      </div>
+    </div>
+
     <!-- ITEM SEARCH MODAL -->
     <ItemSearch
       ref="itemSearchModalRef"
@@ -305,7 +330,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import ItemSearch from '../components/ItemSearch.vue'
@@ -360,6 +385,8 @@ const rowRefs = {}
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const seriesSelect = ref(null)
+const showSeriesDropdown = ref(false)
+const seriesHighlightIdx = ref(0)
 const saveButton = ref(null)
 const itemSearchModalRef = ref(null)
 const showItemSearchModal = ref(false)
@@ -371,6 +398,17 @@ function focusField(f, idx) { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) 
 function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
 function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
 function focusNewQty()    { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
+
+function openSeriesModal() {
+  seriesHighlightIdx.value = Math.max(0, availableSeries.value.indexOf(entrySeries.value))
+  showSeriesDropdown.value = true
+}
+
+function selectSeries(s) {
+  entrySeries.value = s
+  showSeriesDropdown.value = false
+  nextTick(focusNewCode)
+}
 
 // ==================== NAVIGATION ====================
 function findNextActiveRow(from, dir) { let i = from + dir; while (i >= 0 && i < items.value.length) { if (!items.value[i].deleted) return i; i += dir }; return null }
@@ -391,7 +429,7 @@ async function fetchConfig() {
   try {
     const series = await frappeGet(`${API}.get_naming_series`)
     availableSeries.value = series || []
-    if (series.length) entrySeries.value = series[0]
+    if (series.length && !entrySeries.value) entrySeries.value = series[0]
 
     const whs = await frappeGet('frappe.client.get_list', {
       doctype: 'Warehouse',
@@ -401,8 +439,8 @@ async function fetchConfig() {
     })
     availableWarehouses.value = whs.map(w => w.name)
     
-    // Auto-select first two distinct warehouses if available
-    if (availableWarehouses.value.length >= 2) {
+    // Auto-select first two distinct warehouses if available and not set
+    if (!fromWarehouse.value && !toWarehouse.value && availableWarehouses.value.length >= 2) {
       fromWarehouse.value = availableWarehouses.value[0]
       toWarehouse.value = availableWarehouses.value[1]
     }
@@ -581,7 +619,7 @@ function startNewEntry() {
   items.value = []; entryName.value = null; entryDocStatus.value = 0
   newItemCode.value = ''; newQty.value = 1; selectedRow.value = -1
   selectedItemData.value = null
-  nextTick(focusNewCode)
+  nextTick(() => openSeriesModal())
 }
 
 // ==================== MODIFY ====================
@@ -632,11 +670,35 @@ function handleBack() {
   router.push('/')
 }
 
+function handleSeriesNumberKey(e) {
+  if (!showSeriesDropdown.value) return
+  const len = availableSeries.value.length
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    seriesHighlightIdx.value = (seriesHighlightIdx.value + 1) % len
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    seriesHighlightIdx.value = (seriesHighlightIdx.value - 1 + len) % len
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    selectSeries(availableSeries.value[seriesHighlightIdx.value])
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    showSeriesDropdown.value = false
+  } else {
+    const n = parseInt(e.key)
+    if (!isNaN(n) && n >= 1 && n <= len) {
+      e.preventDefault()
+      selectSeries(availableSeries.value[n - 1])
+    }
+  }
+}
+
 useShortcuts(materialTransferShortcuts({
   save: saveEntry,
   searchItem: () => openSearch(),
   deleteRow: () => { if (selectedRow.value >= 0) softDelete(selectedRow.value) },
-  focusSeries: () => seriesSelect.value?.focus(),
+  focusSeries: () => openSeriesModal(),
   openIncentive: () => { if (entryName.value) showIncentiveModal.value = true },
   contextualBack: () => {
     if (showModifyEntry.value) { showModifyEntry.value = false; return }
@@ -646,7 +708,13 @@ useShortcuts(materialTransferShortcuts({
 }), props.isSubWindow ? 'subwindow' : 'local')
 
 onMounted(() => {
+  window.addEventListener('keydown', handleSeriesNumberKey)
   fetchConfig()
-  nextTick(focusNewCode)
+  if (props.name) loadEntry(props.name)
+  else nextTick(() => openSeriesModal())
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleSeriesNumberKey)
 })
 </script>

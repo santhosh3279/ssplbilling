@@ -105,20 +105,6 @@
         <!-- Series / Customer / Date bar -->
         <div class="border-b border-slate-700 bg-slate-800 px-4 py-2">
       <div class="flex items-center gap-6">
-        <!-- Series -->
-        <div class="flex items-center gap-2">
-          <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Series</label>
-          <select
-            ref="seriesSelect"
-            v-model="quotationSeries"
-            :disabled="quotationDocStatus !== 0 || !!savedQuotationName"
-            class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-sm font-bold text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500"
-            @keydown.enter.prevent="openCustomerSearch"
-          >
-            <option v-for="s in availableSeries" :key="s">{{ s }}</option>
-          </select>
-        </div>
-
         <!-- Quotation No -->
         <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
           <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Quotation No</label>
@@ -575,6 +561,44 @@
       @close="showBarcodeModal = false"
     />
 
+    <!-- SERIES SUBWINDOW -->
+    <div
+      v-if="showSeriesDropdown"
+      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      @click.self="showSeriesDropdown = false"
+      @keydown.escape.capture="showSeriesDropdown = false"
+    >
+      <div class="w-[360px] overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+        <div class="border-b border-slate-700 bg-slate-800 px-5 py-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Series</div>
+          <div class="mt-0.5 text-[10px] text-slate-600">↑ ↓ navigate · Enter select · 1–9 quick pick</div>
+        </div>
+        <div class="p-3 flex flex-col gap-2">
+          <button
+            v-for="(s, idx) in availableSeries"
+            :key="s"
+            class="flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus:outline-none"
+            :class="idx === seriesHighlightIdx
+              ? 'border-blue-500 bg-blue-600/30 text-white ring-1 ring-blue-500'
+              : s === quotationSeries
+                ? 'border-blue-700 bg-blue-900/20 text-blue-300'
+                : 'border-slate-700 bg-slate-800 text-slate-200'"
+            @click="selectSeries(s)"
+            @mouseenter="seriesHighlightIdx = idx"
+          >
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm font-black text-slate-300">
+              {{ idx + 1 }}
+            </span>
+            <span class="font-bold tracking-wide">{{ s }}</span>
+            <span v-if="s === quotationSeries" class="ml-auto text-[10px] font-bold text-blue-400">ACTIVE</span>
+          </button>
+        </div>
+        <div class="border-t border-slate-700 bg-slate-800/50 px-5 py-2 text-[10px] text-slate-600 text-center">
+          Esc to close
+        </div>
+      </div>
+    </div>
+
     <!-- IMPORT OPTIONS MODAL -->
     <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showImportModal = false">
       <div class="w-[400px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
@@ -840,6 +864,8 @@ const customerInput = ref(null)
 const searchInput = ref(null)
 const modifySearchInput = ref(null)
 const seriesSelect = ref(null)
+const showSeriesDropdown = ref(false)
+const seriesHighlightIdx = ref(0)
 const sidebarSeriesSelect = ref(null)
 const dateInput = ref(null)
 const discountInput = ref(null)
@@ -859,6 +885,17 @@ function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else sea
 const custSearch = ref('')
 const showCustomerSearchModal = ref(false)
 const selectedCustomerDetails = ref(null)
+
+function openSeriesModal() {
+  seriesHighlightIdx.value = Math.max(0, availableSeries.value.indexOf(quotationSeries.value))
+  showSeriesDropdown.value = true
+}
+
+function selectSeries(s) {
+  quotationSeries.value = s
+  showSeriesDropdown.value = false
+  nextTick(() => openCustomerSearch())
+}
 
 function openCustomerSearch() {
   if (quotationSaved.value || quotationDocStatus.value !== 0) return
@@ -1742,7 +1779,7 @@ function startNewQuotation() {
   selectedCustomerDetails.value = null
   syncSeriesConfig(quotationSeries.value) // Restore price list and other settings from general settings
   fetchCustomerSalesHistory(null) // Clear history cache
-  nextTick(() => seriesSelect.value?.focus())
+  nextTick(() => focusNewCode())
 }
 
 function printQuotation() {
@@ -1817,7 +1854,7 @@ useShortcuts(quotationEntryShortcuts({
       softDelete(selectedRow.value)
     }
   },
-  focusSeries: () => { if (!showPrintModal.value) seriesSelect.value?.focus() },
+  focusSeries: () => { if (!showPrintModal.value) openSeriesModal() },
   toggleDiscountSave: () => {
     if (showPrintModal.value) return
     const activeEl = document.activeElement
@@ -1869,12 +1906,37 @@ function handleStorageChange(e) {
   if (e.key === 'wb-cost-center') costCenter.value = e.newValue || ''
 }
 
+function handleSeriesNumberKey(e) {
+  if (!showSeriesDropdown.value) return
+  const len = availableSeries.value.length
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    seriesHighlightIdx.value = (seriesHighlightIdx.value + 1) % len
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    seriesHighlightIdx.value = (seriesHighlightIdx.value - 1 + len) % len
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    selectSeries(availableSeries.value[seriesHighlightIdx.value])
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    showSeriesDropdown.value = false
+  } else {
+    const n = parseInt(e.key)
+    if (!isNaN(n) && n >= 1 && n <= len) {
+      e.preventDefault()
+      selectSeries(availableSeries.value[n - 1])
+    }
+  }
+}
+
 onMounted(() => {
   // Listen for global shortcut events
   window.addEventListener('wb-global-ledger-search', openCustomerSearch);
   window.addEventListener('wb-global-item-search', () => openSearch('', null));
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.addEventListener('storage', handleStorageChange);
+  window.addEventListener('keydown', handleSeriesNumberKey);
 
   fetchSeriesList()
   fetchDropdownOptions()
@@ -1891,7 +1953,7 @@ onMounted(() => {
   if (targetQuotation) {
     loadQuotation(targetQuotation)
   } else {
-    nextTick(() => seriesSelect.value?.focus())
+    nextTick(() => openSeriesModal())
   }
 })
 onUnmounted(() => {
@@ -1899,6 +1961,7 @@ onUnmounted(() => {
   window.removeEventListener('wb-global-item-search', () => openSearch('', null));
   window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.removeEventListener('storage', handleStorageChange);
+  window.removeEventListener('keydown', handleSeriesNumberKey);
 })
 </script>
 

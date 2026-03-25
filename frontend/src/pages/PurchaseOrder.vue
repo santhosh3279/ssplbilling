@@ -101,20 +101,6 @@
         <!-- Subheader: Series / Supplier / Date -->
         <div class="border-b border-slate-700 bg-slate-800 px-4 py-2 shrink-0">
           <div class="flex items-center gap-6">
-            <!-- Series -->
-            <div class="flex items-center gap-2">
-              <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Series</label>
-              <select
-                ref="seriesSelect"
-                v-model="billSeries"
-                :disabled="billDocStatus !== 0"
-                class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-sm font-bold text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500"
-                @keydown.enter.prevent="openSupplierSearch"
-              >
-                <option v-for="s in availableSeries" :key="s">{{ s }}</option>
-              </select>
-            </div>
-
             <!-- Order No -->
             <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
               <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">PO No</label>
@@ -472,6 +458,44 @@
       @select="pickItem"
     />
 
+    <!-- SERIES SUBWINDOW -->
+    <div
+      v-if="showSeriesDropdown"
+      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      @click.self="showSeriesDropdown = false"
+      @keydown.escape.capture="showSeriesDropdown = false"
+    >
+      <div class="w-[360px] overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+        <div class="border-b border-slate-700 bg-slate-800 px-5 py-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Series</div>
+          <div class="mt-0.5 text-[10px] text-slate-600">↑ ↓ navigate · Enter select · 1–9 quick pick</div>
+        </div>
+        <div class="p-3 flex flex-col gap-2">
+          <button
+            v-for="(s, idx) in availableSeries"
+            :key="s"
+            class="flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus:outline-none"
+            :class="idx === seriesHighlightIdx
+              ? 'border-blue-500 bg-blue-600/30 text-white ring-1 ring-blue-500'
+              : s === billSeries
+                ? 'border-blue-700 bg-blue-900/20 text-blue-300'
+                : 'border-slate-700 bg-slate-800 text-slate-200'"
+            @click="selectSeries(s)"
+            @mouseenter="seriesHighlightIdx = idx"
+          >
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm font-black text-slate-300">
+              {{ idx + 1 }}
+            </span>
+            <span class="font-bold tracking-wide">{{ s }}</span>
+            <span v-if="s === billSeries" class="ml-auto text-[10px] font-bold text-blue-400">ACTIVE</span>
+          </button>
+        </div>
+        <div class="border-t border-slate-700 bg-slate-800/50 px-5 py-2 text-[10px] text-slate-600 text-center">
+          Esc to close
+        </div>
+      </div>
+    </div>
+
     <!-- IMPORT OPTIONS MODAL -->
     <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showImportModal = false">
       <div class="w-[400px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
@@ -666,6 +690,8 @@ const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const supplierInput = ref(null)
 const seriesSelect = ref(null)
+const showSeriesDropdown = ref(false)
+const seriesHighlightIdx = ref(0)
 const dateInput = ref(null)
 const discountInput = ref(null)
 const saveButton = ref(null)
@@ -698,6 +724,17 @@ const nextOrderNo = ref('...')
 const billSeries = ref('')
 const billDate = ref(getTodayIST())
 const scheduleDate = ref(addDays(getTodayIST(), 7))
+
+function openSeriesModal() {
+  seriesHighlightIdx.value = Math.max(0, availableSeries.value.indexOf(billSeries.value))
+  showSeriesDropdown.value = true
+}
+
+function selectSeries(s) {
+  billSeries.value = s
+  showSeriesDropdown.value = false
+  nextTick(() => openSupplierSearch())
+}
 
 watch(billSeries, fetchNextOrderNo)
 
@@ -919,6 +956,7 @@ function pickSupp(s) {
   suppSearch.value = s.label || s.supplier_name
   showSupplierSearchModal.value = false
   selectedSupplierDetails.value = s
+  nextTick(() => newCodeInput.value?.focus())
 }
 
 function closeSupplierSearchModal() { showSupplierSearchModal.value = false }
@@ -1057,7 +1095,7 @@ function startNewOrder() {
   billDate.value = getTodayIST(); scheduleDate.value = addDays(getTodayIST(), 7)
   billSaved.value = false; billDocStatus.value = 0; savedOrderName.value = null; selectedItemData.value = null
   selectedSupplierDetails.value = null
-  nextTick(() => seriesSelect.value?.focus())
+  nextTick(() => openSeriesModal())
 }
 
 function cancelOrder() { startNewOrder() }
@@ -1068,6 +1106,30 @@ function handleBack() {
   } else {
     if (props.isSubWindow) { emit('close'); return }
     router.push('/')
+  }
+}
+
+function handleSeriesNumberKey(e) {
+  if (!showSeriesDropdown.value) return
+  const len = availableSeries.value.length
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    seriesHighlightIdx.value = (seriesHighlightIdx.value + 1) % len
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    seriesHighlightIdx.value = (seriesHighlightIdx.value - 1 + len) % len
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    selectSeries(availableSeries.value[seriesHighlightIdx.value])
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    showSeriesDropdown.value = false
+  } else {
+    const n = parseInt(e.key)
+    if (!isNaN(n) && n >= 1 && n <= len) {
+      e.preventDefault()
+      selectSeries(availableSeries.value[n - 1])
+    }
   }
 }
 
@@ -1084,7 +1146,7 @@ useShortcuts(purchaseOrderShortcuts({
       softDelete(selectedRow.value)
     }
   },
-  focusSeries: () => seriesSelect.value?.focus(),
+  focusSeries: () => openSeriesModal(),
   toggleDiscountSave: () => {
     const activeEl = document.activeElement
     if (selectedRow.value !== -1) {
@@ -1117,6 +1179,7 @@ function handleStorageChange(e) {
 
 onMounted(() => {
   window.addEventListener('storage', handleStorageChange)
+  window.addEventListener('keydown', handleSeriesNumberKey);
   fetchSeriesList()
   fetchSidebarBills()
 
@@ -1127,11 +1190,12 @@ onMounted(() => {
   if (needsRefresh) refreshItemCache('Purchase', priceList.value, defaultWarehouse.value)
 
   if (props.orderName) loadOrder(props.orderName)
-  else nextTick(() => seriesSelect.value?.focus())
+  else nextTick(() => openSeriesModal())
 })
 
 onUnmounted(() => {
   window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('keydown', handleSeriesNumberKey);
 })
 </script>
 
