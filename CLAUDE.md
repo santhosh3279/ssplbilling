@@ -101,7 +101,9 @@ bench --site <site> run-tests --app ssplbilling --module ssplbilling.ssplbilling
 - **`frontend/src/api/customer.js`** — higher-level helpers for creating Customer + linked Address + Contact in sequence.
 - **`frontend/src/services/dashboard.js`** — `dashboardApi` object for dashboard-specific calls: billing settings, allowed series, bulk item/customer sync.
 - **`frontend/src/services/api.js`** — older `frappe-ui call()` wrapper. Still referenced in some components; prefer `src/api.js` for new code.
-- **`ssplbilling/api/sales_api.py`** — Python `@frappe.whitelist()` methods: `search_customers`, `search_items`, `get_item_insight`, `quick_create_customer`, `create_sales_invoice`, `get_sales_invoices`, `get_sales_invoice`, `submit_invoice_with_payment`, `get_customer_ledger`, `get_voucher_detail`, `get_outstanding_invoices`, `create_payment_entry`, `create_journal_entry`, `search_suppliers`, `search_accounts`.
+- **`ssplbilling/api/SaleEntry_api.py`** — Python `@frappe.whitelist()` methods for Sales Entry: `search_items`, `get_item_insight`, `create_sales_invoice`, `update_sales_invoice`, `delete_sales_invoice`, `get_naming_series`, `get_discount_rules`.
+- **`ssplbilling/api/cashier_api.py`** — `get_sales_invoices`, `get_sales_invoice`, `submit_invoice_with_payment`.
+- **`ssplbilling/api/ledger_api.py`** — `get_ledger`, `get_customer_ledger`, `get_voucher_detail`, `get_outstanding_invoices`, `create_payment_entry`, `create_journal_entry`, `search_accounts`.
 - **`ssplbilling/api/dashboard_api.py`** — `get_billing_settings`, `get_allowed_series`.
 
 ### State management

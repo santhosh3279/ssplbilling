@@ -35,7 +35,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
         price_list: priceList,
         warehouse: warehouse
       }),
-      frappeGet('ssplbilling.api.sales_api.get_discount_rules').catch(() => [])
+      frappeGet('ssplbilling.api.SaleEntry_api.get_discount_rules').catch(() => [])
     ])
     items.value = data || []
     discountRules.value = discRules || []
@@ -56,7 +56,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
  */
 export async function refreshDiscountRuleCache() {
   try {
-    const data = await frappeGet('ssplbilling.api.sales_api.get_discount_rules')
+    const data = await frappeGet('ssplbilling.api.SaleEntry_api.get_discount_rules')
     discountRules.value = data || []
     saveDiscountRulesToStorage(discountRules.value)
     return discountRules.value

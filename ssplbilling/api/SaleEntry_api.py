@@ -2,6 +2,10 @@ import json
 import frappe
 from frappe import _
 
+def enforce_ignore_pricing_rule(doc, method=None):
+    """Always keep ignore_pricing_rule=1 on Sales Invoice before save."""
+    doc.ignore_pricing_rule = 1
+
 def _get_item_tax_rate(item_code):
     """Return the effective tax rate (%) for an item from its Item Tax Template."""
     today = frappe.utils.today()
@@ -36,7 +40,12 @@ def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
         item_code = barcode_item
 
     if not frappe.db.exists("Item", item_code):
-        return {"found": False, "item_code": item_code}
+        # Case-insensitive fallback
+        canonical = frappe.db.get_value("Item", {"item_code": ["like", item_code]}, "item_code")
+        if canonical:
+            item_code = canonical
+        else:
+            return {"found": False, "item_code": item_code}
 
     item = frappe.get_cached_doc("Item", item_code)
     wh = warehouse or frappe.db.get_single_value("Stock Settings", "default_warehouse") or ""
@@ -148,14 +157,23 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
                 "discount": float(r.discount or 0),
             })
 
-    price_lists = frappe.get_all(
+    selling_pls = frappe.get_all(
         "Item Price",
         filters={"item_code": item_code, "selling": 1},
         fields=["price_list as name", "price_list_rate as rate", "currency"],
         order_by="price_list_rate asc",
     )
-    for pl in price_lists:
-        pl["rate"] = float(pl["rate"] or 0)
+    buying_pls = frappe.get_all(
+        "Item Price",
+        filters={"item_code": item_code, "buying": 1},
+        fields=["price_list as name", "price_list_rate as rate", "currency"],
+        order_by="price_list_rate asc",
+    )
+    price_lists = []
+    for pl in buying_pls:
+        price_lists.append({"name": pl["name"], "rate": float(pl["rate"] or 0), "currency": pl["currency"], "type": "buying"})
+    for pl in selling_pls:
+        price_lists.append({"name": pl["name"], "rate": float(pl["rate"] or 0), "currency": pl["currency"], "type": "selling"})
 
     return {
         "item_name": item_info.get("item_name"),
@@ -279,7 +297,6 @@ def create_sales_invoice(data=None, **kwargs):
     }
 
 
-@frappe.whitelist()
 @frappe.whitelist()
 def delete_sales_invoice(invoice_name):
     frappe.delete_doc("Sales Invoice", invoice_name)
@@ -437,3 +454,33 @@ def update_sales_invoice(data=None, **kwargs):
     if data.get("price_list"):
         si.db_set("selling_price_list", data["price_list"], update_modified=False)
     return {"invoice_name": si.name, "grand_total": float(si.grand_total)}
+
+
+@frappe.whitelist()
+def get_discount_rules():
+    """Fetch all enabled Discount Rule entries with their child lines."""
+    rules = frappe.get_all(
+        "Discount Rule",
+        filters={"enabled": 1},
+        fields=[
+            "name", "rule_name", "price_list", "discount_type", "applies_to",
+            "product_group", "min_quantity", "free_quantity", "recursive",
+            "percentage_discount", "custom_logic_type", "start_date", "end_date", "enabled",
+        ],
+        order_by="rule_name asc",
+    )
+    for rule in rules:
+        rule["items"] = frappe.get_all(
+            "Discount Rule Item",
+            filters={"parent": rule["name"]},
+            fields=["item_code", "item_name", "uom"],
+            order_by="idx asc",
+        ) if rule.get("applies_to") == "Item Code" else []
+
+        rule["custom_logic_rows"] = frappe.get_all(
+            "Discount Rule Custom Logic",
+            filters={"parent": rule["name"]},
+            fields=["min_quantity", "nos", "percentage"],
+            order_by="idx asc",
+        ) if rule.get("discount_type") == "Custom Logic" else []
+    return rules
