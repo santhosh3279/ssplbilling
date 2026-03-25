@@ -122,9 +122,10 @@ def get_billing_settings():
 		"card": (user_row.card or "") if user_row else "",
 		"upi": (user_row.upi or "") if user_row else "",
 		"bank": (user_row.bank or "") if user_row else "",
-		"bank_account": (user_row.bank or "") if user_row else "", # Use bank field for bank_account
+		"bank_account": (user_row.bank or "") if user_row else "",
 		"warehouse": (user_row.warehouse or "") if user_row else "",
 		"cost_center": (user_row.cost_center or "") if user_row else "",
+		"income_account": (user_row.income_account or "") if user_row else "",
 		"default_printer": (user_row.default_printer or "") if user_row else "",
 	}
 
@@ -142,17 +143,8 @@ def get_billing_settings():
 			{
 				"series": r.series or "",
 				"price_list": r.price_list or "",
-				"warehouse": r.warehouse or "",
 				"tax_template": r.tax_template or "",
-				"tax_rate": r.tax_rate or "",
-				"cost_center": r.cost_center or "",
 				"print_format": r.print_format or "",
-				"printer": r.printer or "",
-				"cash_account": r.cash_account or "",
-				"bank": r.bank or "",
-				"upi": r.upi or "",
-				"income_account": r.income_account or "",
-				"expense_account": r.expense_account or "",
 			}
 			for r in settings.billing_series
 		],
@@ -168,6 +160,7 @@ def get_billing_settings():
 				"bank_account": r.bank or "",
 				"warehouse": r.warehouse or "",
 				"cost_center": r.cost_center or "",
+				"income_account": r.income_account or "",
 				"admin": r.admin or 0,
 				"cashier": r.cashier or 0,
 				"biller": r.biller or 0,

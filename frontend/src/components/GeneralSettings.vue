@@ -1,6 +1,6 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="$emit('close')">
-    <div class="w-[720px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl">
+    <div class="w-[820px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl">
 
       <!-- Header -->
       <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800">
@@ -39,6 +39,18 @@
                 <span class="font-mono font-semibold text-slate-200">{{ rawSettings.user_zoom || '--' }}%</span>
               </div>
               <div class="flex items-center justify-between">
+                <span class="text-slate-400">Warehouse</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.warehouse || '--' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Cost Center</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Income Account</span>
+                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.income_account || '--' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
                 <span class="text-slate-400">Cash Account</span>
                 <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.cash || '--' }}</span>
               </div>
@@ -53,14 +65,6 @@
               <div class="flex items-center justify-between">
                 <span class="text-slate-400">UPI Account</span>
                 <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.upi || '--' }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-400">Warehouse</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.warehouse || '--' }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-400">Cost Center</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-400">Default Printer</span>
@@ -125,8 +129,6 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Print Format</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Price List</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Tax Template</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Income Account</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Expense Account</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,11 +137,9 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.print_format || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.price_list || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.tax_template || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.income_account || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.expense_account || '--' }}</td>
                   </tr>
                   <tr v-if="!visibleBillingSeries.length">
-                    <td colspan="6" class="px-2 py-3 text-center text-slate-500">No billing series configured</td>
+                    <td colspan="4" class="px-2 py-3 text-center text-slate-500">No billing series configured</td>
                   </tr>
                 </tbody>
               </table>
@@ -177,12 +177,13 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">User</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Allowed Series</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-slate-400">Zoom</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Warehouse</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Cost Center</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Income A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Cash A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Card A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Bank A/C</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">UPI A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Warehouse</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Cost Center</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Admin</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Cashier</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Biller</th>
@@ -195,12 +196,13 @@
                     <td class="whitespace-nowrap px-2 py-1.5 font-medium text-slate-200">{{ us.user || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 font-mono text-slate-400">{{ us.allowed_series || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-slate-400">{{ us.zoom_value || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.warehouse || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.cost_center || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.income_account || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.cash || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.card || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.bank || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.upi || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.warehouse || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.cost_center || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.admin ? '✓' : '' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.cashier ? '✓' : '' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.biller ? '✓' : '' }}</td>
@@ -282,49 +284,40 @@ function applyToLocalStorage(settings) {
     localStorage.setItem('wb-other-charges', settings.other_charges)
   }
 
-  // Account Defaults — direct GL accounts from SSPL Billing Settings
-  // Remove legacy MOP keys if they exist
+  // User defaults from user_series row
   ;['wb-cash-mop', 'wb-card-mop', 'wb-bank-mop', 'wb-upi-mop'].forEach(k => localStorage.removeItem(k))
-  if (settings.user_defaults?.cash)  localStorage.setItem('wb-cash',  settings.user_defaults.cash)
-  if (settings.user_defaults?.card)  localStorage.setItem('wb-card',  settings.user_defaults.card)
-  if (settings.user_defaults?.bank)  localStorage.setItem('wb-bank',  settings.user_defaults.bank)
-  if (settings.user_defaults?.upi)   localStorage.setItem('wb-upi',   settings.user_defaults.upi)
-
-  if (settings.user_defaults?.warehouse) {
-    localStorage.setItem('wb-warehouse', settings.user_defaults.warehouse)
-  }
-  if (settings.user_defaults?.cost_center) {
-    localStorage.setItem('wb-cost-center', settings.user_defaults.cost_center)
-  }
-  if (settings.user_defaults?.default_printer) {
-    localStorage.setItem('wb-default-printer', settings.user_defaults.default_printer)
-  }
+  if (settings.user_defaults?.cash)           localStorage.setItem('wb-cash',           settings.user_defaults.cash)
+  if (settings.user_defaults?.card)           localStorage.setItem('wb-card',           settings.user_defaults.card)
+  if (settings.user_defaults?.bank)           localStorage.setItem('wb-bank',           settings.user_defaults.bank)
+  if (settings.user_defaults?.upi)            localStorage.setItem('wb-upi',            settings.user_defaults.upi)
+  if (settings.user_defaults?.warehouse)      localStorage.setItem('wb-warehouse',      settings.user_defaults.warehouse)
+  if (settings.user_defaults?.cost_center)    localStorage.setItem('wb-cost-center',    settings.user_defaults.cost_center)
+  if (settings.user_defaults?.income_account) localStorage.setItem('wb-income-account', settings.user_defaults.income_account)
+  if (settings.user_defaults?.default_printer) localStorage.setItem('wb-default-printer', settings.user_defaults.default_printer)
 
   // Set billing defaults from the first visible series row
   const firstSeries = (settings.billing_series || [])[0]
   if (firstSeries) {
-    if (firstSeries.series)      localStorage.setItem('wb-series', firstSeries.series)
-    if (firstSeries.price_list)  localStorage.setItem('wb-price-list', firstSeries.price_list)
-    if (firstSeries.tax_rate)    localStorage.setItem('wb-tax-rate', String(firstSeries.tax_rate))
+    if (firstSeries.series)     localStorage.setItem('wb-series',     firstSeries.series)
+    if (firstSeries.price_list) localStorage.setItem('wb-price-list', firstSeries.price_list)
   }
 
-  // Save allowed series prefixes for today's bills query (wb-allowed-series = JSON array of prefixes)
-  // A naming series "SSPL-SI-.YYYY.-" has prefix "SSPL-SI-" (everything before the first dot)
+  // Save allowed series prefixes
   const allBillingSeries = settings.billing_series || []
   const currentUser = session.user.value
   const userRow = (settings.user_series || []).find(r => r.user === currentUser)
 
   // Role flags and blocked windows from user_series row
   if (userRow) {
-    localStorage.setItem('wb-role-admin', userRow.admin ? '1' : '0')
+    localStorage.setItem('wb-role-admin',   userRow.admin   ? '1' : '0')
     localStorage.setItem('wb-role-cashier', userRow.cashier ? '1' : '0')
-    localStorage.setItem('wb-role-biller', userRow.biller ? '1' : '0')
+    localStorage.setItem('wb-role-biller',  userRow.biller  ? '1' : '0')
     if (userRow.allowed_windows) {
       localStorage.setItem('wb-blocked-windows', userRow.allowed_windows)
     }
   }
-  let allowedSeries = allBillingSeries
 
+  let allowedSeries = allBillingSeries
   if (userRow?.allowed_series && userRow.allowed_series.trim().toUpperCase() !== 'ALL') {
     const allowedList = userRow.allowed_series.split(',').map(s => s.trim()).filter(Boolean)
     const getAlpha = s => (s || '').replace(/[^A-Za-z]/g, '')
@@ -335,7 +328,7 @@ function applyToLocalStorage(settings) {
   }
 
   const seriesPrefixes = allowedSeries
-    .map(bs => bs.series.split('.')[0])   // "SSPL-SI-.YYYY.-" → "SSPL-SI-"
+    .map(bs => bs.series.split('.')[0])
     .filter(Boolean)
   if (seriesPrefixes.length) {
     localStorage.setItem('wb-allowed-series', JSON.stringify(seriesPrefixes))

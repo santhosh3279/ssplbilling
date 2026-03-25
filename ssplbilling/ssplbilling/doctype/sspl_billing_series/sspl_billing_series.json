@@ -8,11 +8,9 @@
  "field_order": [
   "series",
   "print_format",
-  "column_break_1",
   "price_list",
-  "tax_template",
-  "income_account",
-  "expense_account"
+  "column_break_1",
+  "tax_template"
  ],
  "fields": [
   {
@@ -30,10 +28,6 @@
    "options": "Print Template"
   },
   {
-   "fieldname": "column_break_1",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "Standard Selling",
    "fieldname": "price_list",
    "fieldtype": "Link",
@@ -42,22 +36,14 @@
    "options": "Price List"
   },
   {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "tax_template",
    "fieldtype": "Link",
    "label": "Tax Template",
    "options": "Sales Taxes and Charges Template"
-  },
-  {
-   "fieldname": "income_account",
-   "fieldtype": "Link",
-   "label": "Income Account",
-   "options": "Account"
-  },
-  {
-   "fieldname": "expense_account",
-   "fieldtype": "Link",
-   "label": "Expense Account",
-   "options": "Account"
   }
  ],
  "grid_page_length": 50,
