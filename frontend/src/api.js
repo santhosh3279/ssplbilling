@@ -733,3 +733,13 @@ export async function getItemSummaryReport(series, fromDate, toDate) {
     to_date: toDate,
   });
 }
+
+/**
+ * Fetch Store Sale Report (Sales by Store/Cost Center from Direct Income).
+ */
+export async function getStoreSaleReport(fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_store_sale_report", {
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}

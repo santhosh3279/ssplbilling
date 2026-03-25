@@ -19,6 +19,7 @@ import PurchaseOrder from './pages/PurchaseOrder.vue'
 import SalesOrderEntry from './pages/SalesOrderEntry.vue'
 import IncentiveLedger from './pages/IncentiveLedger.vue'
 import Reports from './pages/Reports.vue'
+import StoreSalesReport from './pages/StoreSalesReport.vue'
 
 const routes = [
   {
@@ -117,6 +118,11 @@ const routes = [
     path: '/reports',
     name: 'Reports',
     component: Reports,
+  },
+  {
+    path: '/store-sale-report',
+    name: 'StoreSalesReport',
+    component: StoreSalesReport,
   },
 ]
 

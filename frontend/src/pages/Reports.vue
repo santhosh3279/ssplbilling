@@ -78,6 +78,19 @@
               <div class="text-xs text-slate-500">Total items sold by code</div>
             </div>
           </button>
+
+          <hr class="border-slate-700 my-1" />
+
+          <button
+            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-indigo-600/20 hover:border-indigo-500/50 hover:text-white transition-all active:scale-[0.98]"
+            @click="router.push('/store-sale-report')"
+          >
+            <span class="text-xl">🏪</span>
+            <div class="text-left">
+              <div class="font-semibold">Store Sale Report</div>
+              <div class="text-xs text-slate-500">Sales by store (Direct Income)</div>
+            </div>
+          </button>
         </div>
       </aside>
 
