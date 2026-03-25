@@ -189,6 +189,8 @@ def create_sales_invoice(data=None, **kwargs):
     si.posting_date = data.get("date", frappe.utils.today())
     si.naming_series = data.get("naming_series", "SINV-.YY.-")
     si.update_stock = 1
+    if data.get("price_list"):
+        si.selling_price_list = data["price_list"]
     if data.get("cost_center"):
         si.cost_center = data["cost_center"]
 
@@ -252,10 +254,22 @@ def create_sales_invoice(data=None, **kwargs):
             "cost_center": data.get("cost_center") or "",
         })
 
+    for row in data.get("incentive_system") or []:
+        si.append("incentive_system", {
+            "employee": row.get("employee"),
+            "role": row.get("role"),
+            "points": row.get("points") or 0,
+        })
+
+    si.ignore_pricing_rule = 1
+    si.flags.ignore_pricing_rule = True
     si.due_date = frappe.utils.today()
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.insert()
+    si.db_set("ignore_pricing_rule", 1, update_modified=False)
+    if data.get("price_list"):
+        si.db_set("selling_price_list", data["price_list"], update_modified=False)
 
     return {
         "invoice_name": si.name,
@@ -330,6 +344,8 @@ def update_sales_invoice(data=None, **kwargs):
     invoice_name = data.get("invoice_name")
     si = frappe.get_doc("Sales Invoice", invoice_name)
     si.customer = data["customer"]
+    if data.get("price_list"):
+        si.selling_price_list = data["price_list"]
     # Preserving original posting_date
     if float(data.get("additional_discount_amount") or 0) > 0:
         si.discount_amount = float(data["additional_discount_amount"])
@@ -403,8 +419,21 @@ def update_sales_invoice(data=None, **kwargs):
     else:
         si.taxes = []
 
+    si.set("incentive_system", [])
+    for row in data.get("incentive_system") or []:
+        si.append("incentive_system", {
+            "employee": row.get("employee"),
+            "role": row.get("role"),
+            "points": row.get("points") or 0,
+        })
+
+    si.ignore_pricing_rule = 1
+    si.flags.ignore_pricing_rule = True
     si.due_date = frappe.utils.today()
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.save()
+    si.db_set("ignore_pricing_rule", 1, update_modified=False)
+    if data.get("price_list"):
+        si.db_set("selling_price_list", data["price_list"], update_modified=False)
     return {"invoice_name": si.name, "grand_total": float(si.grand_total)}
