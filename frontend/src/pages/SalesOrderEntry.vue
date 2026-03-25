@@ -811,12 +811,17 @@ const selectedItemData = ref(null)
 async function lookupItem(code) {
   const cached = lookupItemInCache(code)
   if (cached) {
+    let finalRate = cached.price || cached.rate || 0
+    if (cached.price_lists && priceList.value) {
+      const pl = cached.price_lists.find(p => p.name === priceList.value)
+      if (pl) finalRate = pl.rate
+    }
     return {
       found: true,
       item_code: cached.item_code,
       item_name: cached.item_name,
       uom: cached.uom,
-      rate: cached.price || cached.rate || 0,
+      rate: finalRate,
       stock_qty: cached.stock || 0,
       warehouse: cached.warehouse
     }

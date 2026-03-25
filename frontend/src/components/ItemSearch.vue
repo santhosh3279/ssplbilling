@@ -68,7 +68,7 @@
               <span class="truncate text-sm font-semibold text-slate-400" :title="warehouse">{{ warehouse }}</span>
             </div>
             <div class="flex flex-col min-w-[130px]">
-              <span class="text-[10px] font-bold uppercase text-slate-500">Default Rate</span>
+              <span class="text-[10px] font-bold uppercase text-slate-500">{{ priceList || 'Rate' }}</span>
               <span class="text-xl font-bold text-slate-200">
                 ₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
               </span>
