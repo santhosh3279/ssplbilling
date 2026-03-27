@@ -217,7 +217,7 @@ import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.j
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
-import { useShortcuts } from '../services/shortcutManager'
+import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 
 const router = useRouter()
@@ -324,6 +324,9 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 // ==================== GENERAL SETTINGS ====================
 const showGeneralSettings = ref(false)
 const showSyncSuccess = ref(false)
+
+// Block page shortcuts while any inline overlay is open
+useSubwindowWatcher(showSyncSuccess)
 const defaultSeries = ref(localStorage.getItem('wb-series') || '')
 
 // ==================== CUSTOMER SEARCH ====================

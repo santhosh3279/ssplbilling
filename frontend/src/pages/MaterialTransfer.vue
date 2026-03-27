@@ -335,7 +335,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import ItemSearch from '../components/ItemSearch.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
-import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import { materialTransferShortcuts } from '../shortcuts/materialTransferShortcuts'
 
 const router = useRouter()
@@ -693,6 +693,10 @@ function handleSeriesNumberKey(e) {
     }
   }
 }
+
+// Block page shortcuts while any inline subwindow is open
+useSubwindowWatcher(showSeriesDropdown)
+useSubwindowWatcher(showModifyEntry)
 
 useShortcuts(materialTransferShortcuts({
   save: saveEntry,

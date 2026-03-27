@@ -202,8 +202,9 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show:        { type: Boolean, default: false },
@@ -213,6 +214,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'update:rows'])
+
+useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 // ── state ──────────────────────────────────────────────────────────────
 const localRows   = ref([])

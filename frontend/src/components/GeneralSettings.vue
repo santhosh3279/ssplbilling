@@ -233,12 +233,15 @@
 import { ref, watch, computed, onMounted } from 'vue'
 import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
 })
 
 const emit = defineEmits(['close', 'sync'])
+
+useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 const rawSettings = ref(null)
 const syncing = ref(false)

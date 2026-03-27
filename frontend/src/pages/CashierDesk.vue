@@ -455,7 +455,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { session } from '../session'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet } from '../api.js'
-import { useShortcuts } from '../services/shortcutManager'
+import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 
 /**
@@ -477,6 +477,10 @@ const searchQuery = ref('')
 const showCardRefModal = ref(false)
 const cardRefNo = ref('')
 const showOpeningRequiredModal = ref(false)
+
+// Block page shortcuts while any inline subwindow is open
+useSubwindowWatcher(showCardRefModal)
+useSubwindowWatcher(showOpeningRequiredModal)
 
 const invoices = ref([])
 const selectedInvoice = ref(null)

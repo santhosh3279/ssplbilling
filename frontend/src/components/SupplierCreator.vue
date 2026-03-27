@@ -226,6 +226,9 @@
 import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { createSupplier, fetchSupplierDetails, updateSupplier } from '../api/supplier.js'
 import { frappeGet } from '../api.js'
+import { useSubwindow } from '../services/shortcutManager'
+
+useSubwindow()
 
 const props = defineProps({
   show: { type: Boolean, default: false },

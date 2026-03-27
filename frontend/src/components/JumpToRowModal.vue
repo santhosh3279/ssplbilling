@@ -14,7 +14,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
@@ -25,6 +26,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['jump', 'update:show'])
+
+useSubwindowWatcher(computed(() => props.show))
 
 const rowInput = ref('')
 
@@ -77,7 +80,7 @@ function handleGlobalKeydown(e) {
     active.isContentEditable
   )
 
-  if (!isInputFocused && e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+  if (!isInputFocused && e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.altKey && !e.metaKey && !isSubwindowActive()) {
     e.preventDefault()
     e.stopPropagation()
     rowInput.value = e.key

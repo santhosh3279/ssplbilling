@@ -22,7 +22,7 @@
  * When that sub-subwindow closes: emptyMap2 is popped, shortcutsMap is top again.
  */
 
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 
 // Flat registries for page-level and global shortcuts
 const registry = {
@@ -124,6 +124,14 @@ export const shortcutManager = {
   },
 }
 
+// ─── Public helpers ───────────────────────────────────────────────────────────
+
+/** Returns true when any subwindow layer is on the stack (used by components
+ *  that manage their own open-trigger logic outside the shortcut manager). */
+export function isSubwindowActive() {
+  return subwindowStack.length > 0
+}
+
 // ─── Vue composables ─────────────────────────────────────────────────────────
 
 /**
@@ -176,4 +184,33 @@ export function useSubwindow() {
   onUnmounted(() => {
     if (map) stackRemove(map)
   })
+}
+
+/**
+ * For components that are always mounted but control visibility through a
+ * reactive `show` prop/ref rather than being conditionally mounted via v-if.
+ *
+ * Watches `showRef` and pushes a Map onto the subwindow stack when true,
+ * removes it when false.  Pass `shortcuts` to also register subwindow-level
+ * shortcuts (same semantics as useShortcuts(s, 'subwindow')).
+ *
+ * Usage inside a component's <script setup>:
+ *   useSubwindowWatcher(computed(() => props.show))
+ *   useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
+ */
+export function useSubwindowWatcher(showRef, shortcuts = {}) {
+  let map = null
+
+  function open() {
+    if (map) return
+    map = new Map(Object.entries(shortcuts).map(([k, v]) => [k.toUpperCase(), v]))
+    stackPush(map)
+  }
+
+  function close() {
+    if (map) { stackRemove(map); map = null }
+  }
+
+  watch(showRef, val => (val ? open() : close()), { immediate: true })
+  onUnmounted(close)
 }

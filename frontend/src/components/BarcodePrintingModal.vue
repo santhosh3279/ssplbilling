@@ -2,7 +2,6 @@
   <div
     v-if="show"
     class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-    @keydown.esc="$emit('close')"
   >
     <div class="flex h-[90vh] w-[80vw] flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
       <!-- Header -->
@@ -188,6 +187,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
 import { frappeGet, frappePost } from '../api.js'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
@@ -199,6 +199,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'printed'])
+
+useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 const { items: allItems } = useItemCache()
 

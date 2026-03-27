@@ -697,7 +697,7 @@ import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/cus
 import { useItemCache } from '../services/itemCache.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import CustomerLedger from './CustomerLedger.vue'
-import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import { quotationEntryShortcuts } from '../shortcuts/quotationEntryShortcuts'
 import * as XLSX from 'xlsx'
 
@@ -1101,6 +1101,11 @@ watch(showDiscardModal, (val) => {
     })
   }
 })
+
+// Block page shortcuts while any inline subwindow is open
+useSubwindowWatcher(showSeriesDropdown)
+useSubwindowWatcher(showImportModal)
+useSubwindowWatcher(showDiscardModal)
 
 const selectedItemData = ref(null)
 

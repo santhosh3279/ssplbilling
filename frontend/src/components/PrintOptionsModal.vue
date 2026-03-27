@@ -126,6 +126,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
+import { useSubwindow } from '../services/shortcutManager'
+
+useSubwindow()
 
 const props = defineProps({
   invoiceName: { type: String, required: true },

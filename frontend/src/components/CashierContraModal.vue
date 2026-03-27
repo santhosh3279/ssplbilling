@@ -136,6 +136,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
+import { useSubwindow } from '../services/shortcutManager'
+
+useSubwindow()
 
 const props = defineProps({
   cashAccount: { type: String, required: true },

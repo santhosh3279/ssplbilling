@@ -77,12 +77,17 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import { useSubwindowWatcher } from '../services/shortcutManager'
+
+const props = defineProps({
   show: { type: Boolean, default: false },
   extra: { type: Array, default: () => [] },       // [{ key, desc }] page-specific shortcuts
   extraTitle: { type: String, default: '' },
 })
-defineEmits(['close'])
+const emit = defineEmits(['close'])
+
+useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 const navigationShortcuts = [
   { key: 'Up / Down',    desc: 'Navigate between rows' },

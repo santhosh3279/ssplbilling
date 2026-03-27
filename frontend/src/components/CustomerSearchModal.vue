@@ -282,6 +282,7 @@
 import { ref, nextTick, watch, computed } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer } from '../api/customer.js'
 import { frappeGet } from '../api.js'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 import DateFilter from './DateFilter.vue'
 import SupplierCreator from './SupplierCreator.vue'
 import EmployeeCreator from './EmployeeCreator.vue'
@@ -298,6 +299,8 @@ const props = defineProps({
 const availableTabs = computed(() => [...new Set(['All', ...props.allowedTypes])])
 
 const emit = defineEmits(['close', 'select'])
+
+useSubwindowWatcher(computed(() => props.show))
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const query        = ref('')

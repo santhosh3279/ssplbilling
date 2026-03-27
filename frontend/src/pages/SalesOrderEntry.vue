@@ -613,7 +613,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import { useItemCache } from '../services/itemCache.js'
 import { session } from '../session.js'
-import { useShortcuts } from '../services/shortcutManager'
+import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { salesOrderShortcuts } from '../shortcuts/salesOrderShortcuts'
 import * as XLSX from 'xlsx'
 
@@ -1151,6 +1151,11 @@ function handleBack() {
 }
 
 watch(showDiscardModal, (val) => { if (val) nextTick(() => stayHereBtn.value?.focus()) })
+
+// Block page shortcuts while any inline subwindow is open
+useSubwindowWatcher(showSeriesDropdown)
+useSubwindowWatcher(showImportModal)
+useSubwindowWatcher(showDiscardModal)
 
 // ==================== SHORTCUTS ====================
 useShortcuts(salesOrderShortcuts({

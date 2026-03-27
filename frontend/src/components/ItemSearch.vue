@@ -178,6 +178,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
@@ -201,6 +202,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'select'])
+
+useSubwindowWatcher(computed(() => props.show))
 
 const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, hasHistory, lastParams } = useItemCache()
 

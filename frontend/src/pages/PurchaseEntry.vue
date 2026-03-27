@@ -936,6 +936,10 @@ watch(showDiscardModal, (val) => {
   }
 })
 
+// Block page shortcuts while any inline subwindow is open
+useSubwindowWatcher(showImportModal)
+useSubwindowWatcher(showDiscardModal)
+
 const selectedItemData = ref(null)
 
 async function loadItemInsight(code, itemName = '', uom = '') {
@@ -1496,7 +1500,7 @@ function handleBack() {
   }
 }
 
-import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import { purchaseEntryShortcuts } from '../shortcuts/purchaseEntryShortcuts'
 
 useShortcuts(purchaseEntryShortcuts({

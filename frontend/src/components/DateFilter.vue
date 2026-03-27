@@ -51,6 +51,9 @@
 
 <script setup>
 import { ref, nextTick, watch } from 'vue'
+import { useSubwindow } from '../services/shortcutManager'
+
+useSubwindow()
 
 const props = defineProps({
   show: Boolean,

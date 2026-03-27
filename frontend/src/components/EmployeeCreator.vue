@@ -164,6 +164,9 @@
 <script setup>
 import { ref, reactive, watch, nextTick } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
+import { useSubwindow } from '../services/shortcutManager'
+
+useSubwindow()
 
 const props = defineProps({
   show:        { type: Boolean, default: false },

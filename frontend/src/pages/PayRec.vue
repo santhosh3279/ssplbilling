@@ -373,7 +373,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost, frappeGet } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import { useShortcuts } from '../services/shortcutManager'
+import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { payrecShortcuts } from '../shortcuts/payrecShortcuts'
 
 const router = useRouter()
@@ -708,6 +708,9 @@ onMounted(async () => {
   } catch (e) {
     console.warn('Failed to load account ledgers:', e)
   }
+
+  // Block page shortcuts while the outstanding modal is open
+  useSubwindowWatcher(showOutstandingModal)
 
   useShortcuts(payrecShortcuts({
     switchToReceipt: () => { isReceipt.value = true },

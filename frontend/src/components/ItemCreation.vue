@@ -240,6 +240,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, frappeGet } from '../api.js'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
@@ -247,6 +248,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'created'])
+
+useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 const isEditMode = computed(() => !!props.editItemCode)
 
