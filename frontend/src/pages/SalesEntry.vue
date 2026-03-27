@@ -527,7 +527,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       initial-type="Customer"
-      :allowed-types="isBiller ? ['Customer'] : undefined"
+      :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
       :skip-date-filter="true"
       @close="closeCustomerSearchModal"
       @select="pickCust"
@@ -931,7 +931,7 @@ function openCustomerSearch() {
 function pickCust(c, dates) {
   if (c.type !== 'Customer') {
     showCustomerSearchModal.value = false
-    if (!isBiller) openCustomerLedger(c.name, c.type, dates)
+    openCustomerLedger(c.name, c.type, dates)
     return
   }
   customer.value = c.name; 
