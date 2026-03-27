@@ -1064,7 +1064,8 @@ async function confirmSavePrice() {
     console.error('[CustomerPricing] save failed', e)
   }
   savePricePopup.value.show = false
-  if (idx != null) selectRow(idx)
+  selectedRow.value = -1
+  focusNewCode()
 }
 
 function dismissSavePrice() {
