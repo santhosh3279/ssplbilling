@@ -17,7 +17,16 @@
           </div>
           <div class="min-w-0 flex-1">
             <div class="truncate text-sm font-semibold text-slate-200">{{ session.fullName.value || 'User' }}</div>
-            <div class="truncate text-[10px] text-slate-400">{{ session.user.value }}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="truncate text-[10px] text-slate-400">{{ session.user.value }}</span>
+              <span class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                :class="{
+                  'bg-amber-500/20 text-amber-400': userRole === 'admin',
+                  'bg-blue-500/20 text-blue-400': userRole === 'cashier',
+                  'bg-green-500/20 text-green-400': userRole === 'biller',
+                }"
+              >{{ userRole }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -31,36 +40,42 @@
           🏠 Dashboard
         </button>
         <button
+          v-if="canAccessTile('Cashier-Management')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/Cashier-Management')"
         >
           📓 <span class="font-bold text-white">Cashier</span>
         </button>
         <button
+          v-if="canAccessTile('pricing-rules')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/pricing-rules')"
         >
           🏷️ <span class="font-bold text-white">Pricing Rules</span>
         </button>
         <button
+          v-if="canAccessTile('barcode-print')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/barcode-print')"
         >
           🔖 <span class="font-bold text-white">Print Barcodes</span>
         </button>
         <button
+          v-if="canAccessTile('incentive-ledger')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/incentive-ledger')"
         >
           🏆 <span class="font-bold text-white">Incentive Ledger</span>
         </button>
         <button
+          v-if="canAccessTile('loading-receipt')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/loading-receipt')"
         >
           🚚 <span class="font-bold text-white">Loading Receipt</span>
         </button>
         <button
+          v-if="canAccessTile('parcel-address')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/parcel-address')"
         >
@@ -230,6 +245,7 @@ import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
+import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 
 const router = useRouter()
@@ -267,7 +283,9 @@ const todayDay = computed(() => {
 
 
 // ==================== TILES ====================
-const tiles = [
+const userRole = getUserRole()
+
+const allTiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
   { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-slate-600' },
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
@@ -281,6 +299,8 @@ const tiles = [
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
+
+const tiles = allTiles.filter(t => canAccessTile(t.id))
 
 const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'reports']
 

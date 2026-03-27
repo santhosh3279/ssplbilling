@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { session } from './session'
+import { canAccessRoute } from './composables/usePermission'
 import Login from './pages/Login.vue'
 import Dashboard from './pages/Dashboard.vue'
 import SalesEntry from './pages/SalesEntry.vue'
@@ -152,6 +153,10 @@ router.beforeEach(async (to, from, next) => {
     await session.init()
     if (!session.isLoggedIn.value) {
       next({ name: 'Login' })
+      return
+    }
+    if (!canAccessRoute(to.name)) {
+      next({ name: 'Dashboard' })
       return
     }
     next()
