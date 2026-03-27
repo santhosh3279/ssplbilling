@@ -20,6 +20,7 @@ import SalesOrderEntry from './pages/SalesOrderEntry.vue'
 import IncentiveLedger from './pages/IncentiveLedger.vue'
 import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
+import LoadingReceipt from './pages/LoadingReceipt.vue'
 
 const routes = [
   {
@@ -123,6 +124,11 @@ const routes = [
     path: '/store-sale-report',
     name: 'StoreSalesReport',
     component: StoreSalesReport,
+  },
+  {
+    path: '/loading-receipt',
+    name: 'LoadingReceipt',
+    component: LoadingReceipt,
   },
 ]
 
