@@ -431,7 +431,12 @@ watch(() => props.show, async (newVal) => {
     focus()
     if (props.initialQuery) {
       const idx = results.value.findIndex(i => i.item_code === props.initialQuery)
-      if (idx >= 0) selectedIdx.value = idx
+      if (idx >= 0) {
+        selectedIdx.value = idx
+      } else {
+        // No exact match — treat as a failed barcode scan: pre-fill the search box
+        query.value = props.initialQuery
+      }
     }
   } else {
     showDateModal.value = false
