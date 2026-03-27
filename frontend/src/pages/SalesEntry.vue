@@ -1025,14 +1025,18 @@ function onDiscountFocus(idx) { _discAtFocus = items.value[idx]?.discount ?? nul
 
 function onRateBlur(idx) {
   const item = items.value[idx]
-  if (!item || !customer.value || item._rule_discount != null) { _rateAtFocus = null; return }
+  if (!item) { _rateAtFocus = null; return }
   const newRate = item.rate
-  if (_rateAtFocus === null || newRate === _rateAtFocus) { _rateAtFocus = null; return }
-  // Compute discount vs cached list price
-  const cached = lookupItemInCache(item.item_code)
-  const listRate = (cached?.price || cached?.rate) || _rateAtFocus
-  const discPct = listRate > 0 ? Math.max(0, Math.round(((listRate - newRate) / listRate) * 10000) / 100) : 0
+  const rateChanged = _rateAtFocus !== null && newRate !== _rateAtFocus
   _rateAtFocus = null
+  if (!rateChanged) return
+  item.discount = 0
+  item._customer_pricing = false
+  if (!customer.value || item._rule_discount != null) return
+  // Compute discount vs cached list price and offer to save
+  const cached = lookupItemInCache(item.item_code)
+  const listRate = (cached?.price || cached?.rate) || newRate
+  const discPct = listRate > 0 ? Math.max(0, Math.round(((listRate - newRate) / listRate) * 10000) / 100) : 0
   if (discPct >= 0) _triggerSavePricePopup(idx, discPct)
 }
 
