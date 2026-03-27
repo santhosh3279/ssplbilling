@@ -83,20 +83,24 @@ def update_loading_receipt(data):
 
 
 @frappe.whitelist()
-def get_loading_receipts(query=""):
+def get_loading_receipts(query="", date=None):
 	query = (query or "").strip()
-	conditions = ""
+	clauses = []
 	values = []
 	if query:
-		conditions = "WHERE (lr.name LIKE %s OR lr.customer LIKE %s OR lr.bill_no LIKE %s)"
-		values = [f"%{query}%", f"%{query}%", f"%{query}%"]
+		clauses.append("(lr.name LIKE %s OR lr.customer LIKE %s OR lr.bill_no LIKE %s)")
+		values += [f"%{query}%", f"%{query}%", f"%{query}%"]
+	if date:
+		clauses.append("lr.date = %s")
+		values.append(date)
+	where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 	rows = frappe.db.sql(
 		f"""
 		SELECT lr.name, lr.date, lr.bill_no, lr.customer, lr.customer_name, lr.total
 		FROM `tabLoading Receipt` lr
-		{conditions}
+		{where}
 		ORDER BY lr.creation DESC
-		LIMIT 50
+		LIMIT 100
 		""",
 		values,
 		as_dict=True,

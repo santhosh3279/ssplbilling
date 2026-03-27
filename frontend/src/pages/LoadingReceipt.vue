@@ -2,16 +2,12 @@
   <div class="h-screen flex flex-col bg-slate-900">
 
     <!-- ── TOP BAR ───────────────────────────────────────────────── -->
-    <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5 shadow-sm">
+    <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5 shadow-sm shrink-0">
       <div class="flex items-center gap-3">
         <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700 transition" @click="router.push('/')">&larr; Dashboard</button>
         <span class="text-sm text-slate-600">|</span>
         <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Loading Receipt</span>
         <span v-if="docName" class="rounded bg-slate-700 px-2 py-0.5 font-mono text-xs text-blue-300">{{ docName }}</span>
-        <button
-          class="rounded border border-slate-600 px-2.5 py-1 text-sm text-slate-300 hover:bg-slate-700 transition"
-          @click="openModify"
-        >Open Entry</button>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next field</span>
@@ -21,7 +17,7 @@
     </header>
 
     <!-- ── HEADER FIELDS BAR ─────────────────────────────────────── -->
-    <div class="border-b border-slate-700 bg-slate-800 px-4 py-3">
+    <div class="border-b border-slate-700 bg-slate-800 px-4 py-3 shrink-0">
       <div class="flex flex-wrap items-end gap-6">
 
         <!-- Date -->
@@ -106,9 +102,64 @@
       </div>
     </div>
 
-    <!-- ── MAIN TABLE ─────────────────────────────────────────────── -->
+    <!-- ── BODY: SIDEBAR + MAIN ───────────────────────────────────── -->
     <div class="flex flex-1 overflow-hidden">
-      <div class="flex w-full flex-col p-4 overflow-hidden">
+
+      <!-- ── LEFT SIDEBAR (10%) ──────────────────────────────────── -->
+      <aside class="flex w-[10%] shrink-0 flex-col border-r border-slate-700 bg-slate-800 overflow-hidden">
+
+        <!-- Date navigator -->
+        <div class="flex items-center justify-between border-b border-slate-700 px-1.5 py-2 shrink-0">
+          <button
+            class="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition text-base font-bold"
+            title="Previous day"
+            @click="shiftDate(-1)"
+          >&#8592;</button>
+          <div class="flex flex-col items-center leading-none">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500">Date</span>
+            <span class="text-[11px] font-bold text-slate-200 tabular-nums">{{ sidebarDateLabel }}</span>
+          </div>
+          <button
+            class="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition text-base font-bold"
+            title="Next day"
+            @click="shiftDate(1)"
+          >&#8594;</button>
+        </div>
+
+        <!-- Receipt list -->
+        <div class="flex-1 overflow-y-auto">
+          <div v-if="sidebarLoading" class="flex items-center justify-center py-8">
+            <span class="text-[10px] text-slate-500">Loading...</span>
+          </div>
+          <div v-else-if="!sidebarReceipts.length" class="flex items-center justify-center py-8 px-2 text-center">
+            <span class="text-[10px] italic text-slate-600">No receipts</span>
+          </div>
+          <div v-else class="flex flex-col divide-y divide-slate-700">
+            <button
+              v-for="r in sidebarReceipts"
+              :key="r.name"
+              class="w-full px-2 py-2 text-left transition"
+              :class="docName === r.name
+                ? 'bg-blue-600/30 border-l-2 border-blue-500'
+                : 'hover:bg-slate-700 border-l-2 border-transparent'"
+              @click="loadReceipt(r.name)"
+            >
+              <div class="truncate font-mono text-[10px] font-bold" :class="docName === r.name ? 'text-blue-300' : 'text-slate-400'">{{ r.name }}</div>
+              <div class="truncate text-[10px] text-slate-300 mt-0.5">{{ r.customer_name || r.customer }}</div>
+              <div v-if="r.bill_no" class="truncate text-[9px] text-slate-500">{{ r.bill_no }}</div>
+              <div class="text-[10px] font-mono font-bold mt-0.5" :class="docName === r.name ? 'text-blue-200' : 'text-slate-200'">&#8377;{{ (r.total || 0).toFixed(2) }}</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar footer: count -->
+        <div class="shrink-0 border-t border-slate-700 px-2 py-1.5 text-center">
+          <span class="text-[9px] font-bold uppercase tracking-wider text-slate-600">{{ sidebarReceipts.length }} receipt{{ sidebarReceipts.length !== 1 ? 's' : '' }}</span>
+        </div>
+      </aside>
+
+      <!-- ── MAIN CONTENT (90%) ──────────────────────────────────── -->
+      <div class="flex flex-1 flex-col overflow-hidden p-4">
         <div class="flex-1 overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-sm flex flex-col">
           <div class="flex-1 overflow-y-auto">
             <table class="w-full text-sm border-collapse">
@@ -151,7 +202,6 @@
                         @keydown.up.prevent="moveRow(idx, -1)"
                         @keydown.escape="itemDropdownIdx = null"
                       />
-                      <!-- dropdown -->
                       <div
                         v-if="itemDropdownIdx === idx && rowItemResults.length"
                         class="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-xl border border-slate-600 bg-slate-900 shadow-2xl"
@@ -303,17 +353,17 @@
           </div>
 
           <!-- TABLE FOOTER -->
-          <div class="flex items-center justify-between border-t border-slate-700 bg-slate-800 px-6 py-2.5">
+          <div class="flex items-center justify-between border-t border-slate-700 bg-slate-800 px-6 py-2.5 shrink-0">
             <span class="text-xs font-bold uppercase tracking-widest text-slate-500">Items: {{ rows.length }}</span>
             <div class="flex items-baseline gap-2">
               <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Total:</span>
-              <span class="text-2xl font-mono font-black text-slate-100">₹{{ grandTotal.toFixed(2) }}</span>
+              <span class="text-2xl font-mono font-black text-slate-100">&#8377;{{ grandTotal.toFixed(2) }}</span>
             </div>
           </div>
         </div>
 
         <!-- BOTTOM ACTIONS -->
-        <div class="mt-4 flex gap-3 justify-end">
+        <div class="mt-4 flex gap-3 justify-end shrink-0">
           <button
             @click="clearForm"
             class="rounded-xl border border-slate-700 bg-slate-800 px-6 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 transition"
@@ -330,60 +380,6 @@
       </div>
     </div>
 
-    <!-- ── OPEN ENTRY MODAL ───────────────────────────────────────── -->
-    <div
-      v-if="showModify"
-      class="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm pt-16"
-      @click.self="showModify = false"
-    >
-      <div class="flex max-h-[70vh] w-[700px] flex-col rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
-        <div class="border-b border-slate-700 bg-slate-800 px-6 py-4">
-          <div class="text-base font-bold text-slate-100">Loading Receipts</div>
-          <div class="text-xs text-slate-400 mt-0.5">Click a row to open and edit</div>
-        </div>
-        <div class="border-b border-slate-700 bg-slate-900 p-4">
-          <input
-            ref="modifySearchInput"
-            v-model="modifyQuery"
-            class="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
-            placeholder="Search by name, customer, bill no..."
-          />
-        </div>
-        <div class="flex-1 overflow-y-auto">
-          <div v-if="modifyLoading" class="p-10 text-center text-slate-500 text-sm">Loading...</div>
-          <table v-else-if="modifyResults.length" class="w-full text-sm">
-            <thead class="bg-slate-800 border-b border-slate-700">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>
-                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Bill No</th>
-                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Customer</th>
-                <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Date</th>
-                <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Total</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-              <tr
-                v-for="r in modifyResults"
-                :key="r.name"
-                class="cursor-pointer hover:bg-slate-800/50 transition"
-                @click="loadReceipt(r.name)"
-              >
-                <td class="px-6 py-3 font-mono font-bold text-blue-400">{{ r.name }}</td>
-                <td class="px-4 py-3 text-slate-400">{{ r.bill_no || '--' }}</td>
-                <td class="px-4 py-3 text-slate-300">{{ r.customer_name || r.customer }}</td>
-                <td class="px-4 py-3 text-right text-slate-500">{{ r.date }}</td>
-                <td class="px-4 py-3 text-right font-mono font-bold text-slate-200">₹{{ (r.total || 0).toFixed(2) }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="p-12 text-center text-slate-600 italic text-sm">No receipts found</div>
-        </div>
-        <div class="border-t border-slate-700 bg-slate-800 p-4 flex justify-end">
-          <button @click="showModify = false" class="px-6 py-2 text-sm font-bold text-slate-400 hover:text-slate-200">Close</button>
-        </div>
-      </div>
-    </div>
-
   </div>
 </template>
 
@@ -395,10 +391,28 @@ import { frappeGet, frappePost } from '../api.js'
 const router = useRouter()
 const API = 'ssplbilling.api.loading_receipt_api'
 
-// ── STATE ──────────────────────────────────────────────────────────
+// ── HELPERS ─────────────────────────────────────────────────────────
 const today = new Date().toISOString().split('T')[0]
 const nowTime = () => new Date().toTimeString().slice(0, 8)
 
+function addDays(dateStr, n) {
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + n)
+  return d.toISOString().split('T')[0]
+}
+
+function formatDateLabel(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T00:00:00')
+  const t = new Date(today + 'T00:00:00')
+  const diff = Math.round((d - t) / 86400000)
+  if (diff === 0) return 'Today'
+  if (diff === -1) return 'Yesterday'
+  if (diff === 1) return 'Tomorrow'
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+}
+
+// ── FORM STATE ───────────────────────────────────────────────────────
 const form = ref({ date: today, time: nowTime(), bill_no: '', customer: '', amount: 0 })
 const rows = ref([])
 const docName = ref(null)
@@ -423,13 +437,6 @@ const rowItemHighlight = ref(0)
 const itemDropdownIdx = ref(null)
 let rowItemTimer = null
 
-// modify modal
-const showModify = ref(false)
-const modifyQuery = ref('')
-const modifyResults = ref([])
-const modifyLoading = ref(false)
-const modifySearchInput = ref(null)
-
 // refs
 const inputRefs = {}
 const rowRefs = {}
@@ -438,10 +445,33 @@ const newQtyInput = ref(null)
 const newRateInput = ref(null)
 const saveBtn = ref(null)
 
-// ── COMPUTED ────────────────────────────────────────────────────────
+// ── SIDEBAR STATE ────────────────────────────────────────────────────
+const sidebarDate = ref(today)
+const sidebarReceipts = ref([])
+const sidebarLoading = ref(false)
+const sidebarDateLabel = computed(() => formatDateLabel(sidebarDate.value))
+
+async function fetchSidebarReceipts() {
+  sidebarLoading.value = true
+  try {
+    sidebarReceipts.value = await frappePost(`${API}.get_loading_receipts`, { date: sidebarDate.value, query: '' })
+  } catch {
+    sidebarReceipts.value = []
+  } finally {
+    sidebarLoading.value = false
+  }
+}
+
+function shiftDate(n) {
+  sidebarDate.value = addDays(sidebarDate.value, n)
+}
+
+watch(sidebarDate, fetchSidebarReceipts)
+
+// ── COMPUTED ─────────────────────────────────────────────────────────
 const grandTotal = computed(() => rows.value.reduce((s, r) => s + (r.amount || 0), 0))
 
-// ── REF HELPERS ─────────────────────────────────────────────────────
+// ── REF HELPERS ──────────────────────────────────────────────────────
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 function focusField(f, idx)    { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) }
@@ -450,7 +480,7 @@ function focusNewItem()        { nextTick(() => newItemInput.value?.focus()) }
 function focusNewQty()         { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
 function focusNewRate()        { nextTick(() => { newRateInput.value?.focus(); newRateInput.value?.select() }) }
 
-// ── ROW NAVIGATION ──────────────────────────────────────────────────
+// ── ROW NAVIGATION ───────────────────────────────────────────────────
 function selectRow(idx) { selectedRow.value = idx; focusRow(idx) }
 function moveRow(from, dir) {
   const next = from + dir
@@ -472,7 +502,7 @@ function onRowKeydown(e, idx) {
   else if (e.key === 'Enter')    { e.preventDefault(); focusField('item', idx) }
 }
 
-// ── AMOUNT CALC ─────────────────────────────────────────────────────
+// ── AMOUNT CALC ──────────────────────────────────────────────────────
 function calcRowAmount(idx) {
   const r = rows.value[idx]
   r.amount = (r.qty || 0) * (r.rate || 0)
@@ -483,7 +513,7 @@ function removeRow(idx) {
   selectedRow.value = -1
 }
 
-// ── CUSTOMER SEARCH ─────────────────────────────────────────────────
+// ── CUSTOMER SEARCH ──────────────────────────────────────────────────
 function onCustomerInput() {
   clearTimeout(customerTimer)
   customerHighlight.value = 0
@@ -529,11 +559,8 @@ function onNewItemInput() {
 }
 
 function onNewItemEnter() {
-  if (newItemResults.value.length) {
-    pickNewItem(newItemResults.value[newItemHighlight.value])
-  } else {
-    focusNewQty()
-  }
+  if (newItemResults.value.length) pickNewItem(newItemResults.value[newItemHighlight.value])
+  else focusNewQty()
 }
 
 function pickNewItem(it) {
@@ -575,11 +602,8 @@ function onRowItemInput(idx) {
 }
 
 function onRowItemEnter(idx) {
-  if (rowItemResults.value.length) {
-    pickRowItem(idx, rowItemResults.value[rowItemHighlight.value])
-  } else {
-    focusField('qty', idx)
-  }
+  if (rowItemResults.value.length) pickRowItem(idx, rowItemResults.value[rowItemHighlight.value])
+  else focusField('qty', idx)
 }
 
 function pickRowItem(idx, it) {
@@ -609,6 +633,9 @@ async function saveReceipt() {
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
     docName.value = res.name
     alert(`Receipt ${res.name} saved`)
+    // sync sidebar to the saved receipt's date
+    sidebarDate.value = form.value.date
+    await fetchSidebarReceipts()
   } catch (e) {
     alert(e.message || 'Save failed')
   } finally {
@@ -626,23 +653,6 @@ function clearForm() {
   nextTick(focusNewItem)
 }
 
-// ── MODIFY MODAL ─────────────────────────────────────────────────────
-async function openModify() {
-  showModify.value = true
-  await fetchModifyResults()
-  nextTick(() => modifySearchInput.value?.focus())
-}
-
-watch(modifyQuery, () => fetchModifyResults())
-
-async function fetchModifyResults() {
-  modifyLoading.value = true
-  try {
-    modifyResults.value = await frappePost(`${API}.get_loading_receipts`, { query: modifyQuery.value })
-  } catch { modifyResults.value = [] }
-  modifyLoading.value = false
-}
-
 async function loadReceipt(name) {
   try {
     const d = await frappePost(`${API}.get_loading_receipt`, { name })
@@ -656,7 +666,6 @@ async function loadReceipt(name) {
     }
     customerQuery.value = d.customer_name || d.customer
     rows.value = d.loading_items.map(r => ({ ...r }))
-    showModify.value = false
     selectedRow.value = -1
   } catch (e) {
     alert(e.message || 'Failed to load receipt')
@@ -671,6 +680,7 @@ function onKeydown(e) {
 
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
+  fetchSidebarReceipts()
   nextTick(focusNewItem)
 })
 
