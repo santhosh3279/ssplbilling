@@ -11,6 +11,7 @@
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next field</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">End</kbd> Save</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> Back</span>
       </div>
@@ -663,10 +664,10 @@ async function saveReceipt() {
     const method = docName.value ? 'update_loading_receipt' : 'create_loading_receipt'
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
     docName.value = res.name
-    alert(`Receipt ${res.name} saved`)
     // sync sidebar to the saved receipt's date
     sidebarDate.value = form.value.date
     await fetchSidebarReceipts()
+    showPrint.value = true
   } catch (e) {
     alert(e.message || 'Save failed')
   } finally {
@@ -707,6 +708,7 @@ async function loadReceipt(name) {
 // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────────
 function onKeydown(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveReceipt() }
+  if (e.key === 'End') { e.preventDefault(); saveReceipt() }
   if (e.key === 'Escape') { router.push('/') }
 }
 
