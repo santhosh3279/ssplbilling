@@ -657,8 +657,8 @@
         <div>Save <span class="font-mono text-purple-400">{{ savePricePopup.discount_percentage.toFixed(2) }}%</span> discount for <span class="text-slate-300">{{ customer }}</span>?</div>
       </div>
       <div class="flex gap-2 px-4 pb-3">
-        <button @click="confirmSavePrice" class="flex-1 rounded-lg bg-purple-600 py-1.5 text-xs font-bold text-white hover:bg-purple-700">Yes, Save</button>
-        <button ref="savePriceNoBtn" @click="dismissSavePrice" class="flex-1 rounded-lg bg-slate-700 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600">No</button>
+        <button ref="savePriceYesBtn" @click="confirmSavePrice" @keydown="onSavePriceKeydown" class="flex-1 rounded-lg bg-purple-600 py-1.5 text-xs font-bold text-white hover:bg-purple-700">Yes, Save</button>
+        <button ref="savePriceNoBtn" @click="dismissSavePrice" @keydown="onSavePriceKeydown" class="flex-1 rounded-lg bg-slate-700 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600">No</button>
       </div>
     </div>
 
@@ -1016,6 +1016,7 @@ function applyCustomerPricingForRow(idx) {
 // Save-price popup
 const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', discount_percentage: 0 })
 const savePriceNoBtn = ref(null)
+const savePriceYesBtn = ref(null)
 let _rateAtFocus = null
 let _discAtFocus = null
 
@@ -1072,6 +1073,14 @@ function dismissSavePrice() {
   savePricePopup.value.show = false
   selectedRow.value = -1
   focusNewCode()
+}
+
+function onSavePriceKeydown(e) {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (document.activeElement === savePriceNoBtn.value) savePriceYesBtn.value?.focus()
+    else savePriceNoBtn.value?.focus()
+  }
 }
 
 // ==================== API RESOURCES ====================
