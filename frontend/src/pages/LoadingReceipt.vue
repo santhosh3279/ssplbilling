@@ -8,6 +8,11 @@
         <span class="text-sm text-slate-600">|</span>
         <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Loading Receipt</span>
         <span v-if="docName" class="rounded bg-slate-700 px-2 py-0.5 font-mono text-xs text-blue-300">{{ docName }}</span>
+        <span class="text-sm text-slate-600">|</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-bold uppercase text-slate-500">Today</span>
+          <span class="font-mono text-sm font-black text-green-400">&#8377;{{ todayTotal.toFixed(2) }}</span>
+        </div>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next field</span>
@@ -88,15 +93,6 @@
               <div class="font-semibold">{{ c.customer_name }}</div>
               <div class="text-[10px] font-mono" :class="i === customerHighlight ? 'text-blue-200' : 'text-slate-500'">{{ c.name }}</div>
             </div>
-          </div>
-        </div>
-
-        <!-- Today's Total -->
-        <div class="flex flex-col gap-1 ml-auto">
-          <label class="text-[10px] font-bold uppercase text-slate-400">Today's Total</label>
-          <div class="flex items-center rounded border border-slate-700 bg-slate-900 px-3 py-1.5 tabular-nums">
-            <span class="text-xs text-slate-500 mr-1">&#8377;</span>
-            <span class="text-sm font-black text-green-400 font-mono">{{ todayTotal.toFixed(2) }}</span>
           </div>
         </div>
 
