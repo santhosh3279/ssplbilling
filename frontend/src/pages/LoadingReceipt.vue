@@ -8,11 +8,6 @@
         <span class="text-sm text-slate-600">|</span>
         <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Loading Receipt</span>
         <span v-if="docName" class="rounded bg-slate-700 px-2 py-0.5 font-mono text-xs text-blue-300">{{ docName }}</span>
-        <button
-          v-if="docName"
-          class="rounded border border-slate-600 bg-slate-700 px-2.5 py-1 text-sm font-bold text-slate-200 hover:bg-slate-600 transition flex items-center gap-1.5"
-          @click="showPrint = true"
-        >🖨 Print</button>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next field</span>
@@ -373,6 +368,11 @@
             @click="clearForm"
             class="rounded-xl border border-slate-700 bg-slate-800 px-6 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 transition"
           >Clear</button>
+          <button
+            v-if="docName"
+            @click="showPrint = true"
+            class="rounded-xl border border-slate-600 bg-slate-700 px-6 py-2.5 text-sm font-bold text-slate-200 hover:bg-slate-600 transition flex items-center gap-2"
+          >🖨 Print</button>
           <button
             ref="saveBtn"
             @click="saveReceipt"
