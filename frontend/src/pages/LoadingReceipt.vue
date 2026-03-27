@@ -91,16 +91,13 @@
           </div>
         </div>
 
-        <!-- Amount -->
+        <!-- Today's Total -->
         <div class="flex flex-col gap-1 ml-auto">
-          <label class="text-[10px] font-bold uppercase text-slate-400">Amount</label>
-          <input
-            v-model.number="form.amount"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            class="w-32 rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-right text-sm font-bold text-slate-200 outline-none focus:border-blue-500 tabular-nums"
-          />
+          <label class="text-[10px] font-bold uppercase text-slate-400">Today's Total</label>
+          <div class="flex items-center rounded border border-slate-700 bg-slate-900 px-3 py-1.5 tabular-nums">
+            <span class="text-xs text-slate-500 mr-1">&#8377;</span>
+            <span class="text-sm font-black text-green-400 font-mono">{{ todayTotal.toFixed(2) }}</span>
+          </div>
         </div>
 
       </div>
@@ -430,8 +427,20 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
 }
 
+// ── TODAY'S TOTAL ────────────────────────────────────────────────────
+const todayTotal = ref(0)
+
+async function fetchTodayTotal() {
+  try {
+    const receipts = await frappePost(`${API}.get_loading_receipts`, { date: today, query: '' })
+    todayTotal.value = (receipts || []).reduce((s, r) => s + (r.total || 0), 0)
+  } catch {
+    todayTotal.value = 0
+  }
+}
+
 // ── FORM STATE ───────────────────────────────────────────────────────
-const form = ref({ date: today, time: nowTime(), bill_no: '', customer: '', amount: 0 })
+const form = ref({ date: today, time: nowTime(), bill_no: '', customer: '' })
 const rows = ref([])
 const docName = ref(null)
 const saving = ref(false)
@@ -658,6 +667,7 @@ async function saveReceipt() {
     const payload = {
       name: docName.value,
       ...form.value,
+      amount: grandTotal.value,
       total: grandTotal.value,
       loading_items: rows.value,
     }
@@ -666,7 +676,7 @@ async function saveReceipt() {
     docName.value = res.name
     // sync sidebar to the saved receipt's date
     sidebarDate.value = form.value.date
-    await fetchSidebarReceipts()
+    await Promise.all([fetchSidebarReceipts(), fetchTodayTotal()])
     showPrint.value = true
   } catch (e) {
     alert(e.message || 'Save failed')
@@ -677,7 +687,7 @@ async function saveReceipt() {
 
 function clearForm() {
   if (rows.value.length && !confirm('Clear all data and start a new receipt?')) return
-  form.value = { date: today, time: nowTime(), bill_no: '', customer: '', amount: 0 }
+  form.value = { date: today, time: nowTime(), bill_no: '', customer: '' }
   customerQuery.value = ''
   rows.value = []
   docName.value = null
@@ -694,7 +704,6 @@ async function loadReceipt(name) {
       time: d.time || nowTime(),
       bill_no: d.bill_no || '',
       customer: d.customer,
-      amount: d.amount || 0,
     }
     customerQuery.value = d.customer_name || d.customer
     rows.value = d.loading_items.map(r => ({ ...r }))
@@ -715,6 +724,7 @@ function onKeydown(e) {
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
   fetchSidebarReceipts()
+  fetchTodayTotal()
   nextTick(focusBillNo)
 })
 
