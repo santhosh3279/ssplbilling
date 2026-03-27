@@ -173,6 +173,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       :initialType="searchType"
+      :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
       @close="closeCustomerSearchModal"
       @select="pickCust"
     />
@@ -284,6 +285,7 @@ const todayDay = computed(() => {
 
 // ==================== TILES ====================
 const userRole = getUserRole()
+const isBiller = userRole === 'biller'
 
 const allTiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
