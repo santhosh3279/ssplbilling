@@ -502,6 +502,7 @@
       ref="suppSearchModalRef"
       :show="showSupplierSearchModal"
       initial-type="Supplier"
+      :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
       :skip-date-filter="true"
       @close="closeSupplierSearchModal"
       @select="pickSupp"
@@ -626,6 +627,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { getUserRole } from '../composables/usePermission'
 import ItemSearch from '../components/ItemSearch.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
@@ -841,6 +843,8 @@ const discountInput = ref(null)
 const saveButton = ref(null)
 const stayHereBtn = ref(null)
 const suppSearchModalRef = ref(null)
+
+const isBiller = getUserRole() === 'biller'
 
 // ==================== SUPPLIER SEARCH ====================
 const suppSearch = ref('')

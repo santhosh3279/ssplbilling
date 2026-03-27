@@ -514,6 +514,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       initial-type="Customer"
+      :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
       :skip-date-filter="true"
       @close="closeCustomerSearchModal"
       @select="pickCust"
@@ -689,6 +690,7 @@ import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, fr
 import { searchCustomers } from '../customersearch.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { getUserRole } from '../composables/usePermission'
 import ItemSearch from '../components/ItemSearch.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
@@ -880,6 +882,8 @@ const custSearchModalRef = ref(null)
 const resultsWrapRef = ref(null)
 const searchRowRefs = new Map()
 function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else searchRowRefs.delete(idx) }
+
+const isBiller = getUserRole() === 'biller'
 
 // ==================== CUSTOMER DROPDOWN ====================
 const custSearch = ref('')

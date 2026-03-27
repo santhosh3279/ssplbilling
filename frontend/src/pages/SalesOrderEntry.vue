@@ -485,6 +485,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       initial-type="Customer"
+      :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
       :skip-date-filter="true"
       @close="closeCustomerSearchModal"
       @select="pickCust"
@@ -609,6 +610,7 @@ import { useRouter } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { getUserRole } from '../composables/usePermission'
 import ItemSearch from '../components/ItemSearch.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import { useItemCache } from '../services/itemCache.js'
@@ -987,6 +989,8 @@ async function pickItem(item) {
     nextTick(() => focusNewQty())
   }
 }
+
+const isBiller = getUserRole() === 'biller'
 
 // ==================== CUSTOMER SEARCH ====================
 const custSearch = ref('')
