@@ -1069,9 +1069,9 @@ async function confirmSavePrice() {
 }
 
 function dismissSavePrice() {
-  const idx = savePricePopup.value.idx
   savePricePopup.value.show = false
-  if (idx != null) selectRow(idx)
+  selectedRow.value = -1
+  focusNewCode()
 }
 
 // ==================== API RESOURCES ====================
