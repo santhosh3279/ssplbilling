@@ -336,7 +336,7 @@ const routeMap = {
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(dashboardShortcuts({
   openModule,
-  openCustomerSearch: () => openCustomerSearch('All'),
+  openCustomerSearch: isBiller ? null : () => openCustomerSearch('All'),
   openItemSearch: () => openItemSearch(),
   handleEscape: () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
