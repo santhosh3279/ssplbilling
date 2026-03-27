@@ -142,6 +142,7 @@
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Enter</kbd> Select</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F2</kbd> New Item</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F3</kbd> Edit Item</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Update Price</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F5</kbd> Refresh</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> Close</span>
       </div>
@@ -168,6 +169,15 @@
         @close="showEditModal = false; focus()"
         @created="handleItemUpdated"
       />
+
+      <PriceListUpdate
+        v-if="showPriceUpdateModal"
+        :is-sub-window="true"
+        :item-code="results[selectedIdx]?.item_code"
+        :selected-price-list="priceList"
+        @close="showPriceUpdateModal = false; focus()"
+        @saved="showPriceUpdateModal = false; preloadItems(true); focus()"
+      />
     </div>
   </div>
 </template>
@@ -178,6 +188,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
+import PriceListUpdate from '../pages/PriceListUpdate.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -215,6 +226,7 @@ const showDateModal = ref(false)
 const showCreationModal = ref(false)
 const showEditModal = ref(false)
 const editItemCode = ref('')
+const showPriceUpdateModal = ref(false)
 const insightData = ref(null)
 const cipherMap = ref([])
 
@@ -321,7 +333,7 @@ function handleItemUpdated() {
 }
 
 function handleGlobalKeydown(e) {
-  if (showDateModal.value || showCreationModal.value || showEditModal.value) return
+  if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -348,6 +360,9 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'F3') {
     e.preventDefault()
     openEditModal()
+  } else if (e.key === 'F4') {
+    e.preventDefault()
+    if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
   }
 }
 
