@@ -45,10 +45,13 @@
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-bold uppercase text-slate-400">Bill No</label>
           <input
+            ref="billNoInput"
             v-model="form.bill_no"
             type="text"
             placeholder="Bill / Ref No"
             class="w-36 rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-blue-500"
+            @keydown.enter.prevent="focusCustomer"
+            @keydown.tab.prevent="focusCustomer"
           />
         </div>
 
@@ -65,7 +68,7 @@
             @input="onCustomerInput"
             @keydown.down.prevent="customerHighlight = Math.min(customerHighlight + 1, customerResults.length - 1)"
             @keydown.up.prevent="customerHighlight = Math.max(customerHighlight - 1, 0)"
-            @keydown.enter.prevent="pickCustomer(customerResults[customerHighlight])"
+            @keydown.enter.prevent="onCustomerEnter"
             @keydown.escape="customerResults = []"
             @blur="onCustomerBlur"
           />
@@ -455,6 +458,8 @@ let rowItemTimer = null
 // refs
 const inputRefs = {}
 const rowRefs = {}
+const billNoInput = ref(null)
+const customerInput = ref(null)
 const newItemInput = ref(null)
 const newQtyInput = ref(null)
 const newRateInput = ref(null)
@@ -491,6 +496,8 @@ function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 function focusField(f, idx)    { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) }
 function focusRow(idx)         { nextTick(() => rowRefs[idx]?.focus()) }
+function focusBillNo()         { nextTick(() => { billNoInput.value?.focus(); billNoInput.value?.select() }) }
+function focusCustomer()       { nextTick(() => { customerInput.value?.focus(); customerInput.value?.select() }) }
 function focusNewItem()        { nextTick(() => newItemInput.value?.focus()) }
 function focusNewQty()         { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
 function focusNewRate()        { nextTick(() => { newRateInput.value?.focus(); newRateInput.value?.select() }) }
@@ -548,11 +555,20 @@ async function searchCustomers() {
   } catch { customerResults.value = [] }
 }
 
+function onCustomerEnter() {
+  if (customerResults.value.length) {
+    pickCustomer(customerResults.value[customerHighlight.value])
+  } else {
+    focusNewItem()
+  }
+}
+
 function pickCustomer(c) {
   if (!c) return
   form.value.customer = c.name
   customerQuery.value = c.customer_name
   customerResults.value = []
+  focusNewItem()
 }
 
 function onCustomerBlur() {
@@ -665,7 +681,7 @@ function clearForm() {
   rows.value = []
   docName.value = null
   selectedRow.value = -1
-  nextTick(focusNewItem)
+  nextTick(focusBillNo)
 }
 
 async function loadReceipt(name) {
@@ -682,6 +698,7 @@ async function loadReceipt(name) {
     customerQuery.value = d.customer_name || d.customer
     rows.value = d.loading_items.map(r => ({ ...r }))
     selectedRow.value = -1
+    nextTick(focusBillNo)
   } catch (e) {
     alert(e.message || 'Failed to load receipt')
   }
@@ -696,7 +713,7 @@ function onKeydown(e) {
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
   fetchSidebarReceipts()
-  nextTick(focusNewItem)
+  nextTick(focusBillNo)
 })
 
 onUnmounted(() => {
