@@ -8,6 +8,11 @@
         <span class="text-sm text-slate-600">|</span>
         <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Loading Receipt</span>
         <span v-if="docName" class="rounded bg-slate-700 px-2 py-0.5 font-mono text-xs text-blue-300">{{ docName }}</span>
+        <button
+          v-if="docName"
+          class="rounded border border-slate-600 bg-slate-700 px-2.5 py-1 text-sm font-bold text-slate-200 hover:bg-slate-600 transition flex items-center gap-1.5"
+          @click="showPrint = true"
+        >🖨 Print</button>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next field</span>
@@ -380,6 +385,14 @@
       </div>
     </div>
 
+  <!-- ── PRINT MODAL ───────────────────────────────────────────── -->
+  <PrintOptionsModal
+    v-if="showPrint && docName"
+    :invoice-name="docName"
+    doctype="Loading Receipt"
+    @close="showPrint = false"
+  />
+
   </div>
 </template>
 
@@ -387,6 +400,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 const router = useRouter()
 const API = 'ssplbilling.api.loading_receipt_api'
@@ -418,6 +432,7 @@ const rows = ref([])
 const docName = ref(null)
 const saving = ref(false)
 const selectedRow = ref(-1)
+const showPrint = ref(false)
 
 // customer search
 const customerQuery = ref('')
