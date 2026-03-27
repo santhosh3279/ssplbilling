@@ -21,6 +21,7 @@ import IncentiveLedger from './pages/IncentiveLedger.vue'
 import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
+import ParcelAddress from './pages/ParcelAddress.vue'
 
 const routes = [
   {
@@ -129,6 +130,11 @@ const routes = [
     path: '/loading-receipt',
     name: 'LoadingReceipt',
     component: LoadingReceipt,
+  },
+  {
+    path: '/parcel-address',
+    name: 'ParcelAddress',
+    component: ParcelAddress,
   },
 ]
 
