@@ -105,6 +105,7 @@ def get_sales_invoice(invoice_name):
                 "item_name": item.item_name,
                 "uom": item.uom or item.stock_uom or "",
                 "qty": float(item.qty),
+                "price_list_rate": float(item.price_list_rate or item.rate or 0),
                 "rate": float(item.rate),
                 "discount": float(item.discount_percentage or 0),
                 "warehouse": item.warehouse or "",

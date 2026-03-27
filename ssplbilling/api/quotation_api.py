@@ -258,6 +258,13 @@ def get_quotation(quotation_name):
 		frappe.throw(f"Quotation {quotation_name} not found")
 
 	qt = frappe.get_doc("Quotation", quotation_name)
+	cost_center = qt.items[0].cost_center if qt.items else ""
+
+	def _actual_charge(keyword):
+		for t in (qt.taxes or []):
+			if t.charge_type == "Actual" and keyword.lower() in (t.description or "").lower():
+				return float(t.tax_amount or 0)
+		return 0.0
 
 	items = []
 	for i in qt.items:
@@ -266,9 +273,10 @@ def get_quotation(quotation_name):
 			"item_name": i.item_name,
 			"uom": i.uom or i.stock_uom,
 			"qty": float(i.qty or 0),
+			"price_list_rate": float(i.price_list_rate or i.rate or 0),
 			"rate": float(i.rate or 0),
 			"discount": float(i.discount_percentage or 0),
-			"tax_rate": 0.0,
+			"tax_rate": _get_item_tax_rate(i.item_code),
 			"deleted": False,
 		})
 
@@ -281,6 +289,13 @@ def get_quotation(quotation_name):
 		"valid_till": str(qt.valid_till or ""),
 		"discount_percentage": float(qt.additional_discount_percentage or 0),
 		"additional_discount_amount": float(qt.discount_amount or 0),
+		"freight_amount": _actual_charge("freight"),
+		"packing_amount": _actual_charge("packing"),
+		"loading_amount": _actual_charge("loading"),
+		"other_charges_amount": _actual_charge("other"),
+		"tax_template": qt.taxes_and_charges or "",
+		"cost_center": cost_center or "",
+		"price_list": qt.selling_price_list or "",
 		"docstatus": qt.docstatus,
 		"status": qt.status,
 		"items": items,

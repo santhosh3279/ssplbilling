@@ -1056,9 +1056,14 @@ async function loadOrder(orderName) {
     discountPct.value = so.discount_percentage || 0
     discountDirectAmt.value = so.additional_discount_amount || 0
     discountInputMode.value = so.additional_discount_amount > 0 ? 'amt' : so.discount_percentage > 0 ? 'pct' : null
-    freightAmt.value = 0
-    loadingAmt.value = 0
-    items.value = so.items.map(i => ({ ...i }))
+    freightAmt.value = so.freight_amount || 0
+    loadingAmt.value = so.loading_amount || 0
+    items.value = so.items.map(i => ({
+      ...i,
+      rate: i.price_list_rate || i.rate,
+      discount: i.discount || 0,
+      tax_rate: i.tax_rate ?? 0,
+    }))
     selectedRow.value = -1; newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', rate: null }; selectedItemData.value = null
     savedOrderName.value = so.name
     billDocStatus.value = so.docstatus

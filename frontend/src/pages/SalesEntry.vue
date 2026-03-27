@@ -1503,14 +1503,9 @@ async function loadInvoice(invoiceName) {
     if (inv.cost_center) costCenter.value = inv.cost_center
     items.value = inv.items.map(i => {
       const disc = i.discount || 0
-      // ERPNext returns the effective (discounted) rate. Reconstruct the list price
-      // so the rate column always shows the price list rate, and amount = qty*rate*(1-disc/100).
-      const savedListRate = disc > 0 ? Math.round((i.rate / (1 - disc / 100)) * 100) / 100 : i.rate
-      // Prefer the current price list rate from local cache; fall back to saved list rate.
-      const cached = lookupItemInCache(i.item_code)
-      const listRate = (cached && (cached.price || cached.rate)) ? (cached.price || cached.rate) : savedListRate
-      // Rate=0 rows were saved as product-discount free items. Mark them so
-      // reapplyAllDiscountRules strips and re-adds them correctly (no duplicates).
+      // Use the price_list_rate saved on the invoice item (the rate before row-level
+      // discount). Fall back to rate if price_list_rate is absent (older records).
+      const listRate = i.price_list_rate || i.rate
       const isFreeRow = (i.rate === 0 || i.rate === '0') && disc === 0
       return {
         ...i,

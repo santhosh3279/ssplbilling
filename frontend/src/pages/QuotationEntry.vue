@@ -1480,9 +1480,7 @@ async function loadQuotation(quotationName) {
     if (inv.price_list) priceList.value = inv.price_list
     items.value = inv.items.map(i => {
       const disc = i.discount || 0
-      const savedListRate = disc > 0 ? Math.round((i.rate / (1 - disc / 100)) * 100) / 100 : i.rate
-      const cached = lookupItemInCache(i.item_code)
-      const listRate = (cached && (cached.price || cached.rate)) ? (cached.price || cached.rate) : savedListRate
+      const listRate = i.price_list_rate || i.rate
       const isFreeRow = (i.rate === 0 || i.rate === '0') && disc === 0
       return {
         ...i,

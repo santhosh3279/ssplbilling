@@ -1248,7 +1248,12 @@ async function loadInvoice(invoiceName) {
     discountPct.value = inv.discount_percentage || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
-    items.value = inv.items.map(i => ({ ...i, discount: i.discount || 0, tax_rate: i.tax_rate ?? defaultTaxRate.value }))
+    items.value = inv.items.map(i => ({
+      ...i,
+      rate: i.price_list_rate || i.rate,
+      discount: i.discount || 0,
+      tax_rate: i.tax_rate ?? defaultTaxRate.value,
+    }))
     selectedRow.value = -1
     newItemCode.value = ''
     newQty.value = 1

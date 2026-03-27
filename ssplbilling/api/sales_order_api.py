@@ -214,6 +214,13 @@ def get_sales_order(order_name):
 		frappe.throw(f"Sales Order {order_name} not found")
 
 	so = frappe.get_doc("Sales Order", order_name)
+	cost_center = so.items[0].cost_center if so.items else ""
+
+	def _actual_charge(keyword):
+		for t in (so.taxes or []):
+			if t.charge_type == "Actual" and keyword.lower() in (t.description or "").lower():
+				return float(t.tax_amount or 0)
+		return 0.0
 
 	items = []
 	for i in so.items:
@@ -222,9 +229,10 @@ def get_sales_order(order_name):
 			"item_name": i.item_name,
 			"uom": i.uom or i.stock_uom,
 			"qty": float(i.qty or 0),
+			"price_list_rate": float(i.price_list_rate or i.rate or 0),
 			"rate": float(i.rate or 0),
 			"discount": float(i.discount_percentage or 0),
-			"tax_rate": 0.0,
+			"tax_rate": _get_item_tax_rate(i.item_code),
 			"deleted": False,
 		})
 
@@ -237,6 +245,13 @@ def get_sales_order(order_name):
 		"delivery_date": str(so.delivery_date or ""),
 		"discount_percentage": float(so.additional_discount_percentage or 0),
 		"additional_discount_amount": float(so.discount_amount or 0),
+		"freight_amount": _actual_charge("freight"),
+		"packing_amount": _actual_charge("packing"),
+		"loading_amount": _actual_charge("loading"),
+		"other_charges_amount": _actual_charge("other"),
+		"tax_template": so.taxes_and_charges or "",
+		"cost_center": cost_center or "",
+		"price_list": so.selling_price_list or "",
 		"docstatus": so.docstatus,
 		"items": items,
 	}
