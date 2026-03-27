@@ -449,6 +449,7 @@
     <CustomerSearchModal
       ref="ledgerCustSearchModalRef"
       :show="showCustomerSearchModal"
+      :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
       @close="closeCustomerSearchModal"
       @select="(c, d) => { pickLedger(c, d); closeCustomerSearchModal() }"
     />
@@ -479,6 +480,9 @@ import ItemSearch from '../components/ItemSearch.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import { searchItems } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
+import { getUserRole } from '../composables/usePermission'
+
+const isBiller = getUserRole() === 'biller'
 
 const props = defineProps({
   isSubWindow: {
@@ -614,6 +618,7 @@ function closeCustomerSearchModal() {
 }
 
 function pickLedger(l, dates) {
+  if (isBiller && l.type === 'Account') return
   selectedLedger.value = l
   if (dates) {
     fromDate.value = dates.from
