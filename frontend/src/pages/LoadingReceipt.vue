@@ -141,10 +141,12 @@
                 : 'hover:bg-slate-700 border-l-2 border-transparent'"
               @click="loadReceipt(r.name)"
             >
-              <div class="truncate font-mono text-[10px] font-bold" :class="docName === r.name ? 'text-blue-300' : 'text-slate-400'">{{ r.name }}</div>
+              <div class="flex items-center justify-between gap-1">
+                <div class="truncate font-mono text-[10px] font-bold" :class="docName === r.name ? 'text-blue-300' : 'text-slate-400'">{{ r.name }}</div>
+                <div class="shrink-0 font-mono text-[10px] font-bold" :class="docName === r.name ? 'text-blue-200' : 'text-slate-200'">&#8377;{{ (r.total || 0).toFixed(2) }}</div>
+              </div>
               <div class="truncate text-[10px] text-slate-300 mt-0.5">{{ r.customer_name || r.customer }}</div>
               <div v-if="r.bill_no" class="truncate text-[9px] text-slate-500">{{ r.bill_no }}</div>
-              <div class="text-[10px] font-mono font-bold mt-0.5" :class="docName === r.name ? 'text-blue-200' : 'text-slate-200'">&#8377;{{ (r.total || 0).toFixed(2) }}</div>
             </button>
           </div>
         </div>
