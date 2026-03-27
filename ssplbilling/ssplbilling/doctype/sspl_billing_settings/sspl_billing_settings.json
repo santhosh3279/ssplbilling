@@ -17,7 +17,9 @@
   "column_break_raod",
   "billing_series",
   "user_series",
-  "table_vycb"
+  "table_vycb",
+  "section_break_visible_accounts",
+  "visible_accounts"
  ],
  "fields": [
   {
@@ -97,6 +99,17 @@
    "fieldtype": "Link",
    "label": "Other Charges",
    "options": "Account"
+  },
+  {
+   "fieldname": "section_break_visible_accounts",
+   "fieldtype": "Section Break",
+   "label": "Visible Accounts"
+  },
+  {
+   "fieldname": "visible_accounts",
+   "fieldtype": "Table",
+   "label": "Visible Accounts",
+   "options": "SSPL Visible Account"
   }
  ],
  "issingle": 1,

@@ -146,6 +146,27 @@
             </div>
           </div>
 
+          <!-- ── Visible Accounts ── -->
+          <div v-if="rawSettings.visible_accounts?.length">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Visible Accounts</div>
+            <div class="overflow-auto rounded-lg border border-slate-700">
+              <table class="w-full text-xs">
+                <thead class="bg-slate-800">
+                  <tr>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Account</th>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Display Label</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="va in rawSettings.visible_accounts" :key="va.account" class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 font-medium text-slate-200">{{ va.account || '--' }}</td>
+                    <td class="px-3 py-1.5 text-slate-400">{{ va.label || '--' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- ── Printer Settings ── -->
           <div v-if="rawSettings.printer_settings?.length">
             <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Printer Settings</div>
@@ -188,7 +209,7 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Cashier</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Biller</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Default Printer</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Blocked Windows</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Accounts</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -207,7 +228,7 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.cashier ? '✓' : '' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.biller ? '✓' : '' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.default_printer || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.allowed_windows || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.accounts ? '✓' : '' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -239,7 +260,7 @@ const props = defineProps({
   show: Boolean,
 })
 
-const emit = defineEmits(['close', 'sync'])
+const emit = defineEmits(['close'])
 
 useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
@@ -287,6 +308,16 @@ function applyToLocalStorage(settings) {
     localStorage.setItem('wb-other-charges', settings.other_charges)
   }
 
+  // Visible accounts — global list of GL accounts exposed in the ledger search modal
+  const visibleAccountNames = (settings.visible_accounts || [])
+    .map(va => va.account)
+    .filter(Boolean)
+  if (visibleAccountNames.length) {
+    localStorage.setItem('wb-visible-accounts', JSON.stringify(visibleAccountNames))
+  } else {
+    localStorage.removeItem('wb-visible-accounts')
+  }
+
   // User defaults from user_series row
   ;['wb-cash-mop', 'wb-card-mop', 'wb-bank-mop', 'wb-upi-mop'].forEach(k => localStorage.removeItem(k))
   if (settings.user_defaults?.cash)           localStorage.setItem('wb-cash',           settings.user_defaults.cash)
@@ -310,14 +341,12 @@ function applyToLocalStorage(settings) {
   const currentUser = session.user.value
   const userRow = (settings.user_series || []).find(r => r.user === currentUser)
 
-  // Role flags and blocked windows from user_series row
+  // Role flags from user_series row
   if (userRow) {
-    localStorage.setItem('wb-role-admin',   userRow.admin   ? '1' : '0')
-    localStorage.setItem('wb-role-cashier', userRow.cashier ? '1' : '0')
-    localStorage.setItem('wb-role-biller',  userRow.biller  ? '1' : '0')
-    if (userRow.allowed_windows) {
-      localStorage.setItem('wb-blocked-windows', userRow.allowed_windows)
-    }
+    localStorage.setItem('wb-role-admin',    userRow.admin    ? '1' : '0')
+    localStorage.setItem('wb-role-cashier',  userRow.cashier  ? '1' : '0')
+    localStorage.setItem('wb-role-biller',   userRow.biller   ? '1' : '0')
+    localStorage.setItem('wb-role-accounts', userRow.accounts ? '1' : '0')
   }
 
   let allowedSeries = allBillingSeries
@@ -340,7 +369,6 @@ function applyToLocalStorage(settings) {
 
 async function handleSync() {
   await loadSettings()
-  emit('sync')
 }
 
 function showLocalVariables() {

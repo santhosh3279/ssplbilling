@@ -164,7 +164,7 @@ def get_billing_settings():
 				"admin": r.admin or 0,
 				"cashier": r.cashier or 0,
 				"biller": r.biller or 0,
-				"allowed_windows": r.allowed_windows or "",
+				"accounts": r.accounts or 0,
 				"default_printer": r.default_printer or "",
 			}
 			for r in settings.user_series
@@ -175,5 +175,12 @@ def get_billing_settings():
 				"template": r.template or "",
 			}
 			for r in (settings.table_vycb or [])
+		],
+		"visible_accounts": [
+			{
+				"account": r.account or "",
+				"label": r.label or "",
+			}
+			for r in (settings.visible_accounts or [])
 		],
 	}

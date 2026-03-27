@@ -283,6 +283,7 @@ import { ref, nextTick, watch, computed } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer } from '../api/customer.js'
 import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
+import { getUserRole } from '../composables/usePermission.js'
 import DateFilter from './DateFilter.vue'
 import SupplierCreator from './SupplierCreator.vue'
 import EmployeeCreator from './EmployeeCreator.vue'
@@ -377,6 +378,32 @@ const results = computed(() => {
   if (props.filterList && props.filterList.length > 0) {
     list = list.filter(l => props.filterList.includes(l.name))
   }
+
+  // Admin and accounts role see all GL accounts — skip the Account filter entirely
+  const _role = getUserRole()
+  if (_role !== 'admin' && _role !== 'accounts') {
+
+  // Build allowed Account set: user's MOP accounts (cash/card/bank/upi) UNION global visible_accounts.
+  // If neither is configured, no Account filter is applied (show all).
+  const userMopAccounts = [
+    localStorage.getItem('wb-cash'),
+    localStorage.getItem('wb-card'),
+    localStorage.getItem('wb-bank'),
+    localStorage.getItem('wb-upi'),
+  ].filter(Boolean)
+
+  let globalVisibleAccounts = []
+  try {
+    const raw = localStorage.getItem('wb-visible-accounts')
+    if (raw) globalVisibleAccounts = JSON.parse(raw)
+  } catch (_) { /* ignore malformed JSON */ }
+
+  const allowedAccountSet = new Set([...userMopAccounts, ...globalVisibleAccounts])
+  if (allowedAccountSet.size > 0) {
+    list = list.filter(l => l.type !== 'Account' || allowedAccountSet.has(l.name))
+  }
+
+  } // end non-admin Account filter
 
   if (activeType.value !== 'All') list = list.filter(l => l.type === activeType.value)
   if (!q) return list

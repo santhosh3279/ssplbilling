@@ -19,7 +19,7 @@
   "admin",
   "cashier",
   "biller",
-  "allowed_windows",
+  "accounts",
   "default_printer"
  ],
  "fields": [
@@ -100,9 +100,10 @@
    "label": "Biller"
   },
   {
-   "fieldname": "allowed_windows",
-   "fieldtype": "Data",
-   "label": "Blocked Windows"
+   "default": "0",
+   "fieldname": "accounts",
+   "fieldtype": "Check",
+   "label": "Accounts"
   },
   {
    "fieldname": "default_printer",
@@ -115,7 +116,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-19 08:00:53.486600",
+ "modified": "2026-03-27 00:00:00.000000",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "USER SERIES",

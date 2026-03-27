@@ -165,7 +165,6 @@
     <GeneralSettings
       :show="showGeneralSettings"
       @close="showGeneralSettings = false"
-      @sync="syncSettings"
     />
 
     <!-- CUSTOMER SEARCH MODAL -->
@@ -210,23 +209,6 @@
       @close="closeStockLedgerAndReturnToSearch"
     />
     <!-- SUCCESS POPUP -->
-    <transition name="pop">
-      <div v-if="showSyncSuccess" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[2px]" @click.self="showSyncSuccess = false">
-        <div class="scale-110 rounded-2xl bg-slate-800 p-8 shadow-2xl border border-slate-600 flex flex-col items-center">
-          <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-900/20 text-3xl text-emerald-400 shadow-inner">
-            ✅
-          </div>
-          <h3 class="text-xl font-bold text-white">Sync Complete</h3>
-          <p class="mt-2 text-sm text-slate-400">Settings synchronized successfully</p>
-          <button 
-            @click="showSyncSuccess = false"
-            class="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-100 transition hover:bg-emerald-700 active:scale-95"
-          >
-            Great!
-          </button>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -357,10 +339,7 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
 // ==================== GENERAL SETTINGS ====================
 const showGeneralSettings = ref(false)
-const showSyncSuccess = ref(false)
 
-// Block page shortcuts while any inline overlay is open
-useSubwindowWatcher(showSyncSuccess)
 const defaultSeries = ref(localStorage.getItem('wb-series') || '')
 
 // ==================== CUSTOMER SEARCH ====================
@@ -446,10 +425,6 @@ async function syncSettings() {
   localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
   localStorage.removeItem(GENERAL_SETTINGS_CACHE_KEY)
   await fetchSettings()
-  showSyncSuccess.value = true
-  setTimeout(() => {
-    showSyncSuccess.value = false
-  }, 2000)
 }
 
 async function fetchSettings() {
