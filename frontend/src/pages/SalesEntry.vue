@@ -527,6 +527,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       initial-type="Customer"
+      :allowed-types="isBiller ? ['Customer'] : undefined"
       :skip-date-filter="true"
       @close="closeCustomerSearchModal"
       @select="pickCust"
@@ -712,6 +713,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import CustomerLedger from './CustomerLedger.vue'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
+import { getUserRole } from '../composables/usePermission'
 import { salesEntryShortcuts } from '../shortcuts/salesEntryShortcuts'
 import * as XLSX from 'xlsx'
 
@@ -735,6 +737,8 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 if (props.isSubWindow) useSubwindow()
+
+const isBiller = getUserRole() === 'biller'
 
 const showPrintModal = ref(false)
 const printModalAfterSave = ref(false)
@@ -927,7 +931,7 @@ function openCustomerSearch() {
 function pickCust(c, dates) {
   if (c.type !== 'Customer') {
     showCustomerSearchModal.value = false
-    openCustomerLedger(c.name, c.type, dates)
+    if (!isBiller) openCustomerLedger(c.name, c.type, dates)
     return
   }
   customer.value = c.name; 
