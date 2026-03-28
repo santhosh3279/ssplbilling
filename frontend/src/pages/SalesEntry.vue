@@ -260,7 +260,7 @@
         <!-- BOTTOM PANEL (Insight + Settings + Calculation) -->
         <div class="flex flex-[4] border-t border-slate-700 bg-slate-900 overflow-hidden">
           <!-- Stock Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:260px;max-width:320px;scrollbar-width:none">
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:182px;max-width:224px;scrollbar-width:none">
             <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
             <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
               <colgroup>
@@ -377,7 +377,7 @@
           <!-- Right Column: Bill Summary as full table -->
           <table class="flex-1 bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
             <colgroup>
-              <col style="width:21%"><col style="width:18%"><col style="width:20%"><col style="width:41%">
+              <col style="width:7%"><col style="width:6%"><col style="width:5%"><col style="width:82%">
             </colgroup>
             <thead>
               <tr class="bg-slate-800">
