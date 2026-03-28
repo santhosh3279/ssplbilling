@@ -1728,6 +1728,7 @@ async function saveQuotation() {
     freight_amount: freightAmt.value,
     freight_account: localStorage.getItem('wb_freight') || '',
     tax_template: taxTemplate.value || '',
+    price_list: priceList.value || '',
     cost_center: costCenter.value || '',
     items: activeItems.value.map(i => ({
       item_code: i.item_code,

@@ -320,6 +320,11 @@ def create_quotation(data):
 	if data.get("valid_till"):
 		qt.valid_till = data["valid_till"]
 
+	if data.get("price_list"):
+		qt.selling_price_list = data["price_list"]
+	if data.get("tax_template"):
+		qt.taxes_and_charges = data["tax_template"]
+
 	if data.get("discount_percentage"):
 		qt.additional_discount_percentage = data["discount_percentage"]
 	if data.get("additional_discount_amount"):
@@ -367,6 +372,12 @@ def update_quotation(data):
 	qt.transaction_date = data.get("date") or qt.transaction_date
 	if data.get("valid_till"):
 		qt.valid_till = data["valid_till"]
+	if data.get("price_list"):
+		qt.selling_price_list = data["price_list"]
+	if data.get("tax_template"):
+		qt.taxes_and_charges = data["tax_template"]
+	elif "tax_template" in data:
+		qt.taxes_and_charges = ""
 	qt.additional_discount_percentage = data.get("discount_percentage", 0)
 	qt.discount_amount = data.get("additional_discount_amount", 0)
 
