@@ -350,3 +350,18 @@ def update_sales_order(data):
 	so.save()
 
 	return {"order_name": so.name}
+
+@frappe.whitelist()
+def submit_sales_order(order_name):
+	"""Submit a draft Sales Order (docstatus 0 → 1)."""
+	if not order_name or not frappe.db.exists("Sales Order", order_name):
+		frappe.throw("Sales Order not found")
+
+	so = frappe.get_doc("Sales Order", order_name)
+	if so.docstatus != 0:
+		frappe.throw("Sales Order is already submitted or cancelled")
+
+	so.flags.ignore_permissions = True
+	so.submit()
+
+	return {"order_name": so.name, "docstatus": so.docstatus}

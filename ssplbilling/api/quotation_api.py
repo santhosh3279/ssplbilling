@@ -394,3 +394,18 @@ def update_quotation(data):
 	qt.save()
 
 	return {"quotation_name": qt.name}
+
+@frappe.whitelist()
+def submit_quotation(quotation_name):
+	"""Submit a draft Quotation (docstatus 0 → 1)."""
+	if not quotation_name or not frappe.db.exists("Quotation", quotation_name):
+		frappe.throw("Quotation not found")
+
+	qt = frappe.get_doc("Quotation", quotation_name)
+	if qt.docstatus != 0:
+		frappe.throw("Quotation is already submitted or cancelled")
+
+	qt.flags.ignore_permissions = True
+	qt.submit()
+
+	return {"quotation_name": qt.name, "docstatus": qt.docstatus}

@@ -400,6 +400,7 @@
                       <span class="font-bold">{{ savedQuotationName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
+                    <button v-if="quotationSaved && quotationDocStatus === 0" @click="submitQuotation" class="w-full rounded border border-green-600/50 bg-green-900/20 py-1.5 text-center text-xs font-semibold text-green-400 transition hover:bg-green-900/40">Submit Quotation</button>
                     <button v-if="quotationSaved && quotationDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify Quotation</button>
                     <button v-else-if="!quotationSaved" ref="saveButton" @click="saveQuotation" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedQuotationName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedQuotationName ? 'Update Quotation' : 'Save Quotation (Ctrl+S)' }}</button>
                     <div class="flex gap-1">
@@ -1780,6 +1781,17 @@ async function saveQuotation() {
     showPrintModal.value = true
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save quotation'))
+  }
+}
+
+async function submitQuotation() {
+  if (!savedQuotationName.value || quotationDocStatus.value !== 0) return
+  if (!confirm(`Submit quotation ${savedQuotationName.value}? This cannot be undone.`)) return
+  try {
+    const res = await apiPost('submit_quotation', { quotation_name: savedQuotationName.value })
+    quotationDocStatus.value = res?.docstatus ?? 1
+  } catch (e) {
+    alert('Submit failed: ' + (e?.message || 'Unknown error'))
   }
 }
 
