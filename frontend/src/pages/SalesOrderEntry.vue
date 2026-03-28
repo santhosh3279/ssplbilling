@@ -675,16 +675,17 @@ async function handleImportFile(event) {
       let discount = parseFloat(row['Discount %'] || row['Discount'] || row['discount'] || 0)
       let itemName = row['Item Name'] || row['item_name'] || ''
       let uom = row['UOM'] || row['uom'] || ''
+      let taxRate = 0
       if (importOption.value === 'Master') {
         const master = await lookupItem(itemCode)
-        if (master) { rate = master.rate; discount = 0; itemName = master.item_name; uom = master.uom }
+        if (master) { rate = master.rate; discount = 0; itemName = master.item_name; uom = master.uom; taxRate = master.tax_rate ?? 0 }
       }
       const existing = items.value.findIndex(i => i.item_code === itemCode && !i.deleted)
       if (existing >= 0) {
         items.value[existing].qty += qty
         if (importOption.value === 'File') { items.value[existing].rate = rate; items.value[existing].discount = discount }
       } else {
-        items.value.push({ item_code: itemCode, item_name: itemName, uom, qty, rate, discount, deleted: false })
+        items.value.push({ item_code: itemCode, item_name: itemName, uom, qty, rate, discount, tax_rate: taxRate, deleted: false })
       }
     }
     showImportModal.value = false
@@ -825,6 +826,7 @@ async function lookupItem(code) {
       uom: cached.uom,
       rate: finalRate,
       stock_qty: cached.stock || 0,
+      tax_rate: cached.tax_rate,
       warehouse: cached.warehouse
     }
   }
@@ -842,7 +844,7 @@ watch(newItemCode, (val) => {
   if (code.length < 2) { newPending.value = { item_name: '', uom: '', rate: null }; return }
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
-    newPending.value = r ? { item_name: r.item_name, uom: r.uom, rate: r.rate } : { item_name: '', uom: '', rate: null }
+    newPending.value = r ? { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate } : { item_name: '', uom: '', rate: null }
   }, 300)
 })
 
@@ -908,6 +910,7 @@ async function onCodeEnter(idx) {
     items.value[idx].item_name = r.item_name
     items.value[idx].uom = r.uom
     items.value[idx].rate = r.rate
+    items.value[idx].tax_rate = r.tax_rate ?? 0
     items.value[idx].deleted = false
     loadItemInsight(code, r.item_name, r.uom)
     focusField('qty', idx)
@@ -924,7 +927,7 @@ async function onNewCodeEnter() {
   }
   emptyCodeEnters = 0
   const r = await lookupItem(code)
-  if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate }; focusNewQty() }
+  if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate }; focusNewQty() }
   else openSearch(code, null)
 }
 
@@ -944,6 +947,7 @@ async function addNewItem() {
       qty: newQty.value,
       rate: newPending.value.rate || r.rate,
       discount: 0,
+      tax_rate: newPending.value.tax_rate ?? r.tax_rate ?? 0,
       deleted: false
     })
   }
@@ -975,17 +979,18 @@ async function pickItem(item) {
   let finalRate = item.rate || item.price || 0
   let finalName = item.item_name
   let finalUom = item.uom
+  let finalTax = item.tax_rate ?? 0
   try {
     const r = await lookupItem(item.item_code)
-    if (r) { finalRate = r.rate; finalName = r.item_name; finalUom = r.uom }
+    if (r) { finalRate = r.rate; finalName = r.item_name; finalUom = r.uom; finalTax = r.tax_rate ?? 0 }
   } catch (e) {}
   if (itemSearchTargetRow !== null) {
     const row = items.value[itemSearchTargetRow]
-    row.item_code = item.item_code; row.item_name = finalName; row.uom = finalUom; row.rate = finalRate; row.deleted = false
+    row.item_code = item.item_code; row.item_name = finalName; row.uom = finalUom; row.rate = finalRate; row.tax_rate = finalTax; row.deleted = false
     selectedRow.value = itemSearchTargetRow; focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
-    newPending.value = { item_name: finalName, uom: finalUom, rate: finalRate }
+    newPending.value = { item_name: finalName, uom: finalUom, rate: finalRate, tax_rate: finalTax }
     nextTick(() => focusNewQty())
   }
 }

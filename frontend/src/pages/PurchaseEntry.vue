@@ -739,7 +739,7 @@ async function handleImportFile(event) {
 const billingSeriesConfig = ref([])
 const cipherMap = ref([])
 const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
-const defaultTaxRate = ref(18)
+const defaultTaxRate = ref(0)
 const priceList = ref('Standard Buying')
 const taxTemplate = ref('')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
