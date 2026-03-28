@@ -258,7 +258,7 @@ def get_quotation(quotation_name):
 		frappe.throw(f"Quotation {quotation_name} not found")
 
 	qt = frappe.get_doc("Quotation", quotation_name)
-	cost_center = qt.items[0].cost_center if qt.items else ""
+	cost_center = getattr(qt, "cost_center", "") or ""
 
 	def _actual_charge(keyword):
 		for t in (qt.taxes or []):
