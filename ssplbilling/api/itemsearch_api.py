@@ -138,6 +138,42 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		if b.item_code in item_map:
 			item_map[b.item_code]["stock"] += float(b.actual_qty or 0)
 
+	# 3. Batch fetch item tax rates from Item Tax Template
+	today = frappe.utils.today()
+	all_item_taxes = frappe.get_all(
+		"Item Tax",
+		filters={"parent": ["in", item_codes], "parenttype": "Item"},
+		fields=["parent as item_code", "item_tax_template", "valid_from"],
+		order_by="valid_from desc",
+	)
+	item_template_map = {}
+	for row in all_item_taxes:
+		ic = row.item_code
+		if ic not in item_template_map and row.item_tax_template:
+			if not row.valid_from or str(row.valid_from) <= today:
+				item_template_map[ic] = row.item_tax_template
+
+	templates = list(set(item_template_map.values()))
+	template_rate_map = {}
+	if templates:
+		template_details = frappe.get_all(
+			"Item Tax Template Detail",
+			filters={"parent": ["in", templates]},
+			fields=["parent", "tax_rate"],
+		)
+		for d in template_details:
+			template_rate_map.setdefault(d.parent, 0.0)
+			template_rate_map[d.parent] += float(d.tax_rate or 0)
+		for t in template_rate_map:
+			template_rate_map[t] /= 2
+
+	for i in items:
+		ic = i.item_code
+		if ic in item_template_map:
+			i["tax_rate"] = template_rate_map.get(item_template_map[ic], 0.0)
+		else:
+			i["tax_rate"] = 0.0
+
 	return items
 
 

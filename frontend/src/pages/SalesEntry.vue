@@ -766,7 +766,7 @@ function openFilePicker() {
 const billingSeriesConfig = ref([])
 const cipherMap = ref([])
 const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
-const defaultTaxRate = ref(18)
+const defaultTaxRate = ref(0)
 const priceList = ref('Standard Selling')
 const printScheme = ref('')
 const taxTemplate = ref('')
