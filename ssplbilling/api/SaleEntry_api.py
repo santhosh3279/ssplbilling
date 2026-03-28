@@ -484,3 +484,19 @@ def get_discount_rules():
             order_by="idx asc",
         ) if rule.get("discount_type") == "Custom Logic" else []
     return rules
+
+
+@frappe.whitelist()
+def submit_sales_invoice(invoice_name):
+    """Submit a Draft Sales Invoice (docstatus 0 → 1)."""
+    if not invoice_name or not frappe.db.exists("Sales Invoice", invoice_name):
+        frappe.throw("Sales Invoice not found")
+
+    si = frappe.get_doc("Sales Invoice", invoice_name)
+    if si.docstatus != 0:
+        frappe.throw("Invoice is already submitted or cancelled")
+
+    si.flags.ignore_permissions = True
+    si.submit()
+
+    return {"invoice_name": si.name, "docstatus": si.docstatus}
