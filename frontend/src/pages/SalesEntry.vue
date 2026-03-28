@@ -1352,7 +1352,7 @@ async function pickItem(item) {
   let finalRate = item.price || 0
   let finalTax = item.tax_rate ?? defaultTaxRate.value
   let finalWh = item.warehouse || defaultWarehouse.value
-  
+
   try {
     const r = await lookupItem(item.item_code)
     if (r) {
