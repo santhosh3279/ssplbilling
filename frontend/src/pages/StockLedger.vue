@@ -264,11 +264,7 @@
           </div>
 
           <!-- Loading detail -->
-          <div v-if="loadingDetail" class="flex flex-1 items-center justify-center text-sm text-slate-400">
-            Loading...
-          </div>
-
-          <div v-else-if="voucherDetail" class="flex-1 overflow-y-auto p-4">
+          <div v-if="voucherDetail" class="flex-1 overflow-y-auto p-4">
 
             <!-- Key fields -->
             <div class="mb-4 space-y-2 rounded-lg bg-slate-700 p-3 text-xs">
@@ -367,7 +363,7 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { fetchStockLedger, fetchVoucherDetail, frappeGet } from '../api.js'
+import { fetchStockLedger, frappeGet } from '../api.js'
 import SalesEntry from './SalesEntry.vue'
 import CustomerLedger from './CustomerLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
@@ -520,7 +516,6 @@ const ledgerData = ref(null)
 // ─── Detail panel state ───────────────────────────────────────────────────────
 const selectedEntry = ref(null)
 const voucherDetail = ref(null)
-const loadingDetail = ref(false)
 
 // Ledger row keyboard navigation
 const focusedIdx = ref(-1)
@@ -591,45 +586,25 @@ watch(fromDate, () => { if (selectedItem.value) loadLedger() })
 watch(toDate,   () => { if (selectedItem.value) loadLedger() })
 watch(selectedWarehouse, () => { if (selectedItem.value) loadLedger() })
 
-// ─── Row hover/keyboard → update preview ───────────────────────────────────
-let previewTimer = null
-async function updatePreview(entry, idx) {
+// ─── Row hover/keyboard → update preview (no API calls — detail pre-loaded) ──
+function updatePreview(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
   if (selectedEntry.value === entry) return
-
   selectedEntry.value = entry
-  voucherDetail.value = null
-  
-  clearTimeout(previewTimer)
-  previewTimer = setTimeout(async () => {
-    loadingDetail.value = true
-    try {
-      voucherDetail.value = await fetchVoucherDetail(entry.voucher_type, entry.voucher_no)
-    } catch (e) {
-      voucherDetail.value = { error: e.message }
-    } finally {
-      loadingDetail.value = false
-    }
-  }, 150)
+  voucherDetail.value = entry.detail || null
 }
 
 function onRowMouseEnter(entry, idx) {
   updatePreview(entry, idx)
 }
 
-async function onRowClick(entry, idx) {
+function onRowClick(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
-
   if (entry.voucher_type === 'Sales Invoice') {
     openInternalSalesEntry(entry.voucher_no)
     return
   }
-
-  if (selectedEntry.value === entry && voucherDetail.value) {
-    // Already showing
-  } else {
-    updatePreview(entry, idx)
-  }
+  updatePreview(entry, idx)
 }
 
 function openInternalSalesEntry(invoiceNo) {
@@ -640,7 +615,6 @@ function openInternalSalesEntry(invoiceNo) {
 function closeDetail() {
   selectedEntry.value = null
   voucherDetail.value = null
-  clearTimeout(previewTimer)
 }
 
 // ─── Keyboard navigation for ledger rows ──────────────────────────────────────

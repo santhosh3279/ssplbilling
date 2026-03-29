@@ -275,9 +275,94 @@ def search_accounts(query="", account_type=None):
     if query: filters.append(["account_name", "like", f"%{query}%"])
     return frappe.get_all("Account", filters=filters, fields=["name", "account_name"], limit=25)
 
+def _batch_voucher_details(entries):
+    """Batch-fetch header + line items for all unique vouchers in the entries list."""
+    from collections import defaultdict
+
+    by_type = defaultdict(list)
+    for e in entries:
+        by_type[e.voucher_type].append(e.voucher_no)
+
+    details = {}  # voucher_no -> detail dict
+
+    VOUCHER_MAP = {
+        "Sales Invoice":    ("Sales Invoice Item",    "customer_name",  "grand_total",  "uom",        "rate"),
+        "Delivery Note":    ("Delivery Note Item",    "customer_name",  "grand_total",  "uom",        "rate"),
+        "Purchase Invoice": ("Purchase Invoice Item", "supplier_name",  "grand_total",  "uom",        "rate"),
+        "Purchase Receipt": ("Purchase Receipt Item", "supplier_name",  "grand_total",  "uom",        "rate"),
+    }
+
+    for vtype, (child_dt, party_field, total_field, uom_field, rate_field) in VOUCHER_MAP.items():
+        if not by_type.get(vtype):
+            continue
+        names = list(set(by_type[vtype]))
+        headers = {r.name: r for r in frappe.get_all(
+            vtype,
+            filters={"name": ["in", names]},
+            fields=["name", party_field, total_field],
+        )}
+        items_rows = frappe.get_all(
+            child_dt,
+            filters={"parent": ["in", names]},
+            fields=["parent", "item_code", "item_name", "qty", rate_field, "amount", uom_field, "stock_uom"],
+        )
+        items_map = defaultdict(list)
+        for r in items_rows:
+            items_map[r.parent].append({
+                "item_code": r.item_code,
+                "item_name": r.item_name,
+                "qty": float(r.qty or 0),
+                "rate": float(r.get(rate_field) or 0),
+                "amount": float(r.amount or 0),
+                "uom": r.get(uom_field) or r.stock_uom or "",
+            })
+        for name in names:
+            h = headers.get(name, {})
+            details[name] = {
+                "voucher_type": vtype,
+                "party_name": h.get(party_field) or "",
+                "total_amount": float(h.get(total_field) or 0),
+                "items": items_map.get(name, []),
+            }
+
+    # Stock Entry
+    if by_type.get("Stock Entry"):
+        names = list(set(by_type["Stock Entry"]))
+        headers = {r.name: r for r in frappe.get_all(
+            "Stock Entry",
+            filters={"name": ["in", names]},
+            fields=["name", "stock_entry_type", "total_amount"],
+        )}
+        items_rows = frappe.get_all(
+            "Stock Entry Detail",
+            filters={"parent": ["in", names]},
+            fields=["parent", "item_code", "item_name", "qty", "basic_rate", "amount", "uom"],
+        )
+        items_map = defaultdict(list)
+        for r in items_rows:
+            items_map[r.parent].append({
+                "item_code": r.item_code,
+                "item_name": r.item_name,
+                "qty": float(r.qty or 0),
+                "rate": float(r.basic_rate or 0),
+                "amount": float(r.amount or 0),
+                "uom": r.uom or "",
+            })
+        for name in names:
+            h = headers.get(name, {})
+            details[name] = {
+                "voucher_type": "Stock Entry",
+                "party_name": h.get("stock_entry_type") or "",
+                "total_amount": float(h.get("total_amount") or 0),
+                "items": items_map.get(name, []),
+            }
+
+    return details
+
+
 @frappe.whitelist()
 def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
-    """Return Stock Ledger Entry rows with running balance and summary totals."""
+    """Return Stock Ledger Entry rows with running balance, summary totals, and pre-loaded voucher details."""
     to_date = to_date or frappe.utils.today()
     from_date = from_date or frappe.utils.add_days(to_date, -30)
 
@@ -318,6 +403,11 @@ def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
             total_in += qty
         else:
             total_out += abs(qty)
+
+    # Batch-fetch all voucher details in one go
+    voucher_details = _batch_voucher_details(entries)
+    for e in entries:
+        e["detail"] = voucher_details.get(e["voucher_no"])
 
     return {
         "item_code": item_code,
