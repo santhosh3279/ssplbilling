@@ -343,12 +343,10 @@
     <ItemSearch
       ref="ledgerItemSearchModalRef"
       :show="showItemSearchModal"
-      v-model:query="itemSearchQuery"
-      v-model:selectedIdx="itemSelectedIdx"
-      :results="itemSearchResults"
+      search-type="Stock"
+      :skip-date-filter="true"
       @close="showItemSearchModal = false"
       @select="pickItem"
-      @refresh="refreshItemSearch"
     />
 
     <!-- CUSTOMER SEARCH MODAL -->
@@ -365,7 +363,7 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { searchItems, fetchItemDetails, fetchStockLedger, fetchVoucherDetail, frappeGet, fetchBillingSettings } from '../api.js'
+import { fetchStockLedger, fetchVoucherDetail, frappeGet, fetchBillingSettings } from '../api.js'
 import SalesEntry from './SalesEntry.vue'
 import CustomerLedger from './CustomerLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
@@ -429,48 +427,10 @@ function openCustomerLedger(customerName, dates = null) {
 
 // ─── Item Search Modal State ──────────────────────────────────────────────
 const showItemSearchModal = ref(false)
-const itemSearchQuery = ref('')
-const allItems = ref([])
-const itemSearchResults = ref([])
-const itemSelectedIdx = ref(0)
 const ledgerItemSearchModalRef = ref(null)
-const isItemLoading = ref(false)
 
-async function refreshItemSearch() {
-  isItemLoading.value = true
-  try {
-    const items = await searchItems('')
-    allItems.value = items.map(i => ({ ...i, price: 0, stock: 0, _loading: true, enriched: false }))
-    filterItems()
-  } catch (e) {
-    console.error('Item search refresh failed:', e)
-  } finally {
-    isItemLoading.value = false
-  }
-}
-
-function filterItems() {
-  const q = itemSearchQuery.value.toLowerCase().trim()
-  if (!q) {
-    itemSearchResults.value = allItems.value.slice(0, 100)
-    return
-  }
-  itemSearchResults.value = allItems.value.filter(i =>
-    i.item_code.toLowerCase().includes(q) ||
-    i.item_name.toLowerCase().includes(q)
-  ).slice(0, 100)
-  itemSelectedIdx.value = 0
-}
-
-watch(itemSearchQuery, filterItems)
-
-async function openItemSearch() {
+function openItemSearch() {
   showItemSearchModal.value = true
-  if (allItems.value.length === 0) {
-    await refreshItemSearch()
-  } else {
-    filterItems()
-  }
   nextTick(() => ledgerItemSearchModalRef.value?.focus())
 }
 

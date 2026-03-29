@@ -277,9 +277,53 @@ def search_accounts(query="", account_type=None):
 
 @frappe.whitelist()
 def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
-    """Return Stock Ledger Entry rows."""
+    """Return Stock Ledger Entry rows with running balance and summary totals."""
     to_date = to_date or frappe.utils.today()
     from_date = from_date or frappe.utils.add_days(to_date, -30)
-    wh_filter = f" AND warehouse = '{warehouse}'" if warehouse else ""
-    entries = frappe.db.sql(f"SELECT posting_date, voucher_type, voucher_no, actual_qty, warehouse FROM `tabStock Ledger Entry` WHERE item_code = %s AND is_cancelled = 0 AND posting_date >= %s AND posting_date <= %s {wh_filter} ORDER BY posting_date ASC", (item_code, from_date, to_date), as_dict=True)
-    return {"item_code": item_code, "entries": entries}
+
+    wh_params = []
+    wh_clause = ""
+    if warehouse:
+        wh_clause = " AND warehouse = %s"
+        wh_params.append(warehouse)
+
+    # Opening balance: sum of actual_qty strictly before from_date
+    opening_row = frappe.db.sql(
+        "SELECT IFNULL(SUM(actual_qty), 0) AS qty FROM `tabStock Ledger Entry` "
+        "WHERE item_code = %s AND is_cancelled = 0 AND posting_date < %s" + wh_clause,
+        [item_code, from_date] + wh_params,
+        as_dict=True,
+    )
+    opening_balance = float(opening_row[0].qty if opening_row else 0)
+
+    entries = frappe.db.sql(
+        "SELECT posting_date as date, voucher_type, voucher_no, actual_qty, warehouse "
+        "FROM `tabStock Ledger Entry` "
+        "WHERE item_code = %s AND is_cancelled = 0 AND posting_date >= %s AND posting_date <= %s" + wh_clause + " "
+        "ORDER BY posting_date ASC, creation ASC",
+        [item_code, from_date, to_date] + wh_params,
+        as_dict=True,
+    )
+
+    running = opening_balance
+    total_in = 0.0
+    total_out = 0.0
+    for e in entries:
+        qty = float(e.actual_qty or 0)
+        running += qty
+        e["balance"] = running
+        e["actual_qty"] = qty
+        e["date"] = str(e["date"])
+        if qty > 0:
+            total_in += qty
+        else:
+            total_out += abs(qty)
+
+    return {
+        "item_code": item_code,
+        "entries": entries,
+        "opening_balance": opening_balance,
+        "total_in": total_in,
+        "total_out": total_out,
+        "closing_balance": opening_balance + total_in - total_out,
+    }
