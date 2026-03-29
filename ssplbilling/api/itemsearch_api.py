@@ -176,7 +176,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 
 	# 4. Batch fetch UOM conversions
 	all_item_uoms = frappe.get_all(
-		"Item UOM",
+		"UOM Conversion Detail",
 		filters={"parent": ["in", item_codes]},
 		fields=["parent as item_code", "uom", "conversion_factor"],
 	)
