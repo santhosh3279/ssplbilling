@@ -367,7 +367,7 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { fetchStockLedger, fetchVoucherDetail, frappeGet, fetchBillingSettings } from '../api.js'
+import { fetchStockLedger, fetchVoucherDetail, frappeGet } from '../api.js'
 import SalesEntry from './SalesEntry.vue'
 import CustomerLedger from './CustomerLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
@@ -719,19 +719,26 @@ onMounted(async () => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.addEventListener('keydown', onGlobalKeydown)
 
-  // Fetch allowed warehouses from billing settings
+  // Load allowed warehouses from localStorage billing settings cache
   try {
-    const settings = await fetchBillingSettings()
-    if (settings?.billing_series) {
-      const warehouses = [...new Set(settings.billing_series.map(s => s.warehouse).filter(Boolean))]
+    const cached = JSON.parse(localStorage.getItem('wb-billing-settings-v2') || 'null')
+    const billing_series = cached?.data?.billing_series || []
+    const warehouses = [...new Set(billing_series.map(s => s.warehouse).filter(Boolean))]
+    if (warehouses.length > 0) {
       allowedWarehouses.value = warehouses
-      // Set default warehouse if available
-      if (warehouses.length > 0) {
-        selectedWarehouse.value = warehouses[0]
+      // Default to the wb-warehouse setting if it's in the list, else first
+      const defaultWh = localStorage.getItem('wb-warehouse') || ''
+      selectedWarehouse.value = warehouses.includes(defaultWh) ? defaultWh : warehouses[0]
+    } else {
+      // Fallback to single wb-warehouse setting
+      const wh = localStorage.getItem('wb-warehouse') || ''
+      if (wh) {
+        allowedWarehouses.value = [wh]
+        selectedWarehouse.value = wh
       }
     }
   } catch (e) {
-    console.warn('[StockLedger] Failed to fetch billing settings:', e.message)
+    console.warn('[StockLedger] Failed to read warehouse settings:', e.message)
   }
 
   // Apply initial dates if provided
