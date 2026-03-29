@@ -7,6 +7,22 @@ const lastSync = ref(0)
 const syncLoading = ref(false)
 const lastParams = ref({ searchType: null, priceList: null, warehouse: null })
 
+// UOM map cache — persisted to localStorage: { item_code: [{uom, conversion_factor}] }
+const ITEM_UOMS_KEY = 'sspl-item-uoms'
+function loadUomsFromStorage() {
+  try { return JSON.parse(localStorage.getItem(ITEM_UOMS_KEY) || '{}') } catch { return {} }
+}
+function saveUomsToStorage(itemList) {
+  try {
+    const map = {}
+    for (const i of itemList) {
+      if (i.uoms?.length) map[i.item_code] = i.uoms
+    }
+    localStorage.setItem(ITEM_UOMS_KEY, JSON.stringify(map))
+  } catch {}
+}
+const storedUoms = loadUomsFromStorage()
+
 // Discount Rules cache (custom Discount Rule doctype) — persisted to localStorage
 const DISCOUNT_RULES_KEY = 'sspl-discount-rules'
 function loadDiscountRulesFromStorage() {
@@ -40,6 +56,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
     items.value = data || []
     discountRules.value = discRules || []
     saveDiscountRulesToStorage(discountRules.value)
+    saveUomsToStorage(items.value)
     lastSync.value = Date.now()
     lastParams.value = { searchType, priceList, warehouse }
     return items.value
@@ -99,9 +116,13 @@ export async function fetchCustomerSalesHistory(customer) {
 export function lookupItemInCache(code) {
   if (!code) return null
   const cleanCode = code.trim().toLowerCase()
-  return items.value.find(i =>
-    (i.item_code || '').toLowerCase() === cleanCode
-  ) || null
+  const found = items.value.find(i => (i.item_code || '').toLowerCase() === cleanCode)
+  if (!found) return null
+  // Augment with persisted UOMs if the live cache entry is missing them
+  if (!found.uoms?.length && storedUoms[found.item_code]?.length) {
+    found.uoms = storedUoms[found.item_code]
+  }
+  return found
 }
 
 /**
