@@ -1114,18 +1114,15 @@ async function lookupItem(code) {
   // 1. Try local cache first
   const cached = lookupItemInCache(code)
   if (cached) {
-    let finalRate = cached.price || cached.rate || 0
-    // Respect the current selected price list
-    if (cached.price_lists && priceList.value) {
-      const pl = cached.price_lists.find(p => p.name === priceList.value)
-      if (pl) finalRate = pl.rate
-    }
+    // Use rateForUom to respect per-UOM Item Price records for the stock/default UOM
+    const finalRate = rateForUom(cached, cached.uom)
     return {
       found: true,
       item_code: cached.item_code,
       item_name: cached.item_name,
       uom: cached.uom,
       uoms: cached.uoms || [],
+      uom_price_lists: cached.uom_price_lists || {},
       rate: finalRate,
       stock_qty: cached.stock || 0,
       tax_rate: cached.tax_rate,
@@ -1142,6 +1139,12 @@ async function lookupItem(code) {
 }
 
 function rateForUom(cached, uom) {
+  // 1. Check for an actual Item Price record for this price list + UOM
+  const plUomRates = cached.uom_price_lists?.[priceList.value]
+  if (plUomRates && plUomRates[uom] != null) {
+    return plUomRates[uom]
+  }
+  // 2. Fallback: base (stock-UOM) rate × conversion factor
   let baseRate = cached.price || cached.rate || 0
   if (cached.price_lists && priceList.value) {
     const pl = cached.price_lists.find(p => p.name === priceList.value)
@@ -1153,8 +1156,13 @@ function rateForUom(cached, uom) {
 
 function onUomChange(idx) {
   const item = items.value[idx]
-  const cached = lookupItemInCache(item.item_code)
-  if (!cached) return
+  // Build a minimal cached-like object from the row itself, falling back to cache
+  const cached = lookupItemInCache(item.item_code) || {
+    price: item.rate,
+    price_lists: [],
+    uoms: item.uoms || [],
+    uom_price_lists: item.uom_price_lists || {},
+  }
   item.rate = rateForUom(cached, item.uom)
 }
 
@@ -1328,6 +1336,7 @@ async function addNewItem() {
     item_name: r.item_name,
     uom: r.uom,
     uoms: r.uoms || [],
+    uom_price_lists: r.uom_price_lists || {},
     qty: newQty.value,
     rate: r.rate,
     discount: 0,

@@ -95,33 +95,40 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		i["valuation_rate"] = float(i.valuation_rate or 0)
 		i["price_lists"] = []
 
-	# 1. Batch fetch ALL rates for active price lists
+	# 1. Batch fetch ALL rates for active price lists (including per-UOM records)
 	enabled_price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])
 	pl_names = [pl.name for pl in enabled_price_lists]
 
 	all_rates = frappe.get_all(
 		"Item Price",
 		filters={"item_code": ["in", item_codes], "price_list": ["in", pl_names]},
-		fields=["item_code", "price_list", "price_list_rate"],
+		fields=["item_code", "price_list", "price_list_rate", "uom"],
 	)
 
 	# Main price list requested for the 'price' field
 	if not price_list:
 		price_list = "Standard Selling" if search_type == "Sales" else "Standard Buying"
 
+	# Initialize uom_price_lists map: {price_list: {uom: rate}}
+	for i in items:
+		i["uom_price_lists"] = {}
+
 	for r in all_rates:
 		code = r.item_code
-		if code in item_map:
-			rate_val = float(r.price_list_rate or 0)
-			# Update the primary price if this matches the requested list
+		if code not in item_map:
+			continue
+		rate_val = float(r.price_list_rate or 0)
+		uom_key = r.uom or ""
+
+		if uom_key:
+			# Per-UOM Item Price record — store in uom_price_lists
+			uom_pl = item_map[code].setdefault("uom_price_lists", {}).setdefault(r.price_list, {})
+			uom_pl[uom_key] = rate_val
+		else:
+			# Base (stock-UOM) rate
 			if r.price_list == price_list:
 				item_map[code]["price"] = rate_val
-			
-			# Append to the list of all prices
-			item_map[code]["price_lists"].append({
-				"name": r.price_list,
-				"rate": rate_val
-			})
+			item_map[code]["price_lists"].append({"name": r.price_list, "rate": rate_val})
 
 	# 2. Batch fetch stock
 	stock_filters = {"item_code": ["in", item_codes]}
