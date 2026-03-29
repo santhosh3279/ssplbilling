@@ -297,7 +297,7 @@ def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
     opening_balance = float(opening_row[0].qty if opening_row else 0)
 
     entries = frappe.db.sql(
-        "SELECT posting_date as date, voucher_type, voucher_no, actual_qty, warehouse "
+        "SELECT posting_date as date, voucher_type, voucher_no, actual_qty, stock_uom, warehouse "
         "FROM `tabStock Ledger Entry` "
         "WHERE item_code = %s AND is_cancelled = 0 AND posting_date >= %s AND posting_date <= %s" + wh_clause + " "
         "ORDER BY posting_date ASC, creation ASC",

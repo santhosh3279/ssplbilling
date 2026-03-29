@@ -163,13 +163,14 @@
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Voucher No</th>
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Warehouse</th>
                   <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-slate-400">Qty</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">UOM</th>
                   <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-slate-400">Balance</th>
                 </tr>
               </thead>
               <tbody ref="tableBodyRef">
                 <!-- No entries message -->
                 <tr v-if="!ledgerData.entries.length">
-                  <td colspan="6" class="px-4 py-12 text-center text-slate-500">
+                  <td colspan="7" class="px-4 py-12 text-center text-slate-500">
                     No stock transactions found for the selected period.
                   </td>
                 </tr>
@@ -213,6 +214,9 @@
                     <span :class="entry.actual_qty > 0 ? 'font-semibold text-green-400' : 'font-semibold text-red-400'">
                       {{ entry.actual_qty > 0 ? '+' : '' }}{{ entry.actual_qty }}
                     </span>
+                  </td>
+                  <td class="px-4 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    {{ entry.stock_uom }}
                   </td>
                   <td class="px-4 text-right font-mono font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
@@ -435,6 +439,7 @@ function openItemSearch() {
 }
 
 function pickItem(item, dates) {
+  showItemSearchModal.value = false
   selectedItem.value = item
   if (dates) {
     fromDate.value = dates.from
