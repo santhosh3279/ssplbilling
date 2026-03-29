@@ -174,6 +174,22 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		else:
 			i["tax_rate"] = 0.0
 
+	# 4. Batch fetch UOM conversions
+	all_item_uoms = frappe.get_all(
+		"Item UOM",
+		filters={"parent": ["in", item_codes]},
+		fields=["parent as item_code", "uom", "conversion_factor"],
+	)
+	item_uoms_map = {}
+	for row in all_item_uoms:
+		item_uoms_map.setdefault(row.item_code, []).append({
+			"uom": row.uom,
+			"conversion_factor": float(row.conversion_factor or 1),
+		})
+
+	for i in items:
+		i["uoms"] = item_uoms_map.get(i.item_code, [])
+
 	return items
 
 

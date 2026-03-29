@@ -66,6 +66,43 @@
             </div>
           </div>
 
+          <!-- Extra Barcodes -->
+          <div class="space-y-1.5 md:col-span-2">
+            <div class="flex items-center justify-between px-1">
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Additional Barcodes</label>
+              <button type="button" @click="addBarcodeRow" class="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
+            </div>
+            <div class="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-slate-700 bg-slate-800">
+                    <th class="px-3 py-1.5 text-left text-[10px] font-bold uppercase text-slate-500">Barcode</th>
+                    <th class="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Primary barcode (locked) -->
+                  <tr class="border-b border-slate-700/50">
+                    <td class="px-3 py-2 flex items-center gap-2">
+                      <span class="font-mono text-sm text-slate-300">{{ form.barcode || '—' }}</span>
+                      <span class="text-[9px] font-bold uppercase text-slate-600 bg-slate-700 px-1.5 py-0.5 rounded">Primary</span>
+                    </td>
+                    <td></td>
+                  </tr>
+                  <!-- Additional barcode rows -->
+                  <tr v-for="(row, idx) in form.extra_barcodes" :key="idx" class="border-b border-slate-700/50 last:border-0">
+                    <td class="px-2 py-1.5">
+                      <input v-model="row.barcode" type="text" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 font-mono text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="Enter barcode value..." />
+                    </td>
+                    <td class="px-2 py-1.5 text-center">
+                      <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-lg font-bold leading-none">&times;</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <div class="space-y-1.5">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">Item Group *</label>
             <select
@@ -114,6 +151,54 @@
             >
               <option v-for="u in metadata.uoms" :key="u.name" :value="u.name">{{ u.name }}</option>
             </select>
+          </div>
+
+          <!-- UOM Conversions -->
+          <div class="space-y-1.5 md:col-span-2">
+            <div class="flex items-center justify-between px-1">
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">UOM Conversions</label>
+              <button type="button" @click="addUomRow" class="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add UOM</button>
+            </div>
+            <div class="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-slate-700 bg-slate-800">
+                    <th class="px-3 py-1.5 text-left text-[10px] font-bold uppercase text-slate-500">UOM</th>
+                    <th class="px-3 py-1.5 text-left text-[10px] font-bold uppercase text-slate-500">
+                      Conversion Factor
+                      <span class="normal-case font-normal text-slate-600 ml-1">(1 UOM = ? stock UOM)</span>
+                    </th>
+                    <th class="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Base stock UOM row (locked) -->
+                  <tr class="border-b border-slate-700/50">
+                    <td class="px-3 py-2 flex items-center gap-2">
+                      <span class="text-sm font-semibold text-slate-300">{{ form.stock_uom || '—' }}</span>
+                      <span class="text-[9px] font-bold uppercase text-slate-600 bg-slate-700 px-1.5 py-0.5 rounded">Base</span>
+                    </td>
+                    <td class="px-3 py-2 font-mono text-slate-500">1.000</td>
+                    <td></td>
+                  </tr>
+                  <!-- Additional UOM rows -->
+                  <tr v-for="(row, idx) in form.uom_conversions" :key="idx" class="border-b border-slate-700/50 last:border-0">
+                    <td class="px-2 py-1.5">
+                      <select v-model="row.uom" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-blue-500 appearance-none">
+                        <option value="">Select UOM...</option>
+                        <option v-for="u in metadata.uoms" :key="u.name" :value="u.name" :disabled="u.name === form.stock_uom">{{ u.name }}</option>
+                      </select>
+                    </td>
+                    <td class="px-2 py-1.5">
+                      <input v-model.number="row.conversion_factor" type="number" min="0.0001" step="0.001" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 font-mono text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="1.000" />
+                    </td>
+                    <td class="px-2 py-1.5 text-center">
+                      <button type="button" @click="removeUomRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-lg font-bold leading-none">&times;</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div class="space-y-1.5">
@@ -267,6 +352,8 @@ async function loadForEdit(itemCode) {
     form.value.item_tax_template = data.item_tax_template || ''
     form.value.supplier          = data.supplier          || ''
     form.value.supplier_part_no  = data.supplier_part_no  || ''
+    form.value.uom_conversions   = data.uom_conversions   || []
+    form.value.extra_barcodes    = data.extra_barcodes    || []
     supplierSearch.value = data.supplier || ''
     autoBarcode.value = ''
     isBarcodeManual.value = true
@@ -306,7 +393,25 @@ const form = ref({
   item_tax_template: '',
   supplier: '',
   supplier_part_no: '',
+  uom_conversions: [],
+  extra_barcodes: [],
 })
+
+function addBarcodeRow() {
+  form.value.extra_barcodes.push({ barcode: '' })
+}
+
+function removeBarcodeRow(idx) {
+  form.value.extra_barcodes.splice(idx, 1)
+}
+
+function addUomRow() {
+  form.value.uom_conversions.push({ uom: '', conversion_factor: 1 })
+}
+
+function removeUomRow(idx) {
+  form.value.uom_conversions.splice(idx, 1)
+}
 
 // ── Supplier search state ──────────────────────────────────────────────────
 const supplierSearch = ref('')          // display label
@@ -492,6 +597,8 @@ function resetForm() {
     item_tax_template: '',
     supplier: '',
     supplier_part_no: '',
+    uom_conversions: [],
+    extra_barcodes: [],
   }
   supplierSearch.value = ''
   supplierOptions.value = []

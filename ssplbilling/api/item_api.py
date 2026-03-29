@@ -69,9 +69,20 @@ def create_item(data):
 		item.gst_hsn_code = data.get("hsn_sac")
 	
 	# Add to barcodes child table
-	item.append("barcodes", {
-		"barcode": barcode
-	})
+	item.append("barcodes", {"barcode": barcode})
+	for row in (data.get("extra_barcodes") or []):
+		extra = (row.get("barcode") or "").strip()
+		if extra and extra != barcode:
+			item.append("barcodes", {"barcode": extra})
+
+	# UOM conversions child table
+	stock_uom = data.get("stock_uom", "Nos")
+	item.append("uoms", {"uom": stock_uom, "conversion_factor": 1.0})
+	for row in (data.get("uom_conversions") or []):
+		uom_name = row.get("uom")
+		factor = float(row.get("conversion_factor") or 1)
+		if uom_name and uom_name != stock_uom:
+			item.append("uoms", {"uom": uom_name, "conversion_factor": factor})
 
 	# Add supplier mapping
 	if data.get("supplier"):
@@ -122,6 +133,20 @@ def get_item_for_edit(item_code):
 		supplier = item.supplier_items[0].supplier or ""
 		supplier_part_no = item.supplier_items[0].supplier_part_no or ""
 
+	# Extra barcodes (all except the primary/item_code barcode)
+	extra_barcodes = [
+		{"barcode": row.barcode}
+		for row in item.barcodes
+		if row.barcode != item.item_code
+	]
+
+	# UOM conversions (exclude the stock UOM base row)
+	uom_conversions = [
+		{"uom": row.uom, "conversion_factor": float(row.conversion_factor or 1)}
+		for row in item.uoms
+		if row.uom != item.stock_uom
+	]
+
 	return {
 		"item_code": item.item_code,
 		"item_name": item.item_name,
@@ -135,6 +160,8 @@ def get_item_for_edit(item_code):
 		"item_tax_template": item_tax_template,
 		"supplier": supplier,
 		"supplier_part_no": supplier_part_no,
+		"uom_conversions": uom_conversions,
+		"extra_barcodes": extra_barcodes,
 	}
 
 
@@ -156,6 +183,25 @@ def update_item(data):
 	item.safety_stock = float(data.get("safety_stock") or 0)
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data["hsn_sac"]
+
+	# Update barcodes (keep primary, replace extras)
+	primary_barcode = item.item_code
+	item.barcodes = []
+	item.append("barcodes", {"barcode": primary_barcode})
+	for row in (data.get("extra_barcodes") or []):
+		extra = (row.get("barcode") or "").strip()
+		if extra and extra != primary_barcode:
+			item.append("barcodes", {"barcode": extra})
+
+	# Update UOM conversions
+	stock_uom = data.get("stock_uom") or item.stock_uom
+	item.uoms = []
+	item.append("uoms", {"uom": stock_uom, "conversion_factor": 1.0})
+	for row in (data.get("uom_conversions") or []):
+		uom_name = row.get("uom")
+		factor = float(row.get("conversion_factor") or 1)
+		if uom_name and uom_name != stock_uom:
+			item.append("uoms", {"uom": uom_name, "conversion_factor": factor})
 
 	# Update tax template
 	item.taxes = []

@@ -46,26 +46,29 @@
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
           <div v-else-if="!sidebarQuotations.length" class="p-4 text-center text-xs text-slate-600 italic">No quotations found</div>
-          <div 
-            v-for="(inv, idx) in sidebarQuotations" 
+          <div
+            v-for="(inv, idx) in sidebarQuotations"
             :key="inv.name"
             :ref="el => setSidebarQuotationRef(el, idx)"
-            @click="loadQuotation(inv.name)"
-            class="group cursor-pointer border-b border-slate-800 bg-slate-900 px-2 py-1 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
+            class="group border-b border-slate-800 bg-slate-900 px-2 py-1 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
             :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedQuotationName === inv.name }"
             tabindex="0"
-            @keydown.enter="loadQuotation(inv.name)"
             @keydown.up.prevent="navigateSidebarQuotation(idx, -1)"
             @keydown.down.prevent="navigateSidebarQuotation(idx, 1)"
           >
-            <div class="flex items-center justify-between gap-1">
+            <div class="flex items-center justify-between gap-1 cursor-pointer" @click="loadQuotation(inv.name)" @keydown.enter="loadQuotation(inv.name)">
               <div class="flex items-center gap-1.5 truncate min-w-0">
                 <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
                 <span class="truncate font-mono text-[15px] font-bold text-blue-400">{{ inv.name }}</span>
               </div>
               <span class="shrink-0 font-mono text-[20px] font-bold text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-[11px] text-slate-400">{{ inv.customer_name }}</div>
+            <div class="truncate text-[11px] text-slate-400 cursor-pointer" @click="loadQuotation(inv.name)">{{ inv.customer_name }}</div>
+            <button
+              v-if="inv.docstatus === 0"
+              @click.stop="submitQuotation(inv.name)"
+              class="mt-1 w-full rounded border border-green-700/50 bg-green-900/20 py-0.5 text-center text-[10px] font-semibold text-green-400 hover:bg-green-900/40 transition"
+            >Submit</button>
           </div>
         </div>
       </aside>
@@ -211,7 +214,12 @@
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
-                  <td class="px-2 text-slate-400 border-r border-slate-700" :class="item.deleted ? 'text-slate-600' : ''" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
+                  <td class="p-0 border-r border-slate-700">
+                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-transparent bg-transparent font-mono text-slate-200 outline-none focus:border-blue-500 focus:bg-slate-800 disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('qty', idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.shift.tab.prevent="focusField('code', idx)">
+                      <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+                    </select>
+                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
+                  </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
@@ -240,7 +248,12 @@
                   <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding-left:0;padding-right:0;" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
                   <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" /></td>
-                  <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.uom || '--' }}</td>
+                  <td class="p-0 border-r border-slate-700">
+                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusNewQty" @keydown.tab.prevent="focusNewQty" @keydown.shift.tab.prevent="focusNewCode">
+                      <option v-for="u in newPending.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+                    </select>
+                    <span v-else class="px-2 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ newPending.uom || '--' }}</span>
+                  </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="newPending.rate" class="font-mono text-slate-300">{{ newPending.rate.toFixed(2) }}</span>
                     <span v-else class="text-slate-600">--</span>
@@ -759,12 +772,7 @@ const incomeAccount = ref('')
 const availableTaxTemplates = ref([])
 const availableWarehouses = ref([])
 const availableCostCenters = ref([])
-
-const availablePriceLists = computed(() => {
-  const lists = billingSeriesConfig.value.map(r => r.price_list).filter(Boolean)
-  const unique = [...new Set(lists)]
-  return unique.length ? unique : ['Standard Selling']
-})
+const availablePriceLists = ref([])
 
 const availablePrintSchemes = computed(() => {
   return [...new Set(billingSeriesConfig.value.map(r => r.print_format).filter(Boolean))]
@@ -793,7 +801,7 @@ function syncSeriesConfig(series) {
 
 async function fetchDropdownOptions() {
   try {
-    const [templates, warehouses, costCenters] = await Promise.all([
+    const [templates, warehouses, costCenters, priceLists] = await Promise.all([
       frappeGet('frappe.client.get_list', {
         doctype: 'Sales Taxes and Charges Template',
         fields: ['name'],
@@ -812,11 +820,18 @@ async function fetchDropdownOptions() {
         filters: [['is_group', '=', 0], ['disabled', '=', 0]],
         limit_page_length: 100,
       }),
+      frappeGet('frappe.client.get_list', {
+        doctype: 'Price List',
+        fields: ['name'],
+        filters: [['enabled', '=', 1], ['selling', '=', 1]],
+        limit_page_length: 100,
+      }),
     ])
 
     availableTaxTemplates.value = templates.map(r => r.name)
     availableWarehouses.value = warehouses.map(r => r.name)
     availableCostCenters.value = costCenters.map(r => r.name)
+    availablePriceLists.value = priceLists.map(r => r.name)
   } catch (e) {
     console.warn('[QuotationEntry] fetchDropdownOptions failed:', e)
   }
@@ -1058,7 +1073,8 @@ const itemLookup = createResource({ url: `/api/method/${API}.get_item_details` }
 const itemSearchResource = createResource({ url: `/api/method/${API}.search_items` })
 const insightResource = createResource({ url: `/api/method/${API}.get_item_insight` })
 
-const newPending = ref({ item_name: '', uom: '', rate: null })
+const newPending = ref({ item_name: '', uom: '', uoms: [], rate: null })
+const newUomSelect = ref(null)
 
 async function lookupItem(code) {
   // 1. Try local cache first
@@ -1074,6 +1090,7 @@ async function lookupItem(code) {
       item_code: cached.item_code,
       item_name: cached.item_name,
       uom: cached.uom,
+      uoms: cached.uoms || [],
       rate: finalRate,
       stock_qty: cached.stock || 0,
       tax_rate: cached.tax_rate,
@@ -1092,10 +1109,10 @@ async function lookupItem(code) {
 let lookupTimeout = null
 watch(newItemCode, (val) => {
   clearTimeout(lookupTimeout); const code = val.trim()
-  if (code.length < 2) { newPending.value = { item_name: '', uom: '', rate: null }; return }
+  if (code.length < 2) { newPending.value = { item_name: '', uom: '', uoms: [], rate: null }; return }
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
-    newPending.value = r ? { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse } : { item_name: '', uom: '', rate: null }
+    newPending.value = r ? { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse } : { item_name: '', uom: '', uoms: [], rate: null }
   }, 300)
 })
 
@@ -1200,12 +1217,13 @@ async function onCodeEnter(idx) {
   const r = await lookupItem(code)
   if (r) {
     items.value[idx].item_code = r.item_code || code  // use canonical case from lookup
-    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
+    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].uoms = r.uoms || []; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
     if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
     loadItemInsight(r.item_code || code, r.item_name, r.uom)
     applyDiscountRuleForRow(idx)
     applyCustomerPricingForRow(idx)
-    focusField('qty', idx)
+    if ((items.value[idx].uoms || []).length > 1) focusField('uom', idx)
+    else focusField('qty', idx)
   }
   else openSearch(code, idx)
 }
@@ -1225,8 +1243,9 @@ async function onNewCodeEnter() {
   const r = await lookupItem(code)
   if (r) {
     if (r.item_code) newItemCode.value = r.item_code  // normalize to canonical case
-    newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
-    focusNewQty()
+    newPending.value = { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
+    if ((r.uoms || []).length > 1) nextTick(() => { newUomSelect.value?.focus() })
+    else focusNewQty()
   }
   else openSearch(code, null)
 }
@@ -1245,6 +1264,7 @@ async function addNewItem() {
     item_code: r.item_code || code,
     item_name: r.item_name,
     uom: r.uom,
+    uoms: r.uoms || [],
     qty: newQty.value,
     rate: r.rate,
     discount: 0,
@@ -1258,7 +1278,7 @@ async function addNewItem() {
 
   newItemCode.value = '';
   newQty.value = 1;
-  newPending.value = { item_name: '', uom: '', rate: null };
+  newPending.value = { item_name: '', uom: '', uoms: [], rate: null };
   selectedRow.value = -1; // Reset selection so we stay in "new entry" mode
   focusNewCode()
 }
@@ -1321,6 +1341,7 @@ async function pickItem(item) {
     row.item_code = item.item_code
     row.item_name = item.item_name
     row.uom = item.uom
+    row.uoms = item.uoms || []
     row.rate = finalRate
     row.discount = row.discount || 0
     row.tax_rate = finalTax
@@ -1330,11 +1351,12 @@ async function pickItem(item) {
     selectedRow.value = itemSearchTargetRow
     applyDiscountRuleForRow(itemSearchTargetRow)
     applyCustomerPricingForRow(itemSearchTargetRow)
-    focusField('qty', itemSearchTargetRow)
+    if ((row.uoms || []).length > 1) focusField('uom', itemSearchTargetRow)
+    else focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
-    newPending.value = { item_name: item.item_name, uom: item.uom, rate: finalRate }
-    nextTick(() => focusNewQty())
+    newPending.value = { item_name: item.item_name, uom: item.uom, uoms: item.uoms || [], rate: finalRate }
+    nextTick(() => { if ((item.uoms || []).length > 1) newUomSelect.value?.focus(); else focusNewQty() })
   }
 }
 
@@ -1500,7 +1522,7 @@ async function loadQuotation(quotationName) {
     selectedRow.value = -1
     newItemCode.value = ''
     newQty.value = 1
-    newPending.value = { item_name: '', uom: '', rate: null }
+    newPending.value = { item_name: '', uom: '', uoms: [], rate: null }
     selectedItemData.value = null
 
     savedQuotationName.value = inv.name
@@ -1785,12 +1807,17 @@ async function saveQuotation() {
   }
 }
 
-async function submitQuotation() {
-  if (!savedQuotationName.value || quotationDocStatus.value !== 0) return
-  if (!confirm(`Submit quotation ${savedQuotationName.value}? This cannot be undone.`)) return
+async function submitQuotation(nameOverride) {
+  const qname = nameOverride || savedQuotationName.value
+  if (!qname) return
+  if (!confirm(`Submit quotation ${qname}? This cannot be undone.`)) return
   try {
-    const res = await apiPost('submit_quotation', { quotation_name: savedQuotationName.value })
-    quotationDocStatus.value = res?.docstatus ?? 1
+    const res = await apiPost('submit_quotation', { quotation_name: qname })
+    if (!nameOverride) quotationDocStatus.value = res?.docstatus ?? 1
+    // Update sidebar to reflect new docstatus
+    const entry = sidebarQuotations.value.find(q => q.name === qname)
+    if (entry) entry.docstatus = res?.docstatus ?? 1
+    fetchSidebarQuotations()
   } catch (e) {
     alert('Submit failed: ' + (e?.message || 'Unknown error'))
   }
