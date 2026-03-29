@@ -51,11 +51,22 @@
           <table v-else class="w-full text-left border-collapse">
             <thead class="bg-slate-800 border-b border-slate-700">
               <tr>
-                <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Price List</th>
-                <th class="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
-                <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Current Rate</th>
-                <th class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">New Rate</th>
-                <th v-if="selectedPriceList" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Disc %</th>
+                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Price List</th>
+                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
+                <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Current Rate</th>
+                <!-- One "New Rate" column per UOM -->
+                <th
+                  v-for="u in uoms"
+                  :key="u.uom"
+                  class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider"
+                  :class="u.uom === stockUom ? 'text-blue-400' : 'text-amber-400'"
+                >
+                  New Rate
+                  <span class="block font-normal normal-case text-[10px] mt-0.5 opacity-80">
+                    {{ u.uom }}<span v-if="u.conversion_factor !== 1" class="ml-1 text-slate-500">×{{ u.conversion_factor }}</span>
+                  </span>
+                </th>
+                <th v-if="selectedPriceList" class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Disc %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
@@ -66,32 +77,38 @@
                 :class="{ 'bg-blue-900/30': activeRow === idx }"
                 @click="activeRow = idx"
               >
-                <td class="px-6 py-4">
+                <td class="px-4 py-3">
                   <div class="font-semibold text-slate-100">{{ p.price_list }}</div>
                   <div v-if="p.price_list === selectedPriceList" class="text-[10px] font-bold text-blue-400 uppercase">Selected in entry</div>
                 </td>
-                <td class="px-6 py-4">
-                  <div class="flex gap-2">
-                    <span v-if="p.buying" class="rounded bg-green-900/20 px-1.5 py-0.5 text-[10px] font-bold text-green-400">BUYING</span>
-                    <span v-if="p.selling" class="rounded bg-blue-900/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-400">SELLING</span>
+                <td class="px-4 py-3">
+                  <div class="flex gap-1">
+                    <span v-if="p.buying" class="rounded bg-green-900/20 px-1.5 py-0.5 text-[10px] font-bold text-green-400">BUY</span>
+                    <span v-if="p.selling" class="rounded bg-blue-900/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-400">SELL</span>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-right font-mono text-slate-400">
+                <td class="px-4 py-3 text-right font-mono text-slate-400">
                   &#8377;{{ p.original_rate.toFixed(2) }}
                 </td>
-                <td class="px-6 py-4 text-right">
+                <!-- Rate input per UOM -->
+                <td
+                  v-for="(u, uidx) in uoms"
+                  :key="u.uom"
+                  class="px-4 py-3 text-right"
+                >
                   <input
-                    :ref="el => inputRefs[`rate-${idx}`] = el"
+                    :ref="el => inputRefs[`rate-${idx}-${uidx}`] = el"
                     type="number"
-                    v-model.number="p.rate"
+                    v-model.number="p.uom_rates[u.uom]"
                     step="0.01"
-                    class="w-32 rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-right font-mono font-bold text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    @keydown.enter.prevent="onRateEnter(idx)"
-                    @keydown.up.prevent="moveVertical(idx, -1)"
-                    @keydown.down.prevent="moveVertical(idx, 1)"
+                    class="w-28 rounded border bg-slate-800 px-2 py-1.5 text-right font-mono font-bold text-slate-200 outline-none focus:ring-1 transition-colors"
+                    :class="u.uom === stockUom ? 'border-slate-600 focus:border-blue-500 focus:ring-blue-500/20' : 'border-amber-800/40 focus:border-amber-500 focus:ring-amber-500/20'"
+                    @keydown.enter.prevent="onRateEnter(idx, uidx)"
+                    @keydown.up.prevent="moveVertical(idx, -1, uidx)"
+                    @keydown.down.prevent="moveVertical(idx, 1, uidx)"
                   />
                 </td>
-                <td v-if="selectedPriceList" class="px-6 py-4 text-right">
+                <td v-if="selectedPriceList" class="px-4 py-3 text-right">
                   <input
                     v-if="p.price_list === selectedPriceList"
                     :ref="el => inputRefs[`disc-${idx}`] = el"
@@ -102,8 +119,8 @@
                     max="100"
                     class="w-20 rounded border border-blue-500 bg-blue-900/20 px-3 py-1.5 text-right font-mono font-bold text-blue-300 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     @keydown.enter.prevent="onDiscEnter(idx)"
-                    @keydown.up.prevent="moveVertical(idx, -1)"
-                    @keydown.down.prevent="moveVertical(idx, 1)"
+                    @keydown.up.prevent="moveVertical(idx, -1, uoms.length - 1)"
+                    @keydown.down.prevent="moveVertical(idx, 1, uoms.length - 1)"
                   />
                   <span v-else class="text-slate-600">--</span>
                 </td>
@@ -161,6 +178,8 @@ const router = useRouter()
 const route = useRoute()
 
 const prices = ref([])
+const uoms = ref([])
+const stockUom = ref('')
 const discount = ref(props.initialDiscount)
 const loading = ref(false)
 const saving = ref(false)
@@ -177,12 +196,14 @@ async function loadPrices(code) {
   loading.value = true
   try {
     const data = await frappeGet('ssplbilling.api.pricelist_api.get_item_prices', { item_code: code })
-    prices.value = data.map(p => ({
+    uoms.value = data.uoms || []
+    stockUom.value = data.stock_uom || ''
+    prices.value = (data.prices || []).map(p => ({
       ...p,
       original_rate: p.rate,
-      rate: p.rate // user editable
+      original_uom_rates: { ...(p.uom_rates || {}) },
     }))
-    
+
     // Set active row to selected price list if exists
     if (props.selectedPriceList) {
       const idx = prices.value.findIndex(p => p.price_list === props.selectedPriceList)
@@ -190,7 +211,7 @@ async function loadPrices(code) {
     }
 
     nextTick(() => {
-      focusInput(`rate-${activeRow.value}`)
+      focusInput(`rate-${activeRow.value}-0`)
     })
   } catch (e) {
     alert('Failed to load prices: ' + e.message)
@@ -202,9 +223,15 @@ async function loadPrices(code) {
 async function saveAll() {
   const code = props.itemCode || manualItemCode.value
   if (!code) return
-  
-  // Only update prices that have changed
-  const changedPrices = prices.value.filter(p => p.rate !== p.original_rate)
+
+  // Only update prices that have changed (base rate or any uom rate)
+  const changedPrices = prices.value.filter(p => {
+    if (p.rate !== p.original_rate) return true
+    for (const u of uoms.value) {
+      if ((p.uom_rates[u.uom] ?? 0) !== (p.original_uom_rates[u.uom] ?? 0)) return true
+    }
+    return false
+  })
   const discountChanged = discount.value !== props.initialDiscount
 
   if (!changedPrices.length && !discountChanged) {
@@ -220,14 +247,14 @@ async function saveAll() {
         prices: JSON.stringify(changedPrices)
       })
     }
-    
+
     // Emit back all relevant data
     emit('saved', {
       changedPrices,
       discount: discount.value,
       discountChanged
     })
-    
+
     if (props.isSubWindow) emit('close')
     else alert('Prices updated successfully')
   } catch (e) {
@@ -237,44 +264,40 @@ async function saveAll() {
   }
 }
 
-function onRateEnter(idx) {
+function onRateEnter(idx, uidx) {
   activeRow.value = idx
-  // Left to Right: If this row has a discount field, go to it
-  if (prices.value[idx].price_list === props.selectedPriceList) {
+  // Move right across UOM columns first
+  if (uidx < uoms.value.length - 1) {
+    focusInput(`rate-${idx}-${uidx + 1}`)
+    return
+  }
+  // Last UOM column: go to disc if this row has it
+  if (props.selectedPriceList && prices.value[idx].price_list === props.selectedPriceList) {
     focusInput(`disc-${idx}`)
   } else {
-    // Otherwise go to next row top to bottom
     goToNextRow(idx)
   }
 }
 
 function onDiscEnter(idx) {
   activeRow.value = idx
-  // Left to Right / Top to Bottom: After discount, go to next row rate
   goToNextRow(idx)
 }
 
 function goToNextRow(idx) {
   if (idx < prices.value.length - 1) {
     activeRow.value = idx + 1
-    focusInput(`rate-${idx + 1}`)
+    focusInput(`rate-${idx + 1}-0`)
   } else {
-    // Last field in the whole sequence
     saveAll()
   }
 }
 
-function moveVertical(idx, dir) {
+function moveVertical(idx, dir, uidx) {
   const next = idx + dir
   if (next >= 0 && next < prices.value.length) {
     activeRow.value = next
-    // Maintain current column if possible
-    const isDisc = document.activeElement?.getAttribute('ref')?.includes('disc') || false
-    if (isDisc && prices.value[next].price_list === props.selectedPriceList) {
-      focusInput(`disc-${next}`)
-    } else {
-      focusInput(`rate-${next}`)
-    }
+    focusInput(`rate-${next}-${uidx ?? 0}`)
   }
 }
 
