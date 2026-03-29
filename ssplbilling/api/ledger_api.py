@@ -275,6 +275,17 @@ def search_accounts(query="", account_type=None):
     if query: filters.append(["account_name", "like", f"%{query}%"])
     return frappe.get_all("Account", filters=filters, fields=["name", "account_name"], limit=25)
 
+@frappe.whitelist()
+def get_warehouses():
+    """Return all enabled, non-group warehouses."""
+    return [r.name for r in frappe.get_all(
+        "Warehouse",
+        filters={"disabled": 0, "is_group": 0},
+        fields=["name"],
+        order_by="name asc",
+    )]
+
+
 def _batch_voucher_details(entries):
     """Batch-fetch header + line items for all unique vouchers in the entries list."""
     from collections import defaultdict

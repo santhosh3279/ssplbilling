@@ -693,26 +693,19 @@ onMounted(async () => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.addEventListener('keydown', onGlobalKeydown)
 
-  // Load allowed warehouses from localStorage billing settings cache
+  // Load all warehouses from ERPNext, auto-select user's default
   try {
-    const cached = JSON.parse(localStorage.getItem('wb-billing-settings-v2') || 'null')
-    const billing_series = cached?.data?.billing_series || []
-    const warehouses = [...new Set(billing_series.map(s => s.warehouse).filter(Boolean))]
-    if (warehouses.length > 0) {
+    const warehouses = await frappeGet('ssplbilling.api.ledger_api.get_warehouses')
+    if (warehouses?.length) {
       allowedWarehouses.value = warehouses
-      // Default to the wb-warehouse setting if it's in the list, else first
       const defaultWh = localStorage.getItem('wb-warehouse') || ''
       selectedWarehouse.value = warehouses.includes(defaultWh) ? defaultWh : warehouses[0]
-    } else {
-      // Fallback to single wb-warehouse setting
-      const wh = localStorage.getItem('wb-warehouse') || ''
-      if (wh) {
-        allowedWarehouses.value = [wh]
-        selectedWarehouse.value = wh
-      }
     }
   } catch (e) {
-    console.warn('[StockLedger] Failed to read warehouse settings:', e.message)
+    console.warn('[StockLedger] Failed to load warehouses:', e.message)
+    // Fallback to localStorage
+    const wh = localStorage.getItem('wb-warehouse') || ''
+    if (wh) { allowedWarehouses.value = [wh]; selectedWarehouse.value = wh }
   }
 
   // Apply initial dates if provided
