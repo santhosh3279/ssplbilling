@@ -79,6 +79,22 @@
             </div>
           </div>
 
+          <!-- Warehouse-wise Stock -->
+          <div v-if="results[selectedIdx]?.warehouse_stock?.length" class="flex flex-col gap-1 border-t border-slate-700 pt-2">
+            <span class="text-[10px] font-bold uppercase text-slate-500">Warehouse Stock</span>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="ws in results[selectedIdx].warehouse_stock"
+                :key="ws.warehouse"
+                class="rounded px-2.5 py-1 text-sm border"
+                :class="ws.qty <= 0 ? 'bg-red-900/20 border-red-800' : 'bg-green-900/20 border-green-800'"
+              >
+                <span class="text-slate-400 text-[10px] uppercase font-bold mr-1">{{ ws.warehouse }}:</span>
+                <span class="font-mono font-bold" :class="ws.qty <= 0 ? 'text-red-400' : 'text-green-400'">{{ ws.qty }}</span>
+              </span>
+            </div>
+          </div>
+
           <!-- All Price Lists (Encrypted) -->
           <div v-if="insightData?.priceLists?.length" class="flex flex-col gap-1 border-t border-slate-700 pt-2">
             <span class="text-[10px] font-bold uppercase text-slate-500">All Price Lists</span>

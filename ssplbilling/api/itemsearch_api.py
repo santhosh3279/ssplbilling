@@ -138,12 +138,21 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	bins = frappe.get_all(
 		"Bin",
 		filters=stock_filters,
-		fields=["item_code", "actual_qty"],
+		fields=["item_code", "warehouse", "actual_qty"],
 	)
-	
+
+	# Initialize warehouse_stock list on each item
+	for i in items:
+		i["warehouse_stock"] = []
+
 	for b in bins:
 		if b.item_code in item_map:
-			item_map[b.item_code]["stock"] += float(b.actual_qty or 0)
+			qty = float(b.actual_qty or 0)
+			item_map[b.item_code]["stock"] += qty
+			item_map[b.item_code]["warehouse_stock"].append({
+				"warehouse": b.warehouse,
+				"qty": qty,
+			})
 
 	# 3. Batch fetch item tax rates from Item Tax Template
 	today = frappe.utils.today()
