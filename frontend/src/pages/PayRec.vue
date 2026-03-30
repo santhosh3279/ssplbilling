@@ -825,6 +825,7 @@ async function saveEntry() {
           account_type: r.account_type,
           debit_in_account_currency: r.debit,
           credit_in_account_currency: r.credit,
+          cost_center: localStorage.getItem('wb-cost-center') || '',
           user_remark: userRemarks.value
         }))
     }

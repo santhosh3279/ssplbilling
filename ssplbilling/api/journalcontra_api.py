@@ -60,6 +60,7 @@ def create_journal_contra_entry(data):
             "credit_in_account_currency": credit,
             "party_type": party_type,
             "party": party,
+            "cost_center": acc.get("cost_center"),
             "user_remark": acc.get("user_remark")
         })
 
@@ -71,6 +72,7 @@ def create_journal_contra_entry(data):
                 "credit_in_account_currency": debit, # Flipped
                 "party_type": party_type,
                 "party": party,
+                "cost_center": acc.get("cost_center"),
                 "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
             })
         
