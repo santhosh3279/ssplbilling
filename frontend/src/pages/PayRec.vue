@@ -692,9 +692,33 @@ async function fetchAndShowOutstanding() {
 }
 
 function focusNextAllocOrProceed(i) {
+  const inv = outstandingInvoices.value[i]
+  const amountEntered = isReceipt.value ? Number(rows.value[0].credit) : Number(rows.value[0].debit)
+  const currentlyAllocatedExcludingThis = outstandingInvoices.value.reduce((s, item, idx) => {
+    if (idx === i) return s
+    return s + (Number(item._alloc) || 0)
+  }, 0)
+
+  const remainingToAllocate = amountEntered - currentlyAllocatedExcludingThis
+
+  if (remainingToAllocate > 0) {
+    if (remainingToAllocate >= inv.outstanding_amount) {
+      // Allocate full amount for this bill
+      inv._alloc = inv.outstanding_amount
+      const next = outstandingAllocRefs[i + 1]
+      if (next) { next.focus(); next.select() }
+      else confirmOutstanding()
+    } else {
+      // Allocate remaining balance to this bill and proceed directly
+      inv._alloc = parseFloat(remainingToAllocate.toFixed(2))
+      confirmOutstanding()
+    }
+    return
+  }
+
   const next = outstandingAllocRefs[i + 1]
   if (next) { next.focus(); next.select() }
-  else outstandingProceedBtn.value?.focus()
+  else confirmOutstanding()
 }
 
 function fillRow1Amount() {
