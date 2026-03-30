@@ -195,6 +195,10 @@
                 class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
                 style="font-family: 'Poppins', sans-serif"
               />
+              <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
+                <input type="checkbox" v-model="isReturn" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-red-500 cursor-pointer disabled:cursor-not-allowed" />
+                <span class="text-slate-500 text-[10px]">Purchase Return</span>
+              </label>
             </div>
           </div>
         </div>
@@ -226,7 +230,7 @@
                   <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : 'text-slate-200'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : onQtyEnter(idx)" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : onQtyEnter(idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isReturn ? -item.qty : item.qty }}</span>
                   </td>
                   <td class="p-0 border-r border-slate-700">
                     <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="billDocStatus !== 0" class="w-full rounded border border-transparent bg-transparent font-mono text-slate-200 outline-none focus:border-blue-500 focus:bg-slate-800 disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onUomChange(idx)" @keydown.enter.prevent="onQtyEnter(idx)" @keydown.tab.prevent="onQtyEnter(idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.up.stop @keydown.down.stop>
@@ -245,7 +249,7 @@
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700 font-mono font-semibold" :class="item.deleted ? 'text-slate-600 line-through' : 'text-slate-200'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : (item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
+                  <td class="px-2 text-right border-r border-slate-700 font-mono font-semibold" :class="item.deleted ? 'text-slate-600 line-through' : 'text-slate-200'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : ((isReturn ? -1 : 1) * item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
                   <td class="px-2 text-center" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button v-if="!item.deleted" class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" :style="{ fontSize: dynamicRowStyle.fontSize }" @click.stop="softDelete(idx)">&times;</button>
                     <button v-else class="rounded px-1 py-0.5 font-semibold text-blue-500 hover:bg-blue-900/30 hover:text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }" @click.stop="restoreItem(idx)">&larr;</button>
@@ -269,7 +273,7 @@
                   </td>
                   <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">0</td>
                   <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ isExempted ? 0 : defaultTaxRate }}</td>
-                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '--' }}</td>
+                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? ((isReturn ? -1 : 1) * newQty * newPending.rate).toFixed(2) : '--' }}</td>
                   <td class="border-slate-700"></td>
                 </tr>
               </tbody>
@@ -399,7 +403,7 @@
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Item Discount</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ Math.abs(itemDiscountTotal).toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="11">
                   <div class="flex flex-col gap-2 h-full py-2">
                     <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
@@ -439,7 +443,7 @@
                     </div>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ Math.abs(discountAmt).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Freight</td>
@@ -449,7 +453,7 @@
                     <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">&#8377;{{ (Number(freightAmt) || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">{{ isReturn ? '-' : '' }}&#8377;{{ Math.abs(Number(freightAmt) || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Loading</td>
@@ -459,12 +463,12 @@
                     <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">&#8377;{{ (Number(loadingAmt) || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">{{ isReturn ? '-' : '' }}&#8377;{{ Math.abs(Number(loadingAmt) || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Tax</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">{{ isReturn ? '-' : '+' }}&#8377;{{ Math.abs(totalTax).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-amber-400/80 border border-slate-700">Tax Paid on Purchase</td>
@@ -474,7 +478,7 @@
                     <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-amber-400 text-2xl border border-slate-700">&#8377;{{ (Number(taxPaidAmt) || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">{{ isReturn ? '-' : '+' }}&#8377;{{ Math.abs(Number(taxPaidAmt) || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-200/80 font-bold border border-slate-700">Grand Total</td>
@@ -888,6 +892,7 @@ const items = ref([])
 const selectedRow = ref(-1)
 const newItemCode = ref('')
 const newQty = ref(1)
+const isReturn = ref(false)
 const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const showJumpModal = ref(false)
@@ -1306,6 +1311,7 @@ async function loadInvoice(invoiceName) {
     suppSearch.value = inv.supplier_name
     billNo.value = inv.bill_no || ''
     billDate.value = inv.posting_date
+    isReturn.value = !!inv.is_return
     if (inv.naming_series && availableSeries.value.includes(inv.naming_series)) {
       billSeries.value = inv.naming_series
     }
@@ -1314,6 +1320,7 @@ async function loadInvoice(invoiceName) {
     if (inv.cost_center) costCenter.value = inv.cost_center
     items.value = inv.items.map(i => ({
       ...i,
+      qty: isReturn.value ? Math.abs(i.qty) : i.qty,
       rate: i.price_list_rate || i.rate,
       discount: i.discount || 0,
       tax_rate: i.tax_rate ?? defaultTaxRate.value,
@@ -1432,24 +1439,28 @@ async function fetchNextBillNo() {
 const isExempted = computed(() => taxTemplate.value.toLowerCase().includes('exempt'))
 const isInclusive = computed(() => taxTemplate.value.toLowerCase().includes('inclusive'))
 
-const grossTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
-)
+const grossTotal = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
+  return isReturn.value ? -val : val
+})
 
-const totalBeforeItemDiscount = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0)
-)
+const totalBeforeItemDiscount = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0)
+  return isReturn.value ? -val : val
+})
 
-const itemDiscountTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0)
-)
+const itemDiscountTotal = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0)
+  return isReturn.value ? -val : val
+})
 
 const subtotal = computed(() => {
   if (isInclusive.value) {
-    return activeItems.value.reduce((s, i) => {
+    const val = activeItems.value.reduce((s, i) => {
       const amt = i.qty * i.rate * (1 - (i.discount || 0) / 100)
       return s + amt / (1 + (i.tax_rate || 0) / 100)
     }, 0)
+    return isReturn.value ? -val : val
   }
   return grossTotal.value
 })
@@ -1458,23 +1469,26 @@ const discountAmt = computed(() => {
   if (discountInputMode.value === 'amt') return Number(discountDirectAmt.value) || 0
   return subtotal.value * ((Number(discountPct.value) || 0) / 100)
 })
-const taxableAmt = computed(() => subtotal.value - discountAmt.value)
+const taxableAmt = computed(() => subtotal.value - (isReturn.value ? -discountAmt.value : discountAmt.value))
 
 const totalTax = computed(() => {
   if (isExempted.value) return 0
   if (isInclusive.value) {
     return (grossTotal.value - subtotal.value) * (1 - (Number(discountPct.value) || 0) / 100)
   }
-  return activeItems.value.reduce((s, i) => {
+  const val = activeItems.value.reduce((s, i) => {
     const a = i.qty * i.rate * (1 - (i.discount || 0) / 100)
     return s + (a - a * ((Number(discountPct.value) || 0) / 100)) * (i.tax_rate / 100)
   }, 0)
+  return isReturn.value ? -val : val
 })
 
 const grandTotal = computed(() => {
   const charges = (Number(freightAmt.value) || 0) + (Number(loadingAmt.value) || 0)
-  if (isInclusive.value) return grossTotal.value * (1 - (Number(discountPct.value) || 0) / 100) + charges
-  return taxableAmt.value + totalTax.value + charges
+  const base = isInclusive.value 
+    ? grossTotal.value * (1 - (Number(discountPct.value) || 0) / 100) 
+    : taxableAmt.value + totalTax.value
+  return base + (isReturn.value ? -charges : charges)
 })
 
 async function saveBill() {
@@ -1485,6 +1499,7 @@ async function saveBill() {
     supplier: supplier.value,
     bill_no: billNo.value,
     date: billDate.value,
+    is_return: isReturn.value ? 1 : 0,
     naming_series: billSeries.value,
     discount_percentage: discountInputMode.value === 'amt' ? 0 : (discountPct.value || 0),
     additional_discount_amount: discountInputMode.value === 'amt' ? (discountDirectAmt.value || 0) : 0,
@@ -1541,7 +1556,7 @@ async function submitBill() {
 }
 
 function startNewBill() {
-  items.value = []; selectedRow.value = -1; supplier.value = ''; suppSearch.value = ''; billNo.value = ''
+  items.value = []; selectedRow.value = -1; supplier.value = ''; suppSearch.value = ''; billNo.value = ''; isReturn.value = false
   discountPct.value = 0; discountDirectAmt.value = 0; discountInputMode.value = null; freightAmt.value = 0; loadingAmt.value = 0; taxPaidAmt.value = 0; newItemCode.value = ''; newQty.value = 1;
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null

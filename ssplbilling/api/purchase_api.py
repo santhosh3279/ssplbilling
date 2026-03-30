@@ -211,6 +211,7 @@ def create_purchase_invoice(data=None, **kwargs):
     pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.naming_series = data.get("naming_series", "PINV-.YY.-")
+    pi.is_return = data.get("is_return", 0)
     pi.update_stock = 1
     if data.get("cost_center"):
         pi.cost_center = data["cost_center"]
@@ -222,9 +223,12 @@ def create_purchase_invoice(data=None, **kwargs):
         disc = float(item.get("discount_percentage") or 0)
         price_list_rate = float(item.get("price_list_rate") or item["rate"])
         rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
+        qty = float(item["qty"])
+        if pi.is_return:
+            qty = -abs(qty)
         row = {
             "item_code": item["item_code"],
-            "qty": float(item["qty"]),
+            "qty": qty,
             "price_list_rate": price_list_rate,
             "discount_percentage": disc,
             "rate": rate,
@@ -333,6 +337,7 @@ def get_purchase_invoice(invoice_name):
         "supplier_name": pi.supplier_name,
         "posting_date": str(pi.posting_date),
         "naming_series": pi.naming_series or "",
+        "is_return": pi.is_return,
         "discount_percentage": float(pi.additional_discount_percentage or 0),
         "grand_total": float(pi.grand_total or 0),
         "tax_template": pi.taxes_and_charges or "",
@@ -367,14 +372,18 @@ def update_purchase_invoice(data=None, **kwargs):
     invoice_name = data.get("invoice_name")
     pi = frappe.get_doc("Purchase Invoice", invoice_name)
     pi.supplier = data["supplier"]
+    pi.is_return = data.get("is_return", 0)
     pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.additional_discount_percentage = float(data.get("discount_percentage", 0))
     pi.items = []
     for item in data["items"]:
+        qty = float(item["qty"])
+        if pi.is_return:
+            qty = -abs(qty)
         row = {
             "item_code": item["item_code"],
-            "qty": float(item["qty"]),
+            "qty": qty,
             "rate": float(item["rate"]),
             "warehouse": item.get("warehouse"),
         }
