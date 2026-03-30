@@ -43,9 +43,34 @@ def get_item_details(item_code, price_list="Standard Buying", warehouse=None):
 
     rate = frappe.db.get_value(
         "Item Price",
+        {"item_code": item_code, "price_list": price_list, "buying": 1, "uom": item.stock_uom},
+        "price_list_rate",
+    ) or frappe.db.get_value(
+        "Item Price",
         {"item_code": item_code, "price_list": price_list, "buying": 1},
         "price_list_rate",
     ) or item.last_purchase_rate or 0
+
+    # Fetch UOM conversions
+    uoms = frappe.get_all(
+        "UOM Conversion Detail",
+        filters={"parent": item_code},
+        fields=["uom", "conversion_factor"],
+    )
+
+    # Fetch all buying price list rates for this item (including per-UOM)
+    all_rates = frappe.get_all(
+        "Item Price",
+        filters={"item_code": item_code, "buying": 1},
+        fields=["price_list", "price_list_rate", "uom"],
+    )
+
+    uom_price_lists = {}
+    for r in all_rates:
+        pl = r.price_list
+        uom_key = r.uom or ""
+        if uom_key:
+            uom_price_lists.setdefault(pl, {})[uom_key] = float(r.price_list_rate or 0)
 
     stock_qty = 0
     if wh:
@@ -59,6 +84,8 @@ def get_item_details(item_code, price_list="Standard Buying", warehouse=None):
         "item_code": item.item_code,
         "item_name": item.item_name,
         "uom": item.stock_uom,
+        "uoms": [{"uom": u.uom, "conversion_factor": float(u.conversion_factor or 1)} for u in uoms],
+        "uom_price_lists": uom_price_lists,
         "rate": float(rate),
         "stock_qty": float(stock_qty),
         "warehouse": wh,
