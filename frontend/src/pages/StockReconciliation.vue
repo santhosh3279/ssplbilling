@@ -176,8 +176,29 @@
                     <button class="rounded p-1 text-slate-600 hover:bg-red-900/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" @click.stop="removeItem(idx)">&times;</button>
                   </td>
                 </tr>
-                <tr v-if="items.length === 0" class="h-32 text-center text-slate-600 italic">
-                  <td colspan="8">Select a warehouse and click "Fetch Items" to start.</td>
+                <!-- NEW ENTRY ROW -->
+                <tr v-if="entryDocStatus === 0" class="border-b border-slate-700 bg-blue-900/10" :class="{ 'bg-blue-900/30 ring-2 ring-inset ring-blue-500': selectedRow === -1 }" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                  <td class="px-4 py-3 text-blue-400 font-bold">+</td>
+                  <td class="px-4 py-3">
+                    <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code / Scan" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveRow(items.length, -1)" />
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="text-slate-500 italic" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ newPending.item_name || 'Scan or type to find item...' }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-right text-slate-500 font-mono">
+                    {{ newPending.current_qty }}
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-24 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" />
+                  </td>
+                  <td class="px-4 py-3 text-slate-500">{{ newPending.uom || '--' }}</td>
+                  <td class="px-4 py-3 text-right font-mono font-bold" :class="(newQty - newPending.current_qty) > 0 ? 'text-green-400' : (newQty - newPending.current_qty) < 0 ? 'text-red-400' : 'text-slate-500'">
+                    {{ (newQty - newPending.current_qty).toFixed(3) }}
+                  </td>
+                  <td class="px-4 py-3"></td>
+                </tr>
+                <tr v-if="items.length === 0 && entryDocStatus !== 0" class="h-32 text-center text-slate-600 italic">
+                  <td colspan="8">No items in this reconciliation.</td>
                 </tr>
               </tbody>
             </table>
@@ -264,6 +285,11 @@ const availableWarehouses = ref([])
 const availablePurposes = ref(['Stock Reconciliation', 'Opening Stock'])
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
 
+// New entry state
+const newItemCode = ref('')
+const newQty = ref(0)
+const newPending = ref({ item_name: '', uom: '', current_qty: 0, valuation_rate: 0 })
+
 // Sidebar state
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
@@ -283,6 +309,8 @@ const inputRefs = {}
 const rowRefs = {}
 const warehouseSelect = ref(null)
 const saveButton = ref(null)
+const newCodeInput = ref(null)
+const newQtyInput = ref(null)
 
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
@@ -291,6 +319,8 @@ function setSidebarEntryRef(el, idx) { if (el) sidebarEntryRefs.set(idx, el); el
 function focusField(f, idx) { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) }
 function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
 function focusWarehouse() { nextTick(() => warehouseSelect.value?.focus()) }
+function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
+function focusNewQty()    { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
 
 function navigateSidebarEntry(idx, dir) {
   const target = sidebarEntryRefs.get(idx + dir)
@@ -355,14 +385,68 @@ async function fetchItems() {
   } catch (e) { alert(e.message || 'Fetch failed') }
 }
 
+async function lookupItem(code) {
+  try {
+    return await frappeGet(`ssplbilling.api.stock_api.get_item_details`, { item_code: code, warehouse: warehouse.value })
+  } catch (e) { return null }
+}
+
+watch(newItemCode, async (val) => {
+  const code = val.trim()
+  if (code.length < 2) { newPending.value = { item_name: '', uom: '', current_qty: 0, valuation_rate: 0 }; return }
+  const r = await lookupItem(code)
+  if (r && r.found) {
+    newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
+    newQty.value = r.stock_qty
+  }
+})
+
+async function onNewCodeEnter() {
+  const code = newItemCode.value.trim(); if (!code) return
+  const r = await lookupItem(code)
+  if (r && r.found) {
+    newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
+    newQty.value = r.stock_qty
+    focusNewQty()
+  }
+}
+
+function addNewItem() {
+  if (!newItemCode.value || !newPending.value.item_name) return
+  
+  const existing = items.value.find(i => i.item_code === newItemCode.value)
+  if (existing) {
+    alert('Item already in list')
+    newItemCode.value = ''
+    return
+  }
+
+  items.value.push({
+    item_code: newItemCode.value,
+    item_name: newPending.value.item_name,
+    uom: newPending.value.uom,
+    current_qty: newPending.value.current_qty,
+    qty: newQty.value,
+    valuation_rate: newPending.value.valuation_rate,
+    current_valuation_rate: newPending.value.valuation_rate
+  })
+  
+  newItemCode.value = ''
+  newQty.value = 0
+  newPending.value = { item_name: '', uom: '', current_qty: 0, valuation_rate: 0 }
+  focusNewCode()
+}
+
 async function fetchSidebarEntries() {
   sidebarLoading.value = true
   try {
-    sidebarEntries.value = await frappeGet(`${API}.get_stock_reconciliations`, {
+    const params = {
       posting_date: sidebarSearch.value ? null : sidebarDate.value,
       query: sidebarSearch.value,
-      docstatus: draftOnly.value ? 0 : null
-    })
+    }
+    if (draftOnly.value) params.docstatus = 0
+    
+    sidebarEntries.value = await frappeGet(`${API}.get_stock_reconciliations`, params)
   } catch (e) {}
   sidebarLoading.value = false
 }

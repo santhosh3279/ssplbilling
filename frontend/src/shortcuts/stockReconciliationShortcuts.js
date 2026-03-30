@@ -12,6 +12,7 @@ export const stockReconciliationShortcuts = (handlers) => ({
 
   // Stock Reconciliation specific
   'F2': handlers.focusWarehouse,
+  'F4': handlers.focusNewCode,
   'F7': handlers.fetchItems,
   'ESCAPE': handlers.contextualBack,
 });
