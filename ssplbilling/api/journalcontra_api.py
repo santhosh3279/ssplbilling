@@ -7,6 +7,13 @@ def _get_party_account(party_type, party):
     return get_party_account(party_type, party, frappe.defaults.get_global_default("company"))
 
 @frappe.whitelist()
+def get_journal_entry_types():
+    """Return available voucher types for Journal Entry."""
+    meta = frappe.get_meta("Journal Entry")
+    options = meta.get_field("voucher_type").options
+    return [opt.strip() for opt in options.split("\n") if opt.strip()]
+
+@frappe.whitelist()
 def create_journal_contra_entry(data):
     """Create and submit a Journal Entry or Contra."""
     if isinstance(data, str):

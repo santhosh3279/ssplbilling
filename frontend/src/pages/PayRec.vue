@@ -13,27 +13,34 @@
         <div class="h-4 w-px bg-slate-600 mx-2"></div>
         
         <!-- Selection Box for All Entry Types -->
-        <div class="flex items-center gap-2 mr-2">
-          <select
-            v-model="entryType"
-            class="rounded-lg bg-slate-700 border border-slate-600 px-3 py-1 text-xs font-bold text-slate-200 outline-none focus:border-blue-500 transition-all"
-          >
-            <option v-for="type in entryTypes" :key="type.value" :value="type.value">
-              {{ type.label }}
-            </option>
-          </select>
-        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex rounded-lg bg-slate-700 p-1">
+            <button
+              v-for="type in entryTypes"
+              :key="type.value"
+              @click="entryType = type.value"
+              class="rounded-md px-3 py-1 text-[10px] font-bold transition-all flex items-center gap-1.5"
+              :class="entryType === type.value ? `bg-slate-800 text-${type.color}-400 shadow-sm` : 'text-slate-400 hover:text-slate-200'"
+            >
+              <span>{{ type.label }}</span>
+            </button>
+          </div>
 
-        <div class="flex rounded-lg bg-slate-700 p-1">
-          <button
-            v-for="type in entryTypes"
-            :key="type.value"
-            @click="entryType = type.value"
-            class="rounded-md px-3 py-1 text-[10px] font-bold transition-all flex items-center gap-1.5"
-            :class="entryType === type.value ? `bg-slate-800 text-${type.color}-400 shadow-sm` : 'text-slate-400 hover:text-slate-200'"
+          <div 
+            class="flex items-center gap-2 bg-slate-700 p-1 rounded-lg border transition-all"
+            :class="journalTypes.includes(entryType) ? 'border-violet-500 bg-slate-800/50 shadow-sm' : 'border-slate-600 opacity-60 hover:opacity-100'"
           >
-            <span>{{ type.label }}</span>
-          </button>
+            <span class="text-[10px] font-bold text-slate-400 ml-1">GENERAL</span>
+            <select
+              v-model="entryType"
+              class="rounded-md bg-slate-800 border-none px-2 py-1 text-[10px] font-bold text-slate-200 outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+            >
+              <option v-if="!journalTypes.includes(entryType)" disabled :value="entryType">-- Select --</option>
+              <option v-for="type in journalTypes" :key="type" :value="type">
+                {{ type }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -388,14 +395,15 @@ const router = useRouter()
 const entryTypes = [
   { label: 'Receipt', value: 'Receipt', color: 'blue' },
   { label: 'Payment', value: 'Payment', color: 'emerald' },
-  { label: 'General', value: 'Journal Entry', color: 'violet' },
-  { label: 'Opening', value: 'Opening Entry', color: 'amber' },
 ]
 const entryType = ref('Receipt')
+const journalTypes = ref([])
+
 const isReceipt = computed(() => entryType.value === 'Receipt')
 const entryTypeLabel = computed(() => {
   const type = entryTypes.find(t => t.value === entryType.value)
-  return type ? `${type.label} Entry` : 'Entry'
+  if (type) return `${type.label} Entry`
+  return `${entryType.value}`
 })
 
 const mopLedgers = ref(null)
@@ -611,8 +619,8 @@ function getNewBalance(row) {
 }
 
 function isFieldDisabled(idx, field) {
-  // If General or Opening Entry, nothing is disabled by default
-  if (entryType.value === 'Journal Entry' || entryType.value === 'Opening Entry') return false
+  // If General entry (one from journalTypes), nothing is disabled by default
+  if (journalTypes.value.includes(entryType.value)) return false
 
   // Row 0: mode-based restriction
   if (idx === 0) {
@@ -734,14 +742,23 @@ onMounted(async () => {
     console.warn('Failed to load account ledgers:', e)
   }
 
+  // Fetch Journal Entry Types from backend
+  try {
+    const res = await frappeGet('ssplbilling.api.journalcontra_api.get_journal_entry_types')
+    journalTypes.value = res || []
+  } catch (e) {
+    console.warn('Failed to fetch journal entry types:', e)
+    journalTypes.value = ['Journal Entry', 'Opening Entry', 'Contra Entry']
+  }
+
   // Block page shortcuts while the outstanding modal is open
   useSubwindowWatcher(showOutstandingModal)
 
   useShortcuts(payrecShortcuts({
     switchToReceipt: () => { entryType.value = 'Receipt' },
     switchToPayment: () => { entryType.value = 'Payment' },
-    switchToGeneral: () => { entryType.value = 'Journal Entry' },
-    switchToOpening: () => { entryType.value = 'Opening Entry' },
+    switchToGeneral: () => { if (journalTypes.value.length) entryType.value = journalTypes.value[0] },
+    switchToOpening: () => { if (journalTypes.value.includes('Opening Entry')) entryType.value = 'Opening Entry' },
     addRow: () => {
       if (showSearchModal.value) { showAllAccounts.value = true; nextTick(() => ledgerSearchModal.value?.focus()); return }
       addRow()
@@ -779,8 +796,13 @@ async function saveEntry() {
   if (!canSave.value || isSubmitting.value) return
   isSubmitting.value = true
   try {
+    // If Receipt or Payment, send Journal Entry as voucher_type
+    const vType = (entryType.value === 'Receipt' || entryType.value === 'Payment') 
+      ? 'Journal Entry' 
+      : entryType.value
+
     const payload = {
-      voucher_type: entryType.value === 'Opening Entry' ? 'Opening Entry' : 'Journal Entry',
+      voucher_type: vType,
       posting_date: postingDate.value,
       user_remark: userRemarks.value,
       cheque_no: referenceNo.value,
