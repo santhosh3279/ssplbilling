@@ -178,6 +178,10 @@
             <input type="checkbox" v-model="ignoreDiscountRule" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
             <span class="text-slate-500 text-[10px]">Ignore Discount Rule</span>
           </label>
+          <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
+            <input type="checkbox" v-model="isReturn" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-red-500 cursor-pointer disabled:cursor-not-allowed" />
+            <span class="text-slate-500 text-[10px]">Sale Return</span>
+          </label>
         </div>
       </div>
     </div>
@@ -401,7 +405,7 @@
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Item Discount</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ Math.abs(itemDiscountTotal).toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
                     <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
@@ -448,7 +452,7 @@
                     </div>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ Math.abs(discountAmt).toFixed(2) }}</td>
               </tr>
               <tr class="bg-slate-800/40">
                 <td class="px-2 text-lg font-semibold text-slate-200/80 border border-slate-600">Subtotal</td>
@@ -981,6 +985,7 @@ const selectedRow = ref(-1)
 const editingOriginalCode = ref(null)  // tracks item_code before user edits an existing row
 const newItemCode = ref('')
 const newQty = ref(1)
+const isReturn = ref(false)
 const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const showJumpModal = ref(false)
@@ -1558,6 +1563,7 @@ async function loadInvoice(invoiceName) {
     customer.value = inv.customer
     custSearch.value = inv.customer_name
     billDate.value = inv.posting_date
+    isReturn.value = !!inv.is_return
     skipPriceListSync.value = true
     if (inv.naming_series && availableSeries.value.includes(inv.naming_series)) {
       billSeries.value = inv.naming_series
@@ -1589,6 +1595,7 @@ async function loadInvoice(invoiceName) {
       const isFreeRow = (i.rate === 0 || i.rate === '0') && disc === 0
       return {
         ...i,
+        qty: isReturn.value ? Math.abs(i.qty) : i.qty,
         rate: listRate,
         discount: disc,
         tax_rate: i.tax_rate ?? defaultTaxRate.value,
@@ -1785,54 +1792,64 @@ const isExempted = computed(() => taxTemplate.value.toLowerCase().includes('exem
 const isInclusive = computed(() => taxTemplate.value.toLowerCase().includes('inclusive'))
 
 // Gross = sum of (qty * rate * (1 - item discount%)) — after item-level discount
-const grossTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
-)
+const grossTotal = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
+  return isReturn.value ? -val : val
+})
 
-const totalBeforeItemDiscount = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0)
-)
+const totalBeforeItemDiscount = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0)
+  return isReturn.value ? -val : val
+})
 
-const itemDiscountTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0)
-)
+const itemDiscountTotal = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0)
+  return isReturn.value ? -val : val
+})
 
 // Subtotal: ex-tax amount for inclusive, gross otherwise
 const subtotal = computed(() => {
   if (isInclusive.value) {
-    return activeItems.value.reduce((s, i) => {
+    const val = activeItems.value.reduce((s, i) => {
       const amt = i.qty * i.rate * (1 - (i.discount || 0) / 100)
       return s + amt / (1 + (i.tax_rate || 0) / 100)
     }, 0)
+    return isReturn.value ? -val : val
   }
   return grossTotal.value
 })
 
-const discountAmt = computed(() =>
-  discountInputMode.value === 'amt'
+const discountAmt = computed(() => {
+  const val = discountInputMode.value === 'amt'
     ? discountDirectAmt.value
     : subtotal.value * (discountPct.value / 100)
-)
-const taxableAmt = computed(() => subtotal.value - discountAmt.value)
+  // discountAmt should stay positive or match subtotal sign? 
+  // Usually discount is subtracted. If subtotal is -500, discount -50 makes it -450? 
+  // No, if I return 500, and I had 50 discount, I return 450.
+  // So discount should probably have same sign as subtotal if we are negating everything.
+  return val 
+})
+const taxableAmt = computed(() => subtotal.value - (isReturn.value ? -discountAmt.value : discountAmt.value))
 
 const totalTax = computed(() => {
   if (isExempted.value) return 0
   if (isInclusive.value) {
     return (grossTotal.value - subtotal.value) * (1 - discountPct.value / 100)
   }
-  return activeItems.value.reduce((s, i) => {
+  const val = activeItems.value.reduce((s, i) => {
     const a = i.qty * i.rate * (1 - (i.discount || 0) / 100)
     return s + (a - a * (discountPct.value / 100)) * (i.tax_rate / 100)
   }, 0)
+  return isReturn.value ? -val : val
 })
 
 const grandTotal = computed(() => {
-  const base = isInclusive.value 
+  const base = isInclusive.value
     ? grossTotal.value * (1 - discountPct.value / 100)
     : taxableAmt.value + totalTax.value
-  return base + (freightAmt.value || 0) + (packingAmt.value || 0) + (loadingAmt.value || 0) + (otherChargesAmt.value || 0)
+  const charges = (freightAmt.value || 0) + (packingAmt.value || 0) + (loadingAmt.value || 0) + (otherChargesAmt.value || 0)
+  return base + (isReturn.value ? -charges : charges)
 })
-
 async function saveBill() {
   if (!customer.value.trim()) { openCustomerSearch(); return }
   if (!activeItems.value.length) { alert('Add at least one item'); return }
@@ -1840,6 +1857,7 @@ async function saveBill() {
   const payload = {
     customer: customer.value,
     date: billDate.value,
+    is_return: isReturn.value ? 1 : 0,
     naming_series: billSeries.value,
     price_list: priceList.value || 'Standard Selling',
     payment_mode: paymentMode.value,
@@ -1936,6 +1954,7 @@ async function submitBill() {
 
 function startNewBill() {
   items.value = []; selectedRow.value = -1
+  isReturn.value = false
   discountPct.value = 0; discountDirectAmt.value = 0; discountInputMode.value = null; freightAmt.value = 0; packingAmt.value = 0; loadingAmt.value = 0; otherChargesAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null

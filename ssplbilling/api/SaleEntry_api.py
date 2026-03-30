@@ -206,6 +206,7 @@ def create_sales_invoice(data=None, **kwargs):
     si.customer = data["customer"]
     si.posting_date = data.get("date", frappe.utils.today())
     si.naming_series = data.get("naming_series", "SINV-.YY.-")
+    si.is_return = data.get("is_return", 0)
     si.update_stock = 1
     if data.get("price_list"):
         si.selling_price_list = data["price_list"]
@@ -222,9 +223,12 @@ def create_sales_invoice(data=None, **kwargs):
         disc = float(item.get("discount_percentage") or 0)
         price_list_rate = float(item.get("price_list_rate") or item["rate"])
         rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
+        qty = float(item["qty"])
+        if si.is_return:
+            qty = -abs(qty)
         row = {
             "item_code": item["item_code"],
-            "qty": float(item["qty"]),
+            "qty": qty,
             "price_list_rate": price_list_rate,
             "discount_percentage": disc,
             "rate": rate,
@@ -361,6 +365,7 @@ def update_sales_invoice(data=None, **kwargs):
     invoice_name = data.get("invoice_name")
     si = frappe.get_doc("Sales Invoice", invoice_name)
     si.customer = data["customer"]
+    si.is_return = data.get("is_return", 0)
     if data.get("price_list"):
         si.selling_price_list = data["price_list"]
     # Preserving original posting_date
@@ -380,9 +385,12 @@ def update_sales_invoice(data=None, **kwargs):
         disc = float(item.get("discount_percentage") or 0)
         price_list_rate = float(item.get("price_list_rate") or item["rate"])
         rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
+        qty = float(item["qty"])
+        if si.is_return:
+            qty = -abs(qty)
         row = {
             "item_code": item["item_code"],
-            "qty": float(item["qty"]),
+            "qty": qty,
             "price_list_rate": price_list_rate,
             "discount_percentage": disc,
             "rate": rate,
