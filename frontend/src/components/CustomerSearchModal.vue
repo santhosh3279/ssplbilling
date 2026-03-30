@@ -111,12 +111,7 @@
                 <span
                   v-if="c.group"
                   class="px-2 py-0.5 rounded text-sm font-semibold tracking-tight inline-block"
-                  :class="{
-                    'bg-blue-900/20 text-blue-300 border border-blue-800/50': c.type === 'Customer',
-                    'bg-orange-900/20 text-orange-300 border border-orange-800/50': c.type === 'Supplier',
-                    'bg-purple-900/20 text-purple-300 border border-purple-800/50': c.type === 'Employee',
-                    'bg-slate-800 text-slate-400 border border-slate-700': c.type === 'Account'
-                  }"
+                  :class="getGroupBadgeClass(c)"
                 >
                   {{ c.group }}
                 </span>
@@ -507,5 +502,29 @@ async function onCustomerSaved(result) {
   } else {
     closeSubForm()
   }
+}
+function getGroupBadgeClass(c) {
+  const group = (c.group || '').toLowerCase()
+  const type = c.type
+
+  // 1. Specific Group Name Overrides
+  if (group.includes('wholesale')) {
+    return 'bg-blue-900/30 text-blue-300 border border-blue-700/50'
+  }
+  if (group.includes('retail')) {
+    return 'bg-green-900/30 text-green-300 border border-green-700/50'
+  }
+  if (group.includes('gst')) {
+    return 'bg-red-900/30 text-red-300 border border-red-700/50'
+  }
+  if (group === 'all customer groups') {
+    return 'bg-slate-800 text-slate-400 border border-slate-700'
+  }
+
+  // 2. Default Type-based Fallbacks
+  if (type === 'Customer') return 'bg-blue-900/20 text-blue-300 border border-blue-800/50'
+  if (type === 'Supplier') return 'bg-orange-900/20 text-orange-300 border border-orange-800/50'
+  if (type === 'Employee') return 'bg-purple-900/20 text-purple-300 border border-purple-800/50'
+  return 'bg-slate-800 text-slate-400 border border-slate-700'
 }
 </script>
