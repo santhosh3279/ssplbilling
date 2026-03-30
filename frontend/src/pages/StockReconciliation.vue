@@ -55,7 +55,7 @@
                 <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="ent.docstatus === 0 ? 'bg-amber-500' : 'bg-green-500'"></span>
                 <span class="truncate font-mono text-[14px] font-bold text-blue-400">{{ ent.name }}</span>
               </div>
-              <span class="shrink-0 text-[10px] font-bold text-slate-500 uppercase tabular-nums">{{ ent.posting_time }}</span>
+              <span class="shrink-0 text-[10px] font-bold text-slate-500 uppercase tabular-nums">{{ ent.modified?.split(' ')[1]?.slice(0,5) }}</span>
             </div>
             <div class="truncate text-[10px] text-slate-400 uppercase tracking-tight">{{ ent.company }}</div>
           </div>
@@ -359,7 +359,7 @@ async function fetchSidebarEntries() {
   sidebarLoading.value = true
   try {
     sidebarEntries.value = await frappeGet(`${API}.get_stock_reconciliations`, {
-      posting_date: sidebarDate.value,
+      posting_date: sidebarSearch.value ? null : sidebarDate.value,
       query: sidebarSearch.value,
       docstatus: draftOnly.value ? 0 : null
     })

@@ -124,7 +124,7 @@ def get_stock_reconciliations(query="", limit=20, posting_date=None, docstatus=N
         
     kwargs = dict(
         filters=filters,
-        fields=["name", "posting_date", "posting_time", "company", "status", "modified", "docstatus"],
+        fields=["name", "posting_date", "company", "modified", "docstatus"],
         limit=int(limit),
         order_by="modified desc",
     )
