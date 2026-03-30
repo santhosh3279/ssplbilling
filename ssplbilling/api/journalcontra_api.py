@@ -44,8 +44,8 @@ def create_journal_contra_entry(data):
         party_type = None
         party = None
         
-        # If it's a Customer or Supplier, we need their receivable/payable account
-        if account_type in ["Customer", "Supplier"]:
+        # If it's a Customer, Supplier, or Employee, we need their receivable/payable account
+        if account_type in ["Customer", "Supplier", "Employee"]:
             party_type = account_type
             party = row_account
             row_account = _get_party_account(party_type, party)

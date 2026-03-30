@@ -83,7 +83,7 @@ def get_all_ledgers():
     # 4. Accounts (Ledgers)
     accounts = frappe.get_all(
         "Account",
-        filters={"disabled": 0, "is_group": 0},
+        filters={"disabled": 0, "is_group": 0, "account_type": ["not in", ["Receivable", "Payable"]]},
         fields=["name", "account_name as label", "account_type as group"],
         limit=0
     )
