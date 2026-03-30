@@ -19,7 +19,7 @@
               v-for="type in entryTypes"
               :key="type.value"
               @click="entryType = type.value"
-              class="rounded-md px-3 py-1 text-[10px] font-bold transition-all flex items-center gap-1.5"
+              class="rounded-md px-4 py-1.5 text-lg font-bold transition-all flex items-center gap-1.5"
               :class="entryType === type.value ? `bg-slate-800 text-${type.color}-400 shadow-sm` : 'text-slate-400 hover:text-slate-200'"
             >
               <span>{{ type.label }}</span>
@@ -30,10 +30,10 @@
             class="flex items-center gap-2 bg-slate-700 p-1 rounded-lg border transition-all"
             :class="journalTypes.includes(entryType) ? 'border-violet-500 bg-slate-800/50 shadow-sm' : 'border-slate-600 opacity-60 hover:opacity-100'"
           >
-            <span class="text-[10px] font-bold text-slate-400 ml-1">GENERAL</span>
+            <span class="text-lg font-bold text-slate-400 ml-1 tracking-tight">GENERAL</span>
             <select
               v-model="entryType"
-              class="rounded-md bg-slate-800 border-none px-2 py-1 text-[10px] font-bold text-slate-200 outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+              class="rounded-md bg-slate-800 border-none px-3 py-1.5 text-lg font-bold text-slate-200 outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
             >
               <option v-if="!journalTypes.includes(entryType)" disabled :value="entryType">-- Select --</option>
               <option v-for="type in journalTypes" :key="type" :value="type">
