@@ -278,6 +278,8 @@ def create_sales_order(data):
 		so.additional_discount_percentage = data["discount_percentage"]
 	if data.get("additional_discount_amount"):
 		so.discount_amount = data["additional_discount_amount"]
+	if data.get("tax_template"):
+		so.taxes_and_charges = data["tax_template"]
 
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
@@ -324,6 +326,10 @@ def update_sales_order(data):
 		so.delivery_date = data["delivery_date"]
 	so.additional_discount_percentage = data.get("discount_percentage", 0)
 	so.discount_amount = data.get("additional_discount_amount", 0)
+	if data.get("tax_template"):
+		so.taxes_and_charges = data["tax_template"]
+	elif "tax_template" in data:
+		so.taxes_and_charges = ""
 
 	so.taxes = []
 	for t in data.get("taxes", []):
