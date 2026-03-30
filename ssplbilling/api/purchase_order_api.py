@@ -51,6 +51,13 @@ def get_item_details(item_code, price_list="Standard Buying", warehouse=None):
 		"price_list_rate",
 	) or item.last_purchase_rate or 0
 
+	# Fetch UOM conversions
+	uoms = frappe.get_all(
+		"UOM Conversion Detail",
+		filters={"parent": item_code},
+		fields=["uom", "conversion_factor"],
+	)
+
 	stock_qty = 0
 	if wh:
 		stock_qty = (
@@ -63,6 +70,7 @@ def get_item_details(item_code, price_list="Standard Buying", warehouse=None):
 		"item_code": item.item_code,
 		"item_name": item.item_name,
 		"uom": item.stock_uom,
+		"uoms": [{"uom": u.uom, "conversion_factor": float(u.conversion_factor or 1)} for u in uoms],
 		"rate": float(rate),
 		"stock_qty": float(stock_qty),
 		"warehouse": wh,
@@ -213,10 +221,16 @@ def get_purchase_order(order_name):
 
 	items = []
 	for i in po.items:
+		uoms = frappe.get_all(
+			"UOM Conversion Detail",
+			filters={"parent": i.item_code},
+			fields=["uom", "conversion_factor"],
+		)
 		items.append({
 			"item_code": i.item_code,
 			"item_name": i.item_name,
 			"uom": i.uom or i.stock_uom,
+			"uoms": [{"uom": u.uom, "conversion_factor": float(u.conversion_factor or 1)} for u in uoms],
 			"qty": float(i.qty or 0),
 			"rate": float(i.rate or 0),
 			"discount": float(i.discount_percentage or 0),

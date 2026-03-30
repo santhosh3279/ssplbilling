@@ -196,7 +196,12 @@
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onQtyEnter(idx)" @keydown.tab.prevent="onQtyEnter(idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
-                  <td class="px-2 text-slate-400 border-r border-slate-700" :class="item.deleted ? 'text-slate-600' : ''" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
+                  <td class="p-0 border-r border-slate-700">
+                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="billDocStatus !== 0" class="w-full rounded border border-transparent bg-transparent font-mono text-slate-200 outline-none focus:border-blue-500 focus:bg-slate-800 disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onUomChange(idx)" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.up.stop @keydown.down.stop>
+                      <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+                    </select>
+                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
+                  </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
@@ -217,7 +222,12 @@
                   <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
                   <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" /></td>
-                  <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.uom || '--' }}</td>
+                  <td class="p-0 border-r border-slate-700">
+                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onNewUomChange" @keydown.enter.prevent="addNewItem" @keydown.tab.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewQty">
+                      <option v-for="u in newPending.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+                    </select>
+                    <span v-else class="px-2 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ newPending.uom || '--' }}</span>
+                  </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="newPending.rate" class="font-mono text-slate-300">{{ newPending.rate.toFixed(2) }}</span>
                     <span v-else class="text-slate-600">--</span>
@@ -688,6 +698,7 @@ function setRowRef(el, idx) { if (el) rowRefs[idx] = el; else delete rowRefs[idx
 function setSidebarBillRef(el, idx) { if (el) sidebarBillRefs.set(idx, el); else sidebarBillRefs.delete(idx) }
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
+const newUomSelect = ref(null)
 const supplierInput = ref(null)
 const seriesSelect = ref(null)
 const showSeriesDropdown = ref(false)
@@ -764,7 +775,7 @@ async function fetchNextOrderNo() {
 
 // ==================== ITEM LOOKUP ====================
 const itemLookup = createResource({ url: `${API_BASE}.get_item_details` })
-const newPending = ref({ item_name: '', uom: '', rate: null })
+const newPending = ref({ item_name: '', uom: '', uoms: [], rate: null })
 const selectedItemData = ref(null)
 
 async function lookupItem(code) {
@@ -780,6 +791,7 @@ async function lookupItem(code) {
       item_code: cached.item_code,
       item_name: cached.item_name,
       uom: cached.uom,
+      uoms: cached.uoms || [],
       rate: finalRate,
       stock_qty: cached.stock || 0,
       tax_rate: cached.tax_rate,
@@ -800,7 +812,7 @@ watch(newItemCode, (val) => {
   if (code.length < 2) { newPending.value = { item_name: '', uom: '', rate: null }; return }
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
-    newPending.value = r ? { item_name: r.item_name, uom: r.uom, rate: r.rate } : { item_name: '', uom: '', rate: null }
+    newPending.value = r ? { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], rate: r.rate } : { item_name: '', uom: '', uoms: [], rate: null }
   }, 300)
 })
 
@@ -880,7 +892,7 @@ async function onNewCodeEnter() {
   }
   emptyCodeEnters = 0
   const r = await lookupItem(code)
-  if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, rate: r.rate }; focusNewQty() }
+  if (r) { newPending.value = { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], rate: r.rate }; focusNewQty() }
   else openSearch(code, null)
 }
 
@@ -888,21 +900,76 @@ async function addNewItem() {
   const code = newItemCode.value.trim(); if (!code) return
   const r = await lookupItem(code)
   if (!r) { openSearch(code, null); return }
+
+  if ((newPending.value.uoms || []).length > 1) {
+    nextTick(() => {
+      newUomSelect.value?.focus()
+    })
+    return
+  }
+
   const ei = items.value.findIndex(i => i.item_code === code && !i.deleted)
   if (ei >= 0) {
     items.value[ei].qty += newQty.value
   } else {
     items.value.push({
       item_code: code, item_name: newPending.value.item_name, uom: newPending.value.uom,
+      uoms: newPending.value.uoms || [],
       qty: newQty.value, rate: newPending.value.rate || r.rate, discount: 0,
       tax_rate: r.tax_rate ?? defaultTaxRate.value, warehouse: r.warehouse, deleted: false
     })
   }
-  newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', rate: null }
+  newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', uoms: [], rate: null }
   selectedRow.value = -1; focusNewCode()
 }
 
-function onQtyEnter(idx) { goToNextRow(idx) }
+function onQtyEnter(idx) {
+  const item = items.value[idx]
+  if ((item.uoms || []).length > 1) {
+    focusField('uom', idx)
+  } else {
+    goToNextRow(idx)
+  }
+}
+
+function rateForUom(item_code, uom, baseRate) {
+  const cached = lookupItemInCache(item_code)
+  if (!cached) return baseRate
+
+  // 1. Check for an actual Item Price record for this price list + UOM
+  const plUomRates = cached.uom_price_lists?.[priceList.value]
+  if (plUomRates && plUomRates[uom] != null) {
+    return plUomRates[uom]
+  }
+  // 2. Fallback: base (stock-UOM) rate × conversion factor
+  const uomEntry = (cached.uoms || []).find(u => u.uom === uom)
+  return baseRate * (uomEntry ? uomEntry.conversion_factor : 1)
+}
+
+function onUomChange(idx) {
+  const item = items.value[idx]
+  const cached = lookupItemInCache(item.item_code)
+  if (!cached) return
+  // We need the base rate (Standard Buying or current price list for stock UOM)
+  let baseRate = cached.price || cached.rate || 0
+  if (cached.price_lists && priceList.value) {
+    const pl = cached.price_lists.find(p => p.name === priceList.value)
+    if (pl) baseRate = pl.rate
+  }
+  item.rate = rateForUom(item.item_code, item.uom, baseRate)
+}
+
+function onNewUomChange() {
+  const code = newItemCode.value.trim()
+  const cached = lookupItemInCache(code)
+  if (!cached) return
+  let baseRate = cached.price || cached.rate || 0
+  if (cached.price_lists && priceList.value) {
+    const pl = cached.price_lists.find(p => p.name === priceList.value)
+    if (pl) baseRate = pl.rate
+  }
+  newPending.value.rate = rateForUom(code, newPending.value.uom, baseRate)
+}
 
 function softDelete(idx) { items.value[idx].deleted = true }
 function restoreItem(idx) { items.value[idx].deleted = false }
