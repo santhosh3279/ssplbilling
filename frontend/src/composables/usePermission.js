@@ -29,6 +29,7 @@ export const BILLER_ROUTES = new Set([
   'BarcodePrintPage',
   'LoadingReceipt',
   'MaterialTransfer',
+  'StockReconciliation',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -107,6 +108,7 @@ const TILE_ROUTE_MAP = {
   'purchase-order':    'PurchaseOrder',
   'journal-contra':    'JournalContraEntry',
   'material-transfer': 'MaterialTransfer',
+  'stock-reconciliation': 'StockReconciliation',
   'payment':           'PayRec',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',

@@ -23,6 +23,7 @@ import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
+import StockReconciliation from './pages/StockReconciliation.vue'
 
 const routes = [
   {
@@ -91,6 +92,11 @@ const routes = [
     path: '/material-transfer',
     name: 'MaterialTransfer',
     component: MaterialTransfer,
+  },
+  {
+    path: '/stock-reconciliation',
+    name: 'StockReconciliation',
+    component: StockReconciliation,
   },
   {
     path: '/Cashier-Management',

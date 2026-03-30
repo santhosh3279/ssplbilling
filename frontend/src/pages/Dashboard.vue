@@ -75,6 +75,20 @@
           🚚 <span class="font-bold text-white">Loading Receipt</span>
         </button>
         <button
+          v-if="canAccessTile('material-transfer')"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          @click="router.push('/material-transfer')"
+        >
+          🚚 <span class="font-bold text-white">Stock Transfer</span>
+        </button>
+        <button
+          v-if="canAccessTile('stock-reconciliation')"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          @click="router.push('/stock-reconciliation')"
+        >
+          ⚖️ <span class="font-bold text-white">Stock Reconcile</span>
+        </button>
+        <button
           v-if="canAccessTile('parcel-address')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/parcel-address')"
@@ -155,6 +169,8 @@
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+L</kbd> Customer</span>
           <span class="text-slate-700">|</span>
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+I</kbd> Item Search</span>
+          <span class="text-slate-700">|</span>
+          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+R</kbd> Stock Reconcile</span>
           <span class="text-slate-700">|</span>
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">ESC</kbd> Close Modals</span>
         </div>
@@ -280,13 +296,14 @@ const allTiles = [
   { id: 'purchase-order', name: 'Purchase Order', desc: 'Create & manage purchase orders', icon: '📋', shortcut: 'F7', tileBg: 'bg-sky-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
+  { id: 'stock-reconciliation', name: 'Stock Reconciliation', desc: 'Adjust stock levels', icon: '⚖️', shortcut: '', tileBg: 'bg-slate-700' },
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
 
 const tiles = allTiles.filter(t => canAccessTile(t.id))
 
-const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'reports']
+const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -295,6 +312,7 @@ const routeAliases = {
   'sales-order': '/sales-order',
   'journal-contra': '/journal-contra',
   'material-transfer': '/material-transfer',
+  'stock-reconciliation': '/stock-reconciliation',
   reports: '/reports',
 }
 
