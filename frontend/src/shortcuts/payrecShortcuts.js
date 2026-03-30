@@ -7,6 +7,8 @@
 export const payrecShortcuts = (handlers) => ({
   'F2':        handlers.switchToReceipt,
   'F3':        handlers.switchToPayment,
+  'F4':        handlers.switchToGeneral,
+  'F5':        handlers.switchToOpening,
   'INSERT':    handlers.addRow,
   'F9':        handlers.saveEntry,
   'ARROWUP':   handlers.navigateUp,

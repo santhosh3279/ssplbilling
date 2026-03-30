@@ -9,24 +9,30 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-lg font-bold tracking-tight text-slate-100">{{ isReceipt ? 'RECEIPT ENTRY' : 'PAYMENT ENTRY' }}</h1>
+        <h1 class="text-lg font-bold tracking-tight text-slate-100 uppercase">{{ entryTypeLabel }}</h1>
         <div class="h-4 w-px bg-slate-600 mx-2"></div>
+        
+        <!-- Selection Box for All Entry Types -->
+        <div class="flex items-center gap-2 mr-2">
+          <select
+            v-model="entryType"
+            class="rounded-lg bg-slate-700 border border-slate-600 px-3 py-1 text-xs font-bold text-slate-200 outline-none focus:border-blue-500 transition-all"
+          >
+            <option v-for="type in entryTypes" :key="type.value" :value="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
+
         <div class="flex rounded-lg bg-slate-700 p-1">
           <button
-            @click="isReceipt = true"
-            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="isReceipt ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+            v-for="type in entryTypes"
+            :key="type.value"
+            @click="entryType = type.value"
+            class="rounded-md px-3 py-1 text-[10px] font-bold transition-all flex items-center gap-1.5"
+            :class="entryType === type.value ? `bg-slate-800 text-${type.color}-400 shadow-sm` : 'text-slate-400 hover:text-slate-200'"
           >
-            <span>Receipt</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="isReceipt ? 'border-blue-500 bg-blue-900/20' : 'border-slate-600 bg-slate-700'">F2</kbd>
-          </button>
-          <button
-            @click="isReceipt = false"
-            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="!isReceipt ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
-          >
-            <span>Payment</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="!isReceipt ? 'border-emerald-600 bg-emerald-900/20' : 'border-slate-600 bg-slate-700'">F3</kbd>
+            <span>{{ type.label }}</span>
           </button>
         </div>
       </div>
@@ -379,10 +385,22 @@ import { payrecShortcuts } from '../shortcuts/payrecShortcuts'
 const router = useRouter()
 
 // --- STATE ---
-const isReceipt = ref(true)
+const entryTypes = [
+  { label: 'Receipt', value: 'Receipt', color: 'blue' },
+  { label: 'Payment', value: 'Payment', color: 'emerald' },
+  { label: 'General', value: 'Journal Entry', color: 'violet' },
+  { label: 'Opening', value: 'Opening Entry', color: 'amber' },
+]
+const entryType = ref('Receipt')
+const isReceipt = computed(() => entryType.value === 'Receipt')
+const entryTypeLabel = computed(() => {
+  const type = entryTypes.find(t => t.value === entryType.value)
+  return type ? `${type.label} Entry` : 'Entry'
+})
+
 const mopLedgers = ref(null)
 
-watch(isReceipt, () => {
+watch(entryType, () => {
   rows.value = [
     { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
   ]
@@ -391,17 +409,19 @@ watch(isReceipt, () => {
 })
 
 const searchInitialType = computed(() => {
-  if (isReceipt.value) {
+  if (entryType.value === 'Receipt') {
     if (activeRowIdx.value === 0) return 'Customer'
     return 'Account'
   }
-  // Payment Mode
-  if (activeRowIdx.value === 0) return 'Supplier'
+  if (entryType.value === 'Payment') {
+    if (activeRowIdx.value === 0) return 'Supplier'
+    return 'Account'
+  }
   return 'Account'
 })
 
 const searchFilterList = computed(() => {
-  if (activeRowIdx.value > 0) {
+  if ((entryType.value === 'Receipt' || entryType.value === 'Payment') && activeRowIdx.value > 0) {
     return ['wb-cash', 'wb-card', 'wb-upi', 'wb-bank']
       .map(k => localStorage.getItem(k))
       .filter(Boolean)
@@ -410,7 +430,7 @@ const searchFilterList = computed(() => {
 })
 
 const searchAllowedTypes = computed(() => {
-  if (activeRowIdx.value > 0) return ['Account']
+  if ((entryType.value === 'Receipt' || entryType.value === 'Payment') && activeRowIdx.value > 0) return ['Account']
   return ['Account', 'Customer', 'Supplier', 'Employee']
 })
 
@@ -499,6 +519,8 @@ const totalCredit = computed(() => rows.value.reduce((s, r) => s + (Number(r.cre
 const difference = computed(() => totalDebit.value - totalCredit.value)
 
 const validationError = computed(() => {
+  if (entryType.value === 'Journal Entry' || entryType.value === 'Opening Entry') return null
+
   const r1 = rows.value[0]
   if (!r1) return null
   
@@ -589,10 +611,13 @@ function getNewBalance(row) {
 }
 
 function isFieldDisabled(idx, field) {
+  // If General or Opening Entry, nothing is disabled by default
+  if (entryType.value === 'Journal Entry' || entryType.value === 'Opening Entry') return false
+
   // Row 0: mode-based restriction
   if (idx === 0) {
-    if (isReceipt.value && field === 'debit') return true   // Receipt → party is credited
-    if (!isReceipt.value && field === 'credit') return true // Payment → party is debited
+    if (entryType.value === 'Receipt' && field === 'debit') return true   // Receipt → party is credited
+    if (entryType.value === 'Payment' && field === 'credit') return true // Payment → party is debited
   }
   // Other rows: follow what row 0 has entered
   const firstRowDebit = Number(rows.value[0]?.debit) || 0
@@ -619,7 +644,7 @@ function triggerBlink(idx, field) {
 async function fetchAndShowOutstanding() {
   const row0 = rows.value[0]
   if (!row0.account) return false
-  const partyType = row0.account_type || (isReceipt.value ? 'Customer' : 'Supplier')
+  const partyType = row0.account_type || (entryType.value === 'Receipt' ? 'Customer' : 'Supplier')
   if (!['Customer', 'Supplier', 'Employee'].includes(partyType)) return false
   try {
     const res = await frappeGet('ssplbilling.api.ledgerentry_api.get_outstanding_invoices', {
@@ -654,10 +679,10 @@ function focusNextAllocOrProceed(i) {
 
 function fillRow1Amount() {
   const row0 = rows.value[0]
-  const amount = isReceipt.value ? Number(row0.credit) : Number(row0.debit)
+  const amount = entryType.value === 'Receipt' ? Number(row0.credit) : Number(row0.debit)
   if (rows.value.length < 2) addRow()
   const row1 = rows.value[1]
-  if (isReceipt.value) { row1.debit = amount; row1.credit = 0 }
+  if (entryType.value === 'Receipt') { row1.debit = amount; row1.credit = 0 }
   else { row1.credit = amount; row1.debit = 0 }
 }
 
@@ -679,7 +704,7 @@ async function moveNext(idx, field) {
     nextTick(() => remarksInput.value?.focus())
     return
   }
-  if (idx === 0) {
+  if (idx === 0 && (entryType.value === 'Receipt' || entryType.value === 'Payment')) {
     // Try to show outstanding bills; if none, go directly to row 1
     const shown = await fetchAndShowOutstanding()
     if (!shown) {
@@ -713,8 +738,10 @@ onMounted(async () => {
   useSubwindowWatcher(showOutstandingModal)
 
   useShortcuts(payrecShortcuts({
-    switchToReceipt: () => { isReceipt.value = true },
-    switchToPayment: () => { isReceipt.value = false },
+    switchToReceipt: () => { entryType.value = 'Receipt' },
+    switchToPayment: () => { entryType.value = 'Payment' },
+    switchToGeneral: () => { entryType.value = 'Journal Entry' },
+    switchToOpening: () => { entryType.value = 'Opening Entry' },
     addRow: () => {
       if (showSearchModal.value) { showAllAccounts.value = true; nextTick(() => ledgerSearchModal.value?.focus()); return }
       addRow()
@@ -753,7 +780,7 @@ async function saveEntry() {
   isSubmitting.value = true
   try {
     const payload = {
-      voucher_type: 'Journal Entry', // Standard JE for multiple row pay/rec
+      voucher_type: entryType.value === 'Opening Entry' ? 'Opening Entry' : 'Journal Entry',
       posting_date: postingDate.value,
       user_remark: userRemarks.value,
       cheque_no: referenceNo.value,
