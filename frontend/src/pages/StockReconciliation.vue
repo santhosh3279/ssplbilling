@@ -26,8 +26,20 @@
 
     <div class="border-b border-slate-700 bg-slate-800 px-4 py-3">
       <div class="flex items-center gap-8">
-        <!-- Warehouse -->
+        <!-- Purpose -->
         <div class="flex items-center gap-2">
+          <label class="text-[10px] font-bold uppercase text-slate-400 whitespace-nowrap">Purpose</label>
+          <select
+            v-model="purpose"
+            :disabled="entryDocStatus !== 0 || items.length > 0"
+            class="rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm font-bold text-indigo-400 outline-none focus:border-indigo-500 disabled:bg-slate-900 disabled:text-slate-500 min-w-[150px]"
+          >
+            <option v-for="p in availablePurposes" :key="p" :value="p">{{ p }}</option>
+          </select>
+        </div>
+
+        <!-- Warehouse -->
+        <div class="flex items-center gap-2 border-l border-slate-700 pl-8">
           <label class="text-[10px] font-bold uppercase text-slate-400 whitespace-nowrap">Warehouse</label>
           <select
             ref="warehouseSelect"
@@ -232,10 +244,12 @@ if (props.isSubWindow) useSubwindow()
 const items = ref([])
 const selectedRow = ref(-1)
 const warehouse = ref('')
+const purpose = ref('Stock Reconciliation')
 const entryName = ref(null)
 const entryDocStatus = ref(0)
 const entryDate = ref(new Date().toISOString().split('T')[0])
 const availableWarehouses = ref([])
+const availablePurposes = ref(['Stock Reconciliation', 'Opening Stock'])
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
 
 const dynamicRowStyle = computed(() => ({
@@ -289,6 +303,11 @@ async function fetchConfig() {
     if (!warehouse.value && availableWarehouses.value.length) {
        warehouse.value = availableWarehouses.value[0]
     }
+
+    const purposes = await frappeGet(`${API}.get_stock_reconciliation_purposes`)
+    if (purposes && purposes.length) {
+      availablePurposes.value = purposes
+    }
   } catch (e) { console.error('Failed to fetch config', e) }
 }
 
@@ -317,6 +336,7 @@ async function saveEntry() {
   const payload = {
     name: entryName.value,
     posting_date: entryDate.value,
+    purpose: purpose.value,
     warehouse: warehouse.value,
     items: items.value.filter(i => Math.abs(i.qty - i.current_qty) > 0.0001).map(i => ({
       item_code: i.item_code,
@@ -382,6 +402,7 @@ async function loadEntry(name) {
     const data = await frappeGet(`${API}.get_stock_reconciliation`, { name })
     entryName.value = data.name
     entryDate.value = data.posting_date
+    purpose.value = data.purpose || 'Stock Reconciliation'
     warehouse.value = data.items.length ? data.items[0].warehouse : ''
     items.value = data.items
     entryDocStatus.value = data.docstatus

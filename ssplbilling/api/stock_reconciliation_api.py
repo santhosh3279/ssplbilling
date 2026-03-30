@@ -87,6 +87,7 @@ def update_stock_reconciliation(data=None, **kwargs):
 
     sr.posting_date = data.get("posting_date") or sr.posting_date
     sr.posting_time = data.get("posting_time") or sr.posting_time
+    sr.purpose = data.get("purpose") or sr.purpose
     
     sr.items = []
     for item in data["items"]:
@@ -99,6 +100,15 @@ def update_stock_reconciliation(data=None, **kwargs):
     
     sr.save()
     return {"name": sr.name, "status": "Draft"}
+
+@frappe.whitelist()
+def get_stock_reconciliation_purposes():
+    """Get all available purposes for Stock Reconciliation."""
+    meta = frappe.get_meta("Stock Reconciliation")
+    options = meta.get_field("purpose").options
+    if options:
+        return [o.strip() for o in options.split("\n") if o.strip()]
+    return ["Stock Reconciliation", "Opening Stock"]
 
 @frappe.whitelist()
 def get_stock_reconciliations(query="", limit=20, posting_date=None):
@@ -128,6 +138,7 @@ def get_stock_reconciliation(name):
         "name": sr.name,
         "posting_date": str(sr.posting_date),
         "posting_time": str(sr.posting_time),
+        "purpose": sr.purpose,
         "company": sr.company,
         "docstatus": sr.docstatus,
         "status": sr.status,
