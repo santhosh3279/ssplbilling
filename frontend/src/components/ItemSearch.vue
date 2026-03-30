@@ -330,6 +330,7 @@ watch(query, () => {
 
 watch([selectedIdx, results], () => {
   const item = results.value[selectedIdx.value]
+  if (item) console.log('[ItemSearch] selected item warehouse_stock:', item.warehouse_stock)
   updateItemInsight(item)
 }, { immediate: true })
 

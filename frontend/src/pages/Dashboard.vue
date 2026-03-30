@@ -183,7 +183,7 @@
       :show="showItemSearchModal"
       search-type="Sales"
       :price-list="filteredBillingSeries[0]?.price_list || defaultSeries || 'Standard Selling'"
-      :warehouse="warehouseLabel"
+      :warehouse="defaultWarehouse"
       @close="showItemSearchModal = false"
       @select="pickItem"
     />
@@ -341,6 +341,7 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 const showGeneralSettings = ref(false)
 
 const defaultSeries = ref(localStorage.getItem('wb-series') || '')
+const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 
 // ==================== CUSTOMER SEARCH ====================
 const showCustomerSearchModal = ref(false)
