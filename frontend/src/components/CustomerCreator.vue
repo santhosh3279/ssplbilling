@@ -26,6 +26,18 @@
         />
       </div>
 
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Group *</label>
+        <select
+          v-model="form.customer_group"
+          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+          @keydown.esc.stop="$emit('close')"
+          @keydown.enter.prevent="handleFormEnter"
+        >
+          <option v-for="cg in customerGroups" :key="cg" :value="cg">{{ cg }}</option>
+        </select>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number *</label>
@@ -89,7 +101,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
-import { fetchCustomerDetails, createCustomer, updateCustomer } from '../api/customer.js'
+import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
 
 const props = defineProps({
   show: Boolean,
@@ -103,6 +115,7 @@ const emit = defineEmits(['close', 'saved'])
 const nameInputRef = ref(null)
 const saving = ref(false)
 const editLoading = ref(false)
+const customerGroups = ref([])
 
 const indianStates = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -117,7 +130,8 @@ const indianStates = [
 ]
 
 const defaultForm = () => ({
-  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '',
+  customer_name: '', customer_group: 'All Customer Groups',
+  mobile: '', whatsapp: '', email: '', gstin: '',
   address_name: '', address_line1: '', address_line2: '',
   city: 'Palakkad', pincode: '678000', state: 'Kerala',
 })
@@ -125,21 +139,31 @@ const defaultForm = () => ({
 const form = ref(defaultForm())
 
 onMounted(async () => {
+  // Fetch customer groups
+  try {
+    const groups = await fetchCustomerGroups()
+    customerGroups.value = groups.length ? groups : ['All Customer Groups']
+  } catch (e) {
+    console.error('[CustomerCreator] fetchCustomerGroups failed:', e)
+    customerGroups.value = ['All Customer Groups']
+  }
+
   if (props.isEdit && props.customerRow) {
     const row = props.customerRow
     form.value = {
-      name:          row.name,
-      customer_name: row.label         || '',
-      mobile:        row.mobile_no     || '',
-      whatsapp:      row.whatsapp      || '',
-      email:         row.email         || '',
-      gstin:         row.gstin         || '',
-      address_name:  '',
-      address_line1: row.address_line1 || '',
-      address_line2: '',
-      city:          row.city          || '',
-      pincode:       row.pincode       || '',
-      state:         row.state         || '',
+      name:           row.name,
+      customer_name:  row.label          || '',
+      customer_group: row.customer_group || 'All Customer Groups',
+      mobile:         row.mobile_no      || '',
+      whatsapp:       row.whatsapp       || '',
+      email:          row.email          || '',
+      gstin:          row.gstin          || '',
+      address_name:   '',
+      address_line1:  row.address_line1  || '',
+      address_line2:  '',
+      city:           row.city           || '',
+      pincode:        row.pincode        || '',
+      state:          row.state          || '',
     }
     editLoading.value = true
     try {

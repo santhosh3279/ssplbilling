@@ -84,6 +84,20 @@ async function addWhatsAppToContact(customerName, whatsapp) {
 }
 
 /**
+ * Fetches all non-group Customer Groups for selection.
+ */
+export async function fetchCustomerGroups() {
+  const list = await frappeGet('frappe.client.get_list', {
+    doctype: 'Customer Group',
+    fields: ['name'],
+    // filters: [['is_group', '=', 0]],
+    order_by: 'name asc',
+    limit_page_length: 100,
+  })
+  return list.map(d => d.name)
+}
+
+/**
  * Creates a Customer with mobile_no and email_id set directly on the doc.
  */
 export async function createCustomer(data) {
@@ -91,7 +105,7 @@ export async function createCustomer(data) {
     doctype: 'Customer',
     customer_name: data.customer_name,
     customer_type: 'Individual',
-    customer_group: 'All Customer Groups',
+    customer_group: data.customer_group || 'All Customer Groups',
     territory: 'All Territories',
     mobile_no: data.mobile || '',
     email_id: data.email || '',
@@ -136,6 +150,7 @@ export async function fetchCustomerDetails(customerId) {
       name: customerId,
     })
     result.customer_name = cust.customer_name || ''
+    result.customer_group = cust.customer_group || ''
     result.mobile = cust.mobile_no || ''
     result.email = cust.email_id || ''
     result.gstin = cust.gstin || ''

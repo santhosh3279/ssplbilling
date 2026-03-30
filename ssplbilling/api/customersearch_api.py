@@ -474,6 +474,7 @@ def update_customer_full(data):
 
 	cust = frappe.get_doc("Customer", customer_id)
 	cust.customer_name = data.get("customer_name") or cust.customer_name
+	cust.customer_group = data.get("customer_group") or cust.customer_group
 	cust.mobile_no = data.get("mobile") or ""
 	cust.email_id = data.get("email") or ""
 	cust.gstin = data.get("gstin") or ""
