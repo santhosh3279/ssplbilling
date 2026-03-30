@@ -191,88 +191,17 @@
           @saved="onEmployeeSaved"
         />
 
-        <!-- Customer Form (New / Edit) -->
-        <div v-else-if="showNewForm || showEditForm" class="w-[600px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
-          <div class="border-b border-slate-700 px-5 py-4 bg-slate-800">
-            <div class="text-xl font-bold text-slate-200">{{ showNewForm ? 'New Customer' : 'Modify Customer Details' }}</div>
-            <div class="text-sm text-slate-400 flex items-center gap-2">
-              <template v-if="showEditForm && editLoading">
-                <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent"></span>
-                Loading from ERPNext…
-              </template>
-              <template v-else>
-                {{ showNewForm ? 'Enter customer details to create a new record' : ('Update information for ' + (editData.customer_name || '')) }}
-              </template>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-4 px-6 py-5 max-h-[70vh] overflow-y-auto">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Name *</label>
-              <input
-                ref="formNameInput"
-                v-model="(showNewForm ? newData : editData).customer_name"
-                class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base font-semibold text-slate-200 outline-none focus:border-blue-500"
-                placeholder="Full name"
-                @keydown.esc.stop="handleEsc"
-                @keydown.enter.prevent="handleFormEnter"
-              />
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number *</label>
-                <input v-model="(showNewForm ? newData : editData).mobile" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">WhatsApp Number</label>
-                <input v-model="(showNewForm ? newData : editData).whatsapp" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</label>
-                <input v-model="(showNewForm ? newData : editData).email" type="email" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">GSTIN</label>
-                <input v-model="(showNewForm ? newData : editData).gstin" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 font-mono text-base uppercase text-slate-200 outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
-              <input v-model="(showNewForm ? newData : editData).address_line1" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
-            </div>
-
-            <div class="grid grid-cols-3 gap-4">
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">City</label>
-                <input v-model="(showNewForm ? newData : editData).city" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="City" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pincode</label>
-                <input v-model="(showNewForm ? newData : editData).pincode" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="678XXX" maxlength="6" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter" />
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">State</label>
-                <select v-model="(showNewForm ? newData : editData).state" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" @keydown.esc.stop="handleEsc" @keydown.enter.prevent="handleFormEnter">
-                  <option value="">Select State</option>
-                  <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 border-t border-slate-700 px-6 py-4 bg-slate-800">
-            <button class="rounded border border-slate-600 bg-slate-700 px-5 py-2 font-semibold text-slate-300 transition-colors hover:bg-slate-600" @click="closeSubForm">Cancel</button>
-            <button class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95" :class="showNewForm ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'" @click="submitCustomerForm" :disabled="saving || editLoading">
-              {{ saving ? (showNewForm ? 'Saving...' : 'Updating...') : (showNewForm ? 'Save & Select' : 'Update Details') }}
-              <kbd class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm" :class="showNewForm ? 'border-blue-500 bg-blue-500' : 'border-orange-500 bg-orange-500'">End</kbd>
-            </button>
-          </div>
-        </div>
+        <!-- Customer Creator (New / Edit) -->
+        <CustomerCreator
+          v-else-if="(showNewForm || showEditForm) && formPartyType === 'Customer'"
+          ref="customerCreatorRef"
+          :show="true"
+          :is-edit="showEditForm"
+          :customer-row="showEditForm ? results[selectedIdx] : null"
+          :initial-name="newCustomerName"
+          @close="closeSubForm"
+          @saved="onCustomerSaved"
+        />
       </div>
     </div>
   </div>
@@ -280,11 +209,11 @@
 
 <script setup>
 import { ref, nextTick, watch, computed } from 'vue'
-import { fetchCustomerDetails, createCustomer, updateCustomer } from '../api/customer.js'
 import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { getUserRole } from '../composables/usePermission.js'
 import DateFilter from './DateFilter.vue'
+import CustomerCreator from './CustomerCreator.vue'
 import SupplierCreator from './SupplierCreator.vue'
 import EmployeeCreator from './EmployeeCreator.vue'
 
@@ -309,42 +238,17 @@ const allLedgers   = ref([])
 const activeType   = ref(props.initialType)
 const selectedIdx  = ref(0)
 const loading      = ref(false)
-const saving       = ref(false)
 
-const searchInput     = ref(null)
-const formNameInput   = ref(null)
-const scrollContainer = ref(null)
+const searchInput        = ref(null)
+const scrollContainer    = ref(null)
+const customerCreatorRef = ref(null)
 const supplierCreatorRef = ref(null)
 
-const showNewForm   = ref(false)
-const showEditForm  = ref(false)
-const showDateModal = ref(false)
-const editLoading   = ref(false)
-const formPartyType = ref('Customer') // 'Customer' | 'Supplier'
-
-const indianStates = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
-  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
-  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  'Andaman and Nicobar Islands', 'Chandigarh',
-  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
-  'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
-]
-
-const newData = ref({
-  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '',
-  address_line1: '', address_line2: '',
-  city: 'Palakkad', pincode: '678000', state: 'Kerala'
-})
-
-const editData = ref({
-  customer_name: '', mobile: '', whatsapp: '', email: '', gstin: '',
-  address_line1: '', address_line2: '',
-  city: '', pincode: '', state: ''
-})
+const showNewForm    = ref(false)
+const showEditForm   = ref(false)
+const showDateModal  = ref(false)
+const formPartyType  = ref('Customer') // 'Customer' | 'Supplier' | 'Employee'
+const newCustomerName = ref('')
 
 // ─── Data Preloading ──────────────────────────────────────────────────────────
 async function preloadLedger() {
@@ -441,7 +345,7 @@ function handleGlobalKeydown(e) {
   if (showNewForm.value || showEditForm.value) {
     if (formPartyType.value === 'Customer' && e.key === 'End') {
       e.preventDefault()
-      submitCustomerForm()
+      customerCreatorRef.value?.submit()
     }
     return
   }
@@ -492,10 +396,10 @@ function handleDateConfirm(dates) {
 
 function focus() {
   nextTick(() => {
-    if (formPartyType.value === 'Supplier' && (showNewForm.value || showEditForm.value)) {
+    if (formPartyType.value === 'Customer' && (showNewForm.value || showEditForm.value)) {
+      customerCreatorRef.value?.focusFirst()
+    } else if (formPartyType.value === 'Supplier' && (showNewForm.value || showEditForm.value)) {
       supplierCreatorRef.value?.focusFirst()
-    } else if (showNewForm.value || showEditForm.value) {
-      formNameInput.value?.focus()
     } else {
       searchInput.value?.focus()
     }
@@ -528,59 +432,16 @@ watch(() => props.show, (val) => {
 // ─── Sub-Form: open / close ───────────────────────────────────────────────────
 function openNewForm() {
   formPartyType.value = activeType.value === 'Supplier' ? 'Supplier' : activeType.value === 'Employee' ? 'Employee' : 'Customer'
-  if (formPartyType.value === 'Customer') {
-    newData.value = {
-      customer_name: query.value.trim(), mobile: '', whatsapp: '', email: '', gstin: '',
-      address_line1: '', address_line2: '',
-      city: 'Palakkad', pincode: '678000', state: 'Kerala'
-    }
-  }
+  if (formPartyType.value === 'Customer') newCustomerName.value = query.value.trim()
   showNewForm.value = true
   focus()
 }
 
-async function openEditForm(target) {
+function openEditForm(target) {
   if (!target || (target.type !== 'Customer' && target.type !== 'Supplier' && target.type !== 'Employee')) return
   formPartyType.value = target.type
-  if (target.type === 'Customer') {
-    // Pre-fill immediately from ledger row so the form is usable while we fetch
-    editData.value = {
-      name:          target.name,
-      customer_name: target.label        || '',
-      mobile:        target.mobile_no    || '',
-      whatsapp:      target.whatsapp     || '',
-      email:         target.email        || '',
-      gstin:         target.gstin        || '',
-      address_name:  '',
-      address_line1: target.address_line1 || '',
-      address_line2: '',
-      city:          target.city         || '',
-      pincode:       target.pincode      || '',
-      state:         target.state        || '',
-    }
-    showEditForm.value = true
-    editLoading.value = true
-    focus()
-    try {
-      const full = await fetchCustomerDetails(target.name)
-      // Merge: always take address_name; for all other fields take full value
-      // only when it is non-empty, so a missing address doesn't blank out
-      // values that were already visible in the ledger row.
-      const merged = { ...editData.value }
-      for (const [k, v] of Object.entries(full)) {
-        if (k === 'address_name' || v !== '') merged[k] = v
-      }
-      editData.value = merged
-    } catch (e) {
-      console.warn('[CustomerSearchModal] fetch customer details failed:', e)
-    } finally {
-      editLoading.value = false
-    }
-  } else {
-    // Supplier / Employee — child component handles its own data loading
-    showEditForm.value = true
-    focus()
-  }
+  showEditForm.value = true
+  focus()
 }
 
 function closeSubForm() {
@@ -615,43 +476,16 @@ async function onEmployeeSaved(result) {
   }
 }
 
-// ─── Customer form logic ──────────────────────────────────────────────────────
-function validateCustomer(data, isEdit = false) {
-  if (!data.customer_name.trim()) { alert('Customer Name is required'); return false }
-  if (!isEdit && (!data.mobile || !/^\d{10}$/.test(data.mobile))) { alert('Valid 10-digit Mobile required'); return false }
-  return true
-}
-
-function handleFormEnter(e) {
-  const form = e.target.closest('.flex-col.gap-4')
-  if (!form) return
-  const focusables = Array.from(form.querySelectorAll('input, select, button'))
-  const index = focusables.indexOf(e.target)
-  if (index > -1 && index < focusables.length - 1) focusables[index + 1].focus()
-  else submitCustomerForm()
-}
-
-async function submitCustomerForm() {
-  const data = showNewForm.value ? newData.value : editData.value
-  if (!validateCustomer(data, !showNewForm.value)) return
-  saving.value = true
-  try {
-    const result = showNewForm.value
-      ? await createCustomer(data)
-      : await updateCustomer(data.name, data)
-    await preloadLedger()
-    const savedName = result.name || result.customer_name
-    const foundIdx = results.value.findIndex(c => c.name === savedName)
-    if (foundIdx !== -1) selectedIdx.value = foundIdx
-    if (showNewForm.value) {
-      handleSelect(results.value[selectedIdx.value])
-    } else {
-      closeSubForm()
-    }
-  } catch (e) {
-    alert('Failed to save customer: ' + e.message)
-  } finally {
-    saving.value = false
+// ─── Customer saved callback ──────────────────────────────────────────────────
+async function onCustomerSaved(result) {
+  await preloadLedger()
+  const savedName = result.name || result.customer_name
+  const foundIdx = results.value.findIndex(c => c.name === savedName)
+  if (foundIdx !== -1) selectedIdx.value = foundIdx
+  if (showNewForm.value) {
+    handleSelect(results.value[selectedIdx.value])
+  } else {
+    closeSubForm()
   }
 }
 </script>
