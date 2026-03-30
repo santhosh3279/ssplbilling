@@ -137,27 +137,37 @@ def get_stock_reconciliations(query="", limit=20, posting_date=None, docstatus=N
 @frappe.whitelist()
 def get_stock_reconciliation(name):
     """Fetch a Stock Reconciliation with its items."""
-    sr = frappe.get_doc("Stock Reconciliation", name)
+    doc = frappe.get_all("Stock Reconciliation", 
+        filters={"name": name},
+        fields=["name", "posting_date", "company", "docstatus", "purpose"]
+    )
+    if not doc:
+        frappe.throw(_("Stock Reconciliation {0} not found").format(name))
+    
+    sr = doc[0]
+    items = frappe.get_all("Stock Reconciliation Item",
+        filters={"parent": name},
+        fields=["item_code", "item_name", "warehouse", "stock_uom", "qty", "valuation_rate", "current_qty", "current_valuation_rate"]
+    )
 
     return {
         "name": sr.name,
         "posting_date": str(sr.posting_date),
-        "posting_time": str(sr.posting_time),
         "purpose": sr.purpose,
         "company": sr.company,
         "docstatus": sr.docstatus,
-        "status": sr.status,
         "items": [
             {
                 "item_code": item.item_code,
                 "item_name": item.item_name,
                 "warehouse": item.warehouse,
+                "uom": item.stock_uom,
                 "qty": flt(item.qty),
                 "valuation_rate": flt(item.valuation_rate),
                 "current_qty": flt(item.current_qty),
                 "current_valuation_rate": flt(item.current_valuation_rate),
             }
-            for item in sr.items
+            for item in items
         ],
     }
 

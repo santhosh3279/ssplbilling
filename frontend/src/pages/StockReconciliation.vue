@@ -429,10 +429,13 @@ async function loadEntry(name) {
     entryName.value = data.name
     entryDate.value = data.posting_date
     purpose.value = data.purpose || 'Stock Reconciliation'
-    warehouse.value = data.items.length ? data.items[0].warehouse : ''
+    warehouse.value = data.items.length ? (data.items[0].warehouse || '') : ''
     items.value = data.items
     entryDocStatus.value = data.docstatus
-  } catch (e) { alert('Load failed') }
+  } catch (e) { 
+    console.error('Load failed', e)
+    alert('Load failed: ' + (e.message || 'Unknown error')) 
+  }
 }
 
 // ==================== SHORTCUTS ====================
