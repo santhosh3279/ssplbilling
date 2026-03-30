@@ -1255,8 +1255,7 @@ async function onCodeEnter(idx) {
     loadItemInsight(r.item_code || code, r.item_name, r.uom)
     applyDiscountRuleForRow(idx)
     applyCustomerPricingForRow(idx)
-    if ((items.value[idx].uoms || []).length > 1) focusField('uom', idx)
-    else focusField('qty', idx)
+    focusField('qty', idx)
   }
   else openSearch(code, idx)
 }
@@ -1277,8 +1276,7 @@ async function onNewCodeEnter() {
   if (r) {
     if (r.item_code) newItemCode.value = r.item_code  // normalize to canonical case
     newPending.value = { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], uom_price_lists: r.uom_price_lists || {}, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
-    if ((r.uoms || []).length > 1) nextTick(() => { newUomSelect.value?.focus() })
-    else focusNewQty()
+    focusNewQty()
   }
   else openSearch(code, null)
 }
@@ -1390,12 +1388,11 @@ async function pickItem(item) {
     selectedRow.value = itemSearchTargetRow
     applyDiscountRuleForRow(itemSearchTargetRow)
     applyCustomerPricingForRow(itemSearchTargetRow)
-    if ((row.uoms || []).length > 1) focusField('uom', itemSearchTargetRow)
-    else focusField('qty', itemSearchTargetRow)
+    focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
     newPending.value = { item_name: item.item_name, uom: item.uom, uoms: finalUoms, uom_price_lists: finalUomPriceLists, rate: finalRate }
-    nextTick(() => { if ((finalUoms || []).length > 1) newUomSelect.value?.focus(); else focusNewQty() })
+    nextTick(() => focusNewQty())
   }
 }
 
