@@ -74,7 +74,9 @@
           <thead class="sticky top-0 bg-slate-800 shadow-sm z-10">
             <tr class="text-lg font-bold uppercase tracking-wider text-slate-400 border-b border-slate-700">
               <th class="px-5 py-3 text-left w-24">Type</th>
-              <th class="px-5 py-3 text-left" style="padding-left: 10%">Ledger Name</th>
+              <th class="px-5 py-3 text-left">Ledger Name</th>
+              <th class="px-5 py-3 text-left">Mobile</th>
+              <th class="px-5 py-3 text-left">Group</th>
               <th class="px-5 py-3 text-right">Balance</th>
             </tr>
           </thead>
@@ -99,8 +101,14 @@
                   {{ c.type }}
                 </span>
               </td>
-              <td class="px-5 py-3" style="padding-left: 10%">
+              <td class="px-5 py-3">
                 <div class="font-medium text-slate-200">{{ c.label }}</div>
+              </td>
+              <td class="px-5 py-3">
+                <div class="text-slate-300">{{ c.mobile_no || '--' }}</div>
+              </td>
+              <td class="px-5 py-3">
+                <div class="text-slate-400 text-xl">{{ c.group || '--' }}</div>
               </td>
               <td class="px-5 py-3 text-right">
                 <span
@@ -115,7 +123,7 @@
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
-              <td colspan="3" class="px-5 py-12 text-center text-slate-500 text-xl italic">
+              <td colspan="5" class="px-5 py-12 text-center text-slate-500 text-xl italic">
                 No ledgers found matching "{{ query }}"
               </td>
             </tr>

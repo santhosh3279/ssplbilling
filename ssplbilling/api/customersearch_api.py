@@ -49,7 +49,7 @@ def get_all_ledgers():
     customers = frappe.get_all(
         "Customer",
         filters={"disabled": 0},
-        fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin"],
+        fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin", "customer_group as group"],
         limit=0
     )
     for c in customers:
@@ -60,7 +60,7 @@ def get_all_ledgers():
     suppliers = frappe.get_all(
         "Supplier",
         filters={"disabled": 0},
-        fields=["name", "supplier_name as label", "mobile_no", "email_id as email", "gstin"],
+        fields=["name", "supplier_name as label", "mobile_no", "email_id as email", "gstin", "supplier_group as group"],
         limit=0
     )
     for s in suppliers:
@@ -71,7 +71,7 @@ def get_all_ledgers():
     employees = frappe.get_all(
         "Employee",
         filters={"status": "Active"},
-        fields=["name", "employee_name as label", "cell_number as mobile_no", "personal_email as email"],
+        fields=["name", "employee_name as label", "cell_number as mobile_no", "personal_email as email", "department as group"],
         limit=0,
     )
     for e in employees:
@@ -84,7 +84,7 @@ def get_all_ledgers():
     accounts = frappe.get_all(
         "Account",
         filters={"disabled": 0, "is_group": 0},
-        fields=["name", "account_name as label"],
+        fields=["name", "account_name as label", "account_type as group"],
         limit=0
     )
     for a in accounts:
