@@ -50,14 +50,29 @@ def create_journal_contra_entry(data):
             party = row_account
             row_account = _get_party_account(party_type, party)
             
+        debit = float(acc.get("debit_in_account_currency") or 0)
+        credit = float(acc.get("credit_in_account_currency") or 0)
+
+        # Primary Row
         je.append("accounts", {
             "account": row_account,
-            "debit_in_account_currency": float(acc.get("debit_in_account_currency") or 0),
-            "credit_in_account_currency": float(acc.get("credit_in_account_currency") or 0),
+            "debit_in_account_currency": debit,
+            "credit_in_account_currency": credit,
             "party_type": party_type,
             "party": party,
             "user_remark": acc.get("user_remark")
         })
+
+        # If Opening Entry, user wants a second balancing row for each input
+        if voucher_type == "Opening Entry":
+            je.append("accounts", {
+                "account": row_account,
+                "debit_in_account_currency": credit, # Flipped
+                "credit_in_account_currency": debit, # Flipped
+                "party_type": party_type,
+                "party": party,
+                "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
+            })
         
     je.insert()
     je.submit()

@@ -396,6 +396,7 @@ const router = useRouter()
 const entryTypes = [
   { label: 'Receipt', value: 'Receipt', color: 'blue' },
   { label: 'Payment', value: 'Payment', color: 'emerald' },
+  { label: 'Opening', value: 'Opening Entry', color: 'amber' },
 ]
 const entryType = ref('Receipt')
 const journalTypes = ref([])
@@ -426,6 +427,9 @@ const searchInitialType = computed(() => {
     if (activeRowIdx.value === 0) return 'Supplier'
     return 'Account'
   }
+  if (entryType.value === 'Opening Entry') {
+    return 'Customer'
+  }
   return 'Account'
 })
 
@@ -440,6 +444,7 @@ const searchFilterList = computed(() => {
 
 const searchAllowedTypes = computed(() => {
   if ((entryType.value === 'Receipt' || entryType.value === 'Payment') && activeRowIdx.value > 0) return ['Account']
+  if (entryType.value === 'Opening Entry') return ['Customer', 'Supplier', 'Employee']
   return ['Account', 'Customer', 'Supplier', 'Employee']
 })
 
@@ -621,8 +626,8 @@ function getNewBalance(row) {
 }
 
 function isFieldDisabled(idx, field) {
-  // If General entry (one from journalTypes), nothing is disabled by default
-  if (journalTypes.value.includes(entryType.value)) return false
+  // If General entry (one from journalTypes) or Opening Entry, nothing is disabled by default
+  if (journalTypes.value.includes(entryType.value) || entryType.value === 'Opening Entry') return false
 
   // Row 0: mode-based restriction
   if (idx === 0) {
