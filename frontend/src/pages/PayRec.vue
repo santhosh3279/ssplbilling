@@ -388,6 +388,7 @@ import { frappePost, frappeGet } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { payrecShortcuts } from '../shortcuts/payrecShortcuts'
+import { getUserRole } from '../composables/usePermission'
 
 const router = useRouter()
 
@@ -584,7 +585,8 @@ function removeRow(idx) {
 
 function openLedgerSearch(idx) {
   activeRowIdx.value = idx
-  showAllAccounts.value = false
+  const role = getUserRole()
+  showAllAccounts.value = (role === 'admin' || role === 'accounts')
   showSearchModal.value = true
   nextTick(() => ledgerSearchModal.value?.focus())
 }
