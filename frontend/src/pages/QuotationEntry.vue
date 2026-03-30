@@ -211,17 +211,17 @@
                   </td>
                   <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : 'text-slate-200'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item._is_free" class="ml-1 rounded bg-green-900/60 px-1 py-0.5 font-bold text-green-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">FREE</span><span v-else-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
                   <td class="p-0 border-r border-slate-700">
-                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-transparent bg-transparent font-mono text-slate-200 outline-none focus:border-blue-500 focus:bg-slate-800 disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('qty', idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.shift.tab.prevent="focusField('code', idx)">
+                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-transparent bg-transparent font-mono text-slate-200 outline-none focus:border-blue-500 focus:bg-slate-800 disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onUomChange(idx)" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)">
                       <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
                     <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
                   </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
                   </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
@@ -247,9 +247,9 @@
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 font-bold text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
                   <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding-left:0;padding-right:0;" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
-                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" /></td>
+                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(newPending.uoms||[]).length > 1 ? $nextTick(() => newUomSelect?.focus()) : addNewItem()" @keydown.shift.tab.prevent="focusNewCode" /></td>
                   <td class="p-0 border-r border-slate-700">
-                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusNewQty" @keydown.tab.prevent="focusNewQty" @keydown.shift.tab.prevent="focusNewCode">
+                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onNewUomChange" @keydown.enter.prevent="addNewItem" @keydown.tab.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewQty">
                       <option v-for="u in newPending.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
                     <span v-else class="px-2 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ newPending.uom || '--' }}</span>
@@ -1076,21 +1076,54 @@ const insightResource = createResource({ url: `/api/method/${API}.get_item_insig
 const newPending = ref({ item_name: '', uom: '', uoms: [], rate: null })
 const newUomSelect = ref(null)
 
+function rateForUom(cached, uom) {
+  // 1. Check for an actual Item Price record for this price list + UOM
+  const plUomRates = cached.uom_price_lists?.[priceList.value]
+  if (plUomRates && plUomRates[uom] != null) {
+    return plUomRates[uom]
+  }
+  // 2. Fallback: base (stock-UOM) rate × conversion factor
+  let baseRate = cached.price || cached.rate || 0
+  if (cached.price_lists && priceList.value) {
+    const pl = cached.price_lists.find(p => p.name === priceList.value)
+    if (pl) baseRate = pl.rate
+  }
+  const uomEntry = (cached.uoms || []).find(u => u.uom === uom)
+  return baseRate * (uomEntry ? uomEntry.conversion_factor : 1)
+}
+
+function onUomChange(idx) {
+  const item = items.value[idx]
+  // Build a minimal cached-like object from the row itself, falling back to cache
+  const cached = lookupItemInCache(item.item_code) || {
+    uoms: item.uoms || [],
+    uom_price_lists: item.uom_price_lists || {},
+    rate: item.rate
+  }
+  item.rate = rateForUom(cached, item.uom)
+}
+
+function onNewUomChange() {
+  const cached = lookupItemInCache(newItemCode.value.trim()) || {
+    uoms: newPending.value.uoms || [],
+    uom_price_lists: newPending.value.uom_price_lists || {},
+    rate: newPending.value.rate
+  }
+  newPending.value.rate = rateForUom(cached, newPending.value.uom)
+}
+
 async function lookupItem(code) {
   // 1. Try local cache first
   const cached = lookupItemInCache(code)
   if (cached) {
-    let finalRate = cached.price || cached.rate || 0
-    if (cached.price_lists && priceList.value) {
-      const pl = cached.price_lists.find(p => p.name === priceList.value)
-      if (pl) finalRate = pl.rate
-    }
+    const finalRate = rateForUom(cached, cached.uom)
     return {
       found: true,
       item_code: cached.item_code,
       item_name: cached.item_name,
       uom: cached.uom,
       uoms: cached.uoms || [],
+      uom_price_lists: cached.uom_price_lists || {},
       rate: finalRate,
       stock_qty: cached.stock || 0,
       tax_rate: cached.tax_rate,
@@ -1217,7 +1250,7 @@ async function onCodeEnter(idx) {
   const r = await lookupItem(code)
   if (r) {
     items.value[idx].item_code = r.item_code || code  // use canonical case from lookup
-    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].uoms = r.uoms || []; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
+    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].uoms = r.uoms || []; items.value[idx].uom_price_lists = r.uom_price_lists || {}; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
     if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
     loadItemInsight(r.item_code || code, r.item_name, r.uom)
     applyDiscountRuleForRow(idx)
@@ -1243,7 +1276,7 @@ async function onNewCodeEnter() {
   const r = await lookupItem(code)
   if (r) {
     if (r.item_code) newItemCode.value = r.item_code  // normalize to canonical case
-    newPending.value = { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
+    newPending.value = { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], uom_price_lists: r.uom_price_lists || {}, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
     if ((r.uoms || []).length > 1) nextTick(() => { newUomSelect.value?.focus() })
     else focusNewQty()
   }
@@ -1265,6 +1298,7 @@ async function addNewItem() {
     item_name: r.item_name,
     uom: r.uom,
     uoms: r.uoms || [],
+    uom_price_lists: r.uom_price_lists || {},
     qty: newQty.value,
     rate: r.rate,
     discount: 0,
@@ -1326,6 +1360,8 @@ async function pickItem(item) {
   let finalRate = item.price || 0
   let finalTax = item.tax_rate ?? defaultTaxRate.value
   let finalWh = item.warehouse || defaultWarehouse.value
+  let finalUoms = item.uoms || []
+  let finalUomPriceLists = item.uom_price_lists || {}
   
   try {
     const r = await lookupItem(item.item_code)
@@ -1333,6 +1369,8 @@ async function pickItem(item) {
       finalRate = r.rate
       finalTax = r.tax_rate ?? defaultTaxRate.value
       finalWh = r.warehouse || defaultWarehouse.value
+      finalUoms = r.uoms || []
+      finalUomPriceLists = r.uom_price_lists || {}
     }
   } catch (e) {}
 
@@ -1341,7 +1379,8 @@ async function pickItem(item) {
     row.item_code = item.item_code
     row.item_name = item.item_name
     row.uom = item.uom
-    row.uoms = item.uoms || []
+    row.uoms = finalUoms
+    row.uom_price_lists = finalUomPriceLists
     row.rate = finalRate
     row.discount = row.discount || 0
     row.tax_rate = finalTax
@@ -1355,8 +1394,8 @@ async function pickItem(item) {
     else focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
-    newPending.value = { item_name: item.item_name, uom: item.uom, uoms: item.uoms || [], rate: finalRate }
-    nextTick(() => { if ((item.uoms || []).length > 1) newUomSelect.value?.focus(); else focusNewQty() })
+    newPending.value = { item_name: item.item_name, uom: item.uom, uoms: finalUoms, uom_price_lists: finalUomPriceLists, rate: finalRate }
+    nextTick(() => { if ((finalUoms || []).length > 1) newUomSelect.value?.focus(); else focusNewQty() })
   }
 }
 
