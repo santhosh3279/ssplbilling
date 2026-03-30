@@ -136,11 +136,28 @@ function close() {
 
 function handleKeydown(e) {
   if (!props.show) return
-  if (e.key === 'Escape') close()
+  
+  // Always prevent default/stop propagation for these keys when calculator is open
+  const interceptedKeys = ['Escape', 'Backspace', 'Enter', 'Delete', 'c', 'C', 'F12', '+', '-', '*', '/', '%']
+  if (interceptedKeys.includes(e.key) || /[0-9.]/.test(e.key)) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  if (e.key === 'Escape') {
+    close()
+    return
+  }
+  
+  if (e.key === 'F12') return // Just consume it so it doesn't leak
+
   if (/[0-9.]/.test(e.key)) handleInput({ label: e.key, type: 'number' })
   if (['+', '-', '*', '/', '%'].includes(e.key)) handleInput({ label: e.key, type: 'operator' })
   if (e.key === 'Enter') handleInput({ label: '=', type: 'operator' })
-  if (e.key === 'Backspace') handleInput({ label: 'DEL', type: 'action' })
+  if (e.key === 'Backspace') {
+    if (display.value === '') handleInput({ label: 'C', type: 'action' })
+    else handleInput({ label: 'DEL', type: 'action' })
+  }
   if (e.key === 'Delete' || e.key === 'c' || e.key === 'C') handleInput({ label: 'C', type: 'action' })
 }
 
