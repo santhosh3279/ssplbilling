@@ -233,21 +233,23 @@
               </div>
             </div>
             <div class="flex gap-12 ml-12">
-              <div class="text-right">
+              <div v-if="entryType !== 'Opening Entry'" class="text-right">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Debit</div>
                 <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalDebit) }}</div>
               </div>
-              <div class="text-right">
+              <div v-if="entryType !== 'Opening Entry'" class="text-right">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Credit</div>
                 <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalCredit) }}</div>
               </div>
-              <div class="text-right border-l border-slate-700 pl-12">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
-                <div
-                  class="text-2xl font-black font-mono"
-                  :class="Math.abs(difference) < 0.01 ? 'text-emerald-400' : 'text-rose-400'"
-                >
-                  ₹ {{ fmt(difference) }}
+              <div class="text-right border-l border-slate-700 pl-12" :class="{ 'border-none': entryType === 'Opening Entry' }">
+                <div v-if="entryType !== 'Opening Entry'">
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
+                  <div
+                    class="text-2xl font-black font-mono"
+                    :class="Math.abs(difference) < 0.01 ? 'text-emerald-400' : 'text-rose-400'"
+                  >
+                    ₹ {{ fmt(difference) }}
+                  </div>
                 </div>
                 <!-- SAVE BUTTON -->
                 <div class="mt-4 flex justify-end">
@@ -553,6 +555,9 @@ const validationError = computed(() => {
 })
 
 const canSave = computed(() => {
+  if (entryType.value === 'Opening Entry') {
+    return rows.value.some(r => r.account && (Number(r.debit) > 0 || Number(r.credit) > 0))
+  }
   return rows.value.filter(r => r.account).length >= 2 && 
          Math.abs(difference.value) < 0.01 && 
          totalDebit.value > 0 &&
