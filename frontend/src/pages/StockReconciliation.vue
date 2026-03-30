@@ -1,13 +1,75 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen flex flex-col'">
-    <div class="flex h-full flex-col">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex">
+    <!-- ===================== SIDEBAR / MODIFY PANEL ===================== -->
+    <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
+        <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Modify Entries</div>
+        </div>
+        
+        <!-- Date Filter -->
+        <div class="flex items-center gap-1 border-b border-slate-700 p-1.5 bg-slate-900">
+          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
+          <input 
+            type="date" 
+            v-model="sidebarDate"
+            class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
+          />
+          <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
+        </div>
+
+        <!-- Search & Status Filters -->
+        <div class="flex flex-col gap-1.5 border-b border-slate-700 p-2 bg-slate-800/20">
+          <input 
+            type="text" 
+            v-model="sidebarSearch"
+            placeholder="Search ID..."
+            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+          />
+          <button
+            @click="draftOnly = !draftOnly"
+            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
+            :class="draftOnly ? 'bg-amber-900/40 border-amber-500 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
+          >
+            {{ draftOnly ? 'Drafts Only' : 'All Entries' }}
+          </button>
+        </div>
+
+        <!-- Entry List -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
+          <div v-else-if="!sidebarEntries.length" class="p-4 text-center text-xs text-slate-600 italic">No entries found</div>
+          <div 
+            v-for="(ent, idx) in sidebarEntries" 
+            :key="ent.name"
+            :ref="el => setSidebarEntryRef(el, idx)"
+            @click="loadEntry(ent.name)"
+            class="group cursor-pointer border-b border-slate-800 bg-slate-900 px-2 py-1 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
+            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': entryName === ent.name }"
+            tabindex="0"
+            @keydown.enter="loadEntry(ent.name)"
+            @keydown.up.prevent="navigateSidebarEntry(idx, -1)"
+            @keydown.down.prevent="navigateSidebarEntry(idx, 1)"
+          >
+            <div class="flex items-center justify-between gap-1">
+              <div class="flex items-center gap-1.5 truncate min-w-0">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="ent.docstatus === 0 ? 'bg-amber-500' : 'bg-green-500'"></span>
+                <span class="truncate font-mono text-[14px] font-bold text-blue-400">{{ ent.name }}</span>
+              </div>
+              <span class="shrink-0 text-[10px] font-bold text-slate-500 uppercase tabular-nums">{{ ent.posting_time }}</span>
+            </div>
+            <div class="truncate text-[10px] text-slate-400 uppercase tracking-tight">{{ ent.company }}</div>
+          </div>
+        </div>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <div class="flex flex-1 flex-col overflow-hidden">
     <!-- Top Bar -->
     <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5 shadow-sm">
       <div class="flex items-center gap-3">
         <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700 transition" @click="handleBack">&larr; Dashboard</button>
         <span class="text-sm text-slate-600">|</span>
         <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Stock Reconciliation</span>
-        <button class="rounded border border-slate-600 px-2.5 py-1 text-sm text-slate-300 hover:bg-slate-700 transition" @click="openModifyEntry">History / Drafts</button>
       </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden mr-4">
@@ -168,56 +230,6 @@
       </div>
     </div>
 
-    <!-- MODIFY HISTORY MODAL -->
-    <div v-if="showModifyEntry" class="fixed inset-0 z-50 flex justify-center bg-black/80 backdrop-blur-sm pt-12" @click.self="showModifyEntry = false">
-      <div class="flex max-h-[80vh] w-[700px] flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div class="border-b border-slate-700 px-6 py-5 bg-slate-800">
-          <div class="text-lg font-bold text-slate-100">Stock Reconciliation History</div>
-          <div class="text-sm text-slate-400">Drafts can be edited, Submitted are read-only</div>
-        </div>
-        <div class="p-4 bg-slate-900 border-b border-slate-700">
-          <input
-            ref="modifySearchInput"
-            v-model="modifyQuery"
-            class="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500"
-            placeholder="Search by ID..."
-          />
-        </div>
-        <div class="flex-1 overflow-y-auto">
-          <div v-if="modifyLoading" class="p-10 text-center text-slate-500">Loading...</div>
-          <table v-else-if="modifyResults.length" class="w-full text-sm">
-            <thead class="bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-700">
-              <tr>
-                <th class="px-6 py-3 text-left">ID</th>
-                <th class="px-4 py-3 text-left">Status</th>
-                <th class="px-6 py-3 text-right">Date</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-700">
-              <tr
-                v-for="e in modifyResults"
-                :key="e.name"
-                class="cursor-pointer hover:bg-slate-800/40 transition"
-                @click="loadEntry(e.name)"
-              >
-                <td class="px-6 py-4 font-mono font-bold text-blue-400">{{ e.name }}</td>
-                <td class="px-4 py-4">
-                   <span :class="e.docstatus === 1 ? 'text-green-400' : 'text-blue-400'" class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
-                     {{ e.docstatus === 1 ? 'Submitted' : 'Draft' }}
-                   </span>
-                </td>
-                <td class="px-6 py-4 text-right text-slate-500">{{ e.posting_date }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="p-12 text-center text-slate-600 italic">No entries found</div>
-        </div>
-        <div class="border-t border-slate-700 p-4 bg-slate-800 flex justify-end">
-          <button @click="showModifyEntry = false" class="px-6 py-2 text-sm font-bold text-slate-400 hover:text-slate-200">Cancel</button>
-        </div>
-      </div>
-    </div>
-
     </div>
   </div>
 </template>
@@ -252,6 +264,14 @@ const availableWarehouses = ref([])
 const availablePurposes = ref(['Stock Reconciliation', 'Opening Stock'])
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
 
+// Sidebar state
+const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const sidebarSearch = ref('')
+const sidebarEntries = ref([])
+const sidebarLoading = ref(false)
+const draftOnly = ref(true)
+const sidebarEntryRefs = new Map()
+
 const dynamicRowStyle = computed(() => ({
   fontSize: `${(14 * zoomPercent.value) / 100}px`
 }))
@@ -266,10 +286,22 @@ const saveButton = ref(null)
 
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
+function setSidebarEntryRef(el, idx) { if (el) sidebarEntryRefs.set(idx, el); else sidebarEntryRefs.delete(idx) }
 
 function focusField(f, idx) { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) }
 function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
 function focusWarehouse() { nextTick(() => warehouseSelect.value?.focus()) }
+
+function navigateSidebarEntry(idx, dir) {
+  const target = sidebarEntryRefs.get(idx + dir)
+  if (target) { target.focus(); target.scrollIntoView({ block: 'nearest' }) }
+}
+
+function changeSidebarDate(days) {
+  const d = new Date(sidebarDate.value)
+  d.setDate(d.getDate() + days)
+  sidebarDate.value = d.toISOString().split('T')[0]
+}
 
 // ==================== NAVIGATION ====================
 function moveRow(from, dir) { 
@@ -323,6 +355,20 @@ async function fetchItems() {
   } catch (e) { alert(e.message || 'Fetch failed') }
 }
 
+async function fetchSidebarEntries() {
+  sidebarLoading.value = true
+  try {
+    sidebarEntries.value = await frappeGet(`${API}.get_stock_reconciliations`, {
+      posting_date: sidebarDate.value,
+      query: sidebarSearch.value,
+      docstatus: draftOnly.value ? 0 : null
+    })
+  } catch (e) {}
+  sidebarLoading.value = false
+}
+
+watch([sidebarDate, sidebarSearch, draftOnly], () => fetchSidebarEntries())
+
 // ==================== ACTIONS ====================
 function removeItem(idx) {
   items.value.splice(idx, 1)
@@ -355,6 +401,7 @@ async function saveEntry() {
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
     entryName.value = res.name
     alert(`Entry ${res.name} saved as Draft`)
+    fetchSidebarEntries()
   } catch (e) { alert(e.message || 'Save failed') }
 }
 
@@ -366,6 +413,7 @@ async function submitEntry() {
     await frappePost(`${API}.submit_stock_reconciliation`, { name: entryName.value })
     alert(`Reconciliation ${entryName.value} submitted successfully`)
     startNewEntry()
+    fetchSidebarEntries()
   } catch (e) { alert(e.message || 'Submission failed') }
 }
 
@@ -375,28 +423,6 @@ function startNewEntry() {
 }
 
 // ==================== MODIFY HISTORY ====================
-const showModifyEntry = ref(false)
-const modifyQuery = ref('')
-const modifyResults = ref([])
-const modifyLoading = ref(false)
-const modifySearchInput = ref(null)
-
-function openModifyEntry() {
-  showModifyEntry.value = true
-  searchEntries()
-  nextTick(() => modifySearchInput.value?.focus())
-}
-
-watch(modifyQuery, () => searchEntries())
-
-async function searchEntries() {
-  modifyLoading.value = true
-  try {
-    modifyResults.value = await frappeGet(`${API}.get_stock_reconciliations`, { query: modifyQuery.value })
-  } catch (e) {}
-  modifyLoading.value = false
-}
-
 async function loadEntry(name) {
   try {
     const data = await frappeGet(`${API}.get_stock_reconciliation`, { name })
@@ -406,7 +432,6 @@ async function loadEntry(name) {
     warehouse.value = data.items.length ? data.items[0].warehouse : ''
     items.value = data.items
     entryDocStatus.value = data.docstatus
-    showModifyEntry.value = false
   } catch (e) { alert('Load failed') }
 }
 
@@ -418,20 +443,18 @@ function handleBack() {
   router.push('/')
 }
 
-useSubwindowWatcher(showModifyEntry)
-
 useShortcuts(stockReconciliationShortcuts({
   save: saveEntry,
   fetchItems: fetchItems,
   focusWarehouse: focusWarehouse,
   contextualBack: () => {
-    if (showModifyEntry.value) { showModifyEntry.value = false; return }
     handleBack()
   }
 }), props.isSubWindow ? 'subwindow' : 'local')
 
 onMounted(() => {
   fetchConfig()
+  fetchSidebarEntries()
   if (props.name) loadEntry(props.name)
 })
 </script>

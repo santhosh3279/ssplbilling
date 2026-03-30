@@ -111,9 +111,14 @@ def get_stock_reconciliation_purposes():
     return ["Stock Reconciliation", "Opening Stock"]
 
 @frappe.whitelist()
-def get_stock_reconciliations(query="", limit=20, posting_date=None):
+def get_stock_reconciliations(query="", limit=20, posting_date=None, docstatus=None):
     """List Stock Reconciliations."""
-    filters = {"docstatus": ["<", 2]}
+    filters = {}
+    if docstatus is not None:
+        filters["docstatus"] = docstatus
+    else:
+        filters["docstatus"] = ["<", 2]
+        
     if posting_date:
         filters["posting_date"] = posting_date
         
