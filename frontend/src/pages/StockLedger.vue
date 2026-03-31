@@ -293,7 +293,7 @@
               </div>
 
               <!-- Sales/Purchase/Credit items -->
-              <template v-if="['Sales Invoice', 'Purchase Invoice', 'Credit Note', 'Stock Entry', 'Delivery Note', 'Purchase Receipt'].includes(voucherDetail.voucher_type)">
+              <template v-if="['Sales Invoice', 'Purchase Invoice', 'Credit Note', 'Stock Entry', 'Delivery Note', 'Purchase Receipt', 'Stock Reconciliation'].includes(voucherDetail.voucher_type)">
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="border-b border-slate-700 text-[10px] text-slate-400">
@@ -543,6 +543,7 @@ const VOUCHER_CONFIG = {
   'Stock Entry':      { label: 'SE',   cls: 'bg-purple-900/20 text-purple-400' },
   'Delivery Note':    { label: 'DN',   cls: 'bg-green-900/20 text-green-400' },
   'Purchase Receipt': { label: 'PR',   cls: 'bg-amber-900/20 text-amber-400' },
+  'Stock Reconciliation': { label: 'RECON', cls: 'bg-cyan-900/20 text-cyan-400' },
 }
 
 function voucherLabel(type) {

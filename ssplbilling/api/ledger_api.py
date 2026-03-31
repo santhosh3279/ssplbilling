@@ -368,6 +368,39 @@ def _batch_voucher_details(entries):
                 "items": items_map.get(name, []),
             }
 
+    # Stock Reconciliation
+    if by_type.get("Stock Reconciliation"):
+        names = list(set(by_type["Stock Reconciliation"]))
+        headers = {r.name: r for r in frappe.get_all(
+            "Stock Reconciliation",
+            filters={"name": ["in", names]},
+            fields=["name", "purpose", "posting_date", "difference_amount"],
+        )}
+        items_rows = frappe.get_all(
+            "Stock Reconciliation Item",
+            filters={"parent": ["in", names]},
+            fields=["parent", "item_code", "item_name", "qty", "valuation_rate", "amount", "stock_uom"],
+        )
+        items_map = defaultdict(list)
+        for r in items_rows:
+            items_map[r.parent].append({
+                "item_code": r.item_code,
+                "item_name": r.item_name,
+                "qty": float(r.qty or 0),
+                "rate": float(r.valuation_rate or 0),
+                "amount": float(r.amount or 0),
+                "uom": r.stock_uom or "",
+            })
+        for name in names:
+            h = headers.get(name, {})
+            details[name] = {
+                "voucher_type": "Stock Reconciliation",
+                "party_name": h.get("purpose") or "Stock Reconciliation",
+                "total_amount": float(h.get("difference_amount") or 0),
+                "posting_date": str(h.get("posting_date", "")),
+                "items": items_map.get(name, []),
+            }
+
     return details
 
 
