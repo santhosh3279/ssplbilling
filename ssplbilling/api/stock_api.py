@@ -181,16 +181,17 @@ def get_naming_series():
 
 
 @frappe.whitelist()
-def get_stock_entries(query="", limit=20, posting_date=None):
+def get_stock_entries(query="", limit=20, posting_date=None, purpose=None):
     """List Stock Entries for modification."""
-    date_filter = posting_date or frappe.utils.today()
+    filters = {"docstatus": 0}
+    if posting_date:
+        filters["posting_date"] = posting_date
+    if purpose:
+        filters["purpose"] = purpose
+    
     kwargs = dict(
-        filters={
-            "posting_date": date_filter,
-            "purpose": "Material Transfer",
-            "docstatus": 0
-        },
-        fields=["name", "from_warehouse", "to_warehouse", "posting_date", "total_outgoing_value", "status", "modified", "docstatus"],
+        filters=filters,
+        fields=["name", "from_warehouse", "to_warehouse", "posting_date", "total_outgoing_value as total_value", "purpose", "status", "modified", "docstatus"],
         limit=int(limit),
         order_by="modified desc",
     )

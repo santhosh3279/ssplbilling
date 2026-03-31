@@ -1,14 +1,72 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen flex flex-col'">
-    <div class="flex h-full flex-col">
-    <!-- Top Bar -->
-    <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5 shadow-sm">
-      <div class="flex items-center gap-3">
-        <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700 transition" @click="handleBack">&larr; Dashboard</button>
-        <span class="text-sm text-slate-600">|</span>
-        <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Material Transfer Entry</span>
-        <button class="rounded border border-slate-600 px-2.5 py-1 text-sm text-slate-300 hover:bg-slate-700 transition" @click="openModifyEntry">Modify Entry</button>
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex">
+    <!-- LEFT SIDEBAR: MODIFY ENTRIES -->
+    <aside class="flex w-[18%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
+      <div class="border-b border-slate-700 bg-slate-800 p-3 text-center">
+        <div class="text-[10px] font-black uppercase tracking-widest text-slate-500">Modify Entries</div>
       </div>
+
+      <!-- Date Filter -->
+      <div class="flex items-center gap-1 border-b border-slate-700 p-2 bg-slate-900">
+        <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors">&larr;</button>
+        <input 
+          type="date" 
+          v-model="sidebarDate"
+          class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
+        />
+        <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors">&rarr;</button>
+      </div>
+
+      <!-- Search & Status Filters -->
+      <div class="flex flex-col gap-2 border-b border-slate-700 p-3 bg-slate-800/20">
+        <input 
+          type="text" 
+          v-model="sidebarSearch"
+          placeholder="Search by ID..."
+          class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 transition-all"
+        />
+        <select
+          v-model="sidebarPurpose"
+          class="w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 transition-all"
+        >
+          <option value="">All Types</option>
+          <option v-for="p in availablePurposes" :key="p" :value="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <!-- Entry List -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div v-if="sidebarLoading" class="p-8 text-center text-xs text-slate-500 animate-pulse">Loading...</div>
+        <div v-else-if="!sidebarEntries.length" class="p-8 text-center text-xs text-slate-600 italic">No entries found</div>
+        <div 
+          v-for="entry in sidebarEntries" 
+          :key="entry.name"
+          @click="loadEntry(entry.name)"
+          class="group cursor-pointer border-b border-slate-800 bg-slate-900 px-3 py-2 transition-all hover:bg-slate-800/60"
+          :class="{ 'bg-slate-800/80 border-l-2 border-l-blue-500': entryName === entry.name }"
+        >
+          <div class="flex items-center justify-between gap-1 mb-0.5">
+            <span class="truncate font-mono text-[13px] font-bold text-blue-400">{{ entry.name }}</span>
+            <span class="shrink-0 font-mono text-xs font-bold text-slate-300 tabular-nums">₹{{ (entry.total_value || 0).toFixed(0) }}</span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="truncate text-[10px] font-medium text-slate-500 uppercase tracking-tight">{{ entry.purpose }}</div>
+            <div class="text-[9px] font-bold text-slate-600 px-1 rounded bg-slate-800 border border-slate-700">{{ entry.posting_date }}</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex flex-1 flex-col overflow-hidden">
+      <!-- Top Bar -->
+      <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5 shadow-sm">
+        <div class="flex items-center gap-3">
+          <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700 transition" @click="handleBack">&larr; Dashboard</button>
+          <span class="text-sm text-slate-600">|</span>
+          <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Material Transfer Entry</span>
+        </div>
       <div class="flex items-center gap-3 text-sm text-slate-400">
         <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden mr-4">
           <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
@@ -229,54 +287,6 @@
       @saved="showIncentiveModal = false"
     />
 
-    <!-- =================== MODIFY SUBWINDOW =================== -->
-    <div v-if="showModifyEntry" class="fixed inset-0 z-50 flex justify-center bg-black/80 backdrop-blur-sm pt-12" @click.self="showModifyEntry = false">
-      <div class="flex max-h-[80vh] w-[700px] flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div class="border-b border-slate-700 px-6 py-5 bg-slate-800">
-          <div class="text-lg font-bold text-slate-100">Draft Material Transfers</div>
-          <div class="text-sm text-slate-400">Pick an entry to continue editing</div>
-        </div>
-        <div class="p-4 bg-slate-900 border-b border-slate-700">
-          <input
-            ref="modifySearchInput"
-            v-model="modifyQuery"
-            class="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500"
-            placeholder="Search by entry name..."
-          />
-        </div>
-        <div class="flex-1 overflow-y-auto">
-          <div v-if="modifyLoading" class="p-10 text-center text-slate-500">Loading...</div>
-          <table v-else-if="modifyResults.length" class="w-full text-sm">
-            <thead class="bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-700">
-              <tr>
-                <th class="px-6 py-3 text-left">ID</th>
-                <th class="px-4 py-3 text-left">From</th>
-                <th class="px-4 py-3 text-left">To</th>
-                <th class="px-6 py-3 text-right">Date</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-700">
-              <tr
-                v-for="e in modifyResults"
-                :key="e.name"
-                class="cursor-pointer hover:bg-slate-800/40 transition"
-                @click="loadEntry(e.name)"
-              >
-                <td class="px-6 py-4 font-mono font-bold text-blue-400">{{ e.name }}</td>
-                <td class="px-4 py-4 text-slate-400">{{ e.from_warehouse }}</td>
-                <td class="px-4 py-4 text-slate-400">{{ e.to_warehouse }}</td>
-                <td class="px-6 py-4 text-right text-slate-500">{{ e.posting_date }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="p-12 text-center text-slate-600 italic">No draft entries found</div>
-        </div>
-        <div class="border-t border-slate-700 p-4 bg-slate-800 flex justify-end">
-          <button @click="showModifyEntry = false" class="px-6 py-2 text-sm font-bold text-slate-400 hover:text-slate-200">Cancel</button>
-        </div>
-      </div>
-    </div>
-
     <!-- SERIES SUBWINDOW -->
     <div
       v-if="showSeriesDropdown"
@@ -325,7 +335,6 @@
       @close="showItemSearchModal = false"
       @select="pickItem"
     />
-    </div>
   </div>
 </template>
 
@@ -596,6 +605,7 @@ async function saveEntry() {
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
     entryName.value = res.name
     alert(`Entry ${res.name} saved as Draft`)
+    fetchSidebarEntries()
     // Optionally stay on the page to allow submission
   } catch (e) {
     alert(e.message || 'Save failed')
@@ -609,6 +619,7 @@ async function submitEntry() {
   try {
     await frappePost(`${API}.submit_stock_entry`, { name: entryName.value })
     alert(`Entry ${entryName.value} submitted successfully`)
+    fetchSidebarEntries()
     startNewEntry()
   } catch (e) {
     alert(e.message || 'Submission failed')
@@ -619,32 +630,39 @@ function startNewEntry() {
   items.value = []; entryName.value = null; entryDocStatus.value = 0
   newItemCode.value = ''; newQty.value = 1; selectedRow.value = -1
   selectedItemData.value = null
+  fetchSidebarEntries()
   nextTick(() => openSeriesModal())
 }
 
-// ==================== MODIFY ====================
-const showModifyEntry = ref(false)
+// ==================== SIDEBAR (MODIFY) ====================
+const sidebarEntries = ref([])
+const sidebarLoading = ref(false)
+const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const sidebarSearch = ref('')
+const sidebarPurpose = ref('')
 const showIncentiveModal = ref(false)
-const modifyQuery = ref('')
-const modifyResults = ref([])
-const modifyLoading = ref(false)
-const modifySearchInput = ref(null)
 
-function openModifyEntry() {
-  showModifyEntry.value = true
-  searchEntries()
-  nextTick(() => modifySearchInput.value?.focus())
+function changeSidebarDate(days) {
+  const d = new Date(sidebarDate.value)
+  d.setDate(d.getDate() + days)
+  sidebarDate.value = d.toISOString().split('T')[0]
 }
 
-watch(modifyQuery, () => searchEntries())
-
-async function searchEntries() {
-  modifyLoading.value = true
+async function fetchSidebarEntries() {
+  sidebarLoading.value = true
   try {
-    modifyResults.value = await frappeGet(`${API}.get_stock_entries`, { query: modifyQuery.value })
-  } catch (e) {}
-  modifyLoading.value = false
+    sidebarEntries.value = await frappeGet(`${API}.get_stock_entries`, {
+      posting_date: sidebarDate.value,
+      query: sidebarSearch.value,
+      purpose: sidebarPurpose.value || null
+    })
+  } catch (e) {
+    console.error('Sidebar fetch failed', e)
+  }
+  sidebarLoading.value = false
 }
+
+watch([sidebarDate, sidebarSearch, sidebarPurpose], () => fetchSidebarEntries())
 
 async function loadEntry(name) {
   try {
@@ -657,7 +675,6 @@ async function loadEntry(name) {
     toWarehouse.value = data.to_warehouse
     items.value = data.items
     entryDocStatus.value = data.docstatus
-    showModifyEntry.value = false
     nextTick(focusNewCode)
   } catch (e) { alert('Load failed') }
 }
@@ -696,7 +713,6 @@ function handleSeriesNumberKey(e) {
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showSeriesDropdown)
-useSubwindowWatcher(showModifyEntry)
 
 useShortcuts(materialTransferShortcuts({
   save: saveEntry,
@@ -705,7 +721,6 @@ useShortcuts(materialTransferShortcuts({
   focusSeries: () => openSeriesModal(),
   openIncentive: () => { if (entryName.value) showIncentiveModal.value = true },
   contextualBack: () => {
-    if (showModifyEntry.value) { showModifyEntry.value = false; return }
     if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
     handleBack()
   }
@@ -714,6 +729,7 @@ useShortcuts(materialTransferShortcuts({
 onMounted(() => {
   window.addEventListener('keydown', handleSeriesNumberKey)
   fetchConfig()
+  fetchSidebarEntries()
   if (props.name) loadEntry(props.name)
   else nextTick(() => openSeriesModal())
 })
