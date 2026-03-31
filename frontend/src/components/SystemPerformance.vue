@@ -20,125 +20,134 @@
 
     <!-- Body -->
     <div class="flex-1 overflow-auto px-10 py-10">
-      <div class="mx-auto max-w-lg space-y-6">
-
-        <!-- RAM Card -->
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <div class="text-xs font-bold uppercase tracking-wider text-slate-400">RAM Usage</div>
-              <div class="mt-1 text-3xl font-black" :class="ramColor">
-                {{ stats.ram_percent }}%
-              </div>
-              <div class="text-sm text-slate-400">
-                {{ stats.ram_used_gb }} GB used of {{ stats.ram_total_gb }} GB
-              </div>
-            </div>
-            <div class="flex h-14 w-14 items-center justify-center rounded-full border-4" :class="ramBorderColor">
-              <span class="text-xl">💾</span>
-            </div>
-          </div>
-          <div class="h-3 w-full overflow-hidden rounded-full bg-slate-700">
-            <div
-              class="h-full rounded-full transition-all duration-700"
-              :class="ramBarColor"
-              :style="{ width: stats.ram_percent + '%' }"
-            ></div>
-          </div>
-          <div class="mt-4 flex justify-end">
-            <button
-              @click="clearRam"
-              :disabled="clearing"
-              class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-50"
-            >
-              <span v-if="clearing">Running...</span>
-              <span v-else>🧹 Clear RAM Cache</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Active Users Card -->
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Users</div>
-              <div class="mt-1 flex items-end gap-3">
+      <div class="mx-auto max-w-5xl space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          
+          <!-- Left Column: Usage Stats -->
+          <div class="space-y-6">
+            <!-- RAM Card -->
+            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+              <div class="mb-4 flex items-center justify-between">
                 <div>
-                  <div class="text-3xl font-black text-emerald-400">{{ sessionData.unique_ips }}</div>
-                  <div class="text-sm text-slate-400">{{ sessionData.unique_ips === 1 ? 'computer' : 'computers' }}</div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">RAM Usage</div>
+                  <div class="mt-1 text-3xl font-black" :class="ramColor">
+                    {{ stats.ram_percent }}%
+                  </div>
+                  <div class="text-sm text-slate-400">
+                    {{ stats.ram_used_gb }} GB used of {{ stats.ram_total_gb }} GB
+                  </div>
                 </div>
-                <div class="mb-1 text-slate-600">/</div>
-                <div>
-                  <div class="text-xl font-bold text-slate-300">{{ sessionData.unique_users }}</div>
-                  <div class="text-sm text-slate-400">{{ sessionData.unique_users === 1 ? 'user' : 'users' }}</div>
+                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4" :class="ramBorderColor">
+                  <span class="text-xl">💾</span>
                 </div>
               </div>
-              <div class="mt-1 text-[10px] text-slate-500">active in last 15 min</div>
-            </div>
-            <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-emerald-500">
-              <span class="text-xl">👥</span>
-            </div>
-          </div>
-          <div v-if="sessionData.sessions.length" class="space-y-1 mt-2">
-            <div
-              v-for="s in sessionData.sessions"
-              :key="s.user + s.ip"
-              class="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2"
-            >
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span>
-                <span class="text-xs font-semibold text-slate-200">{{ s.user }}</span>
+              <div class="h-3 w-full overflow-hidden rounded-full bg-slate-700">
+                <div
+                  class="h-full rounded-full transition-all duration-700"
+                  :class="ramBarColor"
+                  :style="{ width: stats.ram_percent + '%' }"
+                ></div>
               </div>
-              <span class="font-mono text-[10px] text-slate-400">{{ s.ip }}</span>
-            </div>
-          </div>
-          <div v-else class="mt-2 text-xs text-slate-500 text-center py-2">No active sessions</div>
-        </div>
-
-        <!-- Backup Card -->
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Site Backup</div>
-              <div class="mt-1 text-sm text-slate-300">Run <span class="font-mono text-[11px] text-slate-400">frappe_backup.sh</span> manually</div>
-            </div>
-            <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-blue-500">
-              <span class="text-xl">💾</span>
-            </div>
-          </div>
-          <div class="flex justify-end">
-            <button
-              @click="runBackup"
-              :disabled="backing"
-              class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-50"
-            >
-              <span v-if="backing">Backing up...</span>
-              <span v-else>📦 Manual Backup</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- CPU Card -->
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <div class="text-xs font-bold uppercase tracking-wider text-slate-400">CPU Usage</div>
-              <div class="mt-1 text-3xl font-black" :class="cpuColor">
-                {{ stats.cpu_percent }}%
+              <div class="mt-4 flex justify-end">
+                <button
+                  @click="clearRam"
+                  :disabled="clearing"
+                  class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-50"
+                >
+                  <span v-if="clearing">Running...</span>
+                  <span v-else>🧹 Clear RAM Cache</span>
+                </button>
               </div>
-              <div class="text-sm text-slate-400">Across all cores</div>
             </div>
-            <div class="flex h-14 w-14 items-center justify-center rounded-full border-4" :class="cpuBorderColor">
-              <span class="text-xl">⚡</span>
+
+            <!-- CPU Card -->
+            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">CPU Usage</div>
+                  <div class="mt-1 text-3xl font-black" :class="cpuColor">
+                    {{ stats.cpu_percent }}%
+                  </div>
+                  <div class="text-sm text-slate-400">Across all cores</div>
+                </div>
+                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4" :class="cpuBorderColor">
+                  <span class="text-xl">⚡</span>
+                </div>
+              </div>
+              <div class="h-3 w-full overflow-hidden rounded-full bg-slate-700">
+                <div
+                  class="h-full rounded-full transition-all duration-700"
+                  :class="cpuBarColor"
+                  :style="{ width: stats.cpu_percent + '%' }"
+                ></div>
+              </div>
             </div>
           </div>
-          <div class="h-3 w-full overflow-hidden rounded-full bg-slate-700">
-            <div
-              class="h-full rounded-full transition-all duration-700"
-              :class="cpuBarColor"
-              :style="{ width: stats.cpu_percent + '%' }"
-            ></div>
+
+          <!-- Right Column: Site & Users -->
+          <div class="space-y-6">
+            <!-- Active Users Card -->
+            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Users</div>
+                  <div class="mt-1 flex items-end gap-3">
+                    <div>
+                      <div class="text-3xl font-black text-emerald-400">{{ sessionData.unique_ips }}</div>
+                      <div class="text-sm text-slate-400">{{ sessionData.unique_ips === 1 ? 'computer' : 'computers' }}</div>
+                    </div>
+                    <div class="mb-1 text-slate-600">/</div>
+                    <div>
+                      <div class="text-xl font-bold text-slate-300">{{ sessionData.unique_users }}</div>
+                      <div class="text-sm text-slate-400">{{ sessionData.unique_users === 1 ? 'user' : 'users' }}</div>
+                    </div>
+                  </div>
+                  <div class="mt-1 text-[10px] text-slate-500">active in last 15 min</div>
+                </div>
+                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-emerald-500">
+                  <span class="text-xl">👥</span>
+                </div>
+              </div>
+              <div v-if="sessionData.sessions.length" class="space-y-1 mt-2">
+                <div
+                  v-for="s in sessionData.sessions"
+                  :key="s.user + s.ip"
+                  class="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span class="text-xs font-semibold text-slate-200">{{ s.user }}</span>
+                  </div>
+                  <span class="font-mono text-[10px] text-slate-400">{{ s.ip }}</span>
+                </div>
+              </div>
+              <div v-else class="mt-2 text-xs text-slate-500 text-center py-2">No active sessions</div>
+            </div>
+
+            <!-- Backup Card -->
+            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Site Backup</div>
+                  <div class="mt-1 text-sm text-slate-300">Run <span class="font-mono text-[11px] text-slate-400">frappe_backup.sh</span> manually</div>
+                </div>
+                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-blue-500">
+                  <span class="text-xl">💾</span>
+                </div>
+              </div>
+              <div class="flex justify-end">
+                <button
+                  @click="runBackup"
+                  :disabled="backing"
+                  class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-50"
+                >
+                  <span v-if="backing">Backing up...</span>
+                  <span v-else>📦 Manual Backup</span>
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
 
         <!-- Terminal -->
