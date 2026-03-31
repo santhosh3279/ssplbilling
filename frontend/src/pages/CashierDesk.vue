@@ -3,6 +3,10 @@
     <!-- TOP NAVBAR -->
     <header class="flex h-14 items-center justify-between border-b border-slate-700 bg-slate-800 px-6 z-20 shrink-0">
       <div class="flex items-center gap-4">
+        <button @click="$router.push('/')" class="mr-2 flex items-center gap-1.5 rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-all active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back
+        </button>
         <div class="flex items-center gap-2 font-bold text-blue-400">
           <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
@@ -176,7 +180,7 @@
                     </td>
                     <td class="px-5 py-3 text-right font-mono text-sm font-bold text-slate-400">{{ item.qty }} {{ item.uom }}</td>
                     <td class="px-5 py-3 text-right font-mono text-sm font-bold text-slate-400">₹{{ fmt(item.rate) }}</td>
-                    <td class="px-5 py-3 text-right font-mono text-sm font-black text-slate-200">₹{{ fmt(item.amount) }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-sm font-black text-slate-200">₹{{ fmt(item.qty * item.rate) }}</td>
                   </tr>
                 </tbody>
               </table>
