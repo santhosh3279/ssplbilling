@@ -141,6 +141,23 @@ def clear_ram_cache():
 
 
 @frappe.whitelist()
+def run_manual_backup():
+	"""Run the site backup script and return its output."""
+	import subprocess
+	result = subprocess.run(
+		["sudo", "/opt/scripts/frappe_backup.sh"],
+		capture_output=True,
+		timeout=600,
+	)
+	return {
+		"success": result.returncode == 0,
+		"stdout": result.stdout.decode(errors="replace").strip(),
+		"stderr": result.stderr.decode(errors="replace").strip(),
+		"returncode": result.returncode,
+	}
+
+
+@frappe.whitelist()
 def get_billing_settings():
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current user."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

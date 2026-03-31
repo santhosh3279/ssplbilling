@@ -58,6 +58,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Run the site backup script and return its output.
+   */
+  runManualBackup: () => {
+    return frappePost(`${API_BASE}.run_manual_backup`)
+  },
+
+  /**
    * Fetch all customers for local sync.
    */
   fetchAllCustomersForSync: () => {

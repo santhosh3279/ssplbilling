@@ -57,6 +57,29 @@
           </div>
         </div>
 
+        <!-- Backup Card -->
+        <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Site Backup</div>
+              <div class="mt-1 text-sm text-slate-300">Run <span class="font-mono text-[11px] text-slate-400">frappe_backup.sh</span> manually</div>
+            </div>
+            <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-blue-500">
+              <span class="text-xl">💾</span>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button
+              @click="runBackup"
+              :disabled="backing"
+              class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-50"
+            >
+              <span v-if="backing">Backing up...</span>
+              <span v-else>📦 Manual Backup</span>
+            </button>
+          </div>
+        </div>
+
         <!-- CPU Card -->
         <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
           <div class="mb-4 flex items-center justify-between">
@@ -131,6 +154,7 @@ defineEmits(['close'])
 
 const stats = ref({ ram_used_gb: 0, ram_total_gb: 0, ram_percent: 0, cpu_percent: 0 })
 const clearing = ref(false)
+const backing = ref(false)
 
 // Terminal state
 const terminalVisible = ref(false)
@@ -231,6 +255,50 @@ async function clearRam() {
 
   terminalDone.value = true
   clearing.value = false
+  await scrollBottom()
+}
+
+async function runBackup() {
+  backing.value = true
+  terminalVisible.value = true
+  terminalLines.value = []
+  terminalDone.value = false
+
+  await typeCmd('sudo /opt/scripts/frappe_backup.sh')
+  await pushLine('(running — this may take a minute...)', 'out')
+  await scrollBottom()
+
+  let result = null
+  try {
+    result = await dashboardApi.runManualBackup()
+  } catch (e) {
+    result = { success: false, stderr: String(e), stdout: '' }
+  }
+
+  // Print stdout lines
+  if (result?.stdout) {
+    for (const line of result.stdout.split('\n')) {
+      await pushLine(line)
+    }
+  }
+
+  // Print stderr lines
+  if (result?.stderr) {
+    for (const line of result.stderr.split('\n')) {
+      await pushLine(line, result.success ? 'out' : 'err')
+    }
+  }
+
+  if (result?.success) {
+    await pushLine('')
+    await pushLine('✔  Backup completed successfully', 'ok')
+  } else {
+    await pushLine('')
+    await pushLine(`✘  Backup failed (exit code ${result?.returncode ?? '?'})`, 'err')
+  }
+
+  terminalDone.value = true
+  backing.value = false
   await scrollBottom()
 }
 
