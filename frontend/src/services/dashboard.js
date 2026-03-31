@@ -44,6 +44,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Return current server RAM and CPU usage.
+   */
+  getSystemStats: () => {
+    return frappeGet(`${API_BASE}.get_system_stats`)
+  },
+
+  /**
    * Fetch all customers for local sync.
    */
   fetchAllCustomersForSync: () => {

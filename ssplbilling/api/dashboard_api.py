@@ -104,6 +104,20 @@ def save_default_zoom(zoom):
 
 
 @frappe.whitelist()
+def get_system_stats():
+	"""Return current RAM and CPU usage for the server."""
+	import psutil
+	mem = psutil.virtual_memory()
+	cpu = psutil.cpu_percent(interval=0.2)
+	return {
+		"ram_used_gb": round(mem.used / (1024 ** 3), 1),
+		"ram_total_gb": round(mem.total / (1024 ** 3), 1),
+		"ram_percent": round(mem.percent, 1),
+		"cpu_percent": round(cpu, 1),
+	}
+
+
+@frappe.whitelist()
 def get_billing_settings():
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current user."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
