@@ -120,20 +120,52 @@ def get_system_stats():
 
 @frappe.whitelist()
 def clear_ram_cache():
-	"""Drop Linux page cache via sudo tee (requires sudoers rule for erpdev)."""
+	"""Drop Linux page cache.
+
+	Strategy (tried in order):
+	1. Direct write to /proc/sys/vm/drop_caches — works when running as root (Docker).
+	2. sudo tee /proc/sys/vm/drop_caches — works on bare-metal with a sudoers rule.
+	"""
+	import os
 	import subprocess
 	import psutil
+
 	mem_before = psutil.virtual_memory()
-	result = subprocess.run(
-		["sudo", "tee", "/proc/sys/vm/drop_caches"],
-		input=b"3",
-		capture_output=True,
-	)
-	freed = result.returncode == 0
+	freed = False
+	error = ""
+
+	# Strategy 1: direct write (root / Docker)
+	try:
+		with open("/proc/sys/vm/drop_caches", "w") as f:
+			f.write("3")
+		freed = True
+	except PermissionError:
+		pass
+	except Exception as e:
+		error = str(e)
+
+	# Strategy 2: sudo tee (bare-metal with sudoers rule)
+	if not freed:
+		try:
+			result = subprocess.run(
+				["sudo", "tee", "/proc/sys/vm/drop_caches"],
+				input=b"3",
+				capture_output=True,
+				timeout=10,
+			)
+			if result.returncode == 0:
+				freed = True
+			else:
+				error = result.stderr.decode().strip() or "sudo tee failed"
+		except FileNotFoundError:
+			error = "sudo not found"
+		except Exception as e:
+			error = str(e)
+
 	mem_after = psutil.virtual_memory()
 	return {
 		"freed": freed,
-		"error": result.stderr.decode().strip() if not freed else "",
+		"error": error if not freed else "",
 		"ram_used_gb": round(mem_after.used / (1024 ** 3), 1),
 		"ram_total_gb": round(mem_after.total / (1024 ** 3), 1),
 		"ram_percent": round(mem_after.percent, 1),
