@@ -413,6 +413,7 @@
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
                     <button v-if="billSaved" @click="openBarcodePrinting" class="w-full rounded border border-orange-600/50 bg-orange-900/20 py-1.5 text-center text-xs font-bold text-orange-400 transition hover:bg-orange-900/30">🏷️ Print Barcodes</button>
+                    <button v-if="billSaved" @click="openPrintModal(savedInvoiceName)" class="w-full rounded border border-slate-600 bg-slate-800 py-1.5 text-center text-xs font-semibold text-slate-300 hover:bg-slate-700 transition">🖨 Print</button>
                     <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Edit Bill</button>
                     <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedInvoiceName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
                     <div class="flex gap-1">
