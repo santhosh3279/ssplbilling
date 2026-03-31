@@ -376,6 +376,24 @@ def update_purchase_invoice(data=None, **kwargs):
     pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.additional_discount_percentage = float(data.get("discount_percentage", 0))
+    if data.get("tax_template"):
+        pi.taxes_and_charges = data["tax_template"]
+    elif "tax_template" in data:
+        pi.taxes_and_charges = ""
+    pi.taxes = []
+    if data.get("tax_template"):
+        try:
+            tmpl = frappe.get_doc("Purchase Taxes and Charges Template", data["tax_template"])
+            for tax in tmpl.taxes:
+                pi.append("taxes", {
+                    "charge_type": tax.charge_type,
+                    "account_head": tax.account_head,
+                    "description": tax.description,
+                    "rate": tax.rate,
+                    "cost_center": data.get("cost_center") or tax.cost_center or "",
+                })
+        except Exception:
+            pass
     pi.items = []
     for item in data["items"]:
         qty = float(item["qty"])

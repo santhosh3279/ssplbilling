@@ -280,6 +280,18 @@ def create_sales_order(data):
 		so.discount_amount = data["additional_discount_amount"]
 	if data.get("tax_template"):
 		so.taxes_and_charges = data["tax_template"]
+		try:
+			tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
+			for tax in tmpl.taxes:
+				so.append("taxes", {
+					"charge_type": tax.charge_type,
+					"account_head": tax.account_head,
+					"description": tax.description,
+					"rate": tax.rate,
+					"cost_center": tax.cost_center or "",
+				})
+		except Exception:
+			pass
 
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
@@ -332,6 +344,19 @@ def update_sales_order(data):
 		so.taxes_and_charges = ""
 
 	so.taxes = []
+	if data.get("tax_template"):
+		try:
+			tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
+			for tax in tmpl.taxes:
+				so.append("taxes", {
+					"charge_type": tax.charge_type,
+					"account_head": tax.account_head,
+					"description": tax.description,
+					"rate": tax.rate,
+					"cost_center": tax.cost_center or "",
+				})
+		except Exception:
+			pass
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
 			so.append("taxes", {

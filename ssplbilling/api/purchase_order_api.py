@@ -277,6 +277,20 @@ def create_purchase_order(data):
 		po.discount_amount = data["additional_discount_amount"]
 
 	# Taxes / charges
+	if data.get("tax_template"):
+		po.taxes_and_charges = data["tax_template"]
+		try:
+			tmpl = frappe.get_doc("Purchase Taxes and Charges Template", data["tax_template"])
+			for tax in tmpl.taxes:
+				po.append("taxes", {
+					"charge_type": tax.charge_type,
+					"account_head": tax.account_head,
+					"description": tax.description,
+					"rate": tax.rate,
+					"cost_center": tax.cost_center or "",
+				})
+		except Exception:
+			pass
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
 			po.append("taxes", {
@@ -323,8 +337,25 @@ def update_purchase_order(data):
 		po.schedule_date = data["schedule_date"]
 	po.additional_discount_percentage = data.get("discount_percentage", 0)
 	po.discount_amount = data.get("additional_discount_amount", 0)
+	if data.get("tax_template"):
+		po.taxes_and_charges = data["tax_template"]
+	elif "tax_template" in data:
+		po.taxes_and_charges = ""
 
 	po.taxes = []
+	if data.get("tax_template"):
+		try:
+			tmpl = frappe.get_doc("Purchase Taxes and Charges Template", data["tax_template"])
+			for tax in tmpl.taxes:
+				po.append("taxes", {
+					"charge_type": tax.charge_type,
+					"account_head": tax.account_head,
+					"description": tax.description,
+					"rate": tax.rate,
+					"cost_center": tax.cost_center or "",
+				})
+		except Exception:
+			pass
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
 			po.append("taxes", {

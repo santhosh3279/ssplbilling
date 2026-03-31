@@ -351,6 +351,18 @@ def create_quotation(data):
 		qt.selling_price_list = data["price_list"]
 	if data.get("tax_template"):
 		qt.taxes_and_charges = data["tax_template"]
+		try:
+			tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
+			for tax in tmpl.taxes:
+				qt.append("taxes", {
+					"charge_type": tax.charge_type,
+					"account_head": tax.account_head,
+					"description": tax.description,
+					"rate": tax.rate,
+					"cost_center": tax.cost_center or "",
+				})
+		except Exception:
+			pass
 
 	if data.get("discount_percentage"):
 		qt.additional_discount_percentage = data["discount_percentage"]
@@ -409,6 +421,19 @@ def update_quotation(data):
 	qt.discount_amount = data.get("additional_discount_amount", 0)
 
 	qt.taxes = []
+	if data.get("tax_template"):
+		try:
+			tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
+			for tax in tmpl.taxes:
+				qt.append("taxes", {
+					"charge_type": tax.charge_type,
+					"account_head": tax.account_head,
+					"description": tax.description,
+					"rate": tax.rate,
+					"cost_center": tax.cost_center or "",
+				})
+		except Exception:
+			pass
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
 			qt.append("taxes", {
