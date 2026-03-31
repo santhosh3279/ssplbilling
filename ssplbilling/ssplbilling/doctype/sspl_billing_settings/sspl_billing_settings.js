@@ -18,7 +18,7 @@ function load_series_options(frm) {
 	frappe.call({
 		method: "ssplbilling.api.SaleEntry_api.get_naming_series",
 		args: {
-			doctypes: ["Sales Invoice", "Purchase Invoice"]
+			doctypes: ["Sales Invoice", "Purchase Invoice", "Sales Order", "Purchase Order", "Quotation"]
 		},
 		callback(r) {
 			const series = r.message;
