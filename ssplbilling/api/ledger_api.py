@@ -379,7 +379,7 @@ def _batch_voucher_details(entries):
         items_rows = frappe.get_all(
             "Stock Reconciliation Item",
             filters={"parent": ["in", names]},
-            fields=["parent", "item_code", "item_name", "qty", "valuation_rate", "amount", "stock_uom"],
+            fields=["parent", "item_code", "item_name", "qty", "current_qty", "valuation_rate", "amount", "stock_uom"],
         )
         items_map = defaultdict(list)
         for r in items_rows:
@@ -387,6 +387,7 @@ def _batch_voucher_details(entries):
                 "item_code": r.item_code,
                 "item_name": r.item_name,
                 "qty": float(r.qty or 0),
+                "current_qty": float(r.current_qty or 0),
                 "rate": float(r.valuation_rate or 0),
                 "amount": float(r.amount or 0),
                 "uom": r.stock_uom or "",
@@ -416,14 +417,43 @@ def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
         wh_clause = " AND warehouse = %s"
         wh_params.append(warehouse)
 
-    # Opening balance: sum of actual_qty strictly before from_date
-    opening_row = frappe.db.sql(
-        "SELECT IFNULL(SUM(actual_qty), 0) AS qty FROM `tabStock Ledger Entry` "
-        "WHERE item_code = %s AND is_cancelled = 0 AND posting_date < %s" + wh_clause,
-        [item_code, from_date] + wh_params,
-        as_dict=True,
-    )
-    opening_balance = float(opening_row[0].qty if opening_row else 0)
+    # Opening balance: sum of qty_after_transaction for the latest entry of each warehouse before from_date
+    if warehouse:
+        opening_row = frappe.db.sql(
+            """
+            SELECT qty_after_transaction AS qty 
+            FROM `tabStock Ledger Entry` 
+            WHERE item_code = %s AND is_cancelled = 0 AND posting_date < %s AND warehouse = %s
+            ORDER BY posting_date DESC, creation DESC 
+            LIMIT 1
+            """,
+            [item_code, from_date, warehouse],
+            as_dict=True,
+        )
+        opening_balance = float(opening_row[0].qty if opening_row else 0)
+    else:
+        # Sum of latest balances for ALL warehouses
+        opening_row = frappe.db.sql(
+            """
+            SELECT SUM(qty) AS qty
+            FROM (
+                SELECT qty_after_transaction AS qty
+                FROM `tabStock Ledger Entry` sle1
+                WHERE item_code = %s AND is_cancelled = 0 AND posting_date < %s
+                  AND creation = (
+                    SELECT MAX(creation)
+                    FROM `tabStock Ledger Entry` sle2
+                    WHERE sle2.item_code = sle1.item_code 
+                      AND sle2.is_cancelled = 0 
+                      AND sle2.posting_date < %s
+                      AND sle2.warehouse = sle1.warehouse
+                  )
+            ) sub
+            """,
+            [item_code, from_date, from_date],
+            as_dict=True,
+        )
+        opening_balance = float(opening_row[0].qty if opening_row else 0)
 
     entries = frappe.db.sql(
         "SELECT posting_date as date, voucher_type, voucher_no, actual_qty, stock_uom, warehouse "
@@ -434,11 +464,24 @@ def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
         as_dict=True,
     )
 
+    # Batch-fetch all voucher details in one go
+    voucher_details = _batch_voucher_details(entries)
+
     running = opening_balance
     total_in = 0.0
     total_out = 0.0
     for e in entries:
+        e["detail"] = voucher_details.get(e["voucher_no"])
         qty = float(e.actual_qty or 0)
+
+        # Fix actual_qty for Stock Reconciliation if it's 0 but there was a change
+        if e.voucher_type == "Stock Reconciliation" and qty == 0 and e["detail"]:
+            # Find this item in the reconciliation items
+            for item in e["detail"].get("items", []):
+                if item["item_code"] == item_code:
+                    qty = item["qty"] - item["current_qty"]
+                    break
+        
         running += qty
         e["balance"] = running
         e["actual_qty"] = qty
@@ -447,11 +490,6 @@ def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
             total_in += qty
         else:
             total_out += abs(qty)
-
-    # Batch-fetch all voucher details in one go
-    voucher_details = _batch_voucher_details(entries)
-    for e in entries:
-        e["detail"] = voucher_details.get(e["voucher_no"])
 
     return {
         "item_code": item_code,
