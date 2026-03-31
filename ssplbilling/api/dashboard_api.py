@@ -1,4 +1,5 @@
 import json
+import os
 import frappe
 import re
 
@@ -138,6 +139,17 @@ def clear_ram_cache():
 		"ram_percent": round(mem_after.percent, 1),
 		"freed_gb": round((mem_before.used - mem_after.used) / (1024 ** 3), 1),
 	}
+
+
+@frappe.whitelist()
+def get_active_sites():
+	"""Return all site names (directories containing site_config.json) in this bench."""
+	sites_path = os.path.join(os.path.dirname(frappe.get_site_path()))
+	sites = []
+	for entry in os.scandir(sites_path):
+		if entry.is_dir() and os.path.exists(os.path.join(entry.path, "site_config.json")):
+			sites.append(entry.name)
+	return {"sites": sorted(sites), "count": len(sites)}
 
 
 @frappe.whitelist()

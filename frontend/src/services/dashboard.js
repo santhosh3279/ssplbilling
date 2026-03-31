@@ -65,6 +65,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Return all active site names in this bench.
+   */
+  getActiveSites: () => {
+    return frappeGet(`${API_BASE}.get_active_sites`)
+  },
+
+  /**
    * Fetch all customers for local sync.
    */
   fetchAllCustomersForSync: () => {
