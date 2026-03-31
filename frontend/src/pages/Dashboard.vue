@@ -305,6 +305,7 @@ const allTiles = [
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
   { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
+  { id: 'Cashier-Management', name: 'Cashier Management', desc: 'Daily reconciliation & denominations', icon: '📓', shortcut: '', tileBg: 'bg-emerald-700' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
   { id: 'purchase-order', name: 'Purchase Order', desc: 'Create & manage purchase orders', icon: '📋', shortcut: 'F7', tileBg: 'bg-sky-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
@@ -326,6 +327,7 @@ const routeAliases = {
   'journal-contra': '/journal-contra',
   'material-transfer': '/material-transfer',
   'stock-reconciliation': '/stock-reconciliation',
+  'Cashier-Management': '/Cashier-Management',
   reports: '/reports',
 }
 

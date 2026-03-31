@@ -39,6 +39,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'CustomerLedger',
   'PayRec',
   'JournalContraEntry',
+  'CashierManagement',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
