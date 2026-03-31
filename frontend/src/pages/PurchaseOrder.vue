@@ -1085,9 +1085,8 @@ async function loadOrder(orderName) {
     selectedRow.value = -1; newItemCode.value = ''; newQty.value = 1; newPending.value = { item_name: '', uom: '', rate: null }; selectedItemData.value = null
     savedOrderName.value = po.name
     billDocStatus.value = po.docstatus
-    billSaved.value = po.docstatus !== 0
+    billSaved.value = true
     selectedSupplierDetails.value = { name: po.supplier, supplier_name: po.supplier_name, balance: 0 }
-    nextTick(() => supplierInput.value?.focus())
   } catch (e) { alert('Error loading order: ' + (e.message || 'Unknown error')) }
 }
 

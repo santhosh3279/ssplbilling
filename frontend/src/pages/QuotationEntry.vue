@@ -413,7 +413,6 @@
                       <span class="font-bold">{{ savedQuotationName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
-                    <button v-if="quotationSaved && quotationDocStatus === 0" @click="submitQuotation" class="w-full rounded border border-green-600/50 bg-green-900/20 py-1.5 text-center text-xs font-semibold text-green-400 transition hover:bg-green-900/40">Submit Quotation</button>
                     <button v-if="quotationSaved && quotationDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify Quotation</button>
                     <button v-else-if="!quotationSaved" ref="saveButton" @click="saveQuotation" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedQuotationName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedQuotationName ? 'Update Quotation' : 'Save Quotation (Ctrl+S)' }}</button>
                     <div class="flex gap-1">
@@ -1564,10 +1563,6 @@ async function loadQuotation(quotationName) {
     savedQuotationName.value = inv.name
     quotationDocStatus.value = inv.docstatus
     quotationSaved.value = true
-    // Auto-enter edit mode for draft quotations
-    if (inv.docstatus === 0) {
-      quotationSaved.value = false
-    }
     fetchNextQuotationNo()
 
     // Set selectedCustomerDetails for display
@@ -1581,8 +1576,6 @@ async function loadQuotation(quotationName) {
         address_line1: ""
       }
     }
-
-    nextTick(() => customerInput.value?.focus())
   } catch (e) {
     alert('Error loading quotation: ' + (e.message || 'Unknown error'))
   }
