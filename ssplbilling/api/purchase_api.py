@@ -1,5 +1,6 @@
 import json
 import frappe
+from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 
 
 def _get_item_tax_rate(item_code):
@@ -244,18 +245,11 @@ def create_purchase_invoice(data=None, **kwargs):
 
     if data.get("tax_template"):
         pi.taxes_and_charges = data["tax_template"]
-        try:
-            tmpl = frappe.get_doc("Purchase Taxes and Charges Template", data["tax_template"])
-            for tax in tmpl.taxes:
-                pi.append("taxes", {
-                    "charge_type": tax.charge_type,
-                    "account_head": tax.account_head,
-                    "description": tax.description,
-                    "rate": tax.rate,
-                    "cost_center": data.get("cost_center") or tax.cost_center or "",
-                })
-        except Exception:
-            pass
+        pi.set("taxes", _erpnext_tax_rows("Purchase Taxes and Charges Template", data["tax_template"]) or [])
+        if data.get("cost_center"):
+            for tax in pi.taxes:
+                if not tax.cost_center:
+                    tax.cost_center = data["cost_center"]
 
     pi.insert()
 
@@ -380,20 +374,15 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.taxes_and_charges = data["tax_template"]
     elif "tax_template" in data:
         pi.taxes_and_charges = ""
-    pi.taxes = []
     if data.get("tax_template"):
-        try:
-            tmpl = frappe.get_doc("Purchase Taxes and Charges Template", data["tax_template"])
-            for tax in tmpl.taxes:
-                pi.append("taxes", {
-                    "charge_type": tax.charge_type,
-                    "account_head": tax.account_head,
-                    "description": tax.description,
-                    "rate": tax.rate,
-                    "cost_center": data.get("cost_center") or tax.cost_center or "",
-                })
-        except Exception:
-            pass
+        pi.taxes_and_charges = data["tax_template"]
+        pi.set("taxes", _erpnext_tax_rows("Purchase Taxes and Charges Template", data["tax_template"]) or [])
+        if data.get("cost_center"):
+            for tax in pi.taxes:
+                if not tax.cost_center:
+                    tax.cost_center = data["cost_center"]
+    else:
+        pi.taxes = []
     pi.items = []
     for item in data["items"]:
         qty = float(item["qty"])

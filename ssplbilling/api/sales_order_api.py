@@ -1,5 +1,6 @@
 import json
 import frappe
+from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -280,18 +281,7 @@ def create_sales_order(data):
 		so.discount_amount = data["additional_discount_amount"]
 	if data.get("tax_template"):
 		so.taxes_and_charges = data["tax_template"]
-		try:
-			tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
-			for tax in tmpl.taxes:
-				so.append("taxes", {
-					"charge_type": tax.charge_type,
-					"account_head": tax.account_head,
-					"description": tax.description,
-					"rate": tax.rate,
-					"cost_center": tax.cost_center or "",
-				})
-		except Exception:
-			pass
+		so.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", data["tax_template"]) or [])
 
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
@@ -343,20 +333,10 @@ def update_sales_order(data):
 	elif "tax_template" in data:
 		so.taxes_and_charges = ""
 
-	so.taxes = []
 	if data.get("tax_template"):
-		try:
-			tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
-			for tax in tmpl.taxes:
-				so.append("taxes", {
-					"charge_type": tax.charge_type,
-					"account_head": tax.account_head,
-					"description": tax.description,
-					"rate": tax.rate,
-					"cost_center": tax.cost_center or "",
-				})
-		except Exception:
-			pass
+		so.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", data["tax_template"]) or [])
+	else:
+		so.taxes = []
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
 			so.append("taxes", {

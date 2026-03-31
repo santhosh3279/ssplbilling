@@ -1,6 +1,23 @@
 import json
 import frappe
 from frappe import _
+from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+
+
+def _apply_tax_template(doc, template_name, doctype, cost_center=""):
+    """Populate doc.taxes from an ERPNext tax template using the official helper.
+
+    Uses erpnext.controllers.accounts_controller.get_taxes_and_charges which
+    copies every field from the template row and strips system/child-table fields,
+    rather than manually copying a subset of fields.
+    """
+    doc.taxes_and_charges = template_name
+    rows = _erpnext_tax_rows(doctype, template_name) or []
+    doc.set("taxes", rows)
+    if cost_center:
+        for tax in doc.taxes:
+            if not tax.cost_center:
+                tax.cost_center = cost_center
 
 def enforce_ignore_pricing_rule(doc, method=None):
     """Always keep ignore_pricing_rule=1 on Sales Invoice before save."""
@@ -243,19 +260,7 @@ def create_sales_invoice(data=None, **kwargs):
         si.append("items", row)
 
     if data.get("tax_template"):
-        si.taxes_and_charges = data["tax_template"]
-        try:
-            tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
-            for tax in tmpl.taxes:
-                si.append("taxes", {
-                    "charge_type": tax.charge_type,
-                    "account_head": tax.account_head,
-                    "description": tax.description,
-                    "rate": tax.rate,
-                    "cost_center": data.get("cost_center") or tax.cost_center or "",
-                })
-        except Exception:
-            pass
+        _apply_tax_template(si, data["tax_template"], "Sales Taxes and Charges Template", data.get("cost_center", ""))
 
     if data.get("taxes"):
         for tax in data["taxes"]:
@@ -405,20 +410,7 @@ def update_sales_invoice(data=None, **kwargs):
         si.append("items", row)
 
     if data.get("tax_template"):
-        si.taxes_and_charges = data["tax_template"]
-        si.taxes = []
-        try:
-            tmpl = frappe.get_doc("Sales Taxes and Charges Template", data["tax_template"])
-            for tax in tmpl.taxes:
-                si.append("taxes", {
-                    "charge_type": tax.charge_type,
-                    "account_head": tax.account_head,
-                    "description": tax.description,
-                    "rate": tax.rate,
-                    "cost_center": data.get("cost_center") or tax.cost_center or "",
-                })
-        except Exception:
-            pass
+        _apply_tax_template(si, data["tax_template"], "Sales Taxes and Charges Template", data.get("cost_center", ""))
 
     if data.get("taxes"):
         if not data.get("tax_template"):
