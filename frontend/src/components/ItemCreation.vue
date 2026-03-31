@@ -451,19 +451,14 @@ watch(() => form.value.item_name, (newVal) => {
   form.value.item_print_name = newVal
 })
 
-// Track manual changes
+// Track manual changes — strip all leading zeros on every change
 watch(() => form.value.barcode, (newVal, oldVal) => {
-  // Strip leading zeros (e.g. "00123" → "123"), leave "0" alone
-  if (newVal && /^0\d/.test(newVal)) {
-    form.value.barcode = newVal.replace(/^0+(\d)/, '$1')
+  if (newVal && /^0/.test(newVal)) {
+    form.value.barcode = stripLeadingZeros(newVal)
     return
   }
   if (oldVal !== undefined && !isFetchingBarcode.value) {
-    if (newVal !== autoBarcode.value) {
-      isBarcodeManual.value = true
-    } else {
-      isBarcodeManual.value = false
-    }
+    isBarcodeManual.value = newVal !== autoBarcode.value
   }
 })
 
@@ -507,14 +502,19 @@ async function loadMetadata() {
   }
 }
 
+function stripLeadingZeros(val) {
+  const s = String(val || '').replace(/^0+/, '')
+  return s || '0'
+}
+
 async function generateBarcode() {
   const series = selectedSeries.value || metadata.value.naming_series[0]
   if (!series) return
-  
+
   isFetchingBarcode.value = true
   try {
     const res = await getNextBarcode(series)
-    const stripped = String(res).replace(/^0+(\d)/, '$1')
+    const stripped = stripLeadingZeros(res)
     form.value.barcode = stripped
     autoBarcode.value = stripped
     nextTick(() => { isBarcodeManual.value = false })
@@ -541,6 +541,13 @@ function onHSNEnter() {
 
 async function handleSubmit() {
   if (!canSubmit.value || isSubmitting.value) return
+
+  // Strip all leading zeros from primary barcode and any additional barcodes before saving
+  form.value.barcode = stripLeadingZeros(form.value.barcode)
+  form.value.extra_barcodes = form.value.extra_barcodes.map(r => ({
+    ...r,
+    barcode: stripLeadingZeros(r.barcode),
+  }))
 
   isSubmitting.value = true
   try {
