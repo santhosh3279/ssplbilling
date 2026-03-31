@@ -253,6 +253,17 @@
 
     </div>
   </div>
+
+  <!-- Item Search Modal (opens when entered code is not found) -->
+  <ItemSearch
+    :show="showItemSearch"
+    search-type="Sales"
+    :warehouse="warehouse"
+    :initial-query="newItemCode"
+    :skip-date-filter="true"
+    @close="showItemSearch = false; nextTick(() => focusNewCode())"
+    @select="onItemSearchSelect"
+  />
 </template>
 
 <script setup>
@@ -261,6 +272,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import { stockReconciliationShortcuts } from '../shortcuts/stockReconciliationShortcuts'
+import ItemSearch from '../components/ItemSearch.vue'
 
 const router = useRouter()
 const API = 'ssplbilling.api.stock_reconciliation_api'
@@ -289,6 +301,7 @@ const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
 const newItemCode = ref('')
 const newQty = ref(0)
 const newPending = ref({ item_name: '', uom: '', current_qty: 0, valuation_rate: 0 })
+const showItemSearch = ref(false)
 
 // Sidebar state
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
@@ -391,24 +404,49 @@ async function lookupItem(code) {
   } catch (e) { return null }
 }
 
-watch(newItemCode, async (val) => {
+let itemLookupTimeout = null
+watch(newItemCode, (val) => {
   const code = val.trim()
-  if (code.length < 2) { newPending.value = { item_name: '', uom: '', current_qty: 0, valuation_rate: 0 }; return }
-  const r = await lookupItem(code)
-  if (r && r.found) {
-    newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
-    newQty.value = r.stock_qty
+  clearTimeout(itemLookupTimeout)
+  if (code.length < 2) {
+    newPending.value = { item_name: '', uom: '', current_qty: 0, valuation_rate: 0 }
+    return
   }
+  itemLookupTimeout = setTimeout(async () => {
+    const r = await lookupItem(code)
+    if (r && r.found) {
+      newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
+      newQty.value = r.stock_qty
+    }
+  }, 300)
 })
 
 async function onNewCodeEnter() {
-  const code = newItemCode.value.trim(); if (!code) return
+  const code = newItemCode.value.trim()
+  if (!code) return
   const r = await lookupItem(code)
   if (r && r.found) {
     newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
     newQty.value = r.stock_qty
     focusNewQty()
+  } else {
+    // Item not found — open search modal with typed code as query
+    showItemSearch.value = true
   }
+}
+
+async function onItemSearchSelect(item) {
+  showItemSearch.value = false
+  newItemCode.value = item.item_code
+  const r = await lookupItem(item.item_code)
+  if (r && r.found) {
+    newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
+    newQty.value = r.stock_qty
+  } else {
+    newPending.value = { item_name: item.item_name, uom: item.uom || '', current_qty: 0, valuation_rate: 0 }
+    newQty.value = 0
+  }
+  nextTick(() => focusNewQty())
 }
 
 function addNewItem() {
