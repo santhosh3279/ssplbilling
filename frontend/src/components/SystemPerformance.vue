@@ -57,6 +57,44 @@
           </div>
         </div>
 
+        <!-- Active Users Card -->
+        <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Users</div>
+              <div class="mt-1 flex items-end gap-3">
+                <div>
+                  <div class="text-3xl font-black text-emerald-400">{{ sessionData.unique_ips }}</div>
+                  <div class="text-sm text-slate-400">{{ sessionData.unique_ips === 1 ? 'computer' : 'computers' }}</div>
+                </div>
+                <div class="mb-1 text-slate-600">/</div>
+                <div>
+                  <div class="text-xl font-bold text-slate-300">{{ sessionData.unique_users }}</div>
+                  <div class="text-sm text-slate-400">{{ sessionData.unique_users === 1 ? 'user' : 'users' }}</div>
+                </div>
+              </div>
+              <div class="mt-1 text-[10px] text-slate-500">active in last 15 min</div>
+            </div>
+            <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-emerald-500">
+              <span class="text-xl">👥</span>
+            </div>
+          </div>
+          <div v-if="sessionData.sessions.length" class="space-y-1 mt-2">
+            <div
+              v-for="s in sessionData.sessions"
+              :key="s.user + s.ip"
+              class="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2"
+            >
+              <div class="flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span>
+                <span class="text-xs font-semibold text-slate-200">{{ s.user }}</span>
+              </div>
+              <span class="font-mono text-[10px] text-slate-400">{{ s.ip }}</span>
+            </div>
+          </div>
+          <div v-else class="mt-2 text-xs text-slate-500 text-center py-2">No active sessions</div>
+        </div>
+
         <!-- Active Sites Card -->
         <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
           <div class="mb-4 flex items-center justify-between">
@@ -178,6 +216,7 @@ defineEmits(['close'])
 
 const stats = ref({ ram_used_gb: 0, ram_total_gb: 0, ram_percent: 0, cpu_percent: 0 })
 const sites = ref([])
+const sessionData = ref({ sessions: [], unique_users: 0, unique_ips: 0 })
 const clearing = ref(false)
 const backing = ref(false)
 
@@ -336,9 +375,17 @@ async function fetchStats() {
   } catch { /* silent */ }
 }
 
+async function fetchSessions() {
+  try {
+    const d = await dashboardApi.getActiveSessions()
+    if (d) sessionData.value = d
+  } catch { /* silent */ }
+}
+
 function startPolling() {
   fetchStats()
-  pollInterval = setInterval(fetchStats, 10000)
+  fetchSessions()
+  pollInterval = setInterval(() => { fetchStats(); fetchSessions() }, 10000)
 }
 
 function stopPolling() {
@@ -353,6 +400,7 @@ watch(() => props.show, (val) => {
     terminalDone.value = false
     startPolling()
     dashboardApi.getActiveSites().then(d => { if (d) sites.value = d.sites }).catch(() => {})
+
   } else {
     stopPolling()
   }

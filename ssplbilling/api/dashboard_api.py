@@ -142,6 +142,36 @@ def clear_ram_cache():
 
 
 @frappe.whitelist()
+def get_active_sessions():
+	"""Return users currently active on this site (session updated within last 15 minutes)."""
+	rows = frappe.db.sql(
+		"""
+		SELECT user, ipaddress, MAX(lastupdate) AS last_seen
+		FROM tabSessions
+		WHERE status = 'Active'
+		  AND lastupdate >= NOW() - INTERVAL 15 MINUTE
+		  AND user != 'Guest'
+		GROUP BY user, ipaddress
+		ORDER BY last_seen DESC
+		""",
+		as_dict=True,
+	)
+	unique_ips = len({r.ipaddress for r in rows if r.ipaddress})
+	return {
+		"sessions": [
+			{
+				"user": r.user,
+				"ip": r.ipaddress or "unknown",
+				"last_seen": str(r.last_seen),
+			}
+			for r in rows
+		],
+		"unique_users": len({r.user for r in rows}),
+		"unique_ips": unique_ips,
+	}
+
+
+@frappe.whitelist()
 def get_active_sites():
 	"""Return all site names (directories containing site_config.json) in this bench."""
 	sites_path = os.path.join(os.path.dirname(frappe.get_site_path()))

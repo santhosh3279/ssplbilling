@@ -72,6 +72,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Return users currently active on this site (last 15 min).
+   */
+  getActiveSessions: () => {
+    return frappeGet(`${API_BASE}.get_active_sessions`)
+  },
+
+  /**
    * Fetch all customers for local sync.
    */
   fetchAllCustomersForSync: () => {
