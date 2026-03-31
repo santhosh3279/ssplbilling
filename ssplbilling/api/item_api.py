@@ -50,8 +50,9 @@ def create_item(data):
 		from frappe.model.naming import make_autoname
 		import re
 		res = make_autoname(naming_series)
-		# Strip non-digits for the auto-assigned code
-		barcode = re.sub(r"\D", "", res)
+		# Strip non-digits and leading zeros for the auto-assigned code
+		digits = re.sub(r"\D", "", res)
+		barcode = digits.lstrip("0") or digits
 	
 	if not barcode:
 		frappe.throw("Barcode/Item Code is required")
