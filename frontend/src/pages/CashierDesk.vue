@@ -149,7 +149,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <button @click="printPlaceholder" class="rounded-lg border border-slate-700 bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all flex items-center gap-2">
+              <button @click="showPrintModal = true" class="rounded-lg border border-slate-700 bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
                 Print
               </button>
@@ -452,6 +452,13 @@
         </div>
       </div>
     </transition>
+
+    <!-- PRINT OPTIONS MODAL -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="selectedInvoice?.name"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
@@ -461,6 +468,7 @@ import { session } from '../session'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet } from '../api.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 /**
  * HELPER: getTodayIST
@@ -479,11 +487,13 @@ const filterDate = ref(getTodayIST())
 const searchQuery = ref('')
 
 const showCardRefModal = ref(false)
+const showPrintModal = ref(false)
 const cardRefNo = ref('')
 const showOpeningRequiredModal = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
+useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showOpeningRequiredModal)
 
 const invoices = ref([])
@@ -730,10 +740,6 @@ function toggleCredit(val) {
   } else {
     nextTick(() => cashInput.value?.focus())
   }
-}
-
-function printPlaceholder() {
-  alert("Print feature is ready. Waiting for print format selection.")
 }
 
 async function processPayment() {
