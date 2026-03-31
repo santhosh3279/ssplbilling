@@ -214,15 +214,62 @@ def get_active_sites():
 	return {"sites": sorted(sites), "count": len(sites)}
 
 
+def _is_docker():
+	"""Return True when this process is running inside a Docker container."""
+	return os.path.exists("/.dockerenv")
+
+
+def _docker_host_ip():
+	"""Resolve the Docker host IP from the container's default gateway.
+
+	Falls back to the BACKUP_SSH_HOST env-var, then 'host.docker.internal'.
+	"""
+	import socket
+	import struct
+	try:
+		with open("/proc/net/route") as f:
+			for line in f:
+				fields = line.strip().split()
+				if len(fields) >= 3 and fields[1] == "00000000":
+					# Gateway field is little-endian hex
+					return socket.inet_ntoa(struct.pack("<I", int(fields[2], 16)))
+	except Exception:
+		pass
+	return os.environ.get("BACKUP_SSH_HOST", "host.docker.internal")
+
+
 @frappe.whitelist()
 def run_manual_backup():
-	"""Run the site backup script and return its output."""
+	"""Run /opt/scripts/frappe_backup.sh.
+
+	- Bare-metal: executes via sudo directly.
+	- Docker: SSHes to the host server and runs the script there.
+
+	Docker requirements:
+	  • SSH key mounted into the container (default: /home/erpdev/.ssh/id_rsa).
+	  • Host accepts the key for BACKUP_SSH_USER (default: erpdev).
+	  • Optionally set BACKUP_SSH_HOST env-var to override auto-detected gateway IP.
+	"""
 	import subprocess
-	result = subprocess.run(
-		["sudo", "/opt/scripts/frappe_backup.sh"],
-		capture_output=True,
-		timeout=600,
-	)
+
+	script = os.environ.get("BACKUP_SCRIPT", "/opt/scripts/frappe_backup.sh")
+
+	if _is_docker():
+		host = os.environ.get("BACKUP_SSH_HOST") or _docker_host_ip()
+		user = os.environ.get("BACKUP_SSH_USER", "erpdev")
+		key  = os.environ.get("BACKUP_SSH_KEY",  "/home/erpdev/.ssh/id_rsa")
+		cmd = [
+			"ssh",
+			"-i", key,
+			"-o", "StrictHostKeyChecking=no",
+			"-o", "ConnectTimeout=10",
+			f"{user}@{host}",
+			f"sudo {script}",
+		]
+	else:
+		cmd = ["sudo", script]
+
+	result = subprocess.run(cmd, capture_output=True, timeout=600)
 	return {
 		"success": result.returncode == 0,
 		"stdout": result.stdout.decode(errors="replace").strip(),
