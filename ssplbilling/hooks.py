@@ -5,6 +5,10 @@ app_description = "Billing and custom app for Sundaram and Sons Private Ltd."
 app_email = "santhosh.sundaran007@gmail.com"
 app_license = "mit"
 
+website_route_rules = [
+	{"from_route": "/frontend/<path:path>", "to_route": "frontend"},
+]
+
 fixtures = [
 	{
 		"dt": "Custom Field",
