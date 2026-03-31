@@ -441,7 +441,8 @@ def update_sales_invoice(data=None, **kwargs):
             "tax_amount": float(data["freight_amount"]),
             "cost_center": data.get("cost_center") or "",
         })
-    else:
+    elif not data.get("tax_template"):
+        # No template, no explicit taxes, no freight — clear the table
         si.taxes = []
 
     si.set("incentive_system", [])
