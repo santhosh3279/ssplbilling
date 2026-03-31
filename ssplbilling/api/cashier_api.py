@@ -58,6 +58,8 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
     for inv in invoices:
         inv["grand_total"] = float(inv["grand_total"] or 0)
         inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
+        # Add item count
+        inv["items_count"] = frappe.db.count("Sales Invoice Item", {"parent": inv["name"]})
         result.append(inv)
 
     return result
