@@ -64,7 +64,7 @@
               Freed {{ clearResult.freed_gb }} GB — RAM now at {{ clearResult.ram_percent }}%
             </span>
             <span v-else>
-              Permission denied — process needs write access to /proc/sys/vm/drop_caches
+              Failed: {{ clearResult.error || 'permission denied' }}
             </span>
           </div>
         </div>

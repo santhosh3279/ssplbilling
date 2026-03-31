@@ -119,18 +119,20 @@ def get_system_stats():
 
 @frappe.whitelist()
 def clear_ram_cache():
-	"""Drop Linux page cache (requires the process to have write access to /proc/sys/vm/drop_caches)."""
+	"""Drop Linux page cache via sudo tee (requires sudoers rule for erpdev)."""
+	import subprocess
 	import psutil
 	mem_before = psutil.virtual_memory()
-	try:
-		with open("/proc/sys/vm/drop_caches", "w") as f:
-			f.write("3")
-		freed = True
-	except PermissionError:
-		freed = False
+	result = subprocess.run(
+		["sudo", "tee", "/proc/sys/vm/drop_caches"],
+		input=b"3",
+		capture_output=True,
+	)
+	freed = result.returncode == 0
 	mem_after = psutil.virtual_memory()
 	return {
 		"freed": freed,
+		"error": result.stderr.decode().strip() if not freed else "",
 		"ram_used_gb": round(mem_after.used / (1024 ** 3), 1),
 		"ram_total_gb": round(mem_after.total / (1024 ** 3), 1),
 		"ram_percent": round(mem_after.percent, 1),
