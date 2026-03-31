@@ -6,7 +6,7 @@ no_cache = 1
 
 def get_context(context):
 	assets_dir = os.path.join(
-		frappe.get_site_path(), "assets", "ssplbilling", "frontend", "assets"
+		os.path.dirname(frappe.get_site_path()), "assets", "ssplbilling", "frontend", "assets"
 	)
 	files = os.listdir(assets_dir)
 	css = next((f for f in files if f.startswith("index.") and f.endswith(".css")), None)
@@ -14,3 +14,4 @@ def get_context(context):
 
 	context.spa_css = f"/assets/ssplbilling/frontend/assets/{css}" if css else ""
 	context.spa_js = f"/assets/ssplbilling/frontend/assets/{js}" if js else ""
+	context.csrf_token = frappe.session.data.csrf_token
