@@ -95,30 +95,6 @@
           <div v-else class="mt-2 text-xs text-slate-500 text-center py-2">No active sessions</div>
         </div>
 
-        <!-- Active Sites Card -->
-        <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Sites</div>
-              <div class="mt-1 text-3xl font-black text-blue-400">{{ sites.length }}</div>
-              <div class="text-sm text-slate-400">{{ sites.length === 1 ? 'site instance' : 'site instances' }} running</div>
-            </div>
-            <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-blue-500">
-              <span class="text-xl">🌐</span>
-            </div>
-          </div>
-          <div class="space-y-1">
-            <div
-              v-for="site in sites"
-              :key="site"
-              class="flex items-center gap-2 rounded-lg bg-slate-900/60 px-3 py-2"
-            >
-              <span class="h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span>
-              <span class="font-mono text-xs text-slate-200">{{ site }}</span>
-            </div>
-          </div>
-        </div>
-
         <!-- Backup Card -->
         <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
           <div class="mb-4 flex items-center justify-between">
@@ -215,7 +191,6 @@ const props = defineProps({
 defineEmits(['close'])
 
 const stats = ref({ ram_used_gb: 0, ram_total_gb: 0, ram_percent: 0, cpu_percent: 0 })
-const sites = ref([])
 const sessionData = ref({ sessions: [], unique_users: 0, unique_ips: 0 })
 const clearing = ref(false)
 const backing = ref(false)
@@ -399,7 +374,6 @@ watch(() => props.show, (val) => {
     terminalLines.value = []
     terminalDone.value = false
     startPolling()
-    dashboardApi.getActiveSites().then(d => { if (d) sites.value = d.sites }).catch(() => {})
 
   } else {
     stopPolling()
