@@ -366,6 +366,7 @@
                       <span class="font-bold">{{ savedOrderName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
+                    <button v-if="billSaved && billDocStatus === 0" @click="submitOrder()" class="w-full rounded border border-green-600/50 bg-green-900/20 py-1.5 text-center text-xs font-semibold text-green-400 transition hover:bg-green-900/40">Submit Order</button>
                     <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Edit Order</button>
                     <button v-else-if="!billSaved" ref="saveButton" @click="saveOrder" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedOrderName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedOrderName ? 'Update Order' : 'Save Order (Ctrl+S)' }}</button>
                     <div class="flex gap-1">
@@ -1156,6 +1157,21 @@ async function saveOrder() {
     fetchSidebarBills()
   } catch (e) {
     alert('Error: ' + (e?.message || 'Failed to save purchase order'))
+  }
+}
+
+async function submitOrder(nameOverride) {
+  const oname = nameOverride || savedOrderName.value
+  if (!oname) return
+  if (!confirm(`Submit order ${oname}? This cannot be undone.`)) return
+  try {
+    const res = await apiPost('submit_purchase_order', { order_name: oname })
+    if (!nameOverride) billDocStatus.value = res?.docstatus ?? 1
+    const entry = sidebarBills.value.find(b => b.name === oname)
+    if (entry) entry.docstatus = res?.docstatus ?? 1
+    fetchSidebarBills()
+  } catch (e) {
+    alert('Submit failed: ' + (e?.message || 'Unknown error'))
   }
 }
 

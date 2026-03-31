@@ -381,3 +381,15 @@ def update_purchase_order(data):
 	po.save()
 
 	return {"order_name": po.name}
+
+@frappe.whitelist()
+def submit_purchase_order(order_name):
+	"""Submit a Draft Purchase Order."""
+	if not order_name:
+		frappe.throw("Order Name is required")
+	po = frappe.get_doc("Purchase Order", order_name)
+	if po.docstatus != 0:
+		frappe.throw(f"Purchase Order {order_name} is not in Draft state")
+	po.flags.ignore_permissions = True
+	po.submit()
+	return {"order_name": po.name, "docstatus": po.docstatus}
