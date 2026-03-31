@@ -97,47 +97,16 @@
         </button>
       </nav>
 
-      <!-- System Stats -->
-      <div class="border-t border-slate-700 px-3 py-3">
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">System</div>
-        <div class="rounded-lg bg-slate-900/60 px-3 py-2 space-y-2">
-          <!-- RAM -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-[10px] text-slate-400">RAM</span>
-              <span class="text-[10px] font-mono" :class="systemStats.ram_percent >= 80 ? 'text-red-400' : systemStats.ram_percent >= 60 ? 'text-amber-400' : 'text-slate-300'">
-                {{ systemStats.ram_used_gb }}GB / {{ systemStats.ram_total_gb }}GB
-              </span>
-            </div>
-            <div class="h-1.5 w-full rounded-full bg-slate-700 overflow-hidden">
-              <div class="h-full rounded-full transition-all duration-500"
-                :class="systemStats.ram_percent >= 80 ? 'bg-red-500' : systemStats.ram_percent >= 60 ? 'bg-amber-500' : 'bg-emerald-500'"
-                :style="{ width: systemStats.ram_percent + '%' }"
-              ></div>
-            </div>
-          </div>
-          <!-- CPU -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-[10px] text-slate-400">CPU</span>
-              <span class="text-[10px] font-mono" :class="systemStats.cpu_percent >= 80 ? 'text-red-400' : systemStats.cpu_percent >= 60 ? 'text-amber-400' : 'text-slate-300'">
-                {{ systemStats.cpu_percent }}%
-              </span>
-            </div>
-            <div class="h-1.5 w-full rounded-full bg-slate-700 overflow-hidden">
-              <div class="h-full rounded-full transition-all duration-500"
-                :class="systemStats.cpu_percent >= 80 ? 'bg-red-500' : systemStats.cpu_percent >= 60 ? 'bg-amber-500' : 'bg-emerald-500'"
-                :style="{ width: systemStats.cpu_percent + '%' }"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Settings section -->
       <div class="border-t border-slate-700 px-3 py-3">
         <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Settings</div>
 
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          @click="showSystemPerformance = true"
+        >
+          📊 System Performance
+        </button>
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="showGeneralSettings = true"
@@ -220,6 +189,12 @@
       @close="showGeneralSettings = false"
     />
 
+    <!-- SYSTEM PERFORMANCE -->
+    <SystemPerformance
+      :show="showSystemPerformance"
+      @close="showSystemPerformance = false"
+    />
+
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
       ref="custSearchModalRef"
@@ -275,6 +250,7 @@ import CustomerLedger from './CustomerLedger.vue'
 import StockLedger from './StockLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import GeneralSettings from '../components/GeneralSettings.vue'
+import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
@@ -392,18 +368,8 @@ const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
 const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
-// ==================== SYSTEM STATS ====================
-const systemStats = ref({ ram_used_gb: 0, ram_total_gb: 0, ram_percent: 0, cpu_percent: 0 })
-let statsInterval = null
-
-async function fetchSystemStats() {
-  try {
-    const d = await dashboardApi.getSystemStats()
-    if (d) systemStats.value = d
-  } catch (e) {
-    // silently ignore — non-critical
-  }
-}
+// ==================== SYSTEM PERFORMANCE ====================
+const showSystemPerformance = ref(false)
 
 // ==================== GENERAL SETTINGS ====================
 const showGeneralSettings = ref(false)
@@ -580,14 +546,11 @@ onMounted(() => {
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   fetchSettings()
   refreshItemCache('Sales') // Preload items for fast entry
-  fetchSystemStats()
-  statsInterval = setInterval(fetchSystemStats, 10000)
 })
 onUnmounted(() => {
   window.removeEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))
   window.removeEventListener('wb-global-item-search', openItemSearch)
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
-  clearInterval(statsInterval)
 })
 
 </script>

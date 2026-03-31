@@ -118,6 +118,27 @@ def get_system_stats():
 
 
 @frappe.whitelist()
+def clear_ram_cache():
+	"""Drop Linux page cache (requires the process to have write access to /proc/sys/vm/drop_caches)."""
+	import psutil
+	mem_before = psutil.virtual_memory()
+	try:
+		with open("/proc/sys/vm/drop_caches", "w") as f:
+			f.write("3")
+		freed = True
+	except PermissionError:
+		freed = False
+	mem_after = psutil.virtual_memory()
+	return {
+		"freed": freed,
+		"ram_used_gb": round(mem_after.used / (1024 ** 3), 1),
+		"ram_total_gb": round(mem_after.total / (1024 ** 3), 1),
+		"ram_percent": round(mem_after.percent, 1),
+		"freed_gb": round((mem_before.used - mem_after.used) / (1024 ** 3), 1),
+	}
+
+
+@frappe.whitelist()
 def get_billing_settings():
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current user."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

@@ -51,6 +51,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Drop Linux page cache and return updated RAM stats.
+   */
+  clearRamCache: () => {
+    return frappePost(`${API_BASE}.clear_ram_cache`)
+  },
+
+  /**
    * Fetch all customers for local sync.
    */
   fetchAllCustomersForSync: () => {
