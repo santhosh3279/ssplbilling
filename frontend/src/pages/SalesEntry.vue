@@ -1613,10 +1613,6 @@ async function loadInvoice(invoiceName) {
     savedInvoiceName.value = inv.name
     billDocStatus.value = inv.docstatus
     billSaved.value = true
-    // Auto-enter edit mode for draft invoices
-    if (inv.docstatus === 0) {
-      billSaved.value = false
-    }
     incentiveRows.value = (inv.incentive_system || []).map(r => ({
       employee: r.employee || '', employee_name: r.employee_name || '',
       role: r.role || '', points: parseFloat(r.points) || 0,
@@ -1634,8 +1630,6 @@ async function loadInvoice(invoiceName) {
         address_line1: ""
       }
     }
-
-    nextTick(() => customerInput.value?.focus())
   } catch (e) {
     alert('Error loading invoice: ' + (e.message || 'Unknown error'))
   }
