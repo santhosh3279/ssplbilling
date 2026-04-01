@@ -916,6 +916,14 @@ async function submitAllocation() {
     if (res.status === 'success') {
       selectedInvoice.value.outstanding_amount = res.outstanding
       selectedInvoice.value.posting_date = res.posting_date
+      selectedInvoice.value.due_date = res.due_date
+      
+      // Update sidebar list if needed
+      const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
+      if (idx !== -1) {
+        invoices.value[idx].posting_date = res.posting_date
+      }
+
       showUnallocatedModal.value = false
       successMsg.value = "Payment allocated successfully!"
       setTimeout(() => successMsg.value = '', 3000)

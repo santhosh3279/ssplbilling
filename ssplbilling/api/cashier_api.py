@@ -174,6 +174,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		today_str = frappe.utils.today()
 		if str(si.posting_date) < today_str:
 			si.posting_date = today_str
+			si.posting_time = frappe.utils.nowtime()
 
 		si.due_date = data.get("due_date") or today_str
 		if si.get("payment_schedule"):
@@ -312,6 +313,7 @@ def update_invoice_advances(invoice_name, total_amount):
 	if str(si.posting_date) < today_str:
 		si.posting_date = today_str
 		si.due_date = today_str
+		si.posting_time = frappe.utils.nowtime()
 
 	amount_left = float(total_amount or 0)
 	if amount_left <= 0:
@@ -320,7 +322,8 @@ def update_invoice_advances(invoice_name, total_amount):
 		return {
 			"status": "success", 
 			"outstanding": float(si.outstanding_amount),
-			"posting_date": str(si.posting_date)
+			"posting_date": str(si.posting_date),
+			"due_date": str(si.due_date)
 		}
 
 	# Fetch fresh list of unallocated payments
@@ -348,6 +351,7 @@ def update_invoice_advances(invoice_name, total_amount):
 		"status": "success", 
 		"grand_total": float(si.grand_total), 
 		"outstanding": float(si.outstanding_amount),
-		"posting_date": str(si.posting_date)
+		"posting_date": str(si.posting_date),
+		"due_date": str(si.due_date)
 	}
 
