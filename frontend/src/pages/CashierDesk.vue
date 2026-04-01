@@ -459,13 +459,67 @@
       :invoice-name="selectedInvoice?.name"
       @close="showPrintModal = false"
     />
+
+    <!-- UNALLOCATED CASH MODAL -->
+    <transition name="fade">
+      <div v-if="showUnallocatedModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl shadow-blue-500/10">
+          <div class="mb-4 flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-slate-100 leading-tight">Unallocated Cash Found</h3>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Reconcile payment for {{ selectedInvoice?.customer }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="rounded-xl bg-slate-800/50 p-4 border border-slate-700/50">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Balance</span>
+                <span class="font-mono text-lg font-black text-emerald-400">₹{{ fmt(unallocatedAmountTotal) }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Bill Amount</span>
+                <span class="font-mono text-sm font-bold text-slate-300">₹{{ fmt(selectedInvoice?.grand_total) }}</span>
+              </div>
+              <div v-if="selectedInvoice?.outstanding_amount < selectedInvoice?.grand_total" class="flex items-center justify-between mt-1 pt-1 border-t border-slate-700/50">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Remaining Outstanding</span>
+                <span class="font-mono text-sm font-bold text-blue-400">₹{{ fmt(selectedInvoice?.outstanding_amount) }}</span>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 ml-1">Amount to Allocate</label>
+              <input
+                ref="unallocatedInput"
+                type="number"
+                v-model.number="unallocatedAmountToAllocate"
+                class="w-full rounded-xl border-2 border-slate-700 bg-slate-800 px-4 py-3 font-mono text-xl font-black text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                @keydown.enter="submitAllocation"
+              />
+            </div>
+          </div>
+
+          <div class="mt-6 flex gap-3">
+            <button @click="showUnallocatedModal = false" class="flex-1 rounded-xl bg-slate-800 py-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-all">
+              Cancel
+            </button>
+            <button @click="submitAllocation" class="flex-[2] rounded-xl bg-blue-600 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 active:scale-95 transition-all">
+              Submit Allocation
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { session } from '../session'
-import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet } from '../api.js'
+import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
@@ -488,6 +542,7 @@ const searchQuery = ref('')
 
 const showCardRefModal = ref(false)
 const showPrintModal = ref(false)
+const showUnallocatedModal = ref(false)
 const cardRefNo = ref('')
 const showOpeningRequiredModal = ref(false)
 
@@ -495,10 +550,15 @@ const showOpeningRequiredModal = ref(false)
 useSubwindowWatcher(showCardRefModal)
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showOpeningRequiredModal)
+useSubwindowWatcher(showUnallocatedModal)
 
 const invoices = ref([])
 const selectedInvoice = ref(null)
 const previewItems = ref([])
+const unallocatedPayments = ref([])
+const unallocatedAmountToAllocate = ref(0)
+const unallocatedAmountTotal = ref(0)
+const selectedUnallocatedPayment = ref(null)
 const isCredit = ref(false)
 const dueDate = ref('')
 const isSubmitting = ref(false)
@@ -529,6 +589,7 @@ const discountInput = ref(null)
 const dueDateInput = ref(null)
 const cardRefInput = ref(null)
 const dateInput = ref(null)
+const unallocatedInput = ref(null)
 
 // ==================== COMPUTED ====================
 const userInitials = computed(() => {
@@ -557,9 +618,13 @@ const todayStr = computed(() => {
 
 const amountToCollect = computed(() => {
   if (!selectedInvoice.value) return 0
-  return selectedInvoice.value.docstatus === 1 
-    ? Number(selectedInvoice.value.outstanding_amount || 0) 
-    : Number(selectedInvoice.value.grand_total || 0)
+  const gt = Number(selectedInvoice.value.grand_total || 0)
+  const os = selectedInvoice.value.outstanding_amount !== undefined && selectedInvoice.value.outstanding_amount !== null
+    ? Number(selectedInvoice.value.outstanding_amount)
+    : gt
+    
+  if (selectedInvoice.value.docstatus === 1) return os
+  return os < gt ? os : gt
 })
 
 const totalPaid = computed(() => {
@@ -685,6 +750,22 @@ async function selectInvoice(inv) {
     previewItems.value = details.items || []
     payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
     await loadSeriesSettings(details.naming_series)
+
+    // Check for Unallocated Cash
+    const unallocated = await frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
+      customer: details.customer
+    })
+    
+    const totalUnallocated = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
+    const alreadyApplied = (details.advances || []).reduce((acc, a) => acc + Number(a.allocated_amount || 0), 0)
+    
+    if (totalUnallocated > 0.005 && alreadyApplied < 0.005) {
+      unallocatedAmountTotal.value = totalUnallocated
+      const billAmount = details.outstanding_amount || details.grand_total
+      unallocatedAmountToAllocate.value = Math.min(totalUnallocated, billAmount)
+      showUnallocatedModal.value = true
+      nextTick(() => unallocatedInput.value?.focus())
+    }
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
   } finally {
@@ -818,6 +899,29 @@ async function confirmCardRef() {
   if (!cardRefNo.value) return
   showCardRefModal.value = false
   await processPayment()
+}
+
+async function submitAllocation() {
+  if (unallocatedAmountToAllocate.value <= 0) {
+    showUnallocatedModal.value = false
+    return
+  }
+  
+  try {
+    const res = await frappePost('ssplbilling.api.cashier_api.update_invoice_advances', {
+      invoice_name: selectedInvoice.value.name,
+      total_amount: unallocatedAmountToAllocate.value
+    })
+    
+    if (res.status === 'success') {
+      selectedInvoice.value.outstanding_amount = res.outstanding
+      showUnallocatedModal.value = false
+      successMsg.value = "Payment allocated successfully!"
+      setTimeout(() => successMsg.value = '', 3000)
+    }
+  } catch (e) {
+    errorMsg.value = "Allocation failed: " + e.message
+  }
 }
 
 // Shortcut Handlers

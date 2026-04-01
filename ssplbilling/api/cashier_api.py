@@ -96,6 +96,7 @@ def get_sales_invoice(invoice_name):
         "loading_amount": loading_amount,
         "other_charges_amount": other_charges_amount,
         "grand_total": float(si.grand_total or 0),
+        "outstanding_amount": float(si.outstanding_amount or 0),
         "tax_template": si.taxes_and_charges or "",
         "cost_center": cost_center or "",
         "price_list": si.selling_price_list or "",
@@ -125,6 +126,13 @@ def get_sales_invoice(invoice_name):
                 "points": float(row.points or 0),
             }
             for row in (si.incentive_system or [])
+        ],
+        "advances": [
+            {
+                "reference_name": row.reference_name,
+                "allocated_amount": float(row.allocated_amount or 0)
+            }
+            for row in (si.advances or [])
         ],
     }
 
@@ -156,7 +164,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	if not is_credit:
 		total_payment = cash_amount + upi_amount + card_amount + discount_amount
-		target_amount = float(si.outstanding_amount if si.docstatus == 1 else grand_total)
+		# Use outstanding_amount even for Drafts if it's already reduced by Advances
+		target_amount = float(si.outstanding_amount if (si.docstatus == 1 or si.outstanding_amount < si.grand_total) else grand_total)
 		if total_payment < target_amount - 0.01:
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
@@ -268,3 +277,57 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		if pe_name: payment_entries.append(pe_name)
 
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}
+
+@frappe.whitelist()
+def get_customer_unallocated_cash(customer):
+	"""Returns a list of unallocated Payment Entries for a customer."""
+	if not customer:
+		return []
+	return frappe.get_all(
+		"Payment Entry",
+		filters={
+			"party_type": "Customer",
+			"party": customer,
+			"docstatus": 1,
+			"unallocated_amount": [">", 0],
+		},
+		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no"],
+		order_by="posting_date asc",
+	)
+
+@frappe.whitelist()
+def update_invoice_advances(invoice_name, total_amount):
+	"""Update the advances table by automatically allocating total_amount across available unallocated payments."""
+	si = frappe.get_doc("Sales Invoice", invoice_name)
+	if si.docstatus != 0:
+		frappe.throw("Advances can only be updated for Draft invoices.")
+
+	amount_left = float(total_amount or 0)
+	if amount_left <= 0:
+		si.set("advances", [])
+		si.save(ignore_permissions=True)
+		return {"status": "success", "outstanding": float(si.outstanding_amount)}
+
+	# Fetch fresh list of unallocated payments
+	unallocated_payments = get_customer_unallocated_cash(si.customer)
+	
+	si.set("advances", [])
+	for pe_data in unallocated_payments:
+		if amount_left <= 0.005:
+			break
+			
+		alloc_amount = min(float(pe_data.unallocated_amount), amount_left)
+		
+		si.append("advances", {
+			"reference_type": "Payment Entry",
+			"reference_name": pe_data.name,
+			"remarks": f"Allocated from {pe_data.name} via Cashier Desk",
+			"advance_amount": pe_data.unallocated_amount,
+			"allocated_amount": alloc_amount,
+			"ref_no": pe_data.reference_no,
+		})
+		amount_left -= alloc_amount
+
+	si.save(ignore_permissions=True)
+	return {"status": "success", "grand_total": float(si.grand_total), "outstanding": float(si.outstanding_amount)}
+
