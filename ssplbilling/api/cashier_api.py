@@ -177,6 +177,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			si.posting_time = frappe.utils.nowtime()
 
 		si.due_date = data.get("due_date") or today_str
+		if str(si.due_date) < str(si.posting_date):
+			si.due_date = si.posting_date
+
 		if si.get("payment_schedule"):
 			si.payment_schedule = []
 		si.submit()
@@ -314,6 +317,13 @@ def update_invoice_advances(invoice_name, total_amount):
 		si.posting_date = today_str
 		si.due_date = today_str
 		si.posting_time = frappe.utils.nowtime()
+
+	# Double check due_date to prevent "Due Date cannot be before Posting Date"
+	if str(si.due_date) < str(si.posting_date):
+		si.due_date = si.posting_date
+
+	if si.get("payment_schedule"):
+		si.payment_schedule = []
 
 	amount_left = float(total_amount or 0)
 	if amount_left <= 0:
