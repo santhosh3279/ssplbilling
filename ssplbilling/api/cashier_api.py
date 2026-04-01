@@ -170,7 +170,12 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
 	if si.docstatus == 0:
-		si.due_date = data.get("due_date") or frappe.utils.today()
+		# Update past dated bills to today
+		today_str = frappe.utils.today()
+		if str(si.posting_date) < today_str:
+			si.posting_date = today_str
+
+		si.due_date = data.get("due_date") or today_str
 		if si.get("payment_schedule"):
 			si.payment_schedule = []
 		si.submit()
@@ -302,11 +307,21 @@ def update_invoice_advances(invoice_name, total_amount):
 	if si.docstatus != 0:
 		frappe.throw("Advances can only be updated for Draft invoices.")
 
+	# Update past dated bills to today
+	today_str = frappe.utils.today()
+	if str(si.posting_date) < today_str:
+		si.posting_date = today_str
+		si.due_date = today_str
+
 	amount_left = float(total_amount or 0)
 	if amount_left <= 0:
 		si.set("advances", [])
 		si.save(ignore_permissions=True)
-		return {"status": "success", "outstanding": float(si.outstanding_amount)}
+		return {
+			"status": "success", 
+			"outstanding": float(si.outstanding_amount),
+			"posting_date": str(si.posting_date)
+		}
 
 	# Fetch fresh list of unallocated payments
 	unallocated_payments = get_customer_unallocated_cash(si.customer)
@@ -329,5 +344,10 @@ def update_invoice_advances(invoice_name, total_amount):
 		amount_left -= alloc_amount
 
 	si.save(ignore_permissions=True)
-	return {"status": "success", "grand_total": float(si.grand_total), "outstanding": float(si.outstanding_amount)}
+	return {
+		"status": "success", 
+		"grand_total": float(si.grand_total), 
+		"outstanding": float(si.outstanding_amount),
+		"posting_date": str(si.posting_date)
+	}
 
