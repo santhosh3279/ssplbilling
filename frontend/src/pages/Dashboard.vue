@@ -482,13 +482,17 @@ async function fetchSettings() {
     // Check cache first
     let settings = null
     const cached = JSON.parse(localStorage.getItem(BILLING_SETTINGS_CACHE_KEY) || 'null')
-    if (cached && (Date.now() - cached.ts) < BILLING_SETTINGS_TTL) {
+    const cacheValid = cached &&
+      (Date.now() - cached.ts) < BILLING_SETTINGS_TTL &&
+      cached.data?._current_user === session.user.value
+    if (cacheValid) {
       settings = cached.data
     } else {
       settings = await dashboardApi.getBillingSettings()
       if (settings) {
-        localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
-        localStorage.setItem(GENERAL_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
+        const settingsWithUser = { ...settings, _current_user: session.user.value }
+        localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
+        localStorage.setItem(GENERAL_SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
       }
     }
     

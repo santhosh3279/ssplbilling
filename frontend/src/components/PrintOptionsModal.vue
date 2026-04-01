@@ -153,18 +153,27 @@ const success        = ref('')
 
 const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
 
+// Returns printer_settings rows for the current user from the billing settings cache
+function getUserPrinterSettings() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_CACHE_KEY) || 'null')
+    const allRows = cached?.data?.printer_settings || []
+    const currentUser = cached?.data?._current_user || ''
+    // Filter by current user; fall back to all rows if no user field is set
+    const userRows = allRows.filter(ps => ps.user === currentUser)
+    return userRows.length ? userRows : allRows.filter(ps => !ps.user)
+  } catch (e) {
+    return []
+  }
+}
+
 function syncPrinter() {
   const template = selectedTemplate.value
   if (!template || !printers.value.length) return
 
-  let targetPrinter = ''
-  try {
-    const cached = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_CACHE_KEY) || 'null')
-    if (cached?.data?.printer_settings) {
-      const mapping = cached.data.printer_settings.find(ps => ps.template === template)
-      if (mapping) targetPrinter = mapping.printer
-    }
-  } catch (e) {}
+  const userRows = getUserPrinterSettings()
+  const mapping = userRows.find(ps => ps.template === template)
+  const targetPrinter = mapping?.printer || ''
 
   if (targetPrinter && printers.value.some(pr => pr.name === targetPrinter)) {
     selectedPrinter.value = targetPrinter
@@ -180,6 +189,7 @@ function syncPrinter() {
 }
 
 watch(selectedTemplate, () => syncPrinter())
+// Note: no watch on selectedPrinter — changing printer must not auto-change the template
 
 function handleKeydown(e) {
   if (e.key === 'Escape') {
@@ -222,17 +232,34 @@ async function loadSettings() {
   loading.value = true
   error.value = ''
   try {
-    const [p, t] = await Promise.all([
-      frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Print Template',
-        filters: JSON.stringify(props.doctype ? { document_type: props.doctype } : { document_type: ['is', 'not set'] }),
-        fields: JSON.stringify(['name']),
-        limit: 50,
-      }),
-    ])
-    printers.value  = p || []
-    templates.value = t || []
+    const userRows = getUserPrinterSettings()
+
+    if (userRows.length) {
+      // Populate templates and printers from the user's printer_settings rows
+      const uniqueTemplates = [...new Map(userRows.map(r => [r.template, { name: r.template }])).values()]
+        .filter(t => t.name)
+      const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
+
+      // Still fetch all printers for status info, then filter to user's printers
+      const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
+      const filteredPrinters = (allPrinters || []).filter(p => uniquePrinterNames.includes(p.name))
+      // Fall back to all printers if none matched (misconfiguration guard)
+      printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
+      templates.value = uniqueTemplates
+    } else {
+      // No user-specific rows — fall back to fetching all printers + templates
+      const [p, t] = await Promise.all([
+        frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
+        frappeGet('frappe.client.get_list', {
+          doctype: 'Print Template',
+          filters: JSON.stringify(props.doctype ? { document_type: props.doctype } : { document_type: ['is', 'not set'] }),
+          fields: JSON.stringify(['name']),
+          limit: 50,
+        }),
+      ])
+      printers.value  = p || []
+      templates.value = t || []
+    }
 
     if (props.initialPrintFormat && templates.value.some(tmp => tmp.name === props.initialPrintFormat)) {
       selectedTemplate.value = props.initialPrintFormat

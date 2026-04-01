@@ -6,10 +6,17 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "user",
   "printer",
   "template"
  ],
  "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
   {
    "fieldname": "printer",
    "fieldtype": "Link",

@@ -346,6 +346,7 @@ def get_billing_settings():
 		],
 		"printer_settings": [
 			{
+				"user": r.user or "",
 				"printer": r.printer or "",
 				"template": r.template or "",
 			}

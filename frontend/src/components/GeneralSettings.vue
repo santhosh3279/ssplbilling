@@ -168,18 +168,20 @@
           </div>
 
           <!-- ── Printer Settings ── -->
-          <div v-if="rawSettings.printer_settings?.length">
+          <div v-if="visiblePrinterSettings.length">
             <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Printer Settings</div>
             <div class="overflow-auto rounded-lg border border-slate-700">
               <table class="w-full text-[10px]">
                 <thead class="bg-slate-800">
                   <tr>
+                    <th v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">User</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Printer</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Print Template</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="ps in rawSettings.printer_settings" :key="ps.printer + ps.template" class="border-t border-slate-700 hover:bg-slate-800/40">
+                  <tr v-for="ps in visiblePrinterSettings" :key="ps.user + ps.printer + ps.template" class="border-t border-slate-700 hover:bg-slate-800/40">
+                    <td v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ ps.user || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 font-medium text-slate-200">{{ ps.printer || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ ps.template || '--' }}</td>
                   </tr>
@@ -400,6 +402,12 @@ const visibleUserSeries = computed(() => {
 function getAlpha(s) {
   return (s || '').replace(/[^A-Za-z]/g, '')
 }
+
+const visiblePrinterSettings = computed(() => {
+  if (!rawSettings.value?.printer_settings) return []
+  if (isAdmin.value) return rawSettings.value.printer_settings
+  return rawSettings.value.printer_settings.filter(ps => ps.user === currentUser.value)
+})
 
 const visibleBillingSeries = computed(() => {
   if (!rawSettings.value?.billing_series) return []
