@@ -323,7 +323,7 @@
                     <td class="px-1 py-0.5 text-center border border-slate-700">
                       <span class="rounded px-1 py-0.5 text-[9px] uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
                     </td>
-                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
+                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px] text-lg" :title="pl.name">{{ pl.name }}</td>
                     <td class="px-1 py-0.5 text-right font-mono text-amber-400 border border-slate-700 text-2xl">{{ encPrice(pl.rate || 0) }}</td>
                   </tr>
                 </tbody>
