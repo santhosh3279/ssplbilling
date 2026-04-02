@@ -1221,17 +1221,38 @@ async function loadItemInsight(code, itemName = '', uom = '') {
   // 1. Fetch from local cache (Instant)
   const cached = lookupItemInCache(code)
   const localHistory = getItemHistoryFromCache(code)
-  
+
+  // 2. Map all available price lists with UOM-aware rates
+  const resolvedPriceLists = availablePriceLists.value.map(plName => {
+    let rate = 0
+    // Try UOM specific price list first
+    if (cached?.uom_price_lists?.[plName]?.[uom] != null) {
+      rate = cached.uom_price_lists[plName][uom]
+    } else if (cached?.price_lists) {
+      // Fallback to base price list rate (applying conversion if needed, though usually handled by rateForUom)
+      const pl = cached.price_lists.find(p => p.name === plName)
+      if (pl) {
+        // If we have a cached object, we can use rateForUom logic
+        rate = rateForUom(cached, uom, plName)
+      }
+    }
+
+    return {
+      name: plName,
+      type: 'selling', // SalesEntry is for selling
+      rate: rate
+    }
+  })
+
   selectedItemData.value = {
     item_code: code,
     item_name: itemName || cached?.item_name || '',
     uom: uom || cached?.uom || '',
     stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
     previousPurchases: localHistory.slice(0, 10), // Show latest 10 from cache
-    priceLists: cached?.price_lists || [],
+    priceLists: resolvedPriceLists,
   }
 }
-
 watch(selectedRow, async (idx) => {
   if (idx >= 0 && idx < items.value.length && !items.value[idx].deleted) {
     const item = items.value[idx]
@@ -1261,6 +1282,12 @@ watch(priceList, () => {
       const price = rateForUom(cached, newPending.value.uom)
       if (price > 0) newPending.value.rate = price
     }
+  }
+
+  // Update insight panel if a row is selected
+  if (selectedRow.value >= 0 && selectedRow.value < items.value.length) {
+    const item = items.value[selectedRow.value]
+    loadItemInsight(item.item_code, item.item_name, item.uom)
   }
 })
 
