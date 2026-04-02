@@ -421,18 +421,29 @@
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
                     <div class="text-xl text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Payable</div>
-                    <div class="font-mono text-4xl text-blue-500 leading-none">{{ grandTotal.toFixed(2) }}</div>                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
+                    
+                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
                       <span class="font-normal">{{ savedInvoiceName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
+
                     <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-lg font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify Bill</button>
                     <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-1.5 text-center text-lg font-semibold text-white transition shadow" :class="savedInvoiceName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
+                    
                     <div class="flex gap-1">
                       <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-1.5 text-center text-lg font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
                       <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-1.5 text-center text-lg font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
                     </div>
+
                     <button @click="showIncentiveModal = true" class="w-full rounded border border-indigo-700/50 bg-indigo-900/20 py-1.5 text-center text-lg font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">👥 Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
+                    
+                    <div class="mt-auto rounded-xl border border-blue-500/30 bg-blue-950/40 p-4 shadow-inner">
+                      <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400/80 mb-1">Total Payable</div>
+                      <div class="flex items-baseline gap-1">
+                        <span class="text-2xl font-bold text-blue-500">₹</span>
+                        <span class="font-mono text-5xl font-black text-blue-400 leading-none drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">{{ grandTotal.toFixed(2) }}</span>
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
