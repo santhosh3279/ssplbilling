@@ -19,8 +19,8 @@
       >
         <div class="flex justify-between items-center gap-4">
           <div class="min-w-0 flex-1">
-            <div class="text-xl font-bold text-slate-100 truncate">{{ item.item_name }}</div>
-            <div class="text-xs font-mono text-slate-500">{{ item.item_code }}</div>
+            <div class="text-3xl font-bold text-slate-100 truncate">{{ item.item_name }}</div>
+            <div class="text-sm font-mono text-slate-500">{{ item.item_code }}</div>
           </div>
           <div class="flex flex-col items-end shrink-0">
             <div class="text-2xl font-mono font-bold text-amber-400">{{ formatPrice(getItemPrice(item)) }}</div>
