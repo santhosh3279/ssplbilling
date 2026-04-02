@@ -287,7 +287,7 @@
         <!-- BOTTOM PANEL (Insight + Settings + Calculation) -->
         <div class="flex flex-[4] border-t border-slate-700 bg-slate-900 overflow-hidden">
           <!-- Insights Column (Previous Sales, Price Lists, Stock) -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:240px;max-width:280px;scrollbar-width:none">
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:360px;max-width:420px;scrollbar-width:none">
             <!-- 1. Previous Sales row -->
             <div class="flex flex-col border-b border-slate-700">
               <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Sales<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
@@ -365,7 +365,7 @@
           </div>
 
           <!-- Settings Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:315px;max-width:360px;scrollbar-width:none">
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;scrollbar-width:none">
 <div class="flex flex-col gap-2 p-2">
               <div class="flex gap-1">
                 <button @click="exportItems" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Export</button>
