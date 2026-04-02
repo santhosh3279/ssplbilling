@@ -53,20 +53,13 @@
                 ₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
               </span>
             </div>
-            <div class="flex flex-col flex-1">
+            <div class="flex flex-col flex-[0.6]">
               <span class="text-[10px] font-bold uppercase text-slate-500">Item Name</span>
-              <span class="text-lg text-slate-200 font-semibold">{{ results[selectedIdx].item_name }}</span>
+              <span class="text-lg text-slate-200 font-semibold truncate">{{ results[selectedIdx].item_name }}</span>
             </div>
-          </div>
-
-          <!-- All Price Lists (Encrypted) -->
-          <div v-if="insightData?.priceLists?.length" class="flex flex-col gap-1 border-t border-slate-700 pt-2">
-            <span class="text-[10px] font-bold uppercase text-slate-500">All Price Lists</span>
-            <div class="flex flex-wrap gap-3">
-              <span v-for="pl in insightData.priceLists" :key="pl.name" class="rounded bg-amber-900/20 px-2.5 py-1 text-sm border border-amber-800">
-                <span class="text-slate-400 text-[10px] uppercase font-bold mr-1">{{ pl.name }}:</span>
-                <span class="font-mono font-bold text-amber-400">₹{{ encPrice(pl.rate || 0) }}</span>
-              </span>
+            <div class="flex flex-col flex-[0.4]">
+              <span class="text-[10px] font-bold uppercase text-slate-500">Default Supplier</span>
+              <span class="text-lg text-slate-400 font-semibold truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
             </div>
           </div>
         </div>
