@@ -1547,19 +1547,25 @@ async function pickItem(item) {
 
   if (itemSearchTargetRow !== null) {
     const row = items.value[itemSearchTargetRow]
+    const itemChanged = row.item_code !== item.item_code
+    
     row.item_code = item.item_code
     row.item_name = item.item_name
-    row.uom = item.uom
-    row.uoms = item.uoms || []
-    row.rate = finalRate
-    row.discount = row.discount || 0
-    row.tax_rate = finalTax
-    row.warehouse = finalWh
     row.deleted = false
+    
+    if (itemChanged) {
+      row.uom = item.uom
+      row.uoms = item.uoms || []
+      row.rate = finalRate
+      row.discount = 0
+      row.tax_rate = finalTax
+      row.warehouse = finalWh
+      applyDiscountRuleForRow(itemSearchTargetRow)
+      applyCustomerPricingForRow(itemSearchTargetRow)
+    }
+    
     if (!row._rowKey) row._rowKey = makeRowKey()
     selectedRow.value = itemSearchTargetRow
-    applyDiscountRuleForRow(itemSearchTargetRow)
-    applyCustomerPricingForRow(itemSearchTargetRow)
     focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code

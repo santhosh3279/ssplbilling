@@ -224,7 +224,7 @@
                 <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted, 'bg-red-900/20': item.deleted, 'hover:bg-slate-800/40': !item.deleted && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="p-0 border-r border-slate-700">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown="handleQuickSearchKeydown" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onCodeFocus(idx)" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown="handleQuickSearchKeydown" />
                     <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
                   <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : 'text-slate-200'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
@@ -898,6 +898,7 @@ function closeSupplierSearchModal() {
 // ==================== STATE ====================
 const items = ref([])
 const selectedRow = ref(-1)
+const editingOriginalCode = ref(null)
 const newItemCode = ref('')
 const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
@@ -1127,12 +1128,28 @@ function onRowKeydown(e, idx) {
 }
 
 // ==================== ITEM ENTRY ====================
+function onCodeFocus(idx) { editingOriginalCode.value = items.value[idx].item_code }
+
 async function onCodeEnter(idx) {
   const code = items.value[idx].item_code.trim(); if (!code) return; items.value[idx].item_code = code
   const r = await lookupItem(code)
   if (r) {
-    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].uoms = r.uoms || []; items.value[idx].uom_price_lists = r.uom_price_lists || {}; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
-    loadItemInsight(code, r.item_name, r.uom)
+    const resolvedCode = r.item_code || code
+    const originalCode = editingOriginalCode.value
+    items.value[idx].item_code = resolvedCode
+    
+    if (resolvedCode !== originalCode) {
+      items.value[idx].item_name = r.item_name; 
+      items.value[idx].uom = r.uom; 
+      items.value[idx].uoms = r.uoms || []; 
+      items.value[idx].uom_price_lists = r.uom_price_lists || {}; 
+      items.value[idx].rate = r.rate; 
+      items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; 
+      items.value[idx].warehouse = r.warehouse; 
+      items.value[idx].deleted = false;
+    }
+    
+    loadItemInsight(resolvedCode, r.item_name, r.uom)
     focusField('qty', idx)
   }
   else openSearch(code, idx)
@@ -1294,15 +1311,21 @@ async function pickItem(item) {
 
   if (itemSearchTargetRow !== null) {
     const row = items.value[itemSearchTargetRow]
+    const itemChanged = row.item_code !== item.item_code
+    
     row.item_code = item.item_code
     row.item_name = finalName
-    row.uom = finalUom
-    row.uoms = finalUoms
-    row.uom_price_lists = finalUomPriceLists
-    row.rate = finalRate
-    row.tax_rate = finalTax
-    row.warehouse = finalWh
     row.deleted = false
+    
+    if (itemChanged) {
+      row.uom = finalUom
+      row.uoms = finalUoms
+      row.uom_price_lists = finalUomPriceLists
+      row.rate = finalRate
+      row.tax_rate = finalTax
+      row.warehouse = finalWh
+    }
+    
     selectedRow.value = itemSearchTargetRow
     focusField('qty', itemSearchTargetRow)
   } else {
