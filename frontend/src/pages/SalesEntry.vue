@@ -689,7 +689,7 @@
       is-sub-window
       :item-code="savePricePopup.item_code"
       :selected-price-list="priceList"
-      :initial-discount="savePricePopup.discount_percentage"
+      :initial-factor="savePricePopup.multiplication_factor"
       @close="showPriceListUpdate = false"
       @saved="onPriceListSaved"
     />
@@ -1050,15 +1050,19 @@ async function loadCustomerPricing(cust) {
 function applyCustomerPricingForRow(idx) {
   const item = items.value[idx]
   if (!item || item.deleted || item._is_free || item._rule_discount != null) return
-  const disc = customerPricing.value[item.item_code]
-  if (disc != null && disc > 0) {
-    item.discount = disc
+  
+  const factor = customerPricing.value[item.item_code]
+  if (factor != null && Math.abs(factor - 1) > 0.0001) {
+    // Multiplication factor should be applied to the base rate for the current UOM
+    const cached = lookupItemInCache(item.item_code)
+    const baseRate = rateForUom(cached, item.uom) || item.rate
+    item.rate = baseRate * factor
     item._customer_pricing = true
   }
 }
 
 // Save-price popup
-const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', discount_percentage: 0, rate: 0, uom: '' })
+const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', multiplication_factor: 1, rate: 0, uom: '' })
 let _rateAtFocus = null
 let _discAtFocus = null
 
@@ -1072,25 +1076,27 @@ function onRateBlur(idx) {
   const rateChanged = _rateAtFocus !== null && newRate !== _rateAtFocus
   _rateAtFocus = null
   if (!rateChanged) return
-  item.discount = 0
+  
+  // Clear any previous customer pricing for this row if rate was manually edited
   item._customer_pricing = false
+  
   if (!customer.value || item._rule_discount != null) return
-  // Compute discount vs cached list price and offer to save
+  
+  // Compute multiplication factor vs cached list price and offer to save
   const cached = lookupItemInCache(item.item_code)
-  const listRate = (cached?.price || cached?.rate) || newRate
-  const discPct = listRate > 0 ? Math.max(0, Math.round(((listRate - newRate) / listRate) * 10000) / 100) : 0
-  if (discPct >= 0) _triggerSavePricePopup(idx, discPct)
+  const listRate = rateForUom(cached, item.uom) || newRate
+  const factor = listRate > 0 ? (newRate / listRate) : 1
+  
+  // If factor is close enough to 1, don't bother
+  if (Math.abs(factor - 1) > 0.0001) {
+    _triggerSavePricePopup(idx, factor)
+  }
 }
 
 function onDiscountBlur(idx) {
-  const item = items.value[idx]
-  if (!item || !customer.value || item._rule_discount != null) { _discAtFocus = null; return }
-  if (_discAtFocus === null || item.discount === _discAtFocus) { _discAtFocus = null; return }
   _discAtFocus = null
-  _triggerSavePricePopup(idx, item.discount || 0)
 }
-
-function _triggerSavePricePopup(idx, discPct) {
+function _triggerSavePricePopup(idx, factor) {
   const item = items.value[idx]
   if (!item?.item_code) return
   savePricePopup.value = { 
@@ -1098,18 +1104,17 @@ function _triggerSavePricePopup(idx, discPct) {
     idx, 
     item_code: item.item_code, 
     item_name: item.item_name, 
-    discount_percentage: discPct,
+    multiplication_factor: factor,
     rate: item.rate,
     uom: item.uom
   }
-  nextTick(() => updatePricelistBtn.value?.focus())
 }
 
 async function confirmSavePrice() {
-  const { item_code, discount_percentage, idx } = savePricePopup.value
+  const { item_code, multiplication_factor, idx } = savePricePopup.value
   try {
-    await saveCustomerItemPrice(customer.value, item_code, discount_percentage)
-    customerPricing.value[item_code] = discount_percentage
+    await saveCustomerItemPrice(customer.value, item_code, multiplication_factor)
+    customerPricing.value[item_code] = multiplication_factor
     if (idx != null && items.value[idx]) items.value[idx]._customer_pricing = true
   } catch (e) {
     console.error('[CustomerPricing] save failed', e)

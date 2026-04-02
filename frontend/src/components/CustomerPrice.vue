@@ -21,8 +21,8 @@
             <span class="text-xl font-mono text-slate-100">{{ (data.rate || 0).toFixed(2) }}</span>
           </div>
           <div class="flex flex-col">
-            <span class="text-[10px] text-slate-500 uppercase font-bold">Discount %</span>
-            <span class="text-xl font-mono text-purple-400">{{ (data.discount_percentage || 0).toFixed(2) }}%</span>
+            <span class="text-[10px] text-slate-500 uppercase font-bold">Factor</span>
+            <span class="text-xl font-mono text-purple-400">{{ (data.multiplication_factor || 1).toFixed(4) }}</span>
           </div>
         </div>
 

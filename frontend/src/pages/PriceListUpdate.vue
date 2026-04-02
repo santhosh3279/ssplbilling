@@ -167,7 +167,7 @@ const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
   itemCode: { type: String, default: '' },
   selectedPriceList: { type: String, default: '' },
-  initialDiscount: { type: Number, default: 0 }
+  initialFactor: { type: Number, default: 1 }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -180,15 +180,15 @@ const route = useRoute()
 const prices = ref([])
 const uoms = ref([])
 const stockUom = ref('')
-const discount = ref(props.initialDiscount)
+const factor = ref(props.initialFactor)
 const loading = ref(false)
 const saving = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
 
-watch(() => props.initialDiscount, (val) => {
-  discount.value = val
+watch(() => props.initialFactor, (val) => {
+  factor.value = val
 })
 
 async function loadPrices(code) {
@@ -232,9 +232,9 @@ async function saveAll() {
     }
     return false
   })
-  const discountChanged = discount.value !== props.initialDiscount
+  const factorChanged = factor.value !== props.initialFactor
 
-  if (!changedPrices.length && !discountChanged) {
+  if (!changedPrices.length && !factorChanged) {
     if (props.isSubWindow) emit('close')
     return
   }
@@ -251,8 +251,8 @@ async function saveAll() {
     // Emit back all relevant data
     emit('saved', {
       changedPrices,
-      discount: discount.value,
-      discountChanged
+      factor: factor.value,
+      factorChanged
     })
 
     if (props.isSubWindow) emit('close')

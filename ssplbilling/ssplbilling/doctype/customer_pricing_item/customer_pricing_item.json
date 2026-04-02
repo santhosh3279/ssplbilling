@@ -4,9 +4,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "item_code",
-  "item_name",
-  "discount_percentage"
+  "multiplication_factor",
+  "item_name"
  ],
  "fields": [
   {
@@ -18,19 +17,19 @@
    "reqd": 1
   },
   {
+   "fieldname": "multiplication_factor",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Multiplication Factor",
+   "reqd": 1
+  },
+  {
    "fetch_from": "item_code.item_name",
    "fieldname": "item_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Item Name",
    "read_only": 1
-  },
-  {
-   "fieldname": "discount_percentage",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "label": "Discount %",
-   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,

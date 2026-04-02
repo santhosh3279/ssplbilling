@@ -1,13 +1,13 @@
 import { frappePost } from '../api.js'
 
 /**
- * Save a specific discount percentage for a customer-item combination.
+ * Save a specific multiplication factor for a customer-item combination.
  */
-export async function saveCustomerItemPrice(customer, itemCode, discountPercentage) {
+export async function saveCustomerItemPrice(customer, itemCode, multiplicationFactor) {
   return frappePost('ssplbilling.api.customer_pricing_api.save_customer_item_price', {
     customer,
     item_code: itemCode,
-    discount_percentage: discountPercentage,
+    multiplication_factor: multiplicationFactor,
   })
 }
 
