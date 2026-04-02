@@ -1,5 +1,5 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4' : 'min-h-screen bg-slate-900 flex flex-col'">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[210] flex items-center justify-center bg-black/80 backdrop-blur-md p-4' : 'min-h-screen bg-slate-900 flex flex-col'">
     <div :class="isSubWindow ? 'flex h-[70vh] w-[70vw] flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl' : 'flex flex-1 flex-col'">
       <!-- Header -->
       <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-4">
