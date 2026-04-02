@@ -224,7 +224,7 @@
                 <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted, 'bg-red-900/20': item.deleted, 'hover:bg-slate-800/40': !item.deleted && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="p-0 border-r border-slate-700">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" @keydown.right.prevent="openSearch(item.item_code, idx)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown="handleQuickSearchKeydown" />
                     <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
                   <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : 'text-slate-200'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
@@ -258,7 +258,7 @@
                 <!-- NEW ENTRY ROW -->
                 <tr v-if="billDocStatus === 0 && !billSaved" class="border-b border-slate-700" :class="selectedRow === -1 ? 'bg-blue-900/20' : 'bg-slate-800/30'" :style="{ fontSize: dynamicRowStyle.fontSize }">
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 font-bold text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
-                  <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" @keydown.right.prevent="openSearch(newItemCode, null)" /></td>
+                  <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" @keydown.right.prevent="openSearch(newItemCode, null)" @keydown="handleQuickSearchKeydown" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
                   <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(newPending.uoms||[]).length > 1 ? $nextTick(() => newUomSelect?.focus()) : focusNewRate()" @keydown.shift.tab.prevent="focusNewCode" /></td>
                   <td class="p-0 border-r border-slate-700">
@@ -541,6 +541,14 @@
     />
 
     <!-- PRICE LIST UPDATE SUB-WINDOW -->
+    <!-- Quick Search results while typing -->
+    <QuickItemSearch
+      ref="quickSearchRef"
+      :results="quickSearchResults"
+      @select="onQuickSearchSelect"
+      @close="quickSearchResults = []"
+    />
+
     <PriceListUpdate
       v-if="showPriceListUpdate"
       :is-sub-window="true"
@@ -643,13 +651,14 @@ import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, fr
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { getUserRole } from '../composables/usePermission'
 import ItemSearch from '../components/ItemSearch.vue'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
-import { useItemCache } from '../services/itemCache.js'
+import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
 import { session } from '../session.js'
 import * as XLSX from 'xlsx'
 
@@ -890,6 +899,26 @@ function closeSupplierSearchModal() {
 const items = ref([])
 const selectedRow = ref(-1)
 const newItemCode = ref('')
+const quickSearchResults = ref([])
+const quickSearchRef = ref(null)
+
+function onQuickSearchSelect(item) {
+  if (!item) return
+  if (selectedRow.value !== -1) {
+    onItemSelect(item) // Re-use existing selection logic
+  } else {
+    // Applying to new item
+    newItemCode.value = item.item_code
+    newPending.value = { 
+      item_name: item.item_name, 
+      uom: item.uom, 
+      uoms: item.uoms || [], 
+      rate: item.price 
+    }
+    nextTick(() => focusNewQty())
+  }
+  quickSearchResults.value = []
+}
 const newQty = ref(1)
 const isReturn = ref(false)
 const billSaved = ref(false)
@@ -980,7 +1009,16 @@ async function lookupItem(code) {
 let lookupTimeout = null
 watch(newItemCode, (val) => {
   clearTimeout(lookupTimeout); const code = val.trim()
-  if (code.length < 2) { newPending.value = { item_name: '', uom: '', uoms: [], rate: null }; return }
+  
+  if (code.length < 2) { 
+    newPending.value = { item_name: '', uom: '', uoms: [], rate: null }
+    quickSearchResults.value = []
+    return 
+  }
+
+  // Quick search results (instant)
+  quickSearchResults.value = searchItemsInCache(code)
+
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
     newPending.value = r ? { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], uom_price_lists: r.uom_price_lists || {}, rate: r.rate } : { item_name: '', uom: '', uoms: [], rate: null }
@@ -1052,10 +1090,30 @@ watch(priceList, () => {
   }
 })
 
+// Watch for changes in grid item barcodes to show quick search
+watch(() => selectedRow.value !== -1 ? items.value[selectedRow.value]?.item_code : null, (val) => {
+  if (val != null) {
+    quickSearchResults.value = searchItemsInCache(val)
+  } else {
+    quickSearchResults.value = []
+  }
+})
+
 // ==================== FOCUS ====================
 function focusField(f, idx) { nextTick(() => { const el = inputRefs[`${f}-${idx}`]; if (el) { el.focus(); el.select() } }) }
 function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
 function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
+
+function handleQuickSearchKeydown(e) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+    } else if (e.key === 'Escape') {
+      quickSearchResults.value = []
+    }
+  }
+}
+
 function focusNewQty() {
   if (newItemCode.value.trim() && newPending.value.item_name) {
     loadItemInsight(newItemCode.value.trim(), newPending.value.item_name, newPending.value.uom)

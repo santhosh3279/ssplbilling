@@ -141,6 +141,21 @@ export function getItemHistoryFromCache(itemCode) {
   return customerSalesHistory.value.filter(h => h.item_code === itemCode)
 }
 
+/**
+ * Search for items in the local cache by code or name.
+ */
+export function searchItemsInCache(query, maxResults = 50) {
+  if (!query || query.length < 2) return []
+  const cleanQuery = query.trim().toLowerCase()
+  
+  return items.value
+    .filter(i => 
+      (i.item_code || '').toLowerCase().includes(cleanQuery) || 
+      (i.item_name || '').toLowerCase().includes(cleanQuery)
+    )
+    .slice(0, maxResults)
+}
+
 export function useItemCache() {
   return {
     items,
@@ -149,6 +164,7 @@ export function useItemCache() {
     lastParams,
     refreshItemCache,
     lookupItemInCache,
+    searchItemsInCache,
     // Discount Rules (custom doctype)
     discountRules,
     refreshDiscountRuleCache,
