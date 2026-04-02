@@ -439,9 +439,11 @@
                     
                     <div class="mt-auto rounded-xl border border-blue-500/40 bg-blue-950/60 p-5 shadow-2xl">
                       <div class="text-[12px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-2">Total Amount</div>
-                      <div class="flex items-baseline gap-2">
-                        <span class="text-[9mm] font-black text-blue-500">₹</span>
-                        <span class="font-mono text-[15mm] font-black text-blue-400 leading-none drop-shadow-[0_0_20px_rgba(59,130,246,0.6)]">{{ grandTotal.toFixed(2) }}</span>
+                      <div class="flex items-baseline gap-2" :class="grandTotal >= 0 ? 'text-green-500/70' : 'text-red-500/70'">
+                        <span class="text-[9mm] font-black">₹</span>
+                        <span class="font-mono text-[15mm] font-black leading-none" :style="{ filter: `drop-shadow(0 0 20px ${grandTotal >= 0 ? 'rgba(34,197,94,0.42)' : 'rgba(239,68,68,0.42)'})` }">
+                          {{ grandTotal.toFixed(2) }}
+                        </span>
                       </div>
                     </div>
                   </div>
