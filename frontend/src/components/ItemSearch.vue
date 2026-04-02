@@ -8,48 +8,28 @@
   >
     <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden relative">
       <!-- Header -->
-      <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800">
-        <div>
-          <div class="text-2xl font-semibold text-slate-200">Detailed Item Search ({{ searchType }})</div>
-          <div class="text-lg text-slate-400">View stock info and select item</div>
+      <div class="border-b border-slate-700 px-5 py-4 flex items-center gap-8 bg-slate-800">
+        <div class="shrink-0">
+          <div class="text-2xl font-semibold text-slate-200 whitespace-nowrap">Detailed Item Search ({{ searchType }})</div>
+          <div class="text-sm text-slate-400">View stock info and select item</div>
         </div>
-        <div class="flex items-center gap-3">
-          <button
-            v-if="results[selectedIdx]"
-            @click="openEditModal"
-            class="flex items-center gap-2 rounded-lg border border-violet-700 bg-violet-900/20 px-4 py-2 text-lg font-semibold text-violet-400 transition-colors"
-          >
-            <span>✏️</span> Edit Item <kbd class="ml-1 rounded border border-violet-700 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-violet-400">F3</kbd>
-          </button>
-          <button
-            @click="showCreationModal = true"
-            class="flex items-center gap-2 rounded-lg border border-amber-700 bg-amber-900/20 px-4 py-2 text-lg font-semibold text-amber-400 transition-colors"
-          >
-            <span>➕</span> New Item <kbd class="ml-1 rounded border border-amber-700 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-amber-400">F2</kbd>
-          </button>
-          <button
-            @click="preloadItems(true)"
-            class="flex items-center gap-2 rounded-lg border border-blue-700 bg-blue-900/20 px-4 py-2 text-lg font-semibold text-blue-400 transition-colors"
-            :disabled="loading"
-          >
-            <span v-if="loading" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-transparent mr-1"></span>
-            <span v-else>🔄</span> Refresh <kbd class="ml-1 rounded border border-blue-700 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
-          </button>
-          <button @click="$emit('close')" class="text-2xl text-slate-500 hover:text-slate-300">✕</button>
-        </div>
-      </div>
 
-      <!-- Search input -->
-      <div class="border-b border-slate-800 p-4 relative">
-        <input
-          ref="searchInput"
-          v-model="query"
-          class="w-full rounded border border-slate-600 bg-slate-800 px-4 py-3 text-2xl text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-          placeholder="Type item code or name..."
-          @keydown.esc.stop="$emit('close')"
-        />
-        <div v-if="loading && !allItems.length" class="absolute right-8 top-1/2 -translate-y-1/2">
-          <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+        <!-- Search input integrated into header -->
+        <div class="flex-1 relative">
+          <input
+            ref="searchInput"
+            v-model="query"
+            class="w-full rounded border border-slate-600 bg-slate-900 px-4 py-2.5 text-2xl text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            placeholder="Type item code or name..."
+            @keydown.esc.stop="$emit('close')"
+          />
+          <div v-if="loading && !allItems.length" class="absolute right-4 top-1/2 -translate-y-1/2">
+            <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button @click="$emit('close')" class="text-2xl text-slate-500 hover:text-slate-300">✕</button>
         </div>
       </div>
 
