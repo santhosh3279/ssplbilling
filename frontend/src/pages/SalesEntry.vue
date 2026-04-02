@@ -372,12 +372,6 @@
                 <button @click="openImportModal" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Import</button>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Warehouse</label>
-                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
-                  <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
-                </select>
-              </div>
-              <div class="flex flex-col gap-0.5">
                 <label class="text-[9px] font-bold uppercase text-slate-600">Price List</label>
                 <select v-model="priceList" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
                   <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
@@ -391,16 +385,15 @@
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Cost Center</label>
-                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
-                  <option :value="costCenter">{{ costCenter || 'None' }}</option>
+                <label class="text-[9px] font-bold uppercase text-slate-600">Warehouse</label>
+                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                  <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Print Format</label>
-                <select v-model="printScheme" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500">
-                  <option value="">-- Default --</option>
-                  <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
+                <label class="text-[9px] font-bold uppercase text-slate-600">Cost Center</label>
+                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                  <option :value="costCenter">{{ costCenter || 'None' }}</option>
                 </select>
               </div>
             </div>
