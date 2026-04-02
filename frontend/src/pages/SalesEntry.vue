@@ -61,9 +61,9 @@
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 truncate min-w-0">
                 <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-[15px] font-bold text-blue-400">{{ inv.name }}</span>
+                <span class="truncate font-mono text-[15px] text-blue-400">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono text-[20px] font-bold text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono text-[20px] text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
             </div>
             <div class="truncate text-[11px] text-slate-400">{{ inv.customer_name }}</div>
           </div>
@@ -84,7 +84,7 @@
               <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-5 w-6 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
               <div class="flex items-center border-x border-slate-700 bg-slate-900 px-2 gap-1">
                 <span class="text-[9px] font-bold uppercase text-slate-500">Zoom</span>
-                <span class="text-[10px] font-bold text-slate-300">{{ zoomPercent }}%</span>
+                <span class="text-[10px] text-slate-300">{{ zoomPercent }}%</span>
               </div>
               <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-5 w-6 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
             </div>
@@ -109,7 +109,7 @@
         <!-- Bill No -->
         <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
           <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Bill No</label>
-          <div class="text-xl font-bold text-slate-100 tabular-nums" style="font-family: 'Poppins', sans-serif">
+          <div class="text-xl text-slate-100 tabular-nums" style="font-family: 'Poppins', sans-serif">
             {{ nextBillNo }}
           </div>
         </div>
@@ -137,7 +137,7 @@
               <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
                 {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
               </span>
-              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 font-bold leading-none">
+              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 leading-none">
                 PH: {{ selectedCustomerDetails.mobile_no }}
               </span>
             </div>
@@ -148,7 +148,7 @@
             <!-- Last Invoice Date -->
             <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
               <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Last Inv</span>
-              <span class="text-sm text-slate-300 font-medium">
+              <span class="text-sm text-slate-300">
                 {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
               </span>
             </div>
@@ -156,8 +156,8 @@
             <!-- Ledger Balance -->
             <div class="flex flex-col items-end leading-none border-l border-slate-700 pl-6">
               <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Ledger Bal</span>
-              <span :class="selectedCustomerDetails.balance > 0 ? 'text-green-400' : 'text-red-400'" class="text-xl font-bold tabular-nums">
-                &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-[10px] font-bold">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
+              <span :class="selectedCustomerDetails.balance > 0 ? 'text-green-400' : 'text-red-400'" class="text-xl tabular-nums">
+                &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-[10px]">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
               </span>
             </div>
           </div>
@@ -171,7 +171,7 @@
             v-model="billDate"
             type="date"
             :disabled="billDocStatus !== 0 || billSaved"
-            class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
+            class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
             style="font-family: 'Poppins', sans-serif"
           />
           <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
@@ -194,19 +194,19 @@
                   <th class="w-8 border-r border-b border-slate-700 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">#</th>
                   <th class="w-32 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Barcode</th>
                   <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Item Name</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Qty</th>
+                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Qty</th>
                   <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">UOM</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Disc %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-amber-500">Disc Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Tax %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Amount</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Rate</th>
+                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Disc %</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-amber-500">Disc Rate</th>
+                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Tax %</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Amount</th>
                   <th class="w-8 border-b border-slate-700"></th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-purple-900/20 border-l-2 border-l-purple-500': !item._is_free && item._rule_discount == null && item._customer_pricing && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && !item._customer_pricing && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
-                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
+                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="p-0 border-r border-slate-700">
                     <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved || item._is_free" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onCodeFocus(idx)" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" @keydown.right.prevent="openSearch(item.item_code, idx)" />
                     <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
@@ -238,7 +238,7 @@
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700 font-mono font-semibold" :class="item.deleted ? 'text-slate-600 line-through' : 'text-slate-200'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : ((isReturn ? -1 : 1) * item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
+                  <td class="px-2 text-right border-r border-slate-700 font-mono" :class="item.deleted ? 'text-slate-600 line-through' : 'text-slate-200'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : ((isReturn ? -1 : 1) * item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
                   <td class="px-2 text-center" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button v-if="!item.deleted && !item._is_free" class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" :style="{ fontSize: dynamicRowStyle.fontSize }" @click.stop="softDelete(idx)">&times;</button>
                     <button v-else-if="item.deleted" class="rounded px-1 py-0.5 font-semibold text-blue-500 hover:bg-blue-900/30 hover:text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }" @click.stop="restoreItem(idx)">&larr;</button>
@@ -246,7 +246,7 @@
                 </tr>
                 <!-- NEW ENTRY ROW -->
                 <tr v-if="billDocStatus === 0 && !billSaved" class="border-b border-slate-700" :class="selectedRow === -1 ? 'bg-blue-900/20' : 'bg-slate-800/30'" :style="{ fontSize: dynamicRowStyle.fontSize }">
-                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 font-bold text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
+                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
                   <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding-left:0;padding-right:0;" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" @keydown.right.prevent="openSearch(newItemCode, null)" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
                   <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(newPending.uoms||[]).length > 1 ? $nextTick(() => newUomSelect?.focus()) : addNewItem()" @keydown.shift.tab.prevent="focusNewCode" /></td>
@@ -283,13 +283,13 @@
               <thead>
                 <tr class="bg-slate-800">
                   <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Warehouse</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Actual</th>
+                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Actual</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
                   <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
                 </tr>
               </tbody>
             </table>
@@ -304,16 +304,16 @@
                 <tr class="bg-slate-800">
                   <th class="px-1 py-0.5 text-center font-semibold text-slate-500 border border-slate-700">T</th>
                   <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">List</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
+                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="hover:bg-slate-800/40">
                   <td class="px-1 py-0.5 text-center border border-slate-700">
-                    <span class="rounded px-1 py-0.5 text-[9px] font-bold uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
+                    <span class="rounded px-1 py-0.5 text-[9px] uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
                   </td>
                   <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold text-amber-400 border border-slate-700 text-base">&#8377;{{ encPrice(pl.rate || 0) }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono text-amber-400 border border-slate-700 text-base">&#8377;{{ encPrice(pl.rate || 0) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -328,18 +328,18 @@
                 <tr class="bg-slate-800">
                   <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
                   <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Qty</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Disc%</th>
+                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
+                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Qty</th>
+                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Disc%</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
                   <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
                   <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
                   <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
-                  <td class="px-1 py-0.5 text-right font-bold border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
+                  <td class="px-1 py-0.5 text-right border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -410,8 +410,7 @@
                   <div class="flex flex-col gap-2 h-full py-2">
                     <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
                     <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Payable</div>
-                    <div class="font-mono text-4xl font-bold text-blue-500 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>
-                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
+                    <div class="font-mono text-4xl text-blue-500 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
                       <span class="font-bold">{{ savedInvoiceName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
@@ -454,11 +453,10 @@
                 <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ Math.abs(discountAmt).toFixed(2) }}</td>
               </tr>
               <tr class="bg-slate-800/40">
-                <td class="px-2 text-lg font-semibold text-slate-200/80 border border-slate-600">Subtotal</td>
-                <td class="px-2 border border-slate-600"></td>
-                <td class="px-2 text-right font-mono font-semibold text-slate-100 text-2xl border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
-              </tr>
-              <tr>
+               <td class="px-2 text-lg font-semibold text-slate-200/80 border border-slate-600">Subtotal</td>
+               <td class="px-2 border border-slate-600"></td>
+               <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
+              </tr>              <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Freight</td>
                 <td class="p-0 border-y border-slate-700">
                   <input ref="freightInput" type="number" v-model.number="freightAmt"
@@ -614,7 +612,7 @@
             @click="selectSeries(s)"
             @mouseenter="seriesHighlightIdx = idx"
           >
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm font-black text-slate-300">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm text-slate-300">
               {{ idx + 1 }}
             </span>
             <span class="font-bold tracking-wide">{{ s }}</span>
