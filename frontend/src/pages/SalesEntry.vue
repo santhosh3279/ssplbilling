@@ -108,8 +108,8 @@
       <div class="flex items-center gap-6">
         <!-- Bill No -->
         <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
-          <label class="text-[10px] uppercase text-slate-500 whitespace-nowrap" style="font-family: 'Times New Roman', Times, serif">Bill No</label>
-          <div class="text-xl text-slate-100 tabular-nums" style="font-family: 'Times New Roman', Times, serif">
+          <label class="text-[10px] uppercase text-slate-500 whitespace-nowrap">Bill No</label>
+          <div class="text-xl text-slate-100 tabular-nums">
             {{ nextBillNo }}
           </div>
         </div>
@@ -124,7 +124,6 @@
               ref="customerInput"
               class="shrink-0 max-w-[300px] truncate text-4xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
               :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
-              style="font-family: 'Times New Roman', Times, serif"
               @click="openCustomerSearch"
               tabindex="0"
               @keydown.enter.prevent="openCustomerSearch"
@@ -134,7 +133,7 @@
             </div>
 
             <div v-if="selectedCustomerDetails" class="flex items-center gap-3 min-w-0">
-              <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1" style="font-family: 'Times New Roman', Times, serif">
+              <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
                 {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
               </span>
               <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 leading-none">
@@ -174,7 +173,7 @@
             >
               &larr;
             </button>
-            <span class="text-xl text-slate-100 tabular-nums px-2 min-w-[120px] text-center cursor-default select-none" style="font-family: 'Poppins', sans-serif">
+            <span class="text-xl text-slate-100 tabular-nums px-2 min-w-[120px] text-center cursor-default select-none">
               {{ new Date(billDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }}
             </span>
             <button 
