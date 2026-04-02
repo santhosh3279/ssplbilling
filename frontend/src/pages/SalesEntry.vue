@@ -1247,7 +1247,10 @@ async function loadItemInsight(code, itemName = '', uom = '') {
     item_code: code,
     item_name: itemName || cached?.item_name || '',
     uom: uom || cached?.uom || '',
-    stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
+    stock: (cached?.warehouse_stock || []).map(s => ({
+      warehouse: s.warehouse,
+      actual_qty: s.qty
+    })),
     previousPurchases: localHistory.slice(0, 10), // Show latest 10 from cache
     priceLists: resolvedPriceLists,
   }
