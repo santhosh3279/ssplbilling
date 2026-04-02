@@ -124,7 +124,7 @@
               ref="customerInput"
               class="shrink-0 max-w-[300px] truncate text-xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
               :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
-              style="font-family: 'Poppins', sans-serif"
+              style="font-family: 'Times New Roman', Times, serif"
               @click="openCustomerSearch"
               tabindex="0"
               @keydown.enter.prevent="openCustomerSearch"
@@ -134,7 +134,7 @@
             </div>
 
             <div v-if="selectedCustomerDetails" class="flex items-center gap-3 min-w-0">
-              <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
+              <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1" style="font-family: 'Times New Roman', Times, serif">
                 {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
               </span>
               <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 leading-none">
