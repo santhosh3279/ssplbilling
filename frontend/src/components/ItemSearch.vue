@@ -324,12 +324,15 @@ function updateItemInsight(item) {
 
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
+  const terms = q.split(/\s+/).filter(Boolean)
   let list = allItems.value
-  if (q) {
-    list = allItems.value.filter(i => 
-      (i.item_code || '').toLowerCase().includes(q) ||
-      (i.item_name || '').toLowerCase().includes(q)
-    )
+
+  if (terms.length > 0) {
+    list = allItems.value.filter(i => {
+      const code = (i.item_code || '').toLowerCase()
+      const name = (i.item_name || '').toLowerCase()
+      return terms.every(term => code.includes(term) || name.includes(term))
+    })
   }
 
   return list.slice(0, 100).map(i => {

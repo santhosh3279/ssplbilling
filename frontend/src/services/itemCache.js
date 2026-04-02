@@ -143,16 +143,22 @@ export function getItemHistoryFromCache(itemCode) {
 
 /**
  * Search for items in the local cache by code or name.
+ * Supports multi-term search (all terms must match partially).
  */
 export function searchItemsInCache(query, maxResults = 50) {
   if (!query || query.length < 2) return []
   const cleanQuery = query.trim().toLowerCase()
+  const terms = cleanQuery.split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return []
   
   return items.value
-    .filter(i => 
-      (i.item_code || '').toLowerCase().includes(cleanQuery) || 
-      (i.item_name || '').toLowerCase().includes(cleanQuery)
-    )
+    .filter(i => {
+      const code = (i.item_code || '').toLowerCase()
+      const name = (i.item_name || '').toLowerCase()
+      
+      // Check if all terms match either the code or name
+      return terms.every(term => code.includes(term) || name.includes(term))
+    })
     .slice(0, maxResults)
 }
 
