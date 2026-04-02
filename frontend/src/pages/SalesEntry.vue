@@ -1139,7 +1139,7 @@ function _triggerSavePricePopup(idx, discPct) {
     rate: item.rate,
     uom: item.uom
   }
-  nextTick(() => savePriceNoBtn.value?.focus())
+  nextTick(() => updatePricelistBtn.value?.focus())
 }
 
 async function confirmSavePrice() {
