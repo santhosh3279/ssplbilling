@@ -145,6 +145,7 @@
       <div class="border-t border-slate-700 px-5 py-3 bg-slate-800 flex gap-6 text-xs text-slate-500 uppercase tracking-widest font-bold">
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">↑↓</kbd> Navigate</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Enter</kbd> Select</span>
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+E</kbd> Toggle Enc</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F2</kbd> New Item</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F3</kbd> Edit Item</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Update Price</span>
@@ -389,6 +390,9 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
+  } else if (e.ctrlKey && e.key.toLowerCase() === 'e') {
+    e.preventDefault()
+    isDecrypted.value = !isDecrypted.value
   } else if (e.key === 'Enter') {
     const item = results.value[selectedIdx.value]
     if (item) {
