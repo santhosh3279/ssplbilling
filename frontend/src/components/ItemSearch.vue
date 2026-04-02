@@ -117,11 +117,7 @@
       </div>
 
       <!-- UOM Prices Grid -->
-      <div v-if="insightData?.uoms?.length > 0" class="border-t border-slate-700 bg-slate-900 px-5 py-3">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">UOM Wise Prices</span>
-          <span class="text-[9px] text-slate-600 italic">Values are encrypted</span>
-        </div>
+      <div v-if="insightData?.uoms?.length > 0" class="border-t border-slate-700 bg-slate-900 px-0 py-0">
         <div class="overflow-x-auto scrollbar-none">
           <table class="w-full border-collapse">
             <thead>
