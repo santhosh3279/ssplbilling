@@ -331,8 +331,8 @@
               <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
             </div>
 
-            <!-- 3. Warehouse Stock row -->
-            <div class="flex flex-col">
+            <!-- 3. Warehouse Stock row (Dynamic height) -->
+            <div class="flex flex-col pt-4">
               <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
               <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
                 <colgroup>
