@@ -710,9 +710,25 @@
             <button ref="updatePricelistBtn" @click="confirmUpdatePricelist" @keydown="onSavePriceKeydown" class="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 transition-all">Update Price List</button>
           </div>
           <button ref="savePriceNoBtn" @click="dismissSavePrice" @keydown="onSavePriceKeydown" class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 transition-all">Dismiss</button>
+          <div class="mt-2 text-center">
+            <span class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">
+              Press <kbd class="rounded border border-slate-700 bg-slate-800 px-1 py-0.5 font-mono text-slate-400">F4</kbd> for Advanced Price List Update
+            </span>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Price List Update Subwindow -->
+    <PriceListUpdate
+      v-if="showPriceListUpdate"
+      is-sub-window
+      :item-code="savePricePopup.item_code"
+      :selected-price-list="priceList"
+      :initial-discount="savePricePopup.discount_percentage"
+      @close="showPriceListUpdate = false"
+      @saved="onPriceListSaved"
+    />
 
     <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
@@ -759,6 +775,7 @@ import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
+import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
@@ -798,6 +815,11 @@ const showShortcutPage = ref(false)
 const incentiveRows = ref([])
 const showBarcodeModal = ref(false)
 const showImportModal = ref(false)
+const showPriceListUpdate = ref(false)
+
+function onPriceListSaved() {
+  refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
+}
 const importOption = ref('Master')
 const fileInput = ref(null)
 
@@ -1164,6 +1186,12 @@ function dismissSavePrice() {
 }
 
 function onSavePriceKeydown(e) {
+  if (e.key === 'F4') {
+    e.preventDefault()
+    showPriceListUpdate.value = true
+    return
+  }
+
   const btns = [savePriceYesBtn.value, updatePricelistBtn.value, savePriceNoBtn.value].filter(Boolean)
   const currIdx = btns.indexOf(document.activeElement)
   
