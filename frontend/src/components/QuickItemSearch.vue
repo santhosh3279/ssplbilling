@@ -19,7 +19,7 @@
       >
         <div class="flex justify-between items-center gap-4">
           <div class="min-w-0 flex-1">
-            <div class="text-3xl font-bold text-slate-100 truncate">{{ item.item_name }}</div>
+            <div class="text-3xl font-normal text-slate-100 truncate">{{ item.item_name }}</div>
             <div class="text-2xl font-mono text-amber-200/80">{{ item.item_code }}</div>
           </div>
           <div class="flex flex-col items-end shrink-0">
