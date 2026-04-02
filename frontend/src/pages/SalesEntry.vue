@@ -1393,9 +1393,33 @@ watch(priceList, () => {
 })
 
 // ==================== FOCUS ====================
-function focusField(f, idx) { nextTick(() => { const el = inputRefs[`${f}-${idx}`]; if (el) { el.focus(); el.select() } }) }
-function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
-function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
+function focusField(f, idx) { 
+  nextTick(() => { 
+    const el = inputRefs[`${f}-${idx}`]; 
+    if (el) { 
+      el.focus(); 
+      el.select();
+      el.scrollIntoView({ block: 'nearest' });
+    } 
+  }) 
+}
+function focusRow(idx) { 
+  nextTick(() => {
+    const el = rowRefs[idx]
+    if (el) {
+      el.focus()
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  }) 
+}
+function focusNewCode() { 
+  nextTick(() => {
+    if (newCodeInput.value) {
+      newCodeInput.value.focus()
+      newCodeInput.value.scrollIntoView({ block: 'nearest' })
+    }
+  }) 
+}
 
 function handleQuickSearchKeydown(e, idx = null) {
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
