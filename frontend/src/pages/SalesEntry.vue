@@ -108,8 +108,8 @@
       <div class="flex items-center gap-6">
         <!-- Bill No -->
         <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
-          <label class="text-[10px] uppercase text-slate-500 whitespace-nowrap">Bill No</label>
-          <div class="text-xl text-slate-100 tabular-nums" style="font-family: 'Poppins', sans-serif">
+          <label class="text-[10px] uppercase text-slate-500 whitespace-nowrap" style="font-family: 'Times New Roman', Times, serif">Bill No</label>
+          <div class="text-xl text-slate-100 tabular-nums" style="font-family: 'Times New Roman', Times, serif">
             {{ nextBillNo }}
           </div>
         </div>
