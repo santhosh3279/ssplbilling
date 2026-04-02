@@ -58,7 +58,7 @@
             <div class="flex flex-col min-w-[130px]">
               <span class="text-[10px] font-bold uppercase text-slate-500">{{ priceList || 'Rate' }}</span>
               <span class="text-xl font-bold text-slate-200">
-                ₹{{ (results[selectedIdx].price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                {{ encPrice(results[selectedIdx].price || 0) }}
               </span>
             </div>
             <div class="flex flex-col flex-[0.6]">
@@ -331,10 +331,28 @@ const results = computed(() => {
     )
   }
 
-  return list.slice(0, 100).map(i => ({
-    ...i,
-    has_history: hasHistory(i.item_code)
-  }))
+  return list.slice(0, 100).map(i => {
+    // Find the rate for the selected price list from props
+    let displayPrice = i.price
+    if (props.priceList) {
+      // 1. Check direct price_lists cache
+      if (i.price_lists) {
+        const pl = i.price_lists.find(p => p.name === props.priceList)
+        if (pl) displayPrice = pl.rate
+      }
+      // 2. Check per-UOM overrides
+      if (i.uom_price_lists?.[props.priceList]) {
+        const uomRate = i.uom_price_lists[props.priceList][i.uom]
+        if (uomRate != null) displayPrice = uomRate
+      }
+    }
+
+    return {
+      ...i,
+      price: displayPrice,
+      has_history: hasHistory(i.item_code)
+    }
+  })
 })
 
 watch(query, () => {
