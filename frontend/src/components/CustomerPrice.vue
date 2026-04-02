@@ -85,7 +85,7 @@ const savePriceNoBtn = ref(null)
 
 onMounted(() => {
   nextTick(() => {
-    updatePricelistBtn.value?.focus()
+    savePriceNoBtn.value?.focus()
   })
 })
 
