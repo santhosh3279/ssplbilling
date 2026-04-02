@@ -346,8 +346,8 @@
                 </thead>
                 <tbody>
                   <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
-                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
-                    <td class="px-1 py-0.5 text-right font-mono border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
+                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap text-lg" :title="s.warehouse">{{ s.warehouse }}</td>
+                    <td class="px-1 py-0.5 text-right font-mono border border-slate-700 text-xl" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
                   </tr>
                 </tbody>
               </table>
