@@ -136,7 +136,7 @@
               <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
                 {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
               </span>
-              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 leading-none">
+              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-xl text-slate-500 leading-none">
                 PH: {{ selectedCustomerDetails.mobile_no }}
               </span>
             </div>
