@@ -615,6 +615,14 @@
       @confirm="showClearBillWarning = false; startNewBill()"
     />
 
+    <Warning
+      :show="showExitModifyWarning"
+      title="Exit without Saving?"
+      message="Discard changes to this bill and start a new one?"
+      @close="showExitModifyWarning = false; nextTick(() => lastFocusedEl?.focus())"
+      @confirm="showExitModifyWarning = false; startNewBill(); openCustomerSearch()"
+    />
+
     <BarcodePrintingModal
       :show="showBarcodeModal"
       @close="showBarcodeModal = false"
@@ -1058,6 +1066,8 @@ const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const showJumpModal = ref(false)
 const showClearBillWarning = ref(false)
+const showExitModifyWarning = ref(false)
+const lastFocusedEl = ref(null)
 const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-saved invoice name
 const showDiscardModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
@@ -2246,9 +2256,23 @@ useShortcuts(salesEntryShortcuts({
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
     if (showClearBillWarning.value) { showClearBillWarning.value = false; focusNewCode(); return }
+    if (showExitModifyWarning.value) { 
+      showExitModifyWarning.value = false; 
+      nextTick(() => lastFocusedEl.value?.focus()); 
+      return 
+    }
 
-    // 1. If entering/editing an item in the grid (not saved bill)
-    if (billDocStatus.value === 0 && !billSaved.value) {
+    // 1. If in "Modify Bill" mode (editing an existing draft)
+    if (savedInvoiceName.value && !billSaved.value && billDocStatus.value === 0) {
+      if (selectedRow.value !== -1 || newItemCode.value || (newPending.value && newPending.value.item_name)) {
+        lastFocusedEl.value = document.activeElement
+        showExitModifyWarning.value = true
+        return
+      }
+    }
+
+    // 2. If entering/editing an item in the grid (not saved bill, new bill)
+    if (billDocStatus.value === 0 && !billSaved.value && !savedInvoiceName.value) {
       // If a row is selected or we have pending barcode entry
       if (selectedRow.value !== -1 || newItemCode.value || (newPending.value && newPending.value.item_name)) {
         selectedRow.value = -1
