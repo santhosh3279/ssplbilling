@@ -122,7 +122,7 @@
           <div class="flex items-baseline gap-4 min-w-0">
             <div 
               ref="customerInput"
-              class="shrink-0 max-w-[300px] truncate text-2xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
+              class="shrink-0 max-w-[300px] truncate text-4xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
               :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
               style="font-family: 'Times New Roman', Times, serif"
               @click="openCustomerSearch"
