@@ -124,7 +124,7 @@
             <tbody>
               <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-slate-800/30">
                 <td class="border border-slate-700 px-2 py-1 text-lg font-bold text-slate-400 truncate">{{ uom }}</td>
-                <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right font-mono text-amber-400 text-2xl">
+                <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right font-mono text-amber-400 text-2xl tracking-widest">
                   {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : '--' }}
                 </td>
               </tr>
