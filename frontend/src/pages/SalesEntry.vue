@@ -211,7 +211,7 @@
                   <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">UOM</th>
                   <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Rate</th>
                   <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Disc %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-amber-500">Disc Rate</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-amber-500">DISC</th>
                   <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Tax %</th>
                   <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Amount</th>
                   <th class="w-8 border-b border-slate-700"></th>
