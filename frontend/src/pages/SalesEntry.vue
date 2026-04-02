@@ -607,6 +607,14 @@
       @jump="handleJump" 
     />
 
+    <Warning
+      :show="showClearBillWarning"
+      title="Clear Bill Items?"
+      message="This will remove all items from the current bill. Continue?"
+      @close="showClearBillWarning = false; focusNewCode()"
+      @confirm="showClearBillWarning = false; startNewBill()"
+    />
+
     <BarcodePrintingModal
       :show="showBarcodeModal"
       @close="showBarcodeModal = false"
@@ -764,6 +772,7 @@ import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
+import Warning from '../components/Warning.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
@@ -1048,6 +1057,7 @@ const isReturn = ref(false)
 const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const showJumpModal = ref(false)
+const showClearBillWarning = ref(false)
 const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-saved invoice name
 const showDiscardModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
@@ -2235,9 +2245,27 @@ useShortcuts(salesEntryShortcuts({
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
-    // First Esc: clear active bill; Second Esc (bill already empty): exit
-    const hasBillContent = activeItems.value.length > 0 || customer.value || savedInvoiceName.value
-    if (hasBillContent) { startNewBill(); return }
+    if (showClearBillWarning.value) { showClearBillWarning.value = false; focusNewCode(); return }
+
+    // 1. If entering/editing an item in the grid (not saved bill)
+    if (billDocStatus.value === 0 && !billSaved.value) {
+      // If a row is selected or we have pending barcode entry
+      if (selectedRow.value !== -1 || newItemCode.value || (newPending.value && newPending.value.item_name)) {
+        selectedRow.value = -1
+        newItemCode.value = ''
+        newPending.value = { item_name: '', uom: '', rate: null }
+        focusNewCode()
+        return
+      }
+
+      // 2. If item table has items, ask to clear
+      if (activeItems.value.length > 0) {
+        showClearBillWarning.value = true
+        return
+      }
+    }
+
+    // 3. If item table is empty or bill is saved/submitted, take to dashboard
     handleBack()
   }
 }), props.isSubWindow ? 'subwindow' : 'local')
