@@ -222,6 +222,7 @@ def create_sales_invoice(data=None, **kwargs):
     si = frappe.new_doc("Sales Invoice")
     si.customer = data["customer"]
     si.posting_date = data.get("date", frappe.utils.today())
+    si.set_posting_time = 1
     si.naming_series = data.get("naming_series", "SINV-.YY.-")
     si.is_return = data.get("is_return", 0)
     si.update_stock = 1
@@ -379,6 +380,7 @@ def update_sales_invoice(data=None, **kwargs):
     # Update posting_date if provided
     if data.get("date"):
         si.posting_date = data["date"]
+    si.set_posting_time = 1
 
     if float(data.get("additional_discount_amount") or 0) > 0:
         si.discount_amount = float(data["additional_discount_amount"])
