@@ -861,6 +861,12 @@ async function processPayment() {
       cash = bill - upi - card - disc
     }
 
+    let finalDueDate = getIsoDueDate()
+    const today = getTodayIST()
+    if (finalDueDate < today) {
+      finalDueDate = today
+    }
+
     const payload = {
       invoice_name: selectedInvoice.value.name,
       cash_amount: cash,
@@ -868,7 +874,7 @@ async function processPayment() {
       card_amount: card,
       discount_amount: disc,
       is_credit: isCredit.value,
-      due_date: getIsoDueDate(),
+      due_date: finalDueDate,
       card_ref_no: cardRefNo.value,
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
