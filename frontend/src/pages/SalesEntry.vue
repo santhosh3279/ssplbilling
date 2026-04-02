@@ -438,7 +438,7 @@
                     <button @click="showIncentiveModal = true" class="w-full rounded border border-indigo-700/50 bg-indigo-900/20 py-1.5 text-center text-lg font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">👥 Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
                     
                     <div class="mt-auto rounded-xl border border-blue-500/30 bg-blue-950/40 p-4 shadow-inner">
-                      <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400/80 mb-1">Total Payable</div>
+                      <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400/80 mb-1">Total Amount</div>
                       <div class="flex items-baseline gap-1">
                         <span class="text-2xl font-bold text-blue-500">₹</span>
                         <span class="font-mono text-5xl font-black text-blue-400 leading-none drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">{{ grandTotal.toFixed(2) }}</span>
