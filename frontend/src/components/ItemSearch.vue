@@ -456,6 +456,7 @@ watch(selectedIdx, async (idx) => {
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     query.value = ''
+    isDecrypted.value = false
     loadCipherMap()
     await preloadItems()
     focus()
