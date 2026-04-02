@@ -90,6 +90,12 @@ onMounted(() => {
 })
 
 function onKeydown(e) {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    emit('dismiss')
+    return
+  }
+
   if (e.key === 'F4') {
     e.preventDefault()
     emit('advanced')
@@ -107,9 +113,6 @@ function onKeydown(e) {
     e.preventDefault()
     const nextIdx = (currIdx + 1) % btns.length
     btns[nextIdx]?.focus()
-  } else if (e.key === 'Escape') {
-    e.preventDefault()
-    emit('dismiss')
   }
 }
 </script>
