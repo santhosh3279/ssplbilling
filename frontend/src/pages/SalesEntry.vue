@@ -286,77 +286,80 @@
 
         <!-- BOTTOM PANEL (Insight + Settings + Calculation) -->
         <div class="flex flex-[4] border-t border-slate-700 bg-slate-900 overflow-hidden">
-          <!-- Stock Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:182px;max-width:224px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-            <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
-              <colgroup>
-                <col style="width:70%"><col style="width:30%">
-              </colgroup>
-              <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Warehouse</th>
-                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Actual</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No stock data' : 'Select a row to see stock' }}</div>
-          </div>
+          <!-- Insights Column (Previous Sales, Price Lists, Stock) -->
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:240px;max-width:280px;scrollbar-width:none">
+            <!-- 1. Previous Sales row -->
+            <div class="flex flex-col border-b border-slate-700 min-h-[150px]">
+              <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Sales<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+              <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
+                <thead>
+                  <tr class="bg-slate-800">
+                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
+                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
+                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
+                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Qty</th>
+                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Disc%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
+                    <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
+                    <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
+                    <td class="px-1 py-0.5 text-right font-mono text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
+                    <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
+                    <td class="px-1 py-0.5 text-right border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous sales' : 'Select a row to see history' }}</div>
+            </div>
 
-          <!-- Price List Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:170px;max-width:200px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-            <table v-if="selectedItemData && selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full border-collapse text-[10px]">
-              <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-center font-semibold text-slate-500 border border-slate-700">T</th>
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">List</th>
-                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 text-center border border-slate-700">
-                    <span class="rounded px-1 py-0.5 text-[9px] uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
-                  </td>
-                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono text-amber-400 border border-slate-700 text-base">&#8377;{{ encPrice(pl.rate || 0) }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
-          </div>
+            <!-- 2. Price List row -->
+            <div class="flex flex-col border-b border-slate-700 min-h-[120px]">
+              <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+              <table v-if="selectedItemData && selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full border-collapse text-[10px]">
+                <thead>
+                  <tr class="bg-slate-800">
+                    <th class="px-1 py-0.5 text-center font-semibold text-slate-500 border border-slate-700">T</th>
+                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">List</th>
+                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="hover:bg-slate-800/40">
+                    <td class="px-1 py-0.5 text-center border border-slate-700">
+                      <span class="rounded px-1 py-0.5 text-[9px] uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
+                    </td>
+                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
+                    <td class="px-1 py-0.5 text-right font-mono text-amber-400 border border-slate-700 text-base">&#8377;{{ encPrice(pl.rate || 0) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
+            </div>
 
-          <!-- Previous Sales Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:200px;max-width:240px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Sales<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-            <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
-              <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
-                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
-                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Qty</th>
-                  <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Disc%</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
-                  <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
-                  <td class="px-1 py-0.5 text-right border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous sales' : 'Select a row to see history' }}</div>
+            <!-- 3. Warehouse Stock row -->
+            <div class="flex flex-col">
+              <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+              <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
+                <colgroup>
+                  <col style="width:70%"><col style="width:30%">
+                </colgroup>
+                <thead>
+                  <tr class="bg-slate-800">
+                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Warehouse</th>
+                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Actual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
+                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
+                    <td class="px-1 py-0.5 text-right font-mono border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No stock data' : 'Select a row to see stock' }}</div>
+            </div>
           </div>
 
           <!-- Settings Panel -->
