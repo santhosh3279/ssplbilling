@@ -291,6 +291,8 @@ def create_sales_invoice(data=None, **kwargs):
     si.ignore_pricing_rule = 1
     si.flags.ignore_pricing_rule = True
     si.due_date = frappe.utils.today()
+    if str(si.due_date) < str(si.posting_date):
+        si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.insert()
@@ -373,7 +375,11 @@ def update_sales_invoice(data=None, **kwargs):
     si.is_return = data.get("is_return", 0)
     if data.get("price_list"):
         si.selling_price_list = data["price_list"]
-    # Preserving original posting_date
+    
+    # Update posting_date if provided
+    if data.get("date"):
+        si.posting_date = data["date"]
+
     if float(data.get("additional_discount_amount") or 0) > 0:
         si.discount_amount = float(data["additional_discount_amount"])
         si.additional_discount_percentage = 0
@@ -448,6 +454,8 @@ def update_sales_invoice(data=None, **kwargs):
     si.ignore_pricing_rule = 1
     si.flags.ignore_pricing_rule = True
     si.due_date = frappe.utils.today()
+    if str(si.due_date) < str(si.posting_date):
+        si.due_date = si.posting_date
     if si.get("payment_schedule"):
         si.payment_schedule = []
     si.save()
