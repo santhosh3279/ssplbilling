@@ -406,23 +406,23 @@
             </colgroup>
             <thead>
               <tr class="bg-slate-800">
-                <th class="px-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Description</th>
-                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Entry</th>
-                <th class="px-2 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Amount</th>
-                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Actions</th>
+                <th class="px-2 text-left text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Description</th>
+                <th class="px-2 text-center text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Entry</th>
+                <th class="px-2 text-right text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Amount</th>
+                <th class="px-2 text-center text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Item Discount</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ Math.abs(itemDiscountTotal).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ Math.abs(itemDiscountTotal).toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
                     <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
                     <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Payable</div>
-                    <div class="font-mono text-4xl text-blue-500 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
-                      <span class="font-bold">{{ savedInvoiceName }}</span>
+                    <div class="font-mono text-4xl text-blue-500 leading-none">{{ grandTotal.toFixed(2) }}</div>                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
+                      <span class="font-normal">{{ savedInvoiceName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
                     <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify Bill</button>
@@ -450,7 +450,7 @@
                       <span class="shrink-0 px-1 text-slate-500 text-xs">%</span>
                     </div>
                     <div class="flex flex-1 items-center">
-                      <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
+                      <span class="shrink-0 px-1 text-slate-500 text-xs"></span>
                       <input ref="discountAmtInput" type="number" v-model.number="discountDirectAmt"
                         :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'pct'"
                         min="0" step="1" style="width:100%;height:100%;padding:0 2px"
@@ -461,12 +461,12 @@
                     </div>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ Math.abs(discountAmt).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ Math.abs(discountAmt).toFixed(2) }}</td>
               </tr>
               <tr class="bg-slate-800/40">
-               <td class="px-2 text-lg font-semibold text-slate-200/80 border border-slate-600">Subtotal</td>
+               <td class="px-2 text-lg text-slate-200/80 border border-slate-600">Subtotal</td>
                <td class="px-2 border border-slate-600"></td>
-               <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
+               <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-600">{{ subtotal.toFixed(2) }}</td>
               </tr>              <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Freight</td>
                 <td class="p-0 border-y border-slate-700">
@@ -476,7 +476,7 @@
                     @keydown.enter="$refs.packingInput?.focus(); $refs.packingInput?.select()"
                     @keydown.tab.prevent="$refs.packingInput?.focus(); $refs.packingInput?.select()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (freightAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Packing</td>
@@ -487,7 +487,7 @@
                     @keydown.enter="$refs.loadingInput?.focus(); $refs.loadingInput?.select()"
                     @keydown.tab.prevent="$refs.loadingInput?.focus(); $refs.loadingInput?.select()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (packingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Loading</td>
@@ -498,7 +498,7 @@
                     @keydown.enter="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()"
                     @keydown.tab.prevent="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (loadingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Other</td>
@@ -509,12 +509,12 @@
                     @keydown.enter="saveButton?.focus()"
                     @keydown.tab.prevent="saveButton?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (otherChargesAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Tax</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+{{ totalTax.toFixed(2) }}</td>
               </tr>
             </tbody>
           </table>
