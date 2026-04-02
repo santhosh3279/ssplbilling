@@ -95,7 +95,7 @@ onMounted(() => {
 function onKeydown(e) {
   if (e.key === 'Escape') {
     e.preventDefault()
-    emit('dismiss')
+    // Do nothing as requested: disable the esc button
     return
   }
 
