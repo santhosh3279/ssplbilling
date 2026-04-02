@@ -51,7 +51,7 @@ Instructional context for Gemini CLI when working on the **ssplbilling** project
 - **Purchase Entry** (`/purchase`): Rapid entry for recording purchases from suppliers into Draft Purchase Invoices.
 
 ### 3. Local Caching
-The application syncs up to 5,000 items and customers to IndexedDB on dashboard load, allowing for near-instant offline-first search.
+The application syncs up to 15,000 items and customers to IndexedDB on dashboard load, allowing for near-instant offline-first search.
 
 ## Development Conventions
 

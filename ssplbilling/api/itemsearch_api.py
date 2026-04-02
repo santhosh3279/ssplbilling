@@ -215,7 +215,7 @@ def get_customer_sales_history(customer):
 	if not customer:
 		return []
 
-	# Fetch last 5000 items sold to this customer
+	# Fetch last 15000 items sold to this customer
 	history = frappe.db.sql(
 		"""
 		SELECT sii.item_code, si.name, si.posting_date as date, sii.rate, sii.qty, sii.discount_percentage as discount
@@ -223,7 +223,7 @@ def get_customer_sales_history(customer):
 		JOIN `tabSales Invoice` si ON si.name = sii.parent
 		WHERE si.customer = %s AND si.docstatus = 1
 		ORDER BY si.posting_date DESC, si.creation DESC
-		LIMIT 5000
+		LIMIT 15000
 		""",
 		(customer,),
 		as_dict=True,

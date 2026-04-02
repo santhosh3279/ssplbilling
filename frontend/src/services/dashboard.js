@@ -38,7 +38,7 @@ export const dashboardApi = {
       doctype: 'Item',
       fields: ['item_code', 'item_name', 'stock_uom as uom', 'standard_rate as rate'],
       filters: { disabled: 0, is_sales_item: 1 },
-      limit_page_length: 5000,
+      limit_page_length: 15000,
       order_by: 'item_name asc'
     })
   },
@@ -86,7 +86,7 @@ export const dashboardApi = {
       doctype: 'Customer',
       fields: ['name', 'customer_name', 'mobile_no'],
       filters: { disabled: 0 },
-      limit_page_length: 5000,
+      limit_page_length: 15000,
       order_by: 'customer_name asc'
     })
   }
