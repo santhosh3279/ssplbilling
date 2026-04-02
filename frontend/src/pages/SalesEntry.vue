@@ -420,7 +420,7 @@
                 <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ Math.abs(itemDiscountTotal).toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
-                    <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
+                    <div class="text-xl text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
                     <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Payable</div>
                     <div class="font-mono text-4xl text-blue-500 leading-none">{{ grandTotal.toFixed(2) }}</div>                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
                       <span class="font-normal">{{ savedInvoiceName }}</span>
