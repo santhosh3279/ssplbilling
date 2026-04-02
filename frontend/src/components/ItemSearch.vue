@@ -80,7 +80,7 @@
             <tr class="text-lg font-bold uppercase tracking-wider text-slate-400 border-b border-slate-700">
               <th class="px-5 py-3 text-left w-1/4">Item Code</th>
               <th class="px-5 py-3 text-left">Item Name</th>
-              <th class="px-5 py-3 text-right">Rate</th>
+              <th class="px-5 py-3 text-right">{{ priceList || 'Rate' }}</th>
               <th class="px-5 py-3 text-right">Stock</th>
             </tr>
           </thead>
@@ -99,8 +99,8 @@
               <td class="px-5 py-2">
                 <div class="font-medium text-slate-200">{{ item.item_name }}</div>
               </td>
-              <td class="px-5 py-2 text-right font-mono text-slate-200">
-                <span>₹{{ (item.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+              <td class="px-5 py-2 text-right font-mono text-amber-400 font-bold tracking-wider">
+                <span>{{ encPrice(item.price || 0) }}</span>
               </td>
               <td class="px-5 py-2 text-right">
                 <span class="font-bold" :class="item.stock <= 0 ? 'text-red-400' : 'text-slate-200'">
