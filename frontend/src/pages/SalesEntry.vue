@@ -187,14 +187,6 @@
             <!-- Hidden input to maintain dateInput ref if needed by other logic -->
             <input ref="dateInput" v-model="billDate" type="date" class="hidden" />
           </div>
-          <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
-            <input type="checkbox" v-model="ignoreDiscountRule" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
-            <span class="text-slate-500 text-[10px]">Ignore Discount Rule</span>
-          </label>
-          <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
-            <input type="checkbox" v-model="isReturn" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-red-500 cursor-pointer disabled:cursor-not-allowed" />
-            <span class="text-slate-500 text-[10px]">Sale Return</span>
-          </label>
         </div>
       </div>
     </div>
@@ -383,6 +375,16 @@
                   <option value="">-- None --</option>
                   <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
                 </select>
+              </div>
+              <div class="flex flex-col gap-1.5 py-1">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" v-model="ignoreDiscountRule" :disabled="billDocStatus !== 0 || billSaved" class="h-4 w-4 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Ignore Pricing Rule</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" v-model="isReturn" :disabled="billDocStatus !== 0 || billSaved" class="h-4 w-4 rounded border-slate-600 accent-red-500 cursor-pointer disabled:cursor-not-allowed" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Sale Return</span>
+                </label>
               </div>
               <div class="flex flex-col gap-0.5">
                 <label class="text-[9px] font-bold uppercase text-slate-600">Warehouse</label>
