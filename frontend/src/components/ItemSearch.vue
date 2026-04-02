@@ -126,16 +126,16 @@
           <table class="w-full border-collapse">
             <thead>
               <tr class="bg-slate-800/50">
-                <th class="border border-slate-700 px-2 py-1 text-left text-[10px] font-bold text-slate-500 uppercase w-32">Price List</th>
-                <th v-for="uom in insightData.uoms" :key="uom" class="border border-slate-700 px-2 py-1 text-right text-[10px] font-bold text-slate-500 uppercase min-w-[100px]">
-                  {{ uom }}
+                <th class="border border-slate-700 px-2 py-1 text-left text-[10px] font-bold text-slate-500 uppercase w-32">UOM</th>
+                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right text-[10px] font-bold text-slate-500 uppercase min-w-[120px]">
+                  {{ pl.name }}
                 </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="pl in insightData.priceLists" :key="pl.name" class="hover:bg-slate-800/30">
-                <td class="border border-slate-700 px-2 py-1 text-[11px] font-bold text-slate-400 truncate">{{ pl.name }}</td>
-                <td v-for="uom in insightData.uoms" :key="uom" class="border border-slate-700 px-2 py-1 text-right font-mono text-amber-400 text-lg">
+              <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-slate-800/30">
+                <td class="border border-slate-700 px-2 py-1 text-[11px] font-bold text-slate-400 truncate">{{ uom }}</td>
+                <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right font-mono text-amber-400 text-lg">
                   {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : '--' }}
                 </td>
               </tr>
