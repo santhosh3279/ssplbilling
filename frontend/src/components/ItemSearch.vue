@@ -116,6 +116,34 @@
         </table>
       </div>
 
+      <!-- UOM Prices Grid -->
+      <div v-if="insightData?.uoms?.length > 0" class="border-t border-slate-700 bg-slate-900 px-5 py-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">UOM Wise Prices</span>
+          <span class="text-[9px] text-slate-600 italic">Values are encrypted</span>
+        </div>
+        <div class="overflow-x-auto scrollbar-none">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-slate-800/50">
+                <th class="border border-slate-700 px-2 py-1 text-left text-[10px] font-bold text-slate-500 uppercase w-32">Price List</th>
+                <th v-for="uom in insightData.uoms" :key="uom" class="border border-slate-700 px-2 py-1 text-right text-[10px] font-bold text-slate-500 uppercase min-w-[100px]">
+                  {{ uom }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="pl in insightData.priceLists" :key="pl.name" class="hover:bg-slate-800/30">
+                <td class="border border-slate-700 px-2 py-1 text-[11px] font-bold text-slate-400 truncate">{{ pl.name }}</td>
+                <td v-for="uom in insightData.uoms" :key="uom" class="border border-slate-700 px-2 py-1 text-right font-mono text-amber-400 text-lg">
+                  {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : '--' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Footer shortcuts -->
       <div class="border-t border-slate-700 px-5 py-3 bg-slate-800 flex gap-6 text-xs text-slate-500 uppercase tracking-widest font-bold">
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">↑↓</kbd> Navigate</span>
@@ -262,10 +290,34 @@ function updateItemInsight(item) {
     return
   }
   
+  // Extract all UOMs for this item
+  const itemUoms = (item.uoms || []).map(u => u.uom)
+  if (!itemUoms.includes(item.uom)) itemUoms.unshift(item.uom)
+  
+  // Prepare a grid: { pl_name: { uom: rate } }
+  const allPriceLists = (item.price_lists || []).map(pl => pl.name)
+  const uomPricesMap = {}
+  
+  // Initialize with base rates
+  for (const pl of item.price_lists || []) {
+    uomPricesMap[pl.name] = { [item.uom]: pl.rate }
+  }
+  
+  // Merge in per-UOM overrides from the cache
+  if (item.uom_price_lists) {
+    for (const [plName, uomMap] of Object.entries(item.uom_price_lists)) {
+      if (!uomPricesMap[plName]) uomPricesMap[plName] = {}
+      for (const [uomName, rate] of Object.entries(uomMap)) {
+        uomPricesMap[plName][uomName] = rate
+      }
+    }
+  }
+
   insightData.value = {
-    priceLists: (item.price_lists || []).map(pl => ({ 
-      name: pl.name, 
-      rate: pl.rate 
+    uoms: itemUoms,
+    priceLists: Object.keys(uomPricesMap).map(name => ({
+      name,
+      rates: uomPricesMap[name]
     }))
   }
 }
