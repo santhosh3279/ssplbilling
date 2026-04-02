@@ -212,12 +212,12 @@
                 <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-[#B0E4CC] border-l-2 border-l-blue-500 text-black': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-purple-900/20 border-l-2 border-l-purple-500': !item._is_free && item._rule_discount == null && item._customer_pricing && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && !item._customer_pricing && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full" :class="item.deleted ? 'bg-red-900/30 text-red-400' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-slate-700 text-[#B0E4CC]' : 'bg-slate-800 text-slate-400')" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="p-0 border-r border-slate-700">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved || item._is_free" class="w-full rounded border border-slate-600 font-mono outline-none focus:border-blue-500 disabled:bg-slate-900" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black' : 'bg-slate-800 text-slate-200'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onCodeFocus(idx)" @input="onCodeInput(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown="handleQuickSearchKeydown($event, idx)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0 || billSaved || item._is_free" class="w-full rounded border border-slate-600 font-mono outline-none focus:border-blue-500 disabled:bg-slate-900" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black' : 'bg-slate-800 text-slate-200'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onCodeFocus(idx)" @input="onCodeInput(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown.enter.prevent="onCodeEnter(idx)" @keydown="handleQuickSearchKeydown($event, idx)" />
                     <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
                   <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-200')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item._is_free" class="ml-1 rounded bg-green-900/60 px-1 py-0.5 font-bold text-green-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">FREE</span><span v-else-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0 || billSaved || item._is_free" min="1" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0 || billSaved || item._is_free" min="0" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="item.qty !== 0 && ((item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx))" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
                     <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isReturn ? -item.qty : item.qty }}</span>
                   </td>
                   <td class="p-0 border-r border-slate-700">
@@ -253,8 +253,7 @@
                   <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
                   <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding-left:0;padding-right:0;" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @input="onNewCodeInput" @keydown.tab.prevent="focusNewQty" @keydown.right.prevent="openSearch(newItemCode, null)" @keydown="handleQuickSearchKeydown($event)" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
-                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(newPending.uoms||[]).length > 1 ? $nextTick(() => newUomSelect?.focus()) : addNewItem()" @keydown.shift.tab.prevent="focusNewCode" /></td>
-                  <td class="p-0 border-r border-slate-700">
+                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="0" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="newQty !== 0 && ((newPending.uoms||[]).length > 1 ? $nextTick(() => newUomSelect?.focus()) : addNewItem())" @keydown.shift.tab.prevent="focusNewCode" /></td>                  <td class="p-0 border-r border-slate-700">
                     <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onNewUomChange" @keydown.enter.prevent="addNewItem" @keydown.tab.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewQty">
                       <option v-for="u in newPending.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
@@ -1060,7 +1059,7 @@ async function onQuickSearchSelect(item) {
   await pickItem(item)
   quickSearchResults.value = []
 }
-const newQty = ref(1)
+const newQty = ref(0)
 const isReturn = ref(false)
 const billSaved = ref(false)
 const billDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
@@ -1460,7 +1459,12 @@ function findNextActiveRow(from, dir) { let i = from + dir; while (i >= 0 && i <
 function moveRow(from, dir) { const n = findNextActiveRow(from, dir); if (n !== null) { selectedRow.value = n; focusRow(n) } else if (dir === 1) { selectedRow.value = -1; focusNewCode() } }
 function moveToLastActiveRow() { for (let i = items.value.length - 1; i >= 0; i--) { if (!items.value[i].deleted) { selectedRow.value = i; focusRow(i); return } } }
 function selectRow(idx) { if (!items.value[idx].deleted) { selectedRow.value = idx; focusRow(idx) } }
-function goToNextRow(from) { const n = findNextActiveRow(from, 1); if (n !== null) { selectedRow.value = n; focusRow(n) } else { selectedRow.value = -1; focusNewCode() } }
+function goToNextRow(from) { 
+  if (items.value[from]?.qty === 0) return
+  const n = findNextActiveRow(from, 1); 
+  if (n !== null) { selectedRow.value = n; focusRow(n) } 
+  else { selectedRow.value = -1; focusNewCode() } 
+}
 function enterRow(idx) { if (!items.value[idx]?.deleted && billDocStatus.value === 0) focusField('code', idx) }
 function onRowKeydown(e, idx) {
   if (e.target !== e.currentTarget) return  // bubbled from a child input — ignore
@@ -1539,6 +1543,7 @@ async function onNewCodeEnter() {
 
 async function addNewItem() {
   const code = newItemCode.value.trim(); if (!code) return
+  if (newQty.value === 0) return
   
   // Use newPending if it matches, otherwise lookup
   let r = (newPending.value && newItemCode.value === code && newPending.value.item_name) 
@@ -1565,7 +1570,7 @@ async function addNewItem() {
   applyCustomerPricingForRow(items.value.length - 1)
 
   newItemCode.value = '';
-  newQty.value = 1;
+  newQty.value = 0;
   newPending.value = { item_name: '', uom: '', uoms: [], rate: null };
   selectedRow.value = -1; // Reset selection so we stay in "new entry" mode
   focusNewCode()
