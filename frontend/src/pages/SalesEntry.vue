@@ -386,14 +386,14 @@
                 </label>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Warehouse</label>
-                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                <label class="text-lg font-bold uppercase text-slate-600">Warehouse</label>
+                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-lg text-slate-400 outline-none cursor-not-allowed">
                   <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Cost Center</label>
-                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                <label class="text-lg font-bold uppercase text-slate-600">Cost Center</label>
+                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-lg text-slate-400 outline-none cursor-not-allowed">
                   <option :value="costCenter">{{ costCenter || 'None' }}</option>
                 </select>
               </div>
