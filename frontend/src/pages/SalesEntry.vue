@@ -441,7 +441,7 @@
                       <div class="text-[12px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-2">Total Amount</div>
                       <div class="flex items-baseline gap-2">
                         <span class="text-4xl font-black text-blue-500">₹</span>
-                        <span class="font-mono text-[5.25rem] font-black text-blue-400 leading-none drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]">{{ grandTotal.toFixed(2) }}</span>
+                        <span class="font-mono text-[4.875rem] font-black text-blue-400 leading-none drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]">{{ grandTotal.toFixed(2) }}</span>
                       </div>
                     </div>
                   </div>
