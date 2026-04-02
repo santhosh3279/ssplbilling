@@ -1231,28 +1231,25 @@ watch(selectedRow, async (idx) => {
 })
 
 // Re-price all active items when price list changes
-watch(priceList, (newList) => {
-  const getPrice = (itemCode) => {
-    const cached = lookupItemInCache(itemCode)
-    if (cached?.price_lists) {
-      const pl = cached.price_lists.find(p => p.name === newList)
-      return pl ? pl.rate : 0
-    }
-    return 0
-  }
-
+watch(priceList, () => {
   // Update active items in grid
   items.value.forEach(item => {
     if (!item.deleted && item.item_code) {
-      const price = getPrice(item.item_code)
-      if (price > 0) item.rate = price
+      const cached = lookupItemInCache(item.item_code)
+      if (cached) {
+        const price = rateForUom(cached, item.uom)
+        if (price > 0) item.rate = price
+      }
     }
   })
 
   // Update pending item
   if (newItemCode.value.trim() && newPending.value.rate !== null) {
-    const price = getPrice(newItemCode.value.trim())
-    if (price > 0) newPending.value.rate = price
+    const cached = lookupItemInCache(newItemCode.value.trim())
+    if (cached) {
+      const price = rateForUom(cached, newPending.value.uom)
+      if (price > 0) newPending.value.rate = price
+    }
   }
 })
 
