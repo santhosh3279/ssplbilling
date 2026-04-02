@@ -166,14 +166,27 @@
         <!-- Bill Date -->
         <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
           <label class="text-[10px] font-bold uppercase text-slate-500">Bill Date</label>
-          <input
-            ref="dateInput"
-            v-model="billDate"
-            type="date"
-            :disabled="billDocStatus !== 0 || billSaved"
-            class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
-            style="font-family: 'Poppins', sans-serif"
-          />
+          <div class="flex items-center gap-1 bg-slate-900 rounded border border-slate-600 px-1 py-0.5">
+            <button 
+              @click="changeBillDate(-1)" 
+              :disabled="billDocStatus !== 0 || billSaved"
+              class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              &larr;
+            </button>
+            <span class="text-xl text-slate-100 tabular-nums px-2 min-w-[120px] text-center cursor-default select-none" style="font-family: 'Poppins', sans-serif">
+              {{ new Date(billDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }}
+            </span>
+            <button 
+              @click="changeBillDate(1)" 
+              :disabled="billDocStatus !== 0 || billSaved"
+              class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              &rarr;
+            </button>
+            <!-- Hidden input to maintain dateInput ref if needed by other logic -->
+            <input ref="dateInput" v-model="billDate" type="date" class="hidden" />
+          </div>
           <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
             <input type="checkbox" v-model="ignoreDiscountRule" :disabled="billDocStatus !== 0 || billSaved" class="h-3 w-3 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
             <span class="text-slate-500 text-[10px]">Ignore Discount Rule</span>
@@ -1644,6 +1657,13 @@ function getTodayIST() {
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
   return formatter.format(date)
+}
+
+function changeBillDate(days) {
+  if (billSaved.value || billDocStatus.value !== 0) return
+  const d = new Date(billDate.value)
+  d.setDate(d.getDate() + days)
+  billDate.value = d.toISOString().split('T')[0]
 }
 
 // ==================== BILLING ====================
