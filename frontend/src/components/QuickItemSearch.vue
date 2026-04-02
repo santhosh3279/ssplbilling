@@ -61,12 +61,13 @@ watch(() => props.results, () => {
 }, { deep: true })
 
 const positionStyle = computed(() => {
-  // Always on the right side as requested, middle-ish vertically or relative to anchor
   if (props.anchorEl) {
     const rect = props.anchorEl.getBoundingClientRect()
+    // Position to the right of the input, or slightly overlapping
     return {
       top: `${rect.top}px`,
-      right: '24px' // Fixed distance from right edge
+      left: `${rect.right + 10}px`,
+      maxHeight: `calc(100vh - ${rect.top + 20}px)`
     }
   }
   return {

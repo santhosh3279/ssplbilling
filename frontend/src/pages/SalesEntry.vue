@@ -675,6 +675,7 @@
     <QuickItemSearch
       ref="quickSearchRef"
       :results="quickSearchResults"
+      :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
     />
@@ -1019,6 +1020,7 @@ const editingOriginalCode = ref(null)  // tracks item_code before user edits an 
 const newItemCode = ref('')
 const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
+const quickSearchAnchor = ref(null)
 
 function onQuickSearchSelect(item) {
   if (!item) return
@@ -1251,6 +1253,7 @@ watch(newItemCode, (val) => {
 
   // Quick search results (instant)
   quickSearchResults.value = searchItemsInCache(code)
+  quickSearchAnchor.value = newCodeInput.value
 
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
@@ -1330,6 +1333,7 @@ watch(selectedRow, async (idx) => {
 watch(() => selectedRow.value !== -1 ? items.value[selectedRow.value]?.item_code : null, (val) => {
   if (val != null) {
     quickSearchResults.value = searchItemsInCache(val)
+    quickSearchAnchor.value = inputRefs[`code-${selectedRow.value}`]
   } else {
     quickSearchResults.value = []
   }
