@@ -70,6 +70,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+import { useSubwindow } from '../services/shortcutManager'
 
 const props = defineProps({
   data: { type: Object, required: true },
@@ -78,6 +79,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['saveCustomer', 'updatePricelist', 'dismiss', 'advanced'])
+
+useSubwindow()
 
 const savePriceYesBtn = ref(null)
 const updatePricelistBtn = ref(null)
