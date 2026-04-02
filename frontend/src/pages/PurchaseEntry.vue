@@ -902,21 +902,11 @@ const newItemCode = ref('')
 const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
 
-function onQuickSearchSelect(item) {
+async function onQuickSearchSelect(item) {
   if (!item) return
-  if (selectedRow.value !== -1) {
-    onItemSelect(item) // Re-use existing selection logic
-  } else {
-    // Applying to new item
-    newItemCode.value = item.item_code
-    newPending.value = { 
-      item_name: item.item_name, 
-      uom: item.uom, 
-      uoms: item.uoms || [], 
-      rate: item.price 
-    }
-    nextTick(() => focusNewQty())
-  }
+  // Use the same logic as the main search modal
+  itemSearchTargetRow = selectedRow.value !== -1 ? selectedRow.value : null
+  await pickItem(item)
   quickSearchResults.value = []
 }
 const newQty = ref(1)
