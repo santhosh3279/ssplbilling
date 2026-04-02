@@ -671,19 +671,46 @@
 
     <input type="file" ref="fileInput" class="hidden" @change="handleImportFile" accept=".csv,.xlsx,.xls" />
 
-    <!-- SAVE CUSTOMER PRICE POPUP -->
-    <div v-if="savePricePopup.show" class="fixed bottom-6 right-6 z-[200] w-80 rounded-xl border border-purple-500/40 bg-slate-900 shadow-2xl">
-      <div class="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
-        <span class="text-base">💜</span>
-        <span class="text-sm font-semibold text-slate-200">Save Customer Price?</span>
-      </div>
-      <div class="px-4 py-3 text-xs text-slate-400">
-        <div class="mb-1 font-medium text-slate-300">{{ savePricePopup.item_name || savePricePopup.item_code }}</div>
-        <div>Save <span class="font-mono text-purple-400">{{ savePricePopup.discount_percentage.toFixed(2) }}%</span> discount for <span class="text-slate-300">{{ customer }}</span>?</div>
-      </div>
-      <div class="flex gap-2 px-4 pb-3">
-        <button ref="savePriceYesBtn" @click="confirmSavePrice" @keydown="onSavePriceKeydown" class="flex-1 rounded-lg bg-purple-600 py-1.5 text-xs font-bold text-white hover:bg-purple-700">Yes, Save</button>
-        <button ref="savePriceNoBtn" @click="dismissSavePrice" @keydown="onSavePriceKeydown" class="flex-1 rounded-lg bg-slate-700 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600">No</button>
+    <!-- SAVE PRICE / UPDATE PRICELIST SUBWINDOW -->
+    <div v-if="savePricePopup.show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+      <div class="w-[400px] overflow-hidden rounded-2xl bg-slate-900 border border-purple-500/40 shadow-2xl">
+        <div class="bg-purple-900/20 px-6 py-4 flex items-center gap-3 border-b border-purple-500/30">
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-purple-900/40 text-xl text-purple-400">💰</div>
+          <div>
+            <div class="text-lg font-bold text-slate-100">Update Item Price?</div>
+            <div class="text-[10px] text-purple-400 uppercase tracking-wider font-bold">Price Change Detected</div>
+          </div>
+        </div>
+        
+        <div class="p-6 space-y-4">
+          <div class="flex flex-col gap-1">
+            <div class="text-sm font-bold text-slate-200">{{ savePricePopup.item_name || savePricePopup.item_code }}</div>
+            <div class="text-xs text-slate-500">Item Code: {{ savePricePopup.item_code }}</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 rounded-xl bg-slate-800/50 p-4 border border-slate-700/50">
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-500 uppercase font-bold">New Rate</span>
+              <span class="text-xl font-mono text-slate-100">{{ savePricePopup.rate.toFixed(2) }}</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-500 uppercase font-bold">Discount %</span>
+              <span class="text-xl font-mono text-purple-400">{{ savePricePopup.discount_percentage.toFixed(2) }}%</span>
+            </div>
+          </div>
+
+          <div class="text-xs text-slate-400 leading-relaxed">
+            Choose how you want to save this price change. You can save it as a special discount for <span class="text-slate-200 font-medium">{{ customer }}</span>, or update the main <span class="text-slate-200 font-medium">{{ priceList }}</span> price list.
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2 p-6 pt-0">
+          <div class="flex gap-2">
+            <button ref="savePriceYesBtn" @click="confirmSavePrice" @keydown="onSavePriceKeydown" class="flex-1 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-purple-700 shadow-lg shadow-purple-900/20 transition-all">Save for Customer</button>
+            <button ref="updatePricelistBtn" @click="confirmUpdatePricelist" @keydown="onSavePriceKeydown" class="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 transition-all">Update Price List</button>
+          </div>
+          <button ref="savePriceNoBtn" @click="dismissSavePrice" @keydown="onSavePriceKeydown" class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 transition-all">Dismiss</button>
+        </div>
       </div>
     </div>
 
@@ -1043,9 +1070,10 @@ function applyCustomerPricingForRow(idx) {
 }
 
 // Save-price popup
-const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', discount_percentage: 0 })
+const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', discount_percentage: 0, rate: 0, uom: '' })
 const savePriceNoBtn = ref(null)
 const savePriceYesBtn = ref(null)
+const updatePricelistBtn = ref(null)
 let _rateAtFocus = null
 let _discAtFocus = null
 
@@ -1080,7 +1108,15 @@ function onDiscountBlur(idx) {
 function _triggerSavePricePopup(idx, discPct) {
   const item = items.value[idx]
   if (!item?.item_code) return
-  savePricePopup.value = { show: true, idx, item_code: item.item_code, item_name: item.item_name, discount_percentage: discPct }
+  savePricePopup.value = { 
+    show: true, 
+    idx, 
+    item_code: item.item_code, 
+    item_name: item.item_name, 
+    discount_percentage: discPct,
+    rate: item.rate,
+    uom: item.uom
+  }
   nextTick(() => savePriceNoBtn.value?.focus())
 }
 
@@ -1102,6 +1138,25 @@ async function confirmSavePrice() {
   focusNewCode()
 }
 
+async function confirmUpdatePricelist() {
+  const { item_code, rate, uom } = savePricePopup.value
+  try {
+    await frappePost('ssplbilling.api.pricelist_api.update_item_price', {
+      item_code,
+      price_list: priceList.value,
+      rate,
+      uom: uom || ""
+    })
+    // Refresh cache to reflect new price
+    refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
+  } catch (e) {
+    console.error('[PriceList] update failed', e)
+  }
+  savePricePopup.value.show = false
+  selectedRow.value = -1
+  focusNewCode()
+}
+
 function dismissSavePrice() {
   savePricePopup.value.show = false
   selectedRow.value = -1
@@ -1109,10 +1164,17 @@ function dismissSavePrice() {
 }
 
 function onSavePriceKeydown(e) {
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+  const btns = [savePriceYesBtn.value, updatePricelistBtn.value, savePriceNoBtn.value].filter(Boolean)
+  const currIdx = btns.indexOf(document.activeElement)
+  
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
     e.preventDefault()
-    if (document.activeElement === savePriceNoBtn.value) savePriceYesBtn.value?.focus()
-    else savePriceNoBtn.value?.focus()
+    const nextIdx = (currIdx - 1 + btns.length) % btns.length
+    btns[nextIdx]?.focus()
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    const nextIdx = (currIdx + 1) % btns.length
+    btns[nextIdx]?.focus()
   }
 }
 
