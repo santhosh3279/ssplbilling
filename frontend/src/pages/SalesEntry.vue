@@ -204,16 +204,16 @@
             <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
               <thead>
                 <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-                  <th class="w-8 border-r border-b border-slate-700 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">#</th>
-                  <th class="w-32 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Barcode</th>
-                  <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Item Name</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Qty</th>
-                  <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">UOM</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Disc %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-amber-500">Disc Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Tax %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs uppercase tracking-wider text-slate-300">Amount</th>
+                  <th class="w-8 border-r border-b border-slate-700 px-3 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-400">#</th>
+                  <th class="w-32 border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">Barcode</th>
+                  <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">Item Name</th>
+                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Qty</th>
+                  <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">UOM</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Rate</th>
+                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Disc %</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-amber-500">Disc Rate</th>
+                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Tax %</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Amount</th>
                   <th class="w-8 border-b border-slate-700"></th>
                 </tr>
               </thead>
