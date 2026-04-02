@@ -10,7 +10,7 @@
       <!-- Header -->
       <div class="border-b border-slate-700 px-5 py-4 flex items-center gap-8 bg-slate-800">
         <div class="shrink-0">
-          <div class="text-2xl font-semibold text-slate-200 whitespace-nowrap">Detailed Item Search ({{ searchType }})</div>
+          <div class="text-2xl text-slate-200 whitespace-nowrap">Detailed Item Search ({{ searchType }})</div>
           <div class="text-sm text-slate-400">View stock info and select item</div>
         </div>
 
@@ -31,7 +31,7 @@
         <div class="flex items-center gap-3">
           <button
             @click="isDecrypted = !isDecrypted"
-            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-bold transition-all"
+            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all"
             :class="isDecrypted ? 'border-amber-500 bg-amber-900/20 text-amber-400' : 'border-slate-600 bg-slate-800 text-slate-400'"
           >
             <span>{{ isDecrypted ? '🔓' : '🔒' }}</span>
@@ -46,28 +46,28 @@
         <div class="flex flex-col gap-3">
           <div class="flex flex-wrap items-start gap-x-8 gap-y-2">
             <div class="flex flex-col min-w-[130px]">
-              <span class="text-[10px] font-bold uppercase text-slate-500">Current Stock</span>
-              <span class="text-xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-400' : 'text-green-400'">
+              <span class="text-[10px] uppercase text-slate-500">Current Stock</span>
+              <span class="text-xl" :class="results[selectedIdx].stock <= 0 ? 'text-red-400' : 'text-green-400'">
                 {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
               </span>
             </div>
             <div v-if="warehouse" class="flex flex-col min-w-[130px] max-w-[200px]">
-              <span class="text-[10px] font-bold uppercase text-slate-500">Warehouse</span>
-              <span class="truncate text-sm font-semibold text-slate-400" :title="warehouse">{{ warehouse }}</span>
+              <span class="text-[10px] uppercase text-slate-500">Warehouse</span>
+              <span class="truncate text-sm text-slate-400" :title="warehouse">{{ warehouse }}</span>
             </div>
             <div class="flex flex-col min-w-[130px]">
-              <span class="text-[10px] font-bold uppercase text-slate-500">{{ priceList || 'Rate' }}</span>
-              <span class="text-xl font-bold text-slate-200">
+              <span class="text-[10px] uppercase text-slate-500">{{ priceList || 'Rate' }}</span>
+              <span class="text-xl text-slate-200">
                 {{ encPrice(results[selectedIdx].price || 0) }}
               </span>
             </div>
             <div class="flex flex-col flex-[0.6]">
-              <span class="text-[10px] font-bold uppercase text-slate-500">Item Name</span>
-              <span class="text-lg text-slate-200 font-semibold truncate">{{ results[selectedIdx].item_name }}</span>
+              <span class="text-[10px] uppercase text-slate-500">Item Name</span>
+              <span class="text-lg text-slate-200 truncate">{{ results[selectedIdx].item_name }}</span>
             </div>
             <div class="flex flex-col flex-[0.4]">
-              <span class="text-[10px] font-bold uppercase text-slate-500">Default Supplier</span>
-              <span class="text-lg text-slate-400 font-semibold truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
+              <span class="text-[10px] uppercase text-slate-500">Default Supplier</span>
+              <span class="text-lg text-slate-400 truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@
       <div ref="scrollContainer" class="flex-1 overflow-y-auto">
         <table class="w-full text-2xl">
           <thead class="sticky top-0 bg-slate-800 shadow-sm">
-            <tr class="text-lg font-bold uppercase tracking-wider text-slate-400 border-b border-slate-700">
+            <tr class="text-lg uppercase tracking-wider text-slate-400 border-b border-slate-700">
               <th class="px-5 py-3 text-left w-1/4">Item Code</th>
               <th class="px-5 py-3 text-left">Item Name</th>
               <th class="px-5 py-3 text-right">{{ priceList || 'Rate' }}</th>
@@ -92,18 +92,18 @@
               :class="{ 'bg-blue-900/30': selectedIdx === idx, 'hover:bg-slate-800/40': selectedIdx !== idx }"
               @click="$emit('select', item)"
             >
-              <td class="px-5 py-2 font-mono text-xl text-blue-400 flex items-center gap-2">
+              <td class="px-5 py-2 font-mono text-3xl text-blue-400 flex items-center gap-2">
                 <span v-if="item.has_history" class="h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" title="Previously sold to this customer"></span>
                 <span>{{ item.item_code }}</span>
               </td>
               <td class="px-5 py-2">
                 <div class="font-medium text-slate-200">{{ item.item_name }}</div>
               </td>
-              <td class="px-5 py-2 text-right font-mono text-amber-400 font-bold tracking-wider">
+              <td class="px-5 py-2 text-right font-mono text-amber-400 tracking-wider">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
               <td class="px-5 py-2 text-right">
-                <span class="font-bold" :class="item.stock <= 0 ? 'text-red-400' : 'text-slate-200'">
+                <span :class="item.stock <= 0 ? 'text-red-400' : 'text-slate-200'">
                   {{ item.stock || 0 }}
                 </span>
               </td>
@@ -123,15 +123,15 @@
           <table class="w-full border-collapse">
             <thead>
               <tr class="bg-slate-800/50">
-                <th class="border border-slate-700 px-2 py-1 text-left text-xs font-bold text-slate-500 uppercase w-32">UOM</th>
-                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right text-lg font-bold text-slate-500 uppercase min-w-[120px]">
+                <th class="border border-slate-700 px-2 py-1 text-left text-xs font-normal text-slate-500 uppercase w-32">UOM</th>
+                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right text-lg font-normal text-slate-500 uppercase min-w-[120px]">
                   {{ pl.name }}
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-slate-800/30">
-                <td class="border border-slate-700 px-2 py-1 text-lg font-bold text-slate-400 truncate">{{ uom }}</td>
+                <td class="border border-slate-700 px-2 py-1 text-lg text-slate-400 truncate">{{ uom }}</td>
                 <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right font-mono text-amber-400 text-2xl tracking-widest">
                   {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : '--' }}
                 </td>
