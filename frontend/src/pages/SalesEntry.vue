@@ -308,7 +308,7 @@
             </div>
 
             <!-- 2. Price List row -->
-            <div class="flex flex-col border-b border-slate-700 min-h-[120px]">
+            <div class="flex flex-col">
               <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
               <table v-if="selectedItemData && selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full border-collapse text-[10px]">
                 <thead>
