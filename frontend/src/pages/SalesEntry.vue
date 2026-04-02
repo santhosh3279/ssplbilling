@@ -299,7 +299,7 @@
                       <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
                       <td class="px-1 py-0.5 text-right font-mono text-slate-300 border border-slate-700 text-xl">{{ p.rate.toFixed(2) }}</td>
                       <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
-                      <td class="px-1 py-0.5 text-right border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
+                      <td class="px-1 py-0.5 text-right border border-slate-700 text-lg" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
                     </tr>
                   </tbody>
                 </table>
