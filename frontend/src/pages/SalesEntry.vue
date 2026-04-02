@@ -671,53 +671,17 @@
 
     <input type="file" ref="fileInput" class="hidden" @change="handleImportFile" accept=".csv,.xlsx,.xls" />
 
-    <!-- SAVE PRICE / UPDATE PRICELIST SUBWINDOW -->
-    <div v-if="savePricePopup.show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
-      <div class="w-[400px] overflow-hidden rounded-2xl bg-slate-900 border border-purple-500/40 shadow-2xl">
-        <div class="bg-purple-900/20 px-6 py-4 flex items-center gap-3 border-b border-purple-500/30">
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-purple-900/40 text-xl text-purple-400">💰</div>
-          <div>
-            <div class="text-lg font-bold text-slate-100">Update Item Price?</div>
-            <div class="text-[10px] text-purple-400 uppercase tracking-wider font-bold">Price Change Detected</div>
-          </div>
-        </div>
-        
-        <div class="p-6 space-y-4">
-          <div class="flex flex-col gap-1">
-            <div class="text-sm font-bold text-slate-200">{{ savePricePopup.item_name || savePricePopup.item_code }}</div>
-            <div class="text-xs text-slate-500">Item Code: {{ savePricePopup.item_code }}</div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4 rounded-xl bg-slate-800/50 p-4 border border-slate-700/50">
-            <div class="flex flex-col">
-              <span class="text-[10px] text-slate-500 uppercase font-bold">New Rate</span>
-              <span class="text-xl font-mono text-slate-100">{{ savePricePopup.rate.toFixed(2) }}</span>
-            </div>
-            <div class="flex flex-col">
-              <span class="text-[10px] text-slate-500 uppercase font-bold">Discount %</span>
-              <span class="text-xl font-mono text-purple-400">{{ savePricePopup.discount_percentage.toFixed(2) }}%</span>
-            </div>
-          </div>
-
-          <div class="text-xs text-slate-400 leading-relaxed">
-            Choose how you want to save this price change. You can save it as a special discount for <span class="text-slate-200 font-medium">{{ customer }}</span>, or update the main <span class="text-slate-200 font-medium">{{ priceList }}</span> price list.
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-2 p-6 pt-0">
-          <div class="flex gap-2">
-            <button ref="savePriceYesBtn" @click="confirmSavePrice" @keydown="onSavePriceKeydown" class="flex-1 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-purple-700 shadow-lg shadow-purple-900/20 transition-all">Save for Customer</button>
-            <button ref="updatePricelistBtn" @click="confirmUpdatePricelist" @keydown="onSavePriceKeydown" class="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 transition-all">Update Price List</button>
-          </div>
-          <button ref="savePriceNoBtn" @click="dismissSavePrice" @keydown="onSavePriceKeydown" class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 transition-all">Dismiss</button>
-          <div class="mt-2 text-center">
-            <span class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">
-              Press <kbd class="rounded border border-slate-700 bg-slate-800 px-1 py-0.5 font-mono text-slate-400">F4</kbd> for Advanced Price List Update
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Price Update Modal (Refactored Component) -->
+    <CustomerPrice
+      v-if="savePricePopup.show"
+      :data="savePricePopup"
+      :customer="customer"
+      :price-list="priceList"
+      @saveCustomer="confirmSavePrice"
+      @updatePricelist="confirmUpdatePricelist"
+      @dismiss="dismissSavePrice"
+      @advanced="showPriceListUpdate = true"
+    />
 
     <!-- Price List Update Subwindow -->
     <PriceListUpdate
@@ -771,12 +735,14 @@ import { searchCustomers } from '../customersearch.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import CustomerPrice from '../components/CustomerPrice.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
+import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
 import { useItemCache } from '../services/itemCache.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import CustomerLedger from './CustomerLedger.vue'
@@ -1093,9 +1059,6 @@ function applyCustomerPricingForRow(idx) {
 
 // Save-price popup
 const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', discount_percentage: 0, rate: 0, uom: '' })
-const savePriceNoBtn = ref(null)
-const savePriceYesBtn = ref(null)
-const updatePricelistBtn = ref(null)
 let _rateAtFocus = null
 let _discAtFocus = null
 
@@ -1145,11 +1108,7 @@ function _triggerSavePricePopup(idx, discPct) {
 async function confirmSavePrice() {
   const { item_code, discount_percentage, idx } = savePricePopup.value
   try {
-    await frappePost('ssplbilling.api.customer_pricing_api.save_customer_item_price', {
-      customer: customer.value,
-      item_code,
-      discount_percentage,
-    })
+    await saveCustomerItemPrice(customer.value, item_code, discount_percentage)
     customerPricing.value[item_code] = discount_percentage
     if (idx != null && items.value[idx]) items.value[idx]._customer_pricing = true
   } catch (e) {
@@ -1163,13 +1122,7 @@ async function confirmSavePrice() {
 async function confirmUpdatePricelist() {
   const { item_code, rate, uom } = savePricePopup.value
   try {
-    await frappePost('ssplbilling.api.pricelist_api.update_item_price', {
-      item_code,
-      price_list: priceList.value,
-      rate,
-      uom: uom || ""
-    })
-    // Refresh cache to reflect new price
+    await updateItemPriceList(item_code, priceList.value, rate, uom)
     refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
   } catch (e) {
     console.error('[PriceList] update failed', e)
@@ -1183,27 +1136,6 @@ function dismissSavePrice() {
   savePricePopup.value.show = false
   selectedRow.value = -1
   focusNewCode()
-}
-
-function onSavePriceKeydown(e) {
-  if (e.key === 'F4') {
-    e.preventDefault()
-    showPriceListUpdate.value = true
-    return
-  }
-
-  const btns = [savePriceYesBtn.value, updatePricelistBtn.value, savePriceNoBtn.value].filter(Boolean)
-  const currIdx = btns.indexOf(document.activeElement)
-  
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-    e.preventDefault()
-    const nextIdx = (currIdx - 1 + btns.length) % btns.length
-    btns[nextIdx]?.focus()
-  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-    e.preventDefault()
-    const nextIdx = (currIdx + 1) % btns.length
-    btns[nextIdx]?.focus()
-  }
 }
 
 // ==================== API RESOURCES ====================
