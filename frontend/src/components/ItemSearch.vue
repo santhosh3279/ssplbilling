@@ -29,6 +29,14 @@
         </div>
 
         <div class="flex items-center gap-3">
+          <button
+            @click="isDecrypted = !isDecrypted"
+            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-bold transition-all"
+            :class="isDecrypted ? 'border-amber-500 bg-amber-900/20 text-amber-400' : 'border-slate-600 bg-slate-800 text-slate-400'"
+          >
+            <span>{{ isDecrypted ? '🔓' : '🔒' }}</span>
+            {{ isDecrypted ? 'Decrypt' : 'Encrypt' }}
+          </button>
           <button @click="$emit('close')" class="text-2xl text-slate-500 hover:text-slate-300">✕</button>
         </div>
       </div>
@@ -226,13 +234,13 @@ const editItemCode = ref('')
 const showPriceUpdateModal = ref(false)
 const insightData = ref(null)
 const cipherMap = ref([])
+const isDecrypted = ref(false)
 
 // ─── Encryption Logic ────────────────────────────────────────────────────────
 
 function loadCipherMap() {
   try {
-    const cached = JSON.parse(localStorage.getItem('wb-billing-settings-v2') || 'null')
-    const raw = cached?.data?.cipher_map
+    const raw = localStorage.getItem('wb-cipher')
     if (raw) {
       const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
       if (Array.isArray(parsed) && parsed.length === 10) {
@@ -247,7 +255,7 @@ function loadCipherMap() {
 function encPrice(val) {
   const n = Number(val || 0)
   const str = n % 1 === 0 ? String(n) : n.toFixed(2)
-  if (!cipherMap.value.length) return str
+  if (isDecrypted.value || !cipherMap.value.length) return str
   return str.replace(/\d/g, d => cipherMap.value[parseInt(d)] ?? d)
 }
 
