@@ -1115,7 +1115,6 @@ async function confirmSavePrice() {
     console.error('[CustomerPricing] save failed', e)
   }
   savePricePopup.value.show = false
-  selectedRow.value = -1
   focusNewCode()
 }
 
@@ -1128,13 +1127,11 @@ async function confirmUpdatePricelist() {
     console.error('[PriceList] update failed', e)
   }
   savePricePopup.value.show = false
-  selectedRow.value = -1
   focusNewCode()
 }
 
 function dismissSavePrice() {
   savePricePopup.value.show = false
-  selectedRow.value = -1
   focusNewCode()
 }
 
