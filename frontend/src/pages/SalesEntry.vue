@@ -289,29 +289,31 @@
           <!-- Insights Column (Previous Sales, Price Lists, Stock) -->
           <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:240px;max-width:280px;scrollbar-width:none">
             <!-- 1. Previous Sales row -->
-            <div class="flex flex-col border-b border-slate-700 min-h-[150px]">
+            <div class="flex flex-col border-b border-slate-700">
               <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Sales<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-              <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
-                <thead>
-                  <tr class="bg-slate-800">
-                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
-                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
-                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
-                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Qty</th>
-                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Disc%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
-                    <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
-                    <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
-                    <td class="px-1 py-0.5 text-right font-mono text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
-                    <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
-                    <td class="px-1 py-0.5 text-right border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous sales' : 'Select a row to see history' }}</div>
+              <div class="overflow-y-auto scrollbar-none max-h-[110px]">
+                <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
+                  <thead>
+                    <tr class="bg-slate-800 sticky top-0 z-10">
+                      <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
+                      <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
+                      <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
+                      <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Qty</th>
+                      <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Disc%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
+                      <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
+                      <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
+                      <td class="px-1 py-0.5 text-right font-mono text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
+                      <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
+                      <td class="px-1 py-0.5 text-right border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous sales' : 'Select a row to see history' }}</div>
+              </div>
             </div>
 
             <!-- 2. Price List row -->
