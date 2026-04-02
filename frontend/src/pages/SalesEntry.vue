@@ -1990,6 +1990,7 @@ async function saveBill() {
   const payload = {
     customer: customer.value,
     date: billDate.value,
+    due_date: getTodayIST(),
     is_return: isReturn.value ? 1 : 0,
     naming_series: billSeries.value,
     price_list: priceList.value || 'Standard Selling',

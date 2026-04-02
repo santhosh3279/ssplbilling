@@ -1543,6 +1543,7 @@ async function saveBill() {
     supplier: supplier.value,
     bill_no: billNo.value,
     date: billDate.value,
+    due_date: getTodayIST(),
     is_return: isReturn.value ? 1 : 0,
     naming_series: billSeries.value,
     discount_percentage: discountInputMode.value === 'amt' ? 0 : (discountPct.value || 0),
