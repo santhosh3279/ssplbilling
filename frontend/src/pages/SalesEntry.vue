@@ -1105,11 +1105,14 @@ function onRateBlur(idx) {
   
   // Compute multiplication factor vs cached list price and offer to save
   const cached = lookupItemInCache(item.item_code)
-  const listRate = rateForUom(cached, item.uom) || newRate
+  const listRate = rateForUom(cached, item.uom) || 0
   const factor = listRate > 0 ? (newRate / listRate) : 1
   
-  // If factor is close enough to 1, don't bother
-  if (Math.abs(factor - 1) > 0.0001) {
+  // If listRate is 0, we can't really compute a factor but we should still allow 
+  // updating the pricelist or saving for customer if the new rate > 0
+  if (listRate === 0 && newRate > 0) {
+    _triggerSavePricePopup(idx, 1) // Factor of 1 for 0-based, or we could use factor = newRate
+  } else if (Math.abs(factor - 1) > 0.0001) {
     _triggerSavePricePopup(idx, factor)
   }
 }
