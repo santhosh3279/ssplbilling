@@ -1487,15 +1487,29 @@ async function onCodeEnter(idx) {
   const r = await lookupItem(code)
   if (r) {
     const resolvedCode = r.item_code || code
-    const originalCode = editingOriginalCode.value
-    items.value[idx].item_code = resolvedCode  // normalize case always
-    if (resolvedCode !== originalCode) {
-      // Item changed — overwrite all metadata
-      items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].uoms = r.uoms || []; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
-      if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
-      applyDiscountRuleForRow(idx)
-      applyCustomerPricingForRow(idx)
+    // Reset the row like a new one
+    items.value[idx] = {
+      ...items.value[idx],
+      item_code: resolvedCode,
+      item_name: r.item_name,
+      uom: r.uom,
+      uoms: r.uoms || [],
+      uom_price_lists: r.uom_price_lists || {},
+      qty: 1,
+      rate: r.rate,
+      discount: 0,
+      tax_rate: r.tax_rate ?? defaultTaxRate.value,
+      warehouse: r.warehouse || defaultWarehouse.value,
+      deleted: false,
+      _is_free: false,
+      _rule_discount: null,
+      _customer_pricing: false
     }
+    
+    if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
+    applyDiscountRuleForRow(idx)
+    applyCustomerPricingForRow(idx)
+    
     loadItemInsight(resolvedCode, r.item_name, r.uom)
     focusField('qty', idx)
   }
@@ -1611,25 +1625,29 @@ async function pickItem(item) {
   } catch (e) {}
 
   if (itemSearchTargetRow !== null) {
-    const row = items.value[itemSearchTargetRow]
-    const itemChanged = row.item_code !== item.item_code
-    
-    row.item_code = item.item_code
-    row.item_name = item.item_name
-    row.deleted = false
-    
-    if (itemChanged) {
-      row.uom = item.uom
-      row.uoms = item.uoms || []
-      row.rate = finalRate
-      row.discount = 0
-      row.tax_rate = finalTax
-      row.warehouse = finalWh
-      applyDiscountRuleForRow(itemSearchTargetRow)
-      applyCustomerPricingForRow(itemSearchTargetRow)
+    // Reset the row like a new one
+    items.value[itemSearchTargetRow] = {
+      ...items.value[itemSearchTargetRow],
+      item_code: item.item_code,
+      item_name: item.item_name,
+      uom: item.uom,
+      uoms: item.uoms || [],
+      uom_price_lists: item.uom_price_lists || {},
+      qty: 1,
+      rate: finalRate,
+      discount: 0,
+      tax_rate: finalTax,
+      warehouse: finalWh,
+      deleted: false,
+      _is_free: false,
+      _rule_discount: null,
+      _customer_pricing: false
     }
     
-    if (!row._rowKey) row._rowKey = makeRowKey()
+    if (!items.value[itemSearchTargetRow]._rowKey) items.value[itemSearchTargetRow]._rowKey = makeRowKey()
+    applyDiscountRuleForRow(itemSearchTargetRow)
+    applyCustomerPricingForRow(itemSearchTargetRow)
+    
     selectedRow.value = itemSearchTargetRow
     focusField('qty', itemSearchTargetRow)
   } else {
