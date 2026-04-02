@@ -151,15 +151,35 @@ export function searchItemsInCache(query, maxResults = 50) {
   const terms = cleanQuery.split(/\s+/).filter(Boolean)
   if (terms.length === 0) return []
   
-  return items.value
-    .filter(i => {
-      const code = (i.item_code || '').toLowerCase()
-      const name = (i.item_name || '').toLowerCase()
-      
-      // Check if all terms match either the code or name
-      return terms.every(term => code.includes(term) || name.includes(term))
-    })
-    .slice(0, maxResults)
+  const filtered = items.value.filter(i => {
+    const code = (i.item_code || '').toLowerCase()
+    const name = (i.item_name || '').toLowerCase()
+    const barcodes = (i.barcodes || '').toLowerCase().split(',')
+    
+    // Check if all terms match either the code, name, or any barcode
+    return terms.every(term => 
+      code.includes(term) || 
+      name.includes(term) || 
+      barcodes.some(b => b.includes(term))
+    )
+  })
+
+  // Sort: prioritize exact match on item_code or ANY barcode
+  filtered.sort((a, b) => {
+    const codeA = (a.item_code || '').toLowerCase()
+    const codeB = (b.item_code || '').toLowerCase()
+    const barcodesA = (a.barcodes || '').toLowerCase().split(',')
+    const barcodesB = (b.barcodes || '').toLowerCase().split(',')
+    
+    const isExactA = codeA === cleanQuery || barcodesA.includes(cleanQuery)
+    const isExactB = codeB === cleanQuery || barcodesB.includes(cleanQuery)
+    
+    if (isExactA && !isExactB) return -1
+    if (!isExactA && isExactB) return 1
+    return 0
+  })
+
+  return filtered.slice(0, maxResults)
 }
 
 export function useItemCache() {

@@ -331,7 +331,27 @@ const results = computed(() => {
     list = allItems.value.filter(i => {
       const code = (i.item_code || '').toLowerCase()
       const name = (i.item_name || '').toLowerCase()
-      return terms.every(term => code.includes(term) || name.includes(term))
+      const barcodes = (i.barcodes || '').toLowerCase().split(',')
+      return terms.every(term => 
+        code.includes(term) || 
+        name.includes(term) || 
+        barcodes.some(b => b.includes(term))
+      )
+    })
+
+    // Sort: prioritize exact match on item_code or ANY barcode
+    list.sort((a, b) => {
+      const codeA = (a.item_code || '').toLowerCase()
+      const codeB = (b.item_code || '').toLowerCase()
+      const barcodesA = (a.barcodes || '').toLowerCase().split(',')
+      const barcodesB = (b.barcodes || '').toLowerCase().split(',')
+      
+      const isExactA = codeA === q || barcodesA.includes(q)
+      const isExactB = codeB === q || barcodesB.includes(q)
+      
+      if (isExactA && !isExactB) return -1
+      if (!isExactA && isExactB) return 1
+      return 0
     })
   }
 

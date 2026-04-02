@@ -206,6 +206,19 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	for i in items:
 		i["uoms"] = item_uoms_map.get(i.item_code, [])
 
+	# 5. Batch fetch Barcodes
+	all_barcodes = frappe.get_all(
+		"Item Barcode",
+		filters={"parent": ["in", item_codes]},
+		fields=["parent as item_code", "barcode"],
+	)
+	item_barcodes_map = {}
+	for row in all_barcodes:
+		item_barcodes_map.setdefault(row.item_code, []).append(row.barcode)
+	
+	for i in items:
+		i["barcodes"] = ",".join(item_barcodes_map.get(i.item_code, []))
+
 	return items
 
 
