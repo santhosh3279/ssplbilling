@@ -23,7 +23,7 @@
             <div class="text-[10px] font-mono text-slate-500">{{ item.item_code }}</div>
           </div>
           <div class="flex flex-col items-end shrink-0">
-            <div class="text-xs font-mono text-amber-400">{{ formatPrice(item.price) }}</div>
+            <div class="text-xs font-mono text-amber-400">{{ formatPrice(getItemPrice(item)) }}</div>
             <div 
               class="text-[10px] font-bold" 
               :class="item.stock > 20 ? 'text-green-500' : item.stock > 0 ? 'text-amber-500' : 'text-red-500'"
@@ -48,6 +48,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 const props = defineProps({
   results: { type: Array, default: () => [] },
   query: { type: String, default: '' },
+  priceList: { type: String, default: '' },
   anchorEl: { type: Object, default: null } // Optional: to position relative to
 })
 
@@ -75,6 +76,24 @@ const positionStyle = computed(() => {
     right: '24px'
   }
 })
+
+function getItemPrice(item) {
+  if (!props.priceList) return item.price
+
+  // 1. Try UOM-specific price list first
+  const plUomRates = item.uom_price_lists?.[props.priceList]
+  if (plUomRates && plUomRates[item.uom] != null) {
+    return plUomRates[item.uom]
+  }
+
+  // 2. Try generic price list for the item
+  if (item.price_lists && item.price_lists.length) {
+    const pl = item.price_lists.find(p => p.name === props.priceList)
+    if (pl) return pl.rate
+  }
+
+  return item.price
+}
 
 function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(2) : '0.00'

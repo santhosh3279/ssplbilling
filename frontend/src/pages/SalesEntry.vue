@@ -675,6 +675,7 @@
     <QuickItemSearch
       ref="quickSearchRef"
       :results="quickSearchResults"
+      :price-list="priceList"
       :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
