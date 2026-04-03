@@ -219,10 +219,6 @@ def create_sales_invoice(data=None, **kwargs):
     if not data.get("items"):
         frappe.throw("At least one item is required")
 
-    factor = frappe.db.get_value("Customer", data["customer"], "pricelist_multiplication_factor") or 1
-    if factor == 0:
-        factor = 1
-
     si = frappe.new_doc("Sales Invoice")
     si.customer = data["customer"]
     si.posting_date = data.get("date", frappe.utils.today())
@@ -243,9 +239,8 @@ def create_sales_invoice(data=None, **kwargs):
 
     for item in data["items"]:
         disc = float(item.get("discount_percentage") or 0)
-        price_list_rate = float(item.get("price_list_rate") or item["rate"]) * float(factor)
-        base_rate = float(item["rate"]) * float(factor)
-        rate = base_rate if not disc else round(price_list_rate * (1 - disc / 100), 9)
+        price_list_rate = float(item.get("price_list_rate") or item["rate"])
+        rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
         qty = float(item["qty"])
         if si.is_return:
             qty = -abs(qty)
@@ -378,11 +373,6 @@ def update_sales_invoice(data=None, **kwargs):
     invoice_name = data.get("invoice_name")
     si = frappe.get_doc("Sales Invoice", invoice_name)
     si.customer = data["customer"]
-    
-    factor = frappe.db.get_value("Customer", si.customer, "pricelist_multiplication_factor") or 1
-    if factor == 0:
-        factor = 1
-
     si.is_return = data.get("is_return", 0)
     if data.get("price_list"):
         si.selling_price_list = data["price_list"]
@@ -406,9 +396,8 @@ def update_sales_invoice(data=None, **kwargs):
     si.items = []
     for item in data["items"]:
         disc = float(item.get("discount_percentage") or 0)
-        price_list_rate = float(item.get("price_list_rate") or item["rate"]) * float(factor)
-        base_rate = float(item["rate"]) * float(factor)
-        rate = base_rate if not disc else round(price_list_rate * (1 - disc / 100), 9)
+        price_list_rate = float(item.get("price_list_rate") or item["rate"])
+        rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
         qty = float(item["qty"])
         if si.is_return:
             qty = -abs(qty)
