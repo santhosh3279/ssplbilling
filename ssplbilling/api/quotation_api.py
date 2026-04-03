@@ -452,3 +452,9 @@ def submit_quotation(quotation_name):
 	qt.submit()
 
 	return {"quotation_name": qt.name, "docstatus": qt.docstatus}
+
+@frappe.whitelist()
+def delete_quotation(quotation_name):
+	"""Delete a Draft Quotation."""
+	frappe.delete_doc("Quotation", quotation_name)
+	return {"status": "Deleted"}
