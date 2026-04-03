@@ -2,7 +2,7 @@
   <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex">
     <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
         <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Modify Bills</div>
+          <div class="text-xl font-bold uppercase tracking-wider text-slate-500">Modify Bills</div>
         </div>
         
         <!-- Date Filter -->
@@ -44,8 +44,8 @@
 
         <!-- Bill List -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
-          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
-          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-slate-600 italic">No bills found</div>
+          <div v-if="sidebarLoading" class="p-4 text-center text-lg text-slate-500">Loading...</div>
+          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-lg text-slate-600 italic">No bills found</div>
           <div 
             v-for="(inv, idx) in sidebarBills" 
             :key="inv.name"
@@ -60,12 +60,12 @@
           >
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 truncate min-w-0">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-[15px] text-blue-400">{{ inv.name }}</span>
+                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
+                <span class="truncate font-mono text-2xl text-blue-400">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono text-[20px] text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono text-4xl text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-[11px] text-slate-400">{{ inv.customer_name }}</div>
+            <div class="truncate text-lg text-slate-400">{{ inv.customer_name }}</div>
           </div>
         </div>
       </aside>
