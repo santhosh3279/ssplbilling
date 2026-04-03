@@ -69,18 +69,11 @@
 
           <!-- Extra Barcodes -->
           <div class="space-y-[4px]">
-            <div class="flex items-center justify-between px-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider">Additional Barcodes</label>
+            <div class="flex items-center justify-end px-[4px]">
               <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
             </div>
             <div class="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
               <table class="w-full">
-                <thead>
-                  <tr class="border-b border-slate-700 bg-slate-800">
-                    <th class="p-[8px] text-left text-lg font-bold uppercase text-slate-500">Barcode</th>
-                    <th class="w-16"></th>
-                  </tr>
-                </thead>
                 <tbody>
                   <!-- Primary barcode (locked) -->
                   <tr class="border-b border-slate-700/50">
