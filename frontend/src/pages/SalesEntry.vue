@@ -17,17 +17,17 @@
         </div>
 
         <!-- Search & Series Filters -->
-        <div class="flex flex-col gap-1.5 border-b border-slate-700 p-2 bg-slate-800/20">
+        <div class="flex flex-col gap-2 border-b border-slate-700 p-3 bg-slate-800/20">
           <input 
             type="text" 
             v-model="sidebarSearch"
             placeholder="Search invoice/cust..."
-            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+            class="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-lg text-slate-300 outline-none focus:border-blue-500"
           />
           <select
             ref="sidebarSeriesSelect"
             v-model="sidebarSeries"
-            class="w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-2 text-lg text-slate-300 outline-none focus:border-blue-500"
             @keydown.enter.prevent="focusFirstSidebarBill"
           >
             <option value="">All Series</option>
@@ -35,7 +35,7 @@
           </select>
           <button
             @click="draftOnly = !draftOnly"
-            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
+            class="w-full rounded border py-2 text-base font-bold uppercase transition-colors"
             :class="draftOnly ? 'bg-amber-900/40 border-amber-500 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
           >
             {{ draftOnly ? 'Drafts Only' : 'All Bills' }}
