@@ -288,3 +288,15 @@ doc_events = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+
+custom_fields = {
+	"Customer": [
+		{
+			"fieldname": "pricelist_multiplication_factor",
+			"label": "Pricelist multiplication factor",
+			"fieldtype": "Float",
+			"insert_after": "default_price_list",
+		}
+	]
+}
