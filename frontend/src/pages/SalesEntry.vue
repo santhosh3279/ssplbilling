@@ -1177,11 +1177,12 @@ async function confirmSavePrice() {
     console.error('[CustomerPricing] save failed', e)
   }
   savePricePopup.value.show = false
-  focusNewCode()
+  if (idx !== null) goToNextRow(idx)
+  else focusNewCode()
 }
 
 async function confirmUpdatePricelist() {
-  const { item_code, rate, uom } = savePricePopup.value
+  const { item_code, rate, uom, idx } = savePricePopup.value
   try {
     await updateItemPriceList(item_code, priceList.value, rate, uom)
     refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
@@ -1189,12 +1190,15 @@ async function confirmUpdatePricelist() {
     console.error('[PriceList] update failed', e)
   }
   savePricePopup.value.show = false
-  focusNewCode()
+  if (idx !== null) goToNextRow(idx)
+  else focusNewCode()
 }
 
 function dismissSavePrice() {
+  const { idx } = savePricePopup.value
   savePricePopup.value.show = false
-  focusNewCode()
+  if (idx !== null) goToNextRow(idx)
+  else focusNewCode()
 }
 
 // ==================== API RESOURCES ====================
@@ -1459,11 +1463,11 @@ function findNextActiveRow(from, dir) { let i = from + dir; while (i >= 0 && i <
 function moveRow(from, dir) { const n = findNextActiveRow(from, dir); if (n !== null) { selectedRow.value = n; focusRow(n) } else if (dir === 1) { selectedRow.value = -1; focusNewCode() } }
 function moveToLastActiveRow() { for (let i = items.value.length - 1; i >= 0; i--) { if (!items.value[i].deleted) { selectedRow.value = i; focusRow(i); return } } }
 function selectRow(idx) { if (!items.value[idx].deleted) { selectedRow.value = idx; focusRow(idx) } }
-function goToNextRow(from) { 
+function goToNextRow(from) {
   if (items.value[from]?.qty === 0) return
-  const n = findNextActiveRow(from, 1); 
-  if (n !== null) { selectedRow.value = n; focusRow(n) } 
-  else { selectedRow.value = -1; focusNewCode() } 
+  const n = findNextActiveRow(from, 1);
+  if (n !== null) { selectedRow.value = n; focusField('code', n) }
+  else { selectedRow.value = -1; focusNewCode() }
 }
 function enterRow(idx) { if (!items.value[idx]?.deleted && billDocStatus.value === 0) focusField('code', idx) }
 function onRowKeydown(e, idx) {
