@@ -1104,6 +1104,13 @@ const { ignoreDiscountRule, makeRowKey, applyDiscountRuleForRow, reapplyAllDisco
 // ==================== CUSTOMER PRICING ====================
 const customerPricing = ref({}) // { item_code: discount_percentage }
 
+// Re-calculate all items when global customer factor changes
+watch(selectedCustomerDetails, (newVal) => {
+  if (newVal && !billSaved.value) {
+    items.value.forEach((_, idx) => applyCustomerPricingForRow(idx))
+  }
+})
+
 async function loadCustomerPricing(cust) {
   if (!cust) { customerPricing.value = {}; return }
   try {
@@ -1905,11 +1912,15 @@ async function loadInvoice(invoiceName) {
     const inv = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: invoiceName })
     if (!inv) { alert('Could not load invoice'); return }
 
-    // Populate form with invoice data
-    customer.value = inv.customer
-    custSearch.value = inv.customer_name
+    // 1. Basic Info
+    savedInvoiceName.value = inv.name
+    billDocStatus.value = inv.docstatus
+    billSaved.value = true
     billDate.value = inv.posting_date
     isReturn.value = !!inv.is_return
+    paymentMode.value = inv.payment_mode || 'Cash'
+    
+    // 2. Series & Price List
     skipPriceListSync.value = true
     if (inv.naming_series && availableSeries.value.includes(inv.naming_series)) {
       billSeries.value = inv.naming_series
@@ -1917,7 +1928,8 @@ async function loadInvoice(invoiceName) {
     await nextTick()
     if (inv.price_list) priceList.value = inv.price_list
     skipPriceListSync.value = false
-    paymentMode.value = inv.payment_mode || 'Cash'
+
+    // 3. Totals & Discounts
     if (inv.additional_discount_amount > 0) {
       discountDirectAmt.value = inv.additional_discount_amount
       discountPct.value = 0
@@ -1933,10 +1945,10 @@ async function loadInvoice(invoiceName) {
     otherChargesAmt.value = inv.other_charges_amount || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
+
+    // 4. Items
     items.value = inv.items.map(i => {
       const disc = i.discount || 0
-      // Use the price_list_rate saved on the invoice item (the rate before row-level
-      // discount). Fall back to rate if price_list_rate is absent (older records).
       const listRate = i.price_list_rate || i.rate
       const isFreeRow = (i.rate === 0 || i.rate === '0') && disc === 0
       return {
@@ -1956,18 +1968,17 @@ async function loadInvoice(invoiceName) {
     newPending.value = { item_name: '', uom: '', rate: null }
     selectedItemData.value = null
 
-    savedInvoiceName.value = inv.name
-    billDocStatus.value = inv.docstatus
-    billSaved.value = true
+    // 5. Incentive
     incentiveRows.value = (inv.incentive_system || []).map(r => ({
       employee: r.employee || '', employee_name: r.employee_name || '',
       role: r.role || '', points: parseFloat(r.points) || 0,
     }))
     fetchNextBillNo()
 
-    // Set selectedCustomerDetails for display
+    // 6. Set selectedCustomerDetails BEFORE customer.value
     try {
-      selectedCustomerDetails.value = await fetchCustomerDetails(inv.customer)
+      const details = await fetchCustomerDetails(inv.customer)
+      selectedCustomerDetails.value = details
     } catch (e) {
       selectedCustomerDetails.value = {
         name: inv.customer,
@@ -1976,6 +1987,9 @@ async function loadInvoice(invoiceName) {
         address_line1: ""
       }
     }
+    
+    customer.value = inv.customer
+    custSearch.value = inv.customer_name
   } catch (e) {
     alert('Error loading invoice: ' + (e.message || 'Unknown error'))
   }
