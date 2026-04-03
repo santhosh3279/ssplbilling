@@ -221,6 +221,8 @@ def create_sales_invoice(data=None, **kwargs):
 
     si = frappe.new_doc("Sales Invoice")
     si.customer = data["customer"]
+    if data.get("customer_address"):
+        si.customer_address = data["customer_address"]
     si.posting_date = data.get("date", frappe.utils.today())
     si.set_posting_time = 1
     si.naming_series = data.get("naming_series", "SINV-.YY.-")
@@ -375,13 +377,15 @@ def update_sales_invoice(data=None, **kwargs):
     
     if si.customer != data["customer"]:
         si.customer = data["customer"]
-        si.customer_address = None
+        si.customer_address = data.get("customer_address")
         si.shipping_address_name = None
         si.contact_person = None
         si.contact_display = None
         si.contact_mobile = None
         si.contact_email = None
         si.address_display = None
+    elif data.get("customer_address"):
+        si.customer_address = data["customer_address"]
 
     si.is_return = data.get("is_return", 0)
     if data.get("price_list"):

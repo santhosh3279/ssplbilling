@@ -2198,6 +2198,7 @@ async function saveQuotation() {
 
   const payload = {
     customer: customer.value,
+    customer_address: selectedCustomerDetails.value?.address_name || '',
     date: quotationDate.value,
     valid_till: getTodayIST(),
     naming_series: quotationSeries.value,

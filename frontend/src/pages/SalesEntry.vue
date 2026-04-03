@@ -2237,6 +2237,7 @@ async function saveBill() {
 
   const payload = {
     customer: customer.value,
+    customer_address: selectedCustomerDetails.value?.address_name || '',
     date: billDate.value,
     due_date: getTodayIST(),
     is_return: isReturn.value ? 1 : 0,

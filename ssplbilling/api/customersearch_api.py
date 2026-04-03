@@ -99,7 +99,7 @@ def get_all_ledgers():
 
     # 4. Batch fetch primary addresses (Customers & Suppliers)
     addresses = frappe.db.sql("""
-        SELECT dl.link_name AS name, addr.address_line1, addr.city
+        SELECT dl.link_name AS name, addr.name as address_name, addr.address_line1, addr.city
         FROM `tabDynamic Link` dl
         JOIN `tabAddress` addr ON addr.name = dl.parent
         WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Address'
@@ -109,6 +109,7 @@ def get_all_ledgers():
         if a.name in ledger_map:
             l = ledger_map[a.name]
             if not l.get("address_line1"):
+                l["address_name"] = a.address_name
                 l["address_line1"] = a.address_line1
                 l["city"] = a.city
 
@@ -166,7 +167,7 @@ def get_customer_ledger():
 
     # 2. Batch fetch primary addresses
     addresses = frappe.db.sql("""
-        SELECT dl.link_name AS customer, addr.address_line1, addr.city
+        SELECT dl.link_name AS customer, addr.name as address_name, addr.address_line1, addr.city
         FROM `tabDynamic Link` dl
         JOIN `tabAddress` addr ON addr.name = dl.parent
         WHERE dl.link_doctype = 'Customer' AND dl.parenttype = 'Address'
@@ -206,6 +207,7 @@ def get_customer_ledger():
     # Merge
     for c in customers:
         addr = addr_map.get(c.name)
+        c["address_name"] = addr.address_name if addr else ""
         c["address_line1"] = addr.address_line1 if addr else ""
         c["city"] = addr.city if addr else ""
         c["whatsapp"] = wa_map.get(c.name, "")
@@ -228,6 +230,7 @@ def get_all_customers_detailed():
     addresses = frappe.db.sql("""
         SELECT 
             dl.link_name as customer,
+            addr.name as address_name,
             addr.address_line1,
             addr.city,
             addr.pincode
@@ -254,10 +257,12 @@ def get_all_customers_detailed():
         c["balance"] = bal_map.get(c.name, 0.0)
         addr = addr_map.get(c.name)
         if addr:
+            c["address_name"] = addr.address_name
             c["address_line1"] = addr.address_line1
             c["city"] = addr.city
             c["pincode"] = addr.pincode
         else:
+            c["address_name"] = ""
             c["address_line1"] = ""
             c["city"] = ""
             c["pincode"] = ""
@@ -277,7 +282,7 @@ def get_all_customers_for_sync():
 
 	addresses = frappe.db.sql(
 		"""
-		SELECT dl.link_name AS customer, addr.address_line1, addr.city
+		SELECT dl.link_name AS customer, addr.name as address_name, addr.address_line1, addr.city
 		FROM `tabDynamic Link` dl
 		JOIN `tabAddress` addr ON addr.name = dl.parent
 		WHERE dl.link_doctype = 'Customer' AND dl.parenttype = 'Address'
@@ -308,6 +313,7 @@ def get_all_customers_for_sync():
 
 	for c in customers:
 		addr = addr_map.get(c.name)
+		c["address_name"] = addr.address_name if addr else ""
 		c["address_line1"] = addr.address_line1 if addr else ""
 		c["city"] = addr.city if addr else ""
 		c["whatsapp"] = wa_map.get(c.name, "")
@@ -358,9 +364,12 @@ def search_customers(query):
         if addr_name:
             addr = frappe.db.get_value("Address", addr_name, ["address_line1", "city", "pincode"], as_dict=True)
             if addr:
+                c["address_name"] = addr_name
                 c["address_line1"] = addr.address_line1
                 c["city"] = addr.city
                 c["pincode"] = addr.pincode
+        else:
+            c["address_name"] = ""
         
         contact_name = frappe.db.get_value("Dynamic Link", 
             {"link_doctype": "Customer", "link_name": c.name, "parenttype": "Contact"}, 
@@ -389,6 +398,7 @@ def get_customer_full(customer):
 		"email": doc.email_id or "",
 		"gstin": doc.gstin or "",
 		"whatsapp": "",
+		"address_name": "",
 		"address_line1": "",
 		"address_line2": "",
 		"address_line3": "",
@@ -412,6 +422,7 @@ def get_customer_full(customer):
 			as_dict=True,
 		)
 		if addr:
+			result["address_name"] = addr_name
 			result["address_line1"] = addr.address_line1 or ""
 			result["address_line2"] = addr.address_line2 or ""
 			result["address_line3"] = addr.address_line3 or ""

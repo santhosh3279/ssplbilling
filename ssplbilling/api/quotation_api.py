@@ -342,6 +342,8 @@ def create_quotation(data):
 	qt.naming_series = data.get("naming_series", "SSPL-QT-.YYYY.-")
 	qt.quotation_to = "Customer"
 	qt.party_name = data["customer"]
+	if data.get("customer_address"):
+		qt.customer_address = data["customer_address"]
 	qt.transaction_date = data.get("date") or frappe.utils.today()
 	if data.get("valid_till"):
 		qt.valid_till = data["valid_till"]
@@ -397,13 +399,15 @@ def update_quotation(data):
 
 	if qt.party_name != data["customer"]:
 		qt.party_name = data["customer"]
-		qt.customer_address = None
+		qt.customer_address = data.get("customer_address")
 		qt.shipping_address_name = None
 		qt.contact_person = None
 		qt.contact_display = None
 		qt.contact_mobile = None
 		qt.contact_email = None
 		qt.address_display = None
+	elif data.get("customer_address"):
+		qt.customer_address = data["customer_address"]
 
 	qt.transaction_date = data.get("date") or qt.transaction_date
 	if data.get("valid_till"):

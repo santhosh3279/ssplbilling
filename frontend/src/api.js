@@ -640,6 +640,7 @@ export async function createSalesInvoice(payload) {
     doctype: "Sales Invoice",
     naming_series: payload.namingSeries,
     customer: payload.customer,
+    customer_address: payload.customer_address,
     posting_date: payload.postingDate,
     due_date: payload.postingDate,
     is_pos: 0,

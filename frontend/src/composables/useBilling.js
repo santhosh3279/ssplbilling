@@ -52,6 +52,7 @@ export function useBilling() {
     billDate: todayISO(),
     customer: "",
     customerName: "",    // display label
+    customerAddress: "",
     namingSeries: "",
     invoiceNo: "—",
     paymentType: "Cash",
@@ -149,6 +150,7 @@ export function useBilling() {
   function pickCustomer(c) {
     form.value.customer = c.name;
     form.value.customerName = c.customer_name;
+    form.value.customerAddress = c.address_name || "";
     customerQuery.value = c.customer_name;
     customerOptions.value = [];
     customerDropdownOpen.value = false;
@@ -287,6 +289,7 @@ export function useBilling() {
     try {
       const doc = await createSalesInvoice({
         customer: form.value.customer,
+        customer_address: form.value.customerAddress,
         postingDate: form.value.billDate,
         namingSeries: form.value.namingSeries,
         paymentType: form.value.paymentType,
