@@ -384,6 +384,11 @@ def update_sales_invoice(data=None, **kwargs):
         si.contact_mobile = None
         si.contact_email = None
         si.address_display = None
+        si.tax_category = None
+        si.gst_category = None
+        si.billing_address_gstin = None
+        si.customer_name = None
+        si.place_of_supply = None
     elif data.get("customer_address"):
         si.customer_address = data["customer_address"]
 
