@@ -63,7 +63,7 @@
                 <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
                 <span class="truncate font-mono text-2xl text-blue-400">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono text-4xl text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono text-4xl text-slate-200 tabular-nums">{{ inv.grand_total.toFixed(0) }}</span>
             </div>
             <div class="truncate text-lg text-slate-400">{{ inv.customer_name }}</div>
           </div>
