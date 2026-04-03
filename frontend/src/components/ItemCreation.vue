@@ -197,44 +197,46 @@
             </div>
           </div>
 
-          <div class="space-y-[4px]">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Standard Rate (Selling)</label>
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-3xl">₹</span>
+          <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-[8px]">
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Tax Template</label>
+              <select
+                ref="taxTemplateInput"
+                v-model="form.item_tax_template"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
+                @keydown.enter.prevent="rateInput?.focus()"
+              >
+                <option value="">No Tax / Exempt</option>
+                <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
+              </select>
+            </div>
+
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Standard Rate (Selling)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-3xl">₹</span>
+                <input
+                  ref="rateInput"
+                  v-model.number="form.standard_rate"
+                  type="number"
+                  class="w-full rounded-xl border border-slate-600 bg-slate-800 py-[8px] pl-12 pr-[8px] text-right font-mono text-4xl font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all"
+                  placeholder="0.00"
+                  @keydown.enter.prevent="safetyStockInput?.focus()"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Safety Stock</label>
               <input
-                ref="rateInput"
-                v-model.number="form.standard_rate"
+                ref="safetyStockInput"
+                v-model.number="form.safety_stock"
                 type="number"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-[8px] pl-12 pr-[8px] text-right font-mono text-4xl font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all"
-                placeholder="0.00"
-                @keydown.enter.prevent="safetyStockInput?.focus()"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-right font-mono text-4xl text-slate-200 outline-none focus:border-blue-500 transition-all"
+                placeholder="0"
+                @keydown.enter.prevent="supplierInput?.focus()"
               />
             </div>
-          </div>
-
-          <div class="space-y-[4px]">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Safety Stock</label>
-            <input
-              ref="safetyStockInput"
-              v-model.number="form.safety_stock"
-              type="number"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-right font-mono text-4xl text-slate-200 outline-none focus:border-blue-500 transition-all"
-              placeholder="0"
-              @keydown.enter.prevent="taxTemplateInput?.focus()"
-            />
-          </div>
-
-          <div class="space-y-[4px] md:col-span-2">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Tax Template</label>
-            <select
-              ref="taxTemplateInput"
-              v-model="form.item_tax_template"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
-              @keydown.enter.prevent="supplierInput?.focus()"
-            >
-              <option value="">No Tax / Exempt</option>
-              <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
-            </select>
           </div>
 
           <!-- Supplier -->
