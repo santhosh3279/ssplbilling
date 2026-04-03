@@ -2400,10 +2400,24 @@ useShortcuts(salesEntryShortcuts({
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
     if (showClearBillWarning.value) { showClearBillWarning.value = false; focusNewCode(); return }
-    if (showExitModifyWarning.value) { 
-      showExitModifyWarning.value = false; 
-      nextTick(() => lastFocusedEl.value?.focus()); 
-      return 
+    if (showExitModifyWarning.value) {
+      showExitModifyWarning.value = false;
+      nextTick(() => lastFocusedEl.value?.focus());
+      return
+    }
+
+    // New logic: If focused on a row input (code, qty, rate, discount, etc.), just blur it first
+    const activeEl = document.activeElement
+    if (activeEl && activeEl.tagName === 'INPUT') {
+      // Check if it's one of the grid inputs (including new entry row)
+      const isGridInput = activeEl === newCodeInput.value || 
+                          activeEl === newQtyInput.value || 
+                          Object.values(inputRefs).includes(activeEl)
+
+      if (isGridInput) {
+        activeEl.blur()
+        return // Just blur, keep selectedRow intact
+      }
     }
 
     // 1. If in "Modify Bill" mode (editing an existing draft)
