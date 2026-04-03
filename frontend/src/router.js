@@ -24,6 +24,7 @@ import StoreSalesReport from './pages/StoreSalesReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
 import StockReconciliation from './pages/StockReconciliation.vue'
+import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
 
 const routes = [
   {
@@ -31,6 +32,11 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true },
+  },
+  {
+    path: '/ssplbillingsettings',
+    name: 'SSPLBillingSettings',
+    component: SSPLBillingSettings,
   },
   {
     path: '/',

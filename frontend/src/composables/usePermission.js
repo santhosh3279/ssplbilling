@@ -120,6 +120,7 @@ const TILE_ROUTE_MAP = {
   'pricing-rules':     'PricingRuleSync',
   'loading-receipt':   'LoadingReceipt',
   'parcel-address':    'ParcelAddress',
+  'ssplbillingsettings': 'SSPLBillingSettings',
 }
 
 export function canAccessTile(tileId) {
