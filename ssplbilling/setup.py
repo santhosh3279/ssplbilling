@@ -10,7 +10,13 @@ CUSTOM_FIELDS = {
 			"label": "Customer Print Name",
 			"insert_after": "customer_name",
 			"translatable": 0,
-		}
+		},
+		{
+			"fieldname": "pricelist_multiplication_factor",
+			"label": "Pricelist multiplication factor",
+			"fieldtype": "Float",
+			"insert_after": "default_price_list",
+		},
 	],
 	"Supplier": [
 		{
