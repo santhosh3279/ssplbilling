@@ -65,7 +65,7 @@
               </div>
               <span class="shrink-0 font-mono font-normal text-4xl text-slate-200 tabular-nums">{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-lg text-slate-400">{{ inv.customer_name }}</div>
+            <div class="truncate text-2xl text-slate-400">{{ inv.customer_name }}</div>
           </div>
         </div>
       </aside>
