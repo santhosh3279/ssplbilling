@@ -6,7 +6,7 @@
         </div>
         
         <!-- Date Filter -->
-        <div class="flex items-center gap-1 border-b border-slate-700 p-3 bg-slate-900">
+        <div class="flex items-center gap-1 border-b border-slate-700 p-0 bg-slate-900">
           <button @click="changeSidebarDate(-1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
           <input 
             type="date" 
