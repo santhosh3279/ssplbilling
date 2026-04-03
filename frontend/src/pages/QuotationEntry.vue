@@ -2017,47 +2017,27 @@ import { session } from '../session.js'
 async function fetchSeriesList() {
   try {
     const settings = await fetchBillingSettings()
-    const rows = (settings?.billing_series || []).filter(r => r.series)
-
-    // Fetch allowed series for this user
-    let allowedList = []
-    let userAllowedString = ''
-    try {
-      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series')
-      allowedList = d.allowed_series || []
-      userAllowedString = d.user_allowed_string || ''
-    } catch (e) {
-      console.warn('[QuotationEntry] get_allowed_series failed:', e)
+    
+    // Always fetch global settings even if we don't use billing_series
+    if (!localStorage.getItem('wb-warehouse')) {
+      if (settings?.default_warehouse) defaultWarehouse.value = settings.default_warehouse
     }
-
-    if (rows.length) {
-      billingSeriesConfig.value = rows
-      // Filter available series strictly based on user allowed series
-      const allSeries = rows.map(r => r.series)
-      if (allowedList.length === 0 && !userAllowedString) {
-        // Unrestricted user: show all series from billing settings
-        availableSeries.value = allSeries
-      } else {
-        // Restricted user: show only allowed series
-        availableSeries.value = allSeries.filter(s => allowedList.includes(s))
+    try {
+      const raw = settings?.cipher_map
+      if (raw) {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+        if (Array.isArray(parsed) && parsed.length === 10) cipherMap.value = parsed
       }
+    } catch (e) { /* non-fatal */ }
+  } catch (e) {
+    console.warn('[QuotationEntry] fetchBillingSettings failed:', e)
+  }
 
-      if (!localStorage.getItem('wb-warehouse')) {
-        if (settings.default_warehouse) defaultWarehouse.value = settings.default_warehouse
-      }
-      try {
-        const raw = settings.cipher_map
-        if (raw) {
-          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
-          if (Array.isArray(parsed) && parsed.length === 10) cipherMap.value = parsed
-        }
-      } catch (e) { /* non-fatal */ }
-
-      if (availableSeries.value.length === 0) {
-        alert('You do not have permission to use any naming series.')
-        return
-      }
-
+  try {
+    const list = await frappeGet('ssplbilling.api.quotation_api.get_naming_series')
+    if (Array.isArray(list) && list.length) {
+      availableSeries.value = list
+      
       const target = availableSeries.value.includes(quotationSeries.value)
         ? quotationSeries.value
         : availableSeries.value[0]
@@ -2065,24 +2045,13 @@ async function fetchSeriesList() {
       if (target !== quotationSeries.value) {
         quotationSeries.value = target
       } else {
-        syncSeriesConfig(target)
         fetchNextQuotationNo()
       }
       return
     }
   } catch (e) {
-    console.warn('[QuotationEntry] fetchBillingSettings failed, falling back:', e)
+    console.warn('[QuotationEntry] get_naming_series failed:', e)
   }
-
-  try {
-    const list = await frappeGet('ssplbilling.api.quotation_api.get_naming_series')
-    if (Array.isArray(list) && list.length) {
-      availableSeries.value = list
-      if (list.includes(quotationSeries.value)) { fetchNextQuotationNo() }
-      else { quotationSeries.value = list[0] }
-      return
-    }
-  } catch (e) {}
 
   fetchNextQuotationNo()
 }
