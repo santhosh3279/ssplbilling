@@ -52,9 +52,11 @@
             :ref="el => setSidebarBillRef(el, idx)"
             @click="loadInvoice(inv.name)"
             class="group cursor-pointer border-b border-slate-800 px-2 py-1 transition-colors outline-none focus:ring-1 focus:ring-blue-500"
-            :class="savedInvoiceName === inv.name ? 'border-l-2 border-l-blue-500' : 'bg-slate-900 hover:bg-slate-800 focus:bg-slate-800'"
-            :style="savedInvoiceName === inv.name ? { backgroundColor: '#B0E4CC !important', opacity: '1 !important' } : {}"
+            :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'border-l-2 border-l-blue-500' : 'bg-slate-900 hover:bg-slate-800'"
+            :style="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? { backgroundColor: '#B0E4CC !important', opacity: '1 !important' } : {}"
             tabindex="0"
+            @focus="sidebarFocusedIdx = idx"
+            @blur="sidebarFocusedIdx = -1"
             @keydown.enter="loadInvoice(inv.name)"
             @keydown.up.prevent="navigateSidebarBill(idx, -1)"
             @keydown.down.prevent="navigateSidebarBill(idx, 1)"
@@ -62,11 +64,11 @@
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 truncate min-w-0">
                 <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-2xl" :class="savedInvoiceName === inv.name ? 'text-black font-bold' : 'text-blue-400'">{{ inv.name }}</span>
+                <span class="truncate font-mono text-2xl" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono font-normal text-4xl tabular-nums" :class="savedInvoiceName === inv.name ? 'text-black' : 'text-slate-200'">{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono font-normal text-4xl tabular-nums" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black' : 'text-slate-200'">{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-2xl" :class="savedInvoiceName === inv.name ? 'text-black font-medium' : 'text-slate-400'">{{ inv.customer_name }}</div>
+            <div class="truncate text-2xl" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-medium' : 'text-slate-400'">{{ inv.customer_name }}</div>
           </div>
         </div>
       </aside>
@@ -953,6 +955,7 @@ async function apiPost(method, params) {
 const inputRefs = {}
 const rowRefs   = {}
 const sidebarBillRefs = new Map()
+const sidebarFocusedIdx = ref(-1)
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 function setSidebarBillRef(el, idx) { if (el) sidebarBillRefs.set(idx, el); else sidebarBillRefs.delete(idx) }
