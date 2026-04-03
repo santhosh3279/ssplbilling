@@ -415,3 +415,9 @@ def submit_purchase_invoice(invoice_name):
         return {"name": pi.name, "status": "Already Submitted"}
     else:
         frappe.throw(f"Invoice {invoice_name} is already cancelled")
+
+@frappe.whitelist()
+def delete_purchase_invoice(invoice_name):
+    """Delete a Draft Purchase Invoice."""
+    frappe.delete_doc("Purchase Invoice", invoice_name)
+    return {"status": "Deleted"}
