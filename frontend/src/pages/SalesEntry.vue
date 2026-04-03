@@ -1492,6 +1492,13 @@ function onCodeInput(idx) {
 
 async function onCodeEnter(idx) {
   const code = items.value[idx].item_code.trim(); if (!code) return; items.value[idx].item_code = code
+
+  // If the code hasn't changed, just move to qty
+  if (code === editingOriginalCode.value) {
+    focusField('qty', idx)
+    return
+  }
+
   const r = await lookupItem(code)
   if (r) {
     const resolvedCode = r.item_code || code
@@ -1669,7 +1676,13 @@ function closeItemSearch() {
 
 async function pickItem(item) {
   showItemSearchModal.value = false
-  
+
+  // If the code hasn't changed for an existing row, just focus qty
+  if (itemSearchTargetRow !== null && item.item_code === editingOriginalCode.value) {
+    focusField('qty', itemSearchTargetRow)
+    return
+  }
+
   // Fetch real-time details
   let finalRate = item.price || 0
   let finalTax = item.tax_rate ?? defaultTaxRate.value
