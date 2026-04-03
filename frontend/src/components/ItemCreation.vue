@@ -127,16 +127,19 @@
               @focus="showHSNDropdown = true"
               @blur="setTimeout(() => showHSNDropdown = false, 200)"
               @keydown.enter.prevent="onHSNEnter"
+              @keydown.down.prevent="hsnHighlightIdx = (hsnHighlightIdx + 1) % filteredHSNCodes.length"
+              @keydown.up.prevent="hsnHighlightIdx = (hsnHighlightIdx - 1 + filteredHSNCodes.length) % filteredHSNCodes.length"
             />
             <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 p-1 shadow-xl">
               <button
-                v-for="res in filteredHSNCodes"
+                v-for="(res, idx) in filteredHSNCodes"
                 :key="res.name"
-                class="w-full rounded-lg px-4 py-2 text-left hover:bg-blue-900/30 transition-colors group flex flex-col gap-0.5"
+                class="w-full rounded-lg px-4 py-2 text-left transition-colors group flex flex-col gap-0.5"
+                :class="hsnHighlightIdx === idx ? 'bg-blue-600' : 'hover:bg-blue-900/30'"
                 @click="selectHSN(res.name)"
               >
-                <span class="text-sm font-bold text-slate-200 group-hover:text-blue-400">{{ res.name }}</span>
-                <span v-if="res.description" class="text-[10px] text-slate-500 truncate line-clamp-1 italic">{{ res.description }}</span>
+                <span class="text-sm font-bold group-hover:text-blue-400" :class="hsnHighlightIdx === idx ? 'text-white' : 'text-slate-200'">{{ res.name }}</span>
+                <span v-if="res.description" class="text-[10px] truncate line-clamp-1 italic" :class="hsnHighlightIdx === idx ? 'text-blue-100' : 'text-slate-500'">{{ res.description }}</span>
               </button>
             </div>
           </div>
@@ -380,6 +383,7 @@ const isBarcodeManual = ref(false)
 const autoBarcode = ref('')
 const selectedSeries = ref('')
 const showHSNDropdown = ref(false)
+const hsnHighlightIdx = ref(0)
 
 const form = ref({
   item_name: '',
@@ -539,16 +543,21 @@ async function generateBarcode() {
 function selectHSN(name) {
   form.value.hsn_sac = name
   showHSNDropdown.value = false
+  hsnHighlightIdx.value = 0
   nextTick(() => uomInput.value?.focus())
 }
 
 function onHSNEnter() {
-  if (filteredHSNCodes.value.length > 0 && showHSNDropdown.value) {
-    selectHSN(filteredHSNCodes.value[0].name)
+  if (showHSNDropdown.value && filteredHSNCodes.value.length > 0) {
+    selectHSN(filteredHSNCodes.value[hsnHighlightIdx.value].name)
   } else {
     uomInput.value?.focus()
   }
 }
+
+watch(filteredHSNCodes, () => {
+  hsnHighlightIdx.value = 0
+})
 
 async function handleSubmit() {
   if (!canSubmit.value || isSubmitting.value) return
