@@ -75,13 +75,13 @@
 
       <!-- Results Table -->
       <div ref="scrollContainer" class="flex-1 overflow-y-auto">
-        <table class="w-full text-2xl">
-          <thead class="sticky top-0 bg-slate-800 shadow-sm">
-            <tr class="text-lg uppercase tracking-wider text-slate-400 border-b border-slate-700">
-              <th class="px-5 py-3 text-left w-1/4">Item Code</th>
-              <th class="px-5 py-3 text-left">Item Name</th>
-              <th class="px-5 py-3 text-right">{{ priceList || 'Rate' }}</th>
-              <th class="px-5 py-3 text-right">Stock</th>
+        <table class="w-full text-4xl">
+          <thead class="sticky top-0 bg-slate-800 shadow-sm z-10">
+            <tr class="text-2xl uppercase tracking-wider text-slate-400 border-b border-slate-700">
+              <th class="px-5 py-4 text-left w-1/4">Item Code</th>
+              <th class="px-5 py-4 text-left">Item Name</th>
+              <th class="px-5 py-4 text-right">{{ priceList || 'Rate' }}</th>
+              <th class="px-5 py-4 text-right">Stock</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-800">
@@ -93,17 +93,17 @@
               :style="selectedIdx === idx ? { backgroundColor: '#B0E4CC !important' } : {}"
               @click="$emit('select', item)"
             >
-              <td class="px-5 py-2 font-mono text-3xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">
-                <span v-if="item.has_history" class="h-2 w-2 shrink-0 rounded-full animate-pulse" :class="selectedIdx === idx ? 'bg-black/40' : 'bg-blue-500'" title="Previously sold to this customer"></span>
+              <td class="px-5 py-4 font-mono text-5xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">
+                <span v-if="item.has_history" class="h-3 w-3 shrink-0 rounded-full animate-pulse" :class="selectedIdx === idx ? 'bg-black/40' : 'bg-blue-500'" title="Previously sold to this customer"></span>
                 <span>{{ item.item_code }}</span>
               </td>
-              <td class="px-5 py-2">
+              <td class="px-5 py-4">
                 <div class="font-medium" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-slate-200'">{{ item.item_name }}</div>
               </td>
-              <td class="px-5 py-2 text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-amber-400'">
+              <td class="px-5 py-4 text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-amber-400'">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
-              <td class="px-5 py-2 text-right">
+              <td class="px-5 py-4 text-right">
                 <span :class="selectedIdx === idx ? 'text-black font-bold' : (item.stock <= 0 ? 'text-red-400' : 'text-slate-200')">
                   {{ item.stock || 0 }}
                 </span>
