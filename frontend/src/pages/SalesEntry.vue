@@ -96,6 +96,7 @@
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ctrl+S</kbd> Save</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F2</kbd> New Bill</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F5</kbd> Print</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ctrl+M</kbd> Modify</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Esc</kbd> Back</span>
             <div class="h-3 w-px bg-slate-700"></div>
             <div class="flex items-center gap-1 font-bold text-blue-400">
@@ -430,7 +431,7 @@
                     <!-- Row 1: Save/Modify and Print -->
                     <div class="flex gap-2">
                       <div class="flex-1">
-                        <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-2 text-center text-lg font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify (M)</button>
+                        <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-2 text-center text-lg font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify (Ctrl+M)</button>
                         <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-2 text-center text-lg font-semibold text-white transition shadow" :class="savedInvoiceName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update' : 'Save (Ctrl+S)' }}</button>
                       </div>
                       <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-2 text-center text-lg font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
@@ -2358,11 +2359,7 @@ useShortcuts(salesEntryShortcuts({
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
-  enterEditMode: () => {
-    if (billSaved.value && billDocStatus.value === 0 && (!document.activeElement || !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName))) {
-      enterEditMode()
-    }
-  },
+  enterEditMode: () => { if (billSaved.value && billDocStatus.value === 0) enterEditMode() },
   focusSidebarSeries: () => { sidebarSeriesSelect.value?.focus() },
   deleteRow: () => {
     if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
