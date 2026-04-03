@@ -413,9 +413,11 @@ function onSupplierEnter() {
   }
 }
 
-// Sync Item Print Name from Item Name by default
+// Sync Item Print Name from Item Name by default (only if empty or matching)
 watch(() => form.value.item_name, (newVal) => {
-  form.value.item_print_name = newVal
+  if (!isEditMode.value) {
+    form.value.item_print_name = newVal
+  }
 })
 
 // Track manual changes — strip all leading zeros on every change
@@ -588,8 +590,11 @@ function resetForm() {
 
 watch(() => props.show, async (newVal) => {
   if (newVal) {
-    await loadMetadata()
-    if (isEditMode.value) {
+    if (!isEditMode.value) {
+      resetForm()
+      await loadMetadata()
+    } else {
+      await loadMetadata()
       await loadForEdit(props.editItemCode)
     }
     nextTick(() => itemNameInput.value?.focus())
