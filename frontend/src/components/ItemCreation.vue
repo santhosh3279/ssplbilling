@@ -6,61 +6,61 @@
   >
     <div class="w-[90vw] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
-      <div class="px-6 py-6 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+      <div class="p-[8px] bg-slate-800 border-b border-slate-700 flex justify-between items-center">
         <div>
           <h3 class="text-5xl font-bold text-slate-100">{{ isEditMode ? 'Edit Item' : 'Create New Item' }}</h3>
-          <p class="text-2xl text-slate-400 mt-2">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
+          <p class="text-2xl text-slate-400 mt-1">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
         </div>
         <button
           @click="$emit('close')"
-          class="text-slate-500 hover:text-slate-300 transition-colors p-3 hover:bg-slate-700 rounded-full"
+          class="text-slate-500 hover:text-slate-300 transition-colors p-[8px] hover:bg-slate-700 rounded-full"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
       </div>
 
       <!-- Form Content -->
-      <div class="flex-1 overflow-y-auto p-10 space-y-10">
+      <div class="flex-1 overflow-y-auto p-[8px] space-y-[8px]">
         <!-- Main Info -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div class="space-y-3">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Item Name *</label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-[8px]">
+          <div class="space-y-[4px]">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Item Name *</label>
             <input
               ref="itemNameInput"
               v-model="form.item_name"
               type="text"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-4xl font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-4xl font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="Enter full item name..."
               @keydown.enter.prevent="itemPrintNameInput?.focus()"
             />
           </div>
 
-          <div class="space-y-3">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Item Print Name</label>
+          <div class="space-y-[4px]">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Item Print Name</label>
             <input
               ref="itemPrintNameInput"
               v-model="form.item_print_name"
               type="text"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-4xl font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-4xl font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="Name as shown on printouts..."
               @keydown.enter.prevent="barcodeInput?.focus()"
             />
           </div>
 
-          <div class="space-y-3">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Barcode / Code</label>
+          <div class="space-y-[4px]">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Barcode / Code</label>
             <div class="relative">
               <input
                 ref="barcodeInput"
                 v-model="form.barcode"
                 type="text"
                 :disabled="isEditMode"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter alphanumeric barcode..."
                 @focus="e => e.target.select()"
                 @keydown.enter.prevent="itemGroupInput?.focus()"
               />
-              <div v-if="isFetchingBarcode" class="absolute right-5 top-1/2 -translate-y-1/2">
+              <div v-if="isFetchingBarcode" class="absolute right-[8px] top-1/2 -translate-y-1/2">
                 <span class="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent inline-block"></span>
               </div>
             </div>
@@ -204,39 +204,39 @@
             </div>
           </div>
 
-          <div class="space-y-3">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Standard Rate (Selling)</label>
+          <div class="space-y-[4px]">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Standard Rate (Selling)</label>
             <div class="relative">
-              <span class="absolute left-6 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-3xl">₹</span>
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-3xl">₹</span>
               <input
                 ref="rateInput"
                 v-model.number="form.standard_rate"
                 type="number"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 pl-14 pr-6 text-right font-mono text-4xl font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-[8px] pl-12 pr-[8px] text-right font-mono text-4xl font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all"
                 placeholder="0.00"
                 @keydown.enter.prevent="safetyStockInput?.focus()"
               />
             </div>
           </div>
 
-          <div class="space-y-3">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Safety Stock</label>
+          <div class="space-y-[4px]">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Safety Stock</label>
             <input
               ref="safetyStockInput"
               v-model.number="form.safety_stock"
               type="number"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-right font-mono text-4xl text-slate-200 outline-none focus:border-blue-500 transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-right font-mono text-4xl text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="0"
               @keydown.enter.prevent="taxTemplateInput?.focus()"
             />
           </div>
 
-          <div class="space-y-3 md:col-span-2">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Tax Template</label>
+          <div class="space-y-[4px] md:col-span-2">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Tax Template</label>
             <select
               ref="taxTemplateInput"
               v-model="form.item_tax_template"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
               @keydown.enter.prevent="supplierInput?.focus()"
             >
               <option value="">No Tax / Exempt</option>
@@ -245,14 +245,14 @@
           </div>
 
           <!-- Supplier -->
-          <div class="space-y-3 md:col-span-2 relative">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Supplier</label>
+          <div class="space-y-[4px] md:col-span-2 relative">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Supplier</label>
             <div class="relative">
               <input
                 ref="supplierInput"
                 :value="supplierSearch"
                 type="text"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all"
+                class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all"
                 :class="form.supplier ? 'border-emerald-600' : ''"
                 placeholder="Search supplier..."
                 autocomplete="off"
@@ -264,18 +264,18 @@
               />
               <button
                 v-if="form.supplier"
-                class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-red-400 transition-colors text-4xl"
+                class="absolute right-[8px] top-1/2 -translate-y-1/2 text-slate-500 hover:text-red-400 transition-colors text-4xl"
                 @click.prevent="clearSupplier"
                 tabindex="-1"
               >&times;</button>
               <div
                 v-if="showSupplierDropdown && supplierOptions.length"
-                class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 p-2 shadow-xl"
+                class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 p-[8px] shadow-xl"
               >
                 <button
                   v-for="opt in supplierOptions"
                   :key="opt.name"
-                  class="w-full rounded-lg px-6 py-4 text-left hover:bg-blue-900/30 transition-colors flex flex-col gap-2"
+                  class="w-full rounded-lg p-[8px] text-left hover:bg-blue-900/30 transition-colors flex flex-col gap-2"
                   @mousedown.prevent="selectSupplier(opt)"
                 >
                   <span class="text-2xl font-bold text-slate-200">{{ opt.label }}</span>
@@ -283,18 +283,18 @@
                 </button>
               </div>
             </div>
-            <p v-if="form.supplier" class="text-lg text-emerald-400 px-1">Mapped: {{ form.supplier }}</p>
+            <p v-if="form.supplier" class="text-lg text-emerald-400 px-[4px]">Mapped: {{ form.supplier }}</p>
           </div>
 
           <!-- Supplier Part No -->
-          <div class="space-y-3 md:col-span-2">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Supplier Part No <span class="normal-case font-normal text-slate-600">(optional)</span></label>
+          <div class="space-y-[4px] md:col-span-2">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Supplier Part No <span class="normal-case font-normal text-slate-600">(optional)</span></label>
             <input
               ref="supplierPartNoInput"
               v-model="form.supplier_part_no"
               type="text"
               :disabled="!form.supplier"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               placeholder="Supplier's part / SKU number..."
               @keydown.enter.prevent="handleSubmit"
             />
@@ -303,17 +303,17 @@
       </div>
 
       <!-- Footer Actions -->
-      <div class="px-6 py-6 bg-slate-800 border-t border-slate-700 flex gap-5">
+      <div class="p-[8px] bg-slate-800 border-t border-slate-700 flex gap-[8px]">
         <button
           @click="$emit('close')"
-          class="flex-1 rounded-xl py-5 text-2xl font-bold uppercase tracking-widest text-slate-400 bg-slate-700 border border-slate-600 hover:bg-slate-600 transition-all active:scale-95"
+          class="flex-1 rounded-xl py-[8px] text-2xl font-bold uppercase tracking-widest text-slate-400 bg-slate-700 border border-slate-600 hover:bg-slate-600 transition-all active:scale-95"
         >
           Cancel
         </button>
         <button
           @click="handleSubmit"
           :disabled="isSubmitting || !canSubmit"
-          class="flex-[2] rounded-xl py-5 text-2xl font-bold uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg flex items-center justify-center gap-4"
+          class="flex-[2] rounded-xl py-[8px] text-2xl font-bold uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg flex items-center justify-center gap-[8px]"
           :class="canSubmit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-700'"
         >
           <span v-if="isSubmitting" class="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
