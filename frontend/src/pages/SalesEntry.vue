@@ -469,8 +469,8 @@
                         @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null; discountDirectAmt = 0 }"
                         @keydown.enter="discountAmtInput?.focus(); discountAmtInput?.select()"
                         @keydown.tab.prevent="discountAmtInput?.focus(); discountAmtInput?.select()" />
-                      <span class="shrink-0 px-1 text-slate-500 text-xs">%</span>
-                    </div>
+                        <span class="shrink-0 px-1 text-slate-300 text-xs">%</span>
+                        </div>
                     <div class="flex flex-1 items-center">
                       <span class="shrink-0 px-1 text-slate-500 text-xs"></span>
                       <input ref="discountAmtInput" type="number" v-model.number="discountDirectAmt"
