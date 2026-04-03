@@ -124,8 +124,8 @@
           <table class="w-full border-collapse">
             <thead>
               <tr class="bg-slate-800/50">
-                <th class="border border-slate-700 px-2 py-1 text-left text-sm font-normal text-slate-500 uppercase w-32">UOM</th>
-                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right text-xl font-normal text-slate-500 uppercase min-w-[120px]">
+                <th class="border border-slate-700 px-2 py-1 text-left text-sm font-normal text-slate-300 uppercase w-32">UOM</th>
+                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right text-xl font-normal text-slate-300 uppercase min-w-[120px]">
                   {{ pl.name }}
                 </th>
               </tr>
