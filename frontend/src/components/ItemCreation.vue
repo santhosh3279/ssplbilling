@@ -68,8 +68,8 @@
           </div>
 
           <!-- Extra Barcodes -->
-          <div class="space-y-3 md:col-span-2">
-            <div class="flex items-center justify-between px-1">
+          <div class="space-y-[4px]">
+            <div class="flex items-center justify-between px-[4px]">
               <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider">Additional Barcodes</label>
               <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
             </div>
@@ -77,14 +77,14 @@
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-slate-700 bg-slate-800">
-                    <th class="px-5 py-3 text-left text-lg font-bold uppercase text-slate-500">Barcode</th>
+                    <th class="p-[8px] text-left text-lg font-bold uppercase text-slate-500">Barcode</th>
                     <th class="w-16"></th>
                   </tr>
                 </thead>
                 <tbody>
                   <!-- Primary barcode (locked) -->
                   <tr class="border-b border-slate-700/50">
-                    <td class="px-5 py-4 flex items-center gap-4">
+                    <td class="p-[8px] flex items-center gap-[8px]">
                       <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
                       <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
                     </td>
@@ -92,10 +92,10 @@
                   </tr>
                   <!-- Additional barcode rows -->
                   <tr v-for="(row, idx) in form.extra_barcodes" :key="idx" class="border-b border-slate-700/50 last:border-0">
-                    <td class="px-4 py-3">
-                      <input v-model="row.barcode" type="text" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 font-mono text-2xl text-slate-200 outline-none focus:border-blue-500" placeholder="Enter barcode value..." />
+                    <td class="p-[8px]">
+                      <input v-model="row.barcode" type="text" class="w-full rounded-lg border border-slate-600 bg-slate-800 p-[8px] font-mono text-2xl text-slate-200 outline-none focus:border-blue-500" placeholder="Enter barcode value..." />
                     </td>
-                    <td class="px-4 py-3 text-center">
+                    <td class="p-[8px] text-center">
                       <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none">&times;</button>
                     </td>
                   </tr>
