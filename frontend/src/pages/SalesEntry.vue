@@ -1958,7 +1958,14 @@ function enterEditMode() {
     return
   }
   billSaved.value = false
-  nextTick(() => customerInput.value?.focus())
+  nextTick(() => {
+    if (items.value.length > 0) {
+      selectedRow.value = 0
+      focusField('code', 0)
+    } else {
+      customerInput.value?.focus()
+    }
+  })
 }
 
 function getTodayIST() {
