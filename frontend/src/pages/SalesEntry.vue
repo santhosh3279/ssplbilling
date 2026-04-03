@@ -6,14 +6,14 @@
         </div>
         
         <!-- Date Filter -->
-        <div class="flex items-center gap-1 border-b border-slate-700 p-1.5 bg-slate-900">
-          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
+        <div class="flex items-center gap-1 border-b border-slate-700 p-3 bg-slate-900">
+          <button @click="changeSidebarDate(-1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
           <input 
             type="date" 
             v-model="sidebarDate"
-            class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
+            class="w-full bg-transparent text-xl font-bold text-slate-300 outline-none"
           />
-          <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
+          <button @click="changeSidebarDate(1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
         </div>
 
         <!-- Search & Series Filters -->
