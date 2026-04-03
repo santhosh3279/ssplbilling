@@ -548,11 +548,6 @@
       @close="showShortcutPage = false"
     />
 
-    <!-- INCENTIVE ENTRY MODAL -->
-      doctype="Sales Invoice"
-      :docname="savedQuotationName || ''"
-    />
-
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
       ref="custSearchModalRef"
