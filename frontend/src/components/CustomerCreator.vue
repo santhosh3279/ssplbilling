@@ -186,12 +186,12 @@ onMounted(async () => {
       // Reverse calculate modifier percentage
       if (full.pricelist_multiplication_factor != null) {
         const factor = full.pricelist_multiplication_factor
-        if (factor > 1) {
+        if (factor === 0 || factor === 1) {
+          merged.pricelist_modifier = 0
+        } else if (factor > 1) {
           merged.pricelist_modifier = Math.round((factor - 1) * 100 * 100) / 100
         } else if (factor < 1) {
           merged.pricelist_modifier = -Math.round((1 - factor) * 100 * 100) / 100
-        } else {
-          merged.pricelist_modifier = 0
         }
       }
       
