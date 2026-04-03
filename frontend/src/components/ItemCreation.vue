@@ -73,15 +73,15 @@
               <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
             </div>
             
-            <div class="flex flex-wrap gap-[8px]">
+            <div class="flex flex-nowrap gap-[8px] overflow-x-auto custom-scrollbar pb-[4px]">
               <!-- Primary barcode (locked) -->
-              <div class="flex items-center gap-[8px] rounded-xl border border-slate-700 bg-slate-800/50 p-[8px]">
+              <div class="flex items-center gap-[8px] rounded-xl border border-slate-700 bg-slate-800/50 p-[8px] shrink-0">
                 <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
                 <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
               </div>
 
               <!-- Additional barcode inputs added to the right -->
-              <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[4px] rounded-xl border border-slate-600 bg-slate-800 p-[4px] relative group">
+              <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[4px] rounded-xl border border-slate-600 bg-slate-800 p-[4px] relative group shrink-0">
                 <input 
                   v-model="row.barcode" 
                   type="text" 
