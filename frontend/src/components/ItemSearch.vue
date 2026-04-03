@@ -42,32 +42,32 @@
       </div>
 
       <!-- Detail Panel -->
-      <div v-if="results[selectedIdx]" class="border-b border-slate-700 bg-blue-900/20 px-6 py-3">
-        <div class="flex flex-col gap-3">
-          <div class="flex flex-wrap items-start gap-x-8 gap-y-2">
-            <div class="flex flex-col min-w-[130px]">
-              <span class="text-[10px] uppercase text-slate-500">Current Stock</span>
-              <span class="text-xl" :class="results[selectedIdx].stock <= 0 ? 'text-red-400' : 'text-green-400'">
+      <div v-if="results[selectedIdx]" class="border-b border-slate-700 bg-blue-900/20 px-6 py-4">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-wrap items-start gap-x-10 gap-y-3">
+            <div class="flex flex-col min-w-[150px]">
+              <span class="text-base uppercase text-slate-200 font-medium">Current Stock</span>
+              <span class="text-3xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-400' : 'text-green-400'">
                 {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
               </span>
             </div>
-            <div v-if="warehouse" class="flex flex-col min-w-[130px] max-w-[200px]">
-              <span class="text-[10px] uppercase text-slate-500">Warehouse</span>
-              <span class="truncate text-sm text-slate-400" :title="warehouse">{{ warehouse }}</span>
+            <div v-if="warehouse" class="flex flex-col min-w-[150px] max-w-[250px]">
+              <span class="text-base uppercase text-slate-200 font-medium">Warehouse</span>
+              <span class="truncate text-xl text-slate-100" :title="warehouse">{{ warehouse }}</span>
             </div>
-            <div class="flex flex-col min-w-[130px]">
-              <span class="text-[10px] uppercase text-slate-500">{{ priceList || 'Rate' }}</span>
-              <span class="text-xl text-slate-200">
+            <div class="flex flex-col min-w-[150px]">
+              <span class="text-base uppercase text-slate-200 font-medium">{{ priceList || 'Rate' }}</span>
+              <span class="text-3xl text-slate-100 font-mono">
                 {{ encPrice(results[selectedIdx].price || 0) }}
               </span>
             </div>
             <div class="flex flex-col flex-[0.6]">
-              <span class="text-[10px] uppercase text-slate-500">Item Name</span>
-              <span class="text-lg text-slate-200 truncate">{{ results[selectedIdx].item_name }}</span>
+              <span class="text-base uppercase text-slate-200 font-medium">Item Name</span>
+              <span class="text-2xl text-slate-100 truncate font-semibold">{{ results[selectedIdx].item_name }}</span>
             </div>
             <div class="flex flex-col flex-[0.4]">
-              <span class="text-[10px] uppercase text-slate-500">Default Supplier</span>
-              <span class="text-lg text-slate-400 truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
+              <span class="text-base uppercase text-slate-200 font-medium">Default Supplier</span>
+              <span class="text-2xl text-slate-300 truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
             </div>
           </div>
         </div>
