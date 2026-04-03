@@ -406,7 +406,7 @@
           <!-- Right Column: Bill Summary as full table -->
           <table class="flex-1 bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
             <colgroup>
-              <col style="width:17%"><col style="width:15%"><col style="width:14%"><col style="width:54%">
+              <col style="width:17%"><col style="width:25%"><col style="width:14%"><col style="width:44%">
             </colgroup>
             <thead>
               <tr class="bg-slate-800">
@@ -465,7 +465,7 @@
                       <input ref="discountInput" type="number" v-model.number="discountPct"
                         :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'amt'"
                         min="0" max="100" step="0.5" style="width:100%;height:100%;padding:0 2px"
-                        class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null; discountDirectAmt = 0 }"
                         @keydown.enter="discountAmtInput?.focus(); discountAmtInput?.select()"
                         @keydown.tab.prevent="discountAmtInput?.focus(); discountAmtInput?.select()" />
@@ -476,7 +476,7 @@
                       <input ref="discountAmtInput" type="number" v-model.number="discountDirectAmt"
                         :disabled="billDocStatus !== 0 || billSaved || discountInputMode === 'pct'"
                         min="0" step="1" style="width:100%;height:100%;padding:0 2px"
-                        class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'amt' : null; discountPct = 0 }"
                         @keydown.enter="freightInput?.focus(); freightInput?.select()"
                         @keydown.tab.prevent="freightInput?.focus(); freightInput?.select()" />
@@ -494,7 +494,7 @@
                 <td class="p-0 border-y border-slate-700">
                   <input ref="freightInput" type="number" v-model.number="freightAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.packingInput?.focus(); $refs.packingInput?.select()"
                     @keydown.tab.prevent="$refs.packingInput?.focus(); $refs.packingInput?.select()" />
                 </td>
@@ -505,7 +505,7 @@
                 <td class="p-0 border-y border-slate-700">
                   <input ref="packingInput" type="number" v-model.number="packingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.loadingInput?.focus(); $refs.loadingInput?.select()"
                     @keydown.tab.prevent="$refs.loadingInput?.focus(); $refs.loadingInput?.select()" />
                 </td>
@@ -516,7 +516,7 @@
                 <td class="p-0 border-y border-slate-700">
                   <input ref="loadingInput" type="number" v-model.number="loadingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()"
                     @keydown.tab.prevent="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()" />
                 </td>
@@ -527,7 +527,7 @@
                 <td class="p-0 border-y border-slate-700">
                   <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="saveButton?.focus()"
                     @keydown.tab.prevent="saveButton?.focus()" />
                 </td>
