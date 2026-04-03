@@ -68,32 +68,28 @@
           </div>
 
           <!-- Extra Barcodes -->
-          <div class="space-y-[4px]">
+          <div class="space-y-[4px] md:col-span-2">
             <div class="flex items-center justify-end px-[4px]">
               <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
             </div>
-            <div class="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
-              <table class="w-full">
-                <tbody>
-                  <!-- Primary barcode (locked) -->
-                  <tr class="border-b border-slate-700/50">
-                    <td class="p-[8px] flex items-center gap-[8px]">
-                      <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
-                      <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
-                    </td>
-                    <td></td>
-                  </tr>
-                  <!-- Additional barcode rows -->
-                  <tr v-for="(row, idx) in form.extra_barcodes" :key="idx" class="border-b border-slate-700/50 last:border-0">
-                    <td class="p-[8px]">
-                      <input v-model="row.barcode" type="text" class="w-full rounded-lg border border-slate-600 bg-slate-800 p-[8px] font-mono text-2xl text-slate-200 outline-none focus:border-blue-500" placeholder="Enter barcode value..." />
-                    </td>
-                    <td class="p-[8px] text-center">
-                      <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none">&times;</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            
+            <div class="flex flex-wrap gap-[8px]">
+              <!-- Primary barcode (locked) -->
+              <div class="flex items-center gap-[8px] rounded-xl border border-slate-700 bg-slate-800/50 p-[8px]">
+                <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
+                <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
+              </div>
+
+              <!-- Additional barcode inputs added to the right -->
+              <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[4px] rounded-xl border border-slate-600 bg-slate-800 p-[4px] relative group">
+                <input 
+                  v-model="row.barcode" 
+                  type="text" 
+                  class="bg-transparent border-none p-[4px] font-mono text-2xl text-slate-200 outline-none w-48" 
+                  placeholder="Barcode..." 
+                />
+                <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
+              </div>
             </div>
           </div>
 
