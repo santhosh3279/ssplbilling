@@ -57,7 +57,7 @@
                   v-model="form.barcode"
                   type="text"
                   :disabled="isEditMode"
-                  class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="w-full rounded-xl border border-slate-600 bg-slate-800 pl-[20px] pr-[30px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Enter alphanumeric barcode..."
                   @focus="e => e.target.select()"
                   @keydown.enter.prevent="itemGroupInput?.focus()"
