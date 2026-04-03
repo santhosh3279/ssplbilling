@@ -49,7 +49,7 @@ def get_all_ledgers():
     customers = frappe.get_all(
         "Customer",
         filters={"disabled": 0},
-        fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin", "customer_group as group"],
+        fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin", "customer_group as group", "pricelist_multiplication_factor"],
         limit=0
     )
     for c in customers:
@@ -327,7 +327,7 @@ def search_customers(query):
             "customer_name": ["like", f"%{query}%"],
         },
         filters={"disabled": 0},
-        fields=["name", "customer_name", "mobile_no"],
+        fields=["name", "customer_name", "mobile_no", "pricelist_multiplication_factor"],
         limit=20,
         order_by="customer_name asc",
     )
