@@ -141,6 +141,7 @@ export async function fetchCustomerDetails(customerId) {
     city: '',
     pincode: '',
     state: '',
+    pricelist_multiplication_factor: null,
   }
 
   try {
@@ -154,6 +155,7 @@ export async function fetchCustomerDetails(customerId) {
     result.mobile = cust.mobile_no || ''
     result.email = cust.email_id || ''
     result.gstin = cust.gstin || ''
+    result.pricelist_multiplication_factor = cust.pricelist_multiplication_factor !== undefined ? cust.pricelist_multiplication_factor : null
 
     // 2. Fetch linked Address
     const addresses = await frappeGet('frappe.client.get_list', {
