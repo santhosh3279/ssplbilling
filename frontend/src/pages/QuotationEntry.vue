@@ -2141,6 +2141,8 @@ const discountAmt = computed(() => {
   return val 
 })
 
+const taxableAmt = computed(() => subtotal.value - discountAmt.value)
+
 const totalTax = computed(() => {
   if (isExempted.value) return 0
   if (isInclusive.value) {
