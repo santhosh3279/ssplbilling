@@ -2,32 +2,32 @@
   <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex">
     <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
         <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Modify Quotations</div>
+          <div class="text-xl font-bold uppercase tracking-wider text-slate-500">Modify Quotations</div>
         </div>
         
         <!-- Date Filter -->
-        <div class="flex items-center gap-1 border-b border-slate-700 p-1.5 bg-slate-900">
-          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
+        <div class="flex items-center gap-1 border-b border-slate-700 p-0 bg-slate-900">
+          <button @click="changeSidebarDate(-1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
           <input 
             type="date" 
             v-model="sidebarDate"
-            class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
+            class="w-full bg-transparent text-xl font-bold text-slate-300 outline-none"
           />
-          <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
+          <button @click="changeSidebarDate(1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
         </div>
 
         <!-- Search & Series Filters -->
-        <div class="flex flex-col gap-1.5 border-b border-slate-700 p-2 bg-slate-800/20">
+        <div class="flex flex-col gap-2 border-b border-slate-700 p-3 bg-slate-800/20">
           <input 
             type="text" 
             v-model="sidebarSearch"
             placeholder="Search quotation/cust..."
-            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+            class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-[1px] text-2xl text-slate-300 outline-none focus:border-blue-500"
           />
           <select
             ref="sidebarSeriesSelect"
             v-model="sidebarSeries"
-            class="w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+            class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-[1px] text-2xl text-slate-300 outline-none focus:border-blue-500"
             @keydown.enter.prevent="focusFirstSidebarQuotation"
           >
             <option value="">All Series</option>
@@ -35,7 +35,7 @@
           </select>
           <button
             @click="draftOnly = !draftOnly"
-            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
+            class="w-full rounded border py-[1px] text-xl font-bold uppercase transition-colors"
             :class="draftOnly ? 'bg-amber-900/40 border-amber-500 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
           >
             {{ draftOnly ? 'Drafts Only' : 'All Quotations' }}
@@ -44,31 +44,31 @@
 
         <!-- Quotation List -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
-          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
-          <div v-else-if="!sidebarQuotations.length" class="p-4 text-center text-xs text-slate-600 italic">No quotations found</div>
-          <div
-            v-for="(inv, idx) in sidebarQuotations"
+          <div v-if="sidebarLoading" class="p-4 text-center text-lg text-slate-500">Loading...</div>
+          <div v-else-if="!sidebarQuotations.length" class="p-4 text-center text-lg text-slate-600 italic">No quotations found</div>
+          <div 
+            v-for="(inv, idx) in sidebarQuotations" 
             :key="inv.name"
             :ref="el => setSidebarQuotationRef(el, idx)"
-            class="group border-b border-slate-800 bg-slate-900 px-2 py-1 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
-            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedQuotationName === inv.name }"
+            @click="loadQuotation(inv.name)"
+            class="group cursor-pointer border-b border-slate-800 px-2 py-1 transition-colors outline-none focus:ring-1 focus:ring-blue-500"
+            :class="savedQuotationName === inv.name || sidebarFocusedIdx === idx ? 'border-l-2 border-l-blue-500' : 'bg-slate-900 hover:bg-slate-800'"
+            :style="savedQuotationName === inv.name || sidebarFocusedIdx === idx ? { backgroundColor: '#B0E4CC !important', opacity: '1 !important' } : {}"
             tabindex="0"
+            @focus="sidebarFocusedIdx = idx"
+            @blur="sidebarFocusedIdx = -1"
+            @keydown.enter="loadQuotation(inv.name)"
             @keydown.up.prevent="navigateSidebarQuotation(idx, -1)"
             @keydown.down.prevent="navigateSidebarQuotation(idx, 1)"
           >
-            <div class="flex items-center justify-between gap-1 cursor-pointer" @click="loadQuotation(inv.name)" @keydown.enter="loadQuotation(inv.name)">
+            <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 truncate min-w-0">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-[15px] font-bold text-blue-400">{{ inv.name }}</span>
+                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
+                <span class="truncate font-mono text-2xl" :class="savedQuotationName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono text-[20px] font-bold text-slate-200 tabular-nums">₹{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono font-normal text-4xl tabular-nums" :class="savedQuotationName === inv.name || sidebarFocusedIdx === idx ? 'text-black' : 'text-slate-200'">{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-[11px] text-slate-400 cursor-pointer" @click="loadQuotation(inv.name)">{{ inv.customer_name }}</div>
-            <button
-              v-if="inv.docstatus === 0"
-              @click.stop="submitQuotation(inv.name)"
-              class="mt-1 w-full rounded border border-green-700/50 bg-green-900/20 py-0.5 text-center text-[10px] font-semibold text-green-400 hover:bg-green-900/40 transition"
-            >Submit</button>
+            <div class="truncate text-2xl" :class="savedQuotationName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-medium' : 'text-slate-400'">{{ inv.customer_name }}</div>
           </div>
         </div>
       </aside>
@@ -87,7 +87,7 @@
               <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-5 w-6 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
               <div class="flex items-center border-x border-slate-700 bg-slate-900 px-2 gap-1">
                 <span class="text-[9px] font-bold uppercase text-slate-500">Zoom</span>
-                <span class="text-[10px] font-bold text-slate-300">{{ zoomPercent }}%</span>
+                <span class="text-[10px] text-slate-300">{{ zoomPercent }}%</span>
               </div>
               <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-5 w-6 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
             </div>
@@ -97,6 +97,7 @@
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ctrl+S</kbd> Save</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F2</kbd> New Quotation</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">F5</kbd> Print</span>
+            <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Ctrl+M</kbd> Modify</span>
             <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[9px] text-slate-300">Esc</kbd> Back</span>
             <div class="h-3 w-px bg-slate-700"></div>
             <div class="flex items-center gap-1 font-bold text-blue-400">
@@ -110,8 +111,8 @@
       <div class="flex items-center gap-6">
         <!-- Quotation No -->
         <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
-          <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Quotation No</label>
-          <div class="text-xl font-bold text-slate-100 tabular-nums" style="font-family: 'Poppins', sans-serif">
+          <label class="text-[10px] uppercase text-slate-500 whitespace-nowrap">Quotation No</label>
+          <div class="text-xl text-slate-100 tabular-nums">
             {{ nextQuotationNo }}
           </div>
         </div>
@@ -124,9 +125,8 @@
           <div class="flex items-baseline gap-4 min-w-0">
             <div 
               ref="customerInput"
-              class="shrink-0 max-w-[300px] truncate text-xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
+              class="shrink-0 max-w-[300px] truncate text-4xl transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
               :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
-              style="font-family: 'Poppins', sans-serif"
               @click="openCustomerSearch"
               tabindex="0"
               @keydown.enter.prevent="openCustomerSearch"
@@ -139,7 +139,7 @@
               <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
                 {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
               </span>
-              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 font-bold leading-none">
+              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-xl text-slate-500 leading-none">
                 PH: {{ selectedCustomerDetails.mobile_no }}
               </span>
             </div>
@@ -147,10 +147,10 @@
 
           <!-- Stats Group -->
           <div v-if="selectedCustomerDetails" class="flex items-center gap-6 ml-auto mr-6">
-            <!-- Last Quotation Date -->
+            <!-- Last Invoice Date -->
             <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
-              <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Last Quote</span>
-              <span class="text-sm text-slate-300 font-medium">
+              <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Last Inv</span>
+              <span class="text-sm text-slate-300">
                 {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
               </span>
             </div>
@@ -158,8 +158,8 @@
             <!-- Ledger Balance -->
             <div class="flex flex-col items-end leading-none border-l border-slate-700 pl-6">
               <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Ledger Bal</span>
-              <span :class="selectedCustomerDetails.balance > 0 ? 'text-green-400' : 'text-red-400'" class="text-xl font-bold tabular-nums">
-                &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-[10px] font-bold">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
+              <span :class="selectedCustomerDetails.balance > 0 ? 'text-green-400' : 'text-red-400'" class="text-xl tabular-nums">
+                &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-[10px]">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
               </span>
             </div>
           </div>
@@ -168,18 +168,27 @@
         <!-- Quotation Date -->
         <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
           <label class="text-[10px] font-bold uppercase text-slate-500">Quotation Date</label>
-          <input
-            ref="dateInput"
-            v-model="quotationDate"
-            type="date"
-            :disabled="quotationDocStatus !== 0 || quotationSaved"
-            class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
-            style="font-family: 'Poppins', sans-serif"
-          />
-          <label class="flex items-center gap-1.5 cursor-pointer select-none ml-2">
-            <input type="checkbox" v-model="ignoreDiscountRule" :disabled="quotationDocStatus !== 0 || quotationSaved" class="h-3 w-3 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
-            <span class="text-slate-500 text-[10px]">Ignore Discount Rule</span>
-          </label>
+          <div class="flex items-center gap-1 bg-slate-900 rounded border border-slate-600 px-1 py-0.5">
+            <button 
+              @click="changeQuotationDate(-1)" 
+              :disabled="quotationDocStatus !== 0 || quotationSaved"
+              class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              &larr;
+            </button>
+            <span class="text-xl text-slate-100 tabular-nums px-2 min-w-[120px] text-center cursor-default select-none">
+              {{ new Date(quotationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }}
+            </span>
+            <button 
+              @click="changeQuotationDate(1)" 
+              :disabled="quotationDocStatus !== 0 || quotationSaved"
+              class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              &rarr;
+            </button>
+            <!-- Hidden input to maintain dateInput ref if needed by other logic -->
+            <input ref="dateInput" v-model="quotationDate" type="date" class="hidden" />
+          </div>
         </div>
       </div>
     </div>
@@ -189,54 +198,54 @@
             <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
               <thead>
                 <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-                  <th class="w-8 border-r border-b border-slate-700 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">#</th>
-                  <th class="w-32 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Barcode</th>
-                  <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Item Name</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Qty</th>
-                  <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">UOM</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Disc %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-amber-500">Disc Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Tax %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Amount</th>
+                  <th class="w-8 border-r border-b border-slate-700 px-3 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-400">#</th>
+                  <th class="w-32 border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">Barcode</th>
+                  <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">Item Name</th>
+                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Qty</th>
+                  <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">UOM</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Rate</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Disc %</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-amber-500">DISC</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Tax %</th>
+                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg uppercase tracking-wider text-slate-300">Amount</th>
                   <th class="w-8 border-b border-slate-700"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-purple-900/20 border-l-2 border-l-purple-500': !item._is_free && item._rule_discount == null && item._customer_pricing && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && !item._customer_pricing && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
-                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
+                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-[#B0E4CC] border-l-2 border-l-blue-500 text-black': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-purple-900/20 border-l-2 border-l-purple-500': !item._is_free && item._rule_discount == null && item._customer_pricing && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && !item._customer_pricing && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
+                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full" :class="item.deleted ? 'bg-red-900/30 text-red-400' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-slate-700 text-[#B0E4CC]' : 'bg-slate-800 text-slate-400')" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="p-0 border-r border-slate-700">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" class="w-full rounded border border-slate-600 font-mono outline-none focus:border-blue-500 disabled:bg-slate-900" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black' : 'bg-slate-800 text-slate-200'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onCodeFocus(idx)" @input="onCodeInput(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown.enter.prevent="onCodeEnter(idx)" @keydown="handleQuickSearchKeydown($event, idx)" />
+                    <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
-                  <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : 'text-slate-200'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item._is_free" class="ml-1 rounded bg-green-900/60 px-1 py-0.5 font-bold text-green-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">FREE</span><span v-else-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
+                  <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-200')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item._is_free" class="ml-1 rounded bg-green-900/60 px-1 py-0.5 font-bold text-green-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">FREE</span><span v-else-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" min="0" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="item.qty !== 0 && ((item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx))" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
                   <td class="p-0 border-r border-slate-700">
-                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-transparent bg-transparent font-mono text-slate-200 outline-none focus:border-blue-500 focus:bg-slate-800 disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onUomChange(idx)" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.up.stop @keydown.down.stop>
+                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-transparent font-mono outline-none focus:border-blue-500 disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onUomChange(idx)" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.up.stop @keydown.down.stop>
                       <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
-                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
+                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
                   </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
                   </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onDiscountFocus(idx)" @blur="onDiscountBlur(idx)" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onDiscountFocus(idx)" @blur="onDiscountBlur(idx)" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
                   </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (item.discount ? 'text-amber-400' : 'text-slate-600')" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : (item.discount ? 'text-amber-400' : 'text-slate-600'))" :style="{ fontSize: dynamicRowStyle.fontSize }">
                       {{ item.discount ? (item.rate * (1 - (item.discount) / 100)).toFixed(2) : '—' }}
                     </span>
                   </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
+                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700 font-mono font-semibold" :class="item.deleted ? 'text-slate-600 line-through' : 'text-slate-200'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : (item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
+                  <td class="px-2 text-right border-r border-slate-700 font-mono" :class="item.deleted ? 'text-slate-600 line-through' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black font-bold' : 'text-slate-200')" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : ((1) * item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
                   <td class="px-2 text-center" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button v-if="!item.deleted && !item._is_free" class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" :style="{ fontSize: dynamicRowStyle.fontSize }" @click.stop="softDelete(idx)">&times;</button>
                     <button v-else-if="item.deleted" class="rounded px-1 py-0.5 font-semibold text-blue-500 hover:bg-blue-900/30 hover:text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }" @click.stop="restoreItem(idx)">&larr;</button>
@@ -244,12 +253,11 @@
                 </tr>
                 <!-- NEW ENTRY ROW -->
                 <tr v-if="quotationDocStatus === 0 && !quotationSaved" class="border-b border-slate-700" :class="selectedRow === -1 ? 'bg-blue-900/20' : 'bg-slate-800/30'" :style="{ fontSize: dynamicRowStyle.fontSize }">
-                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 font-bold text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
-                  <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding-left:0;padding-right:0;" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" /></td>
+                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span></td>
+                  <td class="p-0 border-r border-slate-700"><input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding-left:0;padding-right:0;" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Barcode" @input="onNewCodeInput" @keydown.tab.prevent="focusNewQty" @keydown.right.prevent="openSearch(newItemCode, null)" @keydown="handleQuickSearchKeydown($event)" /></td>
                   <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
-                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="(newPending.uoms||[]).length > 1 ? $nextTick(() => newUomSelect?.focus()) : addNewItem()" @keydown.shift.tab.prevent="focusNewCode" /></td>
-                  <td class="p-0 border-r border-slate-700">
-                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onNewUomChange" @keydown.enter.prevent="addNewItem" @keydown.tab.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewQty" @keydown.up.stop @keydown.down.stop>
+                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><input ref="newQtyInput" v-model.number="newQty" type="number" min="0" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="newQty !== 0 && ((newPending.uoms||[]).length > 1 ? $nextTick(() => newUomSelect?.focus()) : addNewItem())" @keydown.shift.tab.prevent="focusNewCode" /></td>                  <td class="p-0 border-r border-slate-700">
+                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onNewUomChange" @keydown.enter.prevent="addNewItem" @keydown.tab.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewQty">
                       <option v-for="u in newPending.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
                     <span v-else class="px-2 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ newPending.uom || '--' }}</span>
@@ -261,7 +269,7 @@
                   <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">0</td>
                   <td class="px-2 text-right font-mono text-slate-600 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">—</td>
                   <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ isExempted ? 0 : defaultTaxRate }}</td>
-                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '--' }}</td>
+                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? ((1) * newQty * newPending.rate).toFixed(2) : '--' }}</td>
                   <td class="border-slate-700"></td>
                 </tr>
               </tbody>
@@ -271,116 +279,123 @@
 
         <!-- BOTTOM PANEL (Insight + Settings + Calculation) -->
         <div class="flex flex-[4] border-t border-slate-700 bg-slate-900 overflow-hidden">
-          <!-- Stock Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:260px;max-width:320px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-            <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
-              <colgroup>
-                <col style="width:70%"><col style="width:30%">
-              </colgroup>
-              <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Warehouse</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Actual</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No stock data' : 'Select a row to see stock' }}</div>
-          </div>
+          <!-- Insights Column (Previous Sales, Price Lists, Stock) -->
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:360px;max-width:420px;scrollbar-width:none">
+            <!-- 1. Previous Sales row -->
+            <div class="flex flex-col border-b border-slate-700">
+              <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Sales<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+              <div class="overflow-y-auto scrollbar-none max-h-[110px]">
+                <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
+                  <thead>
+                    <tr class="bg-slate-800 sticky top-0 z-10">
+                      <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Invoice</th>
+                      <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
+                      <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
+                      <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Qty</th>
+                      <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Disc%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
+                      <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
+                      <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
+                      <td class="px-1 py-0.5 text-right font-mono text-slate-300 border border-slate-700 text-xl">{{ p.rate.toFixed(2) }}</td>
+                      <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
+                      <td class="px-1 py-0.5 text-right border border-slate-700 text-lg" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous sales' : 'Select a row to see history' }}</div>
+              </div>
+            </div>
 
-          <!-- Price List Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:170px;max-width:200px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-            <table v-if="selectedItemData && selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full border-collapse text-[10px]">
-              <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-center font-semibold text-slate-500 border border-slate-700">T</th>
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">List</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 text-center border border-slate-700">
-                    <span class="rounded px-1 py-0.5 text-[9px] font-bold uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
-                  </td>
-                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold text-amber-400 border border-slate-700 text-base">&#8377;{{ encPrice(pl.rate || 0) }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
-          </div>
+            <!-- 2. Price List row -->
+            <div class="flex flex-col">
+              <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+              <table v-if="selectedItemData && selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full border-collapse text-[10px]">
+                <thead>
+                  <tr class="bg-slate-800">
+                    <th class="px-1 py-0.5 text-center font-semibold text-slate-500 border border-slate-700">T</th>
+                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">List</th>
+                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="pl in selectedItemData.priceLists" :key="pl.name + pl.type" class="hover:bg-slate-800/40">
+                    <td class="px-1 py-0.5 text-center border border-slate-700">
+                      <span class="rounded px-1 py-0.5 text-[9px] uppercase" :class="pl.type === 'buying' ? 'bg-blue-900/40 text-blue-400' : 'bg-slate-700 text-slate-400'">{{ pl.type === 'buying' ? 'B' : 'S' }}</span>
+                    </td>
+                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px] text-lg" :title="pl.name">{{ pl.name }}</td>
+                    <td class="px-1 py-0.5 text-right font-mono text-amber-400 border border-slate-700 text-2xl">{{ encPrice(pl.rate || 0) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
+            </div>
 
-          <!-- Previous Quotations Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:200px;max-width:240px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Previous Quotations<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
-            <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
-              <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Quote</th>
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Qty</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Disc%</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="border-b border-slate-800 hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
-                  <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
-                  <td class="px-1 py-0.5 text-right font-bold border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous quotes' : 'Select a row to see history' }}</div>
+            <!-- 3. Warehouse Stock row (Dynamic height) -->
+            <div class="flex flex-col pt-4">
+              <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span></div>
+              <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
+                <colgroup>
+                  <col style="width:70%"><col style="width:30%">
+                </colgroup>
+                <thead>
+                  <tr class="bg-slate-800">
+                    <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Warehouse</th>
+                    <th class="px-1 py-0.5 text-right font-medium text-slate-500 border border-slate-700">Actual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
+                    <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap text-lg" :title="s.warehouse">{{ s.warehouse }}</td>
+                    <td class="px-1 py-0.5 text-right font-mono border border-slate-700 text-xl" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No stock data' : 'Select a row to see stock' }}</div>
+            </div>
           </div>
 
           <!-- Settings Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:210px;max-width:240px;scrollbar-width:none">
+          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;scrollbar-width:none">
 <div class="flex flex-col gap-2 p-2">
               <div class="flex gap-1">
-                <button @click="exportItems" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Export</button>
-                <button @click="openImportModal" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Import</button>
+                <button @click="exportItems" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Export</button>
+                <button @click="openImportModal" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Import</button>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Warehouse</label>
-                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
-                  <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
-                </select>
-              </div>
-              <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Price List</label>
-                <select v-model="priceList" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
+                <label class="text-lg font-bold uppercase text-slate-600">Price List</label>
+                <select v-model="priceList" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-xl text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
                   <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Tax</label>
-                <select v-model="taxTemplate" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
+                <label class="text-lg font-bold uppercase text-slate-600">Tax</label>
+                <select v-model="taxTemplate" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-xl text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
                   <option value="">-- None --</option>
                   <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
                 </select>
               </div>
+              <div class="flex flex-col gap-1.5 py-1">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" v-model="ignoreDiscountRule" :disabled="quotationDocStatus !== 0 || quotationSaved" class="h-4 w-4 rounded border-slate-600 accent-amber-500 cursor-pointer disabled:cursor-not-allowed" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Ignore Pricing Rule</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  
+                </label>
+              </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Cost Center</label>
-                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
-                  <option :value="costCenter">{{ costCenter || 'None' }}</option>
+                <label class="text-lg font-bold uppercase text-slate-600">Warehouse</label>
+                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-lg text-slate-400 outline-none cursor-not-allowed">
+                  <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Print Format</label>
-                <select v-model="printScheme" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500">
-                  <option value="">-- Default --</option>
-                  <option v-for="pf in availablePrintSchemes" :key="pf" :value="pf">{{ pf }}</option>
+                <label class="text-lg font-bold uppercase text-slate-600">Cost Center</label>
+                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-lg text-slate-400 outline-none cursor-not-allowed">
+                  <option :value="costCenter">{{ costCenter || 'None' }}</option>
                 </select>
               </div>
             </div>
@@ -389,36 +404,51 @@
           <!-- Right Column: Quotation Summary as full table -->
           <table class="flex-1 bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
             <colgroup>
-              <col style="width:21%"><col style="width:18%"><col style="width:20%"><col style="width:41%">
+              <col style="width:17%"><col style="width:18%"><col style="width:14%"><col style="width:51%">
             </colgroup>
             <thead>
               <tr class="bg-slate-800">
-                <th class="px-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Description</th>
-                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Entry</th>
-                <th class="px-2 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Amount</th>
-                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Actions</th>
+                <th class="px-2 text-left text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Description</th>
+                <th class="px-2 text-center text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Entry</th>
+                <th class="px-2 text-right text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Amount</th>
+                <th class="px-2 text-center text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Item Discount</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ Math.abs(itemDiscountTotal).toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
-                    <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Quotation</div>
-                    <div class="font-mono text-4xl font-bold text-blue-500 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>
-                    <div v-if="quotationSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
-                      <span class="font-bold">{{ savedQuotationName }}</span>
-                      <span class="font-semibold uppercase text-[10px]">Saved</span>
+                    <div class="text-4xl text-slate-500/80">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
+                    
+                    <div v-if="quotationSaved" class="flex items-center justify-between rounded bg-green-900/30 px-4 py-2 text-2xl text-green-400/80">
+                      <span class="font-normal">{{ savedQuotationName }}</span>
+                      <span class="font-semibold uppercase text-base">Saved</span>
                     </div>
-                    <button v-if="quotationSaved && quotationDocStatus === 0" @click="submitQuotation()" class="w-full rounded border border-green-600/50 bg-green-900/20 py-1.5 text-center text-xs font-semibold text-green-400 transition hover:bg-green-900/40">Submit Quotation</button>
-                    <button v-if="quotationSaved && quotationDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify Quotation</button>
-                    <button v-else-if="!quotationSaved" ref="saveButton" @click="saveQuotation" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedQuotationName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedQuotationName ? 'Update Quotation' : 'Save Quotation (Ctrl+S)' }}</button>
-                    <div class="flex gap-1">
-                      <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-1.5 text-center text-xs font-semibold text-slate-300 hover:bg-slate-700" @click="printQuotation">Print</button>
-                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-1.5 text-center text-xs font-semibold text-red-400 hover:bg-red-900/20" @click="cancelQuotation">{{ quotationSaved ? 'New Quotation' : 'Cancel' }}</button>
+
+                    <div class="rounded-xl border border-blue-500/40 bg-blue-950/60 p-3.5 shadow-2xl">
+                      <div class="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-1">Total Amount</div>
+                      <div class="flex items-baseline gap-2" :class="grandTotal >= 0 ? 'text-green-500/70' : 'text-red-500/70'">
+                        <span class="text-[6mm] font-black">₹</span>
+                        <span class="font-mono text-[10.5mm] font-black leading-none" :style="{ filter: `drop-shadow(0 0 14px ${grandTotal >= 0 ? 'rgba(34,197,94,0.42)' : 'rgba(239,68,68,0.42)'})` }">
+                          {{ grandTotal.toFixed(2) }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Row 1: Save/Modify and Print -->
+                    <div class="flex gap-2">
+                      <div class="flex-1">
+                        <button v-if="quotationSaved && quotationDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-2.5 text-center text-xl font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify (Ctrl+M)</button>
+                        <button v-else-if="!quotationSaved" ref="saveButton" @click="saveQuotation" class="w-full rounded py-2.5 text-center text-xl font-semibold text-white transition shadow bg-[#285A48] hover:bg-[#1e4538]">{{ savedQuotationName ? 'Update Quotation' : 'Save Quotation (Ctrl+S)' }}</button>
+                      </div>
+                      <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-2.5 text-center text-xl font-semibold text-slate-300 hover:bg-slate-700" @click="printQuotation">Print</button>
+                    </div>
+
+                    <div class="flex gap-2">
+                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-2.5 text-center text-xl font-semibold text-red-400 hover:bg-red-900/20" @click="cancelQuotation">{{ quotationSaved ? 'New Quotation' : 'Cancel' }}</button>
                     </div>
                   </div>
                 </td>
@@ -431,79 +461,78 @@
                       <input ref="discountInput" type="number" v-model.number="discountPct"
                         :disabled="quotationDocStatus !== 0 || quotationSaved || discountInputMode === 'amt'"
                         min="0" max="100" step="0.5" style="width:100%;height:100%;padding:0 2px"
-                        class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'pct' : null; discountDirectAmt = 0 }"
                         @keydown.enter="discountAmtInput?.focus(); discountAmtInput?.select()"
                         @keydown.tab.prevent="discountAmtInput?.focus(); discountAmtInput?.select()" />
-                      <span class="shrink-0 px-1 text-slate-500 text-xs">%</span>
-                    </div>
+                        <span class="shrink-0 px-1 text-slate-300 text-xs">%</span>
+                        </div>
                     <div class="flex flex-1 items-center">
-                      <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
+                      <span class="shrink-0 px-1 text-slate-500 text-xs"></span>
                       <input ref="discountAmtInput" type="number" v-model.number="discountDirectAmt"
                         :disabled="quotationDocStatus !== 0 || quotationSaved || discountInputMode === 'pct'"
                         min="0" step="1" style="width:100%;height:100%;padding:0 2px"
-                        class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         @input="e => { discountInputMode = parseFloat(e.target.value) > 0 ? 'amt' : null; discountPct = 0 }"
                         @keydown.enter="freightInput?.focus(); freightInput?.select()"
                         @keydown.tab.prevent="freightInput?.focus(); freightInput?.select()" />
                     </div>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ Math.abs(discountAmt).toFixed(2) }}</td>
               </tr>
               <tr class="bg-slate-800/40">
-                <td class="px-2 text-lg font-semibold text-slate-200/80 border border-slate-600">Subtotal</td>
-                <td class="px-2 border border-slate-600"></td>
-                <td class="px-2 text-right font-mono font-semibold text-slate-100 text-2xl border border-slate-600">&#8377;{{ subtotal.toFixed(2) }}</td>
-              </tr>
-              <tr>
+               <td class="px-2 text-lg text-slate-200/80 border border-slate-600">Subtotal</td>
+               <td class="px-2 border border-slate-600"></td>
+               <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-600">{{ subtotal.toFixed(2) }}</td>
+              </tr>              <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Freight</td>
                 <td class="p-0 border-y border-slate-700">
                   <input ref="freightInput" type="number" v-model.number="freightAmt"
                     :disabled="quotationDocStatus !== 0 || quotationSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.packingInput?.focus(); $refs.packingInput?.select()"
                     @keydown.tab.prevent="$refs.packingInput?.focus(); $refs.packingInput?.select()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (freightAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Packing</td>
                 <td class="p-0 border-y border-slate-700">
                   <input ref="packingInput" type="number" v-model.number="packingAmt"
                     :disabled="quotationDocStatus !== 0 || quotationSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.loadingInput?.focus(); $refs.loadingInput?.select()"
                     @keydown.tab.prevent="$refs.loadingInput?.focus(); $refs.loadingInput?.select()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (packingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (packingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Loading</td>
                 <td class="p-0 border-y border-slate-700">
                   <input ref="loadingInput" type="number" v-model.number="loadingAmt"
                     :disabled="quotationDocStatus !== 0 || quotationSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()"
                     @keydown.tab.prevent="$refs.otherChargesInput?.focus(); $refs.otherChargesInput?.select()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (loadingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Other</td>
                 <td class="p-0 border-y border-slate-700">
                   <input ref="otherChargesInput" type="number" v-model.number="otherChargesAmt"
                     :disabled="quotationDocStatus !== 0 || quotationSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
-                    class="bg-transparent text-right font-mono text-slate-200 outline-none focus:bg-slate-700/40 disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="bg-transparent text-right font-mono text-3xl text-slate-200 outline-none focus:bg-[#B0E4CC] focus:text-black disabled:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     @keydown.enter="saveButton?.focus()"
                     @keydown.tab.prevent="saveButton?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (otherChargesAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (otherChargesAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Tax</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+&#8377;{{ totalTax.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+{{ totalTax.toFixed(2) }}</td>
               </tr>
             </tbody>
           </table>
@@ -521,6 +550,11 @@
         { key: 'Page Up', desc: 'Focus series selector' },
       ]"
       @close="showShortcutPage = false"
+    />
+
+    <!-- INCENTIVE ENTRY MODAL -->
+      doctype="Sales Invoice"
+      :docname="savedQuotationName || ''"
     />
 
     <!-- CUSTOMER SEARCH MODAL -->
@@ -571,6 +605,22 @@
       @jump="handleJump" 
     />
 
+    <Warning
+      :show="showClearQuotationWarning"
+      title="Clear Quotation Items?"
+      message="This will remove all items from the current quotation. Continue?"
+      @close="showClearQuotationWarning = false; focusNewCode()"
+      @confirm="showClearQuotationWarning = false; startNewQuotation()"
+    />
+
+    <Warning
+      :show="showExitModifyWarning"
+      title="Exit without Saving?"
+      message="Discard changes to this quotation and start a new one?"
+      @close="showExitModifyWarning = false; nextTick(() => lastFocusedEl?.focus())"
+      @confirm="showExitModifyWarning = false; startNewQuotation(); openCustomerSearch()"
+    />
+
     <BarcodePrintingModal
       :show="showBarcodeModal"
       @close="showBarcodeModal = false"
@@ -601,7 +651,7 @@
             @click="selectSeries(s)"
             @mouseenter="seriesHighlightIdx = idx"
           >
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm font-black text-slate-300">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm text-slate-300">
               {{ idx + 1 }}
             </span>
             <span class="font-bold tracking-wide">{{ s }}</span>
@@ -648,23 +698,40 @@
 
     <input type="file" ref="fileInput" class="hidden" @change="handleImportFile" accept=".csv,.xlsx,.xls" />
 
-    <!-- SAVE CUSTOMER PRICE POPUP -->
-    <div v-if="savePricePopup.show" class="fixed bottom-6 right-6 z-[200] w-80 rounded-xl border border-purple-500/40 bg-slate-900 shadow-2xl">
-      <div class="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
-        <span class="text-base">💜</span>
-        <span class="text-sm font-semibold text-slate-200">Save Customer Price?</span>
-      </div>
-      <div class="px-4 py-3 text-xs text-slate-400">
-        <div class="mb-1 font-medium text-slate-300">{{ savePricePopup.item_name || savePricePopup.item_code }}</div>
-        <div>Save <span class="font-mono text-purple-400">{{ savePricePopup.discount_percentage.toFixed(2) }}%</span> discount for <span class="text-slate-300">{{ customer }}</span>?</div>
-      </div>
-      <div class="flex gap-2 px-4 pb-3">
-        <button @click="confirmSavePrice" class="flex-1 rounded-lg bg-purple-600 py-1.5 text-xs font-bold text-white hover:bg-purple-700">Yes, Save</button>
-        <button @click="dismissSavePrice" class="flex-1 rounded-lg bg-slate-700 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600">No</button>
-      </div>
-    </div>
+    <!-- Quick Search results while typing -->
+    <QuickItemSearch
+      ref="quickSearchRef"
+      :results="quickSearchResults"
+      :price-list="priceList"
+      :anchor-el="quickSearchAnchor"
+      @select="onQuickSearchSelect"
+      @close="quickSearchResults = []"
+    />
 
-    <!-- DISCARD QUOTATION MODAL -->
+    <!-- Price Update Quotation Modal (Refactored Component) -->
+    <CustomerPrice
+      v-if="savePricePopup.show"
+      :data="savePricePopup"
+      :customer="customer"
+      :price-list="priceList"
+      @saveCustomer="confirmSavePrice"
+      @updatePricelist="confirmUpdatePricelist"
+      @dismiss="dismissSavePrice"
+      @advanced="showPriceListUpdate = true"
+    />
+
+    <!-- Price List Update Quotation Subwindow -->
+    <PriceListUpdate
+      v-if="showPriceListUpdate"
+      is-sub-window
+      :item-code="savePricePopup.item_code"
+      :selected-price-list="priceList"
+      :initial-factor="savePricePopup.multiplication_factor"
+      @close="showPriceListUpdate = false"
+      @saved="onPriceListSaved"
+    />
+
+    <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
         <div class="bg-amber-900/20 px-6 py-6 flex items-center gap-4 border-b border-amber-900/30">
@@ -704,22 +771,27 @@ import { fetchBillingSettings, fetchItemPrice, searchItems, fetchItemDetails, fr
 import { searchCustomers } from '../customersearch.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import { getUserRole } from '../composables/usePermission'
 import ItemSearch from '../components/ItemSearch.vue'
+import CustomerPrice from '../components/CustomerPrice.vue'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
+import Warning from '../components/Warning.vue'
+import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
-import { useItemCache } from '../services/itemCache.js'
+import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
+import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import CustomerLedger from './CustomerLedger.vue'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
+import { getUserRole } from '../composables/usePermission'
 import { quotationEntryShortcuts } from '../shortcuts/quotationEntryShortcuts'
 import * as XLSX from 'xlsx'
 
 const router = useRouter()
 const route = useRoute()
-const API = 'ssplbilling.api.quotation_api'
+const API = '/api/method/ssplbilling.api.quotation_api'
 
 const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, fetchCustomerSalesHistory, getItemHistoryFromCache, refreshDiscountRuleCache } = useItemCache()
 
@@ -738,11 +810,18 @@ const emit = defineEmits(['close'])
 
 if (props.isSubWindow) useSubwindow()
 
+const isBiller = getUserRole() === 'biller'
+
 const showPrintModal = ref(false)
 const printModalAfterSave = ref(false)
 const showShortcutPage = ref(false)
 const showBarcodeModal = ref(false)
 const showImportModal = ref(false)
+const showPriceListUpdate = ref(false)
+
+function onPriceListSaved() {
+  refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
+}
 const importOption = ref('Master')
 const fileInput = ref(null)
 
@@ -758,7 +837,7 @@ function openFilePicker() {
   fileInput.value?.click()
 }
 
-// ==================== BILLING SETTINGS ====================
+// ==================== QUOTATIONING SETTINGS ====================
 const billingSeriesConfig = ref([])
 const cipherMap = ref([])
 const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
@@ -772,7 +851,12 @@ const incomeAccount = ref('')
 const availableTaxTemplates = ref([])
 const availableWarehouses = ref([])
 const availableCostCenters = ref([])
-const availablePriceLists = ref([])
+
+const availablePriceLists = computed(() => {
+  const lists = billingSeriesConfig.value.map(r => r.price_list).filter(Boolean)
+  const unique = [...new Set(lists)]
+  return unique.length ? unique : ['Standard Selling']
+})
 
 const availablePrintSchemes = computed(() => {
   return [...new Set(billingSeriesConfig.value.map(r => r.print_format).filter(Boolean))]
@@ -785,7 +869,7 @@ function getSeriesConfig(series) {
 function syncSeriesConfig(series) {
   const cfg = getSeriesConfig(series)
   if (!cfg) return
-  if (cfg.price_list) priceList.value = cfg.price_list
+  if (cfg.price_list && !skipPriceListSync.value) priceList.value = cfg.price_list
   if (cfg.print_format) printScheme.value = cfg.print_format
   if (cfg.tax_template) taxTemplate.value = cfg.tax_template
   incomeAccount.value = cfg.income_account || ''
@@ -801,7 +885,7 @@ function syncSeriesConfig(series) {
 
 async function fetchDropdownOptions() {
   try {
-    const [templates, warehouses, costCenters, priceLists] = await Promise.all([
+    const [templates, warehouses, costCenters] = await Promise.all([
       frappeGet('frappe.client.get_list', {
         doctype: 'Sales Taxes and Charges Template',
         fields: ['name'],
@@ -820,18 +904,11 @@ async function fetchDropdownOptions() {
         filters: [['is_group', '=', 0], ['disabled', '=', 0]],
         limit_page_length: 100,
       }),
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Price List',
-        fields: ['name'],
-        filters: [['enabled', '=', 1], ['selling', '=', 1]],
-        limit_page_length: 100,
-      }),
     ])
 
     availableTaxTemplates.value = templates.map(r => r.name)
     availableWarehouses.value = warehouses.map(r => r.name)
     availableCostCenters.value = costCenters.map(r => r.name)
-    availablePriceLists.value = priceLists.map(r => r.name)
   } catch (e) {
     console.warn('[QuotationEntry] fetchDropdownOptions failed:', e)
   }
@@ -858,13 +935,14 @@ function encPrice(val) {
 
 // ==================== SHARED POST HELPER ====================
 async function apiPost(method, params) {
-  return frappePost(`${API}.${method}`, params)
+  return frappePost(`ssplbilling.api.quotation_api.${method}`, params)
 }
 
 // ==================== INPUT REFS ====================
 const inputRefs = {}
 const rowRefs   = {}
 const sidebarQuotationRefs = new Map()
+const sidebarFocusedIdx = ref(-1)
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 function setSidebarQuotationRef(el, idx) { if (el) sidebarQuotationRefs.set(idx, el); else sidebarQuotationRefs.delete(idx) }
@@ -878,6 +956,7 @@ function focusFirstSidebarQuotation() {
 }
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
+const skipPriceListSync = ref(false)
 const customerInput = ref(null)
 const searchInput = ref(null)
 const modifySearchInput = ref(null)
@@ -898,8 +977,6 @@ const custSearchModalRef = ref(null)
 const resultsWrapRef = ref(null)
 const searchRowRefs = new Map()
 function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else searchRowRefs.delete(idx) }
-
-const isBiller = getUserRole() === 'biller'
 
 // ==================== CUSTOMER DROPDOWN ====================
 const custSearch = ref('')
@@ -966,11 +1043,26 @@ function closeCustomerSearchModal() {
 // ==================== STATE ====================
 const items = ref([])
 const selectedRow = ref(-1)
+const editingOriginalCode = ref(null)  // tracks item_code before user edits an existing row
 const newItemCode = ref('')
-const newQty = ref(1)
+const quickSearchResults = ref([])
+const quickSearchRef = ref(null)
+const quickSearchAnchor = ref(null)
+
+async function onQuickSearchSelect(item) {
+  if (!item) return
+  // Use the same logic as the main search modal
+  itemSearchTargetRow = selectedRow.value !== -1 ? selectedRow.value : null
+  await pickItem(item)
+  quickSearchResults.value = []
+}
+const newQty = ref(0)
 const quotationSaved = ref(false)
 const quotationDocStatus = ref(0) // 0=Draft, 1=Submitted, 2=Cancelled
 const showJumpModal = ref(false)
+const showClearQuotationWarning = ref(false)
+const showExitModifyWarning = ref(false)
+const lastFocusedEl = ref(null)
 const savedQuotationName = ref(null)   // null = new quotation; string = existing/just-saved quotation name
 const showDiscardModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
@@ -1008,15 +1100,19 @@ async function loadCustomerPricing(cust) {
 function applyCustomerPricingForRow(idx) {
   const item = items.value[idx]
   if (!item || item.deleted || item._is_free || item._rule_discount != null) return
-  const disc = customerPricing.value[item.item_code]
-  if (disc != null && disc > 0) {
-    item.discount = disc
+  
+  const factor = customerPricing.value[item.item_code]
+  if (factor != null && Math.abs(factor - 1) > 0.0001) {
+    // Multiplication factor should be applied to the base rate for the current UOM
+    const cached = lookupItemInCache(item.item_code)
+    const baseRate = rateForUom(cached, item.uom) || item.rate
+    item.rate = baseRate * factor
     item._customer_pricing = true
   }
 }
 
 // Save-price popup
-const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', discount_percentage: 0 })
+const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', multiplication_factor: 1, rate: 0, uom: '' })
 let _rateAtFocus = null
 let _discAtFocus = null
 
@@ -1025,97 +1121,95 @@ function onDiscountFocus(idx) { _discAtFocus = items.value[idx]?.discount ?? nul
 
 function onRateBlur(idx) {
   const item = items.value[idx]
-  if (!item || !customer.value || item._rule_discount != null) { _rateAtFocus = null; return }
+  if (!item) { _rateAtFocus = null; return }
   const newRate = item.rate
-  if (_rateAtFocus === null || newRate === _rateAtFocus) { _rateAtFocus = null; return }
-  // Compute discount vs cached list price
-  const cached = lookupItemInCache(item.item_code)
-  const listRate = (cached?.price || cached?.rate) || _rateAtFocus
-  const discPct = listRate > 0 ? Math.max(0, Math.round(((listRate - newRate) / listRate) * 10000) / 100) : 0
+  const rateChanged = _rateAtFocus !== null && newRate !== _rateAtFocus
   _rateAtFocus = null
-  if (discPct >= 0) _triggerSavePricePopup(idx, discPct)
+  if (!rateChanged) return
+  
+  // Clear any previous customer pricing for this row if rate was manually edited
+  item._customer_pricing = false
+  
+  if (!customer.value || item._rule_discount != null) return
+  
+  // Compute multiplication factor vs cached list price and offer to save
+  const cached = lookupItemInCache(item.item_code)
+  const listRate = rateForUom(cached, item.uom) || 0
+  const factor = listRate > 0 ? (newRate / listRate) : 1
+  
+  // If listRate is 0, we can't really compute a factor but we should still allow 
+  // updating the pricelist or saving for customer if the new rate > 0
+  if (listRate === 0 && newRate > 0) {
+    _triggerSavePricePopup(idx, 1) // Factor of 1 for 0-based, or we could use factor = newRate
+  } else if (Math.abs(factor - 1) > 0.0001) {
+    _triggerSavePricePopup(idx, factor)
+  }
 }
 
 function onDiscountBlur(idx) {
-  const item = items.value[idx]
-  if (!item || !customer.value || item._rule_discount != null) { _discAtFocus = null; return }
-  if (_discAtFocus === null || item.discount === _discAtFocus) { _discAtFocus = null; return }
   _discAtFocus = null
-  _triggerSavePricePopup(idx, item.discount || 0)
 }
-
-function _triggerSavePricePopup(idx, discPct) {
+function _triggerSavePricePopup(idx, factor) {
   const item = items.value[idx]
   if (!item?.item_code) return
-  savePricePopup.value = { show: true, idx, item_code: item.item_code, item_name: item.item_name, discount_percentage: discPct }
+  savePricePopup.value = { 
+    show: true, 
+    idx, 
+    item_code: item.item_code, 
+    item_name: item.item_name, 
+    multiplication_factor: factor,
+    rate: item.rate,
+    uom: item.uom
+  }
 }
 
 async function confirmSavePrice() {
-  const { item_code, discount_percentage, idx } = savePricePopup.value
+  const { item_code, multiplication_factor, idx } = savePricePopup.value
   try {
-    await frappePost('ssplbilling.api.customer_pricing_api.save_customer_item_price', {
-      customer: customer.value,
-      item_code,
-      discount_percentage,
-    })
-    customerPricing.value[item_code] = discount_percentage
+    await saveCustomerItemPrice(customer.value, item_code, multiplication_factor)
+    customerPricing.value[item_code] = multiplication_factor
     if (idx != null && items.value[idx]) items.value[idx]._customer_pricing = true
   } catch (e) {
     console.error('[CustomerPricing] save failed', e)
   }
   savePricePopup.value.show = false
+  if (idx !== null) goToNextRow(idx)
+  else focusNewCode()
 }
 
-function dismissSavePrice() { savePricePopup.value.show = false }
+async function confirmUpdatePricelist() {
+  const { item_code, rate, uom, idx } = savePricePopup.value
+  try {
+    await updateItemPriceList(item_code, priceList.value, rate, uom)
+    refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
+  } catch (e) {
+    console.error('[PriceList] update failed', e)
+  }
+  savePricePopup.value.show = false
+  if (idx !== null) goToNextRow(idx)
+  else focusNewCode()
+}
+
+function dismissSavePrice() {
+  const { idx } = savePricePopup.value
+  savePricePopup.value.show = false
+  if (idx !== null) goToNextRow(idx)
+  else focusNewCode()
+}
 
 // ==================== API RESOURCES ====================
-const itemLookup = createResource({ url: `/api/method/${API}.get_item_details` })
-const itemSearchResource = createResource({ url: `/api/method/${API}.search_items` })
-const insightResource = createResource({ url: `/api/method/${API}.get_item_insight` })
+const itemLookup = createResource({ url: `${API}.get_item_details` })
+const itemSearchResource = createResource({ url: `${API}.search_items` })
+const insightResource = createResource({ url: `${API}.get_item_insight` })
 
 const newPending = ref({ item_name: '', uom: '', uoms: [], rate: null })
 const newUomSelect = ref(null)
-
-function rateForUom(cached, uom) {
-  // 1. Check for an actual Item Price record for this price list + UOM
-  const plUomRates = cached.uom_price_lists?.[priceList.value]
-  if (plUomRates && plUomRates[uom] != null) {
-    return plUomRates[uom]
-  }
-  // 2. Fallback: base (stock-UOM) rate × conversion factor
-  let baseRate = cached.price || cached.rate || 0
-  if (cached.price_lists && priceList.value) {
-    const pl = cached.price_lists.find(p => p.name === priceList.value)
-    if (pl) baseRate = pl.rate
-  }
-  const uomEntry = (cached.uoms || []).find(u => u.uom === uom)
-  return baseRate * (uomEntry ? uomEntry.conversion_factor : 1)
-}
-
-function onUomChange(idx) {
-  const item = items.value[idx]
-  // Build a minimal cached-like object from the row itself, falling back to cache
-  const cached = lookupItemInCache(item.item_code) || {
-    uoms: item.uoms || [],
-    uom_price_lists: item.uom_price_lists || {},
-    rate: item.rate
-  }
-  item.rate = rateForUom(cached, item.uom)
-}
-
-function onNewUomChange() {
-  const cached = lookupItemInCache(newItemCode.value.trim()) || {
-    uoms: newPending.value.uoms || [],
-    uom_price_lists: newPending.value.uom_price_lists || {},
-    rate: newPending.value.rate
-  }
-  newPending.value.rate = rateForUom(cached, newPending.value.uom)
-}
 
 async function lookupItem(code) {
   // 1. Try local cache first
   const cached = lookupItemInCache(code)
   if (cached) {
+    // Use rateForUom to respect per-UOM Item Price records for the stock/default UOM
     const finalRate = rateForUom(cached, cached.uom)
     return {
       found: true,
@@ -1139,10 +1233,59 @@ async function lookupItem(code) {
   } catch (e) { return null }
 }
 
+function rateForUom(cached, uom) {
+  // 1. Check for an actual Item Price record for this price list + UOM
+  const plUomRates = cached.uom_price_lists?.[priceList.value]
+  if (plUomRates && plUomRates[uom] != null) {
+    return plUomRates[uom]
+  }
+  // 2. Fallback: base (stock-UOM) rate × conversion factor
+  let baseRate = cached.price || cached.rate || 0
+  if (cached.price_lists && priceList.value) {
+    const pl = cached.price_lists.find(p => p.name === priceList.value)
+    if (pl) baseRate = pl.rate
+  }
+  const uomEntry = (cached.uoms || []).find(u => u.uom === uom)
+  return baseRate * (uomEntry ? uomEntry.conversion_factor : 1)
+}
+
+function onUomChange(idx) {
+  const item = items.value[idx]
+  // Build a minimal cached-like object from the row itself, falling back to cache
+  const cached = lookupItemInCache(item.item_code) || {
+    price: item.rate,
+    price_lists: [],
+    uoms: item.uoms || [],
+    uom_price_lists: item.uom_price_lists || {},
+  }
+  item.rate = rateForUom(cached, item.uom)
+}
+
+function onNewUomChange() {
+  const cached = lookupItemInCache(newItemCode.value.trim())
+  if (!cached) return
+  newPending.value.rate = rateForUom(cached, newPending.value.uom)
+}
+
+function onNewCodeInput() {
+  const code = newItemCode.value.trim()
+  if (code && code.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchAnchor.value = newCodeInput.value
+  } else {
+    quickSearchResults.value = []
+  }
+}
+
 let lookupTimeout = null
 watch(newItemCode, (val) => {
   clearTimeout(lookupTimeout); const code = val.trim()
-  if (code.length < 2) { newPending.value = { item_name: '', uom: '', uoms: [], rate: null }; return }
+  
+  if (code.length < 2) { 
+    newPending.value = { item_name: '', uom: '', uoms: [], rate: null }
+    return 
+  }
+
   lookupTimeout = setTimeout(async () => {
     const r = await lookupItem(code)
     newPending.value = r ? { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse } : { item_name: '', uom: '', uoms: [], rate: null }
@@ -1173,17 +1316,41 @@ async function loadItemInsight(code, itemName = '', uom = '') {
   // 1. Fetch from local cache (Instant)
   const cached = lookupItemInCache(code)
   const localHistory = getItemHistoryFromCache(code)
-  
+
+  // 2. Map all available price lists with UOM-aware rates
+  const resolvedPriceLists = availablePriceLists.value.map(plName => {
+    let rate = 0
+    // Try UOM specific price list first
+    if (cached?.uom_price_lists?.[plName]?.[uom] != null) {
+      rate = cached.uom_price_lists[plName][uom]
+    } else if (cached?.price_lists) {
+      // Fallback to base price list rate (applying conversion if needed, though usually handled by rateForUom)
+      const pl = cached.price_lists.find(p => p.name === plName)
+      if (pl) {
+        // If we have a cached object, we can use rateForUom logic
+        rate = rateForUom(cached, uom, plName)
+      }
+    }
+
+    return {
+      name: plName,
+      type: 'selling', // QuotationEntry is for selling
+      rate: rate
+    }
+  })
+
   selectedItemData.value = {
     item_code: code,
     item_name: itemName || cached?.item_name || '',
     uom: uom || cached?.uom || '',
-    stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
+    stock: (cached?.warehouse_stock || []).map(s => ({
+      warehouse: s.warehouse,
+      actual_qty: s.qty
+    })),
     previousPurchases: localHistory.slice(0, 10), // Show latest 10 from cache
-    priceLists: cached?.price_lists || [],
+    priceLists: resolvedPriceLists,
   }
 }
-
 watch(selectedRow, async (idx) => {
   if (idx >= 0 && idx < items.value.length && !items.value[idx].deleted) {
     const item = items.value[idx]
@@ -1191,38 +1358,95 @@ watch(selectedRow, async (idx) => {
   } else {
     selectedItemData.value = null
   }
+  // Clear quick search results when moving between rows
+  quickSearchResults.value = []
 })
 
 // Re-price all active items when price list changes
-watch(priceList, (newList) => {
-  const getPrice = (itemCode) => {
-    const cached = lookupItemInCache(itemCode)
-    if (cached?.price_lists) {
-      const pl = cached.price_lists.find(p => p.name === newList)
-      return pl ? pl.rate : 0
-    }
-    return 0
-  }
-
+watch(priceList, () => {
   // Update active items in grid
   items.value.forEach(item => {
     if (!item.deleted && item.item_code) {
-      const price = getPrice(item.item_code)
-      if (price > 0) item.rate = price
+      const cached = lookupItemInCache(item.item_code)
+      if (cached) {
+        const price = rateForUom(cached, item.uom)
+        if (price > 0) item.rate = price
+      }
     }
   })
 
   // Update pending item
   if (newItemCode.value.trim() && newPending.value.rate !== null) {
-    const price = getPrice(newItemCode.value.trim())
-    if (price > 0) newPending.value.rate = price
+    const cached = lookupItemInCache(newItemCode.value.trim())
+    if (cached) {
+      const price = rateForUom(cached, newPending.value.uom)
+      if (price > 0) newPending.value.rate = price
+    }
+  }
+
+  // Update insight panel if a row is selected
+  if (selectedRow.value >= 0 && selectedRow.value < items.value.length) {
+    const item = items.value[selectedRow.value]
+    loadItemInsight(item.item_code, item.item_name, item.uom)
   }
 })
 
 // ==================== FOCUS ====================
-function focusField(f, idx) { nextTick(() => { const el = inputRefs[`${f}-${idx}`]; if (el) { el.focus(); el.select() } }) }
-function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
-function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
+function focusField(f, idx) { 
+  nextTick(() => { 
+    const el = inputRefs[`${f}-${idx}`]; 
+    if (el) { 
+      el.focus(); 
+      el.select();
+      el.scrollIntoView({ block: 'nearest' });
+    } 
+  }) 
+}
+function focusRow(idx) { 
+  nextTick(() => {
+    const el = rowRefs[idx]
+    if (el) {
+      el.focus()
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  }) 
+}
+function focusNewCode() { 
+  nextTick(() => {
+    if (newCodeInput.value) {
+      newCodeInput.value.focus()
+      newCodeInput.value.scrollIntoView({ block: 'nearest' })
+    }
+  }) 
+}
+
+function handleQuickSearchKeydown(e, idx = null) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault()
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return true
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      quickSearchResults.value = []
+      return true
+    }
+  }
+  
+  // Navigation keys when search is NOT active
+  if (e.key === 'ArrowDown') {
+    if (idx !== null) { e.preventDefault(); moveRow(idx, 1) }
+  } else if (e.key === 'ArrowUp') {
+    if (idx !== null) { e.preventDefault(); moveRow(idx, -1) }
+    else { e.preventDefault(); moveToLastActiveRow() }
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (idx !== null) onCodeEnter(idx)
+    else onNewCodeEnter()
+  }
+  return false
+}
+
 function focusNewQty() {
   if (newItemCode.value.trim() && newPending.value.item_name) {
     loadItemInsight(newItemCode.value.trim(), newPending.value.item_name, newPending.value.uom)
@@ -1235,7 +1459,12 @@ function findNextActiveRow(from, dir) { let i = from + dir; while (i >= 0 && i <
 function moveRow(from, dir) { const n = findNextActiveRow(from, dir); if (n !== null) { selectedRow.value = n; focusRow(n) } else if (dir === 1) { selectedRow.value = -1; focusNewCode() } }
 function moveToLastActiveRow() { for (let i = items.value.length - 1; i >= 0; i--) { if (!items.value[i].deleted) { selectedRow.value = i; focusRow(i); return } } }
 function selectRow(idx) { if (!items.value[idx].deleted) { selectedRow.value = idx; focusRow(idx) } }
-function goToNextRow(from) { const n = findNextActiveRow(from, 1); if (n !== null) { selectedRow.value = n; focusRow(n) } else { selectedRow.value = -1; focusNewCode() } }
+function goToNextRow(from) {
+  if (items.value[from]?.qty === 0) return
+  const n = findNextActiveRow(from, 1);
+  if (n !== null) { selectedRow.value = n; focusField('code', n) }
+  else { selectedRow.value = -1; focusNewCode() }
+}
 function enterRow(idx) { if (!items.value[idx]?.deleted && quotationDocStatus.value === 0) focusField('code', idx) }
 function onRowKeydown(e, idx) {
   if (e.target !== e.currentTarget) return  // bubbled from a child input — ignore
@@ -1245,21 +1474,87 @@ function onRowKeydown(e, idx) {
 }
 
 // ==================== ITEM ENTRY ====================
+function onCodeFocus(idx) { editingOriginalCode.value = items.value[idx].item_code }
+
+function onCodeInput(idx) {
+  const val = items.value[idx].item_code
+  if (val && val.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(val)
+    quickSearchAnchor.value = inputRefs[`code-${idx}`]
+  } else {
+    quickSearchResults.value = []
+  }
+}
+
 async function onCodeEnter(idx) {
   const code = items.value[idx].item_code.trim(); if (!code) return; items.value[idx].item_code = code
+
+  // If the code hasn't changed, just move to qty
+  if (code === editingOriginalCode.value) {
+    focusField('qty', idx)
+    return
+  }
+
   const r = await lookupItem(code)
   if (r) {
-    items.value[idx].item_code = r.item_code || code  // use canonical case from lookup
-    items.value[idx].item_name = r.item_name; items.value[idx].uom = r.uom; items.value[idx].uoms = r.uoms || []; items.value[idx].uom_price_lists = r.uom_price_lists || {}; items.value[idx].rate = r.rate; items.value[idx].tax_rate = r.tax_rate ?? defaultTaxRate.value; items.value[idx].warehouse = r.warehouse; items.value[idx].deleted = false;
+    const resolvedCode = r.item_code || code
+
+    // If the targeted row was deleted while searching, or we want to ALWAYS populate at the end
+    // we should use push instead. But here, if it was already deleted, we definitely push.
+    if (items.value[idx].deleted) {
+      items.value.push({
+        item_code: resolvedCode,
+        item_name: r.item_name,
+        uom: r.uom,
+        uoms: r.uoms || [],
+        uom_price_lists: r.uom_price_lists || {},
+        qty: 1,
+        rate: r.rate,
+        discount: 0,
+        tax_rate: r.tax_rate ?? defaultTaxRate.value,
+        warehouse: r.warehouse || defaultWarehouse.value,
+        deleted: false,
+        _rowKey: makeRowKey(),
+        _is_free: false,
+        _rule_discount: null,
+        _customer_pricing: false
+      })
+      const newIdx = items.value.length - 1
+      applyDiscountRuleForRow(newIdx)
+      applyCustomerPricingForRow(newIdx)
+      loadItemInsight(resolvedCode, r.item_name, r.uom)
+      focusField('qty', newIdx)
+      return
+    }
+
+    // Reset the row like a new one
+    items.value[idx] = {
+      ...items.value[idx],
+      item_code: resolvedCode,
+      item_name: r.item_name,
+      uom: r.uom,
+      uoms: r.uoms || [],
+      uom_price_lists: r.uom_price_lists || {},
+      qty: 1,
+      rate: r.rate,
+      discount: 0,
+      tax_rate: r.tax_rate ?? defaultTaxRate.value,
+      warehouse: r.warehouse || defaultWarehouse.value,
+      deleted: false,
+      _is_free: false,
+      _rule_discount: null,
+      _customer_pricing: false
+    }
+
     if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
-    loadItemInsight(r.item_code || code, r.item_name, r.uom)
     applyDiscountRuleForRow(idx)
     applyCustomerPricingForRow(idx)
+
+    loadItemInsight(resolvedCode, r.item_name, r.uom)
     focusField('qty', idx)
   }
   else openSearch(code, idx)
 }
-
 let emptyCodeEnters = 0
 async function onNewCodeEnter() {
   const code = newItemCode.value.trim()
@@ -1275,7 +1570,7 @@ async function onNewCodeEnter() {
   const r = await lookupItem(code)
   if (r) {
     if (r.item_code) newItemCode.value = r.item_code  // normalize to canonical case
-    newPending.value = { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], uom_price_lists: r.uom_price_lists || {}, rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
+    newPending.value = { item_name: r.item_name, uom: r.uom, uoms: r.uoms || [], rate: r.rate, tax_rate: r.tax_rate, warehouse: r.warehouse }
     focusNewQty()
   }
   else openSearch(code, null)
@@ -1283,6 +1578,7 @@ async function onNewCodeEnter() {
 
 async function addNewItem() {
   const code = newItemCode.value.trim(); if (!code) return
+  if (newQty.value === 0) return
   
   // Use newPending if it matches, otherwise lookup
   let r = (newPending.value && newItemCode.value === code && newPending.value.item_name) 
@@ -1309,14 +1605,37 @@ async function addNewItem() {
   applyCustomerPricingForRow(items.value.length - 1)
 
   newItemCode.value = '';
-  newQty.value = 1;
+  newQty.value = 0;
   newPending.value = { item_name: '', uom: '', uoms: [], rate: null };
   selectedRow.value = -1; // Reset selection so we stay in "new entry" mode
   focusNewCode()
 }
 
-function softDelete(idx) { items.value[idx].deleted = true }
-function restoreItem(idx) { items.value[idx].deleted = false }
+function softDelete(idx) {
+  items.value[idx].deleted = true
+  // If the deleted row was selected, move selection to a nearby active row
+  if (selectedRow.value === idx) {
+    const next = findNextActiveRow(idx, 1)
+    if (next !== null) {
+      selectedRow.value = next
+      focusRow(next)
+    } else {
+      const prev = findNextActiveRow(idx, -1)
+      if (prev !== null) {
+        selectedRow.value = prev
+        focusRow(prev)
+      } else {
+        selectedRow.value = -1
+        focusNewCode()
+      }
+    }
+  }
+}
+function restoreItem(idx) {
+  items.value[idx].deleted = false
+  selectedRow.value = idx
+  focusRow(idx)
+}
 
 // ==================== ITEM SEARCH MODAL ====================
 const showItemSearchModal = ref(false)
@@ -1353,45 +1672,83 @@ function closeItemSearch() {
 
 async function pickItem(item) {
   showItemSearchModal.value = false
-  
+
+  // If the code hasn't changed for an existing row, just focus qty
+  if (itemSearchTargetRow !== null && item.item_code === editingOriginalCode.value) {
+    focusField('qty', itemSearchTargetRow)
+    return
+  }
+
   // Fetch real-time details
   let finalRate = item.price || 0
   let finalTax = item.tax_rate ?? defaultTaxRate.value
   let finalWh = item.warehouse || defaultWarehouse.value
-  let finalUoms = item.uoms || []
-  let finalUomPriceLists = item.uom_price_lists || {}
-  
+
   try {
     const r = await lookupItem(item.item_code)
     if (r) {
       finalRate = r.rate
       finalTax = r.tax_rate ?? defaultTaxRate.value
       finalWh = r.warehouse || defaultWarehouse.value
-      finalUoms = r.uoms || []
-      finalUomPriceLists = r.uom_price_lists || {}
     }
   } catch (e) {}
 
   if (itemSearchTargetRow !== null) {
-    const row = items.value[itemSearchTargetRow]
-    row.item_code = item.item_code
-    row.item_name = item.item_name
-    row.uom = item.uom
-    row.uoms = finalUoms
-    row.uom_price_lists = finalUomPriceLists
-    row.rate = finalRate
-    row.discount = row.discount || 0
-    row.tax_rate = finalTax
-    row.warehouse = finalWh
-    row.deleted = false
-    if (!row._rowKey) row._rowKey = makeRowKey()
-    selectedRow.value = itemSearchTargetRow
+    // If the targeted row is deleted, we must always push to the last row
+    if (items.value[itemSearchTargetRow].deleted) {
+      items.value.push({
+        item_code: item.item_code,
+        item_name: item.item_name,
+        uom: item.uom,
+        uoms: item.uoms || [],
+        uom_price_lists: item.uom_price_lists || {},
+        qty: 1,
+        rate: finalRate,
+        discount: 0,
+        tax_rate: finalTax,
+        warehouse: finalWh,
+        deleted: false,
+        _rowKey: makeRowKey(),
+        _is_free: false,
+        _rule_discount: null,
+        _customer_pricing: false
+      })
+      const newIdx = items.value.length - 1
+      applyDiscountRuleForRow(newIdx)
+      applyCustomerPricingForRow(newIdx)
+      selectedRow.value = newIdx
+      focusField('qty', newIdx)
+      return
+    }
+
+    // Reset the row like a new one
+    items.value[itemSearchTargetRow] = {
+      ...items.value[itemSearchTargetRow],
+      item_code: item.item_code,
+      item_name: item.item_name,
+      uom: item.uom,
+      uoms: item.uoms || [],
+      uom_price_lists: item.uom_price_lists || {},
+      qty: 1,
+      rate: finalRate,
+      discount: 0,
+      tax_rate: finalTax,
+      warehouse: finalWh,
+      deleted: false,
+      _is_free: false,
+      _rule_discount: null,
+      _customer_pricing: false
+    }
+
+    if (!items.value[itemSearchTargetRow]._rowKey) items.value[itemSearchTargetRow]._rowKey = makeRowKey()
     applyDiscountRuleForRow(itemSearchTargetRow)
     applyCustomerPricingForRow(itemSearchTargetRow)
+
+    selectedRow.value = itemSearchTargetRow
     focusField('qty', itemSearchTargetRow)
   } else {
     newItemCode.value = item.item_code
-    newPending.value = { item_name: item.item_name, uom: item.uom, uoms: finalUoms, uom_price_lists: finalUomPriceLists, rate: finalRate }
+    newPending.value = { item_name: item.item_name, uom: item.uom, uoms: item.uoms || [], rate: finalRate }
     nextTick(() => focusNewQty())
   }
 }
@@ -1430,26 +1787,21 @@ async function handleImportFile(event) {
         }
       }
 
-      const existing = items.value.findIndex(i => i.item_code === itemCode && !i.deleted)
-      if (existing >= 0) {
-        items.value[existing].qty += qty
-        if (importOption.value === 'File') {
-          items.value[existing].rate = rate
-          items.value[existing].discount = discount
-        }
-      } else {
-        items.value.push({
-          item_code: itemCode,
-          item_name: itemName,
-          uom: uom,
-          qty: qty,
-          rate: rate,
-          discount: discount,
-          tax_rate: taxRate,
-          warehouse: defaultWarehouse.value,
-          deleted: false
-        })
-      }
+      // Always push to the last row, ignoring existing items
+      items.value.push({
+        item_code: itemCode,
+        item_name: itemName,
+        uom: uom,
+        qty: qty,
+        rate: rate,
+        discount: discount,
+        tax_rate: taxRate,
+        warehouse: defaultWarehouse.value,
+        deleted: false,
+        _rowKey: makeRowKey()
+      })
+      applyDiscountRuleForRow(items.value.length - 1)
+      applyCustomerPricingForRow(items.value.length - 1)
     }
     showImportModal.value = false
     event.target.value = '' 
@@ -1473,7 +1825,7 @@ function exportItems() {
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Items')
-  XLSX.writeFile(wb, `Quotation_Items_${new Date().toISOString().slice(0, 10)}.xlsx`)
+  XLSX.writeFile(wb, `Sales_Items_${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
 // ==================== SIDEBAR MODIFY PANEL ====================
@@ -1522,9 +1874,13 @@ async function loadQuotation(quotationName) {
     customer.value = inv.customer
     custSearch.value = inv.customer_name
     quotationDate.value = inv.transaction_date
+    skipPriceListSync.value = true
     if (inv.naming_series && availableSeries.value.includes(inv.naming_series)) {
       quotationSeries.value = inv.naming_series
     }
+    await nextTick()
+    if (inv.price_list) priceList.value = inv.price_list
+    skipPriceListSync.value = false
     if (inv.additional_discount_amount > 0) {
       discountDirectAmt.value = inv.additional_discount_amount
       discountPct.value = 0
@@ -1540,9 +1896,10 @@ async function loadQuotation(quotationName) {
     otherChargesAmt.value = inv.other_charges_amount || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
     if (inv.cost_center) costCenter.value = inv.cost_center
-    if (inv.price_list) priceList.value = inv.price_list
     items.value = inv.items.map(i => {
       const disc = i.discount || 0
+      // Use the price_list_rate saved on the quotation item (the rate before row-level
+      // discount). Fall back to rate if price_list_rate is absent (older records).
       const listRate = i.price_list_rate || i.rate
       const isFreeRow = (i.rate === 0 || i.rate === '0') && disc === 0
       return {
@@ -1558,7 +1915,7 @@ async function loadQuotation(quotationName) {
     selectedRow.value = -1
     newItemCode.value = ''
     newQty.value = 1
-    newPending.value = { item_name: '', uom: '', uoms: [], rate: null }
+    newPending.value = { item_name: '', uom: '', rate: null }
     selectedItemData.value = null
 
     savedQuotationName.value = inv.name
@@ -1589,7 +1946,14 @@ function enterEditMode() {
     return
   }
   quotationSaved.value = false
-  nextTick(() => customerInput.value?.focus())
+  nextTick(() => {
+    if (items.value.length > 0) {
+      selectedRow.value = 0
+      focusField('code', 0)
+    } else {
+      customerInput.value?.focus()
+    }
+  })
 }
 
 function getTodayIST() {
@@ -1599,7 +1963,14 @@ function getTodayIST() {
   return formatter.format(date)
 }
 
-// ==================== QUOTATION ====================
+function changeQuotationDate(days) {
+  if (quotationSaved.value || quotationDocStatus.value !== 0) return
+  const d = new Date(quotationDate.value)
+  d.setDate(d.getDate() + days)
+  quotationDate.value = d.toISOString().split('T')[0]
+}
+
+// ==================== QUOTATIONING ====================
 const quotationDate = ref(getTodayIST())
 const customer = ref('')
 const quotationSeries = ref('')
@@ -1648,29 +2019,28 @@ async function fetchSeriesList() {
     const settings = await fetchBillingSettings()
     const rows = (settings?.billing_series || []).filter(r => r.series)
 
-    // Filter available series based on Quotation naming series
+    // Fetch allowed series for this user
+    let allowedList = []
+    let userAllowedString = ''
     try {
-      const list = await apiPost('get_naming_series')
-      if (Array.isArray(list) && list.length) {
-        availableSeries.value = list
-        
-        const target = availableSeries.value.includes(quotationSeries.value)
-          ? quotationSeries.value
-          : availableSeries.value[0]
-
-        if (target !== quotationSeries.value) {
-          quotationSeries.value = target
-        } else {
-          syncSeriesConfig(target)
-          fetchNextQuotationNo()
-        }
-        return
-      }
-    } catch (e) {}
+      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series')
+      allowedList = d.allowed_series || []
+      userAllowedString = d.user_allowed_string || ''
+    } catch (e) {
+      console.warn('[QuotationEntry] get_allowed_series failed:', e)
+    }
 
     if (rows.length) {
       billingSeriesConfig.value = rows
-      availableSeries.value = rows.map(r => r.series)
+      // Filter available series strictly based on user allowed series
+      const allSeries = rows.map(r => r.series)
+      if (allowedList.length === 0 && !userAllowedString) {
+        // Unrestricted user: show all series from billing settings
+        availableSeries.value = allSeries
+      } else {
+        // Restricted user: show only allowed series
+        availableSeries.value = allSeries.filter(s => allowedList.includes(s))
+      }
 
       if (!localStorage.getItem('wb-warehouse')) {
         if (settings.default_warehouse) defaultWarehouse.value = settings.default_warehouse
@@ -1682,6 +2052,11 @@ async function fetchSeriesList() {
           if (Array.isArray(parsed) && parsed.length === 10) cipherMap.value = parsed
         }
       } catch (e) { /* non-fatal */ }
+
+      if (availableSeries.value.length === 0) {
+        alert('You do not have permission to use any naming series.')
+        return
+      }
 
       const target = availableSeries.value.includes(quotationSeries.value)
         ? quotationSeries.value
@@ -1699,6 +2074,16 @@ async function fetchSeriesList() {
     console.warn('[QuotationEntry] fetchBillingSettings failed, falling back:', e)
   }
 
+  try {
+    const list = await frappeGet('ssplbilling.api.quotation_api.get_naming_series')
+    if (Array.isArray(list) && list.length) {
+      availableSeries.value = list
+      if (list.includes(quotationSeries.value)) { fetchNextQuotationNo() }
+      else { quotationSeries.value = list[0] }
+      return
+    }
+  } catch (e) {}
+
   fetchNextQuotationNo()
 }
 
@@ -1709,7 +2094,7 @@ async function fetchNextQuotationNo() {
   }
   if (!quotationSeries.value) { nextQuotationNo.value = '...'; return }
   try {
-    const res = await apiPost('get_next_quotation_no', { naming_series: quotationSeries.value })
+    const res = await frappeGet('ssplbilling.api.quotation_api.get_next_quotation_no', { naming_series: quotationSeries.value })
     nextQuotationNo.value = res || '...'
   } catch (e) { nextQuotationNo.value = '...' }
 }
@@ -1718,54 +2103,63 @@ const isExempted = computed(() => taxTemplate.value.toLowerCase().includes('exem
 const isInclusive = computed(() => taxTemplate.value.toLowerCase().includes('inclusive'))
 
 // Gross = sum of (qty * rate * (1 - item discount%)) — after item-level discount
-const grossTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
-)
+const grossTotal = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate * (1 - (i.discount || 0) / 100), 0)
+  return val
+})
 
-const totalBeforeItemDiscount = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0)
-)
+const totalBeforeItemDiscount = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate, 0)
+  return val
+})
 
-const itemDiscountTotal = computed(() =>
-  activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0)
-)
+const itemDiscountTotal = computed(() => {
+  const val = activeItems.value.reduce((s, i) => s + i.qty * i.rate * ((i.discount || 0) / 100), 0)
+  return val
+})
 
 // Subtotal: ex-tax amount for inclusive, gross otherwise
 const subtotal = computed(() => {
   if (isInclusive.value) {
-    return activeItems.value.reduce((s, i) => {
+    const val = activeItems.value.reduce((s, i) => {
       const amt = i.qty * i.rate * (1 - (i.discount || 0) / 100)
       return s + amt / (1 + (i.tax_rate || 0) / 100)
     }, 0)
+    return val
   }
   return grossTotal.value
 })
 
-const discountAmt = computed(() =>
-  discountInputMode.value === 'amt'
+const discountAmt = computed(() => {
+  const val = discountInputMode.value === 'amt'
     ? discountDirectAmt.value
     : subtotal.value * (discountPct.value / 100)
-)
-const taxableAmt = computed(() => subtotal.value - discountAmt.value)
+  // discountAmt should stay positive or match subtotal sign? 
+  // Usually discount is subtracted. If subtotal is -500, discount -50 makes it -450? 
+  // No, if I return 500, and I had 50 discount, I return 450.
+  // So discount should probably have same sign as subtotal if we are negating everything.
+  return val 
+})
 
 const totalTax = computed(() => {
   if (isExempted.value) return 0
   if (isInclusive.value) {
     return (grossTotal.value - subtotal.value) * (1 - discountPct.value / 100)
   }
-  return activeItems.value.reduce((s, i) => {
+  const val = activeItems.value.reduce((s, i) => {
     const a = i.qty * i.rate * (1 - (i.discount || 0) / 100)
     return s + (a - a * (discountPct.value / 100)) * (i.tax_rate / 100)
   }, 0)
+  return val
 })
 
 const grandTotal = computed(() => {
-  const base = isInclusive.value 
+  const base = isInclusive.value
     ? grossTotal.value * (1 - discountPct.value / 100)
     : taxableAmt.value + totalTax.value
-  return base + (freightAmt.value || 0) + (packingAmt.value || 0) + (loadingAmt.value || 0) + (otherChargesAmt.value || 0)
+  const charges = (freightAmt.value || 0) + (packingAmt.value || 0) + (loadingAmt.value || 0) + (otherChargesAmt.value || 0)
+  return base + charges
 })
-
 async function saveQuotation() {
   if (!customer.value.trim()) { openCustomerSearch(); return }
   if (!activeItems.value.length) { alert('Add at least one item'); return }
@@ -1773,14 +2167,15 @@ async function saveQuotation() {
   const payload = {
     customer: customer.value,
     date: quotationDate.value,
+    valid_till: getTodayIST(),
     naming_series: quotationSeries.value,
+    price_list: priceList.value || 'Standard Selling',
     ...(discountInputMode.value === 'amt'
       ? { additional_discount_amount: discountDirectAmt.value, discount_percentage: 0 }
       : { discount_percentage: discountPct.value, additional_discount_amount: 0 }),
     freight_amount: freightAmt.value,
     freight_account: localStorage.getItem('wb_freight') || '',
     tax_template: taxTemplate.value || '',
-    price_list: priceList.value || '',
     cost_center: costCenter.value || '',
     items: activeItems.value.map(i => ({
       item_code: i.item_code,
@@ -1837,30 +2232,35 @@ async function saveQuotation() {
   }
 }
 
-async function submitQuotation(nameOverride) {
-  const qname = nameOverride || savedQuotationName.value
-  if (!qname) return
-  if (!confirm(`Submit quotation ${qname}? This cannot be undone.`)) return
+async function deleteQuotation() {
+  if (!savedQuotationName.value) return
+  if (!confirm('Are you sure you want to delete this draft quotation?')) return
   try {
-    const res = await apiPost('submit_quotation', { quotation_name: qname })
-    if (!nameOverride) quotationDocStatus.value = res?.docstatus ?? 1
-    // Update sidebar to reflect new docstatus
-    const entry = sidebarQuotations.value.find(q => q.name === qname)
-    if (entry) entry.docstatus = res?.docstatus ?? 1
+    await apiPost('delete_quotation', { quotation_name: savedQuotationName.value })
+    alert('Quotation deleted successfully')
+    startNewQuotation()
     fetchSidebarQuotations()
+  } catch (e) {
+    alert('Error deleting quotation: ' + (e.message || 'Unknown error'))
+  }
+}
+
+async function submitQuotation() {
+  if (!savedQuotationName.value || quotationDocStatus.value !== 0) return
+  if (!confirm(`Submit quotation ${savedQuotationName.value}? This cannot be undone.`)) return
+  try {
+    const res = await apiPost('submit_quotation', { quotation_name: savedQuotationName.value })
+    quotationDocStatus.value = res?.docstatus ?? 1
   } catch (e) {
     alert('Submit failed: ' + (e?.message || 'Unknown error'))
   }
 }
 
 function startNewQuotation() {
-  items.value = []; selectedRow.value = -1; customer.value = ''; custSearch.value = ''
-  discountPct.value = 0; discountDirectAmt.value = 0; discountInputMode.value = null; freightAmt.value = 0; packingAmt.value = 0; loadingAmt.value = 0; otherChargesAmt.value = 0; newItemCode.value = ''; newQty.value = 1
+  items.value = []; selectedRow.value = -1
   quotationDate.value = getTodayIST()
   quotationSaved.value = false; quotationDocStatus.value = 0; savedQuotationName.value = null; selectedItemData.value = null
-  selectedCustomerDetails.value = null
-  syncSeriesConfig(quotationSeries.value) // Restore price list and other settings from general settings
-  fetchCustomerSalesHistory(null) // Clear history cache
+  syncSeriesConfig(quotationSeries.value)
   nextTick(() => focusNewCode())
 }
 
@@ -1929,7 +2329,7 @@ useShortcuts(quotationEntryShortcuts({
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
-  enterEditMode: () => { if (quotationSaved.value) enterEditMode() },
+  enterEditMode: () => { if (quotationSaved.value && quotationDocStatus.value === 0) enterEditMode() },
   focusSidebarSeries: () => { sidebarSeriesSelect.value?.focus() },
   deleteRow: () => {
     if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
@@ -1975,9 +2375,55 @@ useShortcuts(quotationEntryShortcuts({
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { closeItemSearch(); return }
     if (showCustomerLedgerWindow.value) { showCustomerLedgerWindow.value = false; return }
-    // First Esc: clear active quotation; Second Esc (quotation already empty): exit
-    const hasQuotationContent = activeItems.value.length > 0 || customer.value || savedQuotationName.value
-    if (hasQuotationContent) { startNewQuotation(); return }
+    if (showClearQuotationWarning.value) { showClearQuotationWarning.value = false; focusNewCode(); return }
+    if (showExitModifyWarning.value) {
+      showExitModifyWarning.value = false;
+      nextTick(() => lastFocusedEl.value?.focus());
+      return
+    }
+
+    // New logic: If focused on a row input (code, qty, rate, discount, etc.), just blur it first
+    const activeEl = document.activeElement
+    if (activeEl && activeEl.tagName === 'INPUT') {
+      // Check if it's one of the grid inputs (including new entry row)
+      const isGridInput = activeEl === newCodeInput.value || 
+                          activeEl === newQtyInput.value || 
+                          Object.values(inputRefs).includes(activeEl)
+
+      if (isGridInput) {
+        activeEl.blur()
+        return // Just blur, keep selectedRow intact
+      }
+    }
+
+    // 1. If in "Modify Quotation" mode (editing an existing draft)
+    if (savedQuotationName.value && !quotationSaved.value && quotationDocStatus.value === 0) {
+      if (selectedRow.value !== -1 || newItemCode.value || (newPending.value && newPending.value.item_name)) {
+        lastFocusedEl.value = document.activeElement
+        showExitModifyWarning.value = true
+        return
+      }
+    }
+
+    // 2. If entering/editing an item in the grid (not saved quotation, new quotation)
+    if (quotationDocStatus.value === 0 && !quotationSaved.value && !savedQuotationName.value) {
+      // If a row is selected or we have pending barcode entry
+      if (selectedRow.value !== -1 || newItemCode.value || (newPending.value && newPending.value.item_name)) {
+        selectedRow.value = -1
+        newItemCode.value = ''
+        newPending.value = { item_name: '', uom: '', rate: null }
+        focusNewCode()
+        return
+      }
+
+      // 2. If item table has items, ask to clear
+      if (activeItems.value.length > 0) {
+        showClearQuotationWarning.value = true
+        return
+      }
+    }
+
+    // 3. If item table is empty or quotation is saved/submitted, take to dashboard
     handleBack()
   }
 }), props.isSubWindow ? 'subwindow' : 'local')
@@ -2012,7 +2458,7 @@ function handleSeriesNumberKey(e) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Listen for global shortcut events
   window.addEventListener('wb-global-ledger-search', openCustomerSearch);
   window.addEventListener('wb-global-item-search', () => openSearch('', null));
@@ -2020,21 +2466,24 @@ onMounted(() => {
   window.addEventListener('storage', handleStorageChange);
   window.addEventListener('keydown', handleSeriesNumberKey);
 
-  fetchSeriesList()
   fetchDropdownOptions()
   fetchSidebarQuotations()
-  
+
   // Ensure item cache is populated (TTL 5 mins)
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
   }
   // Always refresh discount rules for every new quotation session
   refreshDiscountRuleCache()
-  
+
   const targetQuotation = props.isSubWindow ? props.quotationName : route.query.quotation
   if (targetQuotation) {
+    // For modify quotation: wait for series/settings to fully load FIRST so
+    // syncSeriesConfig doesn't race against the quotation's saved price list.
+    await fetchSeriesList()
     loadQuotation(targetQuotation)
   } else {
+    fetchSeriesList()
     nextTick(() => openSeriesModal())
   }
 })
@@ -2056,5 +2505,14 @@ input[type='number']::-webkit-outer-spin-button {
 }
 input[type='number'] {
   -moz-appearance: textfield;
+}
+
+/* Hide scrollbars but keep functionality */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>
