@@ -62,7 +62,7 @@
                 ref="itemGroupInput"
                 v-model="form.item_group"
                 class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
-                @keydown.enter.prevent="uomInput?.focus()"
+                @keydown.enter.prevent="hsnInput?.focus()"
               >
                 <option value="">Select Group...</option>
                 <option v-for="g in metadata.item_groups" :key="g.name" :value="g.name">{{ g.name }}</option>
@@ -87,7 +87,7 @@
                 ref="taxTemplateInput"
                 v-model="form.item_tax_template"
                 class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
-                @keydown.enter.prevent="supplierInput?.focus()"
+                @keydown.enter.prevent="rateInput?.focus()"
               >
                 <option value="">No Tax / Exempt</option>
                 <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
@@ -146,6 +146,7 @@
                 type="text"
                 class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-4xl font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
                 placeholder="Print name..."
+                @keydown.enter.prevent="itemGroupInput?.focus()"
               />
             </div>
 
@@ -236,18 +237,18 @@
                 <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Standard Rate</label>
                 <div class="relative">
                   <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-3xl">₹</span>
-                  <input ref="rateInput" v-model.number="form.standard_rate" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] pl-[40px] text-right font-mono text-4xl font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all" placeholder="0.00" />
+                  <input ref="rateInput" v-model.number="form.standard_rate" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] pl-[40px] text-right font-mono text-4xl font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all" placeholder="0.00" @keydown.enter.prevent="safetyStockInput?.focus()" />
                 </div>
               </div>
               <div class="space-y-[4px]">
                 <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Safety Stock</label>
-                <input ref="safetyStockInput" v-model.number="form.safety_stock" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-right font-mono text-4xl text-slate-200 outline-none focus:border-blue-500 transition-all placeholder:text-slate-700" placeholder="0" />
+                <input ref="safetyStockInput" v-model.number="form.safety_stock" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-right font-mono text-4xl text-slate-200 outline-none focus:border-blue-500 transition-all placeholder:text-slate-700" placeholder="0" @keydown.enter.prevent="supplierInput?.focus()" />
               </div>
             </div>
 
             <div class="space-y-[4px]">
               <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Supplier Part No</label>
-              <input ref="supplierPartNoInput" v-model="form.supplier_part_no" type="text" :disabled="!form.supplier" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed" placeholder="SKU..." />
+              <input ref="supplierPartNoInput" v-model="form.supplier_part_no" type="text" :disabled="!form.supplier" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed" placeholder="SKU..." @keydown.enter.prevent="handleSubmit" />
             </div>
           </div>
         </div>
