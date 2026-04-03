@@ -51,8 +51,9 @@
             :key="inv.name"
             :ref="el => setSidebarBillRef(el, idx)"
             @click="loadInvoice(inv.name)"
-            class="group cursor-pointer border-b border-slate-800 bg-slate-900 px-2 py-1 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
-            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedInvoiceName === inv.name }"
+            class="group cursor-pointer border-b border-slate-800 px-2 py-1 transition-colors outline-none focus:ring-1 focus:ring-blue-500"
+            :class="savedInvoiceName === inv.name ? 'border-l-2 border-l-blue-500' : 'bg-slate-900 hover:bg-slate-800 focus:bg-slate-800'"
+            :style="savedInvoiceName === inv.name ? { backgroundColor: '#B0E4CC !important', opacity: '1 !important' } : {}"
             tabindex="0"
             @keydown.enter="loadInvoice(inv.name)"
             @keydown.up.prevent="navigateSidebarBill(idx, -1)"
@@ -61,11 +62,11 @@
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 truncate min-w-0">
                 <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-2xl text-blue-400">{{ inv.name }}</span>
+                <span class="truncate font-mono text-2xl" :class="savedInvoiceName === inv.name ? 'text-black font-bold' : 'text-blue-400'">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono font-normal text-4xl text-slate-200 tabular-nums">{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono font-normal text-4xl tabular-nums" :class="savedInvoiceName === inv.name ? 'text-black' : 'text-slate-200'">{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-2xl text-slate-400">{{ inv.customer_name }}</div>
+            <div class="truncate text-2xl" :class="savedInvoiceName === inv.name ? 'text-black font-medium' : 'text-slate-400'">{{ inv.customer_name }}</div>
           </div>
         </div>
       </aside>
@@ -426,15 +427,20 @@
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
 
-                    <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-lg font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify Bill</button>
-                    <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-1.5 text-center text-lg font-semibold text-white transition shadow" :class="savedInvoiceName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update Bill' : 'Save Bill (Ctrl+S)' }}</button>
-                    
-                    <div class="flex gap-1">
-                      <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-1.5 text-center text-lg font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
-                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-1.5 text-center text-lg font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
+                    <!-- Row 1: Save/Modify and Print -->
+                    <div class="flex gap-2">
+                      <div class="flex-1">
+                        <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-2 text-center text-lg font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify (M)</button>
+                        <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-2 text-center text-lg font-semibold text-white transition shadow" :class="savedInvoiceName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedInvoiceName ? 'Update' : 'Save (Ctrl+S)' }}</button>
+                      </div>
+                      <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-2 text-center text-lg font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
                     </div>
 
-                    <button @click="showIncentiveModal = true" class="w-full rounded border border-indigo-700/50 bg-indigo-900/20 py-1.5 text-center text-lg font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">👥 Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
+                    <!-- Row 2: Cancel/New Bill and Incentive -->
+                    <div class="flex gap-2">
+                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-2 text-center text-lg font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
+                      <button @click="showIncentiveModal = true" class="flex-1 rounded border border-indigo-700/50 bg-indigo-900/20 py-2 text-center text-lg font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">👥 Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
+                    </div>
                     
                     <div class="mt-auto rounded-xl border border-blue-500/40 bg-blue-950/60 p-5 shadow-2xl">
                       <div class="text-[12px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-2">Total Amount</div>
@@ -2352,7 +2358,11 @@ useShortcuts(salesEntryShortcuts({
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },
-  enterEditMode: () => { if (billSaved.value) enterEditMode() },
+  enterEditMode: () => {
+    if (billSaved.value && billDocStatus.value === 0 && (!document.activeElement || !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName))) {
+      enterEditMode()
+    }
+  },
   focusSidebarSeries: () => { sidebarSeriesSelect.value?.focus() },
   deleteRow: () => {
     if (!showPrintModal.value && selectedRow.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
