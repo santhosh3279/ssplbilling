@@ -1,5 +1,5 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex overflow-hidden">
     <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
         <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
           <div class="text-xl font-bold uppercase tracking-wider text-slate-500">Modify Bills</div>
@@ -43,7 +43,7 @@
         </div>
 
         <!-- Bill List -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="flex-1 overflow-y-auto scrollbar-none">
           <div v-if="sidebarLoading" class="p-4 text-center text-lg text-slate-500">Loading...</div>
           <div v-else-if="!sidebarBills.length" class="p-4 text-center text-lg text-slate-600 italic">No bills found</div>
           <div 
@@ -195,7 +195,7 @@
     </div>
 
         <div class="flex flex-[7] flex-col overflow-hidden">
-          <div class="flex-1 overflow-y-auto">
+          <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
             <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
               <thead>
                 <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
