@@ -19,7 +19,7 @@
           <input
             ref="searchInput"
             v-model="query"
-            class="w-full rounded border border-slate-600 bg-slate-900 p-[5px] text-4xl text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            class="w-full rounded border border-slate-600 bg-slate-900 p-[8px] text-4xl text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             placeholder="Type item code or name..."
             @keydown.esc.stop="$emit('close')"
           />
