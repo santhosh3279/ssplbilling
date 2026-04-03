@@ -395,6 +395,7 @@ def get_customer_full(customer):
 		"city": "",
 		"pincode": "",
 		"state": "",
+		"pricelist_multiplication_factor": doc.pricelist_multiplication_factor or 1,
 	}
 
 	addr_name = frappe.db.get_value(
@@ -478,6 +479,16 @@ def update_customer_full(data):
 	cust.mobile_no = data.get("mobile") or ""
 	cust.email_id = data.get("email") or ""
 	cust.gstin = data.get("gstin") or ""
+	
+	if "pricelist_modifier" in data:
+		mod = float(data.get("pricelist_modifier") or 0)
+		if mod > 0:
+			cust.pricelist_multiplication_factor = 1 + (mod / 100)
+		elif mod < 0:
+			cust.pricelist_multiplication_factor = 1 - (abs(mod) / 100)
+		else:
+			cust.pricelist_multiplication_factor = 1
+			
 	cust.save(ignore_permissions=True)
 
 	address_name = data.get("address_name") or frappe.db.get_value(
@@ -560,6 +571,16 @@ def quick_create_customer(data=None, **kwargs):
     cust.mobile_no = data.get("mobile", "")
     cust.email_id = data.get("email", "")
     cust.gstin = data.get("gstin", "")
+
+    if "pricelist_modifier" in data:
+        mod = float(data.get("pricelist_modifier") or 0)
+        if mod > 0:
+            cust.pricelist_multiplication_factor = 1 + (mod / 100)
+        elif mod < 0:
+            cust.pricelist_multiplication_factor = 1 - (abs(mod) / 100)
+        else:
+            cust.pricelist_multiplication_factor = 1
+
     cust.insert(ignore_permissions=True)
 
     if data.get("address_line1") or data.get("city"):

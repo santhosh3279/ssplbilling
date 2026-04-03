@@ -61,6 +61,14 @@
       </div>
 
       <div class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pricelist Modifier %</label>
+        <div class="relative w-full">
+          <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500 pr-8" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
         <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
         <input v-model="form.address_line1" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
       </div>
@@ -134,6 +142,7 @@ const defaultForm = () => ({
   mobile: '', whatsapp: '', email: '', gstin: '',
   address_name: '', address_line1: '', address_line2: '',
   city: 'Palakkad', pincode: '678000', state: 'Kerala',
+  pricelist_modifier: null,
 })
 
 const form = ref(defaultForm())
@@ -164,6 +173,7 @@ onMounted(async () => {
       city:           row.city           || '',
       pincode:        row.pincode        || '',
       state:          row.state          || '',
+      pricelist_modifier: null,
     }
     editLoading.value = true
     try {
@@ -172,6 +182,19 @@ onMounted(async () => {
       for (const [k, v] of Object.entries(full)) {
         if (k === 'address_name' || v !== '') merged[k] = v
       }
+      
+      // Reverse calculate modifier percentage
+      if (full.pricelist_multiplication_factor != null) {
+        const factor = full.pricelist_multiplication_factor
+        if (factor > 1) {
+          merged.pricelist_modifier = Math.round((factor - 1) * 100 * 100) / 100
+        } else if (factor < 1) {
+          merged.pricelist_modifier = -Math.round((1 - factor) * 100 * 100) / 100
+        } else {
+          merged.pricelist_modifier = 0
+        }
+      }
+      
       form.value = merged
     } catch (e) {
       console.warn('[CustomerCreator] fetch customer details failed:', e)
