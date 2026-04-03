@@ -24,7 +24,18 @@
       </div>
     </header>
 
+    
     <main class="flex-1 overflow-y-auto scrollbar-none p-6 text-slate-200">
+      <datalist id="dl-accounts"><option v-for="o in lists.accounts" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-users"><option v-for="o in lists.users" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-printers"><option v-for="o in lists.printers" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-print-formats"><option v-for="o in lists.printFormats" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-price-lists"><option v-for="o in lists.priceLists" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-tax-templates"><option v-for="o in lists.taxTemplates" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-warehouses"><option v-for="o in lists.warehouses" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-cost-centers"><option v-for="o in lists.costCenters" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-series"><option v-for="o in lists.series" :key="o" :value="o"></option></datalist>
+
       <div v-if="isLoading" class="flex h-full items-center justify-center text-slate-500">
         <span class="text-xl animate-pulse">Loading settings...</span>
       </div>
@@ -45,7 +56,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-400 mb-1">Discount Account</label>
               <input 
-                v-model="settings.discount_account" 
+                v-model="settings.discount_account" list="dl-accounts" 
                 type="text" 
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
               />
@@ -53,7 +64,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-400 mb-1">Freight Account</label>
               <input 
-                v-model="settings.freight" 
+                v-model="settings.freight" list="dl-accounts" 
                 type="text" 
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
               />
@@ -61,7 +72,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-400 mb-1">Tax Paid on Purchase</label>
               <input 
-                v-model="settings.tax_paid_on_purchase" 
+                v-model="settings.tax_paid_on_purchase" list="dl-accounts" 
                 type="text" 
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
               />
@@ -69,7 +80,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-400 mb-1">Packing Charge</label>
               <input 
-                v-model="settings.packing_charge" 
+                v-model="settings.packing_charge" list="dl-accounts" 
                 type="text" 
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
               />
@@ -77,7 +88,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-400 mb-1">Loading</label>
               <input 
-                v-model="settings.loading" 
+                v-model="settings.loading" list="dl-accounts" 
                 type="text" 
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
               />
@@ -85,7 +96,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-400 mb-1">Other Charges</label>
               <input 
-                v-model="settings.other_charges" 
+                v-model="settings.other_charges" list="dl-accounts" 
                 type="text" 
                 class="w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
               />
@@ -111,10 +122,10 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.billing_series" :key="idx" class="border-b border-slate-700">
-                <td class="px-2 py-2"><input v-model="row.series" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.print_format" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.price_list" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.tax_template" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.series" list="dl-series" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.print_format" list="dl-print-formats" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.price_list" list="dl-price-lists" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.tax_template" list="dl-tax-templates" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('billing_series', idx)" class="text-red-400 hover:text-red-300 font-bold px-2">&times;</button></td>
               </tr>
               <tr v-if="!settings.billing_series || settings.billing_series.length === 0">
@@ -149,13 +160,13 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.user_series" :key="idx" class="border-b border-slate-700">
-                <td class="px-1 py-2"><input v-model="row.user" class="w-full min-w-[100px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.user" list="dl-users" class="w-full min-w-[100px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.allowed_series_seperated_by_comma" placeholder="ALL or prefixes" class="w-full min-w-[100px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.cash" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.upi" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.card" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.bank" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.income_account" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.cash" list="dl-accounts" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.upi" list="dl-accounts" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.card" list="dl-accounts" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.bank" list="dl-accounts" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.income_account" list="dl-accounts" class="w-full min-w-[80px] bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs focus:border-blue-500 outline-none" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.admin" :true-value="1" :false-value="0" class="cursor-pointer accent-blue-500" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.cashier" :true-value="1" :false-value="0" class="cursor-pointer accent-blue-500" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.biller" :true-value="1" :false-value="0" class="cursor-pointer accent-blue-500" /></td>
@@ -183,9 +194,9 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.table_vycb" :key="idx" class="border-b border-slate-700">
-                <td class="px-2 py-2"><input v-model="row.user" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.printer" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.template" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.user" list="dl-users" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.printer" list="dl-printers" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.template" list="dl-print-formats" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('table_vycb', idx)" class="text-red-400 hover:text-red-300 font-bold px-2">&times;</button></td>
               </tr>
             </tbody>
@@ -208,7 +219,7 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.visible_accounts" :key="idx" class="border-b border-slate-700">
-                <td class="px-2 py-2"><input v-model="row.account" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
+                <td class="px-2 py-2"><input v-model="row.account" list="dl-accounts" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
                 <td class="px-2 py-2"><input v-model="row.label" class="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:border-blue-500 outline-none" /></td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('visible_accounts', idx)" class="text-red-400 hover:text-red-300 font-bold px-2">&times;</button></td>
               </tr>
@@ -229,11 +240,59 @@ import { frappeGet, frappePost } from '../api.js'
 const router = useRouter()
 const isLoading = ref(true)
 const isSaving = ref(false)
+
 const settings = ref(null)
 
-onMounted(async () => {
-  await fetchSettings()
+const lists = ref({
+  accounts: [],
+  users: [],
+  printers: [],
+  printFormats: [],
+  priceLists: [],
+  taxTemplates: [],
+  warehouses: [],
+  costCenters: [],
+  series: []
 })
+
+
+
+onMounted(async () => {
+  await Promise.all([fetchSettings(), fetchLists()])
+})
+
+async function fetchLists() {
+  try {
+    const [acc, usr, pf, pl, tax, wh, cc, serSI, serQT, prn] = await Promise.all([
+      frappeGet('frappe.client.get_list', { doctype: 'Account', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'User', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'Print Format', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'Price List', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'Sales Taxes and Charges Template', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'Warehouse', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'Cost Center', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' }).catch(() => ({allowed_series: []})),
+      frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Quotation' }).catch(() => ({allowed_series: []})),
+      frappeGet('frappe.client.get_list', { doctype: 'Printer', fields: ['name'], limit_page_length: 0 }).catch(() => [])
+    ])
+    
+    lists.value.accounts = acc.map(a => a.name)
+    lists.value.users = usr.map(u => u.name)
+    lists.value.printFormats = pf.map(p => p.name)
+    lists.value.priceLists = pl.map(p => p.name)
+    lists.value.taxTemplates = tax.map(t => t.name)
+    lists.value.warehouses = wh.map(w => w.name)
+    lists.value.costCenters = cc.map(c => c.name)
+    lists.value.printers = prn.map(p => p.name)
+    
+    const s1 = serSI.allowed_series || []
+    const s2 = serQT.allowed_series || []
+    lists.value.series = [...new Set([...s1, ...s2])]
+  } catch(e) {
+    console.error('Error fetching lists', e)
+  }
+}
+
 
 async function fetchSettings() {
   isLoading.value = true
