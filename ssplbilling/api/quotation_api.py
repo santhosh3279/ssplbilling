@@ -395,7 +395,16 @@ def update_quotation(data):
 	if qt.docstatus != 0:
 		frappe.throw("Cannot edit a submitted or cancelled Quotation")
 
-	qt.party_name = data["customer"]
+	if qt.party_name != data["customer"]:
+		qt.party_name = data["customer"]
+		qt.customer_address = None
+		qt.shipping_address_name = None
+		qt.contact_person = None
+		qt.contact_display = None
+		qt.contact_mobile = None
+		qt.contact_email = None
+		qt.address_display = None
+
 	qt.transaction_date = data.get("date") or qt.transaction_date
 	if data.get("valid_till"):
 		qt.valid_till = data["valid_till"]

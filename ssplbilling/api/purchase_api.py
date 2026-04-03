@@ -365,7 +365,17 @@ def update_purchase_invoice(data=None, **kwargs):
 
     invoice_name = data.get("invoice_name")
     pi = frappe.get_doc("Purchase Invoice", invoice_name)
-    pi.supplier = data["supplier"]
+    
+    if pi.supplier != data["supplier"]:
+        pi.supplier = data["supplier"]
+        pi.supplier_address = None
+        pi.shipping_address_name = None
+        pi.contact_person = None
+        pi.contact_display = None
+        pi.contact_mobile = None
+        pi.contact_email = None
+        pi.address_display = None
+
     pi.is_return = data.get("is_return", 0)
     pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())

@@ -322,7 +322,16 @@ def update_sales_order(data):
 	if so.docstatus != 0:
 		frappe.throw("Cannot edit a submitted or cancelled Sales Order")
 
-	so.customer = data["customer"]
+	if so.customer != data["customer"]:
+		so.customer = data["customer"]
+		so.customer_address = None
+		so.shipping_address_name = None
+		so.contact_person = None
+		so.contact_display = None
+		so.contact_mobile = None
+		so.contact_email = None
+		so.address_display = None
+
 	so.transaction_date = data.get("date") or so.transaction_date
 	if data.get("delivery_date"):
 		so.delivery_date = data["delivery_date"]

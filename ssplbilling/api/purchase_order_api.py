@@ -321,7 +321,16 @@ def update_purchase_order(data):
 	if po.docstatus != 0:
 		frappe.throw("Cannot edit a submitted or cancelled Purchase Order")
 
-	po.supplier = data["supplier"]
+	if po.supplier != data["supplier"]:
+		po.supplier = data["supplier"]
+		po.supplier_address = None
+		po.shipping_address_name = None
+		po.contact_person = None
+		po.contact_display = None
+		po.contact_mobile = None
+		po.contact_email = None
+		po.address_display = None
+
 	po.transaction_date = data.get("date") or po.transaction_date
 	if data.get("schedule_date"):
 		po.schedule_date = data["schedule_date"]

@@ -372,7 +372,17 @@ def update_sales_invoice(data=None, **kwargs):
 
     invoice_name = data.get("invoice_name")
     si = frappe.get_doc("Sales Invoice", invoice_name)
-    si.customer = data["customer"]
+    
+    if si.customer != data["customer"]:
+        si.customer = data["customer"]
+        si.customer_address = None
+        si.shipping_address_name = None
+        si.contact_person = None
+        si.contact_display = None
+        si.contact_mobile = None
+        si.contact_email = None
+        si.address_display = None
+
     si.is_return = data.get("is_return", 0)
     if data.get("price_list"):
         si.selling_price_list = data["price_list"]
