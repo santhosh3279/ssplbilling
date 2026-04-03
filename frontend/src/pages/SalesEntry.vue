@@ -443,16 +443,16 @@
                     <!-- Row 1: Save/Modify and Print -->
                     <div class="flex gap-2">
                       <div class="flex-1">
-                        <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-4 text-center text-3xl font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify (Ctrl+M)</button>
-                        <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-4 text-center text-3xl font-semibold text-white transition shadow bg-[#285A48] hover:bg-[#1e4538]">{{ savedInvoiceName ? 'Update' : 'Save (Ctrl+S)' }}</button>
+                        <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-2.5 text-center text-xl font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Modify (Ctrl+M)</button>
+                        <button v-else-if="!billSaved" ref="saveButton" @click="saveBill" class="w-full rounded py-2.5 text-center text-xl font-semibold text-white transition shadow bg-[#285A48] hover:bg-[#1e4538]">{{ savedInvoiceName ? 'Update' : 'Save (Ctrl+S)' }}</button>
                       </div>
-                      <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-4 text-center text-3xl font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
+                      <button class="flex-1 rounded border border-slate-600 bg-slate-800 py-2.5 text-center text-xl font-semibold text-slate-300 hover:bg-slate-700" @click="printBill">Print</button>
                     </div>
 
                     <!-- Row 2: Cancel/New Bill and Incentive -->
                     <div class="flex gap-2">
-                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-4 text-center text-3xl font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
-                      <button @click="showIncentiveModal = true" class="flex-1 rounded border border-indigo-700/50 bg-indigo-900/20 py-4 text-center text-3xl font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">👥 Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
+                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-2.5 text-center text-xl font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
+                      <button @click="showIncentiveModal = true" class="flex-1 rounded border border-indigo-700/50 bg-indigo-900/20 py-2.5 text-center text-xl font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">👥 Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
                     </div>
                   </div>
                 </td>
