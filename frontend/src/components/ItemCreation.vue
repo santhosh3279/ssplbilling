@@ -6,7 +6,7 @@
   >
     <div class="w-[90vw] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
-      <div class="p-[8px] bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+      <div class="p-[12px] bg-slate-800 border-b border-slate-700 flex justify-between items-center">
         <div class="flex items-baseline gap-4">
           <h3 class="text-5xl font-bold text-slate-100">{{ isEditMode ? 'Edit Item' : 'Create New Item' }}</h3>
           <span class="text-slate-600 text-2xl">|</span>
