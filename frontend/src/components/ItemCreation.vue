@@ -7,9 +7,10 @@
     <div class="w-[90vw] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
       <div class="p-[8px] bg-slate-800 border-b border-slate-700 flex justify-between items-center">
-        <div>
+        <div class="flex items-baseline gap-4">
           <h3 class="text-5xl font-bold text-slate-100">{{ isEditMode ? 'Edit Item' : 'Create New Item' }}</h3>
-          <p class="text-2xl text-slate-400 mt-1">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
+          <span class="text-slate-600 text-2xl">|</span>
+          <p class="text-2xl text-slate-400">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
         </div>
         <button
           @click="$emit('close')"
