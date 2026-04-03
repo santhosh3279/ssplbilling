@@ -1491,6 +1491,35 @@ async function onCodeEnter(idx) {
   const r = await lookupItem(code)
   if (r) {
     const resolvedCode = r.item_code || code
+
+    // If the targeted row was deleted while searching, or we want to ALWAYS populate at the end
+    // we should use push instead. But here, if it was already deleted, we definitely push.
+    if (items.value[idx].deleted) {
+      items.value.push({
+        item_code: resolvedCode,
+        item_name: r.item_name,
+        uom: r.uom,
+        uoms: r.uoms || [],
+        uom_price_lists: r.uom_price_lists || {},
+        qty: 1,
+        rate: r.rate,
+        discount: 0,
+        tax_rate: r.tax_rate ?? defaultTaxRate.value,
+        warehouse: r.warehouse || defaultWarehouse.value,
+        deleted: false,
+        _rowKey: makeRowKey(),
+        _is_free: false,
+        _rule_discount: null,
+        _customer_pricing: false
+      })
+      const newIdx = items.value.length - 1
+      applyDiscountRuleForRow(newIdx)
+      applyCustomerPricingForRow(newIdx)
+      loadItemInsight(resolvedCode, r.item_name, r.uom)
+      focusField('qty', newIdx)
+      return
+    }
+
     // Reset the row like a new one
     items.value[idx] = {
       ...items.value[idx],
@@ -1509,17 +1538,16 @@ async function onCodeEnter(idx) {
       _rule_discount: null,
       _customer_pricing: false
     }
-    
+
     if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
     applyDiscountRuleForRow(idx)
     applyCustomerPricingForRow(idx)
-    
+
     loadItemInsight(resolvedCode, r.item_name, r.uom)
     focusField('qty', idx)
   }
   else openSearch(code, idx)
 }
-
 let emptyCodeEnters = 0
 async function onNewCodeEnter() {
   const code = newItemCode.value.trim()
@@ -1576,8 +1604,31 @@ async function addNewItem() {
   focusNewCode()
 }
 
-function softDelete(idx) { items.value[idx].deleted = true }
-function restoreItem(idx) { items.value[idx].deleted = false }
+function softDelete(idx) {
+  items.value[idx].deleted = true
+  // If the deleted row was selected, move selection to a nearby active row
+  if (selectedRow.value === idx) {
+    const next = findNextActiveRow(idx, 1)
+    if (next !== null) {
+      selectedRow.value = next
+      focusRow(next)
+    } else {
+      const prev = findNextActiveRow(idx, -1)
+      if (prev !== null) {
+        selectedRow.value = prev
+        focusRow(prev)
+      } else {
+        selectedRow.value = -1
+        focusNewCode()
+      }
+    }
+  }
+}
+function restoreItem(idx) {
+  items.value[idx].deleted = false
+  selectedRow.value = idx
+  focusRow(idx)
+}
 
 // ==================== ITEM SEARCH MODAL ====================
 const showItemSearchModal = ref(false)
@@ -1630,6 +1681,33 @@ async function pickItem(item) {
   } catch (e) {}
 
   if (itemSearchTargetRow !== null) {
+    // If the targeted row is deleted, we must always push to the last row
+    if (items.value[itemSearchTargetRow].deleted) {
+      items.value.push({
+        item_code: item.item_code,
+        item_name: item.item_name,
+        uom: item.uom,
+        uoms: item.uoms || [],
+        uom_price_lists: item.uom_price_lists || {},
+        qty: 1,
+        rate: finalRate,
+        discount: 0,
+        tax_rate: finalTax,
+        warehouse: finalWh,
+        deleted: false,
+        _rowKey: makeRowKey(),
+        _is_free: false,
+        _rule_discount: null,
+        _customer_pricing: false
+      })
+      const newIdx = items.value.length - 1
+      applyDiscountRuleForRow(newIdx)
+      applyCustomerPricingForRow(newIdx)
+      selectedRow.value = newIdx
+      focusField('qty', newIdx)
+      return
+    }
+
     // Reset the row like a new one
     items.value[itemSearchTargetRow] = {
       ...items.value[itemSearchTargetRow],
@@ -1648,11 +1726,11 @@ async function pickItem(item) {
       _rule_discount: null,
       _customer_pricing: false
     }
-    
+
     if (!items.value[itemSearchTargetRow]._rowKey) items.value[itemSearchTargetRow]._rowKey = makeRowKey()
     applyDiscountRuleForRow(itemSearchTargetRow)
     applyCustomerPricingForRow(itemSearchTargetRow)
-    
+
     selectedRow.value = itemSearchTargetRow
     focusField('qty', itemSearchTargetRow)
   } else {
@@ -1696,26 +1774,21 @@ async function handleImportFile(event) {
         }
       }
 
-      const existing = items.value.findIndex(i => i.item_code === itemCode && !i.deleted)
-      if (existing >= 0) {
-        items.value[existing].qty += qty
-        if (importOption.value === 'File') {
-          items.value[existing].rate = rate
-          items.value[existing].discount = discount
-        }
-      } else {
-        items.value.push({
-          item_code: itemCode,
-          item_name: itemName,
-          uom: uom,
-          qty: qty,
-          rate: rate,
-          discount: discount,
-          tax_rate: taxRate,
-          warehouse: defaultWarehouse.value,
-          deleted: false
-        })
-      }
+      // Always push to the last row, ignoring existing items
+      items.value.push({
+        item_code: itemCode,
+        item_name: itemName,
+        uom: uom,
+        qty: qty,
+        rate: rate,
+        discount: discount,
+        tax_rate: taxRate,
+        warehouse: defaultWarehouse.value,
+        deleted: false,
+        _rowKey: makeRowKey()
+      })
+      applyDiscountRuleForRow(items.value.length - 1)
+      applyCustomerPricingForRow(items.value.length - 1)
     }
     showImportModal.value = false
     event.target.value = '' 
