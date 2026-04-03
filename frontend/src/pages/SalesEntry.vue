@@ -881,8 +881,18 @@ function getSeriesConfig(series) {
 
 function syncSeriesConfig(series) {
   const cfg = getSeriesConfig(series)
+  
+  // 1. Try local storage first for this series
+  const cachedPL = localStorage.getItem(`wb-price-list-${series}`)
+  if (cachedPL && !skipPriceListSync.value) {
+    priceList.value = cachedPL
+  } else if (cfg?.price_list && !skipPriceListSync.value) {
+    // 2. Fallback to series config from backend
+    priceList.value = cfg.price_list
+  }
+
   if (!cfg) return
-  if (cfg.price_list && !skipPriceListSync.value) priceList.value = cfg.price_list
+  
   if (cfg.print_format) printScheme.value = cfg.print_format
   if (cfg.tax_template) taxTemplate.value = cfg.tax_template
   incomeAccount.value = cfg.income_account || ''
@@ -1377,7 +1387,11 @@ watch(selectedRow, async (idx) => {
 })
 
 // Re-price all active items when price list changes
-watch(priceList, () => {
+watch(priceList, (newPL) => {
+  if (billSeries.value && !skipPriceListSync.value) {
+    localStorage.setItem(`wb-price-list-${billSeries.value}`, newPL)
+  }
+  
   // Update active items in grid
   items.value.forEach(item => {
     if (!item.deleted && item.item_code) {

@@ -868,8 +868,18 @@ function getSeriesConfig(series) {
 
 function syncSeriesConfig(series) {
   const cfg = getSeriesConfig(series)
+  
+  // 1. Try local storage first for this series
+  const cachedPL = localStorage.getItem(`wb-price-list-${series}`)
+  if (cachedPL && !skipPriceListSync.value) {
+    priceList.value = cachedPL
+  } else if (cfg?.price_list && !skipPriceListSync.value) {
+    // 2. Fallback to series config from backend
+    priceList.value = cfg.price_list
+  }
+
   if (!cfg) return
-  if (cfg.price_list && !skipPriceListSync.value) priceList.value = cfg.price_list
+  
   if (cfg.print_format) printScheme.value = cfg.print_format
   if (cfg.tax_template) taxTemplate.value = cfg.tax_template
   incomeAccount.value = cfg.income_account || ''
@@ -1362,8 +1372,11 @@ watch(selectedRow, async (idx) => {
   quickSearchResults.value = []
 })
 
-// Re-price all active items when price list changes
-watch(priceList, () => {
+watch(priceList, (newPL) => {
+  if (quotationSeries.value && !skipPriceListSync.value) {
+    localStorage.setItem(`wb-price-list-${quotationSeries.value}`, newPL)
+  }
+  
   // Update active items in grid
   items.value.forEach(item => {
     if (!item.deleted && item.item_code) {
@@ -2017,8 +2030,11 @@ import { session } from '../session.js'
 async function fetchSeriesList() {
   try {
     const settings = await fetchBillingSettings()
+    if (settings?.billing_series) {
+      billingSeriesConfig.value = settings.billing_series
+    }
     
-    // Always fetch global settings even if we don't use billing_series
+    // Always fetch global settings even if we don't use billing_series directly for Quotation series names
     if (!localStorage.getItem('wb-warehouse')) {
       if (settings?.default_warehouse) defaultWarehouse.value = settings.default_warehouse
     }
@@ -2033,8 +2049,10 @@ async function fetchSeriesList() {
     console.warn('[QuotationEntry] fetchBillingSettings failed:', e)
   }
 
+  // Fetch allowed series for Quotation
   try {
-    const list = await frappeGet('ssplbilling.api.quotation_api.get_naming_series')
+    const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Quotation' })
+    const list = d.allowed_series || []
     if (Array.isArray(list) && list.length) {
       availableSeries.value = list
       
@@ -2045,13 +2063,28 @@ async function fetchSeriesList() {
       if (target !== quotationSeries.value) {
         quotationSeries.value = target
       } else {
+        syncSeriesConfig(target)
         fetchNextQuotationNo()
       }
       return
     }
   } catch (e) {
-    console.warn('[QuotationEntry] get_naming_series failed:', e)
+    console.warn('[QuotationEntry] get_allowed_series failed:', e)
   }
+
+  // Fallback to all quotation series if allowed_series fetch fails
+  try {
+    const list = await frappeGet('ssplbilling.api.quotation_api.get_naming_series')
+    if (Array.isArray(list) && list.length) {
+      availableSeries.value = list
+      if (list.includes(quotationSeries.value)) { 
+        syncSeriesConfig(quotationSeries.value)
+        fetchNextQuotationNo() 
+      }
+      else { quotationSeries.value = list[0] }
+      return
+    }
+  } catch (e) {}
 
   fetchNextQuotationNo()
 }

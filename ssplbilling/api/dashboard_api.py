@@ -4,7 +4,7 @@ import frappe
 import re
 
 @frappe.whitelist()
-def get_allowed_series():
+def get_allowed_series(doctype="Sales Invoice"):
     """Return a list of naming series allowed for the current user.
 
     Logic:
@@ -23,7 +23,7 @@ def get_allowed_series():
         try:
             prop_value = frappe.db.get_value(
                 "Property Setter",
-                {"doc_type": "Sales Invoice", "field_name": "naming_series", "property": "options"},
+                {"doc_type": doctype, "field_name": "naming_series", "property": "options"},
                 "value",
             )
             if prop_value:
@@ -33,7 +33,7 @@ def get_allowed_series():
         except Exception:
             pass
         try:
-            meta = frappe.get_meta("Sales Invoice")
+            meta = frappe.get_meta(doctype)
             sf = meta.get_field("naming_series")
             if sf and sf.options:
                 series = [s.strip() for s in sf.options.split("\n") if s.strip()]
@@ -41,19 +41,28 @@ def get_allowed_series():
                     return series
         except Exception:
             pass
-        return ["SINV-.YY.-"]
+        
+        if doctype == "Sales Invoice":
+            return ["SINV-.YY.-"]
+        elif doctype == "Quotation":
+            return ["SSPL-QT-.YYYY.-"]
+        return []
 
-    settings = None
     available = []
     user_series_rows = []
     try:
         settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-        available = [r.series for r in settings.billing_series if r.series]
+        if doctype == "Sales Invoice":
+            available = [r.series for r in settings.billing_series if r.series]
+        elif doctype == "Quotation":
+            from ssplbilling.api.quotation_api import get_naming_series
+            available = get_naming_series()
+        
         user_series_rows = list(settings.user_series or [])
     except Exception:
         pass
 
-    # If billing_series table is empty, fall back to ERPNext naming series
+    # If available list is empty, fall back to ERPNext naming series
     if not available:
         available = _fallback_series()
 
