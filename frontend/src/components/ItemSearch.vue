@@ -88,22 +88,23 @@
             <tr
               v-for="(item, idx) in results"
               :key="item.item_code"
-              class="cursor-pointer"
-              :class="{ 'bg-blue-900/30': selectedIdx === idx, 'hover:bg-slate-800/40': selectedIdx !== idx }"
+              class="cursor-pointer transition-colors"
+              :class="selectedIdx === idx ? 'text-black' : 'hover:bg-slate-800/40'"
+              :style="selectedIdx === idx ? { backgroundColor: '#B0E4CC !important' } : {}"
               @click="$emit('select', item)"
             >
-              <td class="px-5 py-2 font-mono text-3xl text-blue-400 flex items-center gap-2">
-                <span v-if="item.has_history" class="h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" title="Previously sold to this customer"></span>
+              <td class="px-5 py-2 font-mono text-3xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">
+                <span v-if="item.has_history" class="h-2 w-2 shrink-0 rounded-full animate-pulse" :class="selectedIdx === idx ? 'bg-black/40' : 'bg-blue-500'" title="Previously sold to this customer"></span>
                 <span>{{ item.item_code }}</span>
               </td>
               <td class="px-5 py-2">
-                <div class="font-medium text-slate-200">{{ item.item_name }}</div>
+                <div class="font-medium" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-slate-200'">{{ item.item_name }}</div>
               </td>
-              <td class="px-5 py-2 text-right font-mono text-amber-400 tracking-wider">
+              <td class="px-5 py-2 text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-amber-400'">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
               <td class="px-5 py-2 text-right">
-                <span :class="item.stock <= 0 ? 'text-red-400' : 'text-slate-200'">
+                <span :class="selectedIdx === idx ? 'text-black font-bold' : (item.stock <= 0 ? 'text-red-400' : 'text-slate-200')">
                   {{ item.stock || 0 }}
                 </span>
               </td>
