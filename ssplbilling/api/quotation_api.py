@@ -1,5 +1,6 @@
 import json
 import frappe
+from frappe.model.naming import parse_naming_series
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 
 
@@ -227,13 +228,10 @@ def get_naming_series():
 @frappe.whitelist()
 def get_next_quotation_no(naming_series):
 	"""Preview the next Quotation number for a given series."""
-	if not naming_series:
-		return ""
 	try:
-		from frappe.model.naming import make_autoname
-		return make_autoname(naming_series.replace(".####", ".{####}"), "Quotation")
+		return parse_naming_series(naming_series)
 	except Exception:
-		return ""
+		return naming_series + "???"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
