@@ -617,6 +617,12 @@
       @close="showBarcodeModal = false"
     />
 
+    <ErrorWindow
+      :show="showErrorModal"
+      :message="errorMessage"
+      @close="showErrorModal = false"
+    />
+
     <!-- SERIES SUBWINDOW -->
     <div
       v-if="showSeriesDropdown"
@@ -769,6 +775,7 @@ import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import Warning from '../components/Warning.vue'
+import ErrorWindow from '../components/ErrorWindow.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
@@ -807,6 +814,13 @@ const showPrintModal = ref(false)
 const printModalAfterSave = ref(false)
 const showShortcutPage = ref(false)
 const showBarcodeModal = ref(false)
+const showErrorModal = ref(false)
+const errorMessage = ref('')
+
+function showError(msg) {
+  errorMessage.value = msg
+  showErrorModal.value = true
+}
 const showImportModal = ref(false)
 const showPriceListUpdate = ref(false)
 
@@ -1889,7 +1903,7 @@ watch(sidebarSearch, () => {
 async function loadQuotation(quotationName) {
   try {
     const inv = await apiPost('get_quotation', { quotation_name: quotationName })
-    if (!inv) { alert('Could not load quotation'); return }
+    if (!inv) { showError('Could not load quotation'); return }
 
     // 1. Basic Info
     savedQuotationName.value = inv.name
@@ -1962,14 +1976,14 @@ async function loadQuotation(quotationName) {
     customer.value = inv.customer
     custSearch.value = inv.customer_name
   } catch (e) {
-    alert('Error loading quotation: ' + (e.message || 'Unknown error'))
+    showError('Error loading quotation: ' + (e.message || 'Unknown error'))
   }
 }
 
 /** Click Edit after save → re-enable the form for updates */
 function enterEditMode() {
   if (quotationDocStatus.value !== 0) {
-    alert('Cannot edit a submitted/cancelled quotation.')
+    showError('Cannot edit a submitted/cancelled quotation.')
     return
   }
   quotationSaved.value = false
@@ -2180,7 +2194,7 @@ const grandTotal = computed(() => {
 })
 async function saveQuotation() {
   if (!customer.value.trim()) { openCustomerSearch(); return }
-  if (!activeItems.value.length) { alert('Add at least one item'); return }
+  if (!activeItems.value.length) { showError('Add at least one item'); return }
 
   const payload = {
     customer: customer.value,
@@ -2246,7 +2260,7 @@ async function saveQuotation() {
     printModalAfterSave.value = true
     showPrintModal.value = true
   } catch (e) {
-    alert('Error: ' + (e?.message || 'Failed to save quotation'))
+    showError('Error: ' + (e?.message || 'Failed to save quotation'))
   }
 }
 
@@ -2255,11 +2269,11 @@ async function deleteQuotation() {
   if (!confirm('Are you sure you want to delete this draft quotation?')) return
   try {
     await apiPost('delete_quotation', { quotation_name: savedQuotationName.value })
-    alert('Quotation deleted successfully')
+    showError('Quotation deleted successfully')
     startNewQuotation()
     fetchSidebarQuotations()
   } catch (e) {
-    alert('Error deleting quotation: ' + (e.message || 'Unknown error'))
+    showError('Error deleting quotation: ' + (e.message || 'Unknown error'))
   }
 }
 
@@ -2270,7 +2284,7 @@ async function submitQuotation() {
     const res = await apiPost('submit_quotation', { quotation_name: savedQuotationName.value })
     quotationDocStatus.value = res?.docstatus ?? 1
   } catch (e) {
-    alert('Submit failed: ' + (e?.message || 'Unknown error'))
+    showError('Submit failed: ' + (e?.message || 'Unknown error'))
   }
 }
 
@@ -2283,7 +2297,7 @@ function startNewQuotation() {
 }
 
 function printQuotation() {
-  if (!savedQuotationName.value) { alert('Save the quotation first before printing.'); return }
+  if (!savedQuotationName.value) { showError('Save the quotation first before printing.'); return }
   printModalAfterSave.value = false
   showPrintModal.value = true
 }

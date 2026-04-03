@@ -631,6 +631,12 @@
       @close="showBarcodeModal = false"
     />
 
+    <ErrorWindow
+      :show="showErrorModal"
+      :message="errorMessage"
+      @close="showErrorModal = false"
+    />
+
     <!-- SERIES SUBWINDOW -->
     <div
       v-if="showSeriesDropdown"
@@ -784,6 +790,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import Warning from '../components/Warning.vue'
+import ErrorWindow from '../components/ErrorWindow.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
@@ -824,6 +831,13 @@ const showIncentiveModal = ref(false)
 const showShortcutPage = ref(false)
 const incentiveRows = ref([])
 const showBarcodeModal = ref(false)
+const showErrorModal = ref(false)
+const errorMessage = ref('')
+
+function showError(msg) {
+  errorMessage.value = msg
+  showErrorModal.value = true
+}
 const showImportModal = ref(false)
 const showPriceListUpdate = ref(false)
 
@@ -1909,7 +1923,7 @@ watch(sidebarSearch, () => {
 async function loadInvoice(invoiceName) {
   try {
     const inv = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: invoiceName })
-    if (!inv) { alert('Could not load invoice'); return }
+    if (!inv) { showError('Could not load invoice'); return }
 
     // 1. Basic Info
     savedInvoiceName.value = inv.name
@@ -1990,14 +2004,14 @@ async function loadInvoice(invoiceName) {
     customer.value = inv.customer
     custSearch.value = inv.customer_name
   } catch (e) {
-    alert('Error loading invoice: ' + (e.message || 'Unknown error'))
+    showError('Error loading invoice: ' + (e.message || 'Unknown error'))
   }
 }
 
 /** Click Edit after save → re-enable the form for updates */
 function enterEditMode() {
   if (billDocStatus.value !== 0) {
-    alert('Cannot edit a submitted/cancelled invoice.')
+    showError('Cannot edit a submitted/cancelled invoice.')
     return
   }
   billSaved.value = false
@@ -2110,7 +2124,7 @@ async function fetchSeriesList() {
       } catch (e) { /* non-fatal */ }
 
       if (availableSeries.value.length === 0) {
-        alert('You do not have permission to use any naming series.')
+        showError('You do not have permission to use any naming series.')
         return
       }
 
@@ -2219,7 +2233,7 @@ const grandTotal = computed(() => {
 })
 async function saveBill() {
   if (!customer.value.trim()) { openCustomerSearch(); return }
-  if (!activeItems.value.length) { alert('Add at least one item'); return }
+  if (!activeItems.value.length) { showError('Add at least one item'); return }
 
   const payload = {
     customer: customer.value,
@@ -2292,7 +2306,7 @@ async function saveBill() {
     printModalAfterSave.value = true
     showPrintModal.value = true
   } catch (e) {
-    alert('Error: ' + (e?.message || 'Failed to save invoice'))
+    showError('Error: ' + (e?.message || 'Failed to save invoice'))
   }
 }
 
@@ -2301,11 +2315,11 @@ async function deleteBill() {
   if (!confirm('Are you sure you want to delete this draft bill?')) return
   try {
     await apiPost('delete_sales_invoice', { invoice_name: savedInvoiceName.value })
-    alert('Bill deleted successfully')
+    showError('Bill deleted successfully')
     startNewBill()
     fetchSidebarBills()
   } catch (e) {
-    alert('Error deleting bill: ' + (e.message || 'Unknown error'))
+    showError('Error deleting bill: ' + (e.message || 'Unknown error'))
   }
 }
 
@@ -2320,7 +2334,7 @@ function startNewBill() {
 }
 
 function printBill() {
-  if (!savedInvoiceName.value) { alert('Save the bill first before printing.'); return }
+  if (!savedInvoiceName.value) { showError('Save the bill first before printing.'); return }
   printModalAfterSave.value = false
   showPrintModal.value = true
 }
