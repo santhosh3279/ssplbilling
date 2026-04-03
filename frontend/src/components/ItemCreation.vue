@@ -96,12 +96,12 @@
             </div>
           </div>
 
-          <div class="space-y-3">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Item Group *</label>
+          <div class="space-y-[4px]">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Item Group *</label>
             <select
               ref="itemGroupInput"
               v-model="form.item_group"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
               @keydown.enter.prevent="hsnInput?.focus()"
             >
               <option value="">Select Group...</option>
@@ -109,13 +109,13 @@
             </select>
           </div>
 
-          <div class="space-y-3 relative">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">HSN/SAC Code</label>
+          <div class="space-y-[4px] relative">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">HSN/SAC Code</label>
             <input
               ref="hsnInput"
               v-model="form.hsn_sac"
               type="text"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all"
               placeholder="Search code..."
               @focus="showHSNDropdown = true"
               @blur="setTimeout(() => showHSNDropdown = false, 200)"
@@ -123,11 +123,11 @@
               @keydown.down.prevent="hsnHighlightIdx = (hsnHighlightIdx + 1) % filteredHSNCodes.length"
               @keydown.up.prevent="hsnHighlightIdx = (hsnHighlightIdx - 1 + filteredHSNCodes.length) % filteredHSNCodes.length"
             />
-            <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 p-2 shadow-xl">
+            <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 p-[8px] shadow-xl">
               <button
                 v-for="(res, idx) in filteredHSNCodes"
                 :key="res.name"
-                class="w-full rounded-lg px-5 py-4 text-left transition-colors group flex flex-col gap-2"
+                class="w-full rounded-lg p-[8px] text-left transition-colors group flex flex-col gap-2"
                 :class="hsnHighlightIdx === idx ? 'bg-blue-600' : 'hover:bg-blue-900/30'"
                 @click="selectHSN(res.name)"
               >
