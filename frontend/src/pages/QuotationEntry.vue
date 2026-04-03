@@ -1109,23 +1109,24 @@ function applyCustomerPricingForRow(idx) {
   const item = items.value[idx]
   if (!item || item.deleted || item._is_free || item._rule_discount != null) return
   
-  // 1. Get global customer factor
+  // 1. Get global customer factor (default to 1 if null, undefined, or 0)
   let globalFactor = parseFloat(selectedCustomerDetails.value?.pricelist_multiplication_factor) || 1
   if (globalFactor === 0) globalFactor = 1
 
-  // 2. Get item-specific factor
-  const itemFactor = customerPricing.value[item.item_code] || 1
+  // 2. Get item-specific factor (default to 1 if not found or zero)
+  let itemFactor = customerPricing.value[item.item_code] || 1
+  if (itemFactor === 0) itemFactor = 1
   
-  // 3. Combine factors
+  // 3. Combine factors (Multiplicative)
   const finalFactor = globalFactor * itemFactor
 
-  if (Math.abs(finalFactor - 1) > 0.0001) {
-    // Multiplication factor should be applied to the base rate for the current UOM
-    const cached = lookupItemInCache(item.item_code)
-    const baseRate = rateForUom(cached, item.uom) || item.rate
-    item.rate = baseRate * finalFactor
-    item._customer_pricing = true
-  }
+  // 4. Always use the base list price from cache to avoid compounding factors
+  const cached = lookupItemInCache(item.item_code)
+  const baseRate = cached ? rateForUom(cached, item.uom) : item.rate
+  
+  // 5. Update rate (always multiply)
+  item.rate = baseRate * finalFactor
+  item._customer_pricing = Math.abs(finalFactor - 1) > 0.0001
 }
 
 // Save-price popup
