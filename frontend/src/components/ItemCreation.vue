@@ -242,7 +242,7 @@
           </div>
 
           <!-- Supplier -->
-          <div class="space-y-[4px] md:col-span-2 relative">
+          <div class="space-y-[4px] relative">
             <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Supplier</label>
             <div class="relative">
               <input
@@ -284,7 +284,7 @@
           </div>
 
           <!-- Supplier Part No -->
-          <div class="space-y-[4px] md:col-span-2">
+          <div class="space-y-[4px]">
             <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Supplier Part No <span class="normal-case font-normal text-slate-600">(optional)</span></label>
             <input
               ref="supplierPartNoInput"
