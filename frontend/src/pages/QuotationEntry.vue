@@ -43,7 +43,7 @@
         </div>
 
         <!-- Quotation List -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="flex-1 overflow-y-auto scrollbar-none">
           <div v-if="sidebarLoading" class="p-4 text-center text-lg text-slate-500">Loading...</div>
           <div v-else-if="!sidebarQuotations.length" class="p-4 text-center text-lg text-slate-600 italic">No quotations found</div>
           <div 
@@ -194,7 +194,7 @@
     </div>
 
         <div class="flex flex-[7] flex-col overflow-hidden">
-          <div class="flex-1 overflow-y-auto">
+          <div class="flex-1 overflow-y-auto scrollbar-none">
             <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
               <thead>
                 <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
