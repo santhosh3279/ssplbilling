@@ -144,6 +144,7 @@
 
       <!-- Footer shortcuts -->
       <div class="border-t border-slate-700 px-5 py-3 bg-slate-800 flex gap-6 text-xs text-slate-500 uppercase tracking-widest font-bold">
+        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Home</kbd> Search</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">↑↓</kbd> Navigate</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Enter</kbd> Select</span>
         <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+E</kbd> Toggle Enc</span>
@@ -439,6 +440,9 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'F4') {
     e.preventDefault()
     if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
+  } else if (e.key === 'Home') {
+    e.preventDefault()
+    focus()
   }
 }
 
