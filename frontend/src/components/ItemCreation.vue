@@ -6,7 +6,7 @@
   >
     <div class="w-[90vw] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
-      <div class="p-[12px] bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+      <div class="p-[10px] bg-slate-800 border-b border-slate-700 flex justify-between items-center">
         <div class="flex items-baseline gap-4">
           <h3 class="text-5xl font-bold text-slate-100">{{ isEditMode ? 'Edit Item' : 'Create New Item' }}</h3>
           <span class="text-slate-600 text-2xl">|</span>
@@ -145,12 +145,12 @@
             </div>
           </div>
 
-          <div class="space-y-3">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-1">Default UOM *</label>
+          <div class="space-y-[4px]">
+            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[4px]">Default UOM *</label>
             <select
               ref="uomInput"
               v-model="form.stock_uom"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800 py-5 px-6 text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800 p-[8px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
               @keydown.enter.prevent="rateInput?.focus()"
             >
               <option v-for="u in metadata.uoms" :key="u.name" :value="u.name">{{ u.name }}</option>
@@ -158,8 +158,8 @@
           </div>
 
           <!-- UOM Conversions -->
-          <div class="space-y-3 md:col-span-2">
-            <div class="flex items-center justify-between px-1">
+          <div class="space-y-[4px]">
+            <div class="flex items-center justify-between px-[4px]">
               <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider">UOM Conversions</label>
               <button type="button" @click="addUomRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add UOM</button>
             </div>
@@ -167,8 +167,8 @@
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-slate-700 bg-slate-800">
-                    <th class="px-5 py-3 text-left text-lg font-bold uppercase text-slate-500">UOM</th>
-                    <th class="px-5 py-3 text-left text-lg font-bold uppercase text-slate-500">
+                    <th class="p-[8px] text-left text-lg font-bold uppercase text-slate-500">UOM</th>
+                    <th class="p-[8px] text-left text-lg font-bold uppercase text-slate-500">
                       Conversion Factor
                       <span class="normal-case font-normal text-slate-600 ml-1">(1 UOM = ? stock UOM)</span>
                     </th>
@@ -178,25 +178,25 @@
                 <tbody>
                   <!-- Base stock UOM row (locked) -->
                   <tr class="border-b border-slate-700/50">
-                    <td class="px-5 py-4 flex items-center gap-4">
+                    <td class="p-[8px] flex items-center gap-[8px]">
                       <span class="text-2xl font-semibold text-slate-300">{{ form.stock_uom || '—' }}</span>
                       <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Base</span>
                     </td>
-                    <td class="px-5 py-4 font-mono text-2xl text-slate-500">1.000</td>
+                    <td class="p-[8px] font-mono text-2xl text-slate-500">1.000</td>
                     <td></td>
                   </tr>
                   <!-- Additional UOM rows -->
                   <tr v-for="(row, idx) in form.uom_conversions" :key="idx" class="border-b border-slate-700/50 last:border-0">
-                    <td class="px-4 py-3">
-                      <select v-model="row.uom" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-2xl text-slate-200 outline-none focus:border-blue-500 appearance-none">
+                    <td class="p-[8px]">
+                      <select v-model="row.uom" class="w-full rounded-lg border border-slate-600 bg-slate-800 p-[8px] text-2xl text-slate-200 outline-none focus:border-blue-500 appearance-none">
                         <option value="">Select UOM...</option>
                         <option v-for="u in metadata.uoms" :key="u.name" :value="u.name" :disabled="u.name === form.stock_uom">{{ u.name }}</option>
                       </select>
                     </td>
-                    <td class="px-4 py-3">
-                      <input v-model.number="row.conversion_factor" type="number" min="0.0001" step="0.001" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 font-mono text-2xl text-slate-200 outline-none focus:border-blue-500" placeholder="1.000" />
+                    <td class="p-[8px]">
+                      <input v-model.number="row.conversion_factor" type="number" min="0.0001" step="0.001" class="w-full rounded-lg border border-slate-600 bg-slate-800 p-[8px] font-mono text-2xl text-slate-200 outline-none focus:border-blue-500" placeholder="1.000" />
                     </td>
-                    <td class="px-4 py-3 text-center">
+                    <td class="p-[8px] text-center">
                       <button type="button" @click="removeUomRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none">&times;</button>
                     </td>
                   </tr>
