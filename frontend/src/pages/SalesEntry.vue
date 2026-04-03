@@ -430,11 +430,11 @@
                       <span class="font-semibold uppercase text-base">Saved</span>
                     </div>
 
-                    <div class="rounded-xl border border-blue-500/40 bg-blue-950/60 p-5 shadow-2xl">
-                      <div class="text-[12px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-2">Total Amount</div>
+                    <div class="rounded-xl border border-blue-500/40 bg-blue-950/60 p-3.5 shadow-2xl">
+                      <div class="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-1">Total Amount</div>
                       <div class="flex items-baseline gap-2" :class="grandTotal >= 0 ? 'text-green-500/70' : 'text-red-500/70'">
-                        <span class="text-[9mm] font-black">₹</span>
-                        <span class="font-mono text-[15mm] font-black leading-none" :style="{ filter: `drop-shadow(0 0 20px ${grandTotal >= 0 ? 'rgba(34,197,94,0.42)' : 'rgba(239,68,68,0.42)'})` }">
+                        <span class="text-[6mm] font-black">₹</span>
+                        <span class="font-mono text-[10.5mm] font-black leading-none" :style="{ filter: `drop-shadow(0 0 14px ${grandTotal >= 0 ? 'rgba(34,197,94,0.42)' : 'rgba(239,68,68,0.42)'})` }">
                           {{ grandTotal.toFixed(2) }}
                         </span>
                       </div>
