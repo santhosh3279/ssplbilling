@@ -48,7 +48,7 @@
             />
           </div>
 
-          <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-[25ch_1fr] gap-[8px]">
+          <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-[25ch_1fr] gap-[8px] mt-[8mm]">
             <div class="space-y-[4px]">
               <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Barcode / Code</label>
               <div class="relative">
