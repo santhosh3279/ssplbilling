@@ -449,8 +449,11 @@ function clearSupplier() {
 function onSupplierEnter() {
   if (showSupplierDropdown.value && supplierOptions.value.length > 0) {
     selectSupplier(supplierOptions.value[0])
-  } else {
+  } else if (form.value.supplier) {
     supplierPartNoInput.value?.focus()
+  } else {
+    // If no supplier selected and no options found, submit the form
+    handleSubmit()
   }
 }
 
