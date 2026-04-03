@@ -256,7 +256,7 @@
                 @input="onSupplierInput"
                 @focus="showSupplierDropdown = true"
                 @blur="setTimeout(() => { showSupplierDropdown = false }, 200)"
-                @keydown.enter.prevent="supplierOptions.length ? selectSupplier(supplierOptions[0]) : null"
+                @keydown.enter.prevent="onSupplierEnter"
                 @keydown.escape="clearSupplier"
               />
               <button
@@ -444,6 +444,14 @@ function clearSupplier() {
   form.value.supplier = ''
   supplierSearch.value = ''
   supplierOptions.value = []
+}
+
+function onSupplierEnter() {
+  if (showSupplierDropdown.value && supplierOptions.value.length > 0) {
+    selectSupplier(supplierOptions.value[0])
+  } else {
+    supplierPartNoInput.value?.focus()
+  }
 }
 
 // Sync Item Print Name from Item Name by default
