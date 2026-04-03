@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen flex-col bg-slate-900 overflow-hidden">
+  <div class="flex h-screen flex-col bg-slate-900 overflow-hidden" style="color-scheme: dark;">
     <header class="shrink-0 flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-3">
       <div class="flex items-center gap-4">
         <button 
