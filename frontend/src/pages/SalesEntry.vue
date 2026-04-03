@@ -423,11 +423,11 @@
                 <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ Math.abs(itemDiscountTotal).toFixed(2) }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <div class="flex flex-col gap-2 h-full py-2">
-                    <div class="text-xl text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
+                    <div class="text-4xl text-slate-500/80">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
                     
-                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
+                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-4 py-2 text-2xl text-green-400/80">
                       <span class="font-normal">{{ savedInvoiceName }}</span>
-                      <span class="font-semibold uppercase text-[10px]">Saved</span>
+                      <span class="font-semibold uppercase text-base">Saved</span>
                     </div>
 
                     <!-- Row 1: Save/Modify and Print -->
