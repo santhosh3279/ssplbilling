@@ -85,13 +85,14 @@
               v-for="(c, idx) in results"
               :key="c.name"
               class="cursor-pointer transition-colors"
-              :class="{ 'bg-blue-900/30': selectedIdx === idx, 'hover:bg-slate-800/40': selectedIdx !== idx }"
+              :class="selectedIdx === idx ? 'text-black' : 'hover:bg-slate-800/40'"
+              :style="selectedIdx === idx ? { backgroundColor: '#B0E4CC !important' } : {}"
               @click="handleSelect(c)"
             >
               <td class="px-5 py-3">
                 <span
                   class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
-                  :class="{
+                  :class="selectedIdx === idx ? 'bg-black/10 text-black' : {
                     'bg-blue-900/40 text-blue-400': c.type === 'Customer',
                     'bg-orange-900/40 text-orange-400': c.type === 'Supplier',
                     'bg-purple-900/40 text-purple-400': c.type === 'Employee',
@@ -102,25 +103,25 @@
                 </span>
               </td>
               <td class="px-5 py-3">
-                <div class="font-medium text-slate-200">{{ c.label }}</div>
+                <div class="font-medium" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-slate-200'">{{ c.label }}</div>
               </td>
               <td class="px-5 py-3">
-                <div class="text-slate-300">{{ c.mobile_no || '--' }}</div>
+                <div :class="selectedIdx === idx ? 'text-black' : 'text-slate-300'">{{ c.mobile_no || '--' }}</div>
               </td>
               <td class="px-5 py-3">
                 <span
                   v-if="c.group"
                   class="px-2 py-0.5 rounded text-sm font-semibold tracking-tight inline-block"
-                  :class="getGroupBadgeClass(c)"
+                  :class="selectedIdx === idx ? 'bg-black/10 text-black border border-black/20' : getGroupBadgeClass(c)"
                 >
                   {{ c.group }}
                 </span>
-                <span v-else class="text-slate-600">--</span>
+                <span v-else :class="selectedIdx === idx ? 'text-black/60' : 'text-slate-600'">--</span>
               </td>
               <td class="px-5 py-3 text-right">
                 <span
                   class="font-bold whitespace-nowrap"
-                  :class="(c.balance || 0) > 0 ? 'text-green-400' : (c.balance || 0) < 0 ? 'text-red-400' : 'text-slate-500'"
+                  :class="selectedIdx === idx ? 'text-black' : ((c.balance || 0) > 0 ? 'text-green-400' : (c.balance || 0) < 0 ? 'text-red-400' : 'text-slate-500')"
                 >
                   {{ Math.abs(c.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   <span class="text-xs font-normal uppercase ml-0.5">
