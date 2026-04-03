@@ -406,7 +406,7 @@
           <!-- Right Column: Bill Summary as full table -->
           <table class="flex-1 bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
             <colgroup>
-              <col style="width:17%"><col style="width:25%"><col style="width:14%"><col style="width:44%">
+              <col style="width:17%"><col style="width:18%"><col style="width:14%"><col style="width:51%">
             </colgroup>
             <thead>
               <tr class="bg-slate-800">
