@@ -48,49 +48,51 @@
             />
           </div>
 
-          <div class="space-y-[4px]">
-            <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Barcode / Code</label>
-            <div class="relative">
-              <input
-                ref="barcodeInput"
-                v-model="form.barcode"
-                type="text"
-                :disabled="isEditMode"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Enter alphanumeric barcode..."
-                @focus="e => e.target.select()"
-                @keydown.enter.prevent="itemGroupInput?.focus()"
-              />
-              <div v-if="isFetchingBarcode" class="absolute right-[8px] top-1/2 -translate-y-1/2">
-                <span class="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent inline-block"></span>
+          <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-[25ch_1fr] gap-[8px]">
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Barcode / Code</label>
+              <div class="relative">
+                <input
+                  ref="barcodeInput"
+                  v-model="form.barcode"
+                  type="text"
+                  :disabled="isEditMode"
+                  class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="Enter alphanumeric barcode..."
+                  @focus="e => e.target.select()"
+                  @keydown.enter.prevent="itemGroupInput?.focus()"
+                />
+                <div v-if="isFetchingBarcode" class="absolute right-[8px] top-1/2 -translate-y-1/2">
+                  <span class="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent inline-block"></span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Extra Barcodes -->
-          <div class="space-y-[4px]">
-            <div class="flex items-center justify-between px-[20px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider">Additional Barcodes</label>
-              <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
-            </div>
-            
-            <div class="rounded-xl border border-slate-700 bg-slate-800/30 p-[4px] min-h-[64px] flex items-center">
-              <div class="flex flex-nowrap gap-[8px] overflow-x-auto custom-scrollbar w-full pb-[2px]">
-                <!-- Primary barcode (locked) -->
-                <div class="flex items-center gap-[8px] rounded-xl border border-slate-700 bg-slate-800/50 px-[20px] py-[12px] shrink-0">
-                  <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
-                  <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
-                </div>
+            <!-- Extra Barcodes -->
+            <div class="space-y-[4px]">
+              <div class="flex items-center justify-between px-[20px]">
+                <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider">Additional Barcodes</label>
+                <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
+              </div>
+              
+              <div class="rounded-xl border border-slate-700 bg-slate-800/30 p-[4px] min-h-[64px] flex items-center">
+                <div class="flex flex-nowrap gap-[8px] overflow-x-auto custom-scrollbar w-full pb-[2px]">
+                  <!-- Primary barcode (locked) -->
+                  <div class="flex items-center gap-[8px] rounded-xl border border-slate-700 bg-slate-800/50 px-[20px] py-[12px] shrink-0">
+                    <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
+                    <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
+                  </div>
 
-                <!-- Additional barcode inputs added to the right -->
-                <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[4px] rounded-xl border border-slate-600 bg-slate-800 p-[4px] relative group shrink-0">
-                  <input 
-                    v-model="row.barcode" 
-                    type="text" 
-                    class="bg-transparent border-none p-[4px] font-mono text-2xl text-slate-200 outline-none w-48" 
-                    placeholder="Barcode..." 
-                  />
-                  <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
+                  <!-- Additional barcode inputs added to the right -->
+                  <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[4px] rounded-xl border border-slate-600 bg-slate-800 p-[4px] relative group shrink-0">
+                    <input 
+                      v-model="row.barcode" 
+                      type="text" 
+                      class="bg-transparent border-none p-[4px] font-mono text-2xl text-slate-200 outline-none w-48" 
+                      placeholder="Barcode..." 
+                    />
+                    <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
+                  </div>
                 </div>
               </div>
             </div>
