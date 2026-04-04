@@ -19,7 +19,7 @@ def get_items_for_reconciliation(warehouse=None):
             i.item_name, 
             i.stock_uom as uom,
             IFNULL(b.actual_qty, 0) as current_qty,
-            IFNULL(i.valuation_rate, 0) as current_valuation_rate
+            IFNULL(b.valuation_rate, IFNULL(i.valuation_rate, 0)) as current_valuation_rate
         FROM 
             `tabItem` i
         LEFT JOIN 

@@ -122,15 +122,35 @@
           Fetch Items (F7)
         </button>
 
-        <!-- Date -->
-        <div class="flex items-center gap-3 border-l border-slate-800 pl-8 ml-auto">
-          <label class="text-[10px] font-bold uppercase text-slate-400">Date</label>
-          <input
-            v-model="entryDate"
-            type="date"
-            :disabled="entryDocStatus !== 0"
-            class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-lg font-bold text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500 tabular-nums"
-          />
+        <!-- Posting Date -->
+        <div class="flex items-center gap-3 border-l border-slate-700 pl-8 ml-auto">
+          <div class="flex items-center gap-3 bg-slate-700 px-4 py-1.5 rounded-xl border border-slate-600 shadow-sm">
+            <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">Posting Date</label>
+            <div class="flex items-center gap-1">
+              <button
+                @click="changeDate(-1)"
+                :disabled="entryDocStatus !== 0"
+                class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all disabled:opacity-30"
+                tabindex="-1"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <input
+                v-model="entryDate"
+                type="date"
+                :disabled="entryDocStatus !== 0"
+                class="bg-transparent border-none text-sm font-bold text-slate-100 outline-none w-[125px] text-center focus:ring-0"
+              />
+              <button
+                @click="changeDate(1)"
+                :disabled="entryDocStatus !== 0"
+                class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all disabled:opacity-30"
+                tabindex="-1"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -146,59 +166,79 @@
                   <th class="w-12 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">#</th>
                   <th class="w-48 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Item Code</th>
                   <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Item Name</th>
-                  <th class="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Current Qty</th>
-                  <th class="w-32 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Target Qty</th>
+                  <th class="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Curr Qty</th>
+                  <th class="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">New Qty</th>
+                  <th class="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Curr Rate</th>
+                  <th class="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">New Rate</th>
                   <th class="w-20 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">UOM</th>
-                  <th class="w-32 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Difference</th>
+                  <th class="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Diff</th>
                   <th class="w-12 px-4 py-3 text-center"></th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="group border-b border-slate-700 last:border-0 outline-none transition-colors" :class="{ 'bg-blue-900/30': selectedRow === idx, 'hover:bg-slate-800/40': selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
-                  <td class="px-4 py-2 text-slate-500 font-mono">{{ idx + 1 }}</td>
+                  <td class="px-4 py-2 text-slate-500 font-mono text-[10px]">{{ idx + 1 }}</td>
                   <td class="px-4 py-2">
-                    <span class="font-mono font-semibold text-blue-400" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
+                    <span class="font-mono font-semibold text-blue-400 truncate block w-40" :title="item.item_code" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
                   <td class="px-4 py-2">
-                    <div class="text-slate-200 font-medium" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</div>
+                    <div class="text-slate-200 font-medium truncate max-w-[200px]" :title="item.item_name" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</div>
                   </td>
-                  <td class="px-4 py-2 text-right font-mono text-slate-400">
+                  <td class="px-4 py-2 text-right font-mono text-slate-400 text-[11px]">
                     {{ item.current_qty }}
                   </td>
                   <td class="px-4 py-2 text-right font-mono">
-                    <input :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="entryDocStatus !== 0" step="any" class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-slate-200 focus:border-blue-400 focus:bg-slate-800 outline-none disabled:text-slate-500 font-bold" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="moveRow(idx, 1)" @keydown.tab.prevent="moveRow(idx, 1)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <input :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="entryDocStatus !== 0" step="any" class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-slate-200 focus:border-blue-400 focus:bg-slate-800 outline-none disabled:text-slate-500 font-bold" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1, 'qty')" @keydown.up.prevent="moveRow(idx, -1, 'qty')" />
                   </td>
-                  <td class="px-4 py-2 text-slate-500" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
-                  <td class="px-4 py-2 text-right font-mono font-bold" :class="(item.qty - item.current_qty) > 0 ? 'text-green-400' : (item.qty - item.current_qty) < 0 ? 'text-red-400' : 'text-slate-500'" :style="{ fontSize: dynamicRowStyle.fontSize }">
-                    {{ (item.qty - item.current_qty).toFixed(3) }}
+                  <td class="px-4 py-2 text-right font-mono text-slate-400 text-[11px]">
+                    {{ item.current_valuation_rate?.toFixed(2) }}
+                  </td>
+                  <td class="px-4 py-2 text-right font-mono">
+                    <input :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.valuation_rate" :disabled="entryDocStatus !== 0" step="any"
+                      class="w-full rounded border px-2 py-1 text-right font-bold text-slate-200 outline-none disabled:text-slate-500 focus:bg-slate-800"
+                      :class="item.qty > 0 && item.current_qty === 0 && !(item.valuation_rate > 0) && !(item.current_valuation_rate > 0)
+                        ? 'border-red-500 bg-red-900/20 focus:border-red-400'
+                        : 'border-transparent bg-transparent focus:border-blue-400'"
+                      :style="{ fontSize: dynamicRowStyle.fontSize }"
+                      @keydown.enter.prevent="moveRow(idx, 1, 'qty')" @keydown.tab.prevent="moveRow(idx, 1, 'qty')" @keydown.down.prevent="moveRow(idx, 1, 'rate')" @keydown.up.prevent="moveRow(idx, -1, 'rate')" />
+                  </td>
+                  <td class="px-4 py-2 text-slate-500 text-[11px]" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
+                  <td class="px-4 py-2 text-right font-mono font-bold text-[11px]" :class="(item.qty - item.current_qty) > 0 ? 'text-green-400' : (item.qty - item.current_qty) < 0 ? 'text-red-400' : 'text-slate-500'" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                    {{ (item.qty - item.current_qty).toFixed(2) }}
                   </td>
                   <td class="px-4 py-2 text-center">
-                    <button class="rounded p-1 text-slate-600 hover:bg-red-900/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" @click.stop="removeItem(idx)">&times;</button>
+                    <button v-if="entryDocStatus === 0" class="rounded p-1 text-slate-600 hover:bg-red-900/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" @click.stop="removeItem(idx)">&times;</button>
                   </td>
                 </tr>
                 <!-- NEW ENTRY ROW -->
                 <tr v-if="entryDocStatus === 0" class="border-b border-slate-700 bg-blue-900/10" :class="{ 'bg-blue-900/30 ring-2 ring-inset ring-blue-500': selectedRow === -1 }" :style="{ fontSize: dynamicRowStyle.fontSize }">
-                  <td class="px-4 py-3 text-blue-400 font-bold">+</td>
+                  <td class="px-4 py-3 text-blue-400 font-bold text-[10px]">+</td>
                   <td class="px-4 py-3">
-                    <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code / Scan" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveRow(items.length, -1)" />
+                    <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveRow(items.length, -1, 'qty')" />
                   </td>
                   <td class="px-4 py-3">
-                    <div class="text-slate-500 italic" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ newPending.item_name || 'Scan or type to find item...' }}</div>
+                    <div class="text-slate-500 italic truncate max-w-[200px]" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ newPending.item_name || 'Search...' }}</div>
                   </td>
-                  <td class="px-4 py-3 text-right text-slate-500 font-mono">
+                  <td class="px-4 py-3 text-right text-slate-500 font-mono text-[11px]">
                     {{ newPending.current_qty }}
                   </td>
                   <td class="px-4 py-3 text-right">
-                    <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-24 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" />
+                    <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusNewRate" @keydown.tab.prevent="focusNewRate" />
                   </td>
-                  <td class="px-4 py-3 text-slate-500">{{ newPending.uom || '--' }}</td>
-                  <td class="px-4 py-3 text-right font-mono font-bold" :class="(newQty - newPending.current_qty) > 0 ? 'text-green-400' : (newQty - newPending.current_qty) < 0 ? 'text-red-400' : 'text-slate-500'">
-                    {{ (newQty - newPending.current_qty).toFixed(3) }}
+                  <td class="px-4 py-3 text-right text-slate-500 font-mono text-[11px]">
+                    {{ newPending.valuation_rate?.toFixed(2) }}
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <input ref="newRateInput" v-model.number="newRate" type="number" step="any" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" />
+                  </td>
+                  <td class="px-4 py-3 text-slate-500 text-[11px]">{{ newPending.uom || '--' }}</td>
+                  <td class="px-4 py-3 text-right font-mono font-bold text-[11px]" :class="(newQty - newPending.current_qty) > 0 ? 'text-green-400' : (newQty - newPending.current_qty) < 0 ? 'text-red-400' : 'text-slate-500'">
+                    {{ (newQty - newPending.current_qty).toFixed(2) }}
                   </td>
                   <td class="px-4 py-3"></td>
                 </tr>
                 <tr v-if="items.length === 0 && entryDocStatus !== 0" class="h-32 text-center text-slate-600 italic">
-                  <td colspan="8">No items in this reconciliation.</td>
+                  <td colspan="10">No items in this reconciliation.</td>
                 </tr>
               </tbody>
             </table>
@@ -300,6 +340,7 @@ const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
 // New entry state
 const newItemCode = ref('')
 const newQty = ref(0)
+const newRate = ref(0)
 const newPending = ref({ item_name: '', uom: '', current_qty: 0, valuation_rate: 0 })
 const showItemSearch = ref(false)
 
@@ -417,6 +458,7 @@ watch(newItemCode, (val) => {
     if (r && r.found) {
       newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
       newQty.value = r.stock_qty
+      newRate.value = r.valuation_rate
     }
   }, 300)
 })
@@ -428,6 +470,7 @@ async function onNewCodeEnter() {
   if (r && r.found) {
     newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
     newQty.value = r.stock_qty
+    newRate.value = r.valuation_rate
     focusNewQty()
   } else {
     // Item not found — open search modal with typed code as query
@@ -442,9 +485,11 @@ async function onItemSearchSelect(item) {
   if (r && r.found) {
     newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.valuation_rate }
     newQty.value = r.stock_qty
+    newRate.value = r.valuation_rate
   } else {
     newPending.value = { item_name: item.item_name, uom: item.uom || '', current_qty: 0, valuation_rate: 0 }
     newQty.value = 0
+    newRate.value = 0
   }
   nextTick(() => focusNewQty())
 }
@@ -465,12 +510,13 @@ function addNewItem() {
     uom: newPending.value.uom,
     current_qty: newPending.value.current_qty,
     qty: newQty.value,
-    valuation_rate: newPending.value.valuation_rate,
+    valuation_rate: newRate.value || newPending.value.valuation_rate,
     current_valuation_rate: newPending.value.valuation_rate
   })
-  
+
   newItemCode.value = ''
   newQty.value = 0
+  newRate.value = 0
   newPending.value = { item_name: '', uom: '', current_qty: 0, valuation_rate: 0 }
   focusNewCode()
 }
@@ -510,7 +556,7 @@ async function saveEntry() {
       item_code: i.item_code,
       warehouse: i.warehouse || warehouse.value,
       qty: i.qty,
-      valuation_rate: i.current_valuation_rate
+      valuation_rate: i.valuation_rate || i.current_valuation_rate
     }))
   }
 
@@ -529,6 +575,20 @@ async function saveEntry() {
 
 async function submitEntry() {
   if (!entryName.value) return
+
+  // Validate: items being set to qty > 0 from zero stock must have a valuation rate
+  const needsRate = items.value.filter(
+    i => i.qty > 0 && i.current_qty === 0 && !(i.valuation_rate > 0) && !(i.current_valuation_rate > 0)
+  )
+  if (needsRate.length) {
+    alert(
+      `Valuation Rate required for the following item(s) that have no current stock:\n\n` +
+      needsRate.map(i => `  • ${i.item_code} – ${i.item_name}`).join('\n') +
+      `\n\nPlease enter a value in the "New Rate" column before submitting.`
+    )
+    return
+  }
+
   if (!confirm('SUBMIT reconciliation? This updates stock levels immediately.')) return
 
   try {
