@@ -209,6 +209,63 @@
         </template>
       </main>
 
+      <!-- UNALLOCATED CASH PANEL -->
+      <aside v-if="selectedInvoice && unallocatedPayments.length > 0" class="flex w-80 flex-col border-l border-slate-700 bg-slate-900 z-10 shrink-0">
+        <div class="p-4 border-b border-slate-700 bg-slate-800/30">
+          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Unallocated Cash
+          </h3>
+          <p class="mt-1 text-[10px] font-bold text-slate-500 uppercase truncate">For {{ selectedInvoice?.customer }}</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+          <div v-for="pe in unallocatedPayments" :key="pe.name" class="rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-sm hover:border-slate-600 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+              <div class="overflow-hidden">
+                <div class="text-[11px] font-black text-slate-200 truncate">{{ pe.name }}</div>
+                <div class="text-[9px] font-bold text-slate-500 uppercase">{{ formatDate(pe.posting_date) }}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] font-black text-emerald-400 font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
+                <div class="text-[8px] font-bold text-slate-600 uppercase">{{ pe.mode_of_payment }}</div>
+              </div>
+            </div>
+            <div v-if="pe.reference_no" class="text-[9px] font-medium text-slate-500 truncate italic">Ref: {{ pe.reference_no }}</div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-700 bg-slate-800/50 space-y-3">
+          <div class="flex justify-between items-center px-1">
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Available</span>
+            <span class="text-xs font-black text-emerald-400 font-mono">₹{{ fmt(unallocatedAmountTotal) }}</span>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Allocate Amount</label>
+            <div class="relative group">
+              <input
+                ref="unallocatedInput"
+                type="number"
+                v-model.number="unallocatedAmountToAllocate"
+                @focus="$event.target.select()"
+                class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3 px-4 text-right font-mono font-black text-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none text-lg"
+                @keydown.enter="submitAllocation"
+              />
+            </div>
+          </div>
+
+          <button
+            @click="submitAllocation"
+            :disabled="!unallocatedAmountToAllocate || isSubmitting"
+            class="w-full rounded-xl bg-blue-600 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/40 hover:bg-blue-500 active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+          >
+            <span>Allocate Payment</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </aside>
+
       <!-- RIGHT ASIDE: PAYMENT CONTROLS -->
       <aside class="flex w-[380px] flex-col border-l border-slate-700 bg-slate-800 z-10 shrink-0">
         <div class="p-5 border-b border-slate-700 bg-slate-800/50">
@@ -479,60 +536,6 @@
       :invoice-name="selectedInvoice?.name"
       @close="showPrintModal = false"
     />
-
-    <!-- UNALLOCATED CASH MODAL -->
-    <transition name="fade">
-      <div v-if="showUnallocatedModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-        <div class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl shadow-blue-500/10">
-          <div class="mb-4 flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
-            <div>
-              <h3 class="text-lg font-black text-slate-100 leading-tight">Unallocated Cash Found</h3>
-              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Reconcile payment for {{ selectedInvoice?.customer }}</p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div class="rounded-xl bg-slate-800/50 p-4 border border-slate-700/50">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Balance</span>
-                <span class="font-mono text-lg font-black text-emerald-400">₹{{ fmt(unallocatedAmountTotal) }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Bill Amount</span>
-                <span class="font-mono text-sm font-bold text-slate-300">₹{{ fmt(selectedInvoice?.grand_total) }}</span>
-              </div>
-              <div v-if="selectedInvoice?.outstanding_amount < selectedInvoice?.grand_total" class="flex items-center justify-between mt-1 pt-1 border-t border-slate-700/50">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Remaining Outstanding</span>
-                <span class="font-mono text-sm font-bold text-blue-400">₹{{ fmt(selectedInvoice?.outstanding_amount) }}</span>
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 ml-1">Amount to Allocate</label>
-              <input
-                ref="unallocatedInput"
-                type="number"
-                v-model.number="unallocatedAmountToAllocate"
-                class="w-full rounded-xl border-2 border-slate-700 bg-slate-800 px-4 py-3 font-mono text-xl font-black text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                @keydown.enter="submitAllocation"
-              />
-            </div>
-          </div>
-
-          <div class="mt-6 flex gap-3">
-            <button @click="showUnallocatedModal = false" class="flex-1 rounded-xl bg-slate-800 py-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-all">
-              Cancel
-            </button>
-            <button @click="submitAllocation" class="flex-[2] rounded-xl bg-blue-600 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 active:scale-95 transition-all">
-              Submit Allocation
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -784,15 +787,17 @@ async function selectInvoice(inv) {
       customer: details.customer
     })
     
+    unallocatedPayments.value = unallocated || []
     const totalUnallocated = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
     const alreadyApplied = (details.advances || []).reduce((acc, a) => acc + Number(a.allocated_amount || 0), 0)
     
+    unallocatedAmountTotal.value = totalUnallocated
     if (totalUnallocated > 0.005 && alreadyApplied < 0.005) {
-      unallocatedAmountTotal.value = totalUnallocated
       const billAmount = details.outstanding_amount || details.grand_total
       unallocatedAmountToAllocate.value = Math.min(totalUnallocated, billAmount)
-      showUnallocatedModal.value = true
-      nextTick(() => unallocatedInput.value?.focus())
+      showUnallocatedModal.value = false // We will show panel instead
+    } else {
+      unallocatedAmountToAllocate.value = 0
     }
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
