@@ -76,8 +76,8 @@
     <!-- Body -->
     <div class="flex flex-1 overflow-hidden">
 
-      <!-- LEFT: Unlinked receipts / credits -->
-      <div class="flex w-[300px] shrink-0 flex-col border-r border-slate-700">
+      <!-- COLUMN 1: Unlinked Payments -->
+      <div class="flex w-[280px] shrink-0 flex-col border-r border-slate-700">
         <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
           Unlinked Payments
           <span v-if="unlinkedTotal > 0" class="ml-1.5 text-violet-400">₹{{ fmt(unlinkedTotal) }}</span>
@@ -138,95 +138,77 @@
 
         <!-- Active payment indicator -->
         <div v-if="activePayment" class="border-t border-violet-700/40 bg-violet-900/20 px-4 py-2 text-xs">
-          <div class="font-semibold text-violet-300">Selected: {{ activePayment.name }}</div>
+          <div class="font-semibold text-violet-300 truncate">Selected: {{ activePayment.name }}</div>
           <div class="text-[10px] text-violet-400">
-            Available: ₹{{ fmt(leftRemainingForActive) }} — click to allocate →
+            Available: ₹{{ fmt(leftRemainingForActive) }}
           </div>
         </div>
       </div>
 
-      <!-- CENTRE: Outstanding Invoices OR Opposite Entries -->
-      <div class="flex flex-1 flex-col border-r border-slate-700">
-        <!-- Tab toggle -->
-        <div class="flex items-center gap-0 border-b border-slate-700 bg-slate-800/40">
-          <button
-            @click="rightMode = 'invoices'"
-            class="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors"
-            :class="rightMode === 'invoices'
-              ? 'border-b-2 border-violet-500 text-violet-300 bg-slate-800/60'
-              : 'text-slate-500 hover:text-slate-300'"
-          >
-            Outstanding Invoices
-            <span v-if="outstandingTotal > 0" class="ml-1 text-orange-400">₹{{ fmt(outstandingTotal) }}</span>
-          </button>
-          <button
-            @click="rightMode = 'entries'"
-            class="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors"
-            :class="rightMode === 'entries'
-              ? 'border-b-2 border-amber-500 text-amber-300 bg-slate-800/60'
-              : 'text-slate-500 hover:text-slate-300'"
-          >
-            Unlinked {{ partyType === 'Supplier' ? 'Receipts' : 'Payments' }}
-            <span v-if="oppositeTotal > 0" class="ml-1 text-amber-400">₹{{ fmt(oppositeTotal) }}</span>
-          </button>
+      <!-- COLUMN 2: Unlinked Receipts (Invoices) -->
+      <div class="flex w-[320px] shrink-0 flex-col border-r border-slate-700">
+        <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          Unlinked Receipts
+          <span v-if="outstandingTotal > 0" class="ml-1.5 text-orange-400">₹{{ fmt(outstandingTotal) }}</span>
         </div>
 
-        <!-- INVOICES MODE -->
-        <div v-if="rightMode === 'invoices'" class="flex-1 overflow-y-auto p-3">
+        <div class="flex-1 overflow-y-auto p-3">
           <template v-if="!fetched">
             <p class="py-8 text-center text-xs text-slate-500">Search a party and click Fetch</p>
           </template>
           <template v-else-if="outstandingData.docs.length === 0">
             <p class="py-8 text-center text-xs text-slate-500">No outstanding invoices</p>
           </template>
-          <table v-else class="w-full text-xs">
-            <thead>
-              <tr class="border-b border-slate-700 text-[10px] text-slate-400">
-                <th class="pb-2 text-left font-normal">Document</th>
-                <th class="pb-2 text-left font-normal">Date</th>
-                <th class="pb-2 text-right font-normal">Grand Total</th>
-                <th class="pb-2 text-right font-normal">Outstanding</th>
-                <th class="pb-2 text-right font-normal">Allocating</th>
-                <th class="pb-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="doc in outstandingData.docs"
-                :key="doc.name"
-                class="border-b border-slate-700/50 hover:bg-slate-800/50"
-              >
-                <td class="py-1.5 font-mono text-slate-200">{{ doc.name }}</td>
-                <td class="py-1.5 text-slate-400">{{ doc.posting_date }}</td>
-                <td class="py-1.5 text-right font-mono text-slate-300">₹{{ fmt(doc.grand_total) }}</td>
-                <td class="py-1.5 text-right font-mono text-orange-400">₹{{ fmt(invoiceRemaining(doc.name)) }}</td>
-                <td class="py-1.5 text-right font-mono text-violet-400">
-                  <span v-if="allocatedToInvoice(doc.name) > 0">₹{{ fmt(allocatedToInvoice(doc.name)) }}</span>
-                  <span v-else class="text-slate-600">—</span>
-                </td>
-                <td class="py-1.5 pl-2">
-                  <button
-                    v-if="activePayment && invoiceRemaining(doc.name) > 0.005 && leftRemainingForActive > 0.005"
-                    @click="addInvoiceAllocation(doc)"
-                    class="rounded bg-violet-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-violet-600"
-                  >+ Add</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-else class="space-y-2">
+            <div
+              v-for="doc in outstandingData.docs"
+              :key="doc.name"
+              @click="activePayment && invoiceRemaining(doc.name) > 0.005 ? addInvoiceAllocation(doc) : null"
+              class="rounded-lg border px-3 py-2 text-xs transition-all"
+              :class="[
+                activePayment && invoiceRemaining(doc.name) > 0.005 && leftRemainingForActive > 0.005
+                  ? 'cursor-pointer border-slate-600 bg-slate-800 hover:border-violet-500 hover:bg-slate-700'
+                  : 'border-slate-700 bg-slate-800/50 opacity-80',
+                allocatedToInvoice(doc.name) > 0 ? 'ring-1 ring-violet-500/50' : ''
+              ]"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-semibold text-slate-200">{{ doc.name }}</span>
+                <span class="font-mono font-bold text-orange-400">₹{{ fmt(invoiceRemaining(doc.name)) }}</span>
+              </div>
+              <div class="mt-0.5 flex items-center justify-between text-[10px] text-slate-500">
+                <span>{{ doc.posting_date }}</span>
+                <span v-if="allocatedToInvoice(doc.name) > 0" class="font-bold text-violet-400">Linked: ₹{{ fmt(allocatedToInvoice(doc.name)) }}</span>
+                <span v-else class="italic">Outstanding</span>
+              </div>
+              
+              <!-- Action hint -->
+              <div v-if="activePayment && invoiceRemaining(doc.name) > 0.005 && leftRemainingForActive > 0.005" class="mt-1.5 text-center text-[9px] font-bold uppercase text-violet-500">
+                Click to Link
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMN 3: Cross-Reconciliation -->
+      <div class="flex flex-1 flex-col border-r border-slate-700">
+        <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          Unlinked {{ partyType === 'Supplier' ? 'Receipts' : 'Payments' }} (Opposite)
+          <span v-if="oppositeTotal > 0" class="ml-1.5 text-amber-400">₹{{ fmt(oppositeTotal) }}</span>
         </div>
 
-        <!-- ENTRIES MODE (cross-reconcile) -->
-        <div v-else class="flex-1 overflow-y-auto p-3 space-y-1.5">
-          <div class="mb-2 rounded bg-amber-900/20 border border-amber-700/30 px-3 py-2 text-[10px] text-amber-400">
-            Match a floating receipt (left) against a floating {{ partyType === 'Supplier' ? 'receipt from supplier' : 'refund/payment' }} (here) to net them off via a reconciling Journal Entry.
+        <div class="flex-1 overflow-y-auto p-3 space-y-1.5">
+          <div class="mb-2 rounded bg-amber-900/20 border border-amber-700/30 px-3 py-2 text-[10px] text-amber-400 leading-tight">
+            Match floating receipts against floating {{ partyType === 'Supplier' ? 'receipts from supplier' : 'refunds' }} to net them off via Journal Entry.
           </div>
+          
           <template v-if="!fetched">
             <p class="py-8 text-center text-xs text-slate-500">Search a party and click Fetch</p>
           </template>
           <template v-else-if="allOpposite.length === 0">
             <p class="py-8 text-center text-xs text-slate-500">
-              No unlinked {{ partyType === 'Supplier' ? 'receipt' : 'payment/refund' }} entries
+              No opposite unlinked entries
             </p>
           </template>
 
@@ -235,22 +217,15 @@
             <div
               v-for="pe in oppositeData.payment_entries"
               :key="pe.name"
-              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs"
+              @click="activePayment && rightRemaining(pe.name, null) > 0.005 ? addCrossAllocation({ type: 'Payment Entry', name: pe.name, reference_row: null, unallocated_amount: pe.unallocated_amount }) : null"
+              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs transition-all"
+              :class="activePayment && rightRemaining(pe.name, null) > 0.005 && leftRemainingForActive > 0.005 ? 'cursor-pointer hover:border-amber-500 hover:bg-slate-700' : 'opacity-60'"
             >
               <div class="flex items-center justify-between">
-                <div>
-                  <span class="font-mono font-semibold text-amber-300">{{ pe.name }}</span>
-                  <span class="ml-2 text-[10px] text-slate-500">{{ pe.posting_date }} · {{ pe.mode_of_payment }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(pe.name, null)) }}</span>
-                  <button
-                    v-if="activePayment && rightRemaining(pe.name, null) > 0.005 && leftRemainingForActive > 0.005"
-                    @click="addCrossAllocation({ type: 'Payment Entry', name: pe.name, reference_row: null, unallocated_amount: pe.unallocated_amount })"
-                    class="rounded bg-amber-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-amber-600"
-                  >+ Add</button>
-                </div>
+                <span class="font-mono font-semibold text-amber-300">{{ pe.name }}</span>
+                <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(pe.name, null)) }}</span>
               </div>
+              <div class="mt-0.5 text-[10px] text-slate-500">{{ pe.posting_date }} · {{ pe.mode_of_payment }}</div>
             </div>
           </div>
 
@@ -259,22 +234,15 @@
             <div
               v-for="je in oppositeData.journal_entries"
               :key="je.reference_row"
-              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs"
+              @click="activePayment && rightRemaining(je.name, je.reference_row) > 0.005 ? addCrossAllocation({ type: 'Journal Entry', name: je.name, reference_row: je.reference_row, unallocated_amount: je.unallocated_amount }) : null"
+              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs transition-all"
+              :class="activePayment && rightRemaining(je.name, je.reference_row) > 0.005 && leftRemainingForActive > 0.005 ? 'cursor-pointer hover:border-amber-500 hover:bg-slate-700' : 'opacity-60'"
             >
               <div class="flex items-center justify-between">
-                <div>
-                  <span class="font-mono font-semibold text-amber-300">{{ je.name }}</span>
-                  <span class="ml-2 text-[10px] text-slate-500">{{ je.posting_date }} · {{ je.remarks || je.reference_no }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(je.name, je.reference_row)) }}</span>
-                  <button
-                    v-if="activePayment && rightRemaining(je.name, je.reference_row) > 0.005 && leftRemainingForActive > 0.005"
-                    @click="addCrossAllocation({ type: 'Journal Entry', name: je.name, reference_row: je.reference_row, unallocated_amount: je.unallocated_amount })"
-                    class="rounded bg-amber-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-amber-600"
-                  >+ Add</button>
-                </div>
+                <span class="font-mono font-semibold text-amber-300">{{ je.name }}</span>
+                <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(je.name, je.reference_row)) }}</span>
               </div>
+              <div class="mt-0.5 text-[10px] text-slate-500">{{ je.posting_date }} · {{ je.remarks || je.reference_no }}</div>
             </div>
           </div>
         </div>
@@ -429,7 +397,6 @@ function selectParty(opt) {
 const loading = ref(false)
 const fetched = ref(false)
 const error = ref('')
-const rightMode = ref('invoices')   // 'invoices' | 'entries'
 
 const unlinkedData  = ref({ payment_entries: [], journal_entries: [] })
 const oppositeData  = ref({ payment_entries: [], journal_entries: [] })

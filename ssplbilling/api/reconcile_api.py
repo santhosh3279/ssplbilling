@@ -170,16 +170,7 @@ def get_unlinked_opposite_entries(party_type, party):
 @frappe.whitelist()
 def post_cross_reconciliation(party_type, party, allocations):
 	"""Cross-reconcile a floating receipt against a floating payment (or vice versa)
-	by creating a balancing Journal Entry on the party account.
-
-	Each allocation:
-	  left_type  – "Payment Entry" | "Journal Entry"  (the receipt/credit side)
-	  left_name  – document name
-	  left_row   – JE account row name (only for JE)
-	  right_type – "Payment Entry" | "Journal Entry"  (the payment/debit side)
-	  right_name – document name
-	  right_row  – JE account row name (only for JE)
-	  amount     – amount to cross-reconcile
+	by using the Payment Reconciliation tool to link their GL Entries.
 	"""
 	if isinstance(allocations, str):
 		allocations = json.loads(allocations)
@@ -187,55 +178,35 @@ def post_cross_reconciliation(party_type, party, allocations):
 	if not allocations:
 		frappe.throw("No allocations provided")
 
-	company = _get_company()
-	account = _get_party_account(party_type, party)
-
-	je = frappe.new_doc("Journal Entry")
-	je.company = company
-	je.posting_date = frappe.utils.today()
-	je.voucher_type = "Journal Entry"
-	je.user_remark = f"Cross-reconciliation — {party_type} {party}"
-
-	for alloc in allocations:
-		amount = float(alloc["amount"])
-		# Left side (receipt / credit entry): Dr the party account to consume it
-		je.append("accounts", {
-			"account": account,
-			"debit_in_account_currency": amount,
-			"credit_in_account_currency": 0,
-			"party_type": party_type,
-			"party": party,
-			"reference_type": alloc["left_type"],
-			"reference_name": alloc["left_name"],
-		})
-		# Right side (payment / debit entry): Cr the party account to consume it
-		je.append("accounts", {
-			"account": account,
-			"debit_in_account_currency": 0,
-			"credit_in_account_currency": amount,
-			"party_type": party_type,
-			"party": party,
-			"reference_type": alloc["right_type"],
-			"reference_name": alloc["right_name"],
+	# Re-map cross-allocations to match post_reconciliation structure
+	# left (receipt/credit) -> payment side
+	# right (payment/debit) -> invoice side
+	mapped_allocs = []
+	for a in allocations:
+		mapped_allocs.append({
+			"payment_type": a["left_type"],
+			"payment_name": a["left_name"],
+			"reference_row": a["left_row"],
+			"invoice_type": a["right_type"],
+			"invoice_name": a["right_name"],
+			"amount": a["amount"]
 		})
 
-	je.insert()
-	je.submit()
-	return {"status": "ok", "voucher_no": je.name, "reconciled": len(allocations)}
+	return post_reconciliation(party_type, party, mapped_allocs)
 
 
 @frappe.whitelist()
 def post_reconciliation(party_type, party, allocations):
-	"""Reconcile unlinked payments / JEs against outstanding invoices.
+	"""Reconcile unlinked payments / JEs against outstanding invoices / opposite entries.
 
 	Each item in `allocations`:
 	  payment_type        – "Payment Entry" | "Journal Entry"
 	  payment_name        – name of the PE or JE
 	  reference_row       – name of the JE account row (only for JE)
-	  invoice_type        – "Sales Invoice" | "Purchase Invoice"
-	  invoice_name        – name of the invoice
+	  invoice_type        – doc type of the Debit side (Sales Invoice, PE, JE etc.)
+	  invoice_name        – name of the Debit side document
 	  amount              – amount to allocate
-	  unreconciled_amount – available unreconciled amount on the payment side
+	  unreconciled_amount – (Optional) available unreconciled amount on the payment side
 	"""
 	if isinstance(allocations, str):
 		allocations = json.loads(allocations)
@@ -252,14 +223,27 @@ def post_reconciliation(party_type, party, allocations):
 	rec.company = company
 	rec.receivable_payable_account = account
 
-	# validate_allocation() checks self.get("invoices") to verify outstanding amounts.
-	# Populate the invoices child table with all unique invoices in the allocation list.
+	# 1. Populate the invoices child table. 
+	# Payment Reconciliation validation checks this table to ensure outstanding balance.
 	seen_invoices = {}
+	opposite_entries = None
 	for alloc in allocations:
 		inv_name = alloc["invoice_name"]
 		inv_type = alloc["invoice_type"]
 		if inv_name not in seen_invoices:
-			outstanding = frappe.db.get_value(inv_type, inv_name, "outstanding_amount") or 0
+			# For cross-reconciliation, "invoice" might be a PE or JE. 
+			# We need to find its unallocated Debit amount (for Customer) or Credit amount (for Supplier).
+			if inv_type == "Sales Invoice" or inv_type == "Purchase Invoice":
+				outstanding = frappe.db.get_value(inv_type, inv_name, "outstanding_amount") or 0
+			else:
+				# It's a Payment Entry or Journal Entry (cross-reconciliation)
+				# Pull its unallocated amount from opposite entries API logic
+				if opposite_entries is None:
+					opposite_entries = get_unlinked_opposite_entries(party_type, party)
+				
+				matches = [x for x in opposite_entries["payment_entries"] + opposite_entries["journal_entries"] if x["name"] == inv_name]
+				outstanding = matches[0]["unallocated_amount"] if matches else alloc["amount"]
+
 			seen_invoices[inv_name] = float(outstanding)
 			rec.append("invoices", {
 				"invoice_type": inv_type,
@@ -267,8 +251,7 @@ def post_reconciliation(party_type, party, allocations):
 				"outstanding_amount": float(outstanding),
 			})
 
-	# Build allocation rows.
-	# ERPNext uses `invoice_number` (not `invoice_name`) and `amount` = payment unreconciled total.
+	# 2. Build allocation rows.
 	for alloc in allocations:
 		unreconciled = float(alloc.get("unreconciled_amount") or alloc["amount"])
 		rec.append(
