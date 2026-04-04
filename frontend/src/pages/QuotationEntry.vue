@@ -212,40 +212,40 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-[#B0E4CC] border-l-2 border-l-blue-500 text-black': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-purple-900/20 border-l-2 border-l-purple-500': !item._is_free && item._rule_discount == null && item._customer_pricing && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && !item._customer_pricing && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
-                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full" :class="item.deleted ? 'bg-red-900/30 text-red-400' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-slate-700 text-[#B0E4CC]' : 'bg-slate-800 text-slate-400')" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
+                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="cursor-pointer border-b border-slate-700 outline-none transition-colors" :class="{ 'bg-[#B0E4CC] border-l-2 border-l-blue-500 text-black': selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount, 'bg-green-900/30 border-l-2 border-l-green-400': item._is_free && !item.deleted, 'bg-green-900/20 border-l-2 border-l-green-600': !item._is_free && item._rule_discount != null && !item.deleted, 'bg-red-900/10': item.deleted, 'hover:bg-slate-800/50': !item.deleted && !item._is_free && item._rule_discount == null && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
+                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full" :class="item.deleted ? 'bg-red-900/30 text-red-400' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'bg-slate-700 text-[#B0E4CC]' : 'bg-slate-800 text-slate-400')" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span></td>
                   <td class="p-0 border-r border-slate-700">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" class="w-full rounded border border-slate-600 font-mono outline-none focus:border-blue-500 disabled:bg-slate-900" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black' : 'bg-slate-800 text-slate-200'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onCodeFocus(idx)" @input="onCodeInput(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown.enter.prevent="onCodeEnter(idx)" @keydown="handleQuickSearchKeydown($event, idx)" />
-                    <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" class="w-full rounded border border-slate-600 font-mono outline-none focus:border-blue-500 disabled:bg-slate-900" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'bg-[#B0E4CC] text-black' : 'bg-slate-800 text-slate-200'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onCodeFocus(idx)" @input="onCodeInput(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.right.prevent="openSearch(item.item_code, idx)" @keydown.enter.prevent="onCodeEnter(idx)" @keydown="handleQuickSearchKeydown($event, idx)" />
+                    <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
-                  <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-200')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item._is_free" class="ml-1 rounded bg-green-900/60 px-1 py-0.5 font-bold text-green-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">FREE</span><span v-else-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
+                  <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"><span :class="item.deleted ? 'text-red-900/50 line-through' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : 'text-slate-200')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span><span v-if="item._is_free" class="ml-1 rounded bg-green-900/60 px-1 py-0.5 font-bold text-green-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">FREE</span><span v-else-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span></td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" min="0" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="item.qty !== 0 && ((item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx))" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" min="0" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="item.qty !== 0 && ((item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx))" @keydown.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
                   <td class="p-0 border-r border-slate-700">
-                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-transparent font-mono outline-none focus:border-blue-500 disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onUomChange(idx)" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.up.stop @keydown.down.stop>
+                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="quotationDocStatus !== 0 || quotationSaved" class="w-full rounded border border-transparent font-mono outline-none focus:border-blue-500 disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @change="onUomChange(idx)" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.up.stop @keydown.down.stop>
                       <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
-                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
+                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
                   </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onRateFocus(idx)" @blur="onRateBlur(idx)" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.01" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="(item.uoms||[]).length > 1 ? focusField('uom', idx) : focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
                   </td>
                   <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @focus="onDiscountFocus(idx)" @blur="onDiscountBlur(idx)" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="quotationDocStatus !== 0 || quotationSaved || item._is_free" step="0.5" min="0" max="100" class="w-full rounded border border-transparent text-right font-mono focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed appearance-none" :class="selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'bg-[#B0E4CC] text-black focus:bg-[#B0E4CC]' : 'bg-transparent text-slate-200 focus:bg-slate-800'" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : 'text-slate-300')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
                   </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : (item.discount ? 'text-amber-400' : 'text-slate-600'))" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : (item.discount ? 'text-amber-400' : 'text-slate-600'))" :style="{ fontSize: dynamicRowStyle.fontSize }">
                       {{ item.discount ? (item.rate * (1 - (item.discount) / 100)).toFixed(2) : '—' }}
                     </span>
                   </td>
                   <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
+                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black' : 'text-slate-400')" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700 font-mono" :class="item.deleted ? 'text-slate-600 line-through' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount && !item._customer_pricing ? 'text-black font-bold' : 'text-slate-200')" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : ((1) * item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
+                  <td class="px-2 text-right border-r border-slate-700 font-mono" :class="item.deleted ? 'text-slate-600 line-through' : (selectedRow === idx && !item.deleted && !item._is_free && !item._rule_discount ? 'text-black font-bold' : 'text-slate-200')" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ item.deleted ? '' : ((1) * item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}</td>
                   <td class="px-2 text-center" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button v-if="!item.deleted && !item._is_free" class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" :style="{ fontSize: dynamicRowStyle.fontSize }" @click.stop="softDelete(idx)">&times;</button>
                     <button v-else-if="item.deleted" class="rounded px-1 py-0.5 font-semibold text-blue-500 hover:bg-blue-900/30 hover:text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }" @click.stop="restoreItem(idx)">&larr;</button>
@@ -383,7 +383,8 @@
                   <span class="text-slate-400 text-lg font-bold uppercase">Ignore Pricing Rule</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer select-none">
-                  
+                  <input type="checkbox" v-model="applyTaxDiscount" :disabled="quotationDocStatus !== 0 || quotationSaved" class="h-4 w-4 rounded border-slate-600 accent-blue-500 cursor-pointer disabled:cursor-not-allowed" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Apply Tax Discount</span>
                 </label>
               </div>
               <div class="flex flex-col gap-0.5">
@@ -705,28 +706,7 @@
       @close="quickSearchResults = []"
     />
 
-    <!-- Price Update Quotation Modal (Refactored Component) -->
-    <CustomerPrice
-      v-if="savePricePopup.show"
-      :data="savePricePopup"
-      :customer="customer"
-      :price-list="priceList"
-      @saveCustomer="confirmSavePrice"
-      @updatePricelist="confirmUpdatePricelist"
-      @dismiss="dismissSavePrice"
-      @advanced="showPriceListUpdate = true"
-    />
-
-    <!-- Price List Update Quotation Subwindow -->
-    <PriceListUpdate
-      v-if="showPriceListUpdate"
-      is-sub-window
-      :item-code="savePricePopup.item_code"
-      :selected-price-list="priceList"
-      :initial-factor="savePricePopup.multiplication_factor"
-      @close="showPriceListUpdate = false"
-      @saved="onPriceListSaved"
-    />
+    <!-- Price Update Quotation Modal (Removed Customer Price Logic) -->
 
     <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
@@ -769,16 +749,13 @@ import { searchCustomers } from '../customersearch.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
-import CustomerPrice from '../components/CustomerPrice.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import BarcodePrintingModal from '../components/BarcodePrintingModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import Warning from '../components/Warning.vue'
 import ErrorWindow from '../components/ErrorWindow.vue'
-import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
-import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
 import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import CustomerLedger from './CustomerLedger.vue'
@@ -790,6 +767,8 @@ import * as XLSX from 'xlsx'
 const router = useRouter()
 const route = useRoute()
 const API = '/api/method/ssplbilling.api.quotation_api'
+
+const applyTaxDiscount = ref(false)
 
 const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, fetchCustomerSalesHistory, getItemHistoryFromCache, refreshDiscountRuleCache } = useItemCache()
 
@@ -1097,139 +1076,24 @@ const { ignoreDiscountRule, makeRowKey, applyDiscountRuleForRow, reapplyAllDisco
   lookupItemInCache,
 })
 
-// ==================== CUSTOMER PRICING ====================
-const customerPricing = ref({}) // { item_code: discount_percentage }
+// ==================== TAX DISCOUNT ====================
+function applyTaxDiscountToRow(idx) {
+  if (!applyTaxDiscount.value) return
+  const item = items.value[idx]
+  if (!item || item.deleted || item._is_free) return
+  
+  const tax = item.tax_rate ?? defaultTaxRate.value
+  const discount = (0.5 * tax) / (100 + tax) * 100
+  item.discount = parseFloat(discount.toFixed(2))
+}
 
-// Re-calculate all items when global customer factor changes
-watch(selectedCustomerDetails, (newVal) => {
-  if (newVal && !quotationSaved.value) {
-    items.value.forEach((_, idx) => applyCustomerPricingForRow(idx))
+watch(applyTaxDiscount, (newVal) => {
+  if (newVal) {
+    items.value.forEach((_, idx) => applyTaxDiscountToRow(idx))
   }
 })
 
-async function loadCustomerPricing(cust) {
-  if (!cust) { customerPricing.value = {}; return }
-  try {
-    const data = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust })
-    customerPricing.value = data || {}
-    // Re-apply to items already in the list (fetch may arrive after items were added)
-    items.value.forEach((_, idx) => applyCustomerPricingForRow(idx))
-  } catch (e) {
-    customerPricing.value = {}
-  }
-}
-
-function applyCustomerPricingForRow(idx) {
-  const item = items.value[idx]
-  if (!item || item.deleted || item._is_free || item._rule_discount != null) return
-  
-  // 1. Get global customer factor (default to 1 if null, undefined, or 0)
-  let globalFactor = parseFloat(selectedCustomerDetails.value?.pricelist_multiplication_factor) || 1
-  if (globalFactor === 0) globalFactor = 1
-
-  // 2. Get item-specific factor (default to 1 if not found or zero)
-  let itemFactor = customerPricing.value[item.item_code] || 1
-  if (itemFactor === 0) itemFactor = 1
-  
-  // 3. Combine factors (Multiplicative)
-  const finalFactor = globalFactor * itemFactor
-
-  // 4. Always use the base list price from cache to avoid compounding factors
-  const cached = lookupItemInCache(item.item_code)
-  const baseRate = cached ? rateForUom(cached, item.uom) : item.rate
-  
-  // 5. Update rate (always multiply)
-  item.rate = baseRate * finalFactor
-  item._customer_pricing = Math.abs(finalFactor - 1) > 0.0001
-}
-
-// Save-price popup
-const savePricePopup = ref({ show: false, idx: null, item_code: '', item_name: '', multiplication_factor: 1, rate: 0, uom: '' })
-let _rateAtFocus = null
-let _discAtFocus = null
-
-function onRateFocus(idx) { _rateAtFocus = items.value[idx]?.rate ?? null }
-function onDiscountFocus(idx) { _discAtFocus = items.value[idx]?.discount ?? null }
-
-function onRateBlur(idx) {
-  const item = items.value[idx]
-  if (!item) { _rateAtFocus = null; return }
-  const newRate = item.rate
-  const rateChanged = _rateAtFocus !== null && newRate !== _rateAtFocus
-  _rateAtFocus = null
-  if (!rateChanged) return
-  
-  // Clear any previous customer pricing for this row if rate was manually edited
-  item._customer_pricing = false
-  
-  if (!customer.value || item._rule_discount != null) return
-  
-  // Compute multiplication factor vs cached list price and offer to save
-  const cached = lookupItemInCache(item.item_code)
-  const listRate = rateForUom(cached, item.uom) || 0
-  const factor = listRate > 0 ? (newRate / listRate) : 1
-  
-  // If listRate is 0, we can't really compute a factor but we should still allow 
-  // updating the pricelist or saving for customer if the new rate > 0
-  if (listRate === 0 && newRate > 0) {
-    _triggerSavePricePopup(idx, 1) // Factor of 1 for 0-based, or we could use factor = newRate
-  } else if (Math.abs(factor - 1) > 0.0001) {
-    _triggerSavePricePopup(idx, factor)
-  }
-}
-
-function onDiscountBlur(idx) {
-  _discAtFocus = null
-}
-function _triggerSavePricePopup(idx, factor) {
-  const item = items.value[idx]
-  if (!item?.item_code) return
-  savePricePopup.value = { 
-    show: true, 
-    idx, 
-    item_code: item.item_code, 
-    item_name: item.item_name, 
-    multiplication_factor: factor,
-    rate: item.rate,
-    uom: item.uom
-  }
-}
-
-async function confirmSavePrice() {
-  const { item_code, multiplication_factor, idx } = savePricePopup.value
-  try {
-    await saveCustomerItemPrice(customer.value, item_code, multiplication_factor)
-    customerPricing.value[item_code] = multiplication_factor
-    if (idx != null && items.value[idx]) items.value[idx]._customer_pricing = true
-  } catch (e) {
-    console.error('[CustomerPricing] save failed', e)
-  }
-  savePricePopup.value.show = false
-  if (idx !== null) goToNextRow(idx)
-  else focusNewCode()
-}
-
-async function confirmUpdatePricelist() {
-  const { item_code, rate, uom, idx } = savePricePopup.value
-  try {
-    await updateItemPriceList(item_code, priceList.value, rate, uom)
-    refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
-  } catch (e) {
-    console.error('[PriceList] update failed', e)
-  }
-  savePricePopup.value.show = false
-  if (idx !== null) goToNextRow(idx)
-  else focusNewCode()
-}
-
-function dismissSavePrice() {
-  const { idx } = savePricePopup.value
-  savePricePopup.value.show = false
-  if (idx !== null) goToNextRow(idx)
-  else focusNewCode()
-}
-
-// ==================== API RESOURCES ====================
+// ==================== ITEM ENTRY ====================
 const itemLookup = createResource({ url: `${API}.get_item_details` })
 const itemSearchResource = createResource({ url: `${API}.search_items` })
 const insightResource = createResource({ url: `${API}.get_item_insight` })
@@ -1551,12 +1415,11 @@ async function onCodeEnter(idx) {
         deleted: false,
         _rowKey: makeRowKey(),
         _is_free: false,
-        _rule_discount: null,
-        _customer_pricing: false
+        _rule_discount: null
       })
       const newIdx = items.value.length - 1
       applyDiscountRuleForRow(newIdx)
-      applyCustomerPricingForRow(newIdx)
+      applyTaxDiscountToRow(newIdx)
       loadItemInsight(resolvedCode, r.item_name, r.uom)
       focusField('qty', newIdx)
       return
@@ -1577,13 +1440,12 @@ async function onCodeEnter(idx) {
       warehouse: r.warehouse || defaultWarehouse.value,
       deleted: false,
       _is_free: false,
-      _rule_discount: null,
-      _customer_pricing: false
+      _rule_discount: null
     }
 
     if (!items.value[idx]._rowKey) items.value[idx]._rowKey = makeRowKey()
     applyDiscountRuleForRow(idx)
-    applyCustomerPricingForRow(idx)
+    applyTaxDiscountToRow(idx)
 
     loadItemInsight(resolvedCode, r.item_name, r.uom)
     focusField('qty', idx)
@@ -1637,7 +1499,7 @@ async function addNewItem() {
     _rowKey: makeRowKey(),
   })
   applyDiscountRuleForRow(items.value.length - 1)
-  applyCustomerPricingForRow(items.value.length - 1)
+  applyTaxDiscountToRow(items.value.length - 1)
 
   newItemCode.value = '';
   newQty.value = 0;
@@ -1745,12 +1607,11 @@ async function pickItem(item) {
         deleted: false,
         _rowKey: makeRowKey(),
         _is_free: false,
-        _rule_discount: null,
-        _customer_pricing: false
+        _rule_discount: null
       })
       const newIdx = items.value.length - 1
       applyDiscountRuleForRow(newIdx)
-      applyCustomerPricingForRow(newIdx)
+      applyTaxDiscountToRow(newIdx)
       selectedRow.value = newIdx
       focusField('qty', newIdx)
       return
@@ -1771,13 +1632,12 @@ async function pickItem(item) {
       warehouse: finalWh,
       deleted: false,
       _is_free: false,
-      _rule_discount: null,
-      _customer_pricing: false
+      _rule_discount: null
     }
 
     if (!items.value[itemSearchTargetRow]._rowKey) items.value[itemSearchTargetRow]._rowKey = makeRowKey()
     applyDiscountRuleForRow(itemSearchTargetRow)
-    applyCustomerPricingForRow(itemSearchTargetRow)
+    applyTaxDiscountToRow(itemSearchTargetRow)
 
     selectedRow.value = itemSearchTargetRow
     focusField('qty', itemSearchTargetRow)
@@ -1836,7 +1696,7 @@ async function handleImportFile(event) {
         _rowKey: makeRowKey()
       })
       applyDiscountRuleForRow(items.value.length - 1)
-      applyCustomerPricingForRow(items.value.length - 1)
+      applyTaxDiscountToRow(items.value.length - 1)
     }
     showImportModal.value = false
     event.target.value = '' 
@@ -2019,13 +1879,11 @@ const quotationSeries = ref('')
 watch(customer, async (newVal) => {
   if (!newVal) {
     fetchCustomerSalesHistory(null)
-    loadCustomerPricing(null)
     return
   }
 
-  // Fetch sales history and customer pricing in bulk
+  // Fetch sales history
   fetchCustomerSalesHistory(newVal)
-  loadCustomerPricing(newVal)
 
   if (!selectedCustomerDetails.value) return
   try {
