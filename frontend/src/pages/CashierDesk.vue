@@ -210,49 +210,66 @@
       </main>
 
       <!-- UNALLOCATED CASH PANEL -->
-      <aside v-if="selectedInvoice && unallocatedPayments.length > 0" class="flex w-80 flex-col border-l border-slate-700 bg-slate-900 z-10 shrink-0">
+      <aside v-if="selectedInvoice && (unallocatedPayments.length > 0 || (selectedInvoice.advances && selectedInvoice.advances.length > 0))" class="flex w-80 flex-col border-l border-slate-700 bg-slate-900 z-10 shrink-0">
         <div class="p-4 border-b border-slate-700 bg-slate-800/30">
           <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Unallocated Cash
+            Payment Reconciliation
           </h3>
           <p class="mt-1 text-[10px] font-bold text-slate-500 uppercase truncate">For {{ selectedInvoice?.customer }}</p>
         </div>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
-          <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-sm hover:border-slate-600 transition-colors space-y-3">
-            <div class="flex justify-between items-start">
-              <div class="overflow-hidden">
-                <div class="text-[11px] font-black text-slate-200 truncate">{{ pe.name }}</div>
-                <div class="text-[9px] font-bold text-slate-500 uppercase">{{ formatDate(pe.posting_date) }}</div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+          <!-- Already Allocated Section -->
+          <div v-if="selectedInvoice.advances && selectedInvoice.advances.length > 0" class="space-y-2">
+            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-600 px-1">Already Allocated</h4>
+            <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" class="rounded-xl border border-blue-900/30 bg-blue-900/10 p-2.5">
+              <div class="flex justify-between items-start">
+                <span class="text-[10px] font-black text-blue-400 truncate">{{ adv.reference_name }}</span>
+                <span class="text-[10px] font-black text-slate-200 font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
               </div>
-              <div class="text-right">
-                <div class="text-[10px] font-black text-emerald-400 font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
-                <div class="text-[8px] font-bold text-slate-600 uppercase">{{ pe.mode_of_payment }}</div>
-              </div>
+              <p class="mt-1 text-[8px] font-bold text-slate-500 italic uppercase">In this journal entry this amount is allocated</p>
             </div>
-            
-            <div class="relative group">
-              <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-600 uppercase">Alloc</div>
-              <input
-                :ref="el => allocationInputs[index] = el"
-                type="number"
-                v-model.number="pe.amount_to_allocate"
-                @focus="$event.target.select()"
-                class="w-full rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-10 pr-3 text-right font-mono text-xs font-black text-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all outline-none"
-                @keydown.enter="focusNextAllocation(index)"
-              />
+          </div>
+
+          <!-- Unallocated Section -->
+          <div v-if="unallocatedPayments.length > 0" class="space-y-2">
+            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-600 px-1">Unallocated Cash</h4>
+            <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-sm hover:border-slate-600 transition-colors space-y-3">
+              <div class="flex justify-between items-start">
+                <div class="overflow-hidden">
+                  <div class="text-[11px] font-black text-slate-200 truncate">{{ pe.name }}</div>
+                  <div class="text-[9px] font-bold text-slate-500 uppercase">{{ formatDate(pe.posting_date) }}</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-[10px] font-black text-emerald-400 font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
+                  <div class="text-[8px] font-bold text-slate-600 uppercase">{{ pe.mode_of_payment }}</div>
+                </div>
+              </div>
+              
+              <div class="relative group">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-600 uppercase">Alloc</div>
+                <input
+                  :ref="el => allocationInputs[index] = el"
+                  type="number"
+                  v-model.number="pe.amount_to_allocate"
+                  @focus="$event.target.select()"
+                  class="w-full rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-10 pr-3 text-right font-mono text-xs font-black text-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all outline-none"
+                  @keydown.enter="focusNextAllocation(index)"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="p-4 border-t border-slate-700 bg-slate-800/50 space-y-3">
+        <div v-if="unallocatedPayments.length > 0" class="p-4 border-t border-slate-700 bg-slate-800/50 space-y-3">
           <div class="flex justify-between items-center px-1">
             <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Total to Allocate</span>
             <span class="text-xs font-black text-blue-400 font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
           </div>
 
           <button
+            ref="allocateButton"
             @click="submitAllocation"
             :disabled="!totalAmountToAllocate || isSubmitting"
             class="w-full rounded-xl bg-blue-600 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/40 hover:bg-blue-500 active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
@@ -439,6 +456,7 @@
 
               <!-- Action Button -->
               <button
+                ref="postButton"
                 @click="processPayment"
                 :disabled="!canSubmit"
                 class="group w-full rounded-xl py-4 font-black uppercase tracking-[0.2em] text-sm transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
@@ -575,8 +593,11 @@ const invoices = ref([])
 const selectedInvoice = ref(null)
 const previewItems = ref([])
 const unallocatedPayments = ref([])
+const allocatedAdvances = ref([])
 const unallocatedAmountTotal = ref(0)
 const allocationInputs = ref([])
+const allocateButton = ref(null)
+const postButton = ref(null)
 
 const totalAmountToAllocate = computed(() => {
   return unallocatedPayments.value.reduce((acc, p) => acc + (Number(p.amount_to_allocate) || 0), 0)
@@ -806,7 +827,7 @@ function focusNextAllocation(index) {
     allocationInputs.value[index + 1]?.focus()
     allocationInputs.value[index + 1]?.select()
   } else {
-    submitAllocation()
+    allocateButton.value?.focus()
   }
 }
 
@@ -1009,24 +1030,76 @@ function navigateBills(dir) {
 
 function handleEnter(e) {
   const active = document.activeElement
-  if (active.tagName !== 'INPUT' || (active.type !== 'number' && active.type !== 'text' && active.type !== 'date')) {
-    if (isCredit.value) {
+  
+  // 1. If no invoice selected, focus first bill (handled by navigateBills usually, but if enter pressed on main body)
+  if (!selectedInvoice.value) {
+    if (invoices.value.length) selectInvoice(invoices.value[0])
+    return
+  }
+
+  // 2. Navigation Logic
+  if (active.tagName !== 'INPUT' && active !== allocateButton.value && active !== postButton.value) {
+    // If we just selected a bill, go to side panel if exists, else cash
+    if (unallocatedPayments.value.length > 0) {
+      allocationInputs.value[0]?.focus()
+      allocationInputs.value[0]?.select()
+    } else if (isCredit.value) {
       dueDateInput.value?.focus()
     } else {
       cashInput.value?.focus()
     }
     return
   }
+
+  // 3. Sequential Input Navigation
+  if (unallocatedPayments.value.length > 0) {
+    const allocIdx = allocationInputs.value.findIndex(el => el === active)
+    if (allocIdx !== -1) {
+      if (allocIdx + 1 < unallocatedPayments.value.length) {
+        allocationInputs.value[allocIdx + 1]?.focus()
+        allocationInputs.value[allocIdx + 1]?.select()
+      } else {
+        allocateButton.value?.focus()
+      }
+      return
+    }
+  }
+
+  if (active === allocateButton.value) {
+    submitAllocation().then(() => {
+      nextTick(() => {
+        if (balance.value > 0.01) {
+          if (isCredit.value) dueDateInput.value?.focus()
+          else cashInput.value?.focus()
+        } else {
+          postButton.value?.focus()
+        }
+      })
+    })
+    return
+  }
+
   if (isCredit.value) {
-    if (active === dueDateInput.value) processPayment()
+    if (active === dueDateInput.value) {
+      if (canSubmit.value) postButton.value?.focus()
+      else processPayment() // will show error if not valid
+    } else if (active === postButton.value) {
+      processPayment()
+    }
   } else {
     if (active === cashInput.value) {
       upiInput.value?.focus()
+      upiInput.value?.select()
     } else if (active === upiInput.value) {
       cardInput.value?.focus()
+      cardInput.value?.select()
     } else if (active === cardInput.value) {
       discountInput.value?.focus()
+      discountInput.value?.select()
     } else if (active === discountInput.value) {
+      if (balance.value <= 0.01) postButton.value?.focus()
+      else errorMsg.value = "Payment balance remaining"
+    } else if (active === postButton.value) {
       processPayment()
     }
   }
