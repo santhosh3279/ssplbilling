@@ -868,7 +868,7 @@ const priceList = ref('Standard Selling')
 const printScheme = ref('')
 const taxTemplate = ref('')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
-const incomeAccount = ref('')
+const incomeAccount = ref(localStorage.getItem('wb-income-account') || '')
 
 const availableTaxTemplates = ref([])
 const availableWarehouses = ref([])
@@ -904,7 +904,10 @@ function syncSeriesConfig(series) {
   
   if (cfg.print_format) printScheme.value = cfg.print_format
   if (cfg.tax_template) taxTemplate.value = cfg.tax_template
-  incomeAccount.value = cfg.income_account || ''
+  
+  if (!localStorage.getItem('wb-income-account')) {
+    incomeAccount.value = cfg.income_account || ''
+  }
 
   // Only override if not set in localStorage
   if (!localStorage.getItem('wb-warehouse')) {

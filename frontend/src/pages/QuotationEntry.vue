@@ -830,7 +830,7 @@ const priceList = ref('Standard Selling')
 const printScheme = ref('')
 const taxTemplate = ref('')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
-const incomeAccount = ref('')
+const incomeAccount = ref(localStorage.getItem('wb-income-account') || '')
 
 const availableTaxTemplates = ref([])
 const availableWarehouses = ref([])
@@ -866,7 +866,10 @@ function syncSeriesConfig(series) {
   
   if (cfg.print_format) printScheme.value = cfg.print_format
   if (cfg.tax_template) taxTemplate.value = cfg.tax_template
-  incomeAccount.value = cfg.income_account || ''
+  
+  if (!localStorage.getItem('wb-income-account')) {
+    incomeAccount.value = cfg.income_account || ''
+  }
 
   // Only override if not set in localStorage
   if (!localStorage.getItem('wb-warehouse')) {
@@ -1087,10 +1090,11 @@ function applyTaxDiscountToRow(idx) {
   item.discount = parseFloat(discount.toFixed(2))
 }
 
-watch(applyTaxDiscount, (newVal) => {
+watch(applyTaxDiscount, (newVal, oldVal) => {
   if (newVal) {
     items.value.forEach((_, idx) => applyTaxDiscountToRow(idx))
-  } else {
+  } else if (oldVal === true) {
+    // Only clear if manually unchecked from a checked state
     items.value.forEach(item => {
       if (!item.deleted && !item._is_free) {
         item.discount = 0
@@ -1814,7 +1818,7 @@ async function loadQuotation(quotationName) {
         discount: disc,
         tax_rate: i.tax_rate ?? defaultTaxRate.value,
         _rowKey: makeRowKey(),
-        _rule_discount: disc > 0 ? disc : null,
+        _rule_discount: null,
         _is_free: isFreeRow,
       }
     })
