@@ -303,8 +303,10 @@ def get_customer_unallocated_cash(customer):
 	)
 
 @frappe.whitelist()
-def update_invoice_advances(invoice_name, total_amount):
-	"""Update the advances table by automatically allocating total_amount across available unallocated payments."""
+def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
+	"""Update the advances table. If allocations (list of dicts) is provided, use those.
+	Otherwise, automatically allocate total_amount across available unallocated payments.
+	"""
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	if si.docstatus != 0:
 		frappe.throw("Advances can only be updated for Draft invoices.")
@@ -323,36 +325,54 @@ def update_invoice_advances(invoice_name, total_amount):
 	if si.get("payment_schedule"):
 		si.payment_schedule = []
 
-	amount_left = float(total_amount or 0)
-	if amount_left <= 0:
-		si.set("advances", [])
-		si.save(ignore_permissions=True)
-		return {
-			"status": "success", 
-			"outstanding": float(si.outstanding_amount),
-			"posting_date": str(si.posting_date),
-			"due_date": str(si.due_date)
-		}
-
-	# Fetch fresh list of unallocated payments
-	unallocated_payments = get_customer_unallocated_cash(si.customer)
-	
-	si.set("advances", [])
-	for pe_data in unallocated_payments:
-		if amount_left <= 0.005:
-			break
-			
-		alloc_amount = min(float(pe_data.unallocated_amount), amount_left)
+	if allocations:
+		if isinstance(allocations, str):
+			allocations = json.loads(allocations)
 		
-		si.append("advances", {
-			"reference_type": "Payment Entry",
-			"reference_name": pe_data.name,
-			"remarks": f"Allocated from {pe_data.name} via Cashier Desk",
-			"advance_amount": pe_data.unallocated_amount,
-			"allocated_amount": alloc_amount,
-			"ref_no": pe_data.reference_no,
-		})
-		amount_left -= alloc_amount
+		si.set("advances", [])
+		for alloc in allocations:
+			amt = float(alloc.get("allocated_amount") or 0)
+			if amt <= 0.005:
+				continue
+				
+			pe_name = alloc.get("reference_name")
+			# Verify PE exists and has enough unallocated amount
+			pe_data = frappe.db.get_value("Payment Entry", pe_name, ["unallocated_amount", "reference_no"], as_dict=True)
+			if not pe_data:
+				continue
+				
+			si.append("advances", {
+				"reference_type": "Payment Entry",
+				"reference_name": pe_name,
+				"remarks": f"Allocated from {pe_name} via Cashier Desk",
+				"advance_amount": pe_data.unallocated_amount,
+				"allocated_amount": amt,
+				"ref_no": pe_data.reference_no,
+			})
+	else:
+		amount_left = float(total_amount or 0)
+		if amount_left <= 0:
+			si.set("advances", [])
+		else:
+			# Fetch fresh list of unallocated payments
+			unallocated_payments = get_customer_unallocated_cash(si.customer)
+			
+			si.set("advances", [])
+			for pe_data in unallocated_payments:
+				if amount_left <= 0.005:
+					break
+					
+				alloc_amount = min(float(pe_data.unallocated_amount), amount_left)
+				
+				si.append("advances", {
+					"reference_type": "Payment Entry",
+					"reference_name": pe_data.name,
+					"remarks": f"Allocated from {pe_data.name} via Cashier Desk",
+					"advance_amount": pe_data.unallocated_amount,
+					"allocated_amount": alloc_amount,
+					"ref_no": pe_data.reference_no,
+				})
+				amount_left -= alloc_amount
 
 	si.save(ignore_permissions=True)
 	return {

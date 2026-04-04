@@ -220,8 +220,8 @@
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
-          <div v-for="pe in unallocatedPayments" :key="pe.name" class="rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-sm hover:border-slate-600 transition-colors">
-            <div class="flex justify-between items-start mb-2">
+          <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-sm hover:border-slate-600 transition-colors space-y-3">
+            <div class="flex justify-between items-start">
               <div class="overflow-hidden">
                 <div class="text-[11px] font-black text-slate-200 truncate">{{ pe.name }}</div>
                 <div class="text-[9px] font-bold text-slate-500 uppercase">{{ formatDate(pe.posting_date) }}</div>
@@ -231,36 +231,33 @@
                 <div class="text-[8px] font-bold text-slate-600 uppercase">{{ pe.mode_of_payment }}</div>
               </div>
             </div>
-            <div v-if="pe.reference_no" class="text-[9px] font-medium text-slate-500 truncate italic">Ref: {{ pe.reference_no }}</div>
+            
+            <div class="relative group">
+              <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-600 uppercase">Alloc</div>
+              <input
+                :ref="el => allocationInputs[index] = el"
+                type="number"
+                v-model.number="pe.amount_to_allocate"
+                @focus="$event.target.select()"
+                class="w-full rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-10 pr-3 text-right font-mono text-xs font-black text-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all outline-none"
+                @keydown.enter="focusNextAllocation(index)"
+              />
+            </div>
           </div>
         </div>
 
         <div class="p-4 border-t border-slate-700 bg-slate-800/50 space-y-3">
           <div class="flex justify-between items-center px-1">
-            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Available</span>
-            <span class="text-xs font-black text-emerald-400 font-mono">₹{{ fmt(unallocatedAmountTotal) }}</span>
-          </div>
-
-          <div class="space-y-1.5">
-            <label class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Allocate Amount</label>
-            <div class="relative group">
-              <input
-                ref="unallocatedInput"
-                type="number"
-                v-model.number="unallocatedAmountToAllocate"
-                @focus="$event.target.select()"
-                class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3 px-4 text-right font-mono font-black text-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none text-lg"
-                @keydown.enter="submitAllocation"
-              />
-            </div>
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Total to Allocate</span>
+            <span class="text-xs font-black text-blue-400 font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
           </div>
 
           <button
             @click="submitAllocation"
-            :disabled="!unallocatedAmountToAllocate || isSubmitting"
+            :disabled="!totalAmountToAllocate || isSubmitting"
             class="w-full rounded-xl bg-blue-600 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/40 hover:bg-blue-500 active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
           >
-            <span>Allocate Payment</span>
+            <span>Confirm Allocations</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </button>
         </div>
@@ -576,13 +573,14 @@ useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showOpeningRequiredModal)
 useSubwindowWatcher(showUnallocatedModal)
 
-const invoices = ref([])
-const selectedInvoice = ref(null)
-const previewItems = ref([])
 const unallocatedPayments = ref([])
-const unallocatedAmountToAllocate = ref(0)
 const unallocatedAmountTotal = ref(0)
-const selectedUnallocatedPayment = ref(null)
+const allocationInputs = ref([])
+
+const totalAmountToAllocate = computed(() => {
+  return unallocatedPayments.value.reduce((acc, p) => acc + (Number(p.amount_to_allocate) || 0), 0)
+})
+
 const isCredit = ref(false)
 const dueDate = ref('')
 const isSubmitting = ref(false)
@@ -613,7 +611,6 @@ const discountInput = ref(null)
 const dueDateInput = ref(null)
 const cardRefInput = ref(null)
 const dateInput = ref(null)
-const unallocatedInput = ref(null)
 
 // ==================== COMPUTED ====================
 const userInitials = computed(() => {
@@ -787,22 +784,28 @@ async function selectInvoice(inv) {
       customer: details.customer
     })
     
-    unallocatedPayments.value = unallocated || []
-    const totalUnallocated = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
-    const alreadyApplied = (details.advances || []).reduce((acc, a) => acc + Number(a.allocated_amount || 0), 0)
+    let remaining = details.outstanding_amount || details.grand_total
+    unallocatedPayments.value = (unallocated || []).map(pe => {
+      const alloc = Math.min(Number(pe.unallocated_amount), remaining)
+      remaining -= alloc
+      return { ...pe, amount_to_allocate: parseFloat(alloc.toFixed(2)) }
+    })
     
-    unallocatedAmountTotal.value = totalUnallocated
-    if (totalUnallocated > 0.005 && alreadyApplied < 0.005) {
-      const billAmount = details.outstanding_amount || details.grand_total
-      unallocatedAmountToAllocate.value = Math.min(totalUnallocated, billAmount)
-      showUnallocatedModal.value = false // We will show panel instead
-    } else {
-      unallocatedAmountToAllocate.value = 0
-    }
+    unallocatedAmountTotal.value = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
+    
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
   } finally {
     loadingPreview.value = false
+  }
+}
+
+function focusNextAllocation(index) {
+  if (index + 1 < unallocatedPayments.value.length) {
+    allocationInputs.value[index + 1]?.focus()
+    allocationInputs.value[index + 1]?.select()
+  } else {
+    submitAllocation()
   }
 }
 
@@ -942,15 +945,27 @@ async function confirmCardRef() {
 }
 
 async function submitAllocation() {
-  if (unallocatedAmountToAllocate.value <= 0) {
-    showUnallocatedModal.value = false
+  if (totalAmountToAllocate.value <= 0) {
+    unallocatedPayments.value = []
     return
   }
   
   try {
+    const allocations = unallocatedPayments.value
+      .filter(p => (Number(p.amount_to_allocate) || 0) > 0.005)
+      .map(p => ({
+        reference_name: p.name,
+        allocated_amount: p.amount_to_allocate
+      }))
+
+    if (allocations.length === 0) {
+      unallocatedPayments.value = []
+      return
+    }
+
     const res = await frappePost('ssplbilling.api.cashier_api.update_invoice_advances', {
       invoice_name: selectedInvoice.value.name,
-      total_amount: unallocatedAmountToAllocate.value
+      allocations: allocations
     })
     
     if (res.status === 'success') {
@@ -964,7 +979,7 @@ async function submitAllocation() {
         invoices.value[idx].posting_date = res.posting_date
       }
 
-      showUnallocatedModal.value = false
+      unallocatedPayments.value = []
       successMsg.value = "Payment allocated successfully!"
       setTimeout(() => successMsg.value = '', 3000)
     }
