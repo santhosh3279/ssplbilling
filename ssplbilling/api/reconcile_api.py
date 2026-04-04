@@ -1,0 +1,152 @@
+import frappe
+import json
+
+
+def _get_company():
+	return frappe.defaults.get_global_default("company")
+
+
+def _get_party_account(party_type, party):
+	from erpnext.accounts.party import get_party_account
+	return get_party_account(party_type, party, _get_company())
+
+
+@frappe.whitelist()
+def get_unlinked_entries(party_type, party):
+	"""Return unallocated Payment Entries and Journal Entry rows for a party."""
+	company = _get_company()
+	account_type = "Receivable" if party_type == "Customer" else "Payable"
+
+	payment_entries = frappe.db.sql(
+		"""
+		SELECT
+			name, posting_date, payment_type,
+			paid_amount, unallocated_amount,
+			mode_of_payment,
+			IFNULL(remarks, '') AS remarks
+		FROM `tabPayment Entry`
+		WHERE docstatus = 1
+			AND party_type = %s AND party = %s
+			AND unallocated_amount > 0.005
+			AND company = %s
+		ORDER BY posting_date DESC
+		""",
+		(party_type, party, company),
+		as_dict=True,
+	)
+
+	je_entries = frappe.db.sql(
+		"""
+		SELECT
+			jea.parent                                          AS name,
+			jea.name                                            AS reference_row,
+			je.posting_date,
+			IFNULL(je.cheque_no, '')                            AS reference_no,
+			IFNULL(je.user_remark, '')                          AS remarks,
+			(jea.credit_in_account_currency - jea.debit_in_account_currency) AS unallocated_amount
+		FROM `tabJournal Entry Account` jea
+		JOIN `tabJournal Entry`  je  ON je.name  = jea.parent
+		JOIN `tabAccount`        acc ON acc.name = jea.account
+		WHERE je.docstatus = 1
+			AND jea.party_type = %s AND jea.party = %s
+			AND jea.credit_in_account_currency > jea.debit_in_account_currency
+			AND (jea.reference_name IS NULL OR jea.reference_name = '')
+			AND acc.account_type = %s
+			AND je.company = %s
+		ORDER BY je.posting_date DESC
+		""",
+		(party_type, party, account_type, company),
+		as_dict=True,
+	)
+
+	return {
+		"payment_entries": [dict(r) for r in payment_entries],
+		"journal_entries": [dict(r) for r in je_entries],
+	}
+
+
+@frappe.whitelist()
+def get_outstanding_docs(party_type, party):
+	"""Return submitted invoices with outstanding balance for a party."""
+	company = _get_company()
+
+	if party_type == "Customer":
+		docs = frappe.db.sql(
+			"""
+			SELECT name, posting_date, grand_total, outstanding_amount,
+			       customer_name AS party_name
+			FROM `tabSales Invoice`
+			WHERE docstatus = 1 AND customer = %s
+			      AND outstanding_amount > 0.005 AND company = %s
+			ORDER BY posting_date ASC
+			""",
+			(party, company),
+			as_dict=True,
+		)
+		doc_type = "Sales Invoice"
+	elif party_type == "Supplier":
+		docs = frappe.db.sql(
+			"""
+			SELECT name, posting_date, grand_total, outstanding_amount,
+			       supplier_name AS party_name
+			FROM `tabPurchase Invoice`
+			WHERE docstatus = 1 AND supplier = %s
+			      AND outstanding_amount > 0.005 AND company = %s
+			ORDER BY posting_date ASC
+			""",
+			(party, company),
+			as_dict=True,
+		)
+		doc_type = "Purchase Invoice"
+	else:
+		# Employee — outstanding via JE payables
+		docs = []
+		doc_type = "Journal Entry"
+
+	return {"doc_type": doc_type, "docs": [dict(r) for r in docs]}
+
+
+@frappe.whitelist()
+def post_reconciliation(party_type, party, allocations):
+	"""Reconcile unlinked payments / JEs against outstanding invoices.
+
+	Each item in `allocations`:
+	  payment_type   – "Payment Entry" | "Journal Entry"
+	  payment_name   – name of the PE or JE
+	  reference_row  – name of the JE account row (only for JE)
+	  invoice_type   – "Sales Invoice" | "Purchase Invoice"
+	  invoice_name   – name of the invoice
+	  amount         – amount to allocate
+	  unreconciled_amount – available unreconciled amount on the payment side
+	"""
+	if isinstance(allocations, str):
+		allocations = json.loads(allocations)
+
+	if not allocations:
+		frappe.throw("No allocations provided")
+
+	company = _get_company()
+	account = _get_party_account(party_type, party)
+
+	rec = frappe.new_doc("Payment Reconciliation")
+	rec.party_type = party_type
+	rec.party = party
+	rec.company = company
+	rec.receivable_payable_account = account
+
+	for alloc in allocations:
+		rec.append(
+			"allocation",
+			{
+				"reference_type": alloc["payment_type"],
+				"reference_name": alloc["payment_name"],
+				"reference_row": alloc.get("reference_row") or None,
+				"invoice_type": alloc["invoice_type"],
+				"invoice_name": alloc["invoice_name"],
+				"allocated_amount": float(alloc["amount"]),
+				"unreconciled_amount": float(alloc.get("unreconciled_amount") or alloc["amount"]),
+			},
+		)
+
+	rec.reconcile()
+	return {"status": "ok", "reconciled": len(allocations)}

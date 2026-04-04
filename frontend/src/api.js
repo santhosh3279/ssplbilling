@@ -552,6 +552,34 @@ export async function searchAccounts(query = "", accountType = null) {
   })
 }
 
+// ─── Reconciliation Helpers ───────────────────────────────────────────
+
+export async function getUnlinkedEntries(partyType, party) {
+  return frappeGet("ssplbilling.api.reconcile_api.get_unlinked_entries", {
+    party_type: partyType,
+    party,
+  })
+}
+
+export async function getOutstandingDocs(partyType, party) {
+  return frappeGet("ssplbilling.api.reconcile_api.get_outstanding_docs", {
+    party_type: partyType,
+    party,
+  })
+}
+
+export async function postReconciliation(partyType, party, allocations) {
+  return frappePost("ssplbilling.api.reconcile_api.post_reconciliation", {
+    party_type: partyType,
+    party,
+    allocations: JSON.stringify(allocations),
+  })
+}
+
+export async function searchEmployees(query = "") {
+  return frappeGet("ssplbilling.api.incentive_ledger_api.search_employees", { query })
+}
+
 // ─── Purchase Invoice Helpers ─────────────────────────────────────────
 
 /**

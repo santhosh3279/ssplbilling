@@ -89,6 +89,12 @@
           ⚖️ <span class="font-bold text-white">Stock Reconcile</span>
         </button>
         <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          @click="showReconcileWindow = true"
+        >
+          🔗 <span class="font-bold text-white">Pay Reconcile</span>
+        </button>
+        <button
           v-if="canAccessTile('parcel-address')"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="router.push('/parcel-address')"
@@ -243,6 +249,12 @@
       :initial-to-date="stockLedgerToDate"
       @close="closeStockLedgerAndReturnToSearch"
     />
+    <!-- RECONCILE WINDOW -->
+    <ReconcileWindow
+      v-if="showReconcileWindow"
+      @close="showReconcileWindow = false"
+    />
+
     <!-- SUCCESS POPUP -->
   </div>
 </template>
@@ -259,6 +271,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
+import ReconcileWindow from './ReconcileWindow.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
@@ -365,6 +378,7 @@ useShortcuts(dashboardShortcuts({
   openCustomerSearch: isBiller ? null : () => openCustomerSearch('All'),
   openItemSearch: () => openItemSearch(),
   handleEscape: () => {
+    if (showReconcileWindow.value) { showReconcileWindow.value = false; return }
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
@@ -380,6 +394,9 @@ const systemSettings = ref(null)
 const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
 const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
+
+// ==================== RECONCILE ====================
+const showReconcileWindow = ref(false)
 
 // ==================== SYSTEM PERFORMANCE ====================
 const showSystemPerformance = ref(false)
