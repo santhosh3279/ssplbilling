@@ -23,6 +23,28 @@
           <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> Back</span>
         </div>
 
+        <div class="flex items-center gap-2">
+          <!-- Print Button -->
+          <button
+            v-if="ledgerData"
+            @click="showPrintModal = true"
+            class="flex items-center gap-1.5 rounded border border-slate-600 bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-600 hover:text-slate-100"
+            title="Print Ledger"
+          >
+            🖨 Print
+          </button>
+
+          <!-- Excel Button -->
+          <button
+            v-if="ledgerData"
+            @click="exportExcel"
+            class="flex items-center gap-1.5 rounded border border-slate-600 bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-600 hover:text-slate-100"
+            title="Export to Excel"
+          >
+            ⬇ Excel
+          </button>
+        </div>
+
         <!-- Zoom Controls -->
         <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden">
           <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
@@ -128,8 +150,7 @@
             <thead class="sticky top-0 z-10 bg-slate-800 shadow-md">
               <tr class="border-b border-slate-700 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 <th class="px-6 py-3 text-left">Date</th>
-                <th class="px-6 py-3 text-left">Type</th>
-                <th class="px-6 py-3 text-left">Voucher No</th>
+                                <th class="px-6 py-3 text-left">Voucher No</th>
                 <th class="px-6 py-3 text-right">Debit</th>
                 <th class="px-6 py-3 text-right">Credit</th>
                 <th class="px-6 py-3 text-right">Balance</th>
@@ -138,7 +159,7 @@
             <tbody>
               <!-- Opening Balance Row -->
               <tr class="border-b border-slate-800 bg-slate-800/50">
-                <td colspan="5" class="px-6 py-3 font-bold text-slate-500 uppercase tracking-widest text-[10px]">
+                <td colspan="4" class="px-6 py-3 font-bold text-slate-500 uppercase tracking-widest text-[10px]">
                   Opening Balance <span class="ml-2 font-normal lowercase opacity-60">(before {{ ledgerData.from_date }})</span>
                 </td>
                 <td class="px-6 py-3 text-right font-mono font-black text-slate-400 bg-slate-800/30">
@@ -154,14 +175,6 @@
                 @click="onRowClick(entry)"
               >
                 <td class="px-6 py-3 font-mono text-slate-400">{{ entry.date }}</td>
-                <td class="px-6 py-3">
-                  <span 
-                    class="rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-tight"
-                    :class="entry.voucher_type === 'Quotation' ? 'bg-amber-500/20 text-amber-400' : 'bg-indigo-500/20 text-indigo-400'"
-                  >
-                    {{ entry.voucher_type === 'Quotation' ? 'QUOTE' : 'DUMMY' }}
-                  </span>
-                </td>
                 <td class="px-6 py-3 font-mono text-blue-400 font-bold underline decoration-blue-400/30 underline-offset-2">{{ entry.voucher_no }}</td>
                 <td class="px-6 py-3 text-right font-mono font-bold text-green-400">
                   {{ entry.debit ? '₹' + fmt(entry.debit) : '—' }}
@@ -174,7 +187,7 @@
                 </td>
               </tr>
               <tr v-if="!ledgerData.entries.length" class="h-32 text-center text-slate-600 italic">
-                <td colspan="6">No entries found for this period.</td>
+                <td colspan="5">No entries found for this period.</td>
               </tr>
             </tbody>
           </table>
@@ -251,6 +264,13 @@
       @close="showCustomerSearchModal = false"
       @select="pickCustomer"
     />
+    <!-- PRINT MODAL -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="printKey"
+      :doctype="''"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
@@ -259,6 +279,8 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import { utils, writeFile } from 'xlsx'
 
 const router = useRouter()
 const API = 'ssplbilling.api.gst_ledger_api'
@@ -271,9 +293,15 @@ const loading = ref(false)
 const ledgerData = ref(null)
 const selectedEntry = ref(null)
 const showCustomerSearchModal = ref(false)
+const showPrintModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
 
 // ── COMPUTED ─────────────────────────────────────────────────────────
+const printKey = computed(() => {
+  if (!selectedCustomer.value) return ''
+  return `${selectedCustomer.value.name}||${fromDate.value}||${toDate.value}||Gst Ledger`
+})
+
 const dynamicRowStyle = computed(() => ({
   fontSize: `${(14 * zoomPercent.value) / 100}px`,
   paddingTop: `${(4 * zoomPercent.value) / 100}px`,
@@ -318,6 +346,35 @@ async function loadLedger() {
 
 function onRowClick(entry) {
   selectedEntry.value = entry
+}
+
+// ── EXPORT EXCEL ───────────────────────────────────────────────────────
+function exportExcel() {
+  if (!ledgerData.value || !ledgerData.value.entries.length) return
+
+  const headers = ['Date', 'Voucher No', 'Debit', 'Credit', 'Balance']
+  const data = ledgerData.value.entries.map(e => [
+    e.date,
+    e.voucher_no,
+    e.debit || 0,
+    e.credit || 0,
+    e.balance || 0
+  ])
+
+  // Add opening balance at the top
+  data.unshift(['', 'Opening Balance', '', '', ledgerData.value.opening_balance])
+
+  const wb = utils.book_new()
+  const ws = utils.aoa_to_sheet([headers, ...data])
+  
+  ws['!cols'] = [
+    { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+  ]
+
+  utils.book_append_sheet(wb, ws, 'GST Ledger')
+  
+  const custName = selectedCustomer.value?.customer_name || selectedCustomer.value?.name || 'Customer'
+  writeFile(wb, `GST_Ledger_${custName}_${fromDate.value}_to_${toDate.value}.xlsx`)
 }
 
 function openInErpNext(type, name) {
