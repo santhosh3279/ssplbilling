@@ -997,7 +997,7 @@ async function submitAllocation() {
       selectedInvoice.value.outstanding_amount = res.outstanding
       selectedInvoice.value.posting_date = res.posting_date
       selectedInvoice.value.due_date = res.due_date
-      
+
       // Update sidebar list if needed
       const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
       if (idx !== -1) {
@@ -1005,8 +1005,21 @@ async function submitAllocation() {
       }
 
       unallocatedPayments.value = []
-      successMsg.value = "Payment allocated successfully!"
-      setTimeout(() => successMsg.value = '', 3000)
+
+      const remaining = parseFloat((res.outstanding || 0).toFixed(2))
+
+      if (remaining <= 0.01) {
+        // Advances fully cover the invoice — just submit
+        payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
+        successMsg.value = "Advances cover full amount. Click Post Settlement to finalise."
+        nextTick(() => postButton.value?.focus())
+      } else {
+        // Pre-fill cash with the remaining balance and guide user to payment fields
+        payments.value = { cash: remaining, upi: 0, card: 0, discount: 0 }
+        successMsg.value = `₹${fmt(remaining)} remaining after advance allocation.`
+        nextTick(() => { cashInput.value?.focus(); cashInput.value?.select() })
+      }
+      setTimeout(() => successMsg.value = '', 4000)
     }
   } catch (e) {
     errorMsg.value = "Allocation failed: " + e.message
@@ -1069,16 +1082,7 @@ function handleEnter(e) {
   }
 
   if (active === allocateButton.value) {
-    submitAllocation().then(() => {
-      nextTick(() => {
-        if (balance.value > 0.01) {
-          if (isCredit.value) dueDateInput.value?.focus()
-          else cashInput.value?.focus()
-        } else {
-          postButton.value?.focus()
-        }
-      })
-    })
+    submitAllocation() // focus is managed inside submitAllocation based on remaining balance
     return
   }
 
