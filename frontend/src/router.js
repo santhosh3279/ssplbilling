@@ -25,6 +25,7 @@ import LoadingReceipt from './pages/LoadingReceipt.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
 import StockReconciliation from './pages/StockReconciliation.vue'
 import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
+import GstDummyLedger from './pages/GstDummyLedger.vue'
 
 const routes = [
   {
@@ -148,6 +149,11 @@ const routes = [
     path: '/parcel-address',
     name: 'ParcelAddress',
     component: ParcelAddress,
+  },
+  {
+    path: '/gst-dummy-ledger',
+    name: 'GstDummyLedger',
+    component: GstDummyLedger,
   },
 ]
 
