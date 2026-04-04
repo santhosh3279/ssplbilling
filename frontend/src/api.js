@@ -561,6 +561,13 @@ export async function getUnlinkedEntries(partyType, party) {
   })
 }
 
+export async function getUnlinkedOppositeEntries(partyType, party) {
+  return frappeGet("ssplbilling.api.reconcile_api.get_unlinked_opposite_entries", {
+    party_type: partyType,
+    party,
+  })
+}
+
 export async function getOutstandingDocs(partyType, party) {
   return frappeGet("ssplbilling.api.reconcile_api.get_outstanding_docs", {
     party_type: partyType,
@@ -570,6 +577,14 @@ export async function getOutstandingDocs(partyType, party) {
 
 export async function postReconciliation(partyType, party, allocations) {
   return frappePost("ssplbilling.api.reconcile_api.post_reconciliation", {
+    party_type: partyType,
+    party,
+    allocations: JSON.stringify(allocations),
+  })
+}
+
+export async function postCrossReconciliation(partyType, party, allocations) {
+  return frappePost("ssplbilling.api.reconcile_api.post_cross_reconciliation", {
     party_type: partyType,
     party,
     allocations: JSON.stringify(allocations),

@@ -107,6 +107,124 @@ def get_outstanding_docs(party_type, party):
 
 
 @frappe.whitelist()
+def get_unlinked_opposite_entries(party_type, party):
+	"""Return unlinked entries that move in the OPPOSITE direction to get_unlinked_entries.
+
+	For Customer: Payment Entries of type 'Pay' (refunds out) + JE debit rows on Receivable.
+	For Supplier: Payment Entries of type 'Receive' (money back from supplier) + JE credit rows on Payable.
+	These can be cross-reconciled against the unlinked receipts from get_unlinked_entries.
+	"""
+	company = _get_company()
+	account_type = "Receivable" if party_type == "Customer" else "Payable"
+	opposite_payment_type = "Pay" if party_type == "Customer" else "Receive"
+
+	payment_entries = frappe.db.sql(
+		"""
+		SELECT name, posting_date, payment_type,
+		       paid_amount, unallocated_amount,
+		       mode_of_payment, IFNULL(remarks, '') AS remarks
+		FROM `tabPayment Entry`
+		WHERE docstatus = 1
+		      AND party_type = %s AND party = %s
+		      AND payment_type = %s
+		      AND unallocated_amount > 0.005
+		      AND company = %s
+		ORDER BY posting_date DESC
+		""",
+		(party_type, party, opposite_payment_type, company),
+		as_dict=True,
+	)
+
+	# JE rows where the party account moves the opposite way (debit for Customer, credit for Supplier)
+	je_col = "debit_in_account_currency" if party_type == "Customer" else "credit_in_account_currency"
+	je_opp = "credit_in_account_currency" if party_type == "Customer" else "debit_in_account_currency"
+	je_entries = frappe.db.sql(
+		f"""
+		SELECT jea.parent AS name,
+		       jea.name   AS reference_row,
+		       je.posting_date,
+		       IFNULL(je.cheque_no, '')     AS reference_no,
+		       IFNULL(je.user_remark, '')   AS remarks,
+		       (jea.{je_col} - jea.{je_opp}) AS unallocated_amount
+		FROM `tabJournal Entry Account` jea
+		JOIN `tabJournal Entry` je  ON je.name  = jea.parent
+		JOIN `tabAccount`       acc ON acc.name = jea.account
+		WHERE je.docstatus = 1
+		      AND jea.party_type = %s AND jea.party = %s
+		      AND jea.{je_col} > jea.{je_opp}
+		      AND (jea.reference_name IS NULL OR jea.reference_name = '')
+		      AND acc.account_type = %s
+		      AND je.company = %s
+		ORDER BY je.posting_date DESC
+		""",
+		(party_type, party, account_type, company),
+		as_dict=True,
+	)
+
+	return {
+		"payment_entries": [dict(r) for r in payment_entries],
+		"journal_entries": [dict(r) for r in je_entries],
+	}
+
+
+@frappe.whitelist()
+def post_cross_reconciliation(party_type, party, allocations):
+	"""Cross-reconcile a floating receipt against a floating payment (or vice versa)
+	by creating a balancing Journal Entry on the party account.
+
+	Each allocation:
+	  left_type  – "Payment Entry" | "Journal Entry"  (the receipt/credit side)
+	  left_name  – document name
+	  left_row   – JE account row name (only for JE)
+	  right_type – "Payment Entry" | "Journal Entry"  (the payment/debit side)
+	  right_name – document name
+	  right_row  – JE account row name (only for JE)
+	  amount     – amount to cross-reconcile
+	"""
+	if isinstance(allocations, str):
+		allocations = json.loads(allocations)
+
+	if not allocations:
+		frappe.throw("No allocations provided")
+
+	company = _get_company()
+	account = _get_party_account(party_type, party)
+
+	je = frappe.new_doc("Journal Entry")
+	je.company = company
+	je.posting_date = frappe.utils.today()
+	je.voucher_type = "Journal Entry"
+	je.user_remark = f"Cross-reconciliation — {party_type} {party}"
+
+	for alloc in allocations:
+		amount = float(alloc["amount"])
+		# Left side (receipt / credit entry): Dr the party account to consume it
+		je.append("accounts", {
+			"account": account,
+			"debit_in_account_currency": amount,
+			"credit_in_account_currency": 0,
+			"party_type": party_type,
+			"party": party,
+			"reference_type": alloc["left_type"],
+			"reference_name": alloc["left_name"],
+		})
+		# Right side (payment / debit entry): Cr the party account to consume it
+		je.append("accounts", {
+			"account": account,
+			"debit_in_account_currency": 0,
+			"credit_in_account_currency": amount,
+			"party_type": party_type,
+			"party": party,
+			"reference_type": alloc["right_type"],
+			"reference_name": alloc["right_name"],
+		})
+
+	je.insert()
+	je.submit()
+	return {"status": "ok", "voucher_no": je.name, "reconciled": len(allocations)}
+
+
+@frappe.whitelist()
 def post_reconciliation(party_type, party, allocations):
 	"""Reconcile unlinked payments / JEs against outstanding invoices.
 

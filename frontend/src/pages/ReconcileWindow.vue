@@ -20,7 +20,7 @@
     <!-- Search bar -->
     <div class="border-b border-slate-700 bg-slate-800/60 px-6 py-3">
       <div class="flex items-center gap-3">
-        <!-- Party type -->
+        <!-- Party type toggle -->
         <div class="flex rounded-lg border border-slate-600 overflow-hidden text-sm">
           <button
             v-for="pt in partyTypes"
@@ -76,8 +76,8 @@
     <!-- Body -->
     <div class="flex flex-1 overflow-hidden">
 
-      <!-- LEFT: Unlinked Payments -->
-      <div class="flex w-[340px] shrink-0 flex-col border-r border-slate-700">
+      <!-- LEFT: Unlinked receipts / credits -->
+      <div class="flex w-[300px] shrink-0 flex-col border-r border-slate-700">
         <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
           Unlinked Payments
           <span v-if="unlinkedTotal > 0" class="ml-1.5 text-violet-400">₹{{ fmt(unlinkedTotal) }}</span>
@@ -91,21 +91,20 @@
             <p class="py-8 text-center text-xs text-slate-500">No unlinked entries</p>
           </template>
 
-          <!-- Payment Entries -->
           <div v-if="unlinkedData.payment_entries.length" class="mb-2">
             <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Payment Entries</div>
             <div
               v-for="pe in unlinkedData.payment_entries"
               :key="pe.name"
-              @click="selectPayment({ type: 'Payment Entry', ...pe, available: remainingOnPayment(pe.name, null) })"
+              @click="selectPayment({ type: 'Payment Entry', ...pe })"
               class="cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all"
-              :class="activePayment?.name === pe.name
+              :class="activePayment?.name === pe.name && !activePayment?.reference_row
                 ? 'border-violet-500 bg-violet-900/30 text-white'
                 : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 hover:bg-slate-700'"
             >
               <div class="flex items-center justify-between">
                 <span class="font-mono font-semibold">{{ pe.name }}</span>
-                <span class="font-mono font-bold text-green-400">₹{{ fmt(remainingOnPayment(pe.name, null)) }}</span>
+                <span class="font-mono font-bold text-green-400">₹{{ fmt(leftRemaining(pe.name, null)) }}</span>
               </div>
               <div class="mt-0.5 flex items-center justify-between text-[10px] text-slate-500">
                 <span>{{ pe.posting_date }}</span>
@@ -114,13 +113,12 @@
             </div>
           </div>
 
-          <!-- Journal Entries -->
           <div v-if="unlinkedData.journal_entries.length">
             <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Journal Entries</div>
             <div
               v-for="je in unlinkedData.journal_entries"
               :key="je.reference_row"
-              @click="selectPayment({ type: 'Journal Entry', name: je.name, reference_row: je.reference_row, unallocated_amount: je.unallocated_amount, posting_date: je.posting_date, remarks: je.remarks, available: remainingOnPayment(je.name, je.reference_row) })"
+              @click="selectPayment({ type: 'Journal Entry', name: je.name, reference_row: je.reference_row, unallocated_amount: je.unallocated_amount, posting_date: je.posting_date, remarks: je.remarks })"
               class="cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all"
               :class="activePayment?.reference_row === je.reference_row
                 ? 'border-violet-500 bg-violet-900/30 text-white'
@@ -128,7 +126,7 @@
             >
               <div class="flex items-center justify-between">
                 <span class="font-mono font-semibold">{{ je.name }}</span>
-                <span class="font-mono font-bold text-green-400">₹{{ fmt(remainingOnPayment(je.name, je.reference_row)) }}</span>
+                <span class="font-mono font-bold text-green-400">₹{{ fmt(leftRemaining(je.name, je.reference_row)) }}</span>
               </div>
               <div class="mt-0.5 flex items-center justify-between text-[10px] text-slate-500">
                 <span>{{ je.posting_date }}</span>
@@ -142,24 +140,44 @@
         <div v-if="activePayment" class="border-t border-violet-700/40 bg-violet-900/20 px-4 py-2 text-xs">
           <div class="font-semibold text-violet-300">Selected: {{ activePayment.name }}</div>
           <div class="text-[10px] text-violet-400">
-            Available: ₹{{ fmt(activePayment.available) }} — click invoices to allocate
+            Available: ₹{{ fmt(leftRemainingForActive) }} — click to allocate →
           </div>
         </div>
       </div>
 
-      <!-- CENTRE: Outstanding Invoices -->
+      <!-- CENTRE: Outstanding Invoices OR Opposite Entries -->
       <div class="flex flex-1 flex-col border-r border-slate-700">
-        <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          Outstanding {{ outstandingDocType }}s
-          <span v-if="outstandingTotal > 0" class="ml-1.5 text-orange-400">₹{{ fmt(outstandingTotal) }}</span>
+        <!-- Tab toggle -->
+        <div class="flex items-center gap-0 border-b border-slate-700 bg-slate-800/40">
+          <button
+            @click="rightMode = 'invoices'"
+            class="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors"
+            :class="rightMode === 'invoices'
+              ? 'border-b-2 border-violet-500 text-violet-300 bg-slate-800/60'
+              : 'text-slate-500 hover:text-slate-300'"
+          >
+            Outstanding Invoices
+            <span v-if="outstandingTotal > 0" class="ml-1 text-orange-400">₹{{ fmt(outstandingTotal) }}</span>
+          </button>
+          <button
+            @click="rightMode = 'entries'"
+            class="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors"
+            :class="rightMode === 'entries'
+              ? 'border-b-2 border-amber-500 text-amber-300 bg-slate-800/60'
+              : 'text-slate-500 hover:text-slate-300'"
+          >
+            Unlinked {{ partyType === 'Supplier' ? 'Receipts' : 'Payments' }}
+            <span v-if="oppositeTotal > 0" class="ml-1 text-amber-400">₹{{ fmt(oppositeTotal) }}</span>
+          </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-3">
+        <!-- INVOICES MODE -->
+        <div v-if="rightMode === 'invoices'" class="flex-1 overflow-y-auto p-3">
           <template v-if="!fetched">
             <p class="py-8 text-center text-xs text-slate-500">Search a party and click Fetch</p>
           </template>
           <template v-else-if="outstandingData.docs.length === 0">
-            <p class="py-8 text-center text-xs text-slate-500">No outstanding documents</p>
+            <p class="py-8 text-center text-xs text-slate-500">No outstanding invoices</p>
           </template>
           <table v-else class="w-full text-xs">
             <thead>
@@ -181,15 +199,15 @@
                 <td class="py-1.5 font-mono text-slate-200">{{ doc.name }}</td>
                 <td class="py-1.5 text-slate-400">{{ doc.posting_date }}</td>
                 <td class="py-1.5 text-right font-mono text-slate-300">₹{{ fmt(doc.grand_total) }}</td>
-                <td class="py-1.5 text-right font-mono text-orange-400">₹{{ fmt(remainingOutstanding(doc.name)) }}</td>
+                <td class="py-1.5 text-right font-mono text-orange-400">₹{{ fmt(invoiceRemaining(doc.name)) }}</td>
                 <td class="py-1.5 text-right font-mono text-violet-400">
-                  <span v-if="allocatedToDoc(doc.name) > 0">₹{{ fmt(allocatedToDoc(doc.name)) }}</span>
+                  <span v-if="allocatedToInvoice(doc.name) > 0">₹{{ fmt(allocatedToInvoice(doc.name)) }}</span>
                   <span v-else class="text-slate-600">—</span>
                 </td>
                 <td class="py-1.5 pl-2">
                   <button
-                    v-if="activePayment && remainingOutstanding(doc.name) > 0.005 && activePayment.available > 0.005"
-                    @click="addAllocation(doc)"
+                    v-if="activePayment && invoiceRemaining(doc.name) > 0.005 && leftRemainingForActive > 0.005"
+                    @click="addInvoiceAllocation(doc)"
                     class="rounded bg-violet-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-violet-600"
                   >+ Add</button>
                 </td>
@@ -197,9 +215,72 @@
             </tbody>
           </table>
         </div>
+
+        <!-- ENTRIES MODE (cross-reconcile) -->
+        <div v-else class="flex-1 overflow-y-auto p-3 space-y-1.5">
+          <div class="mb-2 rounded bg-amber-900/20 border border-amber-700/30 px-3 py-2 text-[10px] text-amber-400">
+            Match a floating receipt (left) against a floating {{ partyType === 'Supplier' ? 'receipt from supplier' : 'refund/payment' }} (here) to net them off via a reconciling Journal Entry.
+          </div>
+          <template v-if="!fetched">
+            <p class="py-8 text-center text-xs text-slate-500">Search a party and click Fetch</p>
+          </template>
+          <template v-else-if="allOpposite.length === 0">
+            <p class="py-8 text-center text-xs text-slate-500">
+              No unlinked {{ partyType === 'Supplier' ? 'receipt' : 'payment/refund' }} entries
+            </p>
+          </template>
+
+          <div v-if="oppositeData.payment_entries.length" class="mb-2">
+            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Payment Entries</div>
+            <div
+              v-for="pe in oppositeData.payment_entries"
+              :key="pe.name"
+              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="font-mono font-semibold text-amber-300">{{ pe.name }}</span>
+                  <span class="ml-2 text-[10px] text-slate-500">{{ pe.posting_date }} · {{ pe.mode_of_payment }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(pe.name, null)) }}</span>
+                  <button
+                    v-if="activePayment && rightRemaining(pe.name, null) > 0.005 && leftRemainingForActive > 0.005"
+                    @click="addCrossAllocation({ type: 'Payment Entry', name: pe.name, reference_row: null, unallocated_amount: pe.unallocated_amount })"
+                    class="rounded bg-amber-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-amber-600"
+                  >+ Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="oppositeData.journal_entries.length">
+            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Journal Entries</div>
+            <div
+              v-for="je in oppositeData.journal_entries"
+              :key="je.reference_row"
+              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="font-mono font-semibold text-amber-300">{{ je.name }}</span>
+                  <span class="ml-2 text-[10px] text-slate-500">{{ je.posting_date }} · {{ je.remarks || je.reference_no }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(je.name, je.reference_row)) }}</span>
+                  <button
+                    v-if="activePayment && rightRemaining(je.name, je.reference_row) > 0.005 && leftRemainingForActive > 0.005"
+                    @click="addCrossAllocation({ type: 'Journal Entry', name: je.name, reference_row: je.reference_row, unallocated_amount: je.unallocated_amount })"
+                    class="rounded bg-amber-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-amber-600"
+                  >+ Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- RIGHT: Allocations -->
+      <!-- RIGHT: Allocation Preview -->
       <div class="flex w-[360px] shrink-0 flex-col">
         <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
           Allocation Preview
@@ -209,33 +290,54 @@
         <div class="flex-1 overflow-y-auto p-3">
           <template v-if="allocations.length === 0">
             <p class="py-8 text-center text-xs text-slate-500">
-              Select a payment on the left, then click "+ Add" on an invoice
+              Select a payment on the left, then click "+ Add"
             </p>
           </template>
           <div v-else class="space-y-1.5">
             <div
               v-for="(alloc, i) in allocations"
               :key="i"
-              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs"
+              class="rounded-lg border px-3 py-2 text-xs"
+              :class="alloc.mode === 'cross' ? 'border-amber-700/40 bg-amber-900/10' : 'border-slate-700 bg-slate-800'"
             >
-              <div class="mb-1.5 flex items-center justify-between">
-                <div>
-                  <span class="text-[9px] text-slate-500">{{ alloc.payment_type }}</span>
-                  <div class="font-mono font-semibold text-violet-300">{{ alloc.payment_name }}</div>
+              <!-- Cross-reconcile row -->
+              <template v-if="alloc.mode === 'cross'">
+                <div class="mb-1.5 flex items-center justify-between">
+                  <span class="text-[9px] font-bold uppercase text-amber-500">Cross-Reconcile</span>
+                  <button @click="removeAllocation(i)" class="text-slate-500 hover:text-red-400">✕</button>
                 </div>
-                <button @click="removeAllocation(i)" class="text-slate-500 hover:text-red-400">✕</button>
-              </div>
-              <div class="mb-1.5">
-                <span class="text-[9px] text-slate-500">{{ alloc.invoice_type }}</span>
-                <div class="font-mono text-slate-200">{{ alloc.invoice_name }}</div>
-              </div>
+                <div class="mb-1 flex items-center gap-2 text-[10px]">
+                  <div class="flex-1 rounded bg-violet-900/30 px-2 py-1">
+                    <div class="text-violet-400">{{ alloc.left_type }}</div>
+                    <div class="font-mono font-semibold text-white">{{ alloc.left_name }}</div>
+                  </div>
+                  <span class="text-slate-500">↔</span>
+                  <div class="flex-1 rounded bg-amber-900/30 px-2 py-1">
+                    <div class="text-amber-400">{{ alloc.right_type }}</div>
+                    <div class="font-mono font-semibold text-white">{{ alloc.right_name }}</div>
+                  </div>
+                </div>
+              </template>
+              <!-- Invoice reconcile row -->
+              <template v-else>
+                <div class="mb-1.5 flex items-center justify-between">
+                  <div>
+                    <span class="text-[9px] text-slate-500">{{ alloc.payment_type }}</span>
+                    <div class="font-mono font-semibold text-violet-300">{{ alloc.payment_name }}</div>
+                  </div>
+                  <button @click="removeAllocation(i)" class="text-slate-500 hover:text-red-400">✕</button>
+                </div>
+                <div class="mb-1.5">
+                  <span class="text-[9px] text-slate-500">{{ alloc.invoice_type }}</span>
+                  <div class="font-mono text-slate-200">{{ alloc.invoice_name }}</div>
+                </div>
+              </template>
               <div class="flex items-center gap-2">
                 <span class="text-[10px] text-slate-400 shrink-0">Amount ₹</span>
                 <input
                   v-model.number="alloc.amount"
                   type="number"
                   min="0.01"
-                  :max="alloc.unreconciled_amount"
                   @change="clampAlloc(alloc)"
                   class="w-full rounded border border-slate-600 bg-slate-700 px-2 py-0.5 text-right font-mono text-sm text-white focus:border-violet-500 focus:outline-none"
                 />
@@ -244,7 +346,7 @@
           </div>
         </div>
 
-        <!-- Footer: total + post button -->
+        <!-- Footer -->
         <div class="border-t border-slate-700 bg-slate-800/60 p-4 space-y-3">
           <div class="flex items-center justify-between text-sm">
             <span class="text-slate-400">Total Reconciling</span>
@@ -272,9 +374,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { searchCustomers } from '../customersearch.js'
-import { searchSuppliers, searchEmployees, getUnlinkedEntries, getOutstandingDocs, postReconciliation } from '../api.js'
+import {
+  searchSuppliers, searchEmployees,
+  getUnlinkedEntries, getUnlinkedOppositeEntries,
+  getOutstandingDocs,
+  postReconciliation, postCrossReconciliation,
+} from '../api.js'
 
 const emit = defineEmits(['close'])
 
@@ -285,7 +392,6 @@ const party = ref('')
 const partyQuery = ref('')
 const partyOptions = ref([])
 const partyListIdx = ref(0)
-const partyInput = ref(null)
 
 function setPartyType(pt) {
   partyType.value = pt
@@ -319,11 +425,14 @@ function selectParty(opt) {
   fetchData()
 }
 
-// ── Data fetch ────────────────────────────────────────────────────────
+// ── Data ──────────────────────────────────────────────────────────────
 const loading = ref(false)
 const fetched = ref(false)
 const error = ref('')
-const unlinkedData = ref({ payment_entries: [], journal_entries: [] })
+const rightMode = ref('invoices')   // 'invoices' | 'entries'
+
+const unlinkedData  = ref({ payment_entries: [], journal_entries: [] })
+const oppositeData  = ref({ payment_entries: [], journal_entries: [] })
 const outstandingData = ref({ doc_type: 'Sales Invoice', docs: [] })
 
 const allUnlinked = computed(() => [
@@ -333,6 +442,14 @@ const allUnlinked = computed(() => [
 const unlinkedTotal = computed(() =>
   unlinkedData.value.payment_entries.reduce((s, r) => s + parseFloat(r.unallocated_amount || 0), 0) +
   unlinkedData.value.journal_entries.reduce((s, r) => s + parseFloat(r.unallocated_amount || 0), 0)
+)
+const allOpposite = computed(() => [
+  ...oppositeData.value.payment_entries,
+  ...oppositeData.value.journal_entries,
+])
+const oppositeTotal = computed(() =>
+  oppositeData.value.payment_entries.reduce((s, r) => s + parseFloat(r.unallocated_amount || 0), 0) +
+  oppositeData.value.journal_entries.reduce((s, r) => s + parseFloat(r.unallocated_amount || 0), 0)
 )
 const outstandingDocType = computed(() => outstandingData.value.doc_type || '')
 const outstandingTotal = computed(() =>
@@ -344,11 +461,13 @@ async function fetchData() {
   loading.value = true
   error.value = ''
   try {
-    const [unlinked, outstanding] = await Promise.all([
+    const [unlinked, opposite, outstanding] = await Promise.all([
       getUnlinkedEntries(partyType.value, party.value),
+      getUnlinkedOppositeEntries(partyType.value, party.value),
       getOutstandingDocs(partyType.value, party.value),
     ])
-    unlinkedData.value = unlinked
+    unlinkedData.value  = unlinked
+    oppositeData.value  = opposite
     outstandingData.value = outstanding
     fetched.value = true
     allocations.value = []
@@ -360,72 +479,104 @@ async function fetchData() {
   }
 }
 
-// ── Allocation logic ──────────────────────────────────────────────────
-const activePayment = ref(null)   // { type, name, reference_row?, available }
-const allocations = ref([])       // array of allocation rows
+// ── Active payment selection ──────────────────────────────────────────
+const activePayment = ref(null)
 
 function selectPayment(p) {
   activePayment.value = p
 }
 
-/** Amount already allocated from a given payment (key = name + reference_row) */
-function usedOnPayment(name, referenceRow) {
-  return allocations.value
-    .filter(a => a.payment_name === name && (a.reference_row || null) === (referenceRow || null))
-    .reduce((s, a) => s + parseFloat(a.amount || 0), 0)
-}
+// ── Remaining calculations ────────────────────────────────────────────
 
-function remainingOnPayment(name, referenceRow) {
+/** Remaining available on a LEFT panel entry (receipt/credit). */
+function leftRemaining(name, referenceRow) {
   const pe = unlinkedData.value.payment_entries.find(p => p.name === name)
   const je = unlinkedData.value.journal_entries.find(j => j.name === name && j.reference_row === referenceRow)
-  const available = pe ? parseFloat(pe.unallocated_amount || 0) : je ? parseFloat(je.unallocated_amount || 0) : 0
-  return Math.max(0, available - usedOnPayment(name, referenceRow))
+  const original = parseFloat((pe || je)?.unallocated_amount || 0)
+  const used = allocations.value
+    .filter(a => {
+      if (a.mode === 'cross') return a.left_name === name && (a.left_row || null) === (referenceRow || null)
+      return a.payment_name === name && (a.reference_row || null) === (referenceRow || null)
+    })
+    .reduce((s, a) => s + parseFloat(a.amount || 0), 0)
+  return Math.max(0, original - used)
 }
 
-function allocatedToDoc(invoiceName) {
+const leftRemainingForActive = computed(() => {
+  if (!activePayment.value) return 0
+  return leftRemaining(activePayment.value.name, activePayment.value.reference_row || null)
+})
+
+/** Remaining on a RIGHT panel OPPOSITE entry (payment/debit). */
+function rightRemaining(name, referenceRow) {
+  const pe = oppositeData.value.payment_entries.find(p => p.name === name)
+  const je = oppositeData.value.journal_entries.find(j => j.name === name && j.reference_row === referenceRow)
+  const original = parseFloat((pe || je)?.unallocated_amount || 0)
+  const used = allocations.value
+    .filter(a => a.mode === 'cross' && a.right_name === name && (a.right_row || null) === (referenceRow || null))
+    .reduce((s, a) => s + parseFloat(a.amount || 0), 0)
+  return Math.max(0, original - used)
+}
+
+/** Amount of invoice already allocated in the list. */
+function allocatedToInvoice(invoiceName) {
   return allocations.value
-    .filter(a => a.invoice_name === invoiceName)
+    .filter(a => a.mode !== 'cross' && a.invoice_name === invoiceName)
     .reduce((s, a) => s + parseFloat(a.amount || 0), 0)
 }
 
-function remainingOutstanding(invoiceName) {
+/** Remaining outstanding on an invoice. */
+function invoiceRemaining(invoiceName) {
   const doc = outstandingData.value.docs.find(d => d.name === invoiceName)
   if (!doc) return 0
-  return Math.max(0, parseFloat(doc.outstanding_amount || 0) - allocatedToDoc(invoiceName))
+  return Math.max(0, parseFloat(doc.outstanding_amount || 0) - allocatedToInvoice(invoiceName))
 }
 
-function addAllocation(doc) {
+// ── Add allocations ───────────────────────────────────────────────────
+const allocations = ref([])
+
+/** Add an invoice-mode allocation row. */
+function addInvoiceAllocation(doc) {
   if (!activePayment.value) return
   const ap = activePayment.value
-  const payAvail = remainingOnPayment(ap.name, ap.reference_row || null)
-  const docAvail = remainingOutstanding(doc.name)
-  const amount = Math.min(payAvail, docAvail)
+  const amount = Math.min(leftRemainingForActive.value, invoiceRemaining(doc.name))
   if (amount < 0.005) return
-
   allocations.value.push({
+    mode: 'invoice',
     payment_type: ap.type,
     payment_name: ap.name,
     reference_row: ap.reference_row || null,
     invoice_type: outstandingDocType.value,
     invoice_name: doc.name,
     amount: parseFloat(amount.toFixed(2)),
-    unreconciled_amount: payAvail,
+    unreconciled_amount: parseFloat((ap.unallocated_amount || amount).toFixed(2)),
   })
+}
 
-  // Update the active payment's available amount
-  activePayment.value = { ...ap, available: remainingOnPayment(ap.name, ap.reference_row || null) }
+/** Add a cross-mode allocation row (payment ↔ opposite entry). */
+function addCrossAllocation(rightEntry) {
+  if (!activePayment.value) return
+  const ap = activePayment.value
+  const amount = Math.min(leftRemainingForActive.value, rightRemaining(rightEntry.name, rightEntry.reference_row || null))
+  if (amount < 0.005) return
+  allocations.value.push({
+    mode: 'cross',
+    left_type: ap.type,
+    left_name: ap.name,
+    left_row: ap.reference_row || null,
+    right_type: rightEntry.type,
+    right_name: rightEntry.name,
+    right_row: rightEntry.reference_row || null,
+    amount: parseFloat(amount.toFixed(2)),
+  })
 }
 
 function removeAllocation(i) {
   allocations.value.splice(i, 1)
-  if (activePayment.value) {
-    const ap = activePayment.value
-    activePayment.value = { ...ap, available: remainingOnPayment(ap.name, ap.reference_row || null) }
-  }
 }
 
 function clampAlloc(alloc) {
-  const max = alloc.unreconciled_amount
+  const max = alloc.unreconciled_amount || alloc.amount
   if (alloc.amount > max) alloc.amount = parseFloat(max.toFixed(2))
   if (alloc.amount < 0.01) alloc.amount = 0.01
 }
@@ -445,8 +596,20 @@ async function postReconcile() {
   postError.value = ''
   postSuccess.value = ''
   try {
-    const res = await postReconciliation(partyType.value, party.value, allocations.value)
-    postSuccess.value = `Reconciled ${res.reconciled} allocation${res.reconciled !== 1 ? 's' : ''} successfully.`
+    const invoiceAllocs = allocations.value.filter(a => a.mode !== 'cross')
+    const crossAllocs   = allocations.value.filter(a => a.mode === 'cross')
+    let reconciled = 0
+
+    if (invoiceAllocs.length) {
+      const res = await postReconciliation(partyType.value, party.value, invoiceAllocs)
+      reconciled += res.reconciled || 0
+    }
+    if (crossAllocs.length) {
+      const res = await postCrossReconciliation(partyType.value, party.value, crossAllocs)
+      reconciled += res.reconciled || 0
+    }
+
+    postSuccess.value = `Reconciled ${reconciled} allocation${reconciled !== 1 ? 's' : ''} successfully.`
     allocations.value = []
     activePayment.value = null
     setTimeout(() => fetchData(), 800)
@@ -464,7 +627,8 @@ function fmt(n) {
 
 function reset() {
   fetched.value = false
-  unlinkedData.value = { payment_entries: [], journal_entries: [] }
+  unlinkedData.value  = { payment_entries: [], journal_entries: [] }
+  oppositeData.value  = { payment_entries: [], journal_entries: [] }
   outstandingData.value = { doc_type: 'Sales Invoice', docs: [] }
   allocations.value = []
   activePayment.value = null
