@@ -75,32 +75,49 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
         as_dict=True,
     )
 
-    balance = opening_balance
-    entries = []
     total_debit = 0.0
     total_credit = 0.0
+    voucher_map = {}
 
-    # Collect unique voucher identifiers for batch fetching
-    voucher_map = {} # (type, no) -> bool
+    # Group multiple GL rows for the same voucher into a single ledger line.
+    # This consolidates split JE rows (e.g. one row per invoice reference) so
+    # the ledger shows one transaction = one line item.
+    from collections import OrderedDict
+    voucher_groups = OrderedDict()
 
     for row in entries_raw:
         debit = float(row.debit or 0)
         credit = float(row.credit or 0)
-        balance += debit - credit
         total_debit += debit
         total_credit += credit
-        entries.append(
-            {
+        key = row.voucher_no
+        if key not in voucher_groups:
+            voucher_groups[key] = {
                 "date": str(row.posting_date),
                 "voucher_type": row.voucher_type,
                 "voucher_no": row.voucher_no,
-                "debit": round(debit, 2),
-                "credit": round(credit, 2),
-                "balance": round(balance, 2),
+                "debit": 0.0,
+                "credit": 0.0,
                 "remarks": row.remarks or "",
             }
-        )
-        voucher_map[(row.voucher_type, row.voucher_no)] = True
+            voucher_map[(row.voucher_type, row.voucher_no)] = True
+        voucher_groups[key]["debit"] += debit
+        voucher_groups[key]["credit"] += credit
+
+    # Build entry list with running balance in first-occurrence order
+    balance = opening_balance
+    entries = []
+    for group in voucher_groups.values():
+        balance += group["debit"] - group["credit"]
+        entries.append({
+            "date": group["date"],
+            "voucher_type": group["voucher_type"],
+            "voucher_no": group["voucher_no"],
+            "debit": round(group["debit"], 2),
+            "credit": round(group["credit"], 2),
+            "balance": round(balance, 2),
+            "remarks": group["remarks"],
+        })
 
     # ─── BATCH FETCH VOUCHER DETAILS ───
     details_cache = {}
@@ -166,16 +183,22 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
                 }
             details_cache[parent]["items"].append(ref)
 
-    # 3. Batch fetch Journal Entry accounts
+    # 3. Batch fetch Journal Entry accounts (including reference links)
     je_names = [v[1] for v in voucher_map.keys() if v[0] == "Journal Entry"]
     if je_names:
         je_items = frappe.get_all("Journal Entry Account",
             filters={"parent": ["in", je_names]},
-            fields=["parent", "account", "debit_in_account_currency as debit", "credit_in_account_currency as credit"]
+            fields=[
+                "parent", "account",
+                "debit_in_account_currency as debit",
+                "credit_in_account_currency as credit",
+                "party_type", "party",
+                "reference_type", "reference_name",
+            ]
         )
         je_docs = frappe.get_all("Journal Entry",
             filters={"name": ["in", je_names]},
-            fields=["name", "posting_date", "total_debit", "user_remark"]
+            fields=["name", "posting_date", "total_debit", "user_remark", "cheque_no"]
         )
         je_meta = {d.name: d for d in je_docs}
 
@@ -189,10 +212,19 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
                     "posting_date": str(m.get("posting_date", "")),
                     "status": "Submitted",
                     "remarks": m.get("user_remark", ""),
+                    "reference_no": m.get("cheque_no", ""),
                     "total_amount": float(m.get("total_debit", 0)),
                     "items": []
                 }
-            details_cache[parent]["items"].append(item)
+            details_cache[parent]["items"].append({
+                "account": item.account,
+                "debit": float(item.debit or 0),
+                "credit": float(item.credit or 0),
+                "party_type": item.party_type or "",
+                "party": item.party or "",
+                "reference_type": item.reference_type or "",
+                "reference_name": item.reference_name or "",
+            })
 
     return {
         "ledger_name": ledger_name,
@@ -229,7 +261,7 @@ def get_voucher_detail(voucher_type, voucher_no):
         base["total_amount"] = float(doc.paid_amount)
         base["mode_of_payment"] = doc.mode_of_payment
     elif voucher_type == "Journal Entry":
-        base["items"] = [{"account": r.account, "debit": float(r.debit_in_account_currency), "credit": float(r.credit_in_account_currency)} for r in doc.accounts]
+        base["items"] = [{"account": r.account, "debit": float(r.debit_in_account_currency), "credit": float(r.credit_in_account_currency), "party_type": r.party_type or "", "party": r.party or "", "reference_type": r.reference_type or "", "reference_name": r.reference_name or ""} for r in doc.accounts]
         base["total_amount"] = float(doc.total_debit)
     return base
 

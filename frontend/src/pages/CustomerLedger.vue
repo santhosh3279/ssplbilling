@@ -391,6 +391,31 @@
 
               <!-- Journal Entry accounts -->
               <template v-else-if="voucherDetail.voucher_type === 'Journal Entry'">
+                <!-- Linked References section -->
+                <template v-if="voucherDetail.items.some(a => a.reference_name)">
+                  <div class="mb-2 text-[10px] font-semibold uppercase tracking-wide text-violet-400">Linked References</div>
+                  <div
+                    v-for="(acc, i) in voucherDetail.items.filter(a => a.reference_name)"
+                    :key="'ref-' + i"
+                    class="mb-1.5 flex items-center justify-between rounded bg-violet-900/30 px-3 py-2 text-xs border border-violet-700/40"
+                  >
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-[10px] text-violet-400">{{ acc.reference_type }}</span>
+                      <button
+                        @click="openInErpNext(acc.reference_type, acc.reference_name)"
+                        class="font-mono text-violet-300 hover:text-violet-100 hover:underline text-left"
+                      >{{ acc.reference_name }}</button>
+                      <span v-if="acc.party" class="text-[10px] text-slate-400">{{ acc.party_type }}: {{ acc.party }}</span>
+                    </div>
+                    <div class="flex flex-col items-end gap-0.5">
+                      <span v-if="acc.credit" class="font-mono font-semibold text-green-400">₹{{ fmt(acc.credit) }} Cr</span>
+                      <span v-if="acc.debit" class="font-mono font-semibold text-red-400">₹{{ fmt(acc.debit) }} Dr</span>
+                    </div>
+                  </div>
+                  <div class="my-2 border-t border-slate-700"></div>
+                </template>
+                <!-- All accounts breakdown -->
+                <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Accounts</div>
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="border-b border-slate-700 text-[10px] text-slate-400">
@@ -401,7 +426,10 @@
                   </thead>
                   <tbody>
                     <tr v-for="(acc, i) in voucherDetail.items" :key="i" class="border-b border-slate-700">
-                      <td class="py-1.5 text-slate-300">{{ acc.account }}</td>
+                      <td class="py-1.5 text-slate-300">
+                        {{ acc.account }}
+                        <span v-if="acc.party" class="ml-1 text-[10px] text-slate-500">({{ acc.party }})</span>
+                      </td>
                       <td class="py-1.5 text-right font-mono text-red-400">
                         <span v-if="acc.debit">₹{{ fmt(acc.debit) }}</span>
                         <span v-else class="text-slate-600">—</span>
