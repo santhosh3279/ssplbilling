@@ -973,8 +973,8 @@ function handleEnter(e) {
     if (active === cashInput.value) {
       upiInput.value?.focus()
     } else if (active === upiInput.value) {
-      bankInput.value?.focus()
-    } else if (active === bankInput.value) {
+      cardInput.value?.focus()
+    } else if (active === cardInput.value) {
       discountInput.value?.focus()
     } else if (active === discountInput.value) {
       processPayment()
