@@ -272,87 +272,152 @@
       </div>
     </div>
 
-    <!-- OUTSTANDING INVOICES MODAL -->
+    <!-- OUTSTANDING INVOICES / RECONCILIATION MODAL -->
     <div v-if="showOutstandingModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="confirmOutstanding">
-      <div class="w-[780px] max-h-[85vh] flex flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
+      <div class="w-[860px] max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-4">
           <div>
-            <div class="text-base font-bold text-slate-100">Outstanding Bills</div>
+            <div class="text-base font-bold text-slate-100">Reconciliation Overview</div>
             <div class="text-xs text-slate-400 mt-0.5">
-              {{ rows[0].account_name }} &mdash; {{ outstandingInvoices.length }} pending bill{{ outstandingInvoices.length !== 1 ? 's' : '' }}
+              {{ rows[0].account_name }}
+              <span v-if="outstandingInvoices.length"> &mdash; {{ outstandingInvoices.length }} pending bill{{ outstandingInvoices.length !== 1 ? 's' : '' }}</span>
+              <span v-if="unlinkedPayments.length" class="text-violet-400"> &middot; {{ unlinkedPayments.length }} unlinked payment{{ unlinkedPayments.length !== 1 ? 's' : '' }}</span>
             </div>
           </div>
           <div class="flex items-center gap-4">
             <div class="text-right">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Amount Entered</div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">New Receipt</div>
               <div class="font-mono text-2xl font-bold text-blue-400">₹{{ fmt(isReceipt ? rows[0].credit : rows[0].debit) }}</div>
             </div>
+            <div v-if="unlinkedPayments.length" class="text-right border-l border-slate-700 pl-4">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-violet-400">Unlinked Float</div>
+              <div class="font-mono text-2xl font-bold text-violet-400">₹{{ fmt(unlinkedTotal) }}</div>
+            </div>
             <div class="text-right border-l border-slate-700 pl-4">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Allocated</div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Allocating</div>
               <div class="font-mono text-2xl font-bold" :class="outstandingAllocatedTotal > (isReceipt ? rows[0].credit : rows[0].debit) + 0.005 ? 'text-red-400' : 'text-emerald-400'">
                 ₹{{ fmt(outstandingAllocatedTotal) }}
               </div>
             </div>
-            <div class="text-right border-l border-slate-700 pl-4">
+            <div v-if="outstandingInvoices.length" class="text-right border-l border-slate-700 pl-4">
               <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Outstanding</div>
               <div class="font-mono text-2xl font-bold text-amber-400">₹{{ fmt(outstandingInvoices.reduce((s, i) => s + i.outstanding_amount, 0)) }}</div>
             </div>
           </div>
         </div>
 
-        <!-- Invoice List -->
+        <!-- Reconciliation hint when both exist -->
+        <div
+          v-if="unlinkedPayments.length > 0 && outstandingInvoices.length > 0"
+          class="flex items-center gap-2 bg-violet-900/20 border-b border-violet-800/40 px-6 py-2 text-[11px] font-bold text-violet-300"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          This customer has ₹{{ fmt(unlinkedTotal) }} in unlinked payments. Use Cashier Desk to reconcile them against the outstanding bills below.
+        </div>
+
+        <!-- Scrollable body -->
         <div class="flex-1 overflow-y-auto">
-          <table class="w-full border-collapse">
-            <thead class="sticky top-0 bg-slate-800 border-b border-slate-700">
-              <tr class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                <th class="px-4 py-2 text-left">Invoice</th>
-                <th class="px-4 py-2 text-left">Date</th>
-                <th class="px-4 py-2 text-center">Days</th>
-                <th class="px-4 py-2 text-right">Invoice Amt</th>
-                <th class="px-4 py-2 text-right">Outstanding</th>
-                <th class="px-4 py-2 text-right">Allocate</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-              <tr v-for="(inv, i) in outstandingInvoices" :key="inv.name"
-                class="transition-colors" :class="inv._alloc > 0 ? 'bg-blue-900/10' : 'hover:bg-slate-800/40'">
-                <td class="px-4 py-2 font-mono text-sm font-bold text-blue-400">{{ inv.name }}</td>
-                <td class="px-4 py-2 text-sm text-slate-400 whitespace-nowrap">{{ inv.posting_date }}</td>
-                <td class="px-4 py-2 text-center">
-                  <span class="rounded-full px-2 py-0.5 text-xs font-bold"
-                    :class="inv._days > 90 ? 'bg-red-900/40 text-red-400' : inv._days > 30 ? 'bg-amber-900/40 text-amber-400' : 'bg-slate-700 text-slate-400'">
-                    {{ inv._days }}d
-                  </span>
-                </td>
-                <td class="px-4 py-2 text-right font-mono text-sm text-slate-400">₹{{ fmt(inv.grand_total) }}</td>
-                <td class="px-4 py-2 text-right font-mono font-bold text-amber-400">₹{{ fmt(inv.outstanding_amount) }}</td>
-                <td class="px-3 py-1.5 text-right">
-                  <input
-                    v-model.number="inv._alloc"
-                    type="number"
-                    min="0"
-                    :max="inv.outstanding_amount"
-                    step="0.01"
-                    :ref="el => { if (el) outstandingAllocRefs[i] = el }"
-                    @focus="e => e.target.select()"
-                    @keydown.enter.prevent="focusNextAllocOrProceed(i)"
-                    class="w-28 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-sm font-bold text-slate-100 outline-none focus:border-blue-500 focus:bg-slate-700"
-                    placeholder="0.00"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+          <!-- OUTSTANDING BILLS section -->
+          <div v-if="outstandingInvoices.length > 0">
+            <div class="sticky top-0 z-10 bg-slate-800/90 backdrop-blur-sm px-6 py-2 border-b border-slate-700">
+              <span class="text-[10px] font-black uppercase tracking-widest text-amber-400">Outstanding Bills</span>
+            </div>
+            <table class="w-full border-collapse">
+              <thead class="bg-slate-800 border-b border-slate-700">
+                <tr class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <th class="px-4 py-2 text-left">Invoice</th>
+                  <th class="px-4 py-2 text-left">Date</th>
+                  <th class="px-4 py-2 text-center">Days</th>
+                  <th class="px-4 py-2 text-right">Invoice Amt</th>
+                  <th class="px-4 py-2 text-right">Outstanding</th>
+                  <th class="px-4 py-2 text-right">Allocate (New Receipt)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800">
+                <tr v-for="(inv, i) in outstandingInvoices" :key="inv.name"
+                  class="transition-colors" :class="inv._alloc > 0 ? 'bg-blue-900/10' : 'hover:bg-slate-800/40'">
+                  <td class="px-4 py-2 font-mono text-sm font-bold text-blue-400">{{ inv.name }}</td>
+                  <td class="px-4 py-2 text-sm text-slate-400 whitespace-nowrap">{{ inv.posting_date }}</td>
+                  <td class="px-4 py-2 text-center">
+                    <span class="rounded-full px-2 py-0.5 text-xs font-bold"
+                      :class="inv._days > 90 ? 'bg-red-900/40 text-red-400' : inv._days > 30 ? 'bg-amber-900/40 text-amber-400' : 'bg-slate-700 text-slate-400'">
+                      {{ inv._days }}d
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 text-right font-mono text-sm text-slate-400">₹{{ fmt(inv.grand_total) }}</td>
+                  <td class="px-4 py-2 text-right font-mono font-bold text-amber-400">₹{{ fmt(inv.outstanding_amount) }}</td>
+                  <td class="px-3 py-1.5 text-right">
+                    <input
+                      v-model.number="inv._alloc"
+                      type="number"
+                      min="0"
+                      :max="inv.outstanding_amount"
+                      step="0.01"
+                      :ref="el => { if (el) outstandingAllocRefs[i] = el }"
+                      @focus="e => e.target.select()"
+                      @keydown.enter.prevent="focusNextAllocOrProceed(i)"
+                      class="w-32 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-sm font-bold text-slate-100 outline-none focus:border-blue-500 focus:bg-slate-700"
+                      placeholder="0.00"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- UNLINKED PAYMENTS section -->
+          <div v-if="unlinkedPayments.length > 0">
+            <div class="sticky top-0 z-10 bg-slate-800/90 backdrop-blur-sm px-6 py-2 border-b border-violet-800/30" :class="outstandingInvoices.length ? 'border-t border-slate-700 mt-2' : ''">
+              <span class="text-[10px] font-black uppercase tracking-widest text-violet-400">Unlinked Payments (Floating)</span>
+            </div>
+            <table class="w-full border-collapse">
+              <thead class="bg-slate-800 border-b border-slate-700">
+                <tr class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <th class="px-4 py-2 text-left">Reference</th>
+                  <th class="px-4 py-2 text-left">Date</th>
+                  <th class="px-4 py-2 text-left">Mode</th>
+                  <th class="px-4 py-2 text-right">Unlinked Amount</th>
+                  <th class="px-4 py-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800">
+                <tr v-for="pe in unlinkedPayments" :key="pe.name + (pe.reference_row || '')"
+                  class="hover:bg-slate-800/40 transition-colors">
+                  <td class="px-4 py-2 font-mono text-sm font-bold text-violet-400">{{ pe.name }}</td>
+                  <td class="px-4 py-2 text-sm text-slate-400 whitespace-nowrap">{{ pe.posting_date }}</td>
+                  <td class="px-4 py-2 text-sm text-slate-400">{{ pe.mode_of_payment }}</td>
+                  <td class="px-4 py-2 text-right font-mono font-bold text-violet-300">₹{{ fmt(pe.unallocated_amount) }}</td>
+                  <td class="px-4 py-2">
+                    <span class="rounded-full bg-violet-900/30 border border-violet-700/40 px-2 py-0.5 text-[10px] font-bold text-violet-400 uppercase tracking-wider">
+                      Unreconciled
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty state when neither exists (shouldn't normally show but guard) -->
+          <div v-if="!outstandingInvoices.length && !unlinkedPayments.length" class="flex flex-col items-center justify-center py-16 text-slate-600">
+            <div class="text-sm font-bold">No outstanding bills or unlinked payments</div>
+          </div>
+
         </div>
 
         <!-- Footer -->
         <div class="flex items-center justify-between border-t border-slate-700 bg-slate-800/50 px-6 py-3">
           <div class="text-xs text-slate-500">
-            Enter amount to allocate per bill &middot; Enter on last row proceeds
+            <span v-if="outstandingInvoices.length">Enter amount to allocate per bill · Enter on last row proceeds</span>
+            <span v-else class="text-violet-400">No outstanding bills. Unlinked payments shown for reference.</span>
           </div>
           <div class="flex items-center gap-3">
-            <button @click="outstandingInvoices.forEach(i => i._alloc = 0)" class="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-800 transition-all">
+            <button
+              v-if="outstandingInvoices.length"
+              @click="outstandingInvoices.forEach(i => i._alloc = 0)"
+              class="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-800 transition-all"
+            >
               Clear
             </button>
             <button
@@ -518,10 +583,14 @@ const errorBlink = ref(false)
 const blinkCell = ref(null)
 const showOutstandingModal = ref(false)
 const outstandingInvoices = ref([])
+const unlinkedPayments = ref([])
 const outstandingProceedBtn = ref(null)
 const outstandingAllocRefs = []
 const outstandingAllocatedTotal = computed(() =>
   outstandingInvoices.value.reduce((s, i) => s + (Number(i._alloc) || 0), 0)
+)
+const unlinkedTotal = computed(() =>
+  unlinkedPayments.value.reduce((s, p) => s + (Number(p.unallocated_amount) || 0), 0)
 )
 
 // Template Refs
@@ -667,10 +736,18 @@ async function fetchAndShowOutstanding() {
   const partyType = row0.account_type || (entryType.value === 'Receipt' ? 'Customer' : 'Supplier')
   if (!['Customer', 'Supplier', 'Employee'].includes(partyType)) return false
   try {
-    const res = await frappeGet('ssplbilling.api.ledgerentry_api.get_outstanding_invoices', {
-      party: row0.account,
-      party_type: partyType,
-    })
+    // Fetch outstanding bills and unlinked payments in parallel (unlinked only for Customers)
+    const [res, unlinked] = await Promise.all([
+      frappeGet('ssplbilling.api.ledgerentry_api.get_outstanding_invoices', {
+        party: row0.account,
+        party_type: partyType,
+      }),
+      partyType === 'Customer'
+        ? frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
+            customer: row0.account,
+          })
+        : Promise.resolve([])
+    ])
     const today = new Date()
     outstandingInvoices.value = (res?.invoices || [])
       .filter(i => i.outstanding_amount > 0)
@@ -679,7 +756,9 @@ async function fetchAndShowOutstanding() {
         _alloc: 0,
         _days: Math.floor((today - new Date(i.posting_date)) / 86400000),
       }))
-    if (outstandingInvoices.value.length > 0) {
+    unlinkedPayments.value = unlinked || []
+
+    if (outstandingInvoices.value.length > 0 || unlinkedPayments.value.length > 0) {
       showOutstandingModal.value = true
       nextTick(() => {
         if (outstandingAllocRefs[0]) { outstandingAllocRefs[0].focus(); outstandingAllocRefs[0].select() }
