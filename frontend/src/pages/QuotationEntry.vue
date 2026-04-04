@@ -1090,6 +1090,12 @@ function applyTaxDiscountToRow(idx) {
 watch(applyTaxDiscount, (newVal) => {
   if (newVal) {
     items.value.forEach((_, idx) => applyTaxDiscountToRow(idx))
+  } else {
+    items.value.forEach(item => {
+      if (!item.deleted && !item._is_free) {
+        item.discount = 0
+      }
+    })
   }
 })
 
