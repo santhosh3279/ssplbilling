@@ -977,6 +977,7 @@ async function submitAllocation() {
       .filter(p => (Number(p.amount_to_allocate) || 0) > 0.005)
       .map(p => ({
         reference_name: p.name,
+        reference_type: p.reference_type,
         allocated_amount: p.amount_to_allocate
       }))
 

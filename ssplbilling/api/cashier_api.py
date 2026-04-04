@@ -287,10 +287,12 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 @frappe.whitelist()
 def get_customer_unallocated_cash(customer):
-	"""Returns a list of unallocated Payment Entries for a customer."""
+	"""Returns a list of unallocated Payment Entries and Journal Entries for a customer."""
 	if not customer:
 		return []
-	return frappe.get_all(
+	
+	# 1. Payment Entries
+	pe_list = frappe.get_all(
 		"Payment Entry",
 		filters={
 			"party_type": "Customer",
@@ -299,8 +301,62 @@ def get_customer_unallocated_cash(customer):
 			"unallocated_amount": [">", 0],
 		},
 		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no"],
-		order_by="posting_date asc",
 	)
+	
+	results = []
+	for pe in pe_list:
+		results.append({
+			"name": pe.name,
+			"unallocated_amount": float(pe.unallocated_amount),
+			"posting_date": str(pe.posting_date),
+			"mode_of_payment": pe.mode_of_payment or "Cash",
+			"reference_no": pe.reference_no,
+			"reference_type": "Payment Entry"
+		})
+		
+	# 2. Journal Entries (unlinked credits to Receivable accounts for this customer)
+	je_list = frappe.db.sql("""
+		SELECT 
+			jea.parent as name, 
+			(jea.credit_in_account_currency - jea.debit_in_account_currency) as unallocated_amount,
+			je.posting_date,
+			je.cheque_no as reference_no
+		FROM `tabJournal Entry Account` jea
+		JOIN `tabJournal Entry` je ON je.name = jea.parent
+		WHERE je.docstatus = 1
+		  AND jea.party = %s
+		  AND jea.party_type = 'Customer'
+		  AND jea.credit_in_account_currency > 0
+		  AND (jea.reference_name IS NULL OR jea.reference_name = '')
+	""", (customer,), as_dict=True)
+	
+	for je in je_list:
+		# Check if it's already fully allocated by searching for GL Entries against this JE row
+		# or simpler: check if outstanding is > 0 (Journal Entry doesn't have a single 'unallocated' field easily)
+		# For simplicity in this specialized app, we assume if reference_name is empty in JEA, it's unallocated.
+		# But we should verify if it's already used in another SI's advances.
+		
+		already_used = frappe.db.sql_list("""
+			SELECT SUM(allocated_amount) FROM `tabSales Invoice Advance` 
+			WHERE reference_type = 'Journal Entry' AND reference_name = %s
+		""", (je.name,))
+		
+		used_amt = float(already_used[0] or 0) if already_used else 0
+		available = float(je.unallocated_amount) - used_amt
+		
+		if available > 0.005:
+			results.append({
+				"name": je.name,
+				"unallocated_amount": available,
+				"posting_date": str(je.posting_date),
+				"mode_of_payment": "Journal Entry",
+				"reference_no": je.reference_no,
+				"reference_type": "Journal Entry"
+			})
+			
+	# Sort by date
+	results.sort(key=lambda x: x["posting_date"])
+	return results
 
 @frappe.whitelist()
 def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
@@ -336,25 +392,40 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 				continue
 				
 			pe_name = alloc.get("reference_name")
-			# Verify PE exists and has enough unallocated amount
-			pe_data = frappe.db.get_value("Payment Entry", pe_name, ["unallocated_amount", "reference_no"], as_dict=True)
-			if not pe_data:
-				continue
+			ref_type = alloc.get("reference_type") or "Payment Entry"
+			
+			# Verify PE/JE exists
+			if ref_type == "Payment Entry":
+				pe_data = frappe.db.get_value("Payment Entry", pe_name, ["unallocated_amount", "reference_no"], as_dict=True)
+				if not pe_data: continue
 				
-			si.append("advances", {
-				"reference_type": "Payment Entry",
-				"reference_name": pe_name,
-				"remarks": f"Allocated from {pe_name} via Cashier Desk",
-				"advance_amount": pe_data.unallocated_amount,
-				"allocated_amount": amt,
-				"ref_no": pe_data.reference_no,
-			})
+				si.append("advances", {
+					"reference_type": "Payment Entry",
+					"reference_name": pe_name,
+					"remarks": f"Allocated from {pe_name} via Cashier Desk",
+					"advance_amount": pe_data.unallocated_amount,
+					"allocated_amount": amt,
+					"ref_no": pe_data.reference_no,
+				})
+			else:
+				# Journal Entry
+				je_data = frappe.db.get_value("Journal Entry", pe_name, ["total_debit", "cheque_no"], as_dict=True)
+				if not je_data: continue
+				
+				si.append("advances", {
+					"reference_type": "Journal Entry",
+					"reference_name": pe_name,
+					"remarks": f"Allocated from {pe_name} via Cashier Desk",
+					"advance_amount": amt, # Use amt as placeholder for JE advance amount
+					"allocated_amount": amt,
+					"ref_no": je_data.cheque_no,
+				})
 	else:
 		amount_left = float(total_amount or 0)
 		if amount_left <= 0:
 			si.set("advances", [])
 		else:
-			# Fetch fresh list of unallocated payments
+			# Fetch fresh list of unallocated payments (now includes JEs)
 			unallocated_payments = get_customer_unallocated_cash(si.customer)
 			
 			si.set("advances", [])
@@ -362,15 +433,15 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 				if amount_left <= 0.005:
 					break
 					
-				alloc_amount = min(float(pe_data.unallocated_amount), amount_left)
+				alloc_amount = min(float(pe_data["unallocated_amount"]), amount_left)
 				
 				si.append("advances", {
-					"reference_type": "Payment Entry",
-					"reference_name": pe_data.name,
-					"remarks": f"Allocated from {pe_data.name} via Cashier Desk",
-					"advance_amount": pe_data.unallocated_amount,
+					"reference_type": pe_data["reference_type"],
+					"reference_name": pe_data["name"],
+					"remarks": f"Allocated from {pe_data['name']} via Cashier Desk",
+					"advance_amount": pe_data["unallocated_amount"],
 					"allocated_amount": alloc_amount,
-					"ref_no": pe_data.reference_no,
+					"ref_no": pe_data["reference_no"],
 				})
 				amount_left -= alloc_amount
 
