@@ -43,38 +43,75 @@ def create_journal_contra_entry(data):
         account_type = acc.get("account_type")
         party_type = None
         party = None
-        
+        references = acc.get("references") or []
+
         # If it's a Customer, Supplier, or Employee, we need their receivable/payable account
         if account_type in ["Customer", "Supplier", "Employee"]:
             party_type = account_type
             party = row_account
             row_account = _get_party_account(party_type, party)
-            
+
         debit = float(acc.get("debit_in_account_currency") or 0)
         credit = float(acc.get("credit_in_account_currency") or 0)
 
-        # Primary Row
-        je.append("accounts", {
-            "account": row_account,
-            "debit_in_account_currency": debit,
-            "credit_in_account_currency": credit,
-            "party_type": party_type,
-            "party": party,
-            "cost_center": acc.get("cost_center"),
-            "user_remark": acc.get("user_remark")
-        })
+        if references and party_type and voucher_type != "Opening Entry":
+            # Split the party row: one JE account row per reference (with reference_type/name),
+            # plus an optional residual unlinked row for any unallocated portion.
+            is_credit_side = credit >= debit
+            base_amount = credit if is_credit_side else debit
+            total_ref_alloc = sum(float(r.get("alloc_amount") or 0) for r in references)
 
-        # If Opening Entry, user wants a second balancing row for each input
-        if voucher_type == "Opening Entry":
+            for ref in references:
+                alloc = float(ref.get("alloc_amount") or 0)
+                if alloc < 0.005:
+                    continue
+                je.append("accounts", {
+                    "account": row_account,
+                    "debit_in_account_currency": 0 if is_credit_side else alloc,
+                    "credit_in_account_currency": alloc if is_credit_side else 0,
+                    "party_type": party_type,
+                    "party": party,
+                    "reference_type": ref.get("ref_type"),
+                    "reference_name": ref.get("ref_name"),
+                    "cost_center": acc.get("cost_center"),
+                    "user_remark": acc.get("user_remark"),
+                })
+
+            residual = round(base_amount - total_ref_alloc, 2)
+            if residual > 0.005:
+                # Remaining amount that has no specific invoice link (advance / on-account)
+                je.append("accounts", {
+                    "account": row_account,
+                    "debit_in_account_currency": 0 if is_credit_side else residual,
+                    "credit_in_account_currency": residual if is_credit_side else 0,
+                    "party_type": party_type,
+                    "party": party,
+                    "cost_center": acc.get("cost_center"),
+                    "user_remark": acc.get("user_remark"),
+                })
+        else:
+            # Default: single row (existing behaviour)
             je.append("accounts", {
                 "account": row_account,
-                "debit_in_account_currency": credit, # Flipped
-                "credit_in_account_currency": debit, # Flipped
+                "debit_in_account_currency": debit,
+                "credit_in_account_currency": credit,
                 "party_type": party_type,
                 "party": party,
                 "cost_center": acc.get("cost_center"),
-                "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
+                "user_remark": acc.get("user_remark")
             })
+
+            # Opening Entry: add a balancing row for each input
+            if voucher_type == "Opening Entry":
+                je.append("accounts", {
+                    "account": row_account,
+                    "debit_in_account_currency": credit,  # Flipped
+                    "credit_in_account_currency": debit,  # Flipped
+                    "party_type": party_type,
+                    "party": party,
+                    "cost_center": acc.get("cost_center"),
+                    "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
+                })
         
     je.insert()
     je.submit()

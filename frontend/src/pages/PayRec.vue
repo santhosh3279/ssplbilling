@@ -208,6 +208,57 @@
             {{ validationError }}
           </div>
 
+          <!-- LINKED REFERENCES TABLE -->
+          <div v-if="linkedReferences.length > 0" class="rounded-xl border border-blue-800/40 bg-blue-900/10 overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-blue-800/30 bg-blue-900/20">
+              <span class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Linked to {{ linkedReferences.length }} Reference{{ linkedReferences.length !== 1 ? 's' : '' }}
+              </span>
+              <div class="flex items-center gap-4">
+                <span class="text-[10px] font-bold text-slate-400">
+                  Total Linked: <span class="text-blue-300 font-black font-mono">₹{{ fmt(totalAllocated) }}</span>
+                </span>
+                <button
+                  @click="linkedReferences = []"
+                  class="text-[10px] font-bold text-slate-500 hover:text-rose-400 transition-colors uppercase tracking-wider"
+                  tabindex="-1"
+                >Clear All</button>
+              </div>
+            </div>
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="text-[9px] font-black uppercase tracking-widest text-slate-500 border-b border-blue-800/30">
+                  <th class="px-4 py-1.5 text-left">Reference</th>
+                  <th class="px-4 py-1.5 text-left">Date</th>
+                  <th class="px-4 py-1.5 text-right">Invoice Amt</th>
+                  <th class="px-4 py-1.5 text-right">Outstanding</th>
+                  <th class="px-4 py-1.5 text-right">Allocating</th>
+                  <th class="px-4 py-1.5 w-8"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-blue-900/30">
+                <tr v-for="(ref, i) in linkedReferences" :key="ref.ref_name" class="hover:bg-blue-900/20 transition-colors">
+                  <td class="px-4 py-1.5 font-mono text-xs font-bold text-blue-400">{{ ref.ref_name }}</td>
+                  <td class="px-4 py-1.5 text-xs text-slate-400 whitespace-nowrap">{{ ref.ref_date }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xs text-slate-400">₹{{ fmt(ref.grand_total) }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xs text-amber-400">₹{{ fmt(ref.outstanding_amount) }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xs font-black text-emerald-400">₹{{ fmt(ref.alloc_amount) }}</td>
+                  <td class="px-3 py-1.5 text-center">
+                    <button
+                      @click="linkedReferences.splice(i, 1)"
+                      class="text-slate-600 hover:text-rose-400 transition-colors"
+                      tabindex="-1"
+                      title="Remove reference"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <div class="flex items-start justify-between">
             <div class="flex-1 max-w-xl">
               <div class="grid grid-cols-2 gap-4">
@@ -481,6 +532,7 @@ watch(entryType, () => {
   rows.value = [
     { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
   ]
+  linkedReferences.value = []
   activeRowIdx.value = 0
   nextTick(() => ledgerRefs[0]?.focus())
 })
@@ -584,6 +636,7 @@ const blinkCell = ref(null)
 const showOutstandingModal = ref(false)
 const outstandingInvoices = ref([])
 const unlinkedPayments = ref([])
+const linkedReferences = ref([])   // allocations confirmed from modal → shown as table in footer
 const outstandingProceedBtn = ref(null)
 const outstandingAllocRefs = []
 const outstandingAllocatedTotal = computed(() =>
@@ -591,6 +644,9 @@ const outstandingAllocatedTotal = computed(() =>
 )
 const unlinkedTotal = computed(() =>
   unlinkedPayments.value.reduce((s, p) => s + (Number(p.unallocated_amount) || 0), 0)
+)
+const totalAllocated = computed(() =>
+  linkedReferences.value.reduce((s, r) => s + (Number(r.alloc_amount) || 0), 0)
 )
 
 // Template Refs
@@ -811,9 +867,29 @@ function fillRow1Amount() {
 
 function confirmOutstanding() {
   showOutstandingModal.value = false
-  fillRow1Amount()
-  activeRowIdx.value = 1
-  openLedgerSearch(1)
+
+  const row0 = rows.value[0]
+  const partyType = row0.account_type || (entryType.value === 'Receipt' ? 'Customer' : 'Supplier')
+  const refDocType = partyType === 'Supplier' ? 'Purchase Invoice' : 'Sales Invoice'
+
+  // Collect whichever invoices the user allocated against
+  const allocs = outstandingInvoices.value.filter(i => (Number(i._alloc) || 0) > 0.005)
+  if (allocs.length > 0) {
+    linkedReferences.value = allocs.map(i => ({
+      ref_type: refDocType,
+      ref_name: i.name,
+      ref_date: i.posting_date,
+      grand_total: i.grand_total,
+      outstanding_amount: i.outstanding_amount,
+      alloc_amount: Number(i._alloc),
+    }))
+  }
+
+  if (outstandingInvoices.value.length > 0 || Number(row0.credit || row0.debit) > 0) {
+    fillRow1Amount()
+    activeRowIdx.value = 1
+    openLedgerSearch(1)
+  }
 }
 
 async function moveNext(idx, field) {
@@ -923,19 +999,28 @@ async function saveEntry() {
       cheque_no: referenceNo.value,
       accounts: rows.value
         .filter(r => r.account)
-        .map(r => ({
+        .map((r, idx) => ({
           account: r.account,
           account_type: r.account_type,
           debit_in_account_currency: r.debit,
           credit_in_account_currency: r.credit,
           cost_center: localStorage.getItem('wb-cost-center') || '',
-          user_remark: userRemarks.value
+          user_remark: userRemarks.value,
+          // Attach invoice references only to the party row (row 0)
+          ...(idx === 0 && linkedReferences.value.length > 0
+            ? { references: linkedReferences.value.map(ref => ({
+                  ref_type: ref.ref_type,
+                  ref_name: ref.ref_name,
+                  alloc_amount: ref.alloc_amount,
+                })) }
+            : {})
         }))
     }
     await frappePost('ssplbilling.api.journalcontra_api.create_journal_contra_entry', { data: payload })
     alert('Entry saved successfully!')
     userRemarks.value = ''
     referenceNo.value = ''
+    linkedReferences.value = []
     rows.value = [
       { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     ]
