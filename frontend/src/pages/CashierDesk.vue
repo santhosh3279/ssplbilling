@@ -563,7 +563,6 @@ const searchQuery = ref('')
 
 const showCardRefModal = ref(false)
 const showPrintModal = ref(false)
-const showUnallocatedModal = ref(false)
 const cardRefNo = ref('')
 const showOpeningRequiredModal = ref(false)
 
@@ -571,7 +570,6 @@ const showOpeningRequiredModal = ref(false)
 useSubwindowWatcher(showCardRefModal)
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showOpeningRequiredModal)
-useSubwindowWatcher(showUnallocatedModal)
 
 const unallocatedPayments = ref([])
 const unallocatedAmountTotal = ref(0)
