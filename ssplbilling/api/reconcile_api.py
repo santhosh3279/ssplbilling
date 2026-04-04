@@ -111,12 +111,12 @@ def post_reconciliation(party_type, party, allocations):
 	"""Reconcile unlinked payments / JEs against outstanding invoices.
 
 	Each item in `allocations`:
-	  payment_type   – "Payment Entry" | "Journal Entry"
-	  payment_name   – name of the PE or JE
-	  reference_row  – name of the JE account row (only for JE)
-	  invoice_type   – "Sales Invoice" | "Purchase Invoice"
-	  invoice_name   – name of the invoice
-	  amount         – amount to allocate
+	  payment_type        – "Payment Entry" | "Journal Entry"
+	  payment_name        – name of the PE or JE
+	  reference_row       – name of the JE account row (only for JE)
+	  invoice_type        – "Sales Invoice" | "Purchase Invoice"
+	  invoice_name        – name of the invoice
+	  amount              – amount to allocate
 	  unreconciled_amount – available unreconciled amount on the payment side
 	"""
 	if isinstance(allocations, str):
@@ -134,7 +134,25 @@ def post_reconciliation(party_type, party, allocations):
 	rec.company = company
 	rec.receivable_payable_account = account
 
+	# validate_allocation() checks self.get("invoices") to verify outstanding amounts.
+	# Populate the invoices child table with all unique invoices in the allocation list.
+	seen_invoices = {}
 	for alloc in allocations:
+		inv_name = alloc["invoice_name"]
+		inv_type = alloc["invoice_type"]
+		if inv_name not in seen_invoices:
+			outstanding = frappe.db.get_value(inv_type, inv_name, "outstanding_amount") or 0
+			seen_invoices[inv_name] = float(outstanding)
+			rec.append("invoices", {
+				"invoice_type": inv_type,
+				"invoice_number": inv_name,
+				"outstanding_amount": float(outstanding),
+			})
+
+	# Build allocation rows.
+	# ERPNext uses `invoice_number` (not `invoice_name`) and `amount` = payment unreconciled total.
+	for alloc in allocations:
+		unreconciled = float(alloc.get("unreconciled_amount") or alloc["amount"])
 		rec.append(
 			"allocation",
 			{
@@ -142,9 +160,10 @@ def post_reconciliation(party_type, party, allocations):
 				"reference_name": alloc["payment_name"],
 				"reference_row": alloc.get("reference_row") or None,
 				"invoice_type": alloc["invoice_type"],
-				"invoice_name": alloc["invoice_name"],
+				"invoice_number": alloc["invoice_name"],     # ERPNext field name
 				"allocated_amount": float(alloc["amount"]),
-				"unreconciled_amount": float(alloc.get("unreconciled_amount") or alloc["amount"]),
+				"amount": unreconciled,                      # payment's total unreconciled amount
+				"unreconciled_amount": unreconciled,
 			},
 		)
 
