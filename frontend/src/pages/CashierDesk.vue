@@ -803,7 +803,8 @@ async function selectInvoice(inv) {
 
     // Check for Unallocated Cash
     const unallocated = await frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
-      customer: details.customer
+      customer: details.customer,
+      invoice_name: details.name
     })
     
     let remaining = details.outstanding_amount || details.grand_total
@@ -977,6 +978,7 @@ async function submitAllocation() {
       .filter(p => (Number(p.amount_to_allocate) || 0) > 0.005)
       .map(p => ({
         reference_name: p.name,
+        reference_row: p.reference_row,
         reference_type: p.reference_type,
         allocated_amount: p.amount_to_allocate
       }))

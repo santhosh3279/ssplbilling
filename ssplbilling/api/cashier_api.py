@@ -286,11 +286,11 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}
 
 @frappe.whitelist()
-def get_customer_unallocated_cash(customer):
+def get_customer_unallocated_cash(customer, invoice_name=None):
 	"""Returns a list of unallocated Payment Entries and Journal Entries for a customer."""
 	if not customer:
 		return []
-	
+
 	# 1. Payment Entries
 	pe_list = frappe.get_all(
 		"Payment Entry",
@@ -302,7 +302,7 @@ def get_customer_unallocated_cash(customer):
 		},
 		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no"],
 	)
-	
+
 	results = []
 	for pe in pe_list:
 		results.append({
@@ -313,11 +313,12 @@ def get_customer_unallocated_cash(customer):
 			"reference_no": pe.reference_no,
 			"reference_type": "Payment Entry"
 		})
-		
+
 	# 2. Journal Entries (unlinked credits to Receivable accounts for this customer)
 	je_list = frappe.db.sql("""
 		SELECT 
 			jea.parent as name, 
+			jea.name as reference_row,
 			(jea.credit_in_account_currency - jea.debit_in_account_currency) as unallocated_amount,
 			je.posting_date,
 			je.cheque_no as reference_no
@@ -329,31 +330,36 @@ def get_customer_unallocated_cash(customer):
 		  AND jea.credit_in_account_currency > 0
 		  AND (jea.reference_name IS NULL OR jea.reference_name = '')
 	""", (customer,), as_dict=True)
-	
+
 	for je in je_list:
-		# Check if it's already fully allocated by searching for GL Entries against this JE row
-		# or simpler: check if outstanding is > 0 (Journal Entry doesn't have a single 'unallocated' field easily)
-		# For simplicity in this specialized app, we assume if reference_name is empty in JEA, it's unallocated.
-		# But we should verify if it's already used in another SI's advances.
-		
-		already_used = frappe.db.sql_list("""
+		# Check if it's already used in another SI's advances.
+		# Exclude current invoice if provided.
+		query = """
 			SELECT SUM(allocated_amount) FROM `tabSales Invoice Advance` 
 			WHERE reference_type = 'Journal Entry' AND reference_name = %s
-		""", (je.name,))
-		
+			  AND reference_row = %s
+		"""
+		params = [je.name, je.reference_row]
+		if invoice_name:
+			query += " AND parent != %s"
+			params.append(invoice_name)
+
+		already_used = frappe.db.sql_list(query, tuple(params))
+
 		used_amt = float(already_used[0] or 0) if already_used else 0
 		available = float(je.unallocated_amount) - used_amt
-		
+
 		if available > 0.005:
 			results.append({
 				"name": je.name,
+				"reference_row": je.reference_row,
 				"unallocated_amount": available,
 				"posting_date": str(je.posting_date),
 				"mode_of_payment": "Journal Entry",
 				"reference_no": je.reference_no,
 				"reference_type": "Journal Entry"
 			})
-			
+
 	# Sort by date
 	results.sort(key=lambda x: x["posting_date"])
 	return results
@@ -409,23 +415,35 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 				})
 			else:
 				# Journal Entry
-				# Find the unlinked receivable row for this customer in the JV
-				je_row = frappe.db.get_value("Journal Entry Account", {
-					"parent": pe_name,
-					"party_type": "Customer",
-					"party": si.customer,
-					"credit_in_account_currency": [">", 0],
-					"reference_name": ("in", ["", None])
-				}, ["name", "credit_in_account_currency", "debit_in_account_currency"], as_dict=True)
+				# Use provided reference_row or find the first unlinked receivable row for this customer in the JV
+				ref_row_name = alloc.get("reference_row")
+				
+				if ref_row_name:
+					je_row = frappe.db.get_value("Journal Entry Account", {
+						"name": ref_row_name,
+						"parent": pe_name,
+						"party_type": "Customer",
+						"party": si.customer,
+					}, ["name", "credit_in_account_currency", "debit_in_account_currency"], as_dict=True)
+				else:
+					je_row = frappe.db.get_value("Journal Entry Account", {
+						"parent": pe_name,
+						"party_type": "Customer",
+						"party": si.customer,
+						"credit_in_account_currency": [">", 0],
+						"reference_name": ("in", ["", None])
+					}, ["name", "credit_in_account_currency", "debit_in_account_currency"], as_dict=True)
 				
 				if not je_row: continue
 				
 				# Calculate actual available amount for this specific row
-				already_used = frappe.db.get_value("Sales Invoice Advance", {
-					"reference_type": "Journal Entry",
-					"reference_name": pe_name,
-					"reference_row": je_row.name
-				}, "sum(allocated_amount)") or 0
+				already_used = frappe.db.sql("""
+					SELECT SUM(allocated_amount) FROM `tabSales Invoice Advance`
+					WHERE reference_type = 'Journal Entry' 
+					  AND reference_name = %s 
+					  AND reference_row = %s
+					  AND parent != %s
+				""", (pe_name, je_row.name, si.name))[0][0] or 0
 				
 				available = (float(je_row.credit_in_account_currency) - float(je_row.debit_in_account_currency)) - float(already_used)
 				
@@ -446,7 +464,7 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 			si.set("advances", [])
 		else:
 			# Fetch fresh list of unallocated payments (now includes JEs)
-			unallocated_payments = get_customer_unallocated_cash(si.customer)
+			unallocated_payments = get_customer_unallocated_cash(si.customer, invoice_name=si.name)
 			
 			si.set("advances", [])
 			for pe_data in unallocated_payments:
@@ -455,21 +473,10 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 					
 				alloc_amount = min(float(pe_data["unallocated_amount"]), amount_left)
 				
-				# For Journal Entry, we must find the specific row name
-				reference_row = None
-				if pe_data["reference_type"] == "Journal Entry":
-					reference_row = frappe.db.get_value("Journal Entry Account", {
-						"parent": pe_data["name"],
-						"party_type": "Customer",
-						"party": si.customer,
-						"credit_in_account_currency": [">", 0],
-						"reference_name": ("in", ["", None])
-					}, "name")
-
 				si.append("advances", {
 					"reference_type": pe_data["reference_type"],
 					"reference_name": pe_data["name"],
-					"reference_row": reference_row,
+					"reference_row": pe_data.get("reference_row"),
 					"remarks": f"Allocated from {pe_data['name']} via Cashier Desk",
 					"advance_amount": pe_data["unallocated_amount"],
 					"allocated_amount": alloc_amount,
