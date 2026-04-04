@@ -535,6 +535,7 @@ function addCrossAllocation(rightEntry) {
     right_name: rightEntry.name,
     right_row: rightEntry.reference_row || null,
     amount: parseFloat(amount.toFixed(2)),
+    unreconciled_amount: parseFloat((ap.unallocated_amount || amount).toFixed(2)),
   })
 }
 

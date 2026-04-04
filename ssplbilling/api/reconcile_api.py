@@ -189,7 +189,9 @@ def post_cross_reconciliation(party_type, party, allocations):
 			"reference_row": a["left_row"],
 			"invoice_type": a["right_type"],
 			"invoice_name": a["right_name"],
-			"amount": a["amount"]
+			"right_row": a.get("right_row"), # Row on the "invoice" side
+			"amount": a["amount"],
+			"unreconciled_amount": a.get("unreconciled_amount")
 		})
 
 	return post_reconciliation(party_type, party, mapped_allocs)
@@ -206,7 +208,7 @@ def post_reconciliation(party_type, party, allocations):
 	  invoice_type        – doc type of the Debit side (Sales Invoice, PE, JE etc.)
 	  invoice_name        – name of the Debit side document
 	  amount              – amount to allocate
-	  unreconciled_amount – (Optional) available unreconciled amount on the payment side
+	  unreconciled_amount – available unreconciled balance of the payment row
 	"""
 	if isinstance(allocations, str):
 		allocations = json.loads(allocations)
@@ -230,10 +232,14 @@ def post_reconciliation(party_type, party, allocations):
 	for alloc in allocations:
 		inv_name = alloc["invoice_name"]
 		inv_type = alloc["invoice_type"]
+		
+		# For "invoice" side, we identify unique docs but also need unique rows for JEs
+		# BUT standard Payment Reconciliation only tracks unique document names in 'invoices' table.
+		# However, if we have multiple rows from same JE, we must sum them up for the tool's validation?
+		# No, the tool validates 'outstanding_amount' per invoice name.
+		
 		if inv_name not in seen_invoices:
-			# For cross-reconciliation, "invoice" might be a PE or JE. 
-			# We need to find its unallocated Debit amount (for Customer) or Credit amount (for Supplier).
-			if inv_type == "Sales Invoice" or inv_type == "Purchase Invoice":
+			if inv_type in ["Sales Invoice", "Purchase Invoice"]:
 				outstanding = frappe.db.get_value(inv_type, inv_name, "outstanding_amount") or 0
 			else:
 				# It's a Payment Entry or Journal Entry (cross-reconciliation)
@@ -241,8 +247,9 @@ def post_reconciliation(party_type, party, allocations):
 				if opposite_entries is None:
 					opposite_entries = get_unlinked_opposite_entries(party_type, party)
 				
-				matches = [x for x in opposite_entries["payment_entries"] + opposite_entries["journal_entries"] if x["name"] == inv_name]
-				outstanding = matches[0]["unallocated_amount"] if matches else alloc["amount"]
+				# Find unallocated amount for THIS document (sum of all unallocated rows in it)
+				doc_rows = [x for x in opposite_entries["payment_entries"] + opposite_entries["journal_entries"] if x["name"] == inv_name]
+				outstanding = sum([float(x["unallocated_amount"]) for x in doc_rows]) if doc_rows else alloc["amount"]
 
 			seen_invoices[inv_name] = float(outstanding)
 			rec.append("invoices", {
