@@ -332,13 +332,14 @@ const allTiles = [
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
   { id: 'stock-reconciliation', name: 'Stock Reconciliation', desc: 'Adjust stock levels', icon: '⚖️', shortcut: '', tileBg: 'bg-slate-700' },
   { id: 'gst-dummy-ledger', name: 'GST Dummy Ledger', desc: 'Manage dummy GST entries', icon: '📖', shortcut: '', tileBg: 'bg-indigo-900' },
+  { id: 'gst-ledger', name: 'GST Ledger', desc: 'View GST Quotation ledger', icon: '📜', shortcut: '', tileBg: 'bg-indigo-800' },
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
 
 const tiles = allTiles.filter(t => canAccessTile(t.id))
 
-const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger']
+const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -352,6 +353,7 @@ const routeAliases = {
   'material-transfer': '/material-transfer',
   'stock-reconciliation': '/stock-reconciliation',
   'gst-dummy-ledger': '/gst-dummy-ledger',
+  'gst-ledger': '/gst-ledger',
   'Cashier-Management': '/Cashier-Management',
   reports: '/reports',
 }

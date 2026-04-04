@@ -31,6 +31,7 @@ export const BILLER_ROUTES = new Set([
   'MaterialTransfer',
   'StockReconciliation',
   'GstDummyLedger',
+  'GstLedger',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -122,6 +123,7 @@ const TILE_ROUTE_MAP = {
   'loading-receipt':   'LoadingReceipt',
   'parcel-address':    'ParcelAddress',
   'gst-dummy-ledger':  'GstDummyLedger',
+  'gst-ledger':        'GstLedger',
   'ssplbillingsettings': 'SSPLBillingSettings',
 }
 
