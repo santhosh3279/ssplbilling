@@ -409,16 +409,36 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 				})
 			else:
 				# Journal Entry
-				je_data = frappe.db.get_value("Journal Entry", pe_name, ["total_debit", "cheque_no"], as_dict=True)
-				if not je_data: continue
+				# Find the unlinked receivable row for this customer in the JV
+				je_row = frappe.db.get_value("Journal Entry Account", {
+					"parent": pe_name,
+					"party_type": "Customer",
+					"party": si.customer,
+					"credit_in_account_currency": [">", 0],
+					"reference_name": ("in", ["", None])
+				}, ["name", "credit_in_account_currency", "debit_in_account_currency"], as_dict=True)
+				
+				if not je_row: continue
+				
+				# Calculate actual available amount for this specific row
+				already_used = frappe.db.get_value("Sales Invoice Advance", {
+					"reference_type": "Journal Entry",
+					"reference_name": pe_name,
+					"reference_row": je_row.name
+				}, "sum(allocated_amount)") or 0
+				
+				available = (float(je_row.credit_in_account_currency) - float(je_row.debit_in_account_currency)) - float(already_used)
+				
+				je_data = frappe.db.get_value("Journal Entry", pe_name, ["cheque_no"], as_dict=True)
 				
 				si.append("advances", {
 					"reference_type": "Journal Entry",
 					"reference_name": pe_name,
+					"reference_row": je_row.name, # CRITICAL for JV reconciliation
 					"remarks": f"Allocated from {pe_name} via Cashier Desk",
-					"advance_amount": amt, # Use amt as placeholder for JE advance amount
+					"advance_amount": available,
 					"allocated_amount": amt,
-					"ref_no": je_data.cheque_no,
+					"ref_no": je_data.cheque_no if je_data else "",
 				})
 	else:
 		amount_left = float(total_amount or 0)
@@ -435,9 +455,21 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 					
 				alloc_amount = min(float(pe_data["unallocated_amount"]), amount_left)
 				
+				# For Journal Entry, we must find the specific row name
+				reference_row = None
+				if pe_data["reference_type"] == "Journal Entry":
+					reference_row = frappe.db.get_value("Journal Entry Account", {
+						"parent": pe_data["name"],
+						"party_type": "Customer",
+						"party": si.customer,
+						"credit_in_account_currency": [">", 0],
+						"reference_name": ("in", ["", None])
+					}, "name")
+
 				si.append("advances", {
 					"reference_type": pe_data["reference_type"],
 					"reference_name": pe_data["name"],
+					"reference_row": reference_row,
 					"remarks": f"Allocated from {pe_data['name']} via Cashier Desk",
 					"advance_amount": pe_data["unallocated_amount"],
 					"allocated_amount": alloc_amount,
