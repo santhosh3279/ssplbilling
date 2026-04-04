@@ -315,20 +315,24 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 		})
 
 	# 2. Journal Entries (unlinked credits to Receivable accounts for this customer)
+	# We must restrict to rows whose account is a Receivable-type account so that
+	# ERPNext's reconcile_against_document can balance the GL map on invoice submit.
 	je_list = frappe.db.sql("""
-		SELECT 
-			jea.parent as name, 
+		SELECT
+			jea.parent as name,
 			jea.name as reference_row,
 			(jea.credit_in_account_currency - jea.debit_in_account_currency) as unallocated_amount,
 			je.posting_date,
 			je.cheque_no as reference_no
 		FROM `tabJournal Entry Account` jea
 		JOIN `tabJournal Entry` je ON je.name = jea.parent
+		JOIN `tabAccount` acc ON acc.name = jea.account
 		WHERE je.docstatus = 1
 		  AND jea.party = %s
 		  AND jea.party_type = 'Customer'
 		  AND jea.credit_in_account_currency > 0
 		  AND (jea.reference_name IS NULL OR jea.reference_name = '')
+		  AND acc.account_type = 'Receivable'
 	""", (customer,), as_dict=True)
 
 	for je in je_list:
@@ -436,25 +440,35 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 				
 				if not je_row: continue
 				
-				# Calculate actual available amount for this specific row
+				# advance_amount must be the full net credit of the JE row (credit - debit).
+				# ERPNext's reconcile_against_document uses this to build balanced GL entries;
+				# it tracks other invoices' allocations from the same row independently.
+				# Setting advance_amount to a reduced "available" value causes a GL imbalance.
+				full_credit = float(je_row.credit_in_account_currency) - float(je_row.debit_in_account_currency)
+
+				# Guard: don't allocate more than what's actually unallocated
 				already_used = frappe.db.sql("""
-					SELECT SUM(allocated_amount) FROM `tabSales Invoice Advance`
-					WHERE reference_type = 'Journal Entry' 
-					  AND reference_name = %s 
+					SELECT COALESCE(SUM(allocated_amount), 0) FROM `tabSales Invoice Advance`
+					WHERE reference_type = 'Journal Entry'
+					  AND reference_name = %s
 					  AND reference_row = %s
 					  AND parent != %s
 				""", (pe_name, je_row.name, si.name))[0][0] or 0
-				
-				available = (float(je_row.credit_in_account_currency) - float(je_row.debit_in_account_currency)) - float(already_used)
-				
+
+				available = full_credit - float(already_used)
+				if amt > available + 0.01:
+					amt = round(available, 2)
+				if amt <= 0.005:
+					continue
+
 				je_data = frappe.db.get_value("Journal Entry", pe_name, ["cheque_no"], as_dict=True)
-				
+
 				si.append("advances", {
 					"reference_type": "Journal Entry",
 					"reference_name": pe_name,
-					"reference_row": je_row.name, # CRITICAL for JV reconciliation
+					"reference_row": je_row.name,  # CRITICAL for JV reconciliation
 					"remarks": f"Allocated from {pe_name} via Cashier Desk",
-					"advance_amount": available,
+					"advance_amount": full_credit,   # full net credit — not reduced by other invoices
 					"allocated_amount": amt,
 					"ref_no": je_data.cheque_no if je_data else "",
 				})
