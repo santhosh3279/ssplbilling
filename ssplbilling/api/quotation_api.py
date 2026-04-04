@@ -369,13 +369,16 @@ def create_quotation(data):
 			})
 
 	for i in data.get("items", []):
-		qt.append("items", {
+		row = {
 			"item_code": i["item_code"],
 			"qty": i["qty"],
 			"rate": i.get("rate", 0),
 			"price_list_rate": i.get("price_list_rate", i.get("rate", 0)),
 			"discount_percentage": i.get("discount_percentage", 0),
-		})
+		}
+		if frappe.get_meta("Quotation Item").has_field("allow_zero_valuation_rate"):
+			row["allow_zero_valuation_rate"] = 1
+		qt.append("items", row)
 
 	qt.flags.ignore_permissions = True
 	qt.save()
@@ -436,13 +439,16 @@ def update_quotation(data):
 
 	qt.items = []
 	for i in data.get("items", []):
-		qt.append("items", {
+		row = {
 			"item_code": i["item_code"],
 			"qty": i["qty"],
 			"rate": i.get("rate", 0),
 			"price_list_rate": i.get("price_list_rate", i.get("rate", 0)),
 			"discount_percentage": i.get("discount_percentage", 0),
-		})
+		}
+		if frappe.get_meta("Quotation Item").has_field("allow_zero_valuation_rate"):
+			row["allow_zero_valuation_rate"] = 1
+		qt.append("items", row)
 
 	qt.flags.ignore_permissions = True
 	qt.save()

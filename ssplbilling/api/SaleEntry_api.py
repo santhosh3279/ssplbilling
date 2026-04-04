@@ -253,6 +253,8 @@ def create_sales_invoice(data=None, **kwargs):
             "discount_percentage": disc,
             "rate": rate,
         }
+        if frappe.get_meta("Sales Invoice Item").has_field("allow_zero_valuation_rate"):
+            row["allow_zero_valuation_rate"] = 1
         if item.get("warehouse"):
             row["warehouse"] = item["warehouse"]
         cost_center = item.get("cost_center") or data.get("cost_center") or ""
@@ -427,6 +429,8 @@ def update_sales_invoice(data=None, **kwargs):
             "discount_percentage": disc,
             "rate": rate,
         }
+        if frappe.get_meta("Sales Invoice Item").has_field("allow_zero_valuation_rate"):
+            row["allow_zero_valuation_rate"] = 1
         if item.get("warehouse"):
             row["warehouse"] = item["warehouse"]
         cost_center = item.get("cost_center") or data.get("cost_center") or ""

@@ -234,6 +234,8 @@ def create_purchase_invoice(data=None, **kwargs):
             "discount_percentage": disc,
             "rate": rate,
         }
+        if frappe.get_meta("Purchase Invoice Item").has_field("allow_zero_valuation_rate"):
+            row["allow_zero_valuation_rate"] = 1
         if item.get("warehouse"):
             row["warehouse"] = item["warehouse"]
         cost_center = item.get("cost_center") or data.get("cost_center") or ""
@@ -404,6 +406,8 @@ def update_purchase_invoice(data=None, **kwargs):
             "rate": float(item["rate"]),
             "warehouse": item.get("warehouse"),
         }
+        if frappe.get_meta("Purchase Invoice Item").has_field("allow_zero_valuation_rate"):
+            row["allow_zero_valuation_rate"] = 1
         if item.get("expense_account"):
             row["expense_account"] = item["expense_account"]
         pi.append("items", row)
