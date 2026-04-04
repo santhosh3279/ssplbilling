@@ -150,6 +150,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	card_amount = float(data.get("card_amount") or 0)
 	discount_amount = float(data.get("discount_amount") or 0)
 	is_credit = bool(data.get("is_credit"))
+	posting_date = data.get("posting_date") or frappe.utils.today()
 
 	# Explicit accounts passed from frontend
 	f_cash_account = data.get("cash_account")
@@ -170,13 +171,11 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			frappe.throw(f"Total payment ₹{total_payment:.2f} is less than amount ₹{target_amount:.2f}.")
 
 	if si.docstatus == 0:
-		# Update past dated bills to today
-		today_str = frappe.utils.today()
-		if str(si.posting_date) < today_str:
-			si.posting_date = today_str
-			si.posting_time = frappe.utils.nowtime()
+		# Update posting date if provided or default to today
+		si.posting_date = posting_date
+		si.posting_time = frappe.utils.nowtime()
 
-		si.due_date = data.get("due_date") or today_str
+		si.due_date = data.get("due_date") or posting_date
 		if str(si.due_date) < str(si.posting_date):
 			si.due_date = si.posting_date
 
@@ -187,7 +186,6 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	if is_credit:
 		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted"}
 
-	today = frappe.utils.today()
 	payment_entries = []
 
 	# --- Resolve accounts from user_series in SSPL Billing Settings ---
@@ -246,7 +244,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		mop = _mop_for_account(paid_to_account)
 		pe = frappe.new_doc("Payment Entry")
 		pe.payment_type = "Receive"
-		pe.posting_date = today
+		pe.posting_date = posting_date
 		pe.company = company
 		pe.mode_of_payment = mop
 		pe.party_type = "Customer"
@@ -257,7 +255,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		pe.received_amount = amount
 		if ref_no:
 			pe.reference_no = ref_no
-			pe.reference_date = today
+			pe.reference_date = posting_date
 		if allocated > 0:
 			pe.append("references", {"reference_doctype": "Sales Invoice", "reference_name": si.name, "allocated_amount": allocated})
 		pe.insert(); pe.submit()
@@ -266,7 +264,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	if discount_amount > 0.01:
 		je = frappe.new_doc("Journal Entry")
 		je.voucher_type = "Journal Entry"
-		je.posting_date = today
+		je.posting_date = posting_date
 		je.company = company
 		je.append("accounts", {"account": discount_account, "debit_in_account_currency": discount_amount})
 		je.append("accounts", {"account": si.debit_to, "credit_in_account_currency": discount_amount, "party_type": "Customer", "party": si.customer, "reference_type": "Sales Invoice", "reference_name": si.name})

@@ -363,6 +363,26 @@
                 </p>
               </div>
 
+              <!-- Posting Date Selector -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 ml-1">Posting Date</label>
+                <div class="flex items-center justify-between gap-1.5 bg-slate-900 rounded-xl border border-slate-700 p-1">
+                  <button @click="adjustPostingDate(-1)" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  <div class="flex-1 text-center">
+                    <input
+                      type="date"
+                      v-model="postingDate"
+                      class="bg-transparent border-none text-xs font-black text-slate-300 focus:ring-0 p-0 text-center cursor-pointer w-full"
+                    />
+                  </div>
+                  <button @click="adjustPostingDate(1)" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
+              </div>
+
               <!-- Action Button -->
               <button
                 @click="processPayment"
@@ -538,6 +558,7 @@ function getTodayIST() {
 // ==================== STATE (REFS) ====================
 // Define all refs first to avoid ReferenceErrors in functions or watchers
 const filterDate = ref(getTodayIST())
+const postingDate = ref(getTodayIST())
 const searchQuery = ref('')
 
 const showCardRefModal = ref(false)
@@ -668,15 +689,16 @@ const previewDiscount = computed(() => {
 
 async function checkDayOpening() {
   if (!session.user.value) return
-  // Only block access if the user is looking at Today
-  if (filterDate.value !== getTodayIST()) {
+  const today = getTodayIST()
+  // Only block access if looking at Today or posting for Today
+  if (filterDate.value !== today && postingDate.value !== today) {
     showOpeningRequiredModal.value = false
     return
   }
 
   try {
     const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
-      date: getTodayIST(),
+      date: today,
       user: session.user.value
     })
     const boxCash = Number(localStorage.getItem('wb-opening-box-cash') || 0)
@@ -722,6 +744,12 @@ function adjustDate(days) {
   d.setDate(d.getDate() + days)
   filterDate.value = d.toISOString().slice(0, 10)
   loadInvoices()
+}
+
+function adjustPostingDate(days) {
+  const d = new Date(postingDate.value)
+  d.setDate(d.getDate() + days)
+  postingDate.value = d.toISOString().slice(0, 10)
 }
 
 
@@ -826,7 +854,7 @@ function toggleCredit(val) {
 async function processPayment() {
   if (!canSubmit.value) return
 
-  if (filterDate.value === getTodayIST()) {
+  if (postingDate.value === getTodayIST()) {
     try {
       const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
         date: getTodayIST(),
@@ -875,6 +903,7 @@ async function processPayment() {
       discount_amount: disc,
       is_credit: isCredit.value,
       due_date: finalDueDate,
+      posting_date: postingDate.value,
       card_ref_no: cardRefNo.value,
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
@@ -1032,7 +1061,11 @@ function handleKeydown(e) {
 }
 
 // ==================== WATCHERS ====================
-watch(filterDate, () => {
+watch(filterDate, (newVal) => {
+  postingDate.value = newVal
+  checkDayOpening()
+})
+watch(postingDate, () => {
   checkDayOpening()
 })
 
