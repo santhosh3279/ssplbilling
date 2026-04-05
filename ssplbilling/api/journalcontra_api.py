@@ -24,94 +24,105 @@ def create_journal_contra_entry(data):
         frappe.throw("At least two accounts are required for a Journal Entry")
         
     company = frappe.defaults.get_global_default("company")
-    je = frappe.new_doc("Journal Entry")
     voucher_type = data.get("voucher_type") or "Journal Entry"
     # Map frontend shorthand to ERPNext's exact select option
     if voucher_type == "Contra":
         voucher_type = "Contra Entry"
-    je.voucher_type = voucher_type
-    je.posting_date = data.get("posting_date") or frappe.utils.today()
-    je.company = company
-    je.user_remark = data.get("user_remark") or ""
     
-    if data.get("cheque_no"):
-        je.cheque_no = data.get("cheque_no")
-        je.cheque_date = data.get("posting_date") or frappe.utils.today()
+    posting_date = data.get("posting_date") or frappe.utils.today()
+    user_remark = data.get("user_remark") or ""
+    cheque_no = data.get("cheque_no")
 
-    for acc in accounts:
-        row_account = acc.get("account")
-        account_type = acc.get("account_type")
-        party_type = None
-        party = None
-        references = acc.get("references") or []
+    def _create_single_je(row_accounts):
+        je = frappe.new_doc("Journal Entry")
+        je.voucher_type = voucher_type
+        je.posting_date = posting_date
+        je.company = company
+        je.user_remark = user_remark
+        if cheque_no:
+            je.cheque_no = cheque_no
+            je.cheque_date = posting_date
 
-        # If it's a Customer, Supplier, or Employee, we need their receivable/payable account
-        if account_type in ["Customer", "Supplier", "Employee"]:
-            party_type = account_type
-            party = row_account
-            row_account = _get_party_account(party_type, party)
+        for acc in row_accounts:
+            row_account = acc.get("account")
+            account_type = acc.get("account_type")
+            party_type = None
+            party = None
+            references = acc.get("references") or []
 
-        debit = float(acc.get("debit_in_account_currency") or 0)
-        credit = float(acc.get("credit_in_account_currency") or 0)
+            if account_type in ["Customer", "Supplier", "Employee"]:
+                party_type = account_type
+                party = row_account
+                row_account = _get_party_account(party_type, party)
 
-        if references and party_type and voucher_type != "Opening Entry":
-            # Split the party row: one JE account row per reference (with reference_type/name),
-            # plus an optional residual unlinked row for any unallocated portion.
-            is_credit_side = credit >= debit
-            base_amount = credit if is_credit_side else debit
-            total_ref_alloc = sum(float(r.get("alloc_amount") or 0) for r in references)
+            debit = float(acc.get("debit_in_account_currency") or 0)
+            credit = float(acc.get("credit_in_account_currency") or 0)
 
-            for ref in references:
-                alloc = float(ref.get("alloc_amount") or 0)
-                if alloc < 0.005:
-                    continue
+            if references and party_type and voucher_type != "Opening Entry":
+                is_credit_side = credit >= debit
+                base_amount = credit if is_credit_side else debit
+                total_ref_alloc = sum(float(r.get("alloc_amount") or 0) for r in references)
+
+                for ref in references:
+                    alloc = float(ref.get("alloc_amount") or 0)
+                    if alloc < 0.005: continue
+                    je.append("accounts", {
+                        "account": row_account,
+                        "debit_in_account_currency": 0 if is_credit_side else alloc,
+                        "credit_in_account_currency": alloc if is_credit_side else 0,
+                        "party_type": party_type,
+                        "party": party,
+                        "reference_type": ref.get("ref_type"),
+                        "reference_name": ref.get("ref_name"),
+                        "cost_center": acc.get("cost_center"),
+                        "user_remark": acc.get("user_remark"),
+                    })
+
+                residual = round(base_amount - total_ref_alloc, 2)
+                if residual > 0.005:
+                    je.append("accounts", {
+                        "account": row_account,
+                        "debit_in_account_currency": 0 if is_credit_side else residual,
+                        "credit_in_account_currency": residual if is_credit_side else 0,
+                        "party_type": party_type,
+                        "party": party,
+                        "cost_center": acc.get("cost_center"),
+                        "user_remark": acc.get("user_remark"),
+                    })
+            else:
                 je.append("accounts", {
                     "account": row_account,
-                    "debit_in_account_currency": 0 if is_credit_side else alloc,
-                    "credit_in_account_currency": alloc if is_credit_side else 0,
-                    "party_type": party_type,
-                    "party": party,
-                    "reference_type": ref.get("ref_type"),
-                    "reference_name": ref.get("ref_name"),
-                    "cost_center": acc.get("cost_center"),
-                    "user_remark": acc.get("user_remark"),
-                })
-
-            residual = round(base_amount - total_ref_alloc, 2)
-            if residual > 0.005:
-                # Remaining amount that has no specific invoice link (advance / on-account)
-                je.append("accounts", {
-                    "account": row_account,
-                    "debit_in_account_currency": 0 if is_credit_side else residual,
-                    "credit_in_account_currency": residual if is_credit_side else 0,
+                    "debit_in_account_currency": debit,
+                    "credit_in_account_currency": credit,
                     "party_type": party_type,
                     "party": party,
                     "cost_center": acc.get("cost_center"),
-                    "user_remark": acc.get("user_remark"),
+                    "user_remark": acc.get("user_remark")
                 })
-        else:
-            # Default: single row (existing behaviour)
-            je.append("accounts", {
-                "account": row_account,
-                "debit_in_account_currency": debit,
-                "credit_in_account_currency": credit,
-                "party_type": party_type,
-                "party": party,
-                "cost_center": acc.get("cost_center"),
-                "user_remark": acc.get("user_remark")
-            })
 
-            # Opening Entry: add a balancing row to Temporary Opening
-            if voucher_type == "Opening Entry":
-                temp_opening = frappe.db.get_value("Company", company, "default_opening_balance_equity_account") or "Temporary Opening - SSPL"
-                je.append("accounts", {
-                    "account": temp_opening,
-                    "debit_in_account_currency": credit,  # Flipped
-                    "credit_in_account_currency": debit,  # Flipped
-                    "cost_center": acc.get("cost_center"),
-                    "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
-                })
+                if voucher_type == "Opening Entry":
+                    temp_opening = frappe.db.get_value("Company", company, "default_opening_balance_equity_account") or "Temporary Opening - SSPL"
+                    je.append("accounts", {
+                        "account": temp_opening,
+                        "debit_in_account_currency": credit,
+                        "credit_in_account_currency": debit,
+                        "cost_center": acc.get("cost_center"),
+                        "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
+                    })
         
-    je.insert()
-    je.submit()
-    return {"name": je.name, "status": "Submitted"}
+        je.insert()
+        je.submit()
+        return je.name
+
+    created_names = []
+    if voucher_type == "Opening Entry":
+        # Create separate JE for each account row
+        for single_acc in accounts:
+            name = _create_single_je([single_acc])
+            created_names.append(name)
+    else:
+        # Standard one-JE-for-all-rows behavior
+        name = _create_single_je(accounts)
+        created_names.append(name)
+
+    return {"names": created_names, "status": "Submitted"}

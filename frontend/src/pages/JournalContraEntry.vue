@@ -163,7 +163,7 @@
             </tbody>
           </table>
 
-          <div v-if="entryType !== 'Opening Entry'" class="p-2">
+          <div class="p-2">
             <button
               @click="addRow"
               class="flex items-center gap-2 rounded-xl border border-dashed border-slate-600 px-4 py-2 text-xs font-bold text-slate-500 hover:border-blue-500 hover:text-blue-400 hover:bg-blue-900/20 transition-all w-full justify-center"
@@ -373,11 +373,12 @@ const validationError = computed(() => {
 })
 
 const canSave = computed(() => {
+  const activeRows = rows.value.filter(r => r.account)
   if (entryType.value === 'Opening Entry') {
-    return rows.value.filter(r => r.account).length === 1 && 
-           (Number(rows.value[0]?.debit) > 0 || Number(rows.value[0]?.credit) > 0)
+    return activeRows.length >= 1 && 
+           activeRows.every(r => (Number(r.debit) > 0 || Number(r.credit) > 0))
   }
-  return rows.value.filter(r => r.account).length >= 2 && 
+  return activeRows.length >= 2 && 
          Math.abs(difference.value) < 0.01 && 
          totalDebit.value > 0 &&
          !validationError.value
@@ -392,7 +393,6 @@ function fmt(val) {
 }
 
 function addRow() {
-  if (entryType.value === 'Opening Entry' && rows.value.length >= 1) return
   rows.value.push({ account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 })
   activeRowIdx.value = rows.value.length - 1
 }
