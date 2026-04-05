@@ -834,10 +834,11 @@ function focusNextAllocation(index) {
 
 async function loadSeriesSettings(series) {
   try {
+    const targetUser = localStorage.getItem('wb-inherited-user') || null
     const lsCash = localStorage.getItem('wb-cash')
     const lsUpi  = localStorage.getItem('wb-upi')
     const lsCard = localStorage.getItem('wb-card')
-    const settings = await fetchDashboardSettings()
+    const settings = await fetchDashboardSettings(targetUser)
     const discountAccount = settings.discount_account || 'Write Off - SSPL'
 
     if (lsCash || lsUpi || lsCard) {

@@ -359,7 +359,10 @@ export async function fetchItemDetails(
  * each with: series, print_format, price_list, tax_rate.
  * @returns {Promise<Object>}
  */
-export async function fetchBillingSettings() {
+export async function fetchBillingSettings(user = null) {
+  if (user) {
+    return frappeGet('ssplbilling.api.dashboard_api.get_billing_settings', { user })
+  }
   return frappeGet('frappe.client.get', {
     doctype: 'SSPL Billing Settings',
     name: 'SSPL Billing Settings',
@@ -371,8 +374,8 @@ export async function fetchBillingSettings() {
  * 
  * PYTHON CALL: ssplbilling.api.dashboard_api.get_billing_settings
  */
-export async function fetchDashboardSettings() {
-  return frappeGet("ssplbilling.api.dashboard_api.get_billing_settings");
+export async function fetchDashboardSettings(user = null) {
+  return frappeGet("ssplbilling.api.dashboard_api.get_billing_settings", { user });
 }
 
 // ─── Cashier / Draft Invoice Helpers ─────────────────────────────────────────

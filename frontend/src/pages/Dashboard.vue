@@ -42,7 +42,38 @@
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-3 py-3">
+      <nav class="flex-1 px-3 py-3 overflow-y-auto">
+        <!-- Admin: Inherit User Settings -->
+        <div v-if="userRole === 'admin'" class="mb-6 px-2">
+          <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Inherit Settings
+          </label>
+          <div class="relative group">
+            <select 
+              v-model="selectedUser"
+              @change="handleUserChange"
+              class="w-full appearance-none rounded-lg bg-slate-700/50 border border-slate-600 px-3 py-2 text-xs text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all hover:bg-slate-700"
+            >
+              <option :value="session.user.value">Me ({{ session.fullName.value }})</option>
+              <option v-for="u in allUsers" :key="u.value" :value="u.value">
+                {{ u.label }}
+              </option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+              <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+          <div v-if="selectedUser !== session.user.value" class="mt-1.5 flex items-center gap-1.5 px-1">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span class="text-[10px] font-medium text-amber-400/90 italic">Previewing User Mode</span>
+          </div>
+        </div>
+
         <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Menu</div>
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white"
@@ -302,7 +333,22 @@ const userInitials = computed(() => {
   return name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || 'U'
 })
 
+const selectedUser = ref(localStorage.getItem('wb-inherited-user') || session.user.value)
+const allUsers = ref([])
+
+async function handleUserChange() {
+  if (selectedUser.value === session.user.value) {
+    localStorage.removeItem('wb-inherited-user')
+  } else {
+    localStorage.setItem('wb-inherited-user', selectedUser.value)
+  }
+  await syncSettings()
+  // Refresh page to apply inherited roles/tiles
+  window.location.reload()
+}
+
 async function handleLogout() {
+  localStorage.removeItem('wb-inherited-user')
   await session.logout()
   router.push('/login')
 }
@@ -519,13 +565,14 @@ function closeStockLedgerAndReturnToSearch() {
 async function syncSettings() {
   localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
   localStorage.removeItem(GENERAL_SETTINGS_CACHE_KEY)
-  await fetchSettings()
+  await fetchSettings(selectedUser.value)
 }
 
-async function fetchSettings() {
+async function fetchSettings(user = null) {
+  const targetUser = user || session.user.value
   // 1. Fetch allowed series for this user
   try {
-    const d = await dashboardApi.getAllowedSeries()
+    const d = await dashboardApi.getAllowedSeries(targetUser)
     availableSeries.value = d.allowed_series || []
     userAllowedString.value = d.user_allowed_string || ''
     if (availableSeries.value.length && !availableSeries.value.includes(defaultSeries.value)) {
@@ -542,13 +589,13 @@ async function fetchSettings() {
     const cached = JSON.parse(localStorage.getItem(BILLING_SETTINGS_CACHE_KEY) || 'null')
     const cacheValid = cached &&
       (Date.now() - cached.ts) < BILLING_SETTINGS_TTL &&
-      cached.data?._current_user === session.user.value
+      cached.data?._current_user === targetUser
     if (cacheValid) {
       settings = cached.data
     } else {
-      settings = await dashboardApi.getBillingSettings()
+      settings = await dashboardApi.getBillingSettings(targetUser)
       if (settings) {
-        const settingsWithUser = { ...settings, _current_user: session.user.value }
+        const settingsWithUser = { ...settings, _current_user: targetUser }
         localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
         localStorage.setItem(GENERAL_SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
       }
@@ -562,6 +609,30 @@ async function fetchSettings() {
     if (settings && settings.cipher_map) {
       localStorage.setItem('wb-cipher', settings.cipher_map)
     }
+
+    // Sync roles to localStorage for permission inherited
+    if (settings && settings.user_role) {
+      const roles = settings.user_role
+      localStorage.setItem('wb-role-admin', roles.admin ? '1' : '0')
+      localStorage.setItem('wb-role-cashier', roles.cashier ? '1' : '0')
+      localStorage.setItem('wb-role-biller', roles.biller ? '1' : '0')
+      localStorage.setItem('wb-role-accounts', roles.accounts ? '1' : '0')
+    }
+
+    // Sync printer settings to localStorage
+    if (settings && settings.user_defaults) {
+      const defaults = settings.user_defaults
+      if (defaults.default_printer) localStorage.setItem('wb-printer', defaults.default_printer)
+      if (defaults.warehouse) localStorage.setItem('wb-warehouse', defaults.warehouse)
+      if (defaults.cost_center) localStorage.setItem('wb-cost-center', defaults.cost_center)
+      if (defaults.income_account) localStorage.setItem('wb-income-account', defaults.income_account)
+    }
+
+    // Printer & Template mapping from settings
+    if (settings && settings.printer_settings) {
+       localStorage.setItem('wb-printer-templates', JSON.stringify(settings.printer_settings))
+    }
+
   } catch (e) {
     console.warn('[Dashboard] getBillingSettings failed:', e)
   }
@@ -604,11 +675,20 @@ const filteredUserSeries = computed(() => {
   return all.filter(us => us.user === user)
 })
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))
   window.addEventListener('wb-global-item-search', openItemSearch)
   window.addEventListener('wb-navigate-home', () => router.push('/'))
-  fetchSettings()
+  
+  if (userRole === 'admin') {
+    try {
+      allUsers.value = await dashboardApi.getAllUsers()
+    } catch (e) {
+      console.warn('[Dashboard] getAllUsers failed:', e)
+    }
+  }
+
+  fetchSettings(selectedUser.value)
   refreshItemCache('Sales') // Preload items for fast entry
 })
 onUnmounted(() => {

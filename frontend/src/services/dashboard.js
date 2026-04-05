@@ -5,18 +5,25 @@ const API_BASE = 'ssplbilling.api.dashboard_api'
 
 export const dashboardApi = {
   /**
-   * Return all SSPL Billing Settings data as a read-only summary for the dashboard.
+   * Return all users from SSPL Billing Settings.
    */
-  getBillingSettings: () => {
-    return frappeGet(`${API_BASE}.get_billing_settings`)
+  getAllUsers: () => {
+    return frappeGet(`${API_BASE}.get_all_users`)
   },
 
   /**
-   * Return a list of naming series allowed for the current user.
+   * Return all SSPL Billing Settings data as a read-only summary for the dashboard.
    */
-  getAllowedSeries: () => {
+  getBillingSettings: (user = null) => {
+    return frappeGet(`${API_BASE}.get_billing_settings`, { user })
+  },
+
+  /**
+   * Return a list of naming series allowed for the current or specified user.
+   */
+  getAllowedSeries: (user = null) => {
     return frappeGet(`${API_BASE}.get_allowed_series`, {
-      user: session.user.value
+      user: user || session.user.value
     })
   },
 

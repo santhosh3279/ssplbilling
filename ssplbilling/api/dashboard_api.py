@@ -4,16 +4,14 @@ import frappe
 import re
 
 @frappe.whitelist()
-def get_allowed_series(doctype="Sales Invoice"):
-    """Return a list of naming series allowed for the current user.
+def get_all_users():
+    """Return a list of all users from SSPL Billing Settings -> User Series."""
+    settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+    return [{"value": r.user, "label": r.user} for r in settings.user_series if r.user]
 
-    Logic:
-    1. Read 'SSPL Billing Settings' -> 'user_series' table for the current user.
-    2. If no record for the user exists, return all available series (fallback).
-    3. Split comma-separated series values and collect prefixes.
-    4. If 'ALL' is among the prefixes, return all available series.
-    5. Compare alphabetic parts of available series with allowed prefixes.
-    """
+@frappe.whitelist()
+def get_allowed_series(doctype="Sales Invoice", user=None):
+    """Return a list of naming series allowed for the current or specified user."""
 
     def get_alpha(s):
         return re.sub(r"[^A-Za-z]", "", s or "")
@@ -53,8 +51,6 @@ def get_allowed_series(doctype="Sales Invoice"):
     try:
         settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
         if doctype == "Sales Invoice":
-            # We fetch all from settings.billing_series, but we'll intersect later in the frontend,
-            # or we can intersect right here. The prompt is easier fixed in frontend.
             available = [r.series for r in settings.billing_series if r.series]
         elif doctype == "Purchase Invoice":
             available = [r.series for r in settings.billing_series if r.series]
@@ -70,14 +66,19 @@ def get_allowed_series(doctype="Sales Invoice"):
     if not available:
         available = _fallback_series()
 
-    user = frappe.session.user
+    current_user = frappe.session.user
+    # Only Administrator/admin can request series for another user
+    if user and current_user not in ["Administrator", "admin"]:
+        user = current_user
+    
+    target_user = user or current_user
 
     # Administrator / admin gets everything
-    if user in ["Administrator", "admin"]:
+    if target_user in ["Administrator", "admin"]:
         return {"allowed_series": available, "user_allowed_string": "ALL"}
 
     # Find rows for this user
-    user_rows = [r for r in user_series_rows if r.user == user]
+    user_rows = [r for r in user_series_rows if r.user == target_user]
     if not user_rows:
         return {"allowed_series": available, "user_allowed_string": ""}  # Fallback: show all
 
@@ -133,12 +134,7 @@ def get_system_stats():
 
 @frappe.whitelist()
 def clear_ram_cache():
-	"""Drop Linux page cache.
-
-	Strategy (tried in order):
-	1. Direct write to /proc/sys/vm/drop_caches — works when running as root (Docker).
-	2. sudo tee /proc/sys/vm/drop_caches — works on bare-metal with a sudoers rule.
-	"""
+	"""Drop Linux page cache."""
 	import os
 	import subprocess
 	import psutil
@@ -188,7 +184,7 @@ def clear_ram_cache():
 
 @frappe.whitelist()
 def get_active_sessions():
-	"""Return users currently active on this site (session updated within last 15 minutes)."""
+	"""Return users currently active on this site."""
 	rows = frappe.db.sql(
 		"""
 		SELECT user, ipaddress, MAX(lastupdate) AS last_seen
@@ -218,7 +214,7 @@ def get_active_sessions():
 
 @frappe.whitelist()
 def get_active_sites():
-	"""Return all site names (directories containing site_config.json) in this bench."""
+	"""Return all site names in this bench."""
 	sites_path = os.path.join(os.path.dirname(frappe.get_site_path()))
 	sites = []
 	for entry in os.scandir(sites_path):
@@ -233,10 +229,7 @@ def _is_docker():
 
 
 def _docker_host_ip():
-	"""Resolve the Docker host IP from the container's default gateway.
-
-	Falls back to the BACKUP_SSH_HOST env-var, then 'host.docker.internal'.
-	"""
+	"""Resolve the Docker host IP."""
 	import socket
 	import struct
 	try:
@@ -244,7 +237,6 @@ def _docker_host_ip():
 			for line in f:
 				fields = line.strip().split()
 				if len(fields) >= 3 and fields[1] == "00000000":
-					# Gateway field is little-endian hex
 					return socket.inet_ntoa(struct.pack("<I", int(fields[2], 16)))
 	except Exception:
 		pass
@@ -253,35 +245,19 @@ def _docker_host_ip():
 
 @frappe.whitelist()
 def run_manual_backup():
-	"""Run /opt/scripts/frappe_backup.sh.
-
-	- Bare-metal: executes via sudo directly.
-	- Docker: SSHes to the host server and runs the script there.
-
-	Docker requirements:
-	  • SSH key mounted into the container (default: /home/erpdev/.ssh/id_rsa).
-	  • Host accepts the key for BACKUP_SSH_USER (default: erpdev).
-	  • Optionally set BACKUP_SSH_HOST env-var to override auto-detected gateway IP.
-	"""
+	"""Run /opt/scripts/frappe_backup.sh."""
 	import subprocess
-
 	script = os.environ.get("BACKUP_SCRIPT", "/opt/scripts/frappe_backup.sh")
-
 	if _is_docker():
 		host = os.environ.get("BACKUP_SSH_HOST") or _docker_host_ip()
 		user = os.environ.get("BACKUP_SSH_USER", "erpdev")
 		key  = os.environ.get("BACKUP_SSH_KEY",  "/home/erpdev/.ssh/id_rsa")
 		cmd = [
-			"ssh",
-			"-i", key,
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "ConnectTimeout=10",
-			f"{user}@{host}",
-			f"sudo {script}",
+			"ssh", "-i", key, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10",
+			f"{user}@{host}", f"sudo {script}",
 		]
 	else:
 		cmd = ["sudo", script]
-
 	result = subprocess.run(cmd, capture_output=True, timeout=600)
 	return {
 		"success": result.returncode == 0,
@@ -292,18 +268,19 @@ def run_manual_backup():
 
 
 @frappe.whitelist()
-def get_billing_settings():
-	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current user."""
+def get_billing_settings(user=None):
+	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-	user = frappe.session.user
-	user_row = next((r for r in settings.user_series if r.user == user), None)
+	current_user = frappe.session.user
+	if user and current_user not in ["Administrator", "admin"]:
+		user = current_user
+	target_user = user or current_user
+	user_row = next((r for r in settings.user_series if r.user == target_user), None)
 
-	# Fetch Mode of Payment to Account mappings
 	mop_accounts = frappe.get_all("Mode of Payment Account", 
 		filters={"company": "Sundaram and Sons Private Ltd"}, 
 		fields=["parent", "default_account"])
 	mop_map = {r.parent: r.default_account for r in mop_accounts}
-
 	company_state = frappe.db.get_value("Address", {"is_your_company_address": 1}, "state") or ""
 
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
@@ -330,7 +307,14 @@ def get_billing_settings():
 		"cipher_map": settings.cipher_map or "",
 		"mop_map": mop_map,
 		"user_zoom": user_zoom,
-		"user_defaults": user_defaults,		"billing_series": [
+		"user_defaults": user_defaults,
+		"user_role": {
+			"admin": user_row.admin if user_row else 0,
+			"cashier": user_row.cashier if user_row else 0,
+			"biller": user_row.biller if user_row else 0,
+			"accounts": user_row.accounts if user_row else 0,
+		},
+		"billing_series": [
 			{
 				"series": r.series or "",
 				"price_list": r.price_list or "",

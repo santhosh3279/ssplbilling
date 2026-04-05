@@ -311,8 +311,9 @@ watch(() => props.show, (val) => {
 async function loadSettings() {
   syncing.value = true
   try {
-    rawSettings.value = await dashboardApi.getBillingSettings()
-    applyToLocalStorage(rawSettings.value)
+    const targetUser = localStorage.getItem('wb-inherited-user') || session.user.value
+    rawSettings.value = await dashboardApi.getBillingSettings(targetUser)
+    applyToLocalStorage(rawSettings.value, targetUser)
   } catch (e) {
     console.error('[GeneralSettings] getBillingSettings failed:', e)
   } finally {
@@ -320,8 +321,10 @@ async function loadSettings() {
   }
 }
 
-function applyToLocalStorage(settings) {
+function applyToLocalStorage(settings, targetUserArg) {
   if (!settings) return
+  const targetUser = targetUserArg || localStorage.getItem('wb-inherited-user') || session.user.value
+  
   if (settings.company_state) {
     localStorage.setItem('wb-company-state', settings.company_state)
   }
@@ -374,8 +377,7 @@ function applyToLocalStorage(settings) {
 
   // Save allowed series prefixes
   const allBillingSeries = settings.billing_series || []
-  const currentUser = session.user.value
-  const userRow = (settings.user_series || []).find(r => r.user === currentUser)
+  const userRow = (settings.user_series || []).find(r => r.user === targetUser)
 
   // Role flags from user_series row
   if (userRow) {

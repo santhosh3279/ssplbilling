@@ -2197,14 +2197,15 @@ import { session } from '../session.js'
 
 async function fetchSeriesList() {
   try {
-    const settings = await fetchBillingSettings()
+    const targetUser = localStorage.getItem('wb-inherited-user') || null
+    const settings = await fetchBillingSettings(targetUser)
     const rows = (settings?.billing_series || []).filter(r => r.series)
 
     // Fetch allowed series for this user
     let allowedList = []
     let userAllowedString = ''
     try {
-      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series')
+      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { user: targetUser })
       allowedList = d.allowed_series || []
       userAllowedString = d.user_allowed_string || ''
     } catch (e) {
