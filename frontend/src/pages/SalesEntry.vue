@@ -68,7 +68,10 @@
               </div>
               <span class="shrink-0 font-mono font-normal text-4xl tabular-nums" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black' : 'text-slate-200'">{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-2xl" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-medium' : 'text-slate-400'">{{ inv.customer_name }}</div>
+            <div class="truncate text-2xl" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-medium' : 'text-slate-400'">
+              {{ inv.custom_customer_name || inv.customer_name }}
+              <span v-if="inv.custom_customer_name" class="ml-1 text-lg font-normal opacity-60">({{ inv.customer_name }})</span>
+            </div>
           </div>
         </div>
       </aside>
@@ -121,10 +124,10 @@
         <!-- Customer Section (Flex-1 to take middle space) -->
         <div class="flex-1 flex items-center gap-4 border-l border-slate-700 pl-6 overflow-hidden">
           <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Customer</label>
-          
+
           <!-- Name & Address -->
           <div class="flex items-baseline gap-4 min-w-0">
-            <div 
+            <div
               ref="customerInput"
               class="shrink-0 max-w-[300px] truncate text-4xl transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
               :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
@@ -135,6 +138,23 @@
             >
               {{ custSearch || 'Not Selected' }}
             </div>
+
+            <!-- Custom name badge (shown when custom_customer_name is populated) -->
+            <div v-if="customAddress.custom_customer_name" class="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 leading-none shrink-0">
+              <span class="text-[9px] font-bold uppercase text-amber-500">Custom</span>
+              <span class="text-lg font-semibold text-amber-300 max-w-[220px] truncate">{{ customAddress.custom_customer_name }}</span>
+            </div>
+
+            <!-- Name button -->
+            <button
+              v-if="customer && (billDocStatus === 0 || !billSaved)"
+              @click="showCustomAddressModal = true"
+              class="shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold uppercase leading-none transition-colors"
+              :class="customAddress.custom_customer_name
+                ? 'border-amber-500/50 bg-amber-900/20 text-amber-400 hover:bg-amber-900/40'
+                : 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'"
+              title="Set custom delivery name & address"
+            >Name</button>
 
             <div v-if="selectedCustomerDetails" class="flex items-center gap-3 min-w-0">
               <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
@@ -742,6 +762,69 @@
       @saved="onPriceListSaved"
     />
 
+    <!-- CUSTOM ADDRESS MODAL -->
+    <div v-if="showCustomAddressModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showCustomAddressModal = false">
+      <div class="w-[480px] overflow-hidden rounded-2xl bg-slate-900 border border-amber-700/50 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800/60 px-6 py-4">
+          <div>
+            <div class="text-lg font-bold text-slate-100">Custom Delivery Name &amp; Address</div>
+            <div class="text-xs text-slate-400 mt-0.5">Overrides customer name &amp; address on the printed invoice</div>
+          </div>
+          <button @click="showCustomAddressModal = false" class="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-slate-200 text-xl leading-none">&times;</button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-amber-500">Customer Name</label>
+            <input
+              v-model="customAddress.custom_customer_name"
+              type="text"
+              placeholder="e.g. Ramesh &amp; Brothers"
+              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-amber-500 placeholder-slate-600"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
+            <input
+              v-model="customAddress.custom_address_line1"
+              type="text"
+              placeholder="Street / Door No"
+              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 2</label>
+            <input
+              v-model="customAddress.custom_address_line2"
+              type="text"
+              placeholder="City / District / Pincode"
+              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number</label>
+            <input
+              v-model="customAddress.custom_mobile_number"
+              type="text"
+              placeholder="e.g. 9876543210"
+              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+            />
+          </div>
+        </div>
+        <div class="flex items-center justify-between border-t border-slate-800 bg-slate-800/50 px-6 py-4">
+          <button
+            v-if="customAddress.custom_customer_name || customAddress.custom_address_line1 || customAddress.custom_address_line2 || customAddress.custom_mobile_number"
+            @click="customAddress = { custom_customer_name: '', custom_address_line1: '', custom_address_line2: '', custom_mobile_number: '' }"
+            class="rounded border border-red-900/50 bg-transparent px-4 py-2 text-xs font-bold uppercase text-red-400 hover:bg-red-900/20 transition-colors"
+          >Clear</button>
+          <div v-else></div>
+          <div class="flex gap-3">
+            <button @click="showCustomAddressModal = false" class="rounded border border-slate-600 bg-slate-800 px-5 py-2 text-xs font-bold text-slate-300 hover:bg-slate-700 transition-colors">Cancel</button>
+            <button @click="showCustomAddressModal = false" class="rounded bg-amber-600 px-5 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- DISCARD BILL MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
@@ -1101,6 +1184,8 @@ const showExitModifyWarning = ref(false)
 const lastFocusedEl = ref(null)
 const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-saved invoice name
 const showDiscardModal = ref(false)
+const showCustomAddressModal = ref(false)
+const customAddress = ref({ custom_customer_name: '', custom_address_line1: '', custom_address_line2: '', custom_mobile_number: '' })
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
 const dynamicRowStyle = computed(() => ({
   fontSize: `${(14 * zoomPercent.value) / 100}px`,
@@ -2006,6 +2091,14 @@ async function loadInvoice(invoiceName) {
     
     customer.value = inv.customer
     custSearch.value = inv.customer_name
+
+    // 7. Custom address fields
+    customAddress.value = {
+      custom_customer_name: inv.custom_customer_name || '',
+      custom_address_line1: inv.custom_address_line1 || '',
+      custom_address_line2: inv.custom_address_line2 || '',
+      custom_mobile_number: inv.custom_mobile_number || '',
+    }
   } catch (e) {
     showError('Error loading invoice: ' + (e.message || 'Unknown error'))
   }
@@ -2269,6 +2362,10 @@ async function saveBill() {
       role: r.role,
       points: r.points || 0,
     })),
+    custom_customer_name: customAddress.value.custom_customer_name || '',
+    custom_address_line1: customAddress.value.custom_address_line1 || '',
+    custom_address_line2: customAddress.value.custom_address_line2 || '',
+    custom_mobile_number: customAddress.value.custom_mobile_number || '',
   }
 
   const chargeDefs = [
@@ -2333,6 +2430,7 @@ function startNewBill() {
   discountPct.value = 0; discountDirectAmt.value = 0; discountInputMode.value = null; freightAmt.value = 0; packingAmt.value = 0; loadingAmt.value = 0; otherChargesAmt.value = 0; newItemCode.value = ''; newQty.value = 1; paymentMode.value = 'Cash'
   billDate.value = getTodayIST()
   billSaved.value = false; billDocStatus.value = 0; savedInvoiceName.value = null; selectedItemData.value = null
+  customAddress.value = { custom_customer_name: '', custom_address_line1: '', custom_address_line2: '', custom_mobile_number: '' }
   syncSeriesConfig(billSeries.value)
   nextTick(() => focusNewCode())
 }
@@ -2441,6 +2539,7 @@ useShortcuts(salesEntryShortcuts({
     if (activeItems.value.length) selectRow(items.value.findIndex(i => !i.deleted))
   },
   contextualBack: () => {
+    if (showCustomAddressModal.value) { showCustomAddressModal.value = false; return }
     if (showJumpModal.value) { showJumpModal.value = false; return }
     if (showDiscardModal.value) { showDiscardModal.value = false; return }
     if (showPrintModal.value) { showPrintModal.value = false; startNewBill(); return }

@@ -49,7 +49,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
     invoices = frappe.get_all(
         "Sales Invoice",
         filters=filters,
-        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus"],
+        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
         limit=int(limit),
         order_by="modified desc",
     )
@@ -134,6 +134,10 @@ def get_sales_invoice(invoice_name):
             }
             for row in (si.advances or [])
         ],
+        "custom_customer_name": si.get("custom_customer_name") or "",
+        "custom_address_line1": si.get("custom_address_line1") or "",
+        "custom_address_line2": si.get("custom_address_line2") or "",
+        "custom_mobile_number": si.get("custom_mobile_number") or "",
     }
 
 @frappe.whitelist()
