@@ -253,7 +253,7 @@ def create_purchase_invoice(data=None, **kwargs):
             for tax in pi.taxes:
                 if data.get("cost_center") and not tax.cost_center:
                     tax.cost_center = data["cost_center"]
-                if is_inclusive:
+                if is_inclusive and "GST" in (tax.account_head or ""):
                     tax.included_in_print_rate = 1
 
     pi.insert()
@@ -414,7 +414,7 @@ def update_purchase_invoice(data=None, **kwargs):
             for tax in pi.taxes:
                 if data.get("cost_center") and not tax.cost_center:
                     tax.cost_center = data["cost_center"]
-                if is_inclusive:
+                if is_inclusive and "GST" in (tax.account_head or ""):
                     tax.included_in_print_rate = 1
     else:
         pi.taxes = []

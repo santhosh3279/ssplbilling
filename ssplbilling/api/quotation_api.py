@@ -362,7 +362,8 @@ def create_quotation(data):
 		is_inclusive = data.get("is_inclusive", 0)
 		if is_inclusive:
 			for tax in qt.taxes:
-				tax.included_in_print_rate = 1
+				if "GST" in (tax.account_head or ""):
+					tax.included_in_print_rate = 1
 
 	if data.get("discount_percentage"):
 		qt.additional_discount_percentage = data["discount_percentage"]
@@ -439,7 +440,8 @@ def update_quotation(data):
 		is_inclusive = data.get("is_inclusive", 0)
 		if is_inclusive:
 			for tax in qt.taxes:
-				tax.included_in_print_rate = 1
+				if "GST" in (tax.account_head or ""):
+					tax.included_in_print_rate = 1
 	else:
 		qt.taxes = []
 	for t in data.get("taxes", []):

@@ -18,7 +18,7 @@ def _apply_tax_template(doc, template_name, doctype, cost_center="", is_inclusiv
         for tax in doc.taxes:
             if cost_center and not tax.cost_center:
                 tax.cost_center = cost_center
-            if is_inclusive:
+            if is_inclusive and "GST" in (tax.account_head or ""):
                 tax.included_in_print_rate = 1
 
 def enforce_ignore_pricing_rule(doc, method=None):

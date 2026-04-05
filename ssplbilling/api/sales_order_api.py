@@ -291,7 +291,8 @@ def create_sales_order(data):
 		is_inclusive = data.get("is_inclusive", 0)
 		if is_inclusive:
 			for tax in so.taxes:
-				tax.included_in_print_rate = 1
+				if "GST" in (tax.account_head or ""):
+					tax.included_in_print_rate = 1
 
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
@@ -357,7 +358,8 @@ def update_sales_order(data):
 		is_inclusive = data.get("is_inclusive", 0)
 		if is_inclusive:
 			for tax in so.taxes:
-				tax.included_in_print_rate = 1
+				if "GST" in (tax.account_head or ""):
+					tax.included_in_print_rate = 1
 	else:
 		so.taxes = []
 	for t in data.get("taxes", []):
