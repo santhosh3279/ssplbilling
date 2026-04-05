@@ -570,6 +570,7 @@
       :extra="[
         { key: 'F3', desc: 'Focus modify panel (sidebar)' },
         { key: 'F4', desc: 'Focus sidebar series' },
+        { key: 'F6', desc: 'Select Customer' },
         { key: 'Page Up', desc: 'Focus series selector' },
         { key: 'Insert', desc: 'Open incentive entry' },
       ]"
@@ -591,6 +592,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       initial-type="Customer"
+      :initial-query="custSearchInitialQuery"
       :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
       :skip-date-filter="true"
       @close="closeCustomerSearchModal"
@@ -1122,6 +1124,7 @@ function setSearchRowRef(el, idx) { if (el) searchRowRefs.set(idx, el); else sea
 const custSearch = ref('')
 const showCustomerSearchModal = ref(false)
 const selectedCustomerDetails = ref(null)
+const custSearchInitialQuery = ref('')
 
 function openSeriesModal() {
   seriesHighlightIdx.value = Math.max(0, availableSeries.value.indexOf(billSeries.value))
@@ -1134,10 +1137,11 @@ function selectSeries(s) {
   nextTick(() => openCustomerSearch())
 }
 
-function openCustomerSearch() {
+function openCustomerSearch(prefill = '') {
   if (billSaved.value || billDocStatus.value !== 0) return
+  const query = typeof prefill === 'string' ? prefill : ''
   showCustomerSearchModal.value = true
-  custSearch.value = ''
+  custSearchInitialQuery.value = query
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
     custSearchModalRef.value?.focus()
@@ -2553,6 +2557,7 @@ useShortcuts(salesEntryShortcuts({
   save: () => { if (!showPrintModal.value) saveBill() },
   newBill: () => { if (!showPrintModal.value) cancelBill() },
   print: () => { if (!showPrintModal.value) printBill() },
+  selectCustomer: () => { if (!showPrintModal.value) openCustomerSearch(custSearch.value) },
   newCustomer: () => { if (!showPrintModal.value) openCustomerSearch() },
   searchItem: () => { if (!showPrintModal.value) openSearch('', null) },
   focusModifyPanel: () => { if (!showPrintModal.value) focusModifyPanel() },

@@ -15,6 +15,7 @@ export const salesEntryShortcuts = (handlers) => ({
   'F3':     handlers.focusModifyPanel,
   'F4':     handlers.focusSidebarSeries,
   'F5':     handlers.print,
+  'F6':     handlers.selectCustomer,
   'CTRL+M': handlers.enterEditMode,
   'PAGEUP': handlers.focusSeries,
   'END':    handlers.toggleDiscountSave,

@@ -2353,7 +2353,7 @@ async function saveBill() {
   const chargeDefs = [
     { amt: freightAmt.value,       key: 'wb_freight',        desc: 'Freight Charges' },
     { amt: packingAmt.value,       key: 'wb-packing',        desc: 'Packing Charges' },
-    { amt: loadingAmt.value,       key: 'wb-loading',        desc: 'Tax Paid on Purchase' },
+    { amt: loadingAmt.value,       key: 'wb-tax-paid-on-purchase',        desc: 'Tax Paid on Purchase' },
     { amt: otherChargesAmt.value,  key: 'wb-other-charges',  desc: 'Other Charges'   },
   ]
   const taxRows = chargeDefs

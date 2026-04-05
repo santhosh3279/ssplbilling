@@ -239,7 +239,8 @@ const props = defineProps({
   initialType: { type: String, default: 'All' },
   allowedTypes: { type: Array, default: () => ['Customer', 'Supplier', 'Employee', 'Account'] },
   filterList: { type: Array, default: null },
-  overrideLedgers: { type: Array, default: null }
+  overrideLedgers: { type: Array, default: null },
+  initialQuery: { type: String, default: '' }
 })
 
 const availableTabs = computed(() => [...new Set(['All', ...props.allowedTypes])])
@@ -418,6 +419,7 @@ function focus() {
       supplierCreatorRef.value?.focusFirst()
     } else {
       searchInput.value?.focus()
+      searchInput.value?.select()
     }
   })
 }
@@ -441,7 +443,7 @@ watch(selectedIdx, async (idx) => {
 })
 
 watch(() => props.show, (val) => {
-  if (val) { query.value = ''; activeType.value = props.initialType; if (!props.overrideLedgers) preloadLedger(); focus() }
+  if (val) { query.value = props.initialQuery || ''; activeType.value = props.initialType; if (!props.overrideLedgers) preloadLedger(); focus() }
   else closeSubForm()
 })
 

@@ -463,7 +463,7 @@ const userAllowedString = ref('')
 const systemSettings = ref(null)
 
 const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
-const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
+const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v2'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
 // ==================== RECONCILE ====================
@@ -618,6 +618,9 @@ async function fetchSettings(user = null) {
     }
     if (settings && settings.cipher_map) {
       localStorage.setItem('wb-cipher', settings.cipher_map)
+    }
+    if (settings && settings.tax_paid_on_purchase) {
+      localStorage.setItem('wb-tax-paid-on-purchase', settings.tax_paid_on_purchase)
     }
 
     // Sync roles to localStorage for permission inherited
