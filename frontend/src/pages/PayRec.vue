@@ -490,8 +490,6 @@
       :show="showSearchModal"
       :allowed-types="searchAllowedTypes"
       :initial-type="searchInitialType"
-      :filter-list="showAllAccounts ? null : searchFilterList"
-      :override-ledgers="(!showAllAccounts && activeRowIdx > 0) ? mopLedgers : null"
       :skip-date-filter="true"
       @close="showSearchModal = false"
       @select="selectLedger"
