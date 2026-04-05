@@ -328,13 +328,19 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
 
 @frappe.whitelist()
 def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=False, naming_series=None, draft_only=False):
-    """List Purchase Invoices for modification."""
+    """List Purchase Invoices for modification.
+    
+    draft_only=True  → only Draft invoices (docstatus=0).
+    draft_only=False → all non-cancelled invoices for the date.
+    """
     date_filter = posting_date or frappe.utils.today()
-    filters = {"posting_date": date_filter}
-    if frappe.utils.cint(draft_only) or not frappe.utils.cint(show_submitted):
-        filters["docstatus"] = 0
+    filters = [["posting_date", "=", date_filter], ["docstatus", "!=", 2]]
+    
+    if frappe.utils.cint(draft_only):
+        filters.append(["docstatus", "=", 0])
+    
     if naming_series:
-        filters["naming_series"] = naming_series
+        filters.append(["naming_series", "=", naming_series])
     kwargs = dict(
         filters=filters,
         fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
