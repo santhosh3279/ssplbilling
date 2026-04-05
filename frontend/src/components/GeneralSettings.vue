@@ -291,6 +291,9 @@ async function loadSettings() {
 
 function applyToLocalStorage(settings) {
   if (!settings) return
+  if (settings.company_state) {
+    localStorage.setItem('wb-company-state', settings.company_state)
+  }
   if (settings.user_zoom) {
     localStorage.setItem('wb-zoom', String(settings.user_zoom))
   }

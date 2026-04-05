@@ -300,6 +300,8 @@ def get_billing_settings():
 		fields=["parent", "default_account"])
 	mop_map = {r.parent: r.default_account for r in mop_accounts}
 
+	company_state = frappe.db.get_value("Address", {"is_your_company_address": 1}, "state") or ""
+
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
 	user_defaults = {
 		"cash": (user_row.cash or "") if user_row else "",
@@ -314,6 +316,7 @@ def get_billing_settings():
 	}
 
 	return {
+		"company_state": company_state,
 		"discount_account": settings.discount_account or "",
 		"freight_account": settings.freight or "",
 		"tax_paid_on_purchase": settings.tax_paid_on_purchase or "",
