@@ -300,6 +300,8 @@ useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 const rawSettings = ref(null)
 const syncing = ref(false)
+const showDebugModal = ref(false)
+const localVariables = ref([])
 
 onMounted(() => {
   loadSettings()
