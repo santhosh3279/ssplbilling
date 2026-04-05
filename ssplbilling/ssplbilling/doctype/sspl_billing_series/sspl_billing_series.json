@@ -41,9 +41,10 @@
   },
   {
    "fieldname": "tax_template",
-   "fieldtype": "Link",
+   "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Tax Template",
-   "options": "Sales Taxes and Charges Template"
+   "options": ""
   }
  ],
  "grid_page_length": 50,

@@ -4,6 +4,7 @@
 frappe.ui.form.on("SSPL Billing Settings", {
 	refresh(frm) {
 		load_series_options(frm);
+		load_tax_template_options(frm);
 	},
 });
 
@@ -11,6 +12,7 @@ frappe.ui.form.on("SSPL Billing Settings", {
 frappe.ui.form.on("SSPL Billing Series", {
 	form_render(frm) {
 		load_series_options(frm);
+		load_tax_template_options(frm);
 	},
 });
 
@@ -41,5 +43,32 @@ function load_series_options(frm) {
 			// 3. Re-render existing rows so they show the populated dropdown.
 			frm.fields_dict["billing_series"].grid.refresh();
 		},
+	});
+}
+
+function load_tax_template_options(frm) {
+	Promise.all([
+		frappe.db.get_list("Sales Taxes and Charges Template", { fields: ["name"], limit: 0, order_by: "name asc" }),
+		frappe.db.get_list("Purchase Taxes and Charges Template", { fields: ["name"], limit: 0, order_by: "name asc" }),
+	]).then(([salesTemplates, purchaseTemplates]) => {
+		const names = [
+			...salesTemplates.map((t) => t.name),
+			...purchaseTemplates.map((t) => t.name),
+		];
+		const options = "\n" + names.join("\n");
+
+		// 1. Patch Frappe's global meta cache.
+		const docfield = frappe.meta.get_docfield("SSPL Billing Series", "tax_template");
+		if (docfield) docfield.options = options;
+
+		// 2. Update the live grid's field definition.
+		frm.fields_dict["billing_series"].grid.update_docfield_property(
+			"tax_template",
+			"options",
+			options
+		);
+
+		// 3. Re-render existing rows.
+		frm.fields_dict["billing_series"].grid.refresh();
 	});
 }
