@@ -1822,6 +1822,9 @@ async function loadQuotation(quotationName) {
     quotationDocStatus.value = inv.docstatus
     quotationSaved.value = true
     quotationDate.value = inv.transaction_date
+    customer.value = inv.customer
+    custSearch.value = inv.customer_name
+    selectedCustomerDetails.value = { name: inv.customer, customer_name: inv.customer_name, state: inv.state || '' }
     
     // 2. Series & Price List
     skipPriceListSync.value = true

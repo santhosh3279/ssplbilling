@@ -87,10 +87,16 @@ def get_sales_invoice(invoice_name):
         if any(t.included_in_print_rate for t in si.taxes):
             is_inclusive = 1
 
+    # Fetch state from billing address
+    party_state = ""
+    if si.customer_address:
+        party_state = frappe.db.get_value("Address", si.customer_address, "state") or ""
+
     return {
         "name": si.name,
         "customer": si.customer,
         "customer_name": si.customer_name,
+        "state": party_state,
         "posting_date": str(si.posting_date),
         "naming_series": si.naming_series or "",
         "payment_mode": payment_mode,

@@ -2095,6 +2095,9 @@ async function loadInvoice(invoiceName) {
     billDate.value = inv.posting_date
     isReturn.value = !!inv.is_return
     paymentMode.value = inv.payment_mode || 'Cash'
+    customer.value = inv.customer
+    custSearch.value = inv.customer_name
+    selectedCustomerDetails.value = { name: inv.customer, customer_name: inv.customer_name, state: inv.state || '' }
     
     // 2. Series & Price List
     skipPriceListSync.value = true

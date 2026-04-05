@@ -311,10 +311,16 @@ def get_quotation(quotation_name):
 		if any(t.included_in_print_rate for t in qt.taxes):
 			is_inclusive = 1
 
+	# Fetch state from billing address
+	party_state = ""
+	if qt.customer_address:
+		party_state = frappe.db.get_value("Address", qt.customer_address, "state") or ""
+
 	return {
 		"name": qt.name,
 		"customer": qt.party_name,
 		"customer_name": qt.customer_name,
+		"state": party_state,
 		"naming_series": qt.naming_series,
 		"transaction_date": str(qt.transaction_date or ""),
 		"valid_till": str(qt.valid_till or ""),

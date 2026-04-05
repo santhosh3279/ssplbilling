@@ -2022,6 +2022,7 @@ async function loadInvoice(invoiceName) {
     // Populate form with invoice data
     supplier.value = inv.supplier
     suppSearch.value = inv.supplier_name || inv.customer_name
+    selectedSupplierDetails.value = { name: inv.supplier, customer_name: inv.supplier_name || inv.customer_name, state: inv.state || '' }
     billDate.value = inv.posting_date
     isReturn.value = !!inv.is_return
     skipPriceListSync.value = true
