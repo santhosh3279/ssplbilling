@@ -44,7 +44,7 @@
       <!-- Navigation -->
       <nav class="flex-1 px-3 py-3 overflow-y-auto">
         <!-- Admin: Inherit User Settings -->
-        <div v-if="userRole === 'admin'" class="mb-6 px-2">
+        <div v-if="isActualAdmin" class="mb-6 px-2">
           <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Inherit Settings
           </label>
@@ -327,6 +327,15 @@ const router = useRouter()
 const { refreshItemCache } = useItemCache()
 const { user: currentUser } = session
 
+// ==================== PERMISSIONS & ROLES ====================
+const permissionTrigger = ref(0)
+const userRole = computed(() => {
+  permissionTrigger.value
+  return getUserRole()
+})
+const isBiller = computed(() => userRole.value === 'biller')
+const isActualAdmin = computed(() => ['Administrator', 'admin'].includes(session.user.value))
+
 // ==================== USER ====================
 const userInitials = computed(() => {
   const name = String(session.fullName.value || session.user.value || 'U')
@@ -343,8 +352,7 @@ async function handleUserChange() {
     localStorage.setItem('wb-inherited-user', selectedUser.value)
   }
   await syncSettings()
-  // Refresh page to apply inherited roles/tiles
-  window.location.reload()
+  permissionTrigger.value++
 }
 
 async function handleLogout() {
@@ -372,9 +380,6 @@ const todayDay = computed(() => {
 
 
 // ==================== TILES ====================
-const userRole = getUserRole()
-const isBiller = userRole === 'biller'
-
 const allTiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
   { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-slate-600' },
@@ -394,7 +399,10 @@ const allTiles = [
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
 
-const tiles = allTiles.filter(t => canAccessTile(t.id))
+const tiles = computed(() => {
+  permissionTrigger.value
+  return allTiles.filter(t => canAccessTile(t.id))
+})
 
 const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger']
 
@@ -436,7 +444,9 @@ const routeMap = {
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(dashboardShortcuts({
   openModule,
-  openCustomerSearch: isBiller ? null : () => openCustomerSearch('All'),
+  openCustomerSearch: () => {
+    if (!isBiller.value) openCustomerSearch('All')
+  },
   openItemSearch: () => openItemSearch(),
   handleEscape: () => {
     if (showReconcileWindow.value) { showReconcileWindow.value = false; return }
@@ -623,7 +633,10 @@ async function fetchSettings(user = null) {
     if (settings && settings.user_defaults) {
       const defaults = settings.user_defaults
       if (defaults.default_printer) localStorage.setItem('wb-printer', defaults.default_printer)
-      if (defaults.warehouse) localStorage.setItem('wb-warehouse', defaults.warehouse)
+      if (defaults.warehouse) {
+        localStorage.setItem('wb-warehouse', defaults.warehouse)
+        defaultWarehouse.value = defaults.warehouse
+      }
       if (defaults.cost_center) localStorage.setItem('wb-cost-center', defaults.cost_center)
       if (defaults.income_account) localStorage.setItem('wb-income-account', defaults.income_account)
     }
@@ -680,7 +693,7 @@ onMounted(async () => {
   window.addEventListener('wb-global-item-search', openItemSearch)
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   
-  if (userRole === 'admin') {
+  if (isActualAdmin.value) {
     try {
       allUsers.value = await dashboardApi.getAllUsers()
     } catch (e) {

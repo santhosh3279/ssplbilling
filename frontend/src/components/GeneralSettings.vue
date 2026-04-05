@@ -284,6 +284,7 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
+import { getUserRole } from '../composables/usePermission'
 
 const props = defineProps({
   show: Boolean,
@@ -297,6 +298,7 @@ const rawSettings = ref(null)
 const syncing = ref(false)
 const showDebugModal = ref(false)
 const localVariables = ref([])
+const permissionTrigger = ref(0)
 
 defineExpose({ loadSettings, syncing })
 
@@ -314,6 +316,7 @@ async function loadSettings() {
     const targetUser = localStorage.getItem('wb-inherited-user') || session.user.value
     rawSettings.value = await dashboardApi.getBillingSettings(targetUser)
     applyToLocalStorage(rawSettings.value, targetUser)
+    permissionTrigger.value++
   } catch (e) {
     console.error('[GeneralSettings] getBillingSettings failed:', e)
   } finally {
@@ -423,14 +426,24 @@ function showLocalVariables() {
 }
 
 const currentUser = computed(() => session.user.value)
-const isAdmin = computed(() => ['Administrator', 'admin'].includes(currentUser.value))
+const isActualAdmin = computed(() => ['Administrator', 'admin'].includes(currentUser.value))
+
+const userRole = computed(() => {
+  permissionTrigger.value
+  return getUserRole()
+})
+
+const isAdmin = computed(() => userRole.value === 'admin')
 
 const currentUserRow = computed(() => {
+  permissionTrigger.value
   if (!rawSettings.value) return null
-  return (rawSettings.value.user_series || []).find(r => r.user === currentUser.value) || null
+  const targetUser = localStorage.getItem('wb-inherited-user') || currentUser.value
+  return (rawSettings.value.user_series || []).find(r => r.user === targetUser) || null
 })
 
 const visibleUserSeries = computed(() => {
+  permissionTrigger.value
   if (!rawSettings.value?.user_series) return []
   if (isAdmin.value) return rawSettings.value.user_series
   return currentUserRow.value ? [currentUserRow.value] : []
@@ -441,12 +454,15 @@ function getAlpha(s) {
 }
 
 const visiblePrinterSettings = computed(() => {
+  permissionTrigger.value
   if (!rawSettings.value?.printer_settings) return []
   if (isAdmin.value) return rawSettings.value.printer_settings
-  return rawSettings.value.printer_settings.filter(ps => ps.user === currentUser.value)
+  const targetUser = localStorage.getItem('wb-inherited-user') || currentUser.value
+  return rawSettings.value.printer_settings.filter(ps => ps.user === targetUser)
 })
 
 const visibleBillingSeries = computed(() => {
+  permissionTrigger.value
   if (!rawSettings.value?.billing_series) return []
   if (isAdmin.value) return rawSettings.value.billing_series
   const row = currentUserRow.value
