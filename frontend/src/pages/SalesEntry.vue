@@ -768,62 +768,62 @@
 
     <!-- CUSTOM ADDRESS MODAL -->
     <div v-if="showCustomAddressModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showCustomAddressModal = false">
-      <div class="w-[480px] overflow-hidden rounded-2xl bg-slate-900 border border-amber-700/50 shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800/60 px-6 py-4">
+      <div class="w-[960px] overflow-hidden rounded-[32px] bg-slate-900 border border-amber-700/50 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800/60 px-10 py-8">
           <div>
-            <div class="text-lg font-bold text-slate-100">Custom Delivery Name &amp; Address</div>
-            <div class="text-xs text-slate-400 mt-0.5">Overrides customer name &amp; address on the printed invoice</div>
+            <div class="text-3xl font-bold text-slate-100">Custom Delivery Name &amp; Address</div>
+            <div class="text-base text-slate-400 mt-1">Overrides customer name &amp; address on the printed invoice</div>
           </div>
-          <button @click="showCustomAddressModal = false" class="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-slate-200 text-xl leading-none">&times;</button>
+          <button @click="showCustomAddressModal = false" class="rounded p-2 text-slate-400 hover:bg-slate-700 hover:text-slate-200 text-4xl leading-none">&times;</button>
         </div>
-        <div class="p-6 flex flex-col gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-amber-500">Customer Name</label>
+        <div class="p-12 flex flex-col gap-8">
+          <div class="flex flex-col gap-3">
+            <label class="text-2xl font-bold uppercase tracking-wider text-amber-500">Customer Name</label>
             <input
               v-model="customAddress.custom_customer_name"
               type="text"
               placeholder="e.g. Ramesh &amp; Brothers"
-              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-amber-500 placeholder-slate-600"
+              class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-amber-500 placeholder-slate-600"
             />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
+          <div class="flex flex-col gap-3">
+            <label class="text-2xl font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
             <input
               v-model="customAddress.custom_address_line1"
               type="text"
               placeholder="Street / Door No"
-              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+              class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
             />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 2</label>
+          <div class="flex flex-col gap-3">
+            <label class="text-2xl font-bold uppercase tracking-wider text-slate-500">Address Line 2</label>
             <input
               v-model="customAddress.custom_address_line2"
               type="text"
               placeholder="City / District / Pincode"
-              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+              class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
             />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number</label>
+          <div class="flex flex-col gap-3">
+            <label class="text-2xl font-bold uppercase tracking-wider text-slate-500">Mobile Number</label>
             <input
               v-model="customAddress.custom_mobile_number"
               type="text"
               placeholder="e.g. 9876543210"
-              class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+              class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
             />
           </div>
         </div>
-        <div class="flex items-center justify-between border-t border-slate-800 bg-slate-800/50 px-6 py-4">
+        <div class="flex items-center justify-between border-t border-slate-800 bg-slate-800/50 px-12 py-8">
           <button
             v-if="customAddress.custom_customer_name || customAddress.custom_address_line1 || customAddress.custom_address_line2 || customAddress.custom_mobile_number"
             @click="customAddress = { custom_customer_name: '', custom_address_line1: '', custom_address_line2: '', custom_mobile_number: '' }"
-            class="rounded border border-red-900/50 bg-transparent px-4 py-2 text-xs font-bold uppercase text-red-400 hover:bg-red-900/20 transition-colors"
+            class="rounded-xl border-2 border-red-900/50 bg-transparent px-8 py-4 text-xl font-bold uppercase text-red-400 hover:bg-red-900/20 transition-colors"
           >Clear</button>
           <div v-else></div>
-          <div class="flex gap-3">
-            <button @click="showCustomAddressModal = false" class="rounded border border-slate-600 bg-slate-800 px-5 py-2 text-xs font-bold text-slate-300 hover:bg-slate-700 transition-colors">Cancel</button>
-            <button @click="showCustomAddressModal = false" class="rounded bg-amber-600 px-5 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">Done</button>
+          <div class="flex gap-6">
+            <button @click="showCustomAddressModal = false" class="rounded-xl border-2 border-slate-600 bg-slate-800 px-10 py-4 text-xl font-bold text-slate-300 hover:bg-slate-700 transition-colors">Cancel</button>
+            <button @click="showCustomAddressModal = false" class="rounded-xl bg-amber-600 px-10 py-4 text-xl font-bold text-white hover:bg-amber-700 transition-colors">Done</button>
           </div>
         </div>
       </div>
