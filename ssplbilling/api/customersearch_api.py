@@ -99,7 +99,7 @@ def get_all_ledgers():
 
     # 4. Batch fetch primary addresses (Customers & Suppliers)
     addresses = frappe.db.sql("""
-        SELECT dl.link_name AS name, addr.name as address_name, addr.address_line1, addr.city
+        SELECT dl.link_name AS name, addr.name as address_name, addr.address_line1, addr.city, addr.state
         FROM `tabDynamic Link` dl
         JOIN `tabAddress` addr ON addr.name = dl.parent
         WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Address'
@@ -112,6 +112,7 @@ def get_all_ledgers():
                 l["address_name"] = a.address_name
                 l["address_line1"] = a.address_line1
                 l["city"] = a.city
+                l["state"] = a.state or ""
 
     # 5. Batch fetch WhatsApp (Customers & Suppliers)
     wa_rows = frappe.db.sql("""

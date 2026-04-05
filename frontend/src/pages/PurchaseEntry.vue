@@ -877,7 +877,34 @@ watch(taxTemplate, (val) => {
   } else {
     isInclusiveTax.value = false
   }
+  applyRegionalTaxLogic()
 })
+
+function applyRegionalTaxLogic() {
+  if (!selectedSupplierDetails.value || !taxTemplate.value) return
+  
+  const companyState = localStorage.getItem('wb-company-state') || ''
+  const partyState = selectedSupplierDetails.value.state || ''
+  
+  if (!companyState || !partyState) return
+  
+  const isInterState = companyState.toLowerCase() !== partyState.toLowerCase()
+  const currentTax = taxTemplate.value
+  
+  if (isInterState) {
+    if (currentTax.toLowerCase().includes('in-state')) {
+      const targetTax = currentTax.replace(/in-state/i, 'Out-State')
+      const found = availableTaxTemplates.value.find(t => t.toLowerCase() === targetTax.toLowerCase())
+      if (found) taxTemplate.value = found
+    }
+  } else {
+    if (currentTax.toLowerCase().includes('out-state')) {
+      const targetTax = currentTax.replace(/out-state/i, 'In-State')
+      const found = availableTaxTemplates.value.find(t => t.toLowerCase() === targetTax.toLowerCase())
+      if (found) taxTemplate.value = found
+    }
+  }
+}
 
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || '')
@@ -1062,6 +1089,7 @@ function pickSupplier(c, dates) {
   suppSearch.value = c.label || c.customer_name; 
   showSupplierSearchModal.value = false; 
   selectedSupplierDetails.value = c;
+  applyRegionalTaxLogic();
   nextTick(() => newCodeInput.value?.focus())
 }
 
