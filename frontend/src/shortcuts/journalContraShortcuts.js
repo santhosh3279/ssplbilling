@@ -7,6 +7,7 @@
 export const journalContraShortcuts = (handlers) => ({
   'F2':        handlers.switchToJournal,
   'F3':        handlers.switchToContra,
+  'F4':        handlers.switchToOpening,
   'INSERT':    handlers.addRow,
   'F9':        handlers.saveEntry,
   'ARROWUP':   handlers.navigateUp,

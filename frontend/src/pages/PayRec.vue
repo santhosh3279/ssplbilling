@@ -512,7 +512,6 @@ const router = useRouter()
 const entryTypes = [
   { label: 'Receipt', value: 'Receipt', color: 'blue' },
   { label: 'Payment', value: 'Payment', color: 'emerald' },
-  { label: 'Opening', value: 'Opening Entry', color: 'amber' },
 ]
 const entryType = ref('Receipt')
 const journalTypes = ref([])
@@ -544,9 +543,6 @@ const searchInitialType = computed(() => {
     if (activeRowIdx.value === 0) return 'Supplier'
     return 'Account'
   }
-  if (entryType.value === 'Opening Entry') {
-    return 'Customer'
-  }
   // For row 1+ in Receipt/Payment, default to Account but allow other tabs
   if (activeRowIdx.value > 0) return 'Account'
   return 'Account'
@@ -566,7 +562,6 @@ const searchAllowedTypes = computed(() => {
   if ((entryType.value === 'Receipt' || entryType.value === 'Payment') && activeRowIdx.value > 0) {
     return ['Account', 'Customer', 'Supplier', 'Employee']
   }
-  if (entryType.value === 'Opening Entry') return ['Customer', 'Supplier', 'Employee']
   return ['Account', 'Customer', 'Supplier', 'Employee']
 })
 
@@ -952,7 +947,6 @@ onMounted(async () => {
     switchToReceipt: () => { entryType.value = 'Receipt' },
     switchToPayment: () => { entryType.value = 'Payment' },
     switchToGeneral: () => { if (journalTypes.value.length) entryType.value = journalTypes.value[0] },
-    switchToOpening: () => { if (journalTypes.value.includes('Opening Entry')) entryType.value = 'Opening Entry' },
     addRow: () => {
       if (showSearchModal.value) { showAllAccounts.value = true; nextTick(() => ledgerSearchModal.value?.focus()); return }
       addRow()

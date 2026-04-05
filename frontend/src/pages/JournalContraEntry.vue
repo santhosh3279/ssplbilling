@@ -9,24 +9,32 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-lg font-bold tracking-tight text-slate-100">{{ isContra ? 'CONTRA ENTRY' : 'JOURNAL ENTRY' }}</h1>
+        <h1 class="text-lg font-bold tracking-tight text-slate-100 uppercase">{{ entryType === 'Contra' ? 'CONTRA ENTRY' : (entryType === 'Opening Entry' ? 'OPENING ENTRY' : 'JOURNAL ENTRY') }}</h1>
         <div class="h-4 w-px bg-slate-600 mx-2"></div>
         <div class="flex rounded-lg bg-slate-700 p-1">
           <button
-            @click="isContra = false"
+            @click="entryType = 'Journal Entry'"
             class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="!isContra ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+            :class="entryType === 'Journal Entry' ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
           >
             <span>Journal</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="!isContra ? 'border-blue-500 bg-blue-900/20' : 'border-slate-600 bg-slate-700'">F2</kbd>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="entryType === 'Journal Entry' ? 'border-blue-500 bg-blue-900/20' : 'border-slate-600 bg-slate-700'">F2</kbd>
           </button>
           <button
-            @click="isContra = true"
+            @click="entryType = 'Contra'"
             class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="isContra ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+            :class="entryType === 'Contra' ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
           >
             <span>Contra</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="isContra ? 'border-emerald-600 bg-emerald-900/20' : 'border-slate-600 bg-slate-700'">F3</kbd>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="entryType === 'Contra' ? 'border-emerald-600 bg-emerald-900/20' : 'border-slate-600 bg-slate-700'">F3</kbd>
+          </button>
+          <button
+            @click="entryType = 'Opening Entry'"
+            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
+            :class="entryType === 'Opening Entry' ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+          >
+            <span>Opening</span>
+            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="entryType === 'Opening Entry' ? 'border-amber-600 bg-amber-900/20' : 'border-slate-600 bg-slate-700'">F4</kbd>
           </button>
         </div>
       </div>
@@ -155,7 +163,7 @@
             </tbody>
           </table>
 
-          <div class="p-2">
+          <div v-if="entryType !== 'Opening Entry'" class="p-2">
             <button
               @click="addRow"
               class="flex items-center gap-2 rounded-xl border border-dashed border-slate-600 px-4 py-2 text-xs font-bold text-slate-500 hover:border-blue-500 hover:text-blue-400 hover:bg-blue-900/20 transition-all w-full justify-center"
@@ -189,21 +197,23 @@
               </div>
             </div>
             <div class="flex gap-12 ml-12">
-              <div class="text-right">
+              <div v-if="entryType !== 'Opening Entry'" class="text-right">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Debit</div>
                 <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalDebit) }}</div>
               </div>
-              <div class="text-right">
+              <div v-if="entryType !== 'Opening Entry'" class="text-right">
                 <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Credit</div>
                 <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalCredit) }}</div>
               </div>
-              <div class="text-right border-l border-slate-700 pl-12">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
-                <div
-                  class="text-2xl font-black font-mono"
-                  :class="Math.abs(difference) < 0.01 ? 'text-emerald-400' : 'text-rose-400'"
-                >
-                  ₹ {{ fmt(difference) }}
+              <div class="text-right border-l border-slate-700 pl-12" :class="{ 'border-none': entryType === 'Opening Entry' }">
+                <div v-if="entryType !== 'Opening Entry'">
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
+                  <div
+                    class="text-2xl font-black font-mono"
+                    :class="Math.abs(difference) < 0.01 ? 'text-emerald-400' : 'text-rose-400'"
+                  >
+                    ₹ {{ fmt(difference) }}
+                  </div>
                 </div>
                 <!-- SAVE BUTTON -->
                 <div class="mt-4 flex justify-end">
@@ -229,9 +239,9 @@
     <!-- MODAL -->
     <CustomerSearchModal
       ref="ledgerSearchModal"
+      :allowed-types="entryType === 'Contra' ? ['Account'] : (entryType === 'Opening Entry' ? ['Customer', 'Supplier', 'Employee'] : ['Customer', 'Supplier', 'Account'])"
+      :initial-type="entryType === 'Contra' ? 'Account' : (entryType === 'Opening Entry' ? 'Customer' : 'All')"
       :show="showSearchModal"
-      :allowed-types="isContra ? ['Account'] : ['Customer', 'Supplier']"
-      :initial-type="isContra ? 'Account' : 'All'"
       :skip-date-filter="true"
       @close="showSearchModal = false"
       @select="selectLedger"
@@ -250,9 +260,10 @@ import { journalContraShortcuts } from '../shortcuts/journalContraShortcuts'
 const router = useRouter()
 
 // --- STATE ---
-const isContra = ref(false)
+const entryType = ref('Journal Entry')
+const isContra = computed(() => entryType.value === 'Contra')
 
-watch(isContra, () => {
+watch(entryType, () => {
   rows.value = [
     { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
   ]
@@ -362,6 +373,10 @@ const validationError = computed(() => {
 })
 
 const canSave = computed(() => {
+  if (entryType.value === 'Opening Entry') {
+    return rows.value.filter(r => r.account).length === 1 && 
+           (Number(rows.value[0]?.debit) > 0 || Number(rows.value[0]?.credit) > 0)
+  }
   return rows.value.filter(r => r.account).length >= 2 && 
          Math.abs(difference.value) < 0.01 && 
          totalDebit.value > 0 &&
@@ -377,6 +392,7 @@ function fmt(val) {
 }
 
 function addRow() {
+  if (entryType.value === 'Opening Entry' && rows.value.length >= 1) return
   rows.value.push({ account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 })
   activeRowIdx.value = rows.value.length - 1
 }
@@ -430,6 +446,10 @@ function getNewBalance(row) {
 }
 
 function isFieldDisabled(idx, field) {
+  // Opening and Journal entries allow full flexibility
+  if (entryType.value === 'Opening Entry' || entryType.value === 'Journal Entry') return false
+
+  // Contra entry logic: follow row 0
   const firstRowDebit = Number(rows.value[0]?.debit) || 0
   const firstRowCredit = Number(rows.value[0]?.credit) || 0
   if (firstRowDebit > 0.005) {
@@ -508,8 +528,9 @@ onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   // Mount shortcuts on pageload
   useShortcuts(journalContraShortcuts({
-    switchToJournal: () => { isContra.value = false },
-    switchToContra: () => { isContra.value = true },
+    switchToJournal: () => { entryType.value = 'Journal Entry' },
+    switchToContra: () => { entryType.value = 'Contra' },
+    switchToOpening: () => { entryType.value = 'Opening Entry' },
     addRow: addRow,
     saveEntry: saveEntry,
     navigateUp: () => {
@@ -568,7 +589,7 @@ async function saveEntry() {
   isSubmitting.value = true
   try {
     const payload = {
-      voucher_type: isContra.value ? 'Contra' : 'Journal Entry',
+      voucher_type: entryType.value,
       posting_date: postingDate.value,
       user_remark: userRemarks.value,
       accounts: rows.value

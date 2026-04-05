@@ -101,14 +101,13 @@ def create_journal_contra_entry(data):
                 "user_remark": acc.get("user_remark")
             })
 
-            # Opening Entry: add a balancing row for each input
+            # Opening Entry: add a balancing row to Temporary Opening
             if voucher_type == "Opening Entry":
+                temp_opening = frappe.db.get_value("Company", company, "default_opening_balance_equity_account") or "Temporary Opening - SSPL"
                 je.append("accounts", {
-                    "account": row_account,
+                    "account": temp_opening,
                     "debit_in_account_currency": credit,  # Flipped
                     "credit_in_account_currency": debit,  # Flipped
-                    "party_type": party_type,
-                    "party": party,
                     "cost_center": acc.get("cost_center"),
                     "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
                 })
