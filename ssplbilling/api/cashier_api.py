@@ -82,6 +82,11 @@ def get_sales_invoice(invoice_name):
     loading_amount = _actual_charge("loading")
     other_charges_amount = _actual_charge("other")
 
+    is_inclusive = 0
+    if si.taxes:
+        if any(t.included_in_print_rate for t in si.taxes):
+            is_inclusive = 1
+
     return {
         "name": si.name,
         "customer": si.customer,
@@ -98,6 +103,7 @@ def get_sales_invoice(invoice_name):
         "grand_total": float(si.grand_total or 0),
         "outstanding_amount": float(si.outstanding_amount or 0),
         "tax_template": si.taxes_and_charges or "",
+        "is_inclusive": is_inclusive,
         "cost_center": cost_center or "",
         "price_list": si.selling_price_list or "",
         "docstatus": si.docstatus,

@@ -237,6 +237,11 @@ def get_sales_order(order_name):
 			"deleted": False,
 		})
 
+	is_inclusive = 0
+	if so.taxes:
+		if any(t.included_in_print_rate for t in so.taxes):
+			is_inclusive = 1
+
 	return {
 		"name": so.name,
 		"customer": so.customer,
@@ -251,6 +256,7 @@ def get_sales_order(order_name):
 		"loading_amount": _actual_charge("loading"),
 		"other_charges_amount": _actual_charge("other"),
 		"tax_template": so.taxes_and_charges or "",
+		"is_inclusive": is_inclusive,
 		"cost_center": cost_center or "",
 		"price_list": so.selling_price_list or "",
 		"docstatus": so.docstatus,
@@ -282,6 +288,10 @@ def create_sales_order(data):
 	if data.get("tax_template"):
 		so.taxes_and_charges = data["tax_template"]
 		so.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", data["tax_template"]) or [])
+		is_inclusive = data.get("is_inclusive", 0)
+		if is_inclusive:
+			for tax in so.taxes:
+				tax.included_in_print_rate = 1
 
 	for t in data.get("taxes", []):
 		if t.get("tax_amount", 0):
@@ -344,6 +354,10 @@ def update_sales_order(data):
 
 	if data.get("tax_template"):
 		so.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", data["tax_template"]) or [])
+		is_inclusive = data.get("is_inclusive", 0)
+		if is_inclusive:
+			for tax in so.taxes:
+				tax.included_in_print_rate = 1
 	else:
 		so.taxes = []
 	for t in data.get("taxes", []):

@@ -306,6 +306,11 @@ def get_quotation(quotation_name):
 			"deleted": False,
 		})
 
+	is_inclusive = 0
+	if qt.taxes:
+		if any(t.included_in_print_rate for t in qt.taxes):
+			is_inclusive = 1
+
 	return {
 		"name": qt.name,
 		"customer": qt.party_name,
@@ -320,6 +325,7 @@ def get_quotation(quotation_name):
 		"loading_amount": _actual_charge("loading"),
 		"other_charges_amount": _actual_charge("other"),
 		"tax_template": qt.taxes_and_charges or "",
+		"is_inclusive": is_inclusive,
 		"cost_center": cost_center or "",
 		"price_list": qt.selling_price_list or "",
 		"docstatus": qt.docstatus,
@@ -353,6 +359,10 @@ def create_quotation(data):
 	if data.get("tax_template"):
 		qt.taxes_and_charges = data["tax_template"]
 		qt.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", data["tax_template"]) or [])
+		is_inclusive = data.get("is_inclusive", 0)
+		if is_inclusive:
+			for tax in qt.taxes:
+				tax.included_in_print_rate = 1
 
 	if data.get("discount_percentage"):
 		qt.additional_discount_percentage = data["discount_percentage"]
@@ -426,6 +436,10 @@ def update_quotation(data):
 
 	if data.get("tax_template"):
 		qt.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", data["tax_template"]) or [])
+		is_inclusive = data.get("is_inclusive", 0)
+		if is_inclusive:
+			for tax in qt.taxes:
+				tax.included_in_print_rate = 1
 	else:
 		qt.taxes = []
 	for t in data.get("taxes", []):

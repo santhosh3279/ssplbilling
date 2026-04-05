@@ -248,10 +248,13 @@ def create_purchase_invoice(data=None, **kwargs):
     if data.get("tax_template"):
         pi.taxes_and_charges = data["tax_template"]
         pi.set("taxes", _erpnext_tax_rows("Purchase Taxes and Charges Template", data["tax_template"]) or [])
-        if data.get("cost_center"):
+        is_inclusive = data.get("is_inclusive", 0)
+        if data.get("cost_center") or is_inclusive:
             for tax in pi.taxes:
-                if not tax.cost_center:
+                if data.get("cost_center") and not tax.cost_center:
                     tax.cost_center = data["cost_center"]
+                if is_inclusive:
+                    tax.included_in_print_rate = 1
 
     pi.insert()
 
@@ -338,6 +341,11 @@ def get_purchase_invoice(invoice_name):
     pi = frappe.get_doc("Purchase Invoice", invoice_name)
     cost_center = pi.items[0].cost_center if pi.items else ""
 
+    is_inclusive = 0
+    if pi.taxes:
+        if any(t.included_in_print_rate for t in pi.taxes):
+            is_inclusive = 1
+
     return {
         "name": pi.name,
         "supplier": pi.supplier,
@@ -348,6 +356,7 @@ def get_purchase_invoice(invoice_name):
         "discount_percentage": float(pi.additional_discount_percentage or 0),
         "grand_total": float(pi.grand_total or 0),
         "tax_template": pi.taxes_and_charges or "",
+        "is_inclusive": is_inclusive,
         "cost_center": cost_center or "",
         "docstatus": pi.docstatus,
         "status": pi.status,
@@ -400,10 +409,13 @@ def update_purchase_invoice(data=None, **kwargs):
     if data.get("tax_template"):
         pi.taxes_and_charges = data["tax_template"]
         pi.set("taxes", _erpnext_tax_rows("Purchase Taxes and Charges Template", data["tax_template"]) or [])
-        if data.get("cost_center"):
+        is_inclusive = data.get("is_inclusive", 0)
+        if data.get("cost_center") or is_inclusive:
             for tax in pi.taxes:
-                if not tax.cost_center:
+                if data.get("cost_center") and not tax.cost_center:
                     tax.cost_center = data["cost_center"]
+                if is_inclusive:
+                    tax.included_in_print_rate = 1
     else:
         pi.taxes = []
     pi.items = []

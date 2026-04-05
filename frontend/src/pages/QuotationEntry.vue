@@ -376,6 +376,10 @@
                   <option value="">-- None --</option>
                   <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
                 </select>
+                <label class="flex items-center gap-2 mt-1 cursor-pointer select-none">
+                  <input type="checkbox" v-model="isInclusiveTax" :disabled="quotationDocStatus !== 0 || quotationSaved" class="h-4 w-4 rounded border-slate-600 accent-blue-500 cursor-pointer disabled:cursor-not-allowed" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Inclusive Tax</span>
+                </label>
               </div>
               <div class="flex flex-col gap-1.5 py-1">
                 <label class="flex items-center gap-2 cursor-pointer select-none">
@@ -829,6 +833,16 @@ const defaultTaxRate = ref(0)
 const priceList = ref('Standard Selling')
 const printScheme = ref('')
 const taxTemplate = ref('')
+const isInclusiveTax = ref(false)
+
+watch(taxTemplate, (val) => {
+  if (val.toLowerCase().includes('inclusive')) {
+    isInclusiveTax.value = true
+  } else {
+    isInclusiveTax.value = false
+  }
+})
+
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || '')
 
@@ -1805,6 +1819,7 @@ async function loadQuotation(quotationName) {
     loadingAmt.value = inv.loading_amount || 0
     otherChargesAmt.value = inv.other_charges_amount || 0
     if (inv.tax_template) taxTemplate.value = inv.tax_template
+    isInclusiveTax.value = !!inv.is_inclusive
     if (inv.cost_center) costCenter.value = inv.cost_center
 
     // 4. Items
@@ -1998,7 +2013,7 @@ async function fetchNextQuotationNo() {
 }
 
 const isExempted = computed(() => taxTemplate.value.toLowerCase().includes('exempt'))
-const isInclusive = computed(() => taxTemplate.value.toLowerCase().includes('inclusive'))
+const isInclusive = computed(() => isInclusiveTax.value)
 
 // Gross = sum of (qty * rate * (1 - item discount%)) — after item-level discount
 const grossTotal = computed(() => {
@@ -2077,6 +2092,7 @@ async function saveQuotation() {
     freight_amount: freightAmt.value,
     freight_account: localStorage.getItem('wb_freight') || '',
     tax_template: taxTemplate.value || '',
+    is_inclusive: isInclusiveTax.value ? 1 : 0,
     cost_center: costCenter.value || '',
     items: activeItems.value.map(i => ({
       item_code: i.item_code,

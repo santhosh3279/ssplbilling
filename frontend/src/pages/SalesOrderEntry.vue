@@ -399,6 +399,10 @@
                   <option value="">None</option>
                   <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
                 </select>
+                <label class="flex items-center gap-2 mt-1 cursor-pointer select-none">
+                  <input type="checkbox" v-model="isInclusiveTax" :disabled="billDocStatus !== 0 || billSaved" class="h-4 w-4 rounded border-slate-600 accent-blue-500 cursor-pointer disabled:cursor-not-allowed" />
+                  <span class="text-slate-400 text-[10px] font-bold uppercase">Inclusive Tax</span>
+                </label>
               </div>
               <div class="flex flex-col gap-0.5">
                 <label class="text-[9px] font-bold uppercase text-slate-600">Cost Center</label>
@@ -725,6 +729,15 @@ const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
 const priceList = ref('Standard Selling')
 const taxTemplate = ref('')
+const isInclusiveTax = ref(false)
+
+watch(taxTemplate, (val) => {
+  if (val.toLowerCase().includes('inclusive')) {
+    isInclusiveTax.value = true
+  } else {
+    isInclusiveTax.value = false
+  }
+})
 
 const availablePriceLists = ref([])
 const availableTaxTemplates = ref([])
@@ -1132,8 +1145,9 @@ async function loadOrder(orderName) {
     discountDirectAmt.value = so.additional_discount_amount || 0
     discountInputMode.value = so.additional_discount_amount > 0 ? 'amt' : so.discount_percentage > 0 ? 'pct' : null
     freightAmt.value = so.freight_amount || 0
-    loadingAmt.value = so.loading_amount || 0
+    loadingAmt.value = so.other_charges_amount || 0
     if (so.tax_template !== undefined) taxTemplate.value = so.tax_template || ''
+    isInclusiveTax.value = !!so.is_inclusive
     items.value = so.items.map(i => ({
       ...i,
       rate: i.price_list_rate || i.rate,
@@ -1180,6 +1194,7 @@ async function saveOrder() {
     discount_percentage: discountInputMode.value === 'amt' ? 0 : (discountPct.value || 0),
     additional_discount_amount: discountInputMode.value === 'amt' ? (discountDirectAmt.value || 0) : 0,
     tax_template: taxTemplate.value || '',
+    is_inclusive: isInclusiveTax.value ? 1 : 0,
     taxes: [
       ...(freightAmt.value > 0 ? [{ charge_type: 'Actual', account_head: '', description: 'Freight Charges', tax_amount: freightAmt.value }] : []),
       ...(loadingAmt.value > 0 ? [{ charge_type: 'Actual', account_head: '', description: 'Loading Charges', tax_amount: loadingAmt.value }] : []),
