@@ -263,6 +263,17 @@ def create_purchase_invoice(data=None, **kwargs):
 
 
 @frappe.whitelist()
+def get_tax_templates():
+    """Return available Purchase Taxes and Charges Templates."""
+    return frappe.get_all(
+        "Purchase Taxes and Charges Template",
+        filters={"disabled": 0},
+        fields=["name"],
+        order_by="name asc"
+    )
+
+
+@frappe.whitelist()
 def get_naming_series():
     """Get available naming series for Purchase Invoice."""
     try:

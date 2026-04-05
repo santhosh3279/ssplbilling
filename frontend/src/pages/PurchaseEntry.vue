@@ -799,12 +799,7 @@ function syncSeriesConfig(series) {
 async function fetchDropdownOptions() {
   try {
     const [templates, warehouses, costCenters] = await Promise.all([
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Purchase Taxes and Charges Template',
-        fields: ['name'],
-        filters: [['disabled', '=', 0]],
-        limit_page_length: 100,
-      }),
+      frappeGet('ssplbilling.api.purchase_api.get_tax_templates'),
       frappeGet('frappe.client.get_list', {
         doctype: 'Warehouse',
         fields: ['name'],
