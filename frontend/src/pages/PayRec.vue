@@ -549,6 +549,8 @@ const searchInitialType = computed(() => {
   if (entryType.value === 'Opening Entry') {
     return 'Customer'
   }
+  // For row 1+ in Receipt/Payment, default to Account but allow other tabs
+  if (activeRowIdx.value > 0) return 'Account'
   return 'Account'
 })
 
@@ -562,7 +564,10 @@ const searchFilterList = computed(() => {
 })
 
 const searchAllowedTypes = computed(() => {
-  if ((entryType.value === 'Receipt' || entryType.value === 'Payment') && activeRowIdx.value > 0) return ['Account']
+  // If row 1+ in Receipt/Payment, default to Account but allow all types (Customer, Supplier, Employee, Account)
+  if ((entryType.value === 'Receipt' || entryType.value === 'Payment') && activeRowIdx.value > 0) {
+    return ['Account', 'Customer', 'Supplier', 'Employee']
+  }
   if (entryType.value === 'Opening Entry') return ['Customer', 'Supplier', 'Employee']
   return ['Account', 'Customer', 'Supplier', 'Employee']
 })
