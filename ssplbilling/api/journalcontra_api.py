@@ -36,6 +36,8 @@ def create_journal_contra_entry(data):
     def _create_single_je(row_accounts):
         je = frappe.new_doc("Journal Entry")
         je.voucher_type = voucher_type
+        if voucher_type == "Opening Entry":
+            je.is_opening = "Yes"
         je.posting_date = posting_date
         je.company = company
         je.user_remark = user_remark
@@ -107,7 +109,7 @@ def create_journal_contra_entry(data):
                         "debit_in_account_currency": credit,
                         "credit_in_account_currency": debit,
                         "cost_center": acc.get("cost_center"),
-                        "user_remark": (acc.get("user_remark") or "") + " (Balancing Row)"
+                        "user_remark": acc.get("user_remark") or user_remark
                     })
         
         je.insert()
