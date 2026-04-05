@@ -211,6 +211,8 @@ def create_purchase_invoice(data=None, **kwargs):
     pi.supplier = data["supplier"]
     pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())
+    pi.set_posting_time = 1
+    pi.posting_time = frappe.utils.nowtime()
     pi.naming_series = data.get("naming_series", "PINV-.YY.-")
     pi.is_return = data.get("is_return", 0)
     pi.update_stock = 1
@@ -458,6 +460,12 @@ def update_purchase_invoice(data=None, **kwargs):
     pi.is_return = data.get("is_return", 0)
     pi.bill_no = data.get("bill_no")
     pi.posting_date = data.get("date", frappe.utils.today())
+    pi.set_posting_time = 1
+    # Do not overwrite posting_time if it's already set on existing document,
+    # unless it's explicitly passed in data.
+    if not pi.posting_time:
+        pi.posting_time = frappe.utils.nowtime()
+    
     pi.additional_discount_percentage = float(data.get("discount_percentage", 0))
     if data.get("tax_template"):
         pi.taxes_and_charges = data["tax_template"]
