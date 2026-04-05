@@ -452,7 +452,7 @@
                     <!-- Row 2: Cancel/New Bill and Incentive -->
                     <div class="flex gap-2">
                       <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-2.5 text-center text-xl font-semibold text-red-400 hover:bg-red-900/20" @click="cancelBill">{{ billSaved ? 'New Bill' : 'Cancel' }}</button>
-                      
+                      <button @click="showIncentiveModal = true" class="flex-1 rounded border border-indigo-700/50 bg-indigo-900/20 py-2.5 text-center text-xl font-semibold text-indigo-400 hover:bg-indigo-900/40 transition">Incentive{{ incentiveRows.length ? ' (' + incentiveRows.length + ')' : '' }}</button>
                     </div>
                   </div>
                 </td>
@@ -558,7 +558,14 @@
     />
 
     <!-- INCENTIVE ENTRY MODAL -->
-    
+    <IncentiveEntry
+      :show="showIncentiveModal"
+      doctype="Purchase Invoice"
+      :docname="savedInvoiceName || ''"
+      :initial-rows="incentiveRows"
+      @close="showIncentiveModal = false"
+      @update:rows="rows => { incentiveRows = rows; showIncentiveModal = false }"
+    />
 
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
@@ -788,6 +795,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import Warning from '../components/Warning.vue'
 import ErrorWindow from '../components/ErrorWindow.vue'
+import IncentiveEntry from '../components/IncentiveEntry.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import { createSupplier, updateSupplier, fetchSupplierDetails } from '../api/supplier.js'
 import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
@@ -858,7 +866,7 @@ const billingSeriesConfig = ref([])
 const cipherMap = ref([])
 const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 const defaultTaxRate = ref(0)
-const priceList = ref('Standard Buying')
+const priceList = ref(localStorage.getItem('wb-price-list') || 'Standard Buying')
 const printScheme = ref('')
 const taxTemplate = ref('')
 const isInclusiveTax = ref(false)
@@ -873,6 +881,8 @@ watch(taxTemplate, (val) => {
 
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || '')
+const incentiveRows = ref([])
+const showIncentiveModal = ref(false)
 
 const availableTaxTemplates = ref([])
 const availableWarehouses = ref([])
@@ -902,6 +912,10 @@ function syncSeriesConfig(series) {
   } else if (cfg?.price_list && !skipPriceListSync.value) {
     // 2. Fallback to series config from backend
     priceList.value = cfg.price_list
+  } else if (!skipPriceListSync.value) {
+    // 3. Global default from localStorage (set by General Settings)
+    const globalPL = localStorage.getItem('wb-price-list')
+    if (globalPL) priceList.value = globalPL
   }
 
   if (!cfg) return
@@ -1876,7 +1890,7 @@ const sidebarLoading = ref(false)
 async function fetchSidebarBills() {
   sidebarLoading.value = true
   try {
-    sidebarBills.value = await frappeGet('ssplbilling.api.cashier_api.get_purchase_invoices', {
+    sidebarBills.value = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoices', {
       query: sidebarSearch.value,
       limit: 100,
       posting_date: sidebarDate.value,
@@ -1905,12 +1919,12 @@ watch(sidebarSearch, () => {
 
 async function loadInvoice(invoiceName) {
   try {
-    const inv = await frappeGet('ssplbilling.api.cashier_api.get_purchase_invoice', { invoice_name: invoiceName })
+    const inv = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoice', { invoice_name: invoiceName })
     if (!inv) { showError('Could not load invoice'); return }
 
     // Populate form with invoice data
     supplier.value = inv.supplier
-    suppSearch.value = inv.customer_name
+    suppSearch.value = inv.supplier_name || inv.customer_name
     billDate.value = inv.posting_date
     isReturn.value = !!inv.is_return
     skipPriceListSync.value = true
@@ -1975,7 +1989,7 @@ async function loadInvoice(invoiceName) {
     } catch (e) {
       selectedSupplierDetails.value = {
         name: inv.supplier,
-        customer_name: inv.customer_name,
+        customer_name: inv.supplier_name || inv.customer_name,
         balance: 0,
         address_line1: ""
       }

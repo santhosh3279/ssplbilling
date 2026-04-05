@@ -256,7 +256,22 @@ def create_purchase_invoice(data=None, **kwargs):
                 if is_inclusive and "GST" in (tax.account_head or ""):
                     tax.included_in_print_rate = 1
 
+    # Append extra charge rows from taxes key (freight, packing, loading, other)
+    for tax_row in data.get("taxes") or []:
+        pi.append("taxes", tax_row)
+
     pi.insert()
+
+    # Save incentive_system if the field exists
+    if frappe.get_meta("Purchase Invoice").has_field("incentive_system"):
+        for row in data.get("incentive_system") or []:
+            pi.append("incentive_system", {
+                "employee": row.get("employee"),
+                "role": row.get("role"),
+                "points": row.get("points") or 0,
+            })
+        if data.get("incentive_system"):
+            pi.save(ignore_permissions=True)
 
     return {
         "invoice_name": pi.name,
@@ -312,12 +327,14 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
 
 
 @frappe.whitelist()
-def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=False):
+def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=False, naming_series=None, draft_only=False):
     """List Purchase Invoices for modification."""
     date_filter = posting_date or frappe.utils.today()
     filters = {"posting_date": date_filter}
-    if not frappe.utils.cint(show_submitted):
+    if frappe.utils.cint(draft_only) or not frappe.utils.cint(show_submitted):
         filters["docstatus"] = 0
+    if naming_series:
+        filters["naming_series"] = naming_series
     kwargs = dict(
         filters=filters,
         fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
@@ -332,6 +349,7 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
     invoices = frappe.get_all("Purchase Invoice", **kwargs)
     for inv in invoices:
         inv["grand_total"] = float(inv["grand_total"] or 0)
+        inv["customer_name"] = inv.get("supplier_name", "")
     return invoices
 
 
@@ -342,18 +360,50 @@ def get_purchase_invoice(invoice_name):
     cost_center = pi.items[0].cost_center if pi.items else ""
 
     is_inclusive = 0
+
+    def _actual_charge(keyword):
+        for t in pi.taxes:
+            if t.charge_type == "Actual" and keyword.lower() in (t.description or "").lower():
+                return float(t.tax_amount or 0)
+        return 0.0
+
     if pi.taxes:
         if any(t.included_in_print_rate for t in pi.taxes):
             is_inclusive = 1
+
+    freight_amount = _actual_charge("freight")
+    packing_amount = _actual_charge("packing")
+    loading_amount = _actual_charge("loading")
+    other_charges_amount = _actual_charge("other")
+
+    incentive_system = []
+    if frappe.get_meta("Purchase Invoice").has_field("incentive_system"):
+        incentive_system = [
+            {
+                "employee": row.employee,
+                "employee_name": frappe.db.get_value("Employee", row.employee, "employee_name") if row.employee else "",
+                "role": row.role,
+                "points": float(row.points or 0),
+            }
+            for row in (pi.incentive_system or [])
+        ]
 
     return {
         "name": pi.name,
         "supplier": pi.supplier,
         "supplier_name": pi.supplier_name,
+        "customer_name": pi.supplier_name,
         "posting_date": str(pi.posting_date),
         "naming_series": pi.naming_series or "",
         "is_return": pi.is_return,
         "discount_percentage": float(pi.additional_discount_percentage or 0),
+        "additional_discount_amount": float(pi.discount_amount or 0),
+        "price_list": pi.buying_price_list or "",
+        "payment_mode": "Cash",
+        "freight_amount": freight_amount,
+        "packing_amount": packing_amount,
+        "loading_amount": loading_amount,
+        "other_charges_amount": other_charges_amount,
         "grand_total": float(pi.grand_total or 0),
         "tax_template": pi.taxes_and_charges or "",
         "is_inclusive": is_inclusive,
@@ -376,6 +426,7 @@ def get_purchase_invoice(invoice_name):
             }
             for item in pi.items
         ],
+        "incentive_system": incentive_system,
     }
 
 
@@ -420,21 +471,46 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.taxes = []
     pi.items = []
     for item in data["items"]:
+        disc = float(item.get("discount_percentage") or 0)
+        price_list_rate = float(item.get("price_list_rate") or item["rate"])
+        rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
         qty = float(item["qty"])
         if pi.is_return:
             qty = -abs(qty)
         row = {
             "item_code": item["item_code"],
             "qty": qty,
-            "rate": float(item["rate"]),
+            "price_list_rate": price_list_rate,
+            "discount_percentage": disc,
+            "rate": rate,
             "warehouse": item.get("warehouse"),
         }
         if frappe.get_meta("Purchase Invoice Item").has_field("allow_zero_valuation_rate"):
             row["allow_zero_valuation_rate"] = 1
+        cost_center = item.get("cost_center") or data.get("cost_center") or ""
+        if cost_center:
+            row["cost_center"] = cost_center
         if item.get("expense_account"):
             row["expense_account"] = item["expense_account"]
         pi.append("items", row)
+
+    # Append extra charge rows from taxes key (freight, packing, loading, other)
+    for tax_row in data.get("taxes") or []:
+        pi.append("taxes", tax_row)
+
     pi.save()
+
+    # Save incentive_system if the field exists
+    if frappe.get_meta("Purchase Invoice").has_field("incentive_system"):
+        pi.set("incentive_system", [])
+        for row in data.get("incentive_system") or []:
+            pi.append("incentive_system", {
+                "employee": row.get("employee"),
+                "role": row.get("role"),
+                "points": row.get("points") or 0,
+            })
+        pi.save(ignore_permissions=True)
+
     return {"invoice_name": pi.name, "grand_total": float(pi.grand_total)}
 
 
