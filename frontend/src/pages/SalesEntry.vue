@@ -780,37 +780,45 @@
           <div class="flex flex-col gap-3">
             <label class="text-2xl font-bold uppercase tracking-wider text-amber-500">Customer Name</label>
             <input
+              ref="customNameInput"
               v-model="customAddress.custom_customer_name"
               type="text"
               placeholder="e.g. Ramesh &amp; Brothers"
               class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-amber-500 placeholder-slate-600"
+              @keydown.enter.prevent="focusCustomAddr1"
             />
           </div>
           <div class="flex flex-col gap-3">
             <label class="text-2xl font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
             <input
+              ref="customAddr1Input"
               v-model="customAddress.custom_address_line1"
               type="text"
               placeholder="Street / Door No"
               class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+              @keydown.enter.prevent="focusCustomAddr2"
             />
           </div>
           <div class="flex flex-col gap-3">
             <label class="text-2xl font-bold uppercase tracking-wider text-slate-500">Address Line 2</label>
             <input
+              ref="customAddr2Input"
               v-model="customAddress.custom_address_line2"
               type="text"
               placeholder="City / District / Pincode"
               class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+              @keydown.enter.prevent="focusCustomMobile"
             />
           </div>
           <div class="flex flex-col gap-3">
             <label class="text-2xl font-bold uppercase tracking-wider text-slate-500">Mobile Number</label>
             <input
+              ref="customMobileInput"
               v-model="customAddress.custom_mobile_number"
               type="text"
               placeholder="e.g. 9876543210"
               class="w-full rounded-2xl border-2 border-slate-600 bg-slate-800 px-6 py-5 text-4xl text-slate-100 outline-none focus:border-blue-500 placeholder-slate-600"
+              @keydown.enter.prevent="showCustomAddressModal = false"
             />
           </div>
         </div>
@@ -1200,6 +1208,10 @@ const savedInvoiceName = ref(null)   // null = new bill; string = existing/just-
 const showDiscardModal = ref(false)
 const showCustomAddressModal = ref(false)
 const customAddress = ref({ custom_customer_name: '', custom_address_line1: '', custom_address_line2: '', custom_mobile_number: '' })
+const customNameInput = ref(null)
+const customAddr1Input = ref(null)
+const customAddr2Input = ref(null)
+const customMobileInput = ref(null)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
 const dynamicRowStyle = computed(() => ({
   fontSize: `${(14 * zoomPercent.value) / 100}px`,
@@ -1609,6 +1621,15 @@ function focusNewQty() {
   }
   nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() })
 }
+
+function focusCustomName() { nextTick(() => { customNameInput.value?.focus(); customNameInput.value?.select() }) }
+function focusCustomAddr1() { nextTick(() => { customAddr1Input.value?.focus(); customAddr1Input.value?.select() }) }
+function focusCustomAddr2() { nextTick(() => { customAddr2Input.value?.focus(); customAddr2Input.value?.select() }) }
+function focusCustomMobile() { nextTick(() => { customMobileInput.value?.focus(); customMobileInput.value?.select() }) }
+
+watch(showCustomAddressModal, (val) => {
+  if (val) focusCustomName()
+})
 
 // ==================== ROW NAV ====================
 function findNextActiveRow(from, dir) { let i = from + dir; while (i >= 0 && i < items.value.length) { if (!items.value[i].deleted) return i; i += dir }; return null }
