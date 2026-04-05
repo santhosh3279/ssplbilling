@@ -249,6 +249,38 @@
       </div>
 
     </div>
+
+    <!-- Debug Variables Modal -->
+    <div v-if="showDebugModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showDebugModal = false">
+      <div class="w-[600px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl flex flex-col max-h-[80vh]">
+        <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800 rounded-t-xl">
+          <div class="text-sm font-semibold text-slate-200">🛠️ Debug Local Variables</div>
+          <button @click="showDebugModal = false" class="text-slate-500 hover:text-slate-300">✕</button>
+        </div>
+        <div class="overflow-y-auto p-5">
+          <table class="w-full text-left text-xs text-slate-300 border-collapse">
+            <thead>
+              <tr class="border-b border-slate-700 text-slate-400">
+                <th class="py-2 px-3 font-semibold">Key</th>
+                <th class="py-2 px-3 font-semibold">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="v in localVariables" :key="v.key" class="border-b border-slate-800/50 hover:bg-slate-800/30">
+                <td class="py-2 px-3 font-mono text-blue-400">{{ v.key }}</td>
+                <td class="py-2 px-3 font-mono break-all max-w-[300px]" :title="v.value">{{ v.value }}</td>
+              </tr>
+              <tr v-if="localVariables.length === 0">
+                <td colspan="2" class="py-4 text-center text-slate-500">No local variables found starting with wb-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="border-t border-slate-700 px-5 py-3 bg-slate-800 rounded-b-xl flex justify-end">
+          <button @click="showDebugModal = false" class="rounded bg-slate-700 px-4 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-600">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -381,11 +413,12 @@ function showLocalVariables() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
     if (key.startsWith('wb-') || key.startsWith('wb_')) {
-      vars.push(`${key}: ${localStorage.getItem(key)}`)
+      vars.push({ key, value: localStorage.getItem(key) })
     }
   }
-  vars.sort()
-  alert(vars.length > 0 ? vars.join('\n') : 'No local variables found starting with wb-')
+  vars.sort((a, b) => a.key.localeCompare(b.key))
+  localVariables.value = vars
+  showDebugModal.value = true
 }
 
 const currentUser = computed(() => session.user.value)
