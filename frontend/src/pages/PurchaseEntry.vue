@@ -512,7 +512,7 @@
                 <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ (packingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Loading</td>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Tax Paid on Purchase</td>
                 <td class="p-0 border-y border-slate-700">
                   <input ref="loadingInput" type="number" v-model.number="loadingAmt"
                     :disabled="billDocStatus !== 0 || billSaved" min="0" step="1" style="width:100%;height:100%;display:block;padding:0 2px"
@@ -2353,7 +2353,7 @@ async function saveBill() {
   const chargeDefs = [
     { amt: freightAmt.value,       key: 'wb_freight',        desc: 'Freight Charges' },
     { amt: packingAmt.value,       key: 'wb-packing',        desc: 'Packing Charges' },
-    { amt: loadingAmt.value,       key: 'wb-loading',        desc: 'Loading Charges' },
+    { amt: loadingAmt.value,       key: 'wb-loading',        desc: 'Tax Paid on Purchase' },
     { amt: otherChargesAmt.value,  key: 'wb-other-charges',  desc: 'Other Charges'   },
   ]
   const taxRows = chargeDefs
