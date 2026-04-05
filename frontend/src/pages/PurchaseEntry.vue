@@ -930,7 +930,7 @@ async function fetchDropdownOptions() {
     availableWarehouses.value = warehouses.map(r => r.name)
     availableCostCenters.value = costCenters.map(r => r.name)
   } catch (e) {
-    console.warn('[PurchaseEntryV2] fetchDropdownOptions failed:', e)
+    console.warn('[PurchaseEntry] fetchDropdownOptions failed:', e)
   }
 }
 
@@ -1353,7 +1353,7 @@ async function loadItemInsight(code, itemName = '', uom = '') {
 
     return {
       name: plName,
-      type: 'selling', // PurchaseEntryV2 is for selling
+      type: 'selling', // PurchaseEntry is for selling
       rate: rate
     }
   })
@@ -2024,7 +2024,7 @@ watch(supplier, async (newVal) => {
       selectedSupplierDetails.value = { ...selectedSupplierDetails.value, ...stats }
     }
   } catch (e) {
-    console.warn('[PurchaseEntryV2] Failed to fetch supplier quick stats:', e)
+    console.warn('[PurchaseEntry] Failed to fetch supplier quick stats:', e)
   }
 })
 
@@ -2059,7 +2059,7 @@ async function fetchSeriesList() {
       allowedList = d.allowed_series || []
       userAllowedString = d.user_allowed_string || ''
     } catch (e) {
-      console.warn('[PurchaseEntryV2] get_allowed_series failed:', e)
+      console.warn('[PurchaseEntry] get_allowed_series failed:', e)
     }
 
     // Fetch ERPNext allowed series for Purchase Invoice
@@ -2068,7 +2068,7 @@ async function fetchSeriesList() {
       const list = await frappeGet('ssplbilling.api.purchase_api.get_naming_series')
       if (Array.isArray(list)) erpnextSeries = list
     } catch (e) {
-      console.warn('[PurchaseEntryV2] get_naming_series failed:', e)
+      console.warn('[PurchaseEntry] get_naming_series failed:', e)
     }
 
     if (rows.length) {
@@ -2121,7 +2121,7 @@ async function fetchSeriesList() {
       return
     }
   } catch (e) {
-    console.warn('[PurchaseEntryV2] fetchBillingSettings failed, falling back:', e)
+    console.warn('[PurchaseEntry] fetchBillingSettings failed, falling back:', e)
   }
 
   try {
