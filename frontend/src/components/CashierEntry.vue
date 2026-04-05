@@ -22,17 +22,38 @@
       <!-- Body -->
       <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
 
-        <!-- Row 1: Date (read-only) + Opening/Closing (read-only) -->
+        <!-- Row 1: Date (editable) + Opening/Closing (read-only) -->
         <div class="grid grid-cols-2 gap-4">
-          <div>
+          <div class="relative">
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-300 font-mono">
-              {{ form.date }}
+            <div class="flex items-center gap-2">
+              <input
+                type="text"
+                v-model="displayDate"
+                @blur="onDisplayDateBlur"
+                @keydown.enter.prevent="onDisplayDateBlur"
+                class="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-300 font-mono focus:border-blue-500 outline-none"
+                placeholder="DD-MMM-YYYY"
+              />
+              <button
+                type="button"
+                @click="datePicker?.showPicker()"
+                class="flex h-9 w-10 items-center justify-center rounded-lg border border-slate-600 bg-slate-700 text-slate-400 transition hover:bg-slate-600 hover:text-white"
+                title="Open Calendar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </button>
+              <input
+                ref="datePicker"
+                type="date"
+                v-model="form.date"
+                class="pointer-events-none absolute h-0 w-0 opacity-0"
+              />
             </div>
           </div>
           <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Opening or Closing</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-300 font-mono">
+            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-sm text-slate-300 font-mono">
               {{ form.opening_or_closing }}
             </div>
           </div>
@@ -170,6 +191,29 @@ const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1]
 const denomInputRefs = ref([])
 onBeforeUpdate(() => { denomInputRefs.value = [] })
 
+const datePicker = ref(null)
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+function formatDate(dateStr) {
+  if (!dateStr) return ""
+  const [y, m, d] = dateStr.split("-")
+  const month = monthNames[parseInt(m) - 1]
+  return `${d}-${month}-${y}`
+}
+
+function parseDate(displayStr) {
+  if (!displayStr) return null
+  const parts = displayStr.split("-")
+  if (parts.length !== 3) return null
+  const d = parts[0].padStart(2, '0')
+  const mIdx = monthNames.findIndex(m => m.toLowerCase() === parts[1].toLowerCase())
+  if (mIdx === -1) return null
+  const m = String(mIdx + 1).padStart(2, '0')
+  const y = parts[2]
+  if (y.length !== 4) return null
+  return `${y}-${m}-${d}`
+}
+
 function onDenomEnter(index) {
   if (index < denominations.length - 1) {
     denomInputRefs.value[index + 1]?.focus()
@@ -185,6 +229,22 @@ const form = reactive({
   user: '',
   denominations: Object.fromEntries(denominations.map(d => [d, null])),
 })
+
+const displayDate = ref(formatDate(form.date))
+
+watch(() => form.date, (newVal) => {
+  displayDate.value = formatDate(newVal)
+  fetchExistingRecord()
+})
+
+function onDisplayDateBlur() {
+  const parsed = parseDate(displayDate.value)
+  if (parsed && parsed !== form.date) {
+    form.date = parsed
+  } else {
+    displayDate.value = formatDate(form.date)
+  }
+}
 
 const loadingSettings = ref(false)
 const loadingBalance = ref(false)
