@@ -28,6 +28,16 @@
               >{{ userRole }}</span>
             </div>
           </div>
+          <button
+            @click="handleFullSync"
+            :disabled="isSyncing"
+            class="flex items-center justify-center rounded bg-slate-700 p-1.5 text-slate-400 hover:bg-slate-600 hover:text-white transition-colors disabled:opacity-50"
+            title="Sync Settings"
+          >
+            <svg class="h-4 w-4" :class="{'animate-spin text-blue-400': isSyncing}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -198,6 +208,7 @@
 
     <!-- ===================== GENERAL SETTINGS DIALOG ===================== -->
     <GeneralSettings
+      ref="generalSettingsRef"
       :show="showGeneralSettings"
       @close="showGeneralSettings = false"
     />
@@ -407,6 +418,21 @@ const showSystemPerformance = ref(false)
 
 // ==================== GENERAL SETTINGS ====================
 const showGeneralSettings = ref(false)
+const generalSettingsRef = ref(null)
+const isSyncing = ref(false)
+
+async function handleFullSync() {
+  if (isSyncing.value) return
+  isSyncing.value = true
+  try {
+    await syncSettings()
+    if (generalSettingsRef.value?.loadSettings) {
+      await generalSettingsRef.value.loadSettings()
+    }
+  } finally {
+    isSyncing.value = false
+  }
+}
 
 const defaultSeries = ref(localStorage.getItem('wb-series') || '')
 const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')

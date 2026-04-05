@@ -298,6 +298,8 @@ const syncing = ref(false)
 const showDebugModal = ref(false)
 const localVariables = ref([])
 
+defineExpose({ loadSettings, syncing })
+
 onMounted(() => {
   loadSettings()
 })
