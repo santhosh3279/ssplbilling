@@ -911,12 +911,7 @@ function syncSeriesConfig(series) {
 async function fetchDropdownOptions() {
   try {
     const [templates, warehouses, costCenters] = await Promise.all([
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Sales Taxes and Charges Template',
-        fields: ['name'],
-        filters: [['disabled', '=', 0]],
-        limit_page_length: 100,
-      }),
+      frappeGet('ssplbilling.api.purchase_api.get_tax_templates'),
       frappeGet('frappe.client.get_list', {
         doctype: 'Warehouse',
         fields: ['name'],
@@ -2060,23 +2055,39 @@ async function fetchSeriesList() {
     let allowedList = []
     let userAllowedString = ''
     try {
-      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series')
+      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Purchase Invoice' })
       allowedList = d.allowed_series || []
       userAllowedString = d.user_allowed_string || ''
     } catch (e) {
       console.warn('[PurchaseEntryV2] get_allowed_series failed:', e)
     }
 
+    // Fetch ERPNext allowed series for Purchase Invoice
+    let erpnextSeries = []
+    try {
+      const list = await frappeGet('ssplbilling.api.purchase_api.get_naming_series')
+      if (Array.isArray(list)) erpnextSeries = list
+    } catch (e) {
+      console.warn('[PurchaseEntryV2] get_naming_series failed:', e)
+    }
+
     if (rows.length) {
       billingSeriesConfig.value = rows
       // Filter available series strictly based on user allowed series
       const allSeries = rows.map(r => r.series)
+      
+      let finalSeries = []
       if (allowedList.length === 0 && !userAllowedString) {
         // Unrestricted user: show all series from billing settings
-        availableSeries.value = allSeries
+        finalSeries = allSeries
       } else {
         // Restricted user: show only allowed series
-        availableSeries.value = allSeries.filter(s => allowedList.includes(s))
+        finalSeries = allSeries.filter(s => allowedList.includes(s))
+      }
+
+      // Intersect with actual ERPNext Purchase Invoice series
+      if (erpnextSeries.length) {
+        finalSeries = finalSeries.filter(s => erpnextSeries.includes(s))
       }
 
       if (!localStorage.getItem('wb-warehouse')) {
@@ -2090,8 +2101,10 @@ async function fetchSeriesList() {
         }
       } catch (e) { /* non-fatal */ }
 
+      availableSeries.value = finalSeries
+
       if (availableSeries.value.length === 0) {
-        showError('You do not have permission to use any naming series.')
+        showError('You do not have permission to use any Purchase Invoice series.')
         return
       }
 
