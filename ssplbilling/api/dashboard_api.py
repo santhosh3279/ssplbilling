@@ -53,6 +53,10 @@ def get_allowed_series(doctype="Sales Invoice"):
     try:
         settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
         if doctype == "Sales Invoice":
+            # We fetch all from settings.billing_series, but we'll intersect later in the frontend,
+            # or we can intersect right here. The prompt is easier fixed in frontend.
+            available = [r.series for r in settings.billing_series if r.series]
+        elif doctype == "Purchase Invoice":
             available = [r.series for r in settings.billing_series if r.series]
         elif doctype == "Quotation":
             from ssplbilling.api.quotation_api import get_naming_series

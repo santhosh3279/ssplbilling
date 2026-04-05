@@ -2196,16 +2196,32 @@ async function fetchSeriesList() {
       console.warn('[SalesEntry] get_allowed_series failed:', e)
     }
 
+    // Fetch ERPNext allowed series for Sales Invoice
+    let erpnextSeries = []
+    try {
+      const list = await frappeGet('ssplbilling.api.SaleEntry_api.get_naming_series')
+      if (Array.isArray(list)) erpnextSeries = list
+    } catch (e) {
+      console.warn('[SalesEntry] get_naming_series failed:', e)
+    }
+
     if (rows.length) {
       billingSeriesConfig.value = rows
       // Filter available series strictly based on user allowed series
       const allSeries = rows.map(r => r.series)
+      
+      let finalSeries = []
       if (allowedList.length === 0 && !userAllowedString) {
         // Unrestricted user: show all series from billing settings
-        availableSeries.value = allSeries
+        finalSeries = allSeries
       } else {
         // Restricted user: show only allowed series
-        availableSeries.value = allSeries.filter(s => allowedList.includes(s))
+        finalSeries = allSeries.filter(s => allowedList.includes(s))
+      }
+
+      // Intersect with actual ERPNext Sales Invoice series
+      if (erpnextSeries.length) {
+        finalSeries = finalSeries.filter(s => erpnextSeries.includes(s))
       }
 
       if (!localStorage.getItem('wb-warehouse')) {
@@ -2219,8 +2235,10 @@ async function fetchSeriesList() {
         }
       } catch (e) { /* non-fatal */ }
 
+      availableSeries.value = finalSeries
+
       if (availableSeries.value.length === 0) {
-        showError('You do not have permission to use any naming series.')
+        showError('You do not have permission to use any Sales Invoice series.')
         return
       }
 

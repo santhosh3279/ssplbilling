@@ -1479,18 +1479,57 @@ watch(billSeries, () => {
 async function fetchSeriesList() {
   try {
     const settings = await fetchBillingSettings()
+    const rows = (settings?.billing_series || []).filter(r => r.series)
+    billingSeriesConfig.value = rows
+
     if (!localStorage.getItem('wb-warehouse')) {
       if (settings.default_warehouse) defaultWarehouse.value = settings.default_warehouse
     }
     if (settings.tax_paid_on_purchase) taxPaidAccount.value = settings.tax_paid_on_purchase
 
-    const list = await frappeGet('ssplbilling.api.purchase_api.get_naming_series')
-    if (Array.isArray(list) && list.length) {
-      availableSeries.value = list
-      if (list.includes(billSeries.value)) { fetchNextBillNo() }
-      else { billSeries.value = list[0] }
+    let allowedList = []
+    let userAllowedString = ''
+    try {
+      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Purchase Invoice' })
+      allowedList = d.allowed_series || []
+      userAllowedString = d.user_allowed_string || ''
+    } catch (e) {
+      console.warn('[PurchaseEntry] get_allowed_series failed:', e)
     }
-  } catch (e) {}
+
+    let erpnextSeries = []
+    try {
+      const list = await frappeGet('ssplbilling.api.purchase_api.get_naming_series')
+      if (Array.isArray(list)) erpnextSeries = list
+    } catch (e) {}
+
+    let finalSeries = []
+    if (rows.length) {
+      const allSeries = rows.map(r => r.series)
+      if (allowedList.length === 0 && !userAllowedString) {
+        finalSeries = allSeries
+      } else {
+        finalSeries = allSeries.filter(s => allowedList.includes(s))
+      }
+    } else {
+      finalSeries = erpnextSeries
+    }
+
+    if (erpnextSeries.length) {
+      finalSeries = finalSeries.filter(s => erpnextSeries.includes(s))
+    }
+
+    if (finalSeries.length === 0) {
+      finalSeries = erpnextSeries
+    }
+
+    availableSeries.value = finalSeries
+    if (finalSeries.includes(billSeries.value)) { fetchNextBillNo() }
+    else if (finalSeries.length) { billSeries.value = finalSeries[0] }
+
+  } catch (e) {
+    console.warn('[PurchaseEntry] fetchSeriesList failed:', e)
+  }
 
   fetchNextBillNo()
 }
