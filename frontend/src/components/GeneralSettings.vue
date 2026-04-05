@@ -14,11 +14,6 @@
           </button>
         </div>
         <div class="flex items-center gap-3">
-          <button
-            @click="handleSync"
-            :disabled="syncing"
-            class="text-[10px] font-bold text-blue-400 hover:underline disabled:opacity-50"
-          >{{ syncing ? 'SYNCING...' : 'SYNC NOW' }}</button>
           <button @click="$emit('close')" class="text-slate-500 hover:text-slate-300">✕</button>
         </div>
       </div>
