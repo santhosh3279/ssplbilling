@@ -743,8 +743,8 @@
       :item-code="savePricePopup.item_code"
       :selected-price-list="priceList"
       :initial-factor="savePricePopup.multiplication_factor"
-      @close="showPriceListUpdate = false"
-      @saved="onPriceListSaved"
+      @close="onPriceListUpdateClose"
+      @saved="onPriceListSaved(); onPriceListUpdateClose()"
     />
 
     <!-- DISCARD BILL MODAL -->
@@ -1210,15 +1210,16 @@ function _triggerSavePricePopup(idx, factor) {
   }
 }
 
-/** After qty/UOM entry in an existing row: always show the price popup. */
+/** After qty/UOM entry: open PriceListUpdate directly for the row's item. */
 function triggerPricePopupForRow(idx) {
   const item = items.value[idx]
   if (!item || item.deleted || item._is_free) { goToNextRow(idx); return }
   const cached = lookupItemInCache(item.item_code)
   const listRate = rateForUom(cached, item.uom) || item.rate || 0
   const factor = listRate > 0 ? (item.rate / listRate) : 1
+  // Store row context so close/saved handlers can navigate
   savePricePopup.value = {
-    show: true,
+    show: false,
     idx,
     item_code: item.item_code,
     item_name: item.item_name,
@@ -1226,9 +1227,18 @@ function triggerPricePopupForRow(idx) {
     rate: item.rate,
     uom: item.uom,
   }
+  showPriceListUpdate.value = true
 }
 
-/** For the new entry row: add the item to the list, then show the price popup. */
+/** Navigate to next row after PriceListUpdate closes. */
+function onPriceListUpdateClose() {
+  showPriceListUpdate.value = false
+  const idx = savePricePopup.value.idx
+  if (idx !== null && idx !== undefined) goToNextRow(idx)
+  else focusNewCode()
+}
+
+/** For the new entry row: add the item to the list, then open PriceListUpdate. */
 async function addNewItemAndOpenPricePopup() {
   const code = newItemCode.value.trim()
   if (!code || newQty.value === 0) { addNewItem(); return }
@@ -1265,7 +1275,7 @@ async function addNewItemAndOpenPricePopup() {
   newPending.value = { item_name: '', uom: '', uoms: [], rate: null }
   selectedRow.value = -1
 
-  // Show the price popup for the newly added item
+  // Open PriceListUpdate for the newly added item
   triggerPricePopupForRow(newIdx)
 }
 
