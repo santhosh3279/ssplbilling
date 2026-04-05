@@ -293,6 +293,12 @@ def create_sales_invoice(data=None, **kwargs):
             "points": row.get("points") or 0,
         })
 
+    # Custom address fields
+    si.custom_customer_name = data.get("custom_customer_name") or ""
+    si.custom_address_line1 = data.get("custom_address_line1") or ""
+    si.custom_address_line2 = data.get("custom_address_line2") or ""
+    si.custom_mobile_number = data.get("custom_mobile_number") or ""
+
     si.ignore_pricing_rule = 1
     si.flags.ignore_pricing_rule = True
     si.due_date = frappe.utils.today()
@@ -475,6 +481,12 @@ def update_sales_invoice(data=None, **kwargs):
             "role": row.get("role"),
             "points": row.get("points") or 0,
         })
+
+    # Custom address fields
+    si.custom_customer_name = data.get("custom_customer_name") or ""
+    si.custom_address_line1 = data.get("custom_address_line1") or ""
+    si.custom_address_line2 = data.get("custom_address_line2") or ""
+    si.custom_mobile_number = data.get("custom_mobile_number") or ""
 
     si.ignore_pricing_rule = 1
     si.flags.ignore_pricing_rule = True
