@@ -135,7 +135,7 @@
         </div>
       </header>
 
-      <div class="flex flex-row items-start justify-start gap-8 px-10 py-10">
+      <div class="flex flex-row items-start justify-between gap-8 px-10 py-10">
         <!-- Left: Tiles -->
         <div class="flex-shrink-0">
           <div class="grid grid-cols-3 gap-2">
