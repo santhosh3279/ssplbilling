@@ -386,6 +386,16 @@
                   />
                 </div>
                 <div class="group relative">
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-rose-400 transition-colors uppercase">Credit</div>
+                  <input
+                    ref="creditInput"
+                    type="number"
+                    v-model="payments.credit"
+                    @focus="$event.target.select()"
+                    class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-16 pr-4 text-right font-mono font-black text-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
+                  />
+                </div>
+                <div class="group relative">
                   <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-amber-400 transition-colors uppercase">{{ discountLabel }}</div>
                   <input
                     ref="discountInput"
@@ -615,6 +625,7 @@ const payments = ref({
   cash: 0,
   upi: 0,
   card: 0,
+  credit: 0,
   discount: 0
 })
 
@@ -629,6 +640,7 @@ const seriesAccounts = ref({
 const cashInput = ref(null)
 const upiInput = ref(null)
 const cardInput = ref(null)
+const creditInput = ref(null)
 const discountInput = ref(null)
 const dueDateInput = ref(null)
 const cardRefInput = ref(null)
@@ -674,6 +686,7 @@ const totalPaid = computed(() => {
   const sum = (Number(payments.value.cash) || 0) +
               (Number(payments.value.upi) || 0) +
               (Number(payments.value.card) || 0) +
+              (Number(payments.value.credit) || 0) +
               (Number(payments.value.discount) || 0)
   return parseFloat(sum.toFixed(2))
 })
@@ -1102,6 +1115,9 @@ function handleEnter(e) {
       cardInput.value?.focus()
       cardInput.value?.select()
     } else if (active === cardInput.value) {
+      creditInput.value?.focus()
+      creditInput.value?.select()
+    } else if (active === creditInput.value) {
       discountInput.value?.focus()
       discountInput.value?.select()
     } else if (active === discountInput.value) {
