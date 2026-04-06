@@ -206,23 +206,26 @@
 
       <div class="flex flex-row items-start justify-between gap-8 px-10 py-10">
         <!-- Left: Tiles -->
-        <div class="flex-1 max-w-5xl">
-          <div class="grid grid-cols-3 gap-6">
+        <div class="flex-1">
+          <div class="flex flex-col gap-2">
             <div
               v-for="tile in tiles"
               :key="tile.id"
-              class="group relative cursor-pointer rounded-xl p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:brightness-110"
+              class="group relative cursor-pointer flex items-center gap-4 rounded-lg px-4 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110"
+              :style="{ width: '70mm', height: '15mm' }"
               :class="tile.tileBg"
               @click="openModule(tile.id)"
             >
-              <span v-if="tile.shortcut" class="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-white/30 bg-black/40 px-3 py-1.5 font-mono text-lg font-black text-white shadow-lg backdrop-blur-md group-hover:bg-white/30 transition-all">
-                {{ tile.shortcut }}
-              </span>
-              <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-xl">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 text-xl">
                 {{ tile.icon }}
               </div>
-              <div class="text-sm font-semibold text-white">{{ tile.name }}</div>
-              <div class="mt-1 text-xs text-white/70">{{ tile.desc }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold text-white truncate">{{ tile.name }}</div>
+                <div class="text-[10px] text-white/70 truncate">{{ tile.desc }}</div>
+              </div>
+              <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/20 px-2 py-1 font-mono text-xs font-black text-white/80">
+                {{ tile.shortcut }}
+              </span>
             </div>
           </div>
         </div>
