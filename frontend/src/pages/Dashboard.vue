@@ -1,24 +1,24 @@
 <template>
-  <div class="flex min-h-screen bg-slate-900">
+  <div class="flex min-h-screen bg-[var(--color-bg)]">
 
     <!-- ===================== SIDEBAR ===================== -->
-    <aside class="flex w-56 flex-col border-r border-slate-700 bg-slate-800">
+    <aside class="flex w-56 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
       <!-- Logo -->
-      <div class="border-b border-slate-700 px-4 py-4">
-        <div class="text-base font-bold text-white">Wholesale<span class="font-light text-slate-400">Billing</span></div>
-        <div class="mt-0.5 text-[10px] text-slate-400">Fast Billing System</div>
+      <div class="border-b border-[var(--color-border)] px-4 py-4">
+        <div class="text-base font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
+        <div class="mt-0.5 text-[10px] text-[var(--color-text-muted)]">Fast Billing System</div>
       </div>
 
       <!-- User -->
-      <div class="border-b border-slate-700 px-4 py-3">
+      <div class="border-b border-[var(--color-border)] px-4 py-3">
         <div class="flex items-center gap-2">
-          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-highlight)] text-xs font-bold text-[var(--color-text-on-highlight)]">
             {{ userInitials }}
           </div>
           <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-semibold text-slate-200">{{ session.fullName.value || 'User' }}</div>
+            <div class="truncate text-sm font-semibold text-[var(--color-text)]">{{ session.fullName.value || 'User' }}</div>
             <div class="flex items-center gap-1.5">
-              <span class="truncate text-[10px] text-slate-400">{{ session.user.value }}</span>
+              <span class="truncate text-[10px] text-[var(--color-text-muted)]">{{ session.user.value }}</span>
               <span class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"
                 :class="{
                   'bg-amber-500/20 text-amber-400': userRole === 'admin',
@@ -31,7 +31,7 @@
           <button
             @click="handleFullSync"
             :disabled="isSyncing"
-            class="flex items-center justify-center rounded bg-slate-700 p-1.5 text-slate-400 hover:bg-slate-600 hover:text-white transition-colors disabled:opacity-50"
+            class="flex items-center justify-center rounded bg-[var(--color-surface-raised)] p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
             title="Sync Settings"
           >
             <svg class="h-4 w-4" :class="{'animate-spin text-blue-400': isSyncing}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -45,21 +45,21 @@
       <nav class="flex-1 px-3 py-3 overflow-y-auto">
         <!-- Admin: Inherit User Settings -->
         <div v-if="isActualAdmin" class="mb-6 px-2">
-          <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             Inherit Settings
           </label>
           <div class="relative group">
-            <select 
+            <select
               v-model="selectedUser"
               @change="handleUserChange"
-              class="w-full appearance-none rounded-lg bg-slate-700/50 border border-slate-600 px-3 py-2 text-xs text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all hover:bg-slate-700"
+              class="w-full appearance-none rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-2 text-xs text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
             >
               <option :value="session.user.value">Me ({{ session.fullName.value }})</option>
               <option v-for="u in allUsers" :key="u.value" :value="u.value">
                 {{ u.label }}
               </option>
             </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--color-text-muted)]">
               <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -74,89 +74,89 @@
           </div>
         </div>
 
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Menu</div>
+        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Menu</div>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-[var(--color-highlight)] px-3 py-2 text-left text-sm font-semibold text-[var(--color-text-on-highlight)]"
         >
           🏠 Dashboard
         </button>
         <button
           v-if="canAccessTile('Cashier-Management')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/Cashier-Management')"
         >
-          📓 <span class="font-bold text-white">Cashier</span>
+          📓 <span class="font-bold text-[var(--color-text)]">Cashier</span>
         </button>
         <button
           v-if="canAccessTile('pricing-rules')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/pricing-rules')"
         >
-          🏷️ <span class="font-bold text-white">Pricing Rules</span>
+          🏷️ <span class="font-bold text-[var(--color-text)]">Pricing Rules</span>
         </button>
         <button
           v-if="canAccessTile('barcode-print')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/barcode-print')"
         >
-          🔖 <span class="font-bold text-white">Print Barcodes</span>
+          🔖 <span class="font-bold text-[var(--color-text)]">Print Barcodes</span>
         </button>
         <button
           v-if="canAccessTile('incentive-ledger')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/incentive-ledger')"
         >
-          🏆 <span class="font-bold text-white">Incentive Ledger</span>
+          🏆 <span class="font-bold text-[var(--color-text)]">Incentive Ledger</span>
         </button>
         <button
           v-if="canAccessTile('loading-receipt')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/loading-receipt')"
         >
-          🚚 <span class="font-bold text-white">Loading Receipt</span>
+          🚚 <span class="font-bold text-[var(--color-text)]">Loading Receipt</span>
         </button>
         <button
           v-if="canAccessTile('material-transfer')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/material-transfer')"
         >
-          🚚 <span class="font-bold text-white">Stock Transfer</span>
+          🚚 <span class="font-bold text-[var(--color-text)]">Stock Transfer</span>
         </button>
         <button
           v-if="canAccessTile('stock-reconciliation')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/stock-reconciliation')"
         >
-          ⚖️ <span class="font-bold text-white">Stock Reconcile</span>
+          ⚖️ <span class="font-bold text-[var(--color-text)]">Stock Reconcile</span>
         </button>
         <button
           v-if="canAccessTile('daily-report')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/daily-report')"
         >
-          📊 <span class="font-bold text-white">Daily Report</span>
+          📊 <span class="font-bold text-[var(--color-text)]">Daily Report</span>
         </button>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="showReconcileWindow = true"
         >
-          🔗 <span class="font-bold text-white">Pay Reconcile</span>
+          🔗 <span class="font-bold text-[var(--color-text)]">Pay Reconcile</span>
         </button>
         <button
           v-if="canAccessTile('parcel-address')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/parcel-address')"
         >
-          📦 <span class="font-bold text-white">Parcel Address</span>
+          📦 <span class="font-bold text-[var(--color-text)]">Parcel Address</span>
         </button>
       </nav>
 
       <!-- Settings section -->
-      <div class="border-t border-slate-700 px-3 py-3">
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Settings</div>
+      <div class="border-t border-[var(--color-border)] px-3 py-3">
+        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Settings</div>
 
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="toggleTheme"
         >
           <span v-if="theme === 'light'">☀️</span>
@@ -165,26 +165,26 @@
         </button>
 
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="showSystemPerformance = true"
         >
           📊 System Performance
         </button>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="showGeneralSettings = true"
         >
           ⚙️ General
         </button>
         <button
           v-if="userRole === 'admin'"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/ssplbillingsettings')"
         >
           ⚙️ SSPL Settings
         </button>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 hover:bg-slate-700"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-[var(--color-midlight)]"
           @click="handleLogout"
         >
           🚪 Logout
@@ -195,11 +195,11 @@
     <!-- ===================== MAIN CONTENT ===================== -->
     <main class="flex-1">
       <!-- Top Bar -->
-      <header class="sticky top-0 z-40 border-b border-slate-700 bg-slate-800 px-6 py-3">
+      <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-lg font-bold text-white">Dashboard</h1>
-            <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
+            <h1 class="text-lg font-bold text-[var(--color-text)]">Dashboard</h1>
+            <p class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
           </div>
         </div>
       </header>
@@ -228,27 +228,27 @@
         </div>
 
         <!-- Right: Clock -->
-        <div class="flex-shrink-0 flex flex-col items-center gap-1 pt-2 bg-slate-800/20 p-6 rounded-3xl border border-white/5 backdrop-blur-sm shadow-xl">
-          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{{ todayDate }}</div>
-          <div class="text-lg font-black text-white uppercase tracking-wider mb-2 drop-shadow-sm">{{ todayDay }}</div>
+        <div class="flex-shrink-0 flex flex-col items-center gap-1 pt-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] backdrop-blur-sm shadow-xl">
+          <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{{ todayDate }}</div>
+          <div class="text-lg font-black text-[var(--color-text)] uppercase tracking-wider mb-2 drop-shadow-sm">{{ todayDay }}</div>
           <AnalogueClock />
         </div>
       </div>
 
       <div class="mx-auto max-w-4xl px-6 pb-12">
-        <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--color-text-muted)]">
           <span class="flex items-center gap-1.5">
-            Press <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F1</kbd> – <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">F10</kbd>
+            Press <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">F1</kbd> – <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">F10</kbd>
             to quick open
           </span>
-          <span class="text-slate-700">|</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+L</kbd> Customer</span>
-          <span class="text-slate-700">|</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+I</kbd> Item Search</span>
-          <span class="text-slate-700">|</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">Ctrl+R</kbd> Stock Reconcile</span>
-          <span class="text-slate-700">|</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-300">ESC</kbd> Close Modals</span>
+          <span class="text-[var(--color-lowlight)]">|</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Ctrl+L</kbd> Customer</span>
+          <span class="text-[var(--color-lowlight)]">|</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Ctrl+I</kbd> Item Search</span>
+          <span class="text-[var(--color-lowlight)]">|</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Ctrl+R</kbd> Stock Reconcile</span>
+          <span class="text-[var(--color-lowlight)]">|</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">ESC</kbd> Close Modals</span>
         </div>
       </div>
     </main>
@@ -402,7 +402,7 @@ const todayDay = computed(() => {
 // ==================== TILES ====================
 const allTiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
-  { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-slate-600' },
+  { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-[var(--color-highlight)]' },
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
@@ -412,7 +412,7 @@ const allTiles = [
   { id: 'purchase-order', name: 'Purchase Order', desc: 'Create & manage purchase orders', icon: '📋', shortcut: 'F7', tileBg: 'bg-sky-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
-  { id: 'stock-reconciliation', name: 'Stock Reconciliation', desc: 'Adjust stock levels', icon: '⚖️', shortcut: '', tileBg: 'bg-slate-700' },
+  { id: 'stock-reconciliation', name: 'Stock Reconciliation', desc: 'Adjust stock levels', icon: '⚖️', shortcut: '', tileBg: 'bg-[var(--color-midlight)]' },
   { id: 'gst-dummy-ledger', name: 'GST Dummy Ledger', desc: 'Manage dummy GST entries', icon: '📖', shortcut: '', tileBg: 'bg-indigo-900' },
   { id: 'gst-ledger', name: 'GST Ledger', desc: 'View GST Quotation ledger', icon: '📜', shortcut: '', tileBg: 'bg-indigo-800' },
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
