@@ -27,6 +27,7 @@ import StockReconciliation from './pages/StockReconciliation.vue'
 import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
 import GstDummyLedger from './pages/GstDummyLedger.vue'
 import GstLedger from './pages/GstLedger.vue'
+import DailyReport from './pages/DailyReport.vue'
 
 const routes = [
   {
@@ -34,6 +35,11 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true },
+  },
+  {
+    path: '/daily-report',
+    name: 'DailyReport',
+    component: DailyReport,
   },
   {
     path: '/ssplbillingsettings',
