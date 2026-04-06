@@ -373,17 +373,19 @@ def get_purchase_invoice(invoice_name):
         for t in pi.taxes:
             if t.charge_type == "Actual" and keyword.lower() in (t.description or "").lower():
                 return float(t.tax_amount or 0)
-        is_inclusive = 0
-        if pi.taxes:
-            if any(t.included_in_print_rate for t in pi.taxes):
-                is_inclusive = 1
+        return 0.0
 
-        # Fetch state from supplier address
-        party_state = ""
-        if pi.supplier_address:
-            party_state = frappe.db.get_value("Address", pi.supplier_address, "state") or ""
+    is_inclusive = 0
+    if pi.taxes:
+        if any(t.included_in_print_rate for t in pi.taxes):
+            is_inclusive = 1
 
-        freight_amount = _actual_charge("freight")
+    # Fetch state from supplier address
+    party_state = ""
+    if pi.supplier_address:
+        party_state = frappe.db.get_value("Address", pi.supplier_address, "state") or ""
+
+    freight_amount = _actual_charge("freight")
     packing_amount = _actual_charge("packing")
     loading_amount = _actual_charge("loading")
     other_charges_amount = _actual_charge("other")
