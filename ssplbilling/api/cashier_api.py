@@ -39,6 +39,9 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
 
     if draft_only:
         filters.append(["docstatus", "=", 0])
+    else:
+        # If showing submitted bills, only show those with an outstanding balance
+        filters.append(["outstanding_amount", ">", 0.01])
 
     if naming_series:
         filters.append(["naming_series", "=", naming_series])

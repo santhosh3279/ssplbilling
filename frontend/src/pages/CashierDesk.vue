@@ -83,7 +83,7 @@
                 ? 'bg-rose-900/30 border-rose-500/50 text-rose-400' 
                 : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750 hover:text-slate-300'"
             >
-              {{ showUnpaid ? 'Showing All (Unpaid)' : 'Showing Drafts Only' }}
+              {{ showUnpaid ? 'Showing Unpaid Bills' : 'Showing Drafts Only' }}
             </button>
           </div>
 
@@ -127,8 +127,12 @@
                   class="rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider"
                   :class="selectedInvoice?.name === inv.name
                     ? 'bg-blue-500/50 text-white'
-                    : inv.docstatus === 0 ? 'bg-slate-700 text-slate-500' : 'bg-rose-900/40 text-rose-400'"
-                >{{ inv.docstatus === 0 ? 'DRAFT' : 'UNPAID' }}</span>
+                    : inv.docstatus === 0 
+                      ? 'bg-slate-700 text-slate-500' 
+                      : (inv.outstanding_amount <= 0.01 ? 'bg-green-900/40 text-green-400' : 'bg-rose-900/40 text-rose-400')"
+                >
+                  {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
+                </span>
                 <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-blue-200' : 'text-slate-600'">
                   {{ inv.posting_time }}
                 </span>
@@ -169,12 +173,17 @@
         <template v-else>
           <!-- Invoice Header -->
           <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-3 z-10">
-            <div>
-              <h2 class="text-lg font-bold text-slate-100 leading-none mb-1">{{ selectedInvoice.name }}</h2>
-              <div class="flex items-center gap-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <span class="text-blue-400">{{ selectedInvoice.customer }}</span>
-                <span class="h-1 w-1 rounded-full bg-slate-600"></span>
-                <span>{{ formatDate(selectedInvoice.posting_date) }}</span>
+            <div class="flex items-center gap-4">
+              <div>
+                <h2 class="text-lg font-bold text-slate-100 leading-none mb-1">{{ selectedInvoice.name }}</h2>
+                <div class="flex items-center gap-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <span class="text-blue-400">{{ selectedInvoice.customer }}</span>
+                  <span class="h-1 w-1 rounded-full bg-slate-600"></span>
+                  <span>{{ formatDate(selectedInvoice.posting_date) }}</span>
+                </div>
+              </div>
+              <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded-lg bg-green-900/30 px-3 py-1 border border-green-500/30">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">Paid</span>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -739,6 +748,7 @@ const changeAmount = computed(() => {
 
 const canSubmit = computed(() => {
   if (!selectedInvoice.value || isSubmitting.value) return false
+  if (selectedInvoice.value.docstatus === 1 && (selectedInvoice.value.outstanding_amount || 0) <= 0.01) return false
   if (isCredit.value) return true
   // Force cashier to account for the full bill (using Cash/UPI/Card/Disc OR the Credit box)
   return balance.value <= 0.01
