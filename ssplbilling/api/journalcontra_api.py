@@ -37,7 +37,7 @@ def create_journal_contra_entry(data):
         je = frappe.new_doc("Journal Entry")
         je.voucher_type = voucher_type
         if voucher_type == "Opening Entry":
-            je.is_opening = "Yes"
+            je.is_opening = 1
         je.posting_date = posting_date
         je.company = company
         je.user_remark = user_remark
