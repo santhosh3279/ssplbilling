@@ -661,9 +661,9 @@ const todayStr = computed(() => {
 
 const amountToCollect = computed(() => {
   if (!selectedInvoice.value) return 0
-  const gt = Number(selectedInvoice.value.grand_total || 0)
+  const gt = Math.round(Number(selectedInvoice.value.grand_total || 0))
   const os = selectedInvoice.value.outstanding_amount !== undefined && selectedInvoice.value.outstanding_amount !== null
-    ? Number(selectedInvoice.value.outstanding_amount)
+    ? Math.round(Number(selectedInvoice.value.outstanding_amount))
     : gt
     
   if (selectedInvoice.value.docstatus === 1) return os
@@ -742,9 +742,9 @@ async function loadInvoices() {
 }
 
 function fmt(val) {
-  return Number(val || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+  return Math.round(Number(val || 0)).toLocaleString('en-IN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   })
 }
 
