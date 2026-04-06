@@ -128,6 +128,7 @@ const TILE_ROUTE_MAP = {
   'gst-dummy-ledger':  'GstDummyLedger',
   'gst-ledger':        'GstLedger',
   'daily-report':      'DailyReport',
+  'reconcile':         'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',
 }
 

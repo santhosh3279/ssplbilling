@@ -80,75 +80,6 @@
         >
           🏠 Dashboard
         </button>
-        <button
-          v-if="canAccessTile('Cashier-Management')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/Cashier-Management')"
-        >
-          📓 <span class="font-bold text-[var(--color-text)]">Cashier</span>
-        </button>
-        <button
-          v-if="canAccessTile('pricing-rules')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/pricing-rules')"
-        >
-          🏷️ <span class="font-bold text-[var(--color-text)]">Pricing Rules</span>
-        </button>
-        <button
-          v-if="canAccessTile('barcode-print')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/barcode-print')"
-        >
-          🔖 <span class="font-bold text-[var(--color-text)]">Print Barcodes</span>
-        </button>
-        <button
-          v-if="canAccessTile('incentive-ledger')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/incentive-ledger')"
-        >
-          🏆 <span class="font-bold text-[var(--color-text)]">Incentive Ledger</span>
-        </button>
-        <button
-          v-if="canAccessTile('loading-receipt')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/loading-receipt')"
-        >
-          🚚 <span class="font-bold text-[var(--color-text)]">Loading Receipt</span>
-        </button>
-        <button
-          v-if="canAccessTile('material-transfer')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/material-transfer')"
-        >
-          🚚 <span class="font-bold text-[var(--color-text)]">Stock Transfer</span>
-        </button>
-        <button
-          v-if="canAccessTile('stock-reconciliation')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/stock-reconciliation')"
-        >
-          ⚖️ <span class="font-bold text-[var(--color-text)]">Stock Reconcile</span>
-        </button>
-        <button
-          v-if="canAccessTile('daily-report')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/daily-report')"
-        >
-          📊 <span class="font-bold text-[var(--color-text)]">Daily Report</span>
-        </button>
-        <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="showReconcileWindow = true"
-        >
-          🔗 <span class="font-bold text-[var(--color-text)]">Pay Reconcile</span>
-        </button>
-        <button
-          v-if="canAccessTile('parcel-address')"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="router.push('/parcel-address')"
-        >
-          📦 <span class="font-bold text-[var(--color-text)]">Parcel Address</span>
-        </button>
       </nav>
 
       <!-- Settings section -->
@@ -207,7 +138,7 @@
       <div class="flex flex-row items-start justify-between gap-8 px-10 py-10">
         <!-- Left: Tiles -->
         <div class="flex-1">
-          <div class="flex flex-col gap-2">
+          <div class="grid grid-cols-2 gap-3">
             <div
               v-for="tile in tiles"
               :key="tile.id"
@@ -416,6 +347,13 @@ const allTiles = [
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
   { id: 'stock-reconciliation', name: 'Stock Reconciliation', desc: 'Adjust stock levels', icon: '⚖️', shortcut: '', tileBg: 'bg-[var(--color-midlight)]' },
+  { id: 'daily-report', name: 'Daily Report', desc: 'Daily operations summary', icon: '📊', shortcut: '', tileBg: 'bg-cyan-600' },
+  { id: 'pricing-rules', name: 'Pricing Rules', desc: 'Sync & manage pricing rules', icon: '🏷️', shortcut: '', tileBg: 'bg-indigo-500' },
+  { id: 'barcode-print', name: 'Print Barcodes', desc: 'Print item barcodes', icon: '🔖', shortcut: '', tileBg: 'bg-slate-600' },
+  { id: 'incentive-ledger', name: 'Incentive Ledger', desc: 'Employee incentives', icon: '🏆', shortcut: '', tileBg: 'bg-yellow-600' },
+  { id: 'loading-receipt', name: 'Loading Receipt', desc: 'Generate loading receipts', icon: '🚚', shortcut: '', tileBg: 'bg-orange-700' },
+  { id: 'reconcile', name: 'Pay Reconcile', desc: 'Reconcile payments', icon: '🔗', shortcut: '', tileBg: 'bg-gray-600' },
+  { id: 'parcel-address', name: 'Parcel Address', desc: 'Manage parcel addresses', icon: '📦', shortcut: '', tileBg: 'bg-rose-500' },
   { id: 'gst-dummy-ledger', name: 'GST Dummy Ledger', desc: 'Manage dummy GST entries', icon: '📖', shortcut: '', tileBg: 'bg-indigo-900' },
   { id: 'gst-ledger', name: 'GST Ledger', desc: 'View GST Quotation ledger', icon: '📜', shortcut: '', tileBg: 'bg-indigo-800' },
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
@@ -427,7 +365,7 @@ const tiles = computed(() => {
   return allTiles.filter(t => canAccessTile(t.id))
 })
 
-const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger']
+const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -443,10 +381,20 @@ const routeAliases = {
   'gst-dummy-ledger': '/gst-dummy-ledger',
   'gst-ledger': '/gst-ledger',
   'Cashier-Management': '/Cashier-Management',
+  'pricing-rules': '/pricing-rules',
+  'barcode-print': '/barcode-print',
+  'incentive-ledger': '/incentive-ledger',
+  'loading-receipt': '/loading-receipt',
+  'daily-report': '/daily-report',
+  'parcel-address': '/parcel-address',
   reports: '/reports',
 }
 
 function openModule(id) {
+  if (id === 'reconcile') {
+    showReconcileWindow.value = true
+    return
+  }
   if (routeAliases[id]) {
     router.push(routeAliases[id])
   } else if (readyModules.includes(id)) {
