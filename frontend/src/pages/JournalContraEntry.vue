@@ -355,6 +355,8 @@ const totalCredit = computed(() => rows.value.reduce((s, r) => s + (Number(r.cre
 const difference = computed(() => totalDebit.value - totalCredit.value)
 
 const validationError = computed(() => {
+  if (entryType.value === 'Opening Entry') return null
+  
   const r1 = rows.value[0]
   if (!r1) return null
   
