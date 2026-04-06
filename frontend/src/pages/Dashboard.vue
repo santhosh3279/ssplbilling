@@ -135,26 +135,25 @@
         </div>
       </header>
 
-      <div class="flex flex-row items-start justify-between gap-8 px-10 py-10">
+      <div class="flex flex-row items-start justify-start gap-8 px-10 py-10">
         <!-- Left: Tiles -->
-        <div class="flex-1">
-          <div class="grid grid-cols-2 gap-3">
+        <div class="flex-shrink-0">
+          <div class="grid grid-cols-3 gap-2">
             <div
               v-for="tile in tiles"
               :key="tile.id"
-              class="group relative cursor-pointer flex items-center gap-4 rounded-lg px-4 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110"
+              class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-125 bg-slate-700"
               :style="{ width: '70mm', height: '15mm' }"
-              :class="tile.tileBg"
               @click="openModule(tile.id)"
             >
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 text-xl">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg">
                 {{ tile.icon }}
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-bold text-white truncate">{{ tile.name }}</div>
-                <div class="text-[10px] text-white/70 truncate">{{ tile.desc }}</div>
+                <div class="text-[9px] text-white/60 truncate">{{ tile.desc }}</div>
               </div>
-              <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/20 px-2 py-1 font-mono text-xs font-black text-white/80">
+              <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/30 px-1.5 py-0.5 font-mono text-[10px] font-black text-white/70">
                 {{ tile.shortcut }}
               </span>
             </div>
