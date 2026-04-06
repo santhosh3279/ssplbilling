@@ -284,6 +284,7 @@ def get_billing_settings(user=None):
 	company_state = frappe.db.get_value("Address", {"is_your_company_address": 1}, "state") or ""
 
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
+	user_theme = (user_row.theme or "Light") if user_row else "Light"
 	user_defaults = {
 		"cash": (user_row.cash or "") if user_row else "",
 		"card": (user_row.card or "") if user_row else "",
@@ -294,6 +295,7 @@ def get_billing_settings(user=None):
 		"cost_center": (user_row.cost_center or "") if user_row else "",
 		"income_account": (user_row.income_account or "") if user_row else "",
 		"default_printer": (user_row.default_printer or "") if user_row else "",
+		"theme": user_theme,
 	}
 
 	return {
@@ -307,6 +309,7 @@ def get_billing_settings(user=None):
 		"cipher_map": settings.cipher_map or "",
 		"mop_map": mop_map,
 		"user_zoom": user_zoom,
+		"wb_theme": user_theme,
 		"user_defaults": user_defaults,
 		"user_role": {
 			"admin": user_row.admin if user_row else 0,
@@ -341,6 +344,7 @@ def get_billing_settings(user=None):
 				"biller": r.biller or 0,
 				"accounts": r.accounts or 0,
 				"default_printer": r.default_printer or "",
+				"theme": r.theme or "Light",
 			}
 			for r in settings.user_series
 		],

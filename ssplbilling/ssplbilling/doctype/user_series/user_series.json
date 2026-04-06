@@ -20,7 +20,8 @@
   "cashier",
   "biller",
   "accounts",
-  "default_printer"
+  "default_printer",
+  "theme"
  ],
  "fields": [
   {
@@ -110,6 +111,13 @@
    "fieldtype": "Link",
    "label": "Default Printer",
    "options": "Printer"
+  },
+  {
+   "fieldname": "theme",
+   "fieldtype": "Select",
+   "label": "Theme",
+   "options": "Light\nDark",
+   "default": "Light"
   }
  ],
  "grid_page_length": 50,

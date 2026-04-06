@@ -623,6 +623,9 @@ async function fetchSettings(user = null) {
     if (settings && settings.user_zoom) {
       localStorage.setItem('wb-zoom', settings.user_zoom)
     }
+    if (settings && settings.wb_theme) {
+      localStorage.setItem('wb-theme', settings.wb_theme)
+    }
     if (settings && settings.cipher_map) {
       localStorage.setItem('wb-cipher', settings.cipher_map)
     }
