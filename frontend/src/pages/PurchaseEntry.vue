@@ -389,7 +389,7 @@
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" v-model="isReturn" :disabled="billDocStatus !== 0 || billSaved" class="h-4 w-4 rounded border-slate-600 accent-red-500 cursor-pointer disabled:cursor-not-allowed" />
-                  <span class="text-slate-400 text-lg font-bold uppercase">Sale Return</span>
+                  <span class="text-slate-400 text-lg font-bold uppercase">Purchase Return</span>
                 </label>
               </div>
               <div class="flex flex-col gap-0.5">
