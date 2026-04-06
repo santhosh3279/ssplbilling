@@ -700,7 +700,7 @@ const changeAmount = computed(() => {
   const actualMoney = (Number(payments.value.cash) || 0) +
                       (Number(payments.value.upi) || 0) +
                       (Number(payments.value.card) || 0)
-  const netToPay = amountToCollect.value - (Number(payments.value.discount) || 0)
+  const netToPay = amountToCollect.value - (Number(payments.value.discount) || 0) - (Number(payments.value.credit) || 0)
   const change = actualMoney - netToPay
   return change > 0.005 ? parseFloat(change.toFixed(2)) : 0
 })
@@ -708,6 +708,7 @@ const changeAmount = computed(() => {
 const canSubmit = computed(() => {
   if (!selectedInvoice.value || isSubmitting.value) return false
   if (isCredit.value) return true
+  // Force cashier to account for the full bill (using Cash/UPI/Card/Disc OR the Credit box)
   return balance.value <= 0.01
 })
 
@@ -927,11 +928,13 @@ async function processPayment() {
     const upi  = Number(payments.value.upi)  || 0
     const card = Number(payments.value.card) || 0
     const disc = Number(payments.value.discount) || 0
+    const credit = Number(payments.value.credit) || 0
     let cash = Number(payments.value.cash) || 0
 
-    const total = cash + upi + card + disc
+    const total = cash + upi + card + disc + credit
     if (total > bill + 0.005) {
-      cash = bill - upi - card - disc
+      // Adjustment logic if overpaid (always reduces cash first)
+      cash = Math.max(0, bill - upi - card - disc - credit)
     }
 
     let finalDueDate = getIsoDueDate()
@@ -946,6 +949,7 @@ async function processPayment() {
       upi_amount: upi,
       card_amount: card,
       discount_amount: disc,
+      credit_amount: credit,
       is_credit: isCredit.value,
       due_date: finalDueDate,
       posting_date: postingDate.value,
