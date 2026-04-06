@@ -157,6 +157,15 @@
 
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+          @click="toggleTheme"
+        >
+          <span v-if="theme === 'Light'">☀️</span>
+          <span v-else>🌙</span>
+          <span>Toggle Theme</span>
+        </button>
+
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="showSystemPerformance = true"
         >
           📊 System Performance
@@ -342,6 +351,14 @@ const userRole = computed(() => {
 })
 const isBiller = computed(() => userRole.value === 'biller')
 const isActualAdmin = computed(() => ['Administrator', 'admin'].includes(session.user.value))
+
+// ==================== THEME ====================
+const theme = ref(localStorage.getItem('wb-theme') || 'Light');
+
+function toggleTheme() {
+  theme.value = theme.value === 'Light' ? 'Dark' : 'Light';
+  localStorage.setItem('wb-theme', theme.value);
+}
 
 // ==================== USER ====================
 const userInitials = computed(() => {
