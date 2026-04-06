@@ -13,10 +13,10 @@
 /* ── Light Theme ── */
 :root,
 :root.light {
-  --color-bg:        #BC9F8B;   /* page background */
-  --color-highlight: #E7E8D8;   /* primary accent / buttons */
-  --color-lowlight:  #B5CFB7;   /* subtle surfaces / borders */
-  --color-midlight:  #CADABF;   /* mid-tone — cards, hover states */
+  --color-bg:        #FFF2E1;   /* page background */
+  --color-highlight: #A79277;   /* primary accent / buttons */
+  --color-lowlight:  #EAD8C0;   /* subtle surfaces / borders */
+  --color-midlight:  #D1BB9E;   /* mid-tone — cards, hover states */
 
   /* Derived semantic aliases (use these in components) */
   --color-surface:        var(--color-lowlight);   /* cards / panels */
