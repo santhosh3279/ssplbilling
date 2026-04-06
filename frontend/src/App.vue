@@ -10,8 +10,10 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useShortcuts } from './services/shortcutManager';
 import { globalShortcuts } from './shortcuts/globalShortcuts';
 import Calculator from './components/Calculator.vue';
+import { useTheme } from './composables/useTheme';
 
 const showCalculator = ref(false);
+const { initTheme } = useTheme();
 
 // Register application-wide shortcuts
 useShortcuts(globalShortcuts, 'global');
@@ -21,6 +23,7 @@ function toggleCalculator() {
 }
 
 onMounted(() => {
+  initTheme(); // Apply saved theme class to <html> on boot
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
 });
 

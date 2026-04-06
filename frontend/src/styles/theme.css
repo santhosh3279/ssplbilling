@@ -1,0 +1,44 @@
+/* =============================================================
+   SSPL Billing — Master Colour Theme
+   All pages reference these CSS custom properties.
+
+   Usage in pages:
+     background-color: var(--color-bg);
+     color:            var(--color-highlight);
+
+   Tailwind arbitrary values:
+     class="bg-[var(--color-bg)] text-[var(--color-highlight)]"
+   =============================================================*/
+
+/* ── Light Theme ── */
+:root,
+:root.light {
+  --color-bg:        #EEEFE0;   /* page background */
+  --color-highlight: #819A91;   /* primary accent / buttons */
+  --color-lowlight:  #D1D8BE;   /* subtle surfaces / borders */
+  --color-midlight:  #A7C1A8;   /* mid-tone — cards, hover states */
+
+  /* Derived semantic aliases (use these in components) */
+  --color-surface:        var(--color-lowlight);   /* cards / panels */
+  --color-surface-raised: var(--color-midlight);   /* elevated cards */
+  --color-border:         var(--color-midlight);
+  --color-text:           #1a1a1a;
+  --color-text-muted:     #4a5550;
+  --color-text-on-highlight: #ffffff;
+}
+
+/* ── Dark Theme ── */
+:root.dark {
+  --color-bg:        #091413;   /* page background */
+  --color-highlight: #B0E4CC;   /* primary accent / buttons */
+  --color-lowlight:  #285A48;   /* subtle surfaces / borders */
+  --color-midlight:  #408A71;   /* mid-tone — cards, hover states */
+
+  /* Derived semantic aliases */
+  --color-surface:        var(--color-lowlight);
+  --color-surface-raised: var(--color-midlight);
+  --color-border:         var(--color-midlight);
+  --color-text:           #e8f5ef;
+  --color-text-muted:     #8abba8;
+  --color-text-on-highlight: #091413;
+}

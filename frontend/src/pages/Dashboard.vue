@@ -159,7 +159,7 @@
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
           @click="toggleTheme"
         >
-          <span v-if="theme === 'Light'">☀️</span>
+          <span v-if="theme === 'light'">☀️</span>
           <span v-else>🌙</span>
           <span>Toggle Theme</span>
         </button>
@@ -337,6 +337,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
 
@@ -353,12 +354,7 @@ const isBiller = computed(() => userRole.value === 'biller')
 const isActualAdmin = computed(() => ['Administrator', 'admin'].includes(session.user.value))
 
 // ==================== THEME ====================
-const theme = ref(localStorage.getItem('wb-theme') || 'Light');
-
-function toggleTheme() {
-  theme.value = theme.value === 'Light' ? 'Dark' : 'Light';
-  localStorage.setItem('wb-theme', theme.value);
-}
+const { theme, toggleTheme, applyTheme } = useTheme()
 
 // ==================== USER ====================
 const userInitials = computed(() => {
@@ -641,7 +637,7 @@ async function fetchSettings(user = null) {
       localStorage.setItem('wb-zoom', settings.user_zoom)
     }
     if (settings && settings.wb_theme) {
-      localStorage.setItem('wb-theme', settings.wb_theme)
+      applyTheme(settings.wb_theme) // normalises + applies class to <html>
     }
     if (settings && settings.cipher_map) {
       localStorage.setItem('wb-cipher', settings.cipher_map)
