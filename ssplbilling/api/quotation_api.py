@@ -249,8 +249,10 @@ def get_quotations(query="", limit=50, transaction_date=None, show_submitted=Fal
 
 	or_filters = None
 	if query:
+		import re
+		flexible_query = "%" + "%".join(re.findall(r'[A-Za-z]+|\d+', query)) + "%"
 		or_filters = [
-			["Quotation", "name", "like", f"%{query}%"],
+			["Quotation", "name", "like", flexible_query],
 			["Quotation", "party_name", "like", f"%{query}%"],
 			["Quotation", "customer_name", "like", f"%{query}%"],
 		]
@@ -260,7 +262,7 @@ def get_quotations(query="", limit=50, transaction_date=None, show_submitted=Fal
 		filters=filters,
 		or_filters=or_filters,
 		fields=["name", "party_name", "customer_name", "grand_total", "status", "docstatus", "transaction_date"],
-		order_by="modified desc",
+		order_by="name desc",
 		limit_page_length=int(limit),
 	)
 

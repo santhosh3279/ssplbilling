@@ -343,18 +343,31 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
     
     if naming_series:
         filters.append(["naming_series", "=", naming_series])
-    kwargs = dict(
-        filters=filters,
-        fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
-        limit=int(limit),
-        order_by="modified desc",
-    )
+
     if query:
-        kwargs["or_filters"] = {
-            "name": ["like", f"%{query}%"],
-            "supplier_name": ["like", f"%{query}%"],
-        }
-    invoices = frappe.get_all("Purchase Invoice", **kwargs)
+        import re
+        flexible_query = "%" + "%".join(re.findall(r'[A-Za-z]+|\d+', query)) + "%"
+        or_filters = [
+            ["name", "like", flexible_query],
+            ["supplier_name", "like", f"%{query}%"]
+        ]
+        invoices = frappe.get_all(
+            "Purchase Invoice",
+            filters=filters,
+            or_filters=or_filters,
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
+            limit=int(limit),
+            order_by="name desc",
+        )
+    else:
+        invoices = frappe.get_all(
+            "Purchase Invoice",
+            filters=filters,
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
+            limit=int(limit),
+            order_by="name desc",
+        )
+
     for inv in invoices:
         inv["grand_total"] = float(inv["grand_total"] or 0)
         inv["customer_name"] = inv.get("supplier_name", "")

@@ -44,15 +44,33 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
         filters.append(["naming_series", "=", naming_series])
 
     if query:
-        filters.append(["customer_name", "like", f"%{query}%"])
+        # Create a flexible bill number search (e.g., "EO141" -> "%EO%141%")
+        # We split by transitions between letters and digits
+        import re
+        flexible_query = "%" + "%".join(re.findall(r'[A-Za-z]+|\d+', query)) + "%"
 
-    invoices = frappe.get_all(
-        "Sales Invoice",
-        filters=filters,
-        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
-        limit=int(limit),
-        order_by="name desc",
-    )
+        or_filters = [
+            ["name", "like", flexible_query],
+            ["customer_name", "like", f"%{query}%"],
+            ["custom_customer_name", "like", f"%{query}%"]
+        ]
+        
+        invoices = frappe.get_all(
+            "Sales Invoice",
+            filters=filters,
+            or_filters=or_filters,
+            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
+            limit=int(limit),
+            order_by="name desc",
+        )
+    else:
+        invoices = frappe.get_all(
+            "Sales Invoice",
+            filters=filters,
+            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
+            limit=int(limit),
+            order_by="name desc",
+        )
 
     result = []
     for inv in invoices:

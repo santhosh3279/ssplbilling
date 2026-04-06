@@ -56,6 +56,35 @@
               </button>
             </div>
 
+            <!-- Series & Sync -->
+            <div class="flex items-center gap-2">
+              <select
+                v-model="sidebarSeries"
+                @change="loadInvoices"
+                class="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-300 outline-none focus:border-blue-500 transition-all"
+              >
+                <option value="">All Series</option>
+                <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
+              </select>
+              <button
+                @click="loadInvoices"
+                class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all active:scale-90"
+                title="Sync Bills"
+              >
+                <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              </button>
+            </div>
+
+            <!-- Unpaid Toggle -->
+            <button
+              @click="showUnpaid = !showUnpaid; loadInvoices()"
+              class="w-full rounded-xl border py-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all"
+              :class="showUnpaid 
+                ? 'bg-rose-900/30 border-rose-500/50 text-rose-400' 
+                : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750 hover:text-slate-300'"
+            >
+              {{ showUnpaid ? 'Showing All (Unpaid)' : 'Showing Drafts Only' }}
+            </button>
           </div>
 
           <!-- Search Bar -->
@@ -588,6 +617,9 @@ function getTodayIST() {
 const filterDate = ref(getTodayIST())
 const postingDate = ref(getTodayIST())
 const searchQuery = ref('')
+const showUnpaid = ref(false)
+const sidebarSeries = ref('')
+const availableSeries = ref([])
 
 const showCardRefModal = ref(false)
 const showPrintModal = ref(false)
@@ -747,11 +779,20 @@ async function checkDayOpening() {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value)
+    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, showUnpaid.value, sidebarSeries.value)
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
     loadingList.value = false
+  }
+}
+
+async function fetchSeriesList() {
+  try {
+    const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' })
+    availableSeries.value = res.allowed_series || []
+  } catch (e) {
+    console.warn('[CashierDesk] Could not fetch series list:', e)
   }
 }
 
@@ -1195,6 +1236,7 @@ watch(postingDate, () => {
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus())
   initAccountsFromLocalStorage()
+  fetchSeriesList()
   loadInvoices()
   // Immediately block if no opening recorded (fast path via localStorage)
   if (!Number(localStorage.getItem('wb-opening-box-cash') || 0)) {
