@@ -51,7 +51,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
         filters=filters,
         fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
         limit=int(limit),
-        order_by="modified desc",
+        order_by="name desc",
     )
 
     result = []
@@ -165,6 +165,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	upi_amount = float(data.get("upi_amount") or 0)
 	card_amount = float(data.get("card_amount") or 0)
 	discount_amount = float(data.get("discount_amount") or 0)
+	credit_amount = float(data.get("credit_amount") or 0)
 	is_credit = bool(data.get("is_credit"))
 	posting_date = data.get("posting_date") or frappe.utils.today()
 
@@ -180,7 +181,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	company = si.company
 
 	if not is_credit:
-		total_payment = cash_amount + upi_amount + card_amount + discount_amount
+		total_payment = cash_amount + upi_amount + card_amount + discount_amount + credit_amount
 		# Use outstanding_amount even for Drafts if it's already reduced by Advances
 		target_amount = float(si.outstanding_amount if (si.docstatus == 1 or si.outstanding_amount < si.grand_total) else grand_total)
 		if total_payment < target_amount - 0.01:

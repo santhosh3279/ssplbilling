@@ -2,44 +2,51 @@ import frappe
 from frappe.utils import flt
 
 @frappe.whitelist()
-def get_daily_reports(report_type, date):
+def get_daily_reports(report_type, from_date, to_date, naming_series=None):
 	"""
-	Returns a list of documents for a specific date and type.
+	Returns a list of documents for a specific date range and type.
 	report_type: 'Invoice', 'Payment', 'Journal', 'Quotation'
 	"""
-	if not date:
-		date = frappe.utils.today()
+	if not from_date: from_date = frappe.utils.today()
+	if not to_date: to_date = frappe.utils.today()
 
 	if report_type == 'Invoice':
+		filters = {
+			"posting_date": ["between", [from_date, to_date]],
+			"docstatus": ["<", 2]
+		}
+		if naming_series:
+			filters["naming_series"] = naming_series
+			
 		return frappe.get_all(
 			"Sales Invoice",
-			filters={"posting_date": date, "docstatus": ["<", 2]},
-			fields=["name", "customer_name", "grand_total", "docstatus", "posting_time"],
-			order_by="posting_time desc"
+			filters=filters,
+			fields=["name", "customer_name", "grand_total", "docstatus", "posting_time", "naming_series"],
+			order_by="posting_date desc, posting_time desc"
 		)
 	
 	elif report_type == 'Payment':
 		return frappe.get_all(
 			"Payment Entry",
-			filters={"posting_date": date, "docstatus": ["<", 2]},
+			filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
 			fields=["name", "party_name", "paid_amount", "received_amount", "mode_of_payment", "docstatus"],
-			order_by="creation desc"
+			order_by="posting_date desc, creation desc"
 		)
 
 	elif report_type == 'Journal':
 		return frappe.get_all(
 			"Journal Entry",
-			filters={"posting_date": date, "docstatus": ["<", 2]},
+			filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
 			fields=["name", "voucher_type", "total_debit", "docstatus", "user_remark"],
-			order_by="creation desc"
+			order_by="posting_date desc, creation desc"
 		)
 
 	elif report_type == 'Quotation':
 		return frappe.get_all(
 			"Quotation",
-			filters={"transaction_date": date, "docstatus": ["<", 2]},
+			filters={"transaction_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
 			fields=["name", "customer_name", "grand_total", "docstatus", "status"],
-			order_by="creation desc"
+			order_by="transaction_date desc, creation desc"
 		)
 
 	return []
