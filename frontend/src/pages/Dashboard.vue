@@ -142,18 +142,18 @@
             <div
               v-for="tile in tiles"
               :key="tile.id"
-              class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-125 bg-slate-700"
+              class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-highlight)]"
               :style="{ width: '70mm', height: '15mm' }"
               @click="openModule(tile.id)"
             >
-              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/10 text-lg">
                 {{ tile.icon }}
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-bold text-white truncate">{{ tile.name }}</div>
-                <div class="text-[9px] text-white/60 truncate">{{ tile.desc }}</div>
+                <div class="text-sm font-bold truncate text-[var(--color-text-on-highlight)]">{{ tile.name }}</div>
+                <div class="text-[9px] truncate text-[var(--color-text-on-highlight)] opacity-70">{{ tile.desc }}</div>
               </div>
-              <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/30 px-1.5 py-0.5 font-mono text-[10px] font-black text-white/70">
+              <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/20 px-1.5 py-0.5 font-mono text-[10px] font-black text-[var(--color-text-on-highlight)] opacity-80">
                 {{ tile.shortcut }}
               </span>
             </div>
