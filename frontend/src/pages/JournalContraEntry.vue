@@ -40,6 +40,20 @@
       </div>
 
       <div class="flex items-center gap-4">
+        <!-- Balancing Account selection for Opening Entry -->
+        <div v-if="entryType === 'Opening Entry'" class="flex items-center gap-3 bg-slate-700 px-4 py-1.5 rounded-xl border border-amber-600/40 shadow-sm">
+          <label class="text-[11px] font-black uppercase tracking-widest text-amber-500">Balancing Account</label>
+          <div
+            @click="showBalancingSearch = true"
+            class="min-w-[200px] px-2 py-0.5 rounded border border-slate-600 bg-slate-800 text-sm font-bold text-slate-200 cursor-pointer hover:border-blue-500 transition-all flex items-center justify-between"
+          >
+            <span :class="!balancingAccount.name ? 'text-slate-500 italic font-normal' : ''">
+              {{ balancingAccount.label || 'Select Account...' }}
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+        </div>
+
         <div class="flex items-center gap-3 bg-slate-700 px-4 py-1.5 rounded-xl border border-slate-600 shadow-sm">
           <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">Posting Date</label>
           <div class="flex items-center gap-1">
@@ -246,6 +260,15 @@
       @close="showSearchModal = false"
       @select="selectLedger"
     />
+
+    <CustomerSearchModal
+      :show="showBalancingSearch"
+      :allowed-types="['Account']"
+      initial-type="Account"
+      :skip-date-filter="true"
+      @close="showBalancingSearch = false"
+      @select="ledger => { balancingAccount = { name: ledger.name, label: ledger.label }; showBalancingSearch = false }"
+    />
   </div>
 </template>
 
@@ -261,12 +284,16 @@ const router = useRouter()
 
 // --- STATE ---
 const entryType = ref('Journal Entry')
+const balancingAccount = ref({ name: '', label: '' })
 const isContra = computed(() => entryType.value === 'Contra')
+
+const showBalancingSearch = ref(false)
 
 watch(entryType, () => {
   rows.value = [
     { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
   ]
+  balancingAccount.value = { name: '', label: '' }
   activeRowIdx.value = 0
   nextTick(() => ledgerRefs[0]?.focus())
 })
@@ -378,6 +405,7 @@ const canSave = computed(() => {
   const activeRows = rows.value.filter(r => r.account)
   if (entryType.value === 'Opening Entry') {
     return activeRows.length >= 1 && 
+           balancingAccount.value.name &&
            activeRows.every(r => (Number(r.debit) > 0 || Number(r.credit) > 0))
   }
   return activeRows.length >= 2 && 
@@ -594,6 +622,7 @@ async function saveEntry() {
       voucher_type: entryType.value,
       posting_date: postingDate.value,
       user_remark: userRemarks.value,
+      balancing_account: balancingAccount.value.name,
       accounts: rows.value
         .filter(r => r.account)
         .map(r => ({

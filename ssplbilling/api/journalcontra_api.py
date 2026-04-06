@@ -103,8 +103,11 @@ def create_journal_contra_entry(data):
                 })
 
                 if voucher_type == "Opening Entry":
-                    abbr = frappe.db.get_value("Company", company, "abbr")
-                    temp_opening = f"Temporary Opening - {abbr}"
+                    temp_opening = data.get("balancing_account")
+                    if not temp_opening:
+                        abbr = frappe.db.get_value("Company", company, "abbr")
+                        temp_opening = f"Temporary Opening - {abbr}"
+                    
                     je.append("accounts", {
                         "account": temp_opening,
                         "debit_in_account_currency": credit,
