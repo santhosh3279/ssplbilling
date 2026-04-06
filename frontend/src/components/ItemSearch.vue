@@ -6,12 +6,12 @@
     @keydown="handleGlobalKeydown"
     tabindex="-1"
   >
-    <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden relative">
+    <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden relative">
       <!-- Header -->
-      <div class="border-b border-slate-700 px-5 py-4 flex items-center gap-8 bg-slate-800">
+      <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center gap-8 bg-[var(--color-surface-raised)]">
         <div class="shrink-0">
-          <div class="text-2xl text-slate-200 whitespace-nowrap">Detailed Item Search ({{ searchType }})</div>
-          <div class="text-sm text-slate-400">View stock info and select item</div>
+          <div class="text-2xl text-[var(--color-text)] whitespace-nowrap">Detailed Item Search ({{ searchType }})</div>
+          <div class="text-sm text-[var(--color-text-muted)]">View stock info and select item</div>
         </div>
 
         <!-- Search input integrated into header -->
@@ -19,12 +19,12 @@
           <input
             ref="searchInput"
             v-model="query"
-            class="w-full rounded border border-slate-600 bg-slate-900 p-[8px] text-4xl text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-[8px] text-4xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
             placeholder="Type item code or name..."
             @keydown.esc.stop="$emit('close')"
           />
           <div v-if="loading && !allItems.length" class="absolute right-4 top-1/2 -translate-y-1/2">
-            <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+            <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-highlight)] border-t-transparent"></span>
           </div>
         </div>
 
@@ -32,42 +32,42 @@
           <button
             @click="isDecrypted = !isDecrypted"
             class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all"
-            :class="isDecrypted ? 'border-amber-500 bg-amber-900/20 text-amber-400' : 'border-slate-600 bg-slate-800 text-slate-400'"
+            :class="isDecrypted ? 'border-amber-500 bg-amber-900/20 text-amber-500' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]'"
           >
             <span>{{ isDecrypted ? '🔓' : '🔒' }}</span>
             {{ isDecrypted ? 'Decrypt' : 'Encrypt' }}
           </button>
-          <button @click="$emit('close')" class="text-2xl text-slate-500 hover:text-slate-300">✕</button>
+          <button @click="$emit('close')" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
         </div>
       </div>
 
       <!-- Detail Panel -->
-      <div v-if="results[selectedIdx]" class="border-b border-slate-700 bg-blue-900/20 px-6 py-4">
+      <div v-if="results[selectedIdx]" class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/10 px-6 py-4">
         <div class="flex flex-col gap-4">
           <div class="flex flex-wrap items-start gap-x-10 gap-y-3">
             <div class="flex flex-col min-w-[150px]">
-              <span class="text-base uppercase text-slate-200 font-medium">Current Stock</span>
-              <span class="text-3xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-400' : 'text-green-400'">
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Current Stock</span>
+              <span class="text-3xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-500' : 'text-green-600'">
                 {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
               </span>
             </div>
             <div v-if="warehouse" class="flex flex-col min-w-[150px] max-w-[250px]">
-              <span class="text-base uppercase text-slate-200 font-medium">Warehouse</span>
-              <span class="truncate text-xl text-slate-100" :title="warehouse">{{ warehouse }}</span>
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Warehouse</span>
+              <span class="truncate text-xl text-[var(--color-text)]" :title="warehouse">{{ warehouse }}</span>
             </div>
             <div class="flex flex-col min-w-[150px]">
-              <span class="text-base uppercase text-slate-200 font-medium">{{ priceList || 'Rate' }}</span>
-              <span class="text-3xl text-slate-100 font-mono">
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">{{ priceList || 'Rate' }}</span>
+              <span class="text-3xl text-[var(--color-text)] font-mono">
                 {{ encPrice(results[selectedIdx].price || 0) }}
               </span>
             </div>
             <div class="flex flex-col flex-[0.6]">
-              <span class="text-base uppercase text-slate-200 font-medium">Item Name</span>
-              <span class="text-2xl text-slate-100 truncate font-semibold">{{ results[selectedIdx].item_name }}</span>
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Item Name</span>
+              <span class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ results[selectedIdx].item_name }}</span>
             </div>
             <div class="flex flex-col flex-[0.4]">
-              <span class="text-base uppercase text-slate-200 font-medium">Default Supplier</span>
-              <span class="text-2xl text-slate-300 truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Default Supplier</span>
+              <span class="text-2xl text-[var(--color-text-muted)] truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
             </div>
           </div>
         </div>
@@ -76,41 +76,40 @@
       <!-- Results Table -->
       <div ref="scrollContainer" class="flex-1 overflow-y-auto">
         <table class="w-full text-4xl">
-          <thead class="sticky top-0 bg-slate-800 shadow-sm z-10">
-            <tr class="text-2xl uppercase tracking-wider text-slate-400 border-b border-slate-700">
+          <thead class="sticky top-0 bg-[var(--color-surface-raised)] shadow-sm z-10">
+            <tr class="text-2xl uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
               <th class="p-[5px] text-left w-1/4">Item Code</th>
               <th class="p-[5px] text-left">Item Name</th>
               <th class="p-[5px] text-right">{{ priceList || 'Rate' }}</th>
               <th class="p-[5px] text-right">Stock</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800">
+          <tbody class="divide-y divide-[var(--color-border)]">
             <tr
               v-for="(item, idx) in results"
               :key="item.item_code"
               class="cursor-pointer transition-colors"
-              :class="selectedIdx === idx ? 'text-black' : 'hover:bg-slate-800/40'"
-              :style="selectedIdx === idx ? { backgroundColor: '#B0E4CC !important' } : {}"
+              :class="selectedIdx === idx ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]' : 'hover:bg-[var(--color-midlight)]/20'"
               @click="$emit('select', item)"
             >
-              <td class="p-[5px] font-mono text-5xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">
-                <span v-if="item.has_history" class="h-3 w-3 shrink-0 rounded-full animate-pulse" :class="selectedIdx === idx ? 'bg-black/40' : 'bg-blue-500'" title="Previously sold to this customer"></span>
+              <td class="p-[5px] font-mono text-5xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
+                <span v-if="item.has_history" class="h-3 w-3 shrink-0 rounded-full animate-pulse" :class="selectedIdx === idx ? 'bg-[var(--color-text-on-highlight)]/40' : 'bg-[var(--color-highlight)]'" title="Previously sold to this customer"></span>
                 <span>{{ item.item_code }}</span>
               </td>
               <td class="p-[5px]">
-                <div class="font-medium" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-slate-200'">{{ item.item_name }}</div>
+                <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
               </td>
-              <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-amber-400'">
+              <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-amber-600'">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
               <td class="p-[5px] text-right">
-                <span :class="selectedIdx === idx ? 'text-black font-bold' : (item.stock <= 0 ? 'text-red-400' : 'text-slate-200')">
+                <span :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : (item.stock <= 0 ? 'text-red-500' : 'text-[var(--color-text)]')">
                   {{ item.stock || 0 }}
                 </span>
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
-              <td colspan="4" class="px-5 py-12 text-center text-slate-500 text-xl italic">
+              <td colspan="4" class="px-5 py-12 text-center text-[var(--color-text-muted)] text-xl italic">
                 No items found matching "{{ query }}"
               </td>
             </tr>
@@ -119,21 +118,21 @@
       </div>
 
       <!-- UOM Prices Grid -->
-      <div v-if="insightData?.uoms?.length > 0" class="border-t border-slate-700 bg-slate-900 px-0 py-0">
+      <div v-if="insightData?.uoms?.length > 0" class="border-t border-[var(--color-border)] bg-[var(--color-bg)] px-0 py-0">
         <div class="overflow-x-auto scrollbar-none">
           <table class="w-full border-collapse">
             <thead>
-              <tr class="bg-slate-800/50">
-                <th class="border border-slate-700 px-2 py-1 text-left text-sm font-normal text-slate-300 uppercase w-32">UOM</th>
-                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right text-xl font-normal text-slate-300 uppercase min-w-[120px]">
+              <tr class="bg-[var(--color-surface-raised)]/50">
+                <th class="border border-[var(--color-border)] px-2 py-1 text-left text-sm font-normal text-[var(--color-text-muted)] uppercase w-32">UOM</th>
+                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right text-xl font-normal text-[var(--color-text-muted)] uppercase min-w-[120px]">
                   {{ pl.name }}
                 </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-slate-800/30">
-                <td class="border border-slate-700 px-2 py-1 text-xl text-slate-400 truncate">{{ uom }}</td>
-                <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-slate-700 px-2 py-1 text-right font-mono text-amber-400 text-3xl tracking-widest">
+              <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-[var(--color-midlight)]/30">
+                <td class="border border-[var(--color-border)] px-2 py-1 text-xl text-[var(--color-text-muted)] truncate">{{ uom }}</td>
+                <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right font-mono text-amber-600 text-3xl tracking-widest">
                   {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : '--' }}
                 </td>
               </tr>
@@ -143,16 +142,16 @@
       </div>
 
       <!-- Footer shortcuts -->
-      <div class="border-t border-slate-700 px-5 py-3 bg-slate-800 flex gap-6 text-xs text-slate-500 uppercase tracking-widest font-bold">
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Home</kbd> Search</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">↑↓</kbd> Navigate</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Enter</kbd> Select</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+E</kbd> Toggle Enc</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F2</kbd> New Item</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F3</kbd> Edit Item</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F4</kbd> Update Price</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F5</kbd> Refresh</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> Close</span>
+      <div class="border-t border-[var(--color-border)] px-5 py-3 bg-[var(--color-surface-raised)] flex gap-6 text-xs text-[var(--color-text-muted)] uppercase tracking-widest font-bold">
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Home</kbd> Search</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">↑↓</kbd> Navigate</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Enter</kbd> Select</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+E</kbd> Toggle Enc</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F2</kbd> New Item</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F3</kbd> Edit Item</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F4</kbd> Update Price</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F5</kbd> Refresh</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
 
       <DateFilter
