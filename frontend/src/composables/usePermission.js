@@ -32,6 +32,7 @@ export const BILLER_ROUTES = new Set([
   'StockReconciliation',
   'GstDummyLedger',
   'GstLedger',
+  'DailyReport',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -42,6 +43,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'PayRec',
   'JournalContraEntry',
   'CashierManagement',
+  'DailyReport',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
@@ -51,6 +53,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'PayRec',
   'JournalContraEntry',
   'Reports',
+  'DailyReport',
 ])
 
 /**
@@ -124,6 +127,7 @@ const TILE_ROUTE_MAP = {
   'parcel-address':    'ParcelAddress',
   'gst-dummy-ledger':  'GstDummyLedger',
   'gst-ledger':        'GstLedger',
+  'daily-report':      'DailyReport',
   'ssplbillingsettings': 'SSPLBillingSettings',
 }
 
