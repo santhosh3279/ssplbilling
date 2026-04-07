@@ -275,6 +275,7 @@ const customerMobile = ref('')
 const customerGstin = ref('')
 const customerBalance = ref(null)
 const customerLastInvDate = ref('')
+const customerState = ref('')
 const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
 
 // Use stored arrays for Price List and Tax Template
@@ -285,6 +286,43 @@ try { localTaxTemplates.value = JSON.parse(localStorage.getItem('wb-sales-tax-te
 
 const priceList = ref(localPriceLists.value[0] || 'Standard Selling')
 const taxTemplate = ref(localTaxTemplates.value[0] || '')
+
+watch(taxTemplate, (val) => {
+  if (!val) return
+  if (val.toLowerCase().includes('inclusive')) {
+    isInclusiveTax.value = true
+  } else {
+    isInclusiveTax.value = false
+  }
+  applyRegionalTaxLogic()
+})
+
+function applyRegionalTaxLogic() {
+  if (!customerState.value || !taxTemplate.value) return
+  
+  const companyState = localStorage.getItem('wb-company-state') || ''
+  const partyState = customerState.value
+  
+  if (!companyState || !partyState) return
+  
+  const isInterState = companyState.toLowerCase() !== partyState.toLowerCase()
+  const currentTax = taxTemplate.value
+  
+  if (isInterState) {
+    if (currentTax.toLowerCase().includes('in-state')) {
+      const targetTax = currentTax.replace(/in-state/i, 'Out-State')
+      const found = localTaxTemplates.value.find(t => t.toLowerCase() === targetTax.toLowerCase())
+      if (found) taxTemplate.value = found
+    }
+  } else {
+    if (currentTax.toLowerCase().includes('out-state')) {
+      const targetTax = currentTax.replace(/out-state/i, 'In-State')
+      const found = localTaxTemplates.value.find(t => t.toLowerCase() === targetTax.toLowerCase())
+      if (found) taxTemplate.value = found
+    }
+  }
+}
+
 const isInclusiveTax = ref(true)
 const warehouse = ref(localStorage.getItem('wb-warehouse') || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
@@ -553,6 +591,7 @@ function handleCustomerSelected(cust) {
   customerMobile.value = cust.mobile_no || ''
   customerGstin.value = cust.gstin || ''
   customerBalance.value = cust.balance ?? 0
+  customerState.value = cust.state || ''
   
   // Format Address
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
@@ -566,6 +605,7 @@ function handleCustomerSelected(cust) {
     customerLastInvDate.value = 'None'
   }
 
+  applyRegionalTaxLogic()
   showCustomerModal.value = false
 
   nextTick(() => {
