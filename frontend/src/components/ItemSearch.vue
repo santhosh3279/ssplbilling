@@ -192,6 +192,7 @@
 <script setup>
 import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
+import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
@@ -223,7 +224,8 @@ const emit = defineEmits(['close', 'select'])
 
 useSubwindowWatcher(computed(() => props.show))
 
-const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, hasHistory, lastParams } = useItemCache()
+const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, lastParams } = useItemCache()
+const { hasHistory } = useCustomerHistory()
 
 const query = ref('')
 const selectedIdx = ref(0)
