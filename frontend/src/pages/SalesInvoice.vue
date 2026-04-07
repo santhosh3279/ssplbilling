@@ -23,6 +23,14 @@
       :income-account="incomeAccount"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentInvoices"
+      v-model:freight-entry="freightEntry"
+      :freight-amt="freightAmt"
+      v-model:packing-entry="packingEntry"
+      :packing-amt="packingAmt"
+      v-model:loading-entry="loadingEntry"
+      :loading-amt="loadingAmt"
+      v-model:other-entry="otherEntry"
+      :other-amt="otherAmt"
       @back="goBack"
       @save="handleSave"
       @print="handlePrint"
@@ -392,6 +400,17 @@ const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenter
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
 const isInclusiveTax = ref(true)
 
+// --- Additional Charges ---
+const freightEntry = ref('')
+const packingEntry = ref('')
+const loadingEntry = ref('')
+const otherEntry = ref('')
+
+const freightAmt = computed(() => parseFloat(freightEntry.value) || 0)
+const packingAmt = computed(() => parseFloat(packingEntry.value) || 0)
+const loadingAmt = computed(() => parseFloat(loadingEntry.value) || 0)
+const otherAmt = computed(() => parseFloat(otherEntry.value) || 0)
+
 // --- Composable Logic (Discount Rules) ---
 const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, lookupItemInCache })
 
@@ -472,7 +491,14 @@ const subtotal = computed(() => {
 })
 
 const totalAmount = computed(() => {
-  return (parseFloat(subtotal.value) + parseFloat(totalTax.value)).toFixed(2)
+  return (
+    parseFloat(subtotal.value) + 
+    parseFloat(totalTax.value) + 
+    freightAmt.value + 
+    packingAmt.value + 
+    loadingAmt.value + 
+    otherAmt.value
+  ).toFixed(2)
 })
 
 // --- Watchers ---

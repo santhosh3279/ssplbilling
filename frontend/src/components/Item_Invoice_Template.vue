@@ -309,33 +309,53 @@
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
                 <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
-                  <div v-if="freightEntry" class="bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1">{{ freightEntry }}</div>
+                  <input
+                    type="number"
+                    :value="freightEntry"
+                    @input="$emit('update:freightEntry', $event.target.value)"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-center outline-none focus:bg-[var(--color-highlight)]/10"
+                  />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ freightAmt }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Packing -->
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Packing</td>
                 <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
-                  <div v-if="packingEntry" class="bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1">{{ packingEntry }}</div>
+                  <input
+                    type="number"
+                    :value="packingEntry"
+                    @input="$emit('update:packingEntry', $event.target.value)"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-center outline-none focus:bg-[var(--color-highlight)]/10"
+                  />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ packingAmt }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Loading -->
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Loading</td>
                 <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
-                  <div v-if="loadingEntry" class="bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1">{{ loadingEntry }}</div>
+                  <input
+                    type="number"
+                    :value="loadingEntry"
+                    @input="$emit('update:loadingEntry', $event.target.value)"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-center outline-none focus:bg-[var(--color-highlight)]/10"
+                  />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ loadingAmt }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Other -->
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Other</td>
                 <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
-                  <div v-if="otherEntry" class="bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1">{{ otherEntry }}</div>
+                  <input
+                    type="number"
+                    :value="otherEntry"
+                    @input="$emit('update:otherEntry', $event.target.value)"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-center outline-none focus:bg-[var(--color-highlight)]/10"
+                  />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ otherAmt }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Tax -->
               <tr>
@@ -420,7 +440,8 @@ const props = defineProps({
 const emit = defineEmits([
   'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import', 'party-click',
   'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
-  'toggle-draft-only', 'select-sidebar-item', 'delete-item'
+  'toggle-draft-only', 'select-sidebar-item', 'delete-item',
+  'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry'
 ])
 </script>
 
