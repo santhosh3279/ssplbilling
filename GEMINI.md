@@ -83,7 +83,7 @@ After completing every prompt, you **must** output a detailed summary of everyth
 ## What Was Done
 
 ### Files Changed
-- `path/to/file.ext` — brief description of what changed and why
+- `path/to/file.ext` (lines: <before> -> <after>) — brief description of what changed and why
 
 ### Steps Taken
 1. <First action performed, e.g. "Read X to understand existing structure">
