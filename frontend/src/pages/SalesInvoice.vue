@@ -129,9 +129,43 @@
       </template>
 
       <template #bottom-left>
-        <div class="p-4">
-          <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Item Insights</h3>
-          <p class="text-sm text-slate-400 italic">Select an item row to see history and stock details here.</p>
+        <div class="flex flex-col h-full overflow-hidden">
+          <div class="shrink-0 bg-[var(--color-surface-raised)]/50 px-4 py-2 border-b border-[var(--color-border)]">
+            <h3 class="text-xs font-bold uppercase text-slate-500">Item Insights</h3>
+          </div>
+          
+          <div class="flex-1 overflow-y-auto p-4 scrollbar-none">
+            <div v-if="selectedRowIdx === -1" class="text-sm text-slate-400 italic">
+              Select an item row to see previous purchase history.
+            </div>
+            <div v-else-if="historyLoading" class="text-sm text-blue-400 animate-pulse">
+              Fetching history...
+            </div>
+            <div v-else-if="!selectedItemHistory.length" class="text-sm text-slate-500 italic">
+              No previous history found for this customer.
+            </div>
+            <div v-else>
+              <div class="mb-3 text-sm font-bold text-[var(--color-highlight)]">
+                Recent Purchases:
+              </div>
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
+                    <th class="py-1 pr-2">Date</th>
+                    <th class="py-1 px-2 text-right">Qty</th>
+                    <th class="py-1 pl-2 text-right">Rate</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]/30">
+                  <tr v-for="(h, i) in selectedItemHistory.slice(0, 5)" :key="i" class="text-[var(--color-text)]">
+                    <td class="py-1.5 pr-2 font-mono">{{ h.posting_date }}</td>
+                    <td class="py-1.5 px-2 text-right font-mono">{{ h.qty }}</td>
+                    <td class="py-1.5 pl-2 text-right font-mono font-bold">{{ h.rate.toFixed(2) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </template>
 
@@ -354,6 +388,13 @@ const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
 const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includes('exempt'))
 
 const activeItems = computed(() => items.value.filter(i => !i.deleted))
+
+const selectedItemHistory = computed(() => {
+  if (selectedRowIdx.value === -1) return []
+  const item = items.value[selectedRowIdx.value]
+  if (!item) return []
+  return getItemHistoryFromCache(item.item_code)
+})
 
 const totalTax = computed(() => {
   if (isExempted.value) return '0.00'
