@@ -135,8 +135,8 @@
           </div>
           
           <div class="flex-1 overflow-y-auto p-4 scrollbar-none">
-            <div v-if="selectedRowIdx === -1" class="text-sm text-slate-400 italic">
-              Select an item row to see previous purchase history.
+            <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-slate-400 italic">
+              Scan an item or select a row to see history.
             </div>
             <div v-else-if="historyLoading" class="text-sm text-blue-400 animate-pulse">
               Fetching history...
@@ -390,6 +390,11 @@ const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includ
 const activeItems = computed(() => items.value.filter(i => !i.deleted))
 
 const selectedItemHistory = computed(() => {
+  // If there's a pending item (just scanned/selected), show its history first
+  if (pendingItem.value) {
+    return getItemHistoryFromCache(pendingItem.value.item_code)
+  }
+  // Otherwise show history for the focused row
   if (selectedRowIdx.value === -1) return []
   const item = items.value[selectedRowIdx.value]
   if (!item) return []
