@@ -39,18 +39,67 @@
           :ref="el => { if (el) rowRefs[index] = el }"
           tabindex="0"
           class="border-b border-[var(--color-border)] outline-none cursor-pointer"
-          :class="selectedRowIdx === index ? 'bg-[var(--color-highlight)]/20 ring-inset ring-1 ring-[var(--color-highlight)]/40' : 'hover:bg-[var(--color-surface-raised)]/50'"
+          :class="(selectedRowIdx === index || editingRowIdx === index) ? 'bg-[var(--color-highlight)]/20 ring-inset ring-1 ring-[var(--color-highlight)]/40' : 'hover:bg-[var(--color-surface-raised)]/50'"
           @focus="selectedRowIdx = index"
-          @blur="selectedRowIdx = -1"
           @keydown="handleRowKeydown($event, index)"
         >
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">{{ index + 1 }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ item.item_code }}</td>
+
+          <!-- item_code -->
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input v-if="editingRowIdx === index && editingField === 'code'"
+              ref="editCodeInput"
+              v-model="item.item_code"
+              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none"
+              @keydown.enter.prevent="focusEditField('qty', index)"
+              @keydown.escape="exitEditMode(index)"
+            />
+            <span v-else class="block px-2 py-1 text-[var(--color-highlight)] text-2xl font-mono">{{ item.item_code }}</span>
+          </td>
+
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl font-medium">{{ item.item_name }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-mono text-right tabular-nums">{{ item.qty }}</td>
+
+          <!-- qty -->
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input v-if="editingRowIdx === index && editingField === 'qty'"
+              ref="editQtyInput"
+              v-model.number="item.qty"
+              type="number" min="1"
+              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown.enter.prevent="focusEditField('rate', index)"
+              @keydown.escape="exitEditMode(index)"
+            />
+            <span v-else class="block px-2 py-1 text-[var(--color-text)] text-4xl font-mono text-right tabular-nums">{{ item.qty }}</span>
+          </td>
+
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ item.uom || 'Nos' }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right tabular-nums">{{ item.rate }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)] text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</td>
+
+          <!-- rate -->
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input v-if="editingRowIdx === index && editingField === 'rate'"
+              ref="editRateInput"
+              v-model.number="item.rate"
+              type="number" min="0" step="0.01"
+              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown.enter.prevent="focusEditField('disc', index)"
+              @keydown.escape="exitEditMode(index)"
+            />
+            <span v-else class="block px-2 py-1 text-[var(--color-text)] text-3xl font-mono text-right tabular-nums">{{ item.rate }}</span>
+          </td>
+
+          <!-- disc % -->
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input v-if="editingRowIdx === index && editingField === 'disc'"
+              ref="editDiscInput"
+              v-model.number="item.discount_percentage"
+              type="number" min="0" max="100" step="0.5"
+              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-2xl font-mono text-[var(--color-warning)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown.enter.prevent="finishRowEdit(index)"
+              @keydown.escape="exitEditMode(index)"
+            />
+            <span v-else class="block px-2 py-1 text-[var(--color-warning)] text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</span>
+          </td>
+
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)]/80 text-2xl font-mono text-right tabular-nums">
             {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
           </td>
@@ -184,6 +233,12 @@ const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const selectedRowIdx = ref(-1)
 const rowRefs = ref([])
+const editingRowIdx = ref(-1)
+const editingField = ref(null) // 'code' | 'qty' | 'rate' | 'disc'
+const editCodeInput = ref(null)
+const editQtyInput = ref(null)
+const editRateInput = ref(null)
+const editDiscInput = ref(null)
 
 const items = ref([])
 
@@ -270,7 +325,13 @@ function handleNewCodeKeydown(e) {
 }
 
 function handleRowKeydown(e, idx) {
-  if (e.key === 'ArrowDown') {
+  // While editing this row, only handle Escape at the tr level (inputs handle the rest)
+  if (editingRowIdx.value === idx) return
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    focusEditField('code', idx)
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (idx < items.value.length - 1) focusRow(idx + 1)
     else focusBarcodeInput()
@@ -285,6 +346,42 @@ function handleRowKeydown(e, idx) {
     e.preventDefault()
     deleteItem(idx)
   }
+}
+
+function focusEditField(field, idx) {
+  editingRowIdx.value = idx
+  editingField.value = field
+  selectedRowIdx.value = idx
+  const inputMap = { code: editCodeInput, qty: editQtyInput, rate: editRateInput, disc: editDiscInput }
+  nextTick(() => {
+    const el = inputMap[field]?.value
+    el?.focus()
+    el?.select()
+  })
+}
+
+function exitEditMode(idx) {
+  recalcAmount(idx)
+  editingRowIdx.value = -1
+  editingField.value = null
+  nextTick(() => { rowRefs.value[idx]?.focus() })
+}
+
+function finishRowEdit(idx) {
+  recalcAmount(idx)
+  editingRowIdx.value = -1
+  editingField.value = null
+  if (idx < items.value.length - 1) {
+    focusRow(idx + 1)
+  } else {
+    focusBarcodeInput()
+  }
+}
+
+function recalcAmount(idx) {
+  const item = items.value[idx]
+  if (!item) return
+  item.amount = parseFloat(((item.qty || 1) * (item.rate || 0) * (1 - (item.discount_percentage || 0) / 100)).toFixed(2))
 }
 
 function focusRow(idx) {
