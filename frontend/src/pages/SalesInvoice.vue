@@ -48,6 +48,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { frappeGet } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 
@@ -110,9 +111,23 @@ function handleIncentive() {
   alert('Incentive Entry triggered')
 }
 
-function handleSeriesSelected(series) {
-  // Logic to handle series selection (e.g., fetch next number)
-  console.log('[SalesInvoice] Series selected:', series)
+async function handleSeriesSelected(series) {
+  try {
+    const res = await frappeGet('ssplbilling.api.sales_invoice_api.get_series_defaults', {
+      naming_series: series
+    })
+    invoiceNo.value = res.invoice_no
+    priceList.value = res.price_list
+    taxTemplate.value = res.tax_template
+    
+    // Priority: Series config > User Default > existing
+    if (res.warehouse) warehouse.value = res.warehouse
+    if (res.cost_center) costCenter.value = res.cost_center
+
+    console.log('[SalesInvoice] Series selected and UI updated:', series, res)
+  } catch (e) {
+    console.error('[SalesInvoice] Failed to fetch series defaults:', e)
+  }
 }
 
 onMounted(() => {
