@@ -185,7 +185,7 @@
               <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
                 <div v-for="p in itemPrices" :key="p.price_list" class="flex justify-between items-center text-lg font-mono leading-none">
                   <span class="text-[var(--color-text-muted)] truncate mr-2">{{ p.price_list }}</span>
-                  <span class="text-[var(--color-highlight)] font-bold">{{ p.rate.toFixed(2) }}</span>
+                  <span class="text-[var(--color-highlight)] font-bold tracking-widest">{{ encryptPrice(p.rate) }}</span>
                 </div>
               </div>
             </div>
@@ -321,6 +321,7 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { useItemCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
+import { encryptPrice } from '../encryption.js'
 
 const router = useRouter()
 
