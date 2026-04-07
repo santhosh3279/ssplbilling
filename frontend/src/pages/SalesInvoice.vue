@@ -42,7 +42,29 @@
       </template>
 
       <template #table-extra-rows>
-        <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5">
+        <!-- Pending row: qty input after item selected -->
+        <tr v-if="pendingItem" class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/10">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-xl font-mono text-center">+</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ pendingItem.item_code }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl">{{ pendingItem.item_name }}</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input
+              ref="pendingQtyInput"
+              v-model.number="pendingItem.qty"
+              type="number"
+              min="1"
+              class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown.enter="confirmPendingItem"
+              @keydown.escape="cancelPendingItem"
+            />
+          </td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ pendingItem.uom || 'Nos' }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ pendingItem.rate }}</td>
+          <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter qty and press Enter</td>
+        </tr>
+
+        <!-- Barcode input row -->
+        <tr v-else class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5">
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">*</td>
           <td class="p-0 border-r border-[var(--color-border)]">
             <input
@@ -123,6 +145,8 @@ const newCodeInput = ref(null)
 const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
+const pendingItem = ref(null)
+const pendingQtyInput = ref(null)
 
 const items = ref([])
 
@@ -165,20 +189,17 @@ function handleIncentive() {
 
 function handleItemEntry() {
   if (!newItemCode.value) return
-  // If quick search is open and has results, let keydown handler pick it
-  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
-    return
-  }
-  items.value.push({
-    item_code: newItemCode.value,
-    item_name: 'Newly Added Item',
-    qty: 1,
-    rate: 0,
-    discount_percentage: 0,
-    amount: 0
-  })
-  newItemCode.value = ''
-  quickSearchResults.value = []
+  // If quick search is open, let keydown handler pick from list
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) return
+
+  // Open pending row for qty entry
+  const code = newItemCode.value.trim()
+  const cached = searchItemsInCache(code)
+  const match = cached.find(i => i.item_code.toLowerCase() === code.toLowerCase()) || cached[0]
+  setPendingItem(match
+    ? { item_code: match.item_code, item_name: match.item_name, qty: 1, rate: match.price || 0, uom: match.uom || 'Nos', discount_percentage: 0 }
+    : { item_code: code, item_name: '', qty: 1, rate: 0, uom: 'Nos', discount_percentage: 0 }
+  )
 }
 
 function onNewCodeInput() {
@@ -210,16 +231,36 @@ function handleNewCodeKeydown(e) {
 
 function onQuickSearchSelect(item) {
   if (!item) return
+  quickSearchResults.value = []
+  newItemCode.value = ''
+  setPendingItem({ item_code: item.item_code, item_name: item.item_name, qty: 1, rate: item.price || 0, uom: item.uom || 'Nos', discount_percentage: 0 })
+}
+
+function setPendingItem(item) {
+  pendingItem.value = item
+  nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
+}
+
+function confirmPendingItem() {
+  if (!pendingItem.value) return
+  const p = pendingItem.value
   items.value.push({
-    item_code: item.item_code,
-    item_name: item.item_name,
-    qty: 1,
-    rate: item.price || 0,
-    discount_percentage: 0,
-    amount: item.price || 0
+    item_code: p.item_code,
+    item_name: p.item_name,
+    qty: p.qty || 1,
+    uom: p.uom || 'Nos',
+    rate: p.rate || 0,
+    discount_percentage: p.discount_percentage || 0,
+    amount: ((p.qty || 1) * (p.rate || 0)).toFixed(2)
   })
+  pendingItem.value = null
   newItemCode.value = ''
   quickSearchResults.value = []
+  nextTick(() => { newCodeInput.value?.focus() })
+}
+
+function cancelPendingItem() {
+  pendingItem.value = null
   nextTick(() => { newCodeInput.value?.focus() })
 }
 
