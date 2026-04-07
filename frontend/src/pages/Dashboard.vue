@@ -387,6 +387,7 @@ const todayDay = computed(() => {
 
 // ==================== TILES ====================
 const allTiles = [
+  { id: 'sales-invoice', name: 'Sales Invoice Template', desc: 'Standard invoice entry page', icon: '📄', shortcut: '', tileBg: 'bg-emerald-600' },
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
   { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-[var(--color-highlight)]' },
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
@@ -409,7 +410,6 @@ const allTiles = [
   { id: 'gst-dummy-ledger', name: 'GST Dummy Ledger', desc: 'Manage dummy GST entries', icon: '📖', shortcut: '', tileBg: 'bg-indigo-900' },
   { id: 'gst-ledger', name: 'GST Ledger', desc: 'View GST Quotation ledger', icon: '📜', shortcut: '', tileBg: 'bg-indigo-800' },
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
-  { id: 'sales-invoice', name: 'Sales Invoice Template', desc: 'Standard invoice entry page', icon: '📄', shortcut: '', tileBg: 'bg-emerald-600' },
   { id: 'invoice-template', name: 'Invoice Template', desc: 'Reusable invoice UI template', icon: '🎨', shortcut: '', tileBg: 'bg-slate-600' },
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
