@@ -114,7 +114,6 @@
       <div class="flex items-center gap-6">
         <!-- Bill No -->
         <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
-          <label class="text-[10px] uppercase text-slate-500 whitespace-nowrap">Bill No</label>
           <div class="text-xl text-slate-100 tabular-nums">
             {{ nextBillNo }}
           </div>

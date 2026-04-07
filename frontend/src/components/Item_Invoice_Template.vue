@@ -88,7 +88,6 @@
           <slot name="header-bar">
             <!-- Default Header Layout -->
             <div v-if="docNumber" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6">
-              <label class="text-[10px] uppercase text-[var(--color-text-muted)] whitespace-nowrap">No.</label>
               <div class="text-xl text-[var(--color-text)] tabular-nums font-mono">{{ docNumber }}</div>
             </div>
 
