@@ -165,13 +165,6 @@
                 {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
               </span>
             </div>
-          </div>
-
-          <!-- Line 2: Address and Custom Name -->
-          <div class="flex items-center gap-4 mt-1">
-            <div v-if="selectedCustomerDetails?.address_line1" class="truncate text-xl text-slate-400 font-normal leading-none max-w-[600px]">
-              {{ [selectedCustomerDetails.address_line1, selectedCustomerDetails.city].filter(Boolean).join(', ') }}
-            </div>
 
             <!-- Custom name badge -->
             <div v-if="customAddress.custom_customer_name" class="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 leading-none shrink-0">

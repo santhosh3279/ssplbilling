@@ -129,11 +129,6 @@
                   <span class="text-xl font-mono text-[var(--color-highlight)]">{{ partyLastInvDate }}</span>
                 </div>
               </div>
-
-              <!-- Line 2: Address -->
-              <div v-if="partyAddress || partyDetails" class="mt-0.5 text-lg text-[var(--color-text-muted)] truncate font-normal">
-                {{ partyAddress || partyDetails }}
-              </div>
             </div>
 
             <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
