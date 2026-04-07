@@ -780,6 +780,24 @@ function recalcAmount(idx) {
   item.amount = parseFloat(((item.qty || 0) * (item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(2))
 }
 
+function effectiveModifier() {
+  return (!ignoreModifier.value && customerModifier.value != null) ? customerModifier.value : 1
+}
+
+function applyModifierToRate(baseRate) {
+  return parseFloat(((baseRate || 0) * effectiveModifier()).toFixed(2))
+}
+
+watch(ignoreModifier, () => {
+  const factor = effectiveModifier()
+  items.value.forEach(item => {
+    const base = item._base_rate ?? item.rate
+    item._base_rate = base
+    item.rate = parseFloat(((base || 0) * factor).toFixed(2))
+    item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2))
+  })
+})
+
 function focusRow(idx) { selectedRowIdx.value = idx; nextTick(() => { rowRefs.value[idx]?.focus() }) }
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
 
@@ -799,6 +817,9 @@ function onQuickSearchSelect(item) {
 }
 
 function setPendingItem(item) {
+  const base = item.rate || 0
+  item._base_rate = base
+  item.rate = applyModifierToRate(base)
   pendingItem.value = item
   nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
 }
@@ -808,7 +829,8 @@ function confirmPendingItem() {
   const p = pendingItem.value
   const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty: p.qty, uom: p.uom || 'Nos',
-    rate: p.rate || 0, discount: p.discount || 0, tax_rate: p.tax_rate || 0,
+    rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0,
+    discount: p.discount || 0, tax_rate: p.tax_rate || 0,
     amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2)),
     deleted: false, _rowKey: makeRowKey()
   }
