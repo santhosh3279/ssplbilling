@@ -220,18 +220,18 @@
           </div>
 
           <!-- 3 Checkboxes -->
-          <div class="flex flex-col gap-1 py-1 border-y border-[var(--color-border)]/30">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" v-model="isInclusiveTax" class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
-              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Inclusive Tax</span>
+          <div class="flex flex-col gap-1.5 py-1 border-y border-[var(--color-border)]/30">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" v-model="isInclusiveTax" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
+              <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Inclusive Tax</span>
             </label>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" checked disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
-              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Ignore Pricing Rule</span>
+            <label class="flex items-center gap-3">
+              <input type="checkbox" checked disabled class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
+              <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Ignore Pricing Rule</span>
             </label>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
-              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Sale Return</span>
+            <label class="flex items-center gap-3">
+              <input type="checkbox" disabled class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
+              <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Sale Return</span>
             </label>
           </div>
 
