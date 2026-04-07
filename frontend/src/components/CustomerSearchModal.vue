@@ -132,7 +132,8 @@
             </tr>
             <tr v-if="!results.length && !loading">
               <td colspan="5" class="px-5 py-12 text-center text-slate-500 text-xl italic">
-                No ledgers found matching "{{ query }}"
+                <span v-if="query">No ledgers found matching "{{ query }}"</span>
+                <span v-else>No {{ activeType === 'All' ? '' : activeType }} ledgers found.</span>
               </td>
             </tr>
           </tbody>
@@ -224,7 +225,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed } from 'vue'
+import { ref, nextTick, watch, computed, onMounted } from 'vue'
 import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { getUserRole } from '../composables/usePermission.js'
@@ -445,6 +446,15 @@ watch(selectedIdx, async (idx) => {
 watch(() => props.show, (val) => {
   if (val) { query.value = props.initialQuery || ''; activeType.value = props.initialType; if (!props.overrideLedgers) preloadLedger(); focus() }
   else closeSubForm()
+})
+
+onMounted(() => {
+  if (props.show) {
+    query.value = props.initialQuery || ''
+    activeType.value = props.initialType
+    if (!props.overrideLedgers) preloadLedger()
+    focus()
+  }
 })
 
 // ─── Sub-Form: open / close ───────────────────────────────────────────────────
