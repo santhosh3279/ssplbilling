@@ -10,6 +10,7 @@
       :party-gstin="customerGstin"
       :party-balance="customerBalance"
       :party-last-inv-date="customerLastInvDate"
+      :party-modifier="customerModifier"
       :doc-date="invoiceDate"
       :items="items"
       :subtotal="subtotal"
@@ -450,6 +451,7 @@ const customerGstin = ref('')
 const customerBalance = ref(null)
 const customerLastInvDate = ref('')
 const customerState = ref('')
+const customerModifier = ref(null)
 
 const newItemCode = ref('')
 const newCodeInput = ref(null)
@@ -825,6 +827,7 @@ function handleCustomerSelected(cust) {
   customerGstin.value = cust.gstin || ''
   customerBalance.value = cust.balance ?? 0
   customerState.value = cust.state || ''
+  customerModifier.value = cust.pricelist_multiplication_factor ?? null
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
   if (cust.last_invoice_date) {

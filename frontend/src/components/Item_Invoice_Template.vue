@@ -130,6 +130,11 @@
               </div>
             </div>
 
+            <div v-if="partyModifier !== null" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
+              <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Multiplier</span>
+              <span class="text-xl font-mono font-bold text-[var(--color-warning)]">× {{ partyModifier }}</span>
+            </div>
+
             <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
               <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Date</label>
               <div class="text-xl text-[var(--color-text)] tabular-nums">{{ docDate }}</div>
@@ -416,6 +421,7 @@ const props = defineProps({
   partyGstin: { type: String, default: '' },
   partyBalance: { type: [Number, String], default: null },
   partyLastInvDate: { type: String, default: '' },
+  partyModifier: { type: [Number, String], default: null },
   docDate: { type: String, default: '' },
   items: { type: Array, default: () => [] },
   
