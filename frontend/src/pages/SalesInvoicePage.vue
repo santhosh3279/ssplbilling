@@ -183,47 +183,6 @@
           </div>
         </div>
 
-            <!-- Name button -->
-            <button
-              v-if="customer && (billDocStatus === 0 || !billSaved)"
-              @click="showCustomAddressModal = true"
-              class="shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold uppercase leading-none transition-colors"
-              :class="customAddress.custom_customer_name
-                ? 'border-amber-500/50 bg-amber-900/20 text-amber-400 hover:bg-amber-900/40'
-                : 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'"
-              title="Set custom delivery name & address"
-            >Name</button>
-
-            <div v-if="selectedCustomerDetails" class="flex items-center gap-3 min-w-0">
-              <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none" :title="selectedCustomerDetails.address_line1">
-                {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
-              </span>
-              <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-xl text-slate-500 leading-none">
-                PH: {{ selectedCustomerDetails.mobile_no }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Stats Group -->
-          <div v-if="selectedCustomerDetails" class="flex items-center gap-6 ml-auto mr-6">
-            <!-- Last Invoice Date -->
-            <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
-              <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Last Inv</span>
-              <span class="text-sm text-slate-300">
-                {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
-              </span>
-            </div>
-
-            <!-- Ledger Balance -->
-            <div class="flex flex-col items-end leading-none border-l border-slate-700 pl-6">
-              <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Ledger Bal</span>
-              <span :class="selectedCustomerDetails.balance > 0 ? 'text-green-400' : 'text-red-400'" class="text-xl tabular-nums">
-                &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }} <span class="text-[10px]">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
         <!-- Bill Date -->
         <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
           <label class="text-[10px] font-bold uppercase text-slate-500">Bill Date</label>
@@ -250,7 +209,7 @@
           </div>
         </div>
       </div>
-      </template>
+    </template>
 
       <!-- ═══════════════════ ITEM ROWS (scoped slot) ═══════════════════ -->
       <template #row="{ item, index: idx }">
