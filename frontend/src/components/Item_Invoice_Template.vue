@@ -6,8 +6,23 @@
         <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
           <div class="text-xl font-bold uppercase tracking-wider text-slate-500">{{ sidebarTitle }}</div>
         </div>
-        <div class="flex-1 overflow-y-auto p-4 text-slate-600 italic">
-          Sidebar content goes here...
+        <!-- Placeholder Search -->
+        <div class="p-3 border-b border-slate-700 bg-slate-800/20">
+          <input 
+            type="text" 
+            placeholder="Search..."
+            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-300 outline-none"
+          />
+        </div>
+        <div class="flex-1 overflow-y-auto p-2">
+          <div class="text-xs text-slate-600 italic px-2 mb-2">Recent Invoices</div>
+          <div v-for="i in 5" :key="i" class="p-2 border-b border-slate-800 hover:bg-slate-800 cursor-pointer rounded transition-colors mb-1">
+            <div class="flex justify-between text-xs font-mono text-blue-400">
+              <span>INV-00{{i}}</span>
+              <span class="text-slate-200">₹{{ i * 1000 }}</span>
+            </div>
+            <div class="text-[10px] text-slate-500 truncate">Sample Customer {{i}}</div>
+          </div>
         </div>
       </slot>
     </aside>
@@ -123,8 +138,8 @@
 
 const props = defineProps({
   title: { type: String, default: 'Invoice' },
-  showSidebar: { type: Boolean, default: false },
-  sidebarTitle: { type: String, default: 'History' },
+  showSidebar: { type: Boolean, default: true },
+  sidebarTitle: { type: String, default: 'Modify Bills' },
   showBackButton: { type: Boolean, default: true },
   docNumber: { type: String, default: '' },
   partyName: { type: String, default: '' },
