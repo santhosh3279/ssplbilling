@@ -150,7 +150,7 @@
                 {{ tile.icon }}
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-bold truncate text-[var(--color-text)]">{{ tile.name }}</div>
+                <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
                 <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
               </div>
               <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-mono text-[10px] font-black text-[var(--color-text)] opacity-70">
