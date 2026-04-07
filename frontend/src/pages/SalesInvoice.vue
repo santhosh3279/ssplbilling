@@ -145,9 +145,6 @@
               No previous history found for this customer.
             </div>
             <div v-else>
-              <div class="mb-3 text-sm font-bold text-[var(--color-highlight)]">
-                Recent Purchases:
-              </div>
               <table class="w-full text-left text-lg border-collapse">
                 <thead>
                   <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
@@ -160,8 +157,8 @@
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]/30">
                   <tr v-for="(h, i) in selectedItemHistory.slice(0, 5)" :key="i" class="text-[var(--color-text)]">
-                    <td class="py-1 pr-1 font-mono leading-none truncate max-w-[80px]" :title="h.name">{{ h.name }}</td>
-                    <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ h.date }}</td>
+                    <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
+                    <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
                     <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
                     <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
                     <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
@@ -440,6 +437,15 @@ const totalAmount = computed(() => {
 // Methods
 function goBack() {
   router.push('/')
+}
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = String(d.getFullYear()).slice(-2)
+  return `${day}-${month}-${year}`
 }
 
 function handleSave() {
