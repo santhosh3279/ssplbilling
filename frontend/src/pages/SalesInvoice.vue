@@ -144,7 +144,7 @@
             <div v-else-if="!selectedItemHistory.length" class="pt-4 text-sm text-slate-500 italic">
               No previous history found for this customer.
             </div>
-            <div v-else class="max-h-[135px] overflow-y-auto scrollbar-none">
+            <div v-else class="max-h-[110px] overflow-y-auto scrollbar-none">
               <table class="w-full text-left text-lg border-collapse">
                 <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
                   <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
