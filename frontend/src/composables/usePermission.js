@@ -22,6 +22,7 @@
 // Route names accessible by biller
 export const BILLER_ROUTES = new Set([
   'SalesEntry',
+  'SalesInvoice',
   'PurchaseEntry',
   'QuotationEntry',
   'SalesOrderEntry',
