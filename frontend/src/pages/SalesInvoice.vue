@@ -194,32 +194,49 @@
       </template>
 
       <template #bottom-middle>
-        <div class="flex flex-col gap-2 p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+        <div class="flex flex-col gap-3 p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+          <!-- Row 1: Price List -->
+          <div class="flex flex-col gap-0.5">
+            <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
+            <select
+              v-model="priceList"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+            >
+              <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
+              <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
+            </select>
+          </div>
+
+          <!-- Row 2: Tax Template -->
+          <div class="flex flex-col gap-0.5">
+            <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
+            <select
+              v-model="taxTemplate"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+            >
+              <option value="">-- None --</option>
+              <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
+            </select>
+          </div>
+
+          <!-- 3 Checkboxes -->
+          <div class="flex flex-col gap-1 py-1 border-y border-[var(--color-border)]/30">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="isInclusiveTax" class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
+              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Inclusive Tax</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" checked disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
+              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Ignore Pricing Rule</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
+              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Sale Return</span>
+            </label>
+          </div>
+
+          <!-- Additional Info -->
           <div class="grid grid-cols-2 gap-2">
-            <!-- Price List -->
-            <div class="flex flex-col gap-0.5">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
-              <select
-                v-model="priceList"
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-              >
-                <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
-                <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
-              </select>
-            </div>
-
-            <!-- Tax -->
-            <div class="flex flex-col gap-0.5">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
-              <select
-                v-model="taxTemplate"
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-              >
-                <option value="">-- None --</option>
-                <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
-              </select>
-            </div>
-
             <!-- Warehouse (Readonly) -->
             <div class="flex flex-col gap-0.5">
               <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Warehouse</label>
@@ -253,22 +270,6 @@
                 <option v-if="!localAccounts.length" :value="incomeAccount">{{ incomeAccount }}</option>
               </select>
             </div>
-          </div>
-
-          <!-- 3 Checkboxes: Inclusive, Pricing Rule, Sale Return -->
-          <div class="flex flex-col gap-1 py-1">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" v-model="isInclusiveTax" class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
-              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Inclusive Tax</span>
-            </label>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" checked disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
-              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Ignore Pricing Rule</span>
-            </label>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
-              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Sale Return</span>
-            </label>
           </div>
         </div>
       </template>
