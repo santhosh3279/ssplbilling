@@ -4,6 +4,7 @@ import { canAccessRoute } from './composables/usePermission'
 import Login from './pages/Login.vue'
 import Dashboard from './pages/Dashboard.vue'
 import SalesEntry from './pages/SalesEntry.vue'
+import SalesInvoice from './pages/SalesInvoice.vue'
 import SalesInvoicePage from './pages/SalesInvoicePage.vue'
 import QuotationEntry from './pages/QuotationEntry.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
@@ -56,6 +57,11 @@ const routes = [
     path: '/sales',
     name: 'SalesEntry',
     component: SalesEntry,
+  },
+  {
+    path: '/sales-invoice',
+    name: 'SalesInvoice',
+    component: SalesInvoice,
   },
   {
     path: '/salestemplate',

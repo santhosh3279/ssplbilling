@@ -409,6 +409,7 @@ const allTiles = [
   { id: 'gst-dummy-ledger', name: 'GST Dummy Ledger', desc: 'Manage dummy GST entries', icon: '📖', shortcut: '', tileBg: 'bg-indigo-900' },
   { id: 'gst-ledger', name: 'GST Ledger', desc: 'View GST Quotation ledger', icon: '📜', shortcut: '', tileBg: 'bg-indigo-800' },
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
+  { id: 'sales-invoice', name: 'Sales Invoice Template', desc: 'Standard invoice entry page', icon: '📄', shortcut: '', tileBg: 'bg-emerald-600' },
   { id: 'invoice-template', name: 'Invoice Template', desc: 'Reusable invoice UI template', icon: '🎨', shortcut: '', tileBg: 'bg-slate-600' },
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
@@ -433,6 +434,7 @@ const routeAliases = {
   'stock-reconciliation': '/stock-reconciliation',
   'gst-dummy-ledger': '/gst-dummy-ledger',
   'gst-ledger': '/gst-ledger',
+  'sales-invoice': '/sales-invoice',
   'Cashier-Management': '/Cashier-Management',
   'pricing-rules': '/pricing-rules',
   'barcode-print': '/barcode-print',
