@@ -20,8 +20,8 @@
       :is-inclusive-tax="isInclusiveTax"
       :warehouse="warehouse"
       :cost-center="costCenter"
-      :sidebar-date="sidebarDate"
-      :sidebar-items="recentInvoices"
+      :income-account="incomeAccount"
+      :sidebar-date="sidebarDate"      :sidebar-items="recentInvoices"
       @back="goBack"
       @save="handleSave"
       @print="handlePrint"
@@ -242,15 +242,15 @@
               </select>
             </div>
 
-            <!-- Sale Account -->
+            <!-- Income Account -->
             <div class="flex flex-col gap-0.5 col-span-2">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Sale Account</label>
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Income Account</label>
               <select
-                v-model="saleAccount"
+                v-model="incomeAccount"
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
               >
                 <option v-for="acc in localAccounts" :key="acc" :value="acc">{{ acc }}</option>
-                <option v-if="!localAccounts.length" :value="saleAccount">{{ saleAccount }}</option>
+                <option v-if="!localAccounts.length" :value="incomeAccount">{{ incomeAccount }}</option>
               </select>
             </div>
           </div>
@@ -425,7 +425,7 @@ try { localAccounts.value = JSON.parse(localStorage.getItem('wb-visible-accounts
 
 const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenters.value[0] || 'None')
-const saleAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
+const incomeAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
 const isInclusiveTax = ref(true)
 
 watch(taxTemplate, (val) => {
