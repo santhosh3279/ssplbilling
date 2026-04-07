@@ -83,7 +83,7 @@
       </div>
 
       <!-- Header Bar (Series / Customer / Date) -->
-      <div class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2">
+      <div class="border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2">
         <div class="flex items-center gap-6">
           <slot name="header-bar">
             <!-- Default Header Layout -->
@@ -113,7 +113,7 @@
         <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
           <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]">
             <thead>
-              <tr class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+              <tr class="sticky top-0 z-10 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-32">Barcode</th>
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
