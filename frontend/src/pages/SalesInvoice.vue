@@ -325,8 +325,8 @@ function handleNewCodeKeydown(e) {
 }
 
 function handleRowKeydown(e, idx) {
-  // While editing this row, only handle Escape at the tr level (inputs handle the rest)
-  if (editingRowIdx.value === idx) return
+  // Ignore events bubbled up from inputs inside the row
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
 
   if (e.key === 'Enter') {
     e.preventDefault()
