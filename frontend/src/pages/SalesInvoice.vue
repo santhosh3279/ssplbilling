@@ -314,14 +314,36 @@ const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
 // Computeds
 const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includes('exempt'))
 
-const subtotal = computed(() => {
-  return items.value
-    .filter(i => !i.deleted)
-    .reduce((sum, item) => sum + item.amount, 0)
-    .toFixed(2)
+const activeItems = computed(() => items.value.filter(i => !i.deleted))
+
+const totalTax = computed(() => {
+  if (isExempted.value) return '0.00'
+  return activeItems.value.reduce((sum, item) => {
+    const rate = item.tax_rate || 0
+    let tax = 0
+    if (isInclusiveTax.value) {
+      // Tax is included in item.amount: Amount - (Amount / (1 + rate/100))
+      tax = item.amount - (item.amount / (1 + rate / 100))
+    } else {
+      // Tax is extra: Amount * (rate/100)
+      tax = item.amount * (rate / 100)
+    }
+    return sum + tax
+  }, 0).toFixed(2)
 })
 
-const totalTax = ref('0.00')
+const subtotal = computed(() => {
+  return activeItems.value.reduce((sum, item) => {
+    const rate = item.tax_rate || 0
+    let net = item.amount
+    if (isInclusiveTax.value && !isExempted.value) {
+      // Amount is inclusive, subtotal should show Net: Amount / (1 + rate/100)
+      net = item.amount / (1 + rate / 100)
+    }
+    return sum + net
+  }, 0).toFixed(2)
+})
+
 const totalAmount = computed(() => {
   return (parseFloat(subtotal.value) + parseFloat(totalTax.value)).toFixed(2)
 })
