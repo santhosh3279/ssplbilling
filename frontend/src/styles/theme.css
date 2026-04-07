@@ -25,6 +25,11 @@
   --color-text:           #1a1a1a;
   --color-text-muted:     #4a5550;
   --color-text-on-highlight: #ffffff;
+
+  /* Semantic Colors */
+  --color-success: #16a34a;   /* green-600 */
+  --color-danger:  #dc2626;   /* red-600 */
+  --color-warning: #d97706;   /* amber-600 */
 }
 
 /* ── Dark Theme ── */
@@ -41,4 +46,9 @@
   --color-text:           #e8f5ef;
   --color-text-muted:     #8abba8;
   --color-text-on-highlight: #091413;
+
+  /* Semantic Colors */
+  --color-success: #22c55e;   /* green-500 */
+  --color-danger:  #ef4444;   /* red-500 */
+  --color-warning: #f59e0b;   /* amber-500 */
 }
