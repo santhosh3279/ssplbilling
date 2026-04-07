@@ -259,10 +259,12 @@ import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { useItemCache } from '../services/itemCache.js'
+import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 
 const router = useRouter()
 
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
+const { fetchCustomerSalesHistory, clearHistory, getItemHistoryFromCache, historyLoading } = useCustomerHistory()
 
 // Page State
 const showSeriesModal = ref(false)
@@ -397,6 +399,7 @@ function handleSave() {
     return
   }
   alert('Template Save triggered for ' + activeItems.length + ' items')
+  clearHistory()
 }
 
 function handlePrint() {
@@ -406,6 +409,7 @@ function handlePrint() {
 function handleCancel() {
   if (confirm('Clear all items?')) {
     items.value = []
+    clearHistory()
   }
 }
 
@@ -605,6 +609,7 @@ function handleCustomerSelected(cust) {
   }
 
   applyRegionalTaxLogic()
+  fetchCustomerSalesHistory(cust.name)
   showCustomerModal.value = false
 
   nextTick(() => {

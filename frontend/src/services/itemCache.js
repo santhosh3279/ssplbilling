@@ -33,11 +33,6 @@ export function saveDiscountRulesToStorage(rules) {
 }
 const discountRules = ref(loadDiscountRulesFromStorage())
 
-// Global cache for customer sales history
-const customerSalesHistory = ref([])
-const currentCustomerForHistory = ref(null)
-const historyLoading = ref(false)
-
 /**
  * Fetch all items with details from the backend and update the global cache.
  * Also syncs discount rules in parallel.
@@ -84,33 +79,6 @@ export async function refreshDiscountRuleCache() {
 }
 
 /**
- * Fetch and cache previous sales history for a customer.
- */
-export async function fetchCustomerSalesHistory(customer) {
-  if (!customer) {
-    customerSalesHistory.value = []
-    currentCustomerForHistory.value = null
-    return
-  }
-
-  if (currentCustomerForHistory.value === customer) return
-
-  historyLoading.value = true
-  try {
-    const data = await frappeGet('ssplbilling.api.itemsearch_api.get_customer_sales_history', {
-      customer: customer
-    })
-    customerSalesHistory.value = data || []
-    currentCustomerForHistory.value = customer
-  } catch (e) {
-    console.warn('[itemCache] History fetch failed:', e)
-    customerSalesHistory.value = []
-  } finally {
-    historyLoading.value = false
-  }
-}
-
-/**
  * Look up an item by code or barcode in the local cache.
  */
 export function lookupItemInCache(code) {
@@ -123,22 +91,6 @@ export function lookupItemInCache(code) {
     found.uoms = storedUoms[found.item_code]
   }
   return found
-}
-
-/**
- * Check if an item has history with the currently cached customer.
- */
-export function hasHistory(itemCode) {
-  if (!itemCode || !customerSalesHistory.value.length) return false
-  return customerSalesHistory.value.some(h => h.item_code === itemCode)
-}
-
-/**
- * Get the history for a specific item from the cache.
- */
-export function getItemHistoryFromCache(itemCode) {
-  if (!itemCode) return []
-  return customerSalesHistory.value.filter(h => h.item_code === itemCode)
 }
 
 /**
@@ -194,13 +146,6 @@ export function useItemCache() {
     // Discount Rules (custom doctype)
     discountRules,
     refreshDiscountRuleCache,
-    saveDiscountRulesToStorage,
-    // History
-    customerSalesHistory,
-    currentCustomerForHistory,
-    historyLoading,
-    fetchCustomerSalesHistory,
-    hasHistory,
-    getItemHistoryFromCache
+    saveDiscountRulesToStorage
   }
 }

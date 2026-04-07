@@ -892,6 +892,7 @@ import PriceListUpdate from './PriceListUpdate.vue'
 import { createCustomer, updateCustomer, fetchCustomerDetails } from '../api/customer.js'
 import { saveCustomerItemPrice, updateItemPriceList } from '../api/customerPrice.js'
 import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
+import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import CustomerLedger from './CustomerLedger.vue'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
@@ -903,7 +904,8 @@ const router = useRouter()
 const route = useRoute()
 const API = '/api/method/ssplbilling.api.SaleEntry_api'
 
-const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, fetchCustomerSalesHistory, getItemHistoryFromCache, refreshDiscountRuleCache } = useItemCache()
+const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync, refreshDiscountRuleCache } = useItemCache()
+const { fetchCustomerSalesHistory, getItemHistoryFromCache } = useCustomerHistory()
 
 const props = defineProps({
   isSubWindow: {
