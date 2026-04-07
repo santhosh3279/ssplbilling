@@ -9,6 +9,9 @@ export function useCustomerHistory() {
   const customerSalesHistory = ref([])
   const currentCustomerForHistory = ref(null)
   const historyLoading = ref(false)
+  
+  const itemStock = ref([])
+  const stockLoading = ref(false)
 
   /**
    * Fetch and cache previous sales history for a customer.
@@ -37,6 +40,28 @@ export function useCustomerHistory() {
   }
 
   /**
+   * Fetch warehouse-wise stock levels for a specific item.
+   */
+  async function fetchItemStock(itemCode) {
+    if (!itemCode) {
+      itemStock.value = []
+      return
+    }
+    stockLoading.value = true
+    try {
+      const data = await frappeGet('ssplbilling.api.stock_api.get_warehouse_stock', {
+        item_code: itemCode
+      })
+      itemStock.value = data || []
+    } catch (e) {
+      console.warn('[customerHistory] Stock fetch failed:', e.message)
+      itemStock.value = []
+    } finally {
+      stockLoading.value = false
+    }
+  }
+
+  /**
    * Check if an item has history with the currently cached customer.
    */
   function hasHistory(itemCode) {
@@ -59,6 +84,8 @@ export function useCustomerHistory() {
     customerSalesHistory.value = []
     currentCustomerForHistory.value = null
     historyLoading.value = false
+    itemStock.value = []
+    stockLoading.value = false
   }
 
   return {
@@ -68,6 +95,10 @@ export function useCustomerHistory() {
     fetchCustomerSalesHistory,
     hasHistory,
     getItemHistoryFromCache,
-    clearHistory
+    clearHistory,
+    // Stock levels
+    itemStock,
+    stockLoading,
+    fetchItemStock
   }
 }

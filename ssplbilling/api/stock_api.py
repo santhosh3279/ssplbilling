@@ -35,6 +35,16 @@ def get_item_details(item_code, warehouse=None):
 
 
 @frappe.whitelist()
+def get_warehouse_stock(item_code):
+    """Fetch stock for a specific item across all warehouses."""
+    return frappe.get_all(
+        "Bin",
+        filters={"item_code": item_code, "actual_qty": ["!=", 0]},
+        fields=["warehouse", "actual_qty as qty"],
+    )
+
+
+@frappe.whitelist()
 def search_items(query, warehouse=None):
     """Search items by code, name, or barcode. Returns list of matches."""
     if not query or len(query) < 1:

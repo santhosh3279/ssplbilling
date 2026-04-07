@@ -144,7 +144,7 @@
             <div v-else-if="!selectedItemHistory.length" class="pt-4 text-sm text-slate-500 italic">
               No previous history found for this customer.
             </div>
-            <div v-else class="max-h-[110px] overflow-y-auto scrollbar-none">
+            <div v-else class="max-h-[110px] overflow-y-auto scrollbar-none mb-4">
               <table class="w-full text-left text-lg border-collapse">
                 <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
                   <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
@@ -165,6 +165,21 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Warehouse Stock -->
+            <div v-if="itemStock.length" class="border-t border-[var(--color-border)] pt-2">
+              <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Available Stock:</div>
+              <div v-if="stockLoading" class="text-sm text-blue-400 animate-pulse">Updating stock...</div>
+              <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <div v-for="s in itemStock" :key="s.warehouse" class="flex justify-between items-center text-lg font-mono leading-none">
+                  <span class="text-[var(--color-text-muted)] truncate mr-2">{{ s.warehouse.split(' - ')[0] }}</span>
+                  <span :class="s.qty > 0 ? 'text-green-400' : 'text-red-400'" class="font-bold">{{ s.qty }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="(selectedRowIdx !== -1 || pendingItem) && !historyLoading && !stockLoading" class="border-t border-[var(--color-border)] pt-2 text-sm text-slate-500 italic">
+              No stock information available for this item.
             </div>
           </div>
         </div>
@@ -299,7 +314,7 @@ import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 const router = useRouter()
 
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
-const { fetchCustomerSalesHistory, clearHistory, getItemHistoryFromCache, historyLoading } = useCustomerHistory()
+const { fetchCustomerSalesHistory, clearHistory, getItemHistoryFromCache, historyLoading, fetchItemStock, itemStock, stockLoading } = useCustomerHistory()
 
 // Page State
 const showSeriesModal = ref(false)
@@ -314,6 +329,17 @@ const customerBalance = ref(null)
 const customerLastInvDate = ref('')
 const customerState = ref('')
 const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
+
+// Watch for item selection/pending to fetch live stock
+watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
+  let code = null
+  if (pending) code = pending.item_code
+  else if (rowIdx !== -1) code = items.value[rowIdx]?.item_code
+
+  if (code) {
+    fetchItemStock(code)
+  }
+})
 
 // Use stored arrays for Price List and Tax Template
 const localPriceLists = ref([])
