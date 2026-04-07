@@ -416,17 +416,6 @@ const packingAmt = computed(() => parseFloat(packingEntry.value) || 0)
 const loadingAmt = computed(() => parseFloat(loadingEntry.value) || 0)
 const otherAmt = computed(() => parseFloat(otherEntry.value) || 0)
 
-const discountAmt = computed(() => {
-  const p = parseFloat(discountPct.value) || 0
-  const a = parseFloat(discountDirectAmt.value) || 0
-  if (p > 0) {
-    // Percentage based on gross subtotal
-    const base = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
-    return base * (p / 100)
-  }
-  return a
-})
-
 // --- Composable Logic (Discount Rules) ---
 const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, lookupItemInCache })
 
