@@ -1,12 +1,11 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="$emit('close')">
+  <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
     <div class="w-[500px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 shadow-2xl">
       <div class="mb-6 flex items-center justify-between">
         <div>
           <h2 class="text-2xl font-bold text-[var(--color-text)]">Select Billing Series</h2>
           <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wider">Choose your active series for this session</p>
         </div>
-        <button @click="$emit('close')" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
       </div>
 
       <div v-if="loading" class="flex flex-col items-center justify-center py-12">
@@ -47,15 +46,6 @@
         <div v-if="!allowedSeries.length" class="py-12 text-center text-slate-500 italic">
           No allowed series found for your user profile.
         </div>
-      </div>
-
-      <div class="mt-8 flex justify-end">
-        <button 
-          @click="$emit('close')"
-          class="rounded-lg border border-[var(--color-border)] px-6 py-2.5 text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all"
-        >
-          Cancel <span class="ml-1 opacity-50 text-[10px]">(Esc)</span>
-        </button>
       </div>
     </div>
   </div>
@@ -118,9 +108,6 @@ function handleKeydown(e) {
     if (allowedSeries.value[focusedIndex.value]) {
       selectSeries(allowedSeries.value[focusedIndex.value])
     }
-  } else if (e.key === 'Escape') {
-    e.preventDefault()
-    emit('close')
   } else if (e.key >= '1' && e.key <= '9') {
     // Top row and numpad both return "1"-"9"
     const idx = parseInt(e.key) - 1
