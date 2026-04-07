@@ -144,9 +144,9 @@
             <div v-else-if="!selectedItemHistory.length" class="pt-4 text-sm text-slate-500 italic">
               No previous history found for this customer.
             </div>
-            <div v-else>
+            <div v-else class="max-h-[180px] overflow-y-auto scrollbar-none">
               <table class="w-full text-left text-lg border-collapse">
-                <thead>
+                <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
                   <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
                     <th class="py-0.5 pr-1 font-bold">Bill</th>
                     <th class="py-0.5 px-1 font-bold">Date</th>
@@ -156,7 +156,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]/30">
-                  <tr v-for="(h, i) in selectedItemHistory.slice(0, 5)" :key="i" class="text-[var(--color-text)]">
+                  <tr v-for="(h, i) in selectedItemHistory.slice(0, 10)" :key="i" class="text-[var(--color-text)]">
                     <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
                     <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
                     <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
