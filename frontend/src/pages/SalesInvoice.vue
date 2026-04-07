@@ -35,6 +35,12 @@
         </div>
       </template>
     </Item_Invoice_Template>
+
+    <Userseries
+      :show="showSeriesModal"
+      @close="showSeriesModal = false"
+      @selected="handleSeriesSelected"
+    />
   </div>
 </template>
 
@@ -42,10 +48,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
+import Userseries from '../components/Userseries.vue'
 
 const router = useRouter()
 
 // Page State
+const showSeriesModal = ref(false)
 const invoiceNo = ref('NEW')
 const customerName = ref('Select Customer...')
 const customerDetails = ref('')
@@ -101,7 +109,12 @@ function handleIncentive() {
   alert('Incentive Entry triggered')
 }
 
+function handleSeriesSelected(series) {
+  // Logic to handle series selection (e.g., fetch next number)
+  console.log('[SalesInvoice] Series selected:', series)
+}
+
 onMounted(() => {
-  // Logic to load settings or initial data
+  showSeriesModal.value = true
 })
 </script>
