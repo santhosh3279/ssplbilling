@@ -547,6 +547,20 @@ def get_discount_rules():
 
 
 @frappe.whitelist()
+def get_sync_metadata():
+    """Fetch Sales/Purchase Tax Templates and Price Lists for synchronization."""
+    sales_taxes = frappe.get_all("Sales Taxes and Charges Template", filters={"disabled": 0}, fields=["name"])
+    purchase_taxes = frappe.get_all("Purchase Taxes and Charges Template", filters={"disabled": 0}, fields=["name"])
+    price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])
+
+    return {
+        "sales_tax_templates": [t.name for t in sales_taxes],
+        "purchase_tax_templates": [t.name for t in purchase_taxes],
+        "price_lists": [p.name for p in price_lists],
+    }
+
+
+@frappe.whitelist()
 def submit_sales_invoice(invoice_name):
     """Submit a Draft Sales Invoice (docstatus 0 → 1)."""
     if not invoice_name or not frappe.db.exists("Sales Invoice", invoice_name):

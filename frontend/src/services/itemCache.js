@@ -40,23 +40,37 @@ const historyLoading = ref(false)
 
 /**
  * Fetch all items with details from the backend and update the global cache.
- * Also syncs discount rules in parallel.
+ * Also syncs discount rules, tax templates, and price lists in parallel.
  */
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null) {
   syncLoading.value = true
   try {
-    const [data, discRules] = await Promise.all([
+    const [data, discRules, metadata] = await Promise.all([
       frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
         search_type: searchType,
         price_list: priceList,
         warehouse: warehouse
       }),
-      frappeGet('ssplbilling.api.SaleEntry_api.get_discount_rules').catch(() => [])
+      frappeGet('ssplbilling.api.SaleEntry_api.get_discount_rules').catch(() => []),
+      frappeGet('ssplbilling.api.SaleEntry_api.get_sync_metadata').catch(() => ({}))
     ])
     items.value = data || []
     discountRules.value = discRules || []
     saveDiscountRulesToStorage(discountRules.value)
     saveUomsToStorage(items.value)
+
+    if (metadata) {
+      if (metadata.sales_tax_templates) {
+        localStorage.setItem('wb-sales-tax-template', JSON.stringify(metadata.sales_tax_templates))
+      }
+      if (metadata.purchase_tax_templates) {
+        localStorage.setItem('wb-purchase-tax-template', JSON.stringify(metadata.purchase_tax_templates))
+      }
+      if (metadata.price_lists) {
+        localStorage.setItem('wb-pricelist', JSON.stringify(metadata.price_lists))
+      }
+    }
+
     lastSync.value = Date.now()
     lastParams.value = { searchType, priceList, warehouse }
     return items.value
