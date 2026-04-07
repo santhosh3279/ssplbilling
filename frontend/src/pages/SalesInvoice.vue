@@ -130,18 +130,14 @@
 
       <template #bottom-left>
         <div class="flex flex-col h-full overflow-hidden">
-          <div class="shrink-0 bg-[var(--color-surface-raised)]/50 px-4 py-2 border-b border-[var(--color-border)]">
-            <h3 class="text-xs font-bold uppercase text-slate-500">Item Insights</h3>
-          </div>
-          
-          <div class="flex-1 overflow-y-auto px-4 pb-4 pt-0 scrollbar-none">
-            <div v-if="selectedRowIdx === -1 && !pendingItem" class="pt-4 text-sm text-slate-400 italic">
+          <div class="flex-1 overflow-y-auto px-4 pb-4 pt-2 scrollbar-none">
+            <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-slate-400 italic">
               Scan an item or select a row to see history.
             </div>
-            <div v-else-if="historyLoading" class="pt-4 text-sm text-blue-400 animate-pulse">
+            <div v-else-if="historyLoading" class="text-sm text-blue-400 animate-pulse">
               Fetching history...
             </div>
-            <div v-else-if="!selectedItemHistory.length" class="pt-4 text-sm text-slate-500 italic">
+            <div v-else-if="!selectedItemHistory.length" class="text-sm text-slate-500 italic">
               No previous history found for this customer.
             </div>
             <div v-else class="max-h-[110px] overflow-y-auto scrollbar-none mb-4">
