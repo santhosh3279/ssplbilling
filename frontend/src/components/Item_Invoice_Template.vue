@@ -89,17 +89,48 @@
             <!-- Default Header Layout -->
             <div v-if="docNumber" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6">
               <label class="text-[10px] uppercase text-[var(--color-text-muted)] whitespace-nowrap">No.</label>
-              <div class="text-xl text-[var(--color-text)] tabular-nums">{{ docNumber }}</div>
+              <div class="text-xl text-[var(--color-text)] tabular-nums font-mono">{{ docNumber }}</div>
             </div>
 
             <div 
-              class="flex-1 flex items-center gap-4 border-l border-[var(--color-border)] pl-6 overflow-hidden cursor-pointer hover:bg-[var(--color-surface-raised)]/80 transition-colors group"
+              class="flex-1 flex flex-col border-l border-[var(--color-border)] pl-6 overflow-hidden cursor-pointer hover:bg-[var(--color-surface-raised)]/80 transition-colors group"
               @click="$emit('party-click')"
             >
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
-              <div class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ partyName || 'Not Selected' }}</div>
-              <div v-if="partyDetails" class="flex items-center gap-3 min-w-0">
-                <span class="truncate max-w-[350px] text-lg text-[var(--color-text-muted)] font-normal leading-none">{{ partyDetails }}</span>
+              <!-- Party Name and Basic Info -->
+              <div class="flex items-center gap-4">
+                <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
+                <div class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ partyName || 'Not Selected' }}</div>
+                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-xl">
+                  <span class="text-[10px] uppercase text-[var(--color-text-muted)]">Mob:</span>
+                  {{ partyMobile }}
+                </div>
+                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-xl">
+                  <span class="text-[10px] uppercase text-[var(--color-text-muted)]">GST:</span>
+                  {{ partyGstin }}
+                </div>
+              </div>
+
+              <!-- Address and Stats -->
+              <div class="flex items-center gap-6 mt-0.5">
+                <div class="truncate text-lg text-[var(--color-text-muted)] font-normal leading-none max-w-[40%]">
+                  {{ partyAddress || partyDetails || 'No address provided' }}
+                </div>
+                
+                <div v-if="partyBalance !== null" class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
+                  <span 
+                    class="text-xl font-bold font-mono"
+                    :class="(Number(partyBalance) > 0) ? 'text-[var(--color-success)]' : (Number(partyBalance) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
+                  >
+                    ₹ {{ Math.abs(partyBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                    <span class="text-[10px]">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
+                  </span>
+                </div>
+
+                <div v-if="partyLastInvDate" class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Last Inv</span>
+                  <span class="text-xl font-mono text-[var(--color-highlight)]">{{ partyLastInvDate }}</span>
+                </div>
               </div>
             </div>
 
@@ -354,7 +385,12 @@ const props = defineProps({
   showBackButton: { type: Boolean, default: true },
   docNumber: { type: String, default: '' },
   partyName: { type: String, default: '' },
-  partyDetails: { type: String, default: '' },
+  partyDetails: { type: String, default: '' }, // Deprecated or for generic info
+  partyAddress: { type: String, default: '' },
+  partyMobile: { type: String, default: '' },
+  partyGstin: { type: String, default: '' },
+  partyBalance: { type: [Number, String], default: null },
+  partyLastInvDate: { type: String, default: '' },
   docDate: { type: String, default: '' },
   items: { type: Array, default: () => [] },
   

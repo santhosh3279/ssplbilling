@@ -121,28 +121,67 @@
         </div>
 
         <!-- Customer Section (Flex-1 to take middle space) -->
-        <div class="flex-1 flex items-center gap-4 border-l border-slate-700 pl-6 overflow-hidden">
-          <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Customer</label>
+        <div class="flex-1 flex flex-col border-l border-slate-700 pl-6 overflow-hidden">
+          <div class="flex items-center gap-4">
+            <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Customer</label>
 
-          <!-- Name & Address -->
-          <div class="flex items-baseline gap-4 min-w-0">
-            <div
-              ref="customerInput"
-              class="shrink-0 max-w-[300px] truncate text-4xl transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
-              :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
-              @click="openCustomerSearch"
-              tabindex="0"
-              @keydown.enter.prevent="openCustomerSearch"
-              @keydown.space.prevent="openCustomerSearch"
-            >
-              {{ custSearch || 'Not Selected' }}
+            <!-- Name & Info -->
+            <div class="flex items-center gap-4 min-w-0">
+              <div
+                ref="customerInput"
+                class="shrink-0 max-w-[400px] truncate text-4xl transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none font-semibold"
+                :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
+                @click="openCustomerSearch"
+                tabindex="0"
+                @keydown.enter.prevent="openCustomerSearch"
+                @keydown.space.prevent="openCustomerSearch"
+              >
+                {{ custSearch || 'Not Selected' }}
+              </div>
+
+              <div v-if="selectedCustomerDetails?.mobile_no" class="flex items-center gap-1 text-blue-400 font-mono text-2xl">
+                <span class="text-[10px] uppercase text-slate-500">Mob:</span>
+                {{ selectedCustomerDetails.mobile_no }}
+              </div>
+
+              <div v-if="selectedCustomerDetails?.gstin" class="flex items-center gap-1 text-slate-400 font-mono text-xl">
+                <span class="text-[10px] uppercase text-slate-500">GST:</span>
+                {{ selectedCustomerDetails.gstin }}
+              </div>
+
+              <!-- Custom name badge -->
+              <div v-if="customAddress.custom_customer_name" class="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 leading-none shrink-0">
+                <span class="text-[9px] font-bold uppercase text-amber-500">Custom</span>
+                <span class="text-lg font-semibold text-amber-300 max-w-[220px] truncate">{{ customAddress.custom_customer_name }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Address and Stats -->
+          <div class="flex items-center gap-6 mt-1">
+            <div class="truncate text-xl text-slate-400 font-normal leading-none max-w-[40%]">
+              {{ (selectedCustomerDetails?.address_line1 ? [selectedCustomerDetails.address_line1, selectedCustomerDetails.city].filter(Boolean).join(', ') : '') || 'No address provided' }}
             </div>
 
-            <!-- Custom name badge (shown when custom_customer_name is populated) -->
-            <div v-if="customAddress.custom_customer_name" class="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 leading-none shrink-0">
-              <span class="text-[9px] font-bold uppercase text-amber-500">Custom</span>
-              <span class="text-lg font-semibold text-amber-300 max-w-[220px] truncate">{{ customAddress.custom_customer_name }}</span>
+            <div v-if="selectedCustomerDetails?.balance !== undefined" class="flex items-center gap-2">
+              <span class="text-[10px] font-bold uppercase text-slate-500">Balance</span>
+              <span 
+                class="text-2xl font-bold font-mono"
+                :class="(selectedCustomerDetails.balance > 0) ? 'text-green-400' : (selectedCustomerDetails.balance < 0) ? 'text-red-400' : 'text-slate-500'"
+              >
+                ₹ {{ Math.abs(selectedCustomerDetails.balance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                <span class="text-[10px]">{{ (selectedCustomerDetails.balance > 0) ? 'DR' : (selectedCustomerDetails.balance < 0) ? 'CR' : '' }}</span>
+              </span>
             </div>
+
+            <div v-if="selectedCustomerDetails?.last_invoice_date" class="flex items-center gap-2">
+              <span class="text-[10px] font-bold uppercase text-slate-500">Last Inv</span>
+              <span class="text-2xl font-mono text-blue-400">
+                {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
+              </span>
+            </div>
+          </div>
+        </div>
 
             <!-- Name button -->
             <button

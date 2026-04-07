@@ -5,6 +5,11 @@
       :doc-number="invoiceNo"
       :party-name="customerName"
       :party-details="customerDetails"
+      :party-address="customerAddress"
+      :party-mobile="customerMobile"
+      :party-gstin="customerGstin"
+      :party-balance="customerBalance"
+      :party-last-inv-date="customerLastInvDate"
       :doc-date="invoiceDate"
       :items="items"
       :subtotal="subtotal"
@@ -71,6 +76,11 @@ const showCustomerModal = ref(false)
 const invoiceNo = ref('NEW')
 const customerName = ref('Select Customer...')
 const customerDetails = ref('')
+const customerAddress = ref('')
+const customerMobile = ref('')
+const customerGstin = ref('')
+const customerBalance = ref(null)
+const customerLastInvDate = ref('')
 const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
 const priceList = ref('Standard Selling')
 const taxTemplate = ref('')
@@ -126,6 +136,22 @@ function handleIncentive() {
 function handleCustomerSelected(cust) {
   customerName.value = cust.label || cust.name
   customerDetails.value = cust.mobile_no || cust.email || ''
+  customerMobile.value = cust.mobile_no || ''
+  customerGstin.value = cust.gstin || ''
+  customerBalance.value = cust.balance ?? 0
+  
+  // Format Address
+  const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
+  customerAddress.value = addrParts.join(', ')
+
+  // Format Date (Last Invoice)
+  if (cust.last_invoice_date) {
+    const d = new Date(cust.last_invoice_date)
+    customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+  } else {
+    customerLastInvDate.value = 'None'
+  }
+
   showCustomerModal.value = false
 }
 
