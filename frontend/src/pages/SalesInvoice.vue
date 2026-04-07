@@ -64,9 +64,9 @@
             <input v-if="editingRowIdx === index && editingField === 'qty'"
               ref="editQtyInput"
               v-model.number="item.qty"
-              type="number" min="1"
+              type="number" min="0"
               class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter.prevent="focusEditField('rate', index)"
+              @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index)"
             />
             <span v-else class="block px-2 py-1 text-[var(--color-text)] text-4xl font-mono text-right tabular-nums">{{ item.qty }}</span>
@@ -133,9 +133,9 @@
                 ref="pendingQtyInput"
                 v-model.number="pendingItem.qty"
                 type="number"
-                min="1"
+                min="0"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                @keydown.enter.prevent="confirmPendingItem"
+                @keydown.enter.prevent="pendingItem.qty > 0 && confirmPendingItem()"
                 @keydown.escape="cancelPendingItem"
               />
             </td>
@@ -289,8 +289,8 @@ function handleItemEntry() {
   const cached = searchItemsInCache(code)
   const match = cached.find(i => i.item_code.toLowerCase() === code.toLowerCase()) || cached[0]
   setPendingItem(match
-    ? { item_code: match.item_code, item_name: match.item_name, qty: 1, rate: match.price || 0, uom: match.uom || 'Nos', discount_percentage: 0 }
-    : { item_code: code, item_name: '', qty: 1, rate: 0, uom: 'Nos', discount_percentage: 0 }
+    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: match.price || 0, uom: match.uom || 'Nos', discount_percentage: 0 }
+    : { item_code: code, item_name: '', qty: 0, rate: 0, uom: 'Nos', discount_percentage: 0 }
   )
 }
 
@@ -378,7 +378,7 @@ function finishRowEdit(idx) {
 function recalcAmount(idx) {
   const item = items.value[idx]
   if (!item) return
-  item.amount = parseFloat(((item.qty || 1) * (item.rate || 0) * (1 - (item.discount_percentage || 0) / 100)).toFixed(2))
+  item.amount = parseFloat(((item.qty || 0) * (item.rate || 0) * (1 - (item.discount_percentage || 0) / 100)).toFixed(2))
 }
 
 function focusRow(idx) {
@@ -405,7 +405,7 @@ function onQuickSearchSelect(item) {
   if (!item) return
   quickSearchResults.value = []
   newItemCode.value = ''
-  setPendingItem({ item_code: item.item_code, item_name: item.item_name, qty: 1, rate: item.price || 0, uom: item.uom || 'Nos', discount_percentage: 0 })
+  setPendingItem({ item_code: item.item_code, item_name: item.item_name, qty: 0, rate: item.price || 0, uom: item.uom || 'Nos', discount_percentage: 0 })
 }
 
 function setPendingItem(item) {
@@ -414,16 +414,16 @@ function setPendingItem(item) {
 }
 
 function confirmPendingItem() {
-  if (!pendingItem.value) return
+  if (!pendingItem.value || pendingItem.value.qty <= 0) return
   const p = pendingItem.value
   items.value.push({
     item_code: p.item_code,
     item_name: p.item_name,
-    qty: p.qty || 1,
+    qty: p.qty,
     uom: p.uom || 'Nos',
     rate: p.rate || 0,
     discount_percentage: p.discount_percentage || 0,
-    amount: parseFloat(((p.qty || 1) * (p.rate || 0)).toFixed(2))
+    amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2))
   })
   pendingItem.value = null
   newItemCode.value = ''
