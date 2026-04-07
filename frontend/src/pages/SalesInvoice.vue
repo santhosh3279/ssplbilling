@@ -34,6 +34,37 @@
         <span class="text-blue-400 font-bold uppercase tracking-widest">Live Template Mode</span>
       </template>
 
+      <template #row="{ item, index }">
+        <tr
+          :ref="el => { if (el) rowRefs[index] = el }"
+          tabindex="0"
+          class="border-b border-[var(--color-border)] outline-none cursor-pointer"
+          :class="selectedRowIdx === index ? 'bg-[var(--color-highlight)]/20 ring-inset ring-1 ring-[var(--color-highlight)]/40' : 'hover:bg-[var(--color-surface-raised)]/50'"
+          @focus="selectedRowIdx = index"
+          @blur="selectedRowIdx = -1"
+          @keydown="handleRowKeydown($event, index)"
+        >
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">{{ index + 1 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ item.item_code }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl font-medium">{{ item.item_name }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-mono text-right tabular-nums">{{ item.qty }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ item.uom || 'Nos' }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right tabular-nums">{{ item.rate }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)] text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)]/80 text-2xl font-mono text-right tabular-nums">
+            {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
+          </td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-2xl font-mono text-right tabular-nums">{{ item.tax_rate ?? 0 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right tabular-nums">{{ item.amount }}</td>
+          <td class="px-2 py-1 text-center">
+            <button
+              class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
+              @click.stop="deleteItem(index)"
+            >&times;</button>
+          </td>
+        </tr>
+      </template>
+
       <template #bottom-left>
         <div class="p-4">
           <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Item Insights</h3>
@@ -151,6 +182,8 @@ const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
+const selectedRowIdx = ref(-1)
+const rowRefs = ref([])
 
 const items = ref([])
 
@@ -230,6 +263,47 @@ function handleNewCodeKeydown(e) {
   }
   if (e.key === 'Enter') {
     handleItemEntry()
+  } else if (e.key === 'ArrowUp' && items.value.length > 0) {
+    e.preventDefault()
+    focusRow(items.value.length - 1)
+  }
+}
+
+function handleRowKeydown(e, idx) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (idx < items.value.length - 1) focusRow(idx + 1)
+    else focusBarcodeInput()
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (idx > 0) focusRow(idx - 1)
+    else focusBarcodeInput()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    focusBarcodeInput()
+  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    e.preventDefault()
+    deleteItem(idx)
+  }
+}
+
+function focusRow(idx) {
+  selectedRowIdx.value = idx
+  nextTick(() => { rowRefs.value[idx]?.focus() })
+}
+
+function focusBarcodeInput() {
+  selectedRowIdx.value = -1
+  nextTick(() => { newCodeInput.value?.focus() })
+}
+
+function deleteItem(idx) {
+  items.value.splice(idx, 1)
+  rowRefs.value.splice(idx, 1)
+  if (items.value.length === 0) {
+    focusBarcodeInput()
+  } else {
+    focusRow(Math.min(idx, items.value.length - 1))
   }
 }
 
