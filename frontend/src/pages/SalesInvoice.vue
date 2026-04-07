@@ -140,7 +140,7 @@
             <div v-else-if="!selectedItemHistory.length" class="text-sm text-slate-500 italic">
               No previous history found for this customer.
             </div>
-            <div v-else class="max-h-[110px] overflow-y-auto scrollbar-none mb-4">
+            <div v-else class="max-h-[110px] overflow-y-auto mb-4 custom-scrollbar">
               <table class="w-full text-left text-lg border-collapse">
                 <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
                   <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
@@ -759,5 +759,19 @@ onMounted(() => {
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-highlight);
 }
 </style>
