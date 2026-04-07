@@ -16,15 +16,21 @@
 
       <div v-else class="flex flex-col gap-3">
         <div 
-          v-for="s in allowedSeries" 
+          v-for="(s, idx) in allowedSeries" 
           :key="s"
           @click="selectSeries(s)"
-          class="group flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 transition-all hover:translate-x-1 hover:border-[var(--color-highlight)] hover:bg-[var(--color-surface-raised)]"
-          :class="{ 'border-[var(--color-highlight)] ring-2 ring-[var(--color-highlight)]/20 bg-[var(--color-surface-raised)]': currentSeries === s }"
+          class="group flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 transition-all hover:translate-x-1"
+          :class="{ 
+            'border-[var(--color-highlight)] ring-2 ring-[var(--color-highlight)]/20 bg-[var(--color-surface-raised)]': currentSeries === s || focusedIndex === idx,
+            'translate-x-1 border-[var(--color-highlight)] bg-[var(--color-surface-raised)]': focusedIndex === idx
+          }"
         >
           <div class="flex items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-xl">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-xl relative">
               🔖
+              <span class="absolute -top-1.5 -left-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-text)] text-[9px] text-[var(--color-bg)] font-black">
+                {{ idx + 1 }}
+              </span>
             </div>
             <div>
               <div class="text-lg font-bold text-[var(--color-text)]">{{ s }}</div>
@@ -48,7 +54,7 @@
           @click="$emit('close')"
           class="rounded-lg border border-[var(--color-border)] px-6 py-2.5 text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all"
         >
-          Cancel
+          Cancel <span class="ml-1 opacity-50 text-[10px]">(Esc)</span>
         </button>
       </div>
     </div>
@@ -56,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet } from '../api'
 
 const props = defineProps({
@@ -69,6 +75,7 @@ const emit = defineEmits(['close', 'selected'])
 const allowedSeries = ref([])
 const loading = ref(false)
 const currentSeries = ref(localStorage.getItem('wb-series') || '')
+const focusedIndex = ref(0)
 
 async function fetchAllowedSeries() {
   loading.value = true
@@ -78,9 +85,10 @@ async function fetchAllowedSeries() {
     })
     allowedSeries.value = d.allowed_series || []
     
-    // If no series selected yet, or current is not in allowed, auto-select first
-    if (!currentSeries.value && allowedSeries.value.length) {
-      // Don't auto-select here, let user choose explicitly or keep from storage
+    // Set focused index to current series if found, otherwise 0
+    if (currentSeries.value) {
+      const idx = allowedSeries.value.indexOf(currentSeries.value)
+      if (idx !== -1) focusedIndex.value = idx
     }
   } catch (e) {
     console.error('[Userseries] Fetch failed:', e)
@@ -96,14 +104,51 @@ function selectSeries(s) {
   emit('close')
 }
 
+function handleKeydown(e) {
+  if (!props.show || loading.value) return
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    focusedIndex.value = (focusedIndex.value + 1) % allowedSeries.value.length
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    focusedIndex.value = (focusedIndex.value - 1 + allowedSeries.value.length) % allowedSeries.value.length
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (allowedSeries.value[focusedIndex.value]) {
+      selectSeries(allowedSeries.value[focusedIndex.value])
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    emit('close')
+  } else if (e.key >= '1' && e.key <= '9') {
+    // Top row and numpad both return "1"-"9"
+    const idx = parseInt(e.key) - 1
+    if (allowedSeries.value[idx]) {
+      selectSeries(allowedSeries.value[idx])
+    }
+  }
+}
+
 watch(() => props.show, (newVal) => {
   if (newVal) {
     currentSeries.value = localStorage.getItem('wb-series') || ''
+    focusedIndex.value = 0
     fetchAllowedSeries()
+    window.addEventListener('keydown', handleKeydown)
+  } else {
+    window.removeEventListener('keydown', handleKeydown)
   }
 })
 
 onMounted(() => {
-  if (props.show) fetchAllowedSeries()
+  if (props.show) {
+    fetchAllowedSeries()
+    window.addEventListener('keydown', handleKeydown)
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
