@@ -40,6 +40,22 @@
           <p class="text-sm text-slate-400 italic">Select an item row to see history and stock details here.</p>
         </div>
       </template>
+
+      <template #table-extra-rows>
+        <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">*</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input 
+              ref="newCodeInput"
+              v-model="newItemCode"
+              class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none placeholder:text-[var(--color-text-muted)]/30"
+              placeholder="Scan or Type Item..."
+              @keydown.enter="handleItemEntry"
+            />
+          </td>
+          <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
+        </tr>
+      </template>
     </Item_Invoice_Template>
 
     <CustomerSearchModal
@@ -61,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -87,6 +103,9 @@ const taxTemplate = ref('')
 const isInclusiveTax = ref(true)
 const warehouse = ref(localStorage.getItem('wb-warehouse') || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
+
+const newItemCode = ref('')
+const newCodeInput = ref(null)
 
 const items = ref([
   { item_code: 'ITEM-001', item_name: 'Sample Item Alpha', qty: 1, rate: 1000, discount_percentage: 0, amount: 1000 },
@@ -133,6 +152,19 @@ function handleIncentive() {
   alert('Incentive Entry triggered')
 }
 
+function handleItemEntry() {
+  if (!newItemCode.value) return
+  items.value.push({
+    item_code: newItemCode.value,
+    item_name: 'Newly Added Item',
+    qty: 1,
+    rate: 0,
+    discount_percentage: 0,
+    amount: 0
+  })
+  newItemCode.value = ''
+}
+
 function handleCustomerSelected(cust) {
   customerName.value = cust.label || cust.name
   customerDetails.value = cust.mobile_no || cust.email || ''
@@ -153,6 +185,10 @@ function handleCustomerSelected(cust) {
   }
 
   showCustomerModal.value = false
+
+  nextTick(() => {
+    newCodeInput.value?.focus()
+  })
 }
 
 async function handleSeriesSelected(series) {
