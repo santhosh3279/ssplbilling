@@ -40,8 +40,10 @@
     <CustomerSearchModal
       v-if="showCustomerModal"
       :show="showCustomerModal"
+      skip-date-filter
+      initial-type="Customer"
       @close="showCustomerModal = false"
-      @selected="handleCustomerSelected"
+      @select="handleCustomerSelected"
     />
 
     <Userseries
@@ -122,8 +124,8 @@ function handleIncentive() {
 }
 
 function handleCustomerSelected(cust) {
-  customerName.value = cust.customer_name || cust.name
-  customerDetails.value = cust.mobile || cust.email || ''
+  customerName.value = cust.label || cust.name
+  customerDetails.value = cust.mobile_no || cust.email || ''
   showCustomerModal.value = false
 }
 
@@ -141,6 +143,10 @@ async function handleSeriesSelected(series) {
     if (res.cost_center) costCenter.value = res.cost_center
 
     console.log('[SalesInvoice] Series selected and UI updated:', series, res)
+    
+    // After series selection, close the series modal and open customer modal
+    showSeriesModal.value = false
+    showCustomerModal.value = true
   } catch (e) {
     console.error('[SalesInvoice] Failed to fetch series defaults:', e)
   }
