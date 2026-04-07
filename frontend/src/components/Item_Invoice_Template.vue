@@ -294,9 +294,30 @@
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Discount</td>
                 <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
-                  <div v-if="discountEntry" class="bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1">{{ discountEntry }}</div>
+                  <div class="flex h-full items-stretch">
+                    <!-- Pct Half -->
+                    <div class="flex flex-1 items-center border-r border-[var(--color-border)]/50">
+                      <span class="px-1 text-[var(--color-text-muted)] font-bold">%</span>
+                      <input
+                        type="number"
+                        :value="discountPct"
+                        @input="$emit('update:discountPct', $event.target.value)"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <!-- Amt Half -->
+                    <div class="flex flex-1 items-center">
+                      <input
+                        type="number"
+                        :value="discountDirectAmt"
+                        @input="$emit('update:discountDirectAmt', $event.target.value)"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-1 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="Amt"
+                      />
+                    </div>
+                  </div>
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-2xl border border-[var(--color-border)]">-{{ discountAmt }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-2xl border border-[var(--color-border)]">-{{ Number(discountAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Subtotal -->
               <tr class="bg-[var(--color-surface-raised)]/40">
@@ -423,6 +444,8 @@ const props = defineProps({
   // Calculation Panel Props
   itemDiscountTotal: { type: [Number, String], default: '0.00' },
   discountEntry: { type: String, default: '' },
+  discountPct: { type: [Number, String], default: 0 },
+  discountDirectAmt: { type: [Number, String], default: 0 },
   discountAmt: { type: [Number, String], default: '0.00' },
   subtotal: { type: [Number, String], default: '0.00' },
   freightEntry: { type: String, default: '' },
@@ -441,7 +464,8 @@ const emit = defineEmits([
   'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import', 'party-click',
   'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
   'toggle-draft-only', 'select-sidebar-item', 'delete-item',
-  'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry'
+  'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
+  'update:discountPct', 'update:discountDirectAmt'
 ])
 </script>
 

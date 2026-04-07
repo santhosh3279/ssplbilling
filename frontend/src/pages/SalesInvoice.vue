@@ -31,6 +31,9 @@
       :loading-amt="loadingAmt"
       v-model:other-entry="otherEntry"
       :other-amt="otherAmt"
+      v-model:discount-pct="discountPct"
+      v-model:discount-direct-amt="discountDirectAmt"
+      :discount-amt="discountAmt"
       @back="goBack"
       @save="handleSave"
       @print="handlePrint"
@@ -405,11 +408,24 @@ const freightEntry = ref('')
 const packingEntry = ref('')
 const loadingEntry = ref('')
 const otherEntry = ref('')
+const discountPct = ref('')
+const discountDirectAmt = ref('')
 
 const freightAmt = computed(() => parseFloat(freightEntry.value) || 0)
 const packingAmt = computed(() => parseFloat(packingEntry.value) || 0)
 const loadingAmt = computed(() => parseFloat(loadingEntry.value) || 0)
 const otherAmt = computed(() => parseFloat(otherEntry.value) || 0)
+
+const discountAmt = computed(() => {
+  const p = parseFloat(discountPct.value) || 0
+  const a = parseFloat(discountDirectAmt.value) || 0
+  if (p > 0) {
+    // Percentage based on gross subtotal
+    const base = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
+    return base * (p / 100)
+  }
+  return a
+})
 
 // --- Composable Logic (Discount Rules) ---
 const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, lookupItemInCache })
@@ -497,7 +513,8 @@ const totalAmount = computed(() => {
     freightAmt.value + 
     packingAmt.value + 
     loadingAmt.value + 
-    otherAmt.value
+    otherAmt.value -
+    discountAmt.value
   ).toFixed(2)
 })
 
