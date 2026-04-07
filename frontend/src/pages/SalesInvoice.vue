@@ -613,8 +613,13 @@ function detectPriceChange(item, focusTarget) {
   
   const standardRate = parseFloat(cached.price || 0)
   const currentRate = parseFloat(item.rate || 0)
+  const currentDiscount = parseFloat(item.discount || 0)
   
-  if (Math.abs(standardRate - currentRate) > 0.001) {
+  // Trigger if rate is different OR if a discount has been applied
+  const rateChanged = Math.abs(standardRate - currentRate) > 0.001
+  const discountChanged = Math.abs(currentDiscount) > 0.001
+
+  if (rateChanged || discountChanged) {
     const factor = standardRate > 0 ? currentRate / standardRate : 1
     priceDetectData.value = { ...item, multiplication_factor: factor }
     postModalFocusTarget.value = focusTarget
