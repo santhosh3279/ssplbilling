@@ -183,11 +183,6 @@
                 </slot>
               </template>
               <slot name="table-extra-rows"></slot>
-              <!-- Empty rows to maintain layout -->
-              <tr v-for="i in Math.max(0, 10 - items.length)" :key="'empty-'+i" class="border-b border-[var(--color-border)]/50">
-                <td v-for="j in 10" :key="j" class="px-2 py-4 border-r border-[var(--color-border)]"></td>
-                <td class="px-2 py-4"></td>
-              </tr>
             </tbody>
           </table>
         </div>

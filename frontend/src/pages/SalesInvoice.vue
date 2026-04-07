@@ -107,15 +107,9 @@ const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
 const newItemCode = ref('')
 const newCodeInput = ref(null)
 
-const items = ref([
-  { item_code: 'ITEM-001', item_name: 'Sample Item Alpha', qty: 1, rate: 1000, discount_percentage: 0, amount: 1000 },
-  { item_code: 'ITEM-002', item_name: 'Sample Item Beta', qty: 2, rate: 500, discount_percentage: 10, amount: 900 }
-])
+const items = ref([])
 
-const recentInvoices = ref([
-  { name: 'SINV-001', customer_name: 'Walk-in Customer', grand_total: 1900, docstatus: 0 },
-  { name: 'SINV-002', customer_name: 'John Doe', grand_total: 2500, docstatus: 1 }
-])
+const recentInvoices = ref([])
 
 const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
 
