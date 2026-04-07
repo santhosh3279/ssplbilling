@@ -132,7 +132,14 @@
 
             <div v-if="partyModifier !== null" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
               <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Multiplier</span>
-              <span class="text-xl font-mono font-bold text-[var(--color-warning)]">× {{ partyModifier }}</span>
+              <span class="text-xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">× {{ partyModifier }}</span>
+              <input
+                type="checkbox"
+                :checked="ignoreModifier"
+                class="h-[15px] w-[15px] cursor-pointer accent-[var(--color-warning)]"
+                title="Ignore Multiplier"
+                @change="$emit('update:ignoreModifier', $event.target.checked)"
+              />
             </div>
 
             <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
@@ -422,6 +429,7 @@ const props = defineProps({
   partyBalance: { type: [Number, String], default: null },
   partyLastInvDate: { type: String, default: '' },
   partyModifier: { type: [Number, String], default: null },
+  ignoreModifier: { type: Boolean, default: false },
   docDate: { type: String, default: '' },
   items: { type: Array, default: () => [] },
   
@@ -471,7 +479,8 @@ const emit = defineEmits([
   'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
   'toggle-draft-only', 'select-sidebar-item', 'delete-item',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
-  'update:discountPct', 'update:discountDirectAmt'
+  'update:discountPct', 'update:discountDirectAmt',
+  'update:ignoreModifier'
 ])
 </script>
 

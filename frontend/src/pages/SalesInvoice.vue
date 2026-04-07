@@ -11,6 +11,7 @@
       :party-balance="customerBalance"
       :party-last-inv-date="customerLastInvDate"
       :party-modifier="customerModifier"
+      v-model:ignore-modifier="ignoreModifier"
       :doc-date="invoiceDate"
       :items="items"
       :subtotal="subtotal"
@@ -452,6 +453,7 @@ const customerBalance = ref(null)
 const customerLastInvDate = ref('')
 const customerState = ref('')
 const customerModifier = ref(null)
+const ignoreModifier = ref(false)
 
 const newItemCode = ref('')
 const newCodeInput = ref(null)
@@ -828,6 +830,7 @@ function handleCustomerSelected(cust) {
   customerBalance.value = cust.balance ?? 0
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
+  ignoreModifier.value = false
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
   if (cust.last_invoice_date) {
