@@ -38,15 +38,19 @@
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
           tabindex="0"
-          class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-colors"
+          class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
-            'bg-[var(--color-lowlight)] font-bold': selectedRowIdx === index || editingRowIdx === index,
-            'hover:bg-[var(--color-surface-raised)]/50': selectedRowIdx !== index && editingRowIdx !== index
+            'bg-[var(--color-lowlight)] font-bold': (selectedRowIdx === index || editingRowIdx === index) && !item.deleted,
+            'opacity-40 bg-red-900/10 grayscale-[0.5]': item.deleted,
+            'hover:bg-[var(--color-surface-raised)]/50': selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
           }"
           @focus="selectedRowIdx = index"
           @keydown="handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">{{ index + 1 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">
+            <span v-if="item.deleted" class="text-[10px] bg-red-600 text-white px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
+            {{ index + 1 }}
+          </td>
 
           <!-- item_code -->
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -57,10 +61,12 @@
               @keydown.enter.prevent="focusEditField('qty', index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-2xl font-mono" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
+            <span v-else class="block px-2 py-1 text-2xl font-mono" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-medium" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.item_name }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-medium" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">
+            {{ item.item_name }}
+          </td>
 
           <!-- qty -->
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -72,10 +78,10 @@
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
+            <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</td>
 
           <!-- rate -->
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -87,7 +93,7 @@
               @keydown.enter.prevent="focusEditField('disc', index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
+            <span v-else class="block px-2 py-1 text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
           </td>
 
           <!-- disc % -->
@@ -100,20 +106,22 @@
               @keydown.enter.prevent="finishRowEdit(index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-2xl font-mono text-right" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-warning)]'">{{ item.discount_percentage || '0' }}</span>
+            <span v-else class="block px-2 py-1 text-2xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-warning)]'">{{ item.discount_percentage || '0' }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-warning)]/80'">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-warning)]/80'">
             {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">{{ item.tax_rate ?? 0 }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.amount }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">{{ item.tax_rate ?? 0 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.amount }}</td>
           <td class="px-2 py-1 text-center">
             <button
               class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
-              :class="selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-red-700' : 'text-[var(--color-text-muted)]'"
+              :class="item.deleted ? 'text-red-500 hover:text-red-400 font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-red-700' : 'text-[var(--color-text-muted)]')"
               @click.stop="deleteItem(index)"
-            >&times;</button>
+            >
+              {{ item.deleted ? 'Undo' : '×' }}
+            </button>
           </td>
         </tr>
       </template>
@@ -252,7 +260,10 @@ const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
 
 // Computeds
 const subtotal = computed(() => {
-  return items.value.reduce((sum, item) => sum + item.amount, 0).toFixed(2)
+  return items.value
+    .filter(i => !i.deleted)
+    .reduce((sum, item) => sum + item.amount, 0)
+    .toFixed(2)
 })
 
 const totalTax = ref('0.00')
@@ -266,7 +277,12 @@ function goBack() {
 }
 
 function handleSave() {
-  alert('Template Save triggered')
+  const activeItems = items.value.filter(i => !i.deleted)
+  if (activeItems.length === 0) {
+    alert('No items to save')
+    return
+  }
+  alert('Template Save triggered for ' + activeItems.length + ' items')
 }
 
 function handlePrint() {
@@ -293,8 +309,8 @@ function handleItemEntry() {
   const cached = searchItemsInCache(code)
   const match = cached.find(i => i.item_code.toLowerCase() === code.toLowerCase()) || cached[0]
   setPendingItem(match
-    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: match.price || 0, uom: match.uom || 'Nos', discount_percentage: 0 }
-    : { item_code: code, item_name: '', qty: 0, rate: 0, uom: 'Nos', discount_percentage: 0 }
+    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: match.price || 0, uom: match.uom || 'Nos', discount_percentage: 0, deleted: false }
+    : { item_code: code, item_name: '', qty: 0, rate: 0, uom: 'Nos', discount_percentage: 0, deleted: false }
   )
 }
 
@@ -329,10 +345,11 @@ function handleNewCodeKeydown(e) {
 }
 
 function handleRowKeydown(e, idx) {
+  const item = items.value[idx]
   // Ignore events bubbled up from inputs inside the row
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
 
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' && !item.deleted) {
     e.preventDefault()
     focusEditField('code', idx)
   } else if (e.key === 'ArrowDown') {
@@ -353,6 +370,8 @@ function handleRowKeydown(e, idx) {
 }
 
 function focusEditField(field, idx) {
+  if (items.value[idx]?.deleted) return
+
   editingRowIdx.value = idx
   editingField.value = field
   selectedRowIdx.value = idx
@@ -396,12 +415,12 @@ function focusBarcodeInput() {
 }
 
 function deleteItem(idx) {
-  items.value.splice(idx, 1)
-  rowRefs.value.splice(idx, 1)
-  if (items.value.length === 0) {
-    focusBarcodeInput()
-  } else {
-    focusRow(Math.min(idx, items.value.length - 1))
+  const item = items.value[idx]
+  if (!item) return
+  item.deleted = !item.deleted
+  if (item.deleted && editingRowIdx.value === idx) {
+    editingRowIdx.value = -1
+    editingField.value = null
   }
 }
 
@@ -409,7 +428,15 @@ function onQuickSearchSelect(item) {
   if (!item) return
   quickSearchResults.value = []
   newItemCode.value = ''
-  setPendingItem({ item_code: item.item_code, item_name: item.item_name, qty: 0, rate: item.price || 0, uom: item.uom || 'Nos', discount_percentage: 0 })
+  setPendingItem({ 
+    item_code: item.item_code, 
+    item_name: item.item_name, 
+    qty: 0, 
+    rate: item.price || 0, 
+    uom: item.uom || 'Nos', 
+    discount_percentage: 0,
+    deleted: false
+  })
 }
 
 function setPendingItem(item) {
@@ -427,7 +454,8 @@ function confirmPendingItem() {
     uom: p.uom || 'Nos',
     rate: p.rate || 0,
     discount_percentage: p.discount_percentage || 0,
-    amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2))
+    amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2)),
+    deleted: false
   })
   pendingItem.value = null
   newItemCode.value = ''
