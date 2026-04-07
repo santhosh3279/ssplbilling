@@ -291,7 +291,6 @@ const { theme, toggleTheme, applyTheme } = useTheme()
 
 function handleToggleTheme() {
   toggleTheme()
-  localStorage.setItem('wb-theme', theme.value)
 }
 
 // ==================== USER ====================
@@ -592,7 +591,9 @@ async function fetchSettings(user = null) {
       localStorage.setItem('wb-zoom', settings.user_zoom)
     }
     if (settings && settings.wb_theme) {
-      applyTheme(settings.wb_theme) // normalises + applies class to <html>
+      const t = settings.wb_theme.toLowerCase() === 'dark' ? 'dark' : 'light'
+      localStorage.setItem('wb-theme', t)
+      // Do not call applyTheme() here to avoid overwriting Session_Theme once logged in
     }
     if (settings && settings.cipher_map) {
       localStorage.setItem('wb-cipher', settings.cipher_map)

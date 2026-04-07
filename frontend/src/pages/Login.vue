@@ -93,6 +93,11 @@ async function handleLogin() {
       const settings = await dashboardApi.getBillingSettings()
       if (settings) {
         localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
+        if (settings.wb_theme) {
+          const t = settings.wb_theme.toLowerCase() === 'dark' ? 'dark' : 'light'
+          localStorage.setItem('wb-theme', t)
+          localStorage.setItem('Session_Theme', t)
+        }
         if (settings.default_zoom) {
           localStorage.setItem('wb-zoom', settings.default_zoom)
         }

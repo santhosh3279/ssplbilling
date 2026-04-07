@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
-const STORAGE_KEY = 'wb-theme'
+const STORAGE_KEY = 'Session_Theme'
+const PERSISTENT_KEY = 'wb-theme'
 const DEFAULT_THEME = 'light'
 
 // Module-level singleton so all callers share the same reactive state
@@ -26,8 +27,11 @@ function applyTheme(themeName) {
 
 /** Read saved preference (or default) and apply it. */
 function initTheme() {
-  const saved = localStorage.getItem(STORAGE_KEY)
-  applyTheme(saved || DEFAULT_THEME)
+  const sessionSaved = localStorage.getItem(STORAGE_KEY)
+  const persistentSaved = localStorage.getItem(PERSISTENT_KEY)
+  
+  // Fallback chain: Session_Theme -> wb-theme -> default
+  applyTheme(sessionSaved || persistentSaved || DEFAULT_THEME)
 }
 
 /** Flip between light and dark. */
@@ -38,7 +42,9 @@ function toggleTheme() {
 export function useTheme() {
   // Ensure theme ref is populated if composable is used before initTheme runs
   if (theme.value === null) {
-    theme.value = _normalise(localStorage.getItem(STORAGE_KEY))
+    const sessionSaved = localStorage.getItem(STORAGE_KEY)
+    const persistentSaved = localStorage.getItem(PERSISTENT_KEY)
+    theme.value = _normalise(sessionSaved || persistentSaved)
   }
   return { theme, applyTheme, initTheme, toggleTheme }
 }
