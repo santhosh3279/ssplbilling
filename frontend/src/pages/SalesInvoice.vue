@@ -369,13 +369,10 @@ function exitEditMode(idx) {
 
 function finishRowEdit(idx) {
   recalcAmount(idx)
-  if (idx < items.value.length - 1) {
-    focusEditField('code', idx + 1)
-  } else {
-    editingRowIdx.value = -1
-    editingField.value = null
-    focusBarcodeInput()
-  }
+  editingRowIdx.value = -1
+  editingField.value = null
+  const next = idx < items.value.length - 1 ? idx + 1 : idx
+  focusRow(next)
 }
 
 function recalcAmount(idx) {
