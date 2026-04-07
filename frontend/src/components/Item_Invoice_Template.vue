@@ -10,7 +10,12 @@
         <!-- Date Filter -->
         <div class="flex items-center gap-1 border-b border-slate-700 p-0 bg-slate-900">
           <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
-          <div class="flex-1 text-center font-bold text-slate-300 text-lg">{{ sidebarDate || 'Select Date' }}</div>
+          <input
+            type="date"
+            :value="sidebarDate"
+            @input="$emit('update:sidebarDate', $event.target.value)"
+            class="w-full bg-transparent text-xl font-bold text-slate-300 outline-none"
+          />
           <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
         </div>
 
@@ -114,14 +119,17 @@
           <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
             <thead>
               <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-16">#</th>
-                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-48">Item Code</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-8">#</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-32">Barcode</th>
                 <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">Item Name</th>
-                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-24">Qty</th>
-                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-24">UOM</th>
-                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-32">Rate</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-16">Qty</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-14">UOM</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-24">Rate</th>
                 <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-24">Disc %</th>
-                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-32">Amount</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-amber-500 w-24">DISC</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-24">Tax %</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-24">Amount</th>
+                <th class="border-b border-slate-700 w-8"></th>
               </tr>
             </thead>
             <tbody>
@@ -134,7 +142,16 @@
                   <td class="px-2 py-1 border-r border-slate-700 text-slate-400 text-xl">{{ item.uom || 'Nos' }}</td>
                   <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.rate }}</td>
                   <td class="px-2 py-1 border-r border-slate-700 text-amber-500 text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-amber-400 text-2xl font-mono text-right tabular-nums">
+                    {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
+                  </td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-slate-400 text-2xl font-mono text-right tabular-nums">
+                    {{ item.tax_rate != null ? item.tax_rate : defaultTaxRate }}
+                  </td>
                   <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.amount }}</td>
+                  <td class="px-2 py-1 text-center">
+                    <button class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" @click="$emit('delete-item', idx)">&times;</button>
+                  </td>
                 </slot>
               </tr>
               <!-- Empty rows to maintain layout -->
@@ -147,6 +164,9 @@
                 <td class="px-2 py-4 border-r border-slate-700"></td>
                 <td class="px-2 py-4 border-r border-slate-700"></td>
                 <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4"></td>
               </tr>
             </tbody>
           </table>
@@ -345,7 +365,7 @@ const props = defineProps({
   docDate: { type: String, default: '' },
   items: { type: Array, default: () => [] },
   
-  // Sidebar Props
+  // Sidebar Props (sidebarDate supports v-model via update:sidebarDate emit)
   sidebarDate: { type: String, default: '' },
   sidebarSearch: { type: String, default: '' },
   sidebarSeries: { type: String, default: '' },
@@ -363,6 +383,9 @@ const props = defineProps({
   isReturn: { type: Boolean, default: false },
   warehouse: { type: String, default: '' },
   costCenter: { type: String, default: '' },
+
+  // Table Props
+  defaultTaxRate: { type: [Number, String], default: 0 },
 
   // Calculation Panel Props
   itemDiscountTotal: { type: [Number, String], default: '0.00' },
@@ -383,8 +406,8 @@ const props = defineProps({
 
 const emit = defineEmits([
   'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import',
-  'sidebar-date-change', 'update:sidebarSearch', 'update:sidebarSeries', 
-  'toggle-draft-only', 'select-sidebar-item'
+  'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
+  'toggle-draft-only', 'select-sidebar-item', 'delete-item'
 ])
 </script>
 
