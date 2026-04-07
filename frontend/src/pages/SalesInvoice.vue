@@ -304,8 +304,7 @@
                 type="number"
                 min="0"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                @keydown.enter.prevent="pendingItem.qty > 0 && confirmPendingItem()"
-                @keydown.escape="cancelPendingItem"
+                @keydown="handlePendingQtyKeydown"
               />
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ pendingItem.uom || 'Nos' }}</td>
@@ -343,6 +342,18 @@
       @close="quickSearchResults = []"
     />
 
+    <ItemSearch
+      v-if="showItemSearch"
+      :show="showItemSearch"
+      search-type="Sales"
+      :price-list="priceList"
+      :warehouse="warehouse"
+      :initial-query="newItemCode"
+      skip-date-filter
+      @close="showItemSearch = false; focusBarcodeInput()"
+      @select="onItemSearchSelect"
+    />
+
     <CustomerSearchModal
       v-if="showCustomerModal"
       :show="showCustomerModal"
@@ -368,6 +379,12 @@
       @updatePricelist="updatePriceList"
       @dismiss="dismissPriceModal"
     />
+
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="invoiceNo"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
@@ -379,6 +396,8 @@ import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
+import ItemSearch from '../components/ItemSearch.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
@@ -437,6 +456,9 @@ const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, 
 // --- Page & UI State ---
 const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
+const showPrintModal = ref(false)
+const showItemSearch = ref(false)
+const lastEnterTime = ref(0)
 const showPriceDetectModal = ref(false)
 const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
@@ -602,7 +624,13 @@ function handleSave() {
   clearHistory()
 }
 
-function handlePrint() { alert('Template Print triggered') }
+function handlePrint() { 
+  if (invoiceNo.value === 'NEW') {
+    alert('Please save the invoice before printing.')
+    return
+  }
+  showPrintModal.value = true 
+}
 
 function handleCancel() {
   if (confirm('Clear all items?')) {
@@ -713,7 +741,7 @@ function handleItemEntry() {
   const cached = searchItemsInCache(code)
   const match = cached.find(i => i.item_code.toLowerCase() === code.toLowerCase()) || cached[0]
   setPendingItem(match
-    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: match.price || 0, uom: match.uom || 'Nos', discount: 0, tax_rate: match.tax_rate || 0, deleted: false }
+    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: getItemRateForPriceList(match, match.uom), uom: match.uom || 'Nos', discount: 0, tax_rate: match.tax_rate || 0, deleted: false }
     : { item_code: code, item_name: '', qty: 0, rate: 0, uom: 'Nos', discount: 0, tax_rate: 0, deleted: false }
   )
 }
@@ -729,6 +757,22 @@ function onNewCodeInput() {
 }
 
 function handleNewCodeKeydown(e) {
+  if (e.key === 'Enter') {
+    const now = Date.now()
+    const isDouble = (now - lastEnterTime.value < 400)
+    lastEnterTime.value = now
+
+    if (isDouble) {
+      e.preventDefault()
+      cancelPendingItem(true)
+      newItemCode.value = ''
+      quickSearchResults.value = []
+      showItemSearch.value = true
+      lastEnterTime.value = 0
+      return
+    }
+  }
+
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
       e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return
@@ -736,8 +780,39 @@ function handleNewCodeKeydown(e) {
       e.preventDefault(); quickSearchResults.value = []; return
     }
   }
-  if (e.key === 'Enter') handleItemEntry()
+
+  if (e.key === 'Enter') {
+    if (!newItemCode.value) return
+    handleItemEntry()
+  }
+  else if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    showItemSearch.value = true
+  }
   else if (e.key === 'ArrowUp' && items.value.length > 0) { e.preventDefault(); focusRow(items.value.length - 1) }
+}
+
+function handlePendingQtyKeydown(e) {
+  if (e.key === 'Enter') {
+    const now = Date.now()
+    const isDouble = (now - lastEnterTime.value < 400)
+    lastEnterTime.value = now
+
+    if (isDouble && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
+      e.preventDefault()
+      cancelPendingItem(true)
+      showItemSearch.value = true
+      lastEnterTime.value = 0
+      return
+    }
+
+    if (pendingItem.value.qty > 0) {
+      e.preventDefault()
+      confirmPendingItem()
+    }
+  } else if (e.key === 'Escape') {
+    cancelPendingItem()
+  }
 }
 
 function handleRowKeydown(e, idx) {
@@ -796,6 +871,50 @@ function combinedFactor(item_code) {
   return cpFactor != null ? globalFactor * cpFactor : globalFactor
 }
 
+// Get price for the currently selected price list from the cache
+function getItemRateForPriceList(cachedItem, uom = null) {
+  if (!cachedItem) return 0
+  const plName = priceList.value
+  
+  // 1. Check per-UOM overrides first
+  const targetUom = uom || cachedItem.uom || 'Nos'
+  if (cachedItem.uom_price_lists?.[plName]?.[targetUom] != null) {
+    return cachedItem.uom_price_lists[plName][targetUom]
+  }
+
+  // 2. Check direct price_lists array (base rates)
+  const plEntry = (cachedItem.price_lists || []).find(p => p.name === plName)
+  if (plEntry) return plEntry.rate
+
+  // 3. Fallback to the main 'price' field (which should match the last requested price list)
+  return parseFloat(cachedItem.price || 0)
+}
+
+// Reprice all rows when price list is changed in settings panel
+watch(priceList, async (newList) => {
+  if (!newList) return
+  localStorage.setItem('wb-pricelist-selected', newList) // Persist selection
+  
+  try {
+    // 1. Refresh cache to get updated 'price' field for the new list
+    await refreshItemCache('Sales', newList, warehouse.value)
+    
+    // 2. Update all existing items in the table
+    items.value.forEach((item, idx) => {
+      const cached = lookupItemInCache(item.item_code)
+      if (cached) {
+        let newRate = getItemRateForPriceList(cached, item.uom)
+        
+        item._base_rate = newRate
+        item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+        recalcAmount(idx)
+      }
+    })
+  } catch (e) {
+    console.error('[SalesInvoice] Failed to update rates on price list change:', e)
+  }
+})
+
 watch(ignoreModifier, () => {
   items.value.forEach(item => {
     const base = item._base_rate ?? item.rate
@@ -817,8 +936,18 @@ function deleteItem(idx) {
 function onQuickSearchSelect(item) {
   if (!item) return
   quickSearchResults.value = []; newItemCode.value = ''
-  setPendingItem({ 
-    item_code: item.item_code, item_name: item.item_name, qty: 0, rate: item.price || 0, 
+  setPendingItem({
+    item_code: item.item_code, item_name: item.item_name, qty: 0, rate: getItemRateForPriceList(item, item.uom),
+    uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
+  })
+}
+
+function onItemSearchSelect(item) {
+  showItemSearch.value = false
+  if (!item) return
+  newItemCode.value = ''
+  setPendingItem({
+    item_code: item.item_code, item_name: item.item_name, qty: 0, rate: item.price || getItemRateForPriceList(item, item.uom),
     uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
   })
 }
@@ -848,7 +977,10 @@ function confirmPendingItem() {
   nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
 
-function cancelPendingItem() { pendingItem.value = null; nextTick(() => { newCodeInput.value?.focus() }) }
+function cancelPendingItem(skipFocus = false) { 
+  pendingItem.value = null
+  if (!skipFocus) nextTick(() => { newCodeInput.value?.focus() }) 
+}
 
 function handleCustomerSelected(cust) {
   customerName.value = cust.label || cust.name
