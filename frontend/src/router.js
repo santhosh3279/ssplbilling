@@ -55,6 +55,11 @@ const routes = [
   {
     path: '/sales',
     name: 'SalesEntry',
+    component: SalesEntry,
+  },
+  {
+    path: '/salestemplate',
+    name: 'SalesInvoicePage',
     component: SalesInvoicePage,
   },
   {
