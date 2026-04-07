@@ -94,9 +94,11 @@ import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
-import { searchItemsInCache } from '../services/itemCache.js'
+import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
+
+const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
 
 // Page State
 const showSeriesModal = ref(false)
@@ -272,5 +274,10 @@ async function handleSeriesSelected(series) {
 
 onMounted(() => {
   showSeriesModal.value = true
+
+  // Ensure item cache is populated (TTL 5 mins)
+  if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
+    refreshItemCache('Sales', priceList.value, warehouse.value)
+  }
 })
 </script>
