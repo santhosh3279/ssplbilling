@@ -327,7 +327,7 @@ const router = useRouter()
 
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
 const { 
-  fetchCustomerSalesHistory, clearHistory, getItemHistoryFromCache, historyLoading, 
+  fetchCustomerSalesHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 
   fetchItemStock, itemStock, stockLoading,
   fetchItemPrices, itemPrices, pricesLoading
 } = useCustomerHistory()
@@ -371,6 +371,8 @@ watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
   if (code) {
     fetchItemStock(code)
     fetchItemPrices(code)
+  } else {
+    clearItemInsights()
   }
 })
 

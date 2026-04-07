@@ -103,16 +103,24 @@ export function useCustomerHistory() {
   }
 
   /**
+   * Clear item-specific insights (stock and prices).
+   * Keeps customerSalesHistory intact.
+   */
+  function clearItemInsights() {
+    itemStock.value = []
+    stockLoading.value = false
+    itemPrices.value = []
+    pricesLoading.value = false
+  }
+
+  /**
    * Clear all history details.
    */
   function clearHistory() {
     customerSalesHistory.value = []
     currentCustomerForHistory.value = null
     historyLoading.value = false
-    itemStock.value = []
-    stockLoading.value = false
-    itemPrices.value = []
-    pricesLoading.value = false
+    clearItemInsights()
   }
 
   return {
@@ -123,6 +131,7 @@ export function useCustomerHistory() {
     hasHistory,
     getItemHistoryFromCache,
     clearHistory,
+    clearItemInsights,
     // Stock levels
     itemStock,
     stockLoading,
