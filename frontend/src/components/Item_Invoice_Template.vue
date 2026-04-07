@@ -120,10 +120,11 @@
           <tbody>
             <slot name="calculation-rows">
               <!-- Default Calculation Rows (Props based) -->
+              <!-- Item Discount -->
               <tr>
-                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Subtotal</td>
-                <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-700">{{ subtotal }}</td>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Item Discount</td>
+                <td class="p-0 border-y border-slate-700 text-center text-[10px] text-slate-500 italic">Auto</td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ itemDiscountTotal }}</td>
                 <td class="border border-slate-700 px-2" rowspan="10">
                   <slot name="actions">
                     <div class="flex flex-col gap-2 h-full py-2">
@@ -152,12 +153,59 @@
                   </slot>
                 </td>
               </tr>
+              <!-- Global Discount -->
+              <tr>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Discount</td>
+                <td class="p-0 border-y border-slate-700 text-center text-[10px] text-slate-500">
+                  <div v-if="discountEntry" class="bg-slate-900 text-slate-200 font-mono text-xl py-1">{{ discountEntry }}</div>
+                </td>
+                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-{{ discountAmt }}</td>
+              </tr>
+              <!-- Subtotal -->
+              <tr class="bg-slate-800/40">
+                <td class="px-2 text-lg text-slate-200/80 border border-slate-700">Subtotal</td>
+                <td class="p-0 border-y border-slate-700"></td>
+                <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-700">{{ subtotal }}</td>
+              </tr>
+              <!-- Freight -->
+              <tr>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Freight</td>
+                <td class="p-0 border-y border-slate-700 text-center text-[10px] text-slate-500">
+                  <div v-if="freightEntry" class="bg-slate-900 text-slate-200 font-mono text-xl py-1">{{ freightEntry }}</div>
+                </td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ freightAmt }}</td>
+              </tr>
+              <!-- Packing -->
+              <tr>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Packing</td>
+                <td class="p-0 border-y border-slate-700 text-center text-[10px] text-slate-500">
+                  <div v-if="packingEntry" class="bg-slate-900 text-slate-200 font-mono text-xl py-1">{{ packingEntry }}</div>
+                </td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ packingAmt }}</td>
+              </tr>
+              <!-- Loading -->
+              <tr>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Loading</td>
+                <td class="p-0 border-y border-slate-700 text-center text-[10px] text-slate-500">
+                  <div v-if="loadingEntry" class="bg-slate-900 text-slate-200 font-mono text-xl py-1">{{ loadingEntry }}</div>
+                </td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ loadingAmt }}</td>
+              </tr>
+              <!-- Other -->
+              <tr>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Other</td>
+                <td class="p-0 border-y border-slate-700 text-center text-[10px] text-slate-500">
+                  <div v-if="otherEntry" class="bg-slate-900 text-slate-200 font-mono text-xl py-1">{{ otherEntry }}</div>
+                </td>
+                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+{{ otherAmt }}</td>
+              </tr>
+              <!-- Tax -->
               <tr>
                 <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Tax</td>
                 <td class="p-0 border-y border-slate-700"></td>
                 <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+{{ totalTax }}</td>
               </tr>
-              <tr v-for="i in 6" :key="i">
+              <tr v-for="i in 2" :key="i">
                 <td class="px-2 border border-slate-700">&nbsp;</td>
                 <td class="p-0 border border-slate-700"></td>
                 <td class="px-2 border border-slate-700"></td>
@@ -196,7 +244,20 @@ const props = defineProps({
       { key: 'amount', label: 'Amount', class: 'w-24', cellClass: 'text-right font-mono' },
     ] 
   },
+  
+  // Calculation Panel Props
+  itemDiscountTotal: { type: [Number, String], default: '0.00' },
+  discountEntry: { type: String, default: '' },
+  discountAmt: { type: [Number, String], default: '0.00' },
   subtotal: { type: [Number, String], default: '0.00' },
+  freightEntry: { type: String, default: '' },
+  freightAmt: { type: [Number, String], default: '0.00' },
+  packingEntry: { type: String, default: '' },
+  packingAmt: { type: [Number, String], default: '0.00' },
+  loadingEntry: { type: String, default: '' },
+  loadingAmt: { type: [Number, String], default: '0.00' },
+  otherEntry: { type: String, default: '' },
+  otherAmt: { type: [Number, String], default: '0.00' },
   totalTax: { type: [Number, String], default: '0.00' },
   totalAmount: { type: [Number, String], default: '0.00' }
 })
