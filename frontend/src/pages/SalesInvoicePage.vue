@@ -127,7 +127,7 @@
               <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap group-hover:text-blue-400 transition-colors">Customer</label>
               <div
                 ref="customerInput"
-                class="shrink-0 max-w-[400px] truncate text-4xl transition-colors outline-none leading-none font-semibold"
+                class="shrink-0 max-w-[400px] truncate text-4xl transition-colors outline-none leading-none"
                 :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
                 tabindex="0"
                 @keydown.enter.prevent.stop="openCustomerSearch"

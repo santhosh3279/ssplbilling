@@ -99,7 +99,7 @@
               <div class="flex items-center gap-6">
                 <div class="flex items-baseline gap-2 min-w-0">
                   <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
-                  <div class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ partyName || 'Not Selected' }}</div>
+                  <div class="text-2xl text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
                 </div>
 
                 <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-xl whitespace-nowrap">
