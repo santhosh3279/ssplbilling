@@ -96,29 +96,24 @@
               class="flex-1 flex flex-col border-l border-[var(--color-border)] pl-6 overflow-hidden cursor-pointer hover:bg-[var(--color-surface-raised)]/80 transition-colors group"
               @click="$emit('party-click')"
             >
-              <!-- Line 1: Party Name and Address -->
-              <div class="flex items-baseline gap-2">
-                <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
-                <div class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ partyName || 'Not Selected' }}</div>
-                <div v-if="partyAddress || partyDetails" class="text-lg text-[var(--color-text-muted)] truncate font-normal">
-                  <span class="mx-1 opacity-50">·</span>
-                  {{ partyAddress || partyDetails }}
+              <!-- Line 1: Party Name, Mobile, GST, Balance, Last Inv -->
+              <div class="flex items-center gap-6">
+                <div class="flex items-baseline gap-2 min-w-0">
+                  <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
+                  <div class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ partyName || 'Not Selected' }}</div>
                 </div>
-              </div>
 
-              <!-- Line 2: Mobile, GST, Balance, and Stats -->
-              <div class="flex items-center gap-6 mt-0.5">
-                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-xl">
+                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-xl whitespace-nowrap">
                   <span class="text-[10px] uppercase text-[var(--color-text-muted)]">Mob:</span>
                   {{ partyMobile }}
                 </div>
                 
-                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-xl">
+                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-xl whitespace-nowrap">
                   <span class="text-[10px] uppercase text-[var(--color-text-muted)]">GST:</span>
                   {{ partyGstin }}
                 </div>
 
-                <div v-if="partyBalance !== null" class="flex items-center gap-2">
+                <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap">
                   <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
                   <span 
                     class="text-xl font-bold font-mono"
@@ -129,10 +124,15 @@
                   </span>
                 </div>
 
-                <div v-if="partyLastInvDate" class="flex items-center gap-2">
+                <div v-if="partyLastInvDate" class="flex items-center gap-2 whitespace-nowrap">
                   <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Last Inv</span>
                   <span class="text-xl font-mono text-[var(--color-highlight)]">{{ partyLastInvDate }}</span>
                 </div>
+              </div>
+
+              <!-- Line 2: Address -->
+              <div v-if="partyAddress || partyDetails" class="mt-0.5 text-lg text-[var(--color-text-muted)] truncate font-normal">
+                {{ partyAddress || partyDetails }}
               </div>
             </div>
 

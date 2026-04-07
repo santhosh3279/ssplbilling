@@ -122,11 +122,10 @@
 
         <!-- Customer Section (Flex-1 to take middle space) -->
         <div class="flex-1 flex flex-col border-l border-slate-700 pl-6 overflow-hidden cursor-pointer hover:bg-slate-800/40 transition-colors group" @click="openCustomerSearch">
-          <div class="flex items-baseline gap-2">
-            <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap group-hover:text-blue-400 transition-colors">Customer</label>
-
-            <!-- Name & Address -->
+          <!-- Line 1: Name, Mobile, GST, Balance, and Stats -->
+          <div class="flex items-center gap-6">
             <div class="flex items-baseline gap-2 min-w-0">
+              <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap group-hover:text-blue-400 transition-colors">Customer</label>
               <div
                 ref="customerInput"
                 class="shrink-0 max-w-[400px] truncate text-4xl transition-colors outline-none leading-none font-semibold"
@@ -137,33 +136,19 @@
               >
                 {{ custSearch || 'Not Selected' }}
               </div>
-
-              <div v-if="selectedCustomerDetails?.address_line1" class="truncate text-xl text-slate-400 font-normal leading-none max-w-[500px]">
-                <span class="mx-1 opacity-50">·</span>
-                {{ [selectedCustomerDetails.address_line1, selectedCustomerDetails.city].filter(Boolean).join(', ') }}
-              </div>
-
-              <!-- Custom name badge -->
-              <div v-if="customAddress.custom_customer_name" class="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 leading-none shrink-0 ml-2">
-                <span class="text-[9px] font-bold uppercase text-amber-500">Custom</span>
-                <span class="text-lg font-semibold text-amber-300 max-w-[220px] truncate">{{ customAddress.custom_customer_name }}</span>
-              </div>
             </div>
-          </div>
 
-          <!-- Mobile, GST, Balance, and Stats -->
-          <div class="flex items-center gap-6 mt-1">
-            <div v-if="selectedCustomerDetails?.mobile_no" class="flex items-center gap-1 text-blue-400 font-mono text-2xl">
+            <div v-if="selectedCustomerDetails?.mobile_no" class="flex items-center gap-1 text-blue-400 font-mono text-2xl whitespace-nowrap">
               <span class="text-[10px] uppercase text-slate-500">Mob:</span>
               {{ selectedCustomerDetails.mobile_no }}
             </div>
 
-            <div v-if="selectedCustomerDetails?.gstin" class="flex items-center gap-1 text-slate-400 font-mono text-xl">
+            <div v-if="selectedCustomerDetails?.gstin" class="flex items-center gap-1 text-slate-400 font-mono text-xl whitespace-nowrap">
               <span class="text-[10px] uppercase text-slate-500">GST:</span>
               {{ selectedCustomerDetails.gstin }}
             </div>
 
-            <div v-if="selectedCustomerDetails?.balance !== undefined" class="flex items-center gap-2">
+            <div v-if="selectedCustomerDetails?.balance !== undefined" class="flex items-center gap-2 whitespace-nowrap">
               <span class="text-[10px] font-bold uppercase text-slate-500">Balance</span>
               <span 
                 class="text-2xl font-bold font-mono"
@@ -174,11 +159,24 @@
               </span>
             </div>
 
-            <div v-if="selectedCustomerDetails?.last_invoice_date" class="flex items-center gap-2">
+            <div v-if="selectedCustomerDetails?.last_invoice_date" class="flex items-center gap-2 whitespace-nowrap">
               <span class="text-[10px] font-bold uppercase text-slate-500">Last Inv</span>
               <span class="text-2xl font-mono text-blue-400">
                 {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
               </span>
+            </div>
+          </div>
+
+          <!-- Line 2: Address and Custom Name -->
+          <div class="flex items-center gap-4 mt-1">
+            <div v-if="selectedCustomerDetails?.address_line1" class="truncate text-xl text-slate-400 font-normal leading-none max-w-[600px]">
+              {{ [selectedCustomerDetails.address_line1, selectedCustomerDetails.city].filter(Boolean).join(', ') }}
+            </div>
+
+            <!-- Custom name badge -->
+            <div v-if="customAddress.custom_customer_name" class="flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 leading-none shrink-0">
+              <span class="text-[9px] font-bold uppercase text-amber-500">Custom</span>
+              <span class="text-lg font-semibold text-amber-300 max-w-[220px] truncate">{{ customAddress.custom_customer_name }}</span>
             </div>
           </div>
         </div>
