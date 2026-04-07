@@ -314,11 +314,28 @@ async function loadSettings() {
   syncing.value = true
   try {
     const targetUser = localStorage.getItem('wb-inherited-user') || session.user.value
-    rawSettings.value = await dashboardApi.getBillingSettings(targetUser)
-    applyToLocalStorage(rawSettings.value, targetUser)
+    const [settings, metadata] = await Promise.all([
+      dashboardApi.getBillingSettings(targetUser),
+      dashboardApi.getSyncMetadata().catch(() => ({}))
+    ])
+    rawSettings.value = settings
+    applyToLocalStorage(settings, targetUser)
+    
+    if (metadata) {
+      if (metadata.sales_tax_templates) {
+        localStorage.setItem('wb-sales-tax-template', JSON.stringify(metadata.sales_tax_templates))
+      }
+      if (metadata.purchase_tax_templates) {
+        localStorage.setItem('wb-purchase-tax-template', JSON.stringify(metadata.purchase_tax_templates))
+      }
+      if (metadata.price_lists) {
+        localStorage.setItem('wb-pricelist', JSON.stringify(metadata.price_lists))
+      }
+    }
+
     permissionTrigger.value++
   } catch (e) {
-    console.error('[GeneralSettings] getBillingSettings failed:', e)
+    console.error('[GeneralSettings] loadSettings failed:', e)
   } finally {
     syncing.value = false
   }

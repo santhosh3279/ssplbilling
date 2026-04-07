@@ -103,5 +103,12 @@ export const dashboardApi = {
       limit_page_length: 15000,
       order_by: 'customer_name asc'
     })
+  },
+
+  /**
+   * Fetch Sales/Purchase Tax Templates and Price Lists for synchronization.
+   */
+  getSyncMetadata: () => {
+    return frappeGet('ssplbilling.api.SaleEntry_api.get_sync_metadata')
   }
 }
