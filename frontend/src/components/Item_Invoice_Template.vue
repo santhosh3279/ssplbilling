@@ -272,10 +272,11 @@
                 <td class="border border-[var(--color-border)] px-2" rowspan="10">
                   <slot name="actions">
                     <div class="flex flex-col gap-2 h-full py-2">
-                      <div class="text-4xl text-[var(--color-text-muted)]">{{ items.length }} items</div>
-                      
                       <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
-                        <div class="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-highlight)] mb-1">Total Amount</div>
+                        <div class="flex justify-between items-start mb-1">
+                          <div class="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
+                          <div class="text-[12px] font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
+                        </div>
                         <div class="flex items-baseline gap-2 text-[var(--color-success)] font-bold">
                           <span class="text-[6mm] font-black">₹</span>
                           <span class="font-mono text-[10.5mm] font-black leading-none">{{ totalAmount }}</span>
