@@ -114,20 +114,40 @@
           <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
             <thead>
               <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-                <th v-for="col in columns" :key="col.key" :class="col.class" class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">
-                  {{ col.label }}
-                </th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-16">#</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-48">Item Code</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300">Item Name</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-24">Qty</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-slate-300 w-24">UOM</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-32">Rate</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-24">Disc %</th>
+                <th class="border-r border-b border-slate-700 px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-slate-300 w-32">Amount</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(item, idx) in items" :key="idx" class="border-b border-slate-700 hover:bg-slate-800/50">
                 <slot name="row" :item="item" :index="idx">
-                  <td v-for="col in columns" :key="col.key" :class="col.cellClass" class="px-2 py-1 border-r border-slate-700 text-slate-300 text-xl">
-                    {{ item[col.key] }}
-                  </td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-slate-500 text-xl font-mono text-center">{{ idx + 1 }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-blue-400 text-2xl font-mono">{{ item.item_code }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-slate-200 text-2xl font-medium">{{ item.item_name }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-4xl font-mono text-right tabular-nums">{{ item.qty }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-slate-400 text-xl">{{ item.uom || 'Nos' }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.rate }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-amber-500 text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</td>
+                  <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.amount }}</td>
                 </slot>
               </tr>
-              <slot name="after-rows"></slot>
+              <!-- Empty rows to maintain layout -->
+              <tr v-for="i in Math.max(0, 10 - items.length)" :key="'empty-'+i" class="border-b border-slate-800/50">
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+                <td class="px-2 py-4 border-r border-slate-700"></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -324,16 +344,6 @@ const props = defineProps({
   partyDetails: { type: String, default: '' },
   docDate: { type: String, default: '' },
   items: { type: Array, default: () => [] },
-  columns: { 
-    type: Array, 
-    default: () => [
-      { key: 'item_code', label: 'Item Code', class: 'w-32' },
-      { key: 'item_name', label: 'Item Name' },
-      { key: 'qty', label: 'Qty', class: 'w-16', cellClass: 'text-right' },
-      { key: 'rate', label: 'Rate', class: 'w-24', cellClass: 'text-right font-mono' },
-      { key: 'amount', label: 'Amount', class: 'w-24', cellClass: 'text-right font-mono' },
-    ] 
-  },
   
   // Sidebar Props
   sidebarDate: { type: String, default: '' },
