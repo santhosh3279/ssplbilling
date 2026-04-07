@@ -13,6 +13,7 @@
       :doc-date="invoiceDate"
       :items="items"
       :subtotal="subtotal"
+      :item-discount-total="itemDiscountTotal"
       :total-tax="totalTax"
       :total-amount="totalAmount"
       :price-list="priceList"
@@ -468,6 +469,16 @@ const discountAmt = computed(() => {
   const grossSubtotal = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
   if (p > 0) return grossSubtotal * (p / 100)
   return a
+})
+
+const itemDiscountTotal = computed(() => {
+  return activeItems.value.reduce((sum, item) => {
+    const rate = item.rate || 0
+    const qty = item.qty || 0
+    const disc = item.discount || 0
+    // Total discount for this row = (Rate * Qty) * (Disc / 100)
+    return sum + ((rate * qty) * (disc / 100))
+  }, 0).toFixed(2)
 })
 
 const discountFactor = computed(() => {
