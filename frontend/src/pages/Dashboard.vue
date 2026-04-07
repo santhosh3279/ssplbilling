@@ -88,7 +88,7 @@
 
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="toggleTheme"
+          @click="handleToggleTheme"
         >
           <span v-if="theme === 'light'">☀️</span>
           <span v-else>🌙</span>
@@ -288,6 +288,11 @@ const isActualAdmin = computed(() => ['Administrator', 'admin'].includes(session
 
 // ==================== THEME ====================
 const { theme, toggleTheme, applyTheme } = useTheme()
+
+function handleToggleTheme() {
+  toggleTheme()
+  localStorage.setItem('wb-theme', theme.value)
+}
 
 // ==================== USER ====================
 const userInitials = computed(() => {
