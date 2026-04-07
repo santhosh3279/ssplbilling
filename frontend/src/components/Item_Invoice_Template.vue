@@ -135,10 +135,10 @@
               <span class="text-xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">× {{ partyModifier }}</span>
               <input
                 type="checkbox"
-                :checked="ignoreModifier"
+                :checked="!ignoreModifier"
                 class="h-[15px] w-[15px] cursor-pointer accent-[var(--color-warning)]"
-                title="Ignore Multiplier"
-                @change="$emit('update:ignoreModifier', $event.target.checked)"
+                title="Apply Multiplier"
+                @change="$emit('update:ignoreModifier', !$event.target.checked)"
               />
             </div>
 
