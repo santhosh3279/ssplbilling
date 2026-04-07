@@ -133,6 +133,50 @@
         </div>
       </template>
 
+      <template #bottom-middle>
+        <div class="flex flex-col gap-2 p-2">
+          <!-- Price List -->
+          <div class="flex flex-col gap-0.5">
+            <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
+            <select
+              v-model="priceList"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+            >
+              <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
+              <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
+            </select>
+          </div>
+
+          <!-- Tax -->
+          <div class="flex flex-col gap-0.5">
+            <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
+            <select
+              v-model="taxTemplate"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+            >
+              <option value="">-- None --</option>
+              <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
+            </select>
+          </div>
+
+          <!-- 3 Checkboxes: Inclusive, Pricing Rule, Sale Return -->
+          <div class="flex flex-col gap-1.5 py-1">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" v-model="isInclusiveTax" class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
+              <span class="text-[var(--color-text-muted)] text-lg font-bold uppercase">Inclusive Tax</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" checked disabled class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
+              <span class="text-[var(--color-text-muted)] text-lg font-bold uppercase">Ignore Pricing Rule</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" disabled class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
+              <span class="text-[var(--color-text-muted)] text-lg font-bold uppercase">Sale Return</span>
+            </label>
+          </div>
+        </div>
+      </template>
+
       <template #table-extra-rows>
         <!-- Pending row: qty input after item selected -->
         <template v-if="pendingItem">
@@ -230,8 +274,15 @@ const customerGstin = ref('')
 const customerBalance = ref(null)
 const customerLastInvDate = ref('')
 const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
-const priceList = ref('Standard Selling')
-const taxTemplate = ref('')
+
+// Use stored arrays for Price List and Tax Template
+const localPriceLists = ref([])
+try { localPriceLists.value = JSON.parse(localStorage.getItem('wb-pricelist') || '[]') } catch { localPriceLists.value = [] }
+const localTaxTemplates = ref([])
+try { localTaxTemplates.value = JSON.parse(localStorage.getItem('wb-sales-tax-template') || '[]') } catch { localTaxTemplates.value = [] }
+
+const priceList = ref(localPriceLists.value[0] || 'Standard Selling')
+const taxTemplate = ref(localTaxTemplates.value[0] || '')
 const isInclusiveTax = ref(true)
 const warehouse = ref(localStorage.getItem('wb-warehouse') || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
