@@ -261,7 +261,7 @@
 
             <!-- Income Account -->
             <div class="flex flex-col gap-0.5 col-span-2">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Income Account</label>
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">wb-income-account</label>
               <select
                 v-model="incomeAccount"
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
