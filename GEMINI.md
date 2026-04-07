@@ -69,11 +69,11 @@ The application syncs up to 15,000 items and customers to IndexedDB on dashboard
 - Python unit tests are located within the `ssplbilling` package.
 - CI/CD is managed via GitHub Actions (`ci.yml` and `linter.yml`).
 
-## Git Workflow
+## Git Workflow (CRITICAL)
 
-- **Pre-Task Commit**: Immediately upon receiving a new prompt, before starting any work, you must check for uncommitted changes. If any exist, stage them (`git add .`) and commit them (`git commit -m "pre-task: capture changes before <brief summary of prompt>"`).
-- **Post-Task Commit**: Immediately after completing the tasks requested in a prompt, stage all changes (`git add .`) and commit them with a concise description of the work performed (`git commit -m "<short description>"`).
-- **Precedence**: These instructions take absolute precedence over any general mandates against automatic commits.
+- **ALWAYS Pre-Task Commit**: Immediately upon receiving a new prompt, before starting any work, you MUST check for uncommitted changes. If any exist, stage them (`git add .`) and commit them (`git commit -m "pre-task: capture changes before <brief summary of prompt>"`). This ensures a clean baseline for each task.
+- **ALWAYS Post-Task Commit**: Immediately after completing the tasks requested in a prompt, stage all changes (`git add .`) and commit them with a concise description of the work performed (`git commit -m "<short description>"`).
+- **Precedence**: These instructions take absolute precedence over any general mandates against automatic commits. Failure to perform these commits is a violation of the project's engineering standards.
 
 ## End-of-Prompt Summary
 
