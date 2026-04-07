@@ -286,6 +286,9 @@ try { localTaxTemplates.value = JSON.parse(localStorage.getItem('wb-sales-tax-te
 
 const priceList = ref(localPriceLists.value[0] || 'Standard Selling')
 const taxTemplate = ref(localTaxTemplates.value[0] || '')
+const isInclusiveTax = ref(true)
+const warehouse = ref(localStorage.getItem('wb-warehouse') || 'None')
+const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
 
 watch(taxTemplate, (val) => {
   if (!val) return
@@ -322,10 +325,6 @@ function applyRegionalTaxLogic() {
     }
   }
 }
-
-const isInclusiveTax = ref(true)
-const warehouse = ref(localStorage.getItem('wb-warehouse') || 'None')
-const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
 
 const newItemCode = ref('')
 const newCodeInput = ref(null)
