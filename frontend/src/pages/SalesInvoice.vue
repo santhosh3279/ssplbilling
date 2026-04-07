@@ -63,7 +63,8 @@
           @focus="selectedRowIdx = index"
           @keydown="handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">
+            <span v-if="item._cp_applied" class="absolute left-0 inset-y-0 w-[3px] bg-blue-500 rounded-r"></span>
             <span v-if="item.deleted" class="text-[10px] bg-red-600 text-white px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
             {{ index + 1 }}
           </td>
@@ -454,6 +455,7 @@ const customerLastInvDate = ref('')
 const customerState = ref('')
 const customerModifier = ref(null)
 const ignoreModifier = ref(false)
+const customerPricing = ref({}) // { item_code: multiplication_factor }
 
 const newItemCode = ref('')
 const newCodeInput = ref(null)
@@ -819,7 +821,14 @@ function onQuickSearchSelect(item) {
 function setPendingItem(item) {
   const base = item.rate || 0
   item._base_rate = base
-  item.rate = applyModifierToRate(base)
+  const cpFactor = customerPricing.value[item.item_code]
+  if (cpFactor != null) {
+    item.rate = parseFloat((base * cpFactor).toFixed(2))
+    item._cp_applied = true
+  } else {
+    item.rate = applyModifierToRate(base)
+    item._cp_applied = false
+  }
   pendingItem.value = item
   nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
 }
@@ -829,7 +838,7 @@ function confirmPendingItem() {
   const p = pendingItem.value
   const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty: p.qty, uom: p.uom || 'Nos',
-    rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0,
+    rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0, _cp_applied: !!p._cp_applied,
     discount: p.discount || 0, tax_rate: p.tax_rate || 0,
     amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2)),
     deleted: false, _rowKey: makeRowKey()
@@ -850,6 +859,10 @@ function handleCustomerSelected(cust) {
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
   ignoreModifier.value = false
+  customerPricing.value = {}
+  frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust.name || cust.label })
+    .then(data => { customerPricing.value = data || {} })
+    .catch(() => { customerPricing.value = {} })
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
   if (cust.last_invoice_date) {
