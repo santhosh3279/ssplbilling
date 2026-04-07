@@ -620,7 +620,13 @@ function detectPriceChange(item, focusTarget) {
   const discountChanged = Math.abs(currentDiscount) > 0.001
 
   if (rateChanged || discountChanged) {
-    const factor = standardRate > 0 ? currentRate / standardRate : 1
+    let factor = 1
+    if (discountChanged) {
+      factor = (1 - currentDiscount / 100)
+    } else if (rateChanged) {
+      factor = standardRate > 0 ? currentRate / standardRate : 1
+    }
+    
     priceDetectData.value = { ...item, multiplication_factor: factor }
     postModalFocusTarget.value = focusTarget
     showPriceDetectModal.value = true
