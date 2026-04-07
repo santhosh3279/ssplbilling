@@ -698,6 +698,29 @@ async function fetchSettings(user = null) {
   } catch (e) {
     console.warn('[Dashboard] opening box cash sync failed:', e)
   }
+
+  // 4. Fetch and store all naming series for the requested DocTypes
+  try {
+    const seriesMap = await dashboardApi.getAllNamingSeries()
+    if (seriesMap) {
+      // Store individual lists and a flattened list of all unique prefixes
+      const allPrefixes = new Set()
+      Object.keys(seriesMap).forEach(dt => {
+        const seriesList = seriesMap[dt] || []
+        const key = `wb-series-${dt.toLowerCase().replace(/ /g, '-')}`
+        localStorage.setItem(key, JSON.stringify(seriesList))
+        
+        seriesList.forEach(s => {
+          const prefix = (s || '').split('.')[0]
+          if (prefix) allPrefixes.add(prefix)
+        })
+      })
+      // Flattened array of all unique prefixes as requested
+      localStorage.setItem('wb-all-naming-series', JSON.stringify([...allPrefixes]))
+    }
+  } catch (e) {
+    console.warn('[Dashboard] getAllNamingSeries failed:', e)
+  }
 }
 
 const filteredBillingSeries = computed(() => {

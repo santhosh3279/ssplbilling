@@ -4,6 +4,41 @@ import frappe
 import re
 
 @frappe.whitelist()
+def get_all_naming_series():
+    """Return naming series for Sales Invoice, Purchase Invoice, Quotation, Sales Order, and Purchase Order."""
+    doctypes = ["Sales Invoice", "Purchase Invoice", "Quotation", "Sales Order", "Purchase Order"]
+    result = {}
+
+    def _get_series(dt):
+        try:
+            prop_value = frappe.db.get_value(
+                "Property Setter",
+                {"doc_type": dt, "field_name": "naming_series", "property": "options"},
+                "value",
+            )
+            if prop_value:
+                series = [s.strip() for s in prop_value.split("\n") if s.strip()]
+                if series:
+                    return series
+        except Exception:
+            pass
+        try:
+            meta = frappe.get_meta(dt)
+            sf = meta.get_field("naming_series")
+            if sf and sf.options:
+                series = [s.strip() for s in sf.options.split("\n") if s.strip()]
+                if series:
+                    return series
+        except Exception:
+            pass
+        return []
+
+    for dt in doctypes:
+        result[dt] = _get_series(dt)
+    
+    return result
+
+@frappe.whitelist()
 def get_all_users():
     """Return a list of all users from SSPL Billing Settings -> User Series."""
     settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

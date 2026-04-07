@@ -73,7 +73,25 @@ async function fetchAllowedSeries() {
     const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', {
       doctype: props.doctype
     })
-    allowedSeries.value = d.allowed_series || []
+    let series = d.allowed_series || []
+
+    // Filter based on wb-allowed-series from localStorage
+    const stored = localStorage.getItem('wb-allowed-series')
+    if (stored) {
+      try {
+        const allowedPrefixes = JSON.parse(stored)
+        if (Array.isArray(allowedPrefixes) && allowedPrefixes.length) {
+          series = series.filter(s => {
+            const prefix = (s || '').split('.')[0]
+            return allowedPrefixes.includes(prefix)
+          })
+        }
+      } catch (e) {
+        console.warn('[Userseries] Failed to parse wb-allowed-series:', e)
+      }
+    }
+
+    allowedSeries.value = series
     
     // Set focused index to current series if found, otherwise 0
     if (currentSeries.value) {

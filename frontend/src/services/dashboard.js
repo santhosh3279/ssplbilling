@@ -12,6 +12,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Return naming series for multiple DocTypes.
+   */
+  getAllNamingSeries: () => {
+    return frappeGet(`${API_BASE}.get_all_naming_series`)
+  },
+
+  /**
    * Return all SSPL Billing Settings data as a read-only summary for the dashboard.
    */
   getBillingSettings: (user = null) => {

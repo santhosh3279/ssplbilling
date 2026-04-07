@@ -38,6 +38,7 @@
 
     <Userseries
       :show="showSeriesModal"
+      doctype="Sales Invoice"
       @close="showSeriesModal = false"
       @selected="handleSeriesSelected"
     />
