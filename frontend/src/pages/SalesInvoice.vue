@@ -371,8 +371,8 @@ function finishRowEdit(idx) {
   recalcAmount(idx)
   editingRowIdx.value = -1
   editingField.value = null
-  const next = idx < items.value.length - 1 ? idx + 1 : idx
-  focusRow(next)
+  if (idx < items.value.length - 1) focusRow(idx + 1)
+  else focusBarcodeInput()
 }
 
 function recalcAmount(idx) {
