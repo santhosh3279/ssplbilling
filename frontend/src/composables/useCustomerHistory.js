@@ -13,6 +13,9 @@ export function useCustomerHistory() {
   const itemStock = ref([])
   const stockLoading = ref(false)
 
+  const itemPrices = ref([])
+  const pricesLoading = ref(false)
+
   /**
    * Fetch and cache previous sales history for a customer.
    */
@@ -62,6 +65,28 @@ export function useCustomerHistory() {
   }
 
   /**
+   * Fetch available price lists and rates for a specific item.
+   */
+  async function fetchItemPrices(itemCode) {
+    if (!itemCode) {
+      itemPrices.value = []
+      return
+    }
+    pricesLoading.value = true
+    try {
+      const res = await frappeGet('ssplbilling.api.pricelist_api.get_item_prices', {
+        item_code: itemCode
+      })
+      itemPrices.value = res?.prices || []
+    } catch (e) {
+      console.warn('[customerHistory] Prices fetch failed:', e.message)
+      itemPrices.value = []
+    } finally {
+      pricesLoading.value = false
+    }
+  }
+
+  /**
    * Check if an item has history with the currently cached customer.
    */
   function hasHistory(itemCode) {
@@ -86,6 +111,8 @@ export function useCustomerHistory() {
     historyLoading.value = false
     itemStock.value = []
     stockLoading.value = false
+    itemPrices.value = []
+    pricesLoading.value = false
   }
 
   return {
@@ -99,6 +126,10 @@ export function useCustomerHistory() {
     // Stock levels
     itemStock,
     stockLoading,
-    fetchItemStock
+    fetchItemStock,
+    // Price lists
+    itemPrices,
+    pricesLoading,
+    fetchItemPrices
   }
 }

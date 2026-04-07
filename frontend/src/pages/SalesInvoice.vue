@@ -178,8 +178,19 @@
                 </div>
               </div>
             </div>
-            <div v-else-if="(selectedRowIdx !== -1 || pendingItem) && !historyLoading && !stockLoading" class="border-t border-[var(--color-border)] pt-2 text-sm text-slate-500 italic">
-              No stock information available for this item.
+            <!-- Available Prices -->
+            <div v-if="itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2">
+              <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Available Prices:</div>
+              <div v-if="pricesLoading" class="text-sm text-blue-400 animate-pulse">Updating prices...</div>
+              <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <div v-for="p in itemPrices" :key="p.price_list" class="flex justify-between items-center text-lg font-mono leading-none">
+                  <span class="text-[var(--color-text-muted)] truncate mr-2">{{ p.price_list }}</span>
+                  <span class="text-[var(--color-highlight)] font-bold">{{ p.rate.toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="(selectedRowIdx !== -1 || pendingItem) && !historyLoading && !pricesLoading" class="border-t border-[var(--color-border)] pt-2 mt-2 text-sm text-slate-500 italic">
+              No additional price lists available.
             </div>
           </div>
         </div>
@@ -314,7 +325,11 @@ import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 const router = useRouter()
 
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
-const { fetchCustomerSalesHistory, clearHistory, getItemHistoryFromCache, historyLoading, fetchItemStock, itemStock, stockLoading } = useCustomerHistory()
+const { 
+  fetchCustomerSalesHistory, clearHistory, getItemHistoryFromCache, historyLoading, 
+  fetchItemStock, itemStock, stockLoading,
+  fetchItemPrices, itemPrices, pricesLoading
+} = useCustomerHistory()
 
 // Page State
 const showSeriesModal = ref(false)
@@ -346,7 +361,7 @@ const editQtyInput = ref(null)
 const editRateInput = ref(null)
 const editDiscInput = ref(null)
 
-// Watch for item selection/pending to fetch live stock
+// Watch for item selection/pending to fetch live stock and prices
 watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
   let code = null
   if (pending) code = pending.item_code
@@ -354,6 +369,7 @@ watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
 
   if (code) {
     fetchItemStock(code)
+    fetchItemPrices(code)
   }
 })
 
