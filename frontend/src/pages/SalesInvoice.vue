@@ -112,7 +112,9 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-warning)]/80'">
             {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">{{ item.tax_rate ?? 0 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">
+            {{ isExempted ? 0 : (item.tax_rate ?? 0) }}
+          </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]'">{{ item.amount }}</td>
           <td class="px-2 py-1 text-center">
             <button
@@ -310,6 +312,8 @@ const recentInvoices = ref([])
 const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
 
 // Computeds
+const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includes('exempt'))
+
 const subtotal = computed(() => {
   return items.value
     .filter(i => !i.deleted)
@@ -360,8 +364,8 @@ function handleItemEntry() {
   const cached = searchItemsInCache(code)
   const match = cached.find(i => i.item_code.toLowerCase() === code.toLowerCase()) || cached[0]
   setPendingItem(match
-    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: match.price || 0, uom: match.uom || 'Nos', discount_percentage: 0, deleted: false }
-    : { item_code: code, item_name: '', qty: 0, rate: 0, uom: 'Nos', discount_percentage: 0, deleted: false }
+    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: match.price || 0, uom: match.uom || 'Nos', discount_percentage: 0, tax_rate: match.tax_rate || 0, deleted: false }
+    : { item_code: code, item_name: '', qty: 0, rate: 0, uom: 'Nos', discount_percentage: 0, tax_rate: 0, deleted: false }
   )
 }
 
@@ -486,6 +490,7 @@ function onQuickSearchSelect(item) {
     rate: item.price || 0, 
     uom: item.uom || 'Nos', 
     discount_percentage: 0,
+    tax_rate: item.tax_rate || 0,
     deleted: false
   })
 }
@@ -505,6 +510,7 @@ function confirmPendingItem() {
     uom: p.uom || 'Nos',
     rate: p.rate || 0,
     discount_percentage: p.discount_percentage || 0,
+    tax_rate: p.tax_rate || 0,
     amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2)),
     deleted: false
   })
