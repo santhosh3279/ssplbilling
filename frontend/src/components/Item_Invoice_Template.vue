@@ -133,27 +133,31 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, idx) in items" :key="idx" class="border-b border-slate-700 hover:bg-slate-800/50">
+              <!-- #row slot wraps the entire <tr> so consumers can add :class/:ref/@click on the row -->
+              <template v-for="(item, idx) in items" :key="idx">
                 <slot name="row" :item="item" :index="idx">
-                  <td class="px-2 py-1 border-r border-slate-700 text-slate-500 text-xl font-mono text-center">{{ idx + 1 }}</td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-blue-400 text-2xl font-mono">{{ item.item_code }}</td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-slate-200 text-2xl font-medium">{{ item.item_name }}</td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-4xl font-mono text-right tabular-nums">{{ item.qty }}</td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-slate-400 text-xl">{{ item.uom || 'Nos' }}</td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.rate }}</td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-amber-500 text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-amber-400 text-2xl font-mono text-right tabular-nums">
-                    {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
-                  </td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-slate-400 text-2xl font-mono text-right tabular-nums">
-                    {{ item.tax_rate != null ? item.tax_rate : defaultTaxRate }}
-                  </td>
-                  <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.amount }}</td>
-                  <td class="px-2 py-1 text-center">
-                    <button class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" @click="$emit('delete-item', idx)">&times;</button>
-                  </td>
+                  <tr class="border-b border-slate-700 hover:bg-slate-800/50">
+                    <td class="px-2 py-1 border-r border-slate-700 text-slate-500 text-xl font-mono text-center">{{ idx + 1 }}</td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-blue-400 text-2xl font-mono">{{ item.item_code }}</td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-slate-200 text-2xl font-medium">{{ item.item_name }}</td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-4xl font-mono text-right tabular-nums">{{ item.qty }}</td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-slate-400 text-xl">{{ item.uom || 'Nos' }}</td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.rate }}</td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-amber-500 text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-amber-400 text-2xl font-mono text-right tabular-nums">
+                      {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
+                    </td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-slate-400 text-2xl font-mono text-right tabular-nums">
+                      {{ item.tax_rate != null ? item.tax_rate : defaultTaxRate }}
+                    </td>
+                    <td class="px-2 py-1 border-r border-slate-700 text-slate-100 text-3xl font-mono text-right tabular-nums">{{ item.amount }}</td>
+                    <td class="px-2 py-1 text-center">
+                      <button class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" @click="$emit('delete-item', idx)">&times;</button>
+                    </td>
+                  </tr>
                 </slot>
-              </tr>
+              </template>
+              <slot name="table-extra-rows"></slot>
               <!-- Empty rows to maintain layout -->
               <tr v-for="i in Math.max(0, 10 - items.length)" :key="'empty-'+i" class="border-b border-slate-800/50">
                 <td class="px-2 py-4 border-r border-slate-700"></td>
