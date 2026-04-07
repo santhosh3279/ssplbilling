@@ -355,6 +355,16 @@
       @close="showSeriesModal = false"
       @selected="handleSeriesSelected"
     />
+
+    <CustomerPrice
+      v-if="showPriceDetectModal"
+      :data="priceDetectData"
+      :customer="customerName"
+      :price-list="priceList"
+      @saveCustomer="saveCustomerPrice"
+      @updatePricelist="updatePriceList"
+      @dismiss="dismissPriceModal"
+    />
   </div>
 </template>
 
@@ -366,6 +376,7 @@ import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
+import CustomerPrice from '../components/CustomerPrice.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -423,6 +434,10 @@ const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, 
 // --- Page & UI State ---
 const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
+const showPriceDetectModal = ref(false)
+const priceDetectData = ref(null)
+const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
+
 const invoiceNo = ref('NEW')
 const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
 const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
@@ -592,6 +607,63 @@ function handleCancel() {
 
 function handleIncentive() { alert('Incentive Entry triggered') }
 
+function detectPriceChange(item, focusTarget) {
+  const cached = lookupItemInCache(item.item_code)
+  if (!cached) return false
+  
+  const standardRate = parseFloat(cached.price || 0)
+  const currentRate = parseFloat(item.rate || 0)
+  
+  if (Math.abs(standardRate - currentRate) > 0.001) {
+    priceDetectData.value = { ...item, multiplication_factor: 1 } // factor hardcoded to 1 for now
+    postModalFocusTarget.value = focusTarget
+    showPriceDetectModal.value = true
+    return true
+  }
+  return false
+}
+
+async function saveCustomerPrice() {
+  if (!priceDetectData.value) return
+  try {
+    await frappeGet('ssplbilling.api.customer_pricing_api.set_customer_pricing', {
+      customer: customerName.value,
+      item_code: priceDetectData.value.item_code,
+      rate: priceDetectData.value.rate
+    })
+    dismissPriceModal()
+  } catch (e) {
+    console.error('Failed to save customer price:', e)
+    dismissPriceModal()
+  }
+}
+
+async function updatePriceList() {
+  if (!priceDetectData.value) return
+  try {
+    await frappeGet('ssplbilling.api.pricelist_api.update_item_price', {
+      item_code: priceDetectData.value.item_code,
+      price_list: priceList.value,
+      rate: priceDetectData.value.rate
+    })
+    dismissPriceModal()
+  } catch (e) {
+    console.error('Failed to update price list:', e)
+    dismissPriceModal()
+  }
+}
+
+function dismissPriceModal() {
+  showPriceDetectModal.value = false
+  const target = postModalFocusTarget.value
+  if (target) {
+    if (target.type === 'row') focusRow(target.index)
+    else focusBarcodeInput()
+  }
+  priceDetectData.value = null
+  postModalFocusTarget.value = null
+}
+
 function applyRegionalTaxLogic() {
   if (!customerState.value || !taxTemplate.value) return
   const companyState = localStorage.getItem('wb-company-state') || ''
@@ -674,7 +746,16 @@ function exitEditMode(idx) {
 
 function finishRowEdit(idx) {
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
-  if (idx < items.value.length - 1) focusRow(idx + 1); else focusBarcodeInput()
+  
+  const item = items.value[idx]
+  const nextTarget = idx < items.value.length - 1 
+    ? { type: 'row', index: idx + 1 } 
+    : { type: 'barcode' }
+
+  if (!detectPriceChange(item, nextTarget)) {
+    if (nextTarget.type === 'row') focusRow(nextTarget.index)
+    else focusBarcodeInput()
+  }
 }
 
 function recalcAmount(idx) {
@@ -709,14 +790,18 @@ function setPendingItem(item) {
 function confirmPendingItem() {
   if (!pendingItem.value || pendingItem.value.qty <= 0) return
   const p = pendingItem.value
-  items.value.push({
+  const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty: p.qty, uom: p.uom || 'Nos',
     rate: p.rate || 0, discount: p.discount || 0, tax_rate: p.tax_rate || 0,
     amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2)),
     deleted: false, _rowKey: makeRowKey()
-  })
+  }
+  items.value.push(newItem)
   pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
-  nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
+  
+  if (!detectPriceChange(newItem, { type: 'barcode' })) {
+    nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
+  }
 }
 
 function cancelPendingItem() { pendingItem.value = null; nextTick(() => { newCodeInput.value?.focus() }) }
