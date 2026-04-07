@@ -253,14 +253,6 @@
           <colgroup>
             <col style="width:17%"><col style="width:18%"><col style="width:14%"><col style="width:51%">
           </colgroup>
-          <thead>
-            <tr class="bg-[var(--color-surface-raised)]">
-              <th class="px-2 text-left text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Description</th>
-              <th class="px-2 text-center text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Entry</th>
-              <th class="px-2 text-right text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Amount</th>
-              <th class="px-2 text-center text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Actions</th>
-            </tr>
-          </thead>
           <tbody>
             <slot name="calculation-rows">
               <!-- Default Calculation Rows (Props based) -->
@@ -269,7 +261,7 @@
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Item Discount</td>
                 <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)] italic">Auto</td>
                 <td class="px-2 text-right font-mono text-[var(--color-danger)] text-2xl border border-[var(--color-border)]">-{{ itemDiscountTotal }}</td>
-                <td class="border border-[var(--color-border)] px-2" rowspan="10">
+                <td class="border border-[var(--color-border)] px-2 bg-[var(--color-bg)] align-top" rowspan="11">
                   <slot name="actions">
                     <div class="flex flex-col gap-2 h-full py-2">
                       <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
