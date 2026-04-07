@@ -246,6 +246,35 @@
       @close="showReconcileWindow = false"
     />
 
+    <!-- INVOICE TEMPLATE FULL SCREEN MODAL -->
+    <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-slate-900">
+      <Item_Invoice_Template
+        title="Template Preview"
+        doc-number="INV-TEMP-001"
+        party-name="Sample Customer"
+        party-details="123 Main Street, Sample City"
+        doc-date="06-Apr-2026"
+        :items="[
+          { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 10, rate: 100, amount: 1000 },
+          { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 5, rate: 250, amount: 1250 }
+        ]"
+        total-amount="2250.00"
+        @back="showInvoiceTemplate = false"
+        @save="showInvoiceTemplate = false"
+        @print="showInvoiceTemplate = false"
+      >
+        <template #header-right>
+          <span>Sample Header Extra Info</span>
+        </template>
+        <template #bottom-left>
+          <div class="p-4 text-slate-500">Sample Insights Content</div>
+        </template>
+        <template #bottom-middle>
+          <div class="p-4 text-slate-500">Sample Settings Content</div>
+        </template>
+      </Item_Invoice_Template>
+    </div>
+
     <!-- SUCCESS POPUP -->
   </div>
 </template>
@@ -263,6 +292,7 @@ import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 import ReconcileWindow from './ReconcileWindow.vue'
+import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
@@ -360,6 +390,7 @@ const allTiles = [
   { id: 'gst-dummy-ledger', name: 'GST Dummy Ledger', desc: 'Manage dummy GST entries', icon: '📖', shortcut: '', tileBg: 'bg-indigo-900' },
   { id: 'gst-ledger', name: 'GST Ledger', desc: 'View GST Quotation ledger', icon: '📜', shortcut: '', tileBg: 'bg-indigo-800' },
   { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
+  { id: 'invoice-template', name: 'Invoice Template', desc: 'Reusable invoice UI template', icon: '🎨', shortcut: '', tileBg: 'bg-slate-600' },
   { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
 ]
 
@@ -396,6 +427,10 @@ const routeAliases = {
 function openModule(id) {
   if (id === 'reconcile') {
     showReconcileWindow.value = true
+    return
+  }
+  if (id === 'invoice-template') {
+    showInvoiceTemplate.value = true
     return
   }
   if (routeAliases[id]) {
@@ -441,6 +476,7 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
 // ==================== RECONCILE ====================
 const showReconcileWindow = ref(false)
+const showInvoiceTemplate = ref(false)
 
 // ==================== SYSTEM PERFORMANCE ====================
 const showSystemPerformance = ref(false)
