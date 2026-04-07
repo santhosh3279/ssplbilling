@@ -148,19 +148,21 @@
               <div class="mb-3 text-sm font-bold text-[var(--color-highlight)]">
                 Recent Purchases:
               </div>
-              <table class="w-full text-left text-xs border-collapse">
+              <table class="w-full text-left text-lg border-collapse">
                 <thead>
                   <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
-                    <th class="py-1 pr-2">Date</th>
-                    <th class="py-1 px-2 text-right">Qty</th>
-                    <th class="py-1 pl-2 text-right">Rate</th>
+                    <th class="py-0.5 pr-1 font-bold">Date</th>
+                    <th class="py-0.5 px-1 text-right font-bold">Qty</th>
+                    <th class="py-0.5 px-1 text-right font-bold">Rate</th>
+                    <th class="py-0.5 pl-1 text-right font-bold">Disc%</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]/30">
                   <tr v-for="(h, i) in selectedItemHistory.slice(0, 5)" :key="i" class="text-[var(--color-text)]">
-                    <td class="py-1.5 pr-2 font-mono">{{ h.posting_date }}</td>
-                    <td class="py-1.5 px-2 text-right font-mono">{{ h.qty }}</td>
-                    <td class="py-1.5 pl-2 text-right font-mono font-bold">{{ h.rate.toFixed(2) }}</td>
+                    <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.posting_date }}</td>
+                    <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
+                    <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
+                    <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount_percentage || 0 }}%</td>
                   </tr>
                 </tbody>
               </table>
