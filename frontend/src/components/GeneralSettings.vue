@@ -331,6 +331,12 @@ async function loadSettings() {
       if (metadata.price_lists) {
         localStorage.setItem('wb-pricelist', JSON.stringify(metadata.price_lists))
       }
+      if (metadata.cost_centers) {
+        localStorage.setItem('wb-cost-centers', JSON.stringify(metadata.cost_centers))
+      }
+      if (metadata.warehouses) {
+        localStorage.setItem('wb-warehouses', JSON.stringify(metadata.warehouses))
+      }
     }
 
     permissionTrigger.value++

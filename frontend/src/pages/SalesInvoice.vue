@@ -194,44 +194,80 @@
       </template>
 
       <template #bottom-middle>
-        <div class="flex flex-col gap-2 p-2">
-          <!-- Price List -->
-          <div class="flex flex-col gap-0.5">
-            <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
-            <select
-              v-model="priceList"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-            >
-              <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
-              <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
-            </select>
-          </div>
+        <div class="flex flex-col gap-2 p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+          <div class="grid grid-cols-2 gap-2">
+            <!-- Price List -->
+            <div class="flex flex-col gap-0.5">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
+              <select
+                v-model="priceList"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+              >
+                <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
+                <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
+              </select>
+            </div>
 
-          <!-- Tax -->
-          <div class="flex flex-col gap-0.5">
-            <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
-            <select
-              v-model="taxTemplate"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-            >
-              <option value="">-- None --</option>
-              <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
-            </select>
+            <!-- Tax -->
+            <div class="flex flex-col gap-0.5">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
+              <select
+                v-model="taxTemplate"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+              >
+                <option value="">-- None --</option>
+                <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
+              </select>
+            </div>
+
+            <!-- Warehouse (Readonly) -->
+            <div class="flex flex-col gap-0.5">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Warehouse</label>
+              <input
+                :value="warehouse"
+                readonly
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-base text-[var(--color-text-muted)] outline-none cursor-not-allowed"
+              />
+            </div>
+
+            <!-- Cost Center -->
+            <div class="flex flex-col gap-0.5">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Cost Center</label>
+              <select
+                v-model="costCenter"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+              >
+                <option v-for="cc in localCostCenters" :key="cc" :value="cc">{{ cc }}</option>
+                <option v-if="!localCostCenters.length" :value="costCenter">{{ costCenter }}</option>
+              </select>
+            </div>
+
+            <!-- Sale Account -->
+            <div class="flex flex-col gap-0.5 col-span-2">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Sale Account</label>
+              <select
+                v-model="saleAccount"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+              >
+                <option v-for="acc in localAccounts" :key="acc" :value="acc">{{ acc }}</option>
+                <option v-if="!localAccounts.length" :value="saleAccount">{{ saleAccount }}</option>
+              </select>
+            </div>
           </div>
 
           <!-- 3 Checkboxes: Inclusive, Pricing Rule, Sale Return -->
-          <div class="flex flex-col gap-1.5 py-1">
-            <label class="flex items-center gap-2">
-              <input type="checkbox" v-model="isInclusiveTax" class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
-              <span class="text-[var(--color-text-muted)] text-lg font-bold uppercase">Inclusive Tax</span>
+          <div class="flex flex-col gap-1 py-1">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="isInclusiveTax" class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
+              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Inclusive Tax</span>
             </label>
             <label class="flex items-center gap-2">
-              <input type="checkbox" checked disabled class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
-              <span class="text-[var(--color-text-muted)] text-lg font-bold uppercase">Ignore Pricing Rule</span>
+              <input type="checkbox" checked disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
+              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Ignore Pricing Rule</span>
             </label>
             <label class="flex items-center gap-2">
-              <input type="checkbox" disabled class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
-              <span class="text-[var(--color-text-muted)] text-lg font-bold uppercase">Sale Return</span>
+              <input type="checkbox" disabled class="h-3 w-3 rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
+              <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Sale Return</span>
             </label>
           </div>
         </div>
@@ -379,9 +415,18 @@ try { localTaxTemplates.value = JSON.parse(localStorage.getItem('wb-sales-tax-te
 
 const priceList = ref(localPriceLists.value[0] || 'Standard Selling')
 const taxTemplate = ref(localTaxTemplates.value[0] || '')
+
+const localWarehouses = ref([])
+try { localWarehouses.value = JSON.parse(localStorage.getItem('wb-warehouses') || '[]') } catch { localWarehouses.value = [] }
+const localCostCenters = ref([])
+try { localCostCenters.value = JSON.parse(localStorage.getItem('wb-cost-centers') || '[]') } catch { localCostCenters.value = [] }
+const localAccounts = ref([])
+try { localAccounts.value = JSON.parse(localStorage.getItem('wb-visible-accounts') || '[]') } catch { localAccounts.value = [] }
+
+const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None')
+const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenters.value[0] || 'None')
+const saleAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
 const isInclusiveTax = ref(true)
-const warehouse = ref(localStorage.getItem('wb-warehouse') || 'None')
-const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
 
 watch(taxTemplate, (val) => {
   if (!val) return

@@ -548,15 +548,19 @@ def get_discount_rules():
 
 @frappe.whitelist()
 def get_sync_metadata():
-    """Fetch Sales/Purchase Tax Templates and Price Lists for synchronization."""
+    """Fetch Sales/Purchase Tax Templates, Price Lists, Cost Centers and Warehouses for synchronization."""
     sales_taxes = frappe.get_all("Sales Taxes and Charges Template", filters={"disabled": 0}, fields=["name"])
     purchase_taxes = frappe.get_all("Purchase Taxes and Charges Template", filters={"disabled": 0}, fields=["name"])
     price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])
+    cost_centers = frappe.get_all("Cost Center", filters={"disabled": 0, "is_group": 0}, fields=["name"])
+    warehouses = frappe.get_all("Warehouse", filters={"disabled": 0, "is_group": 0}, fields=["name"])
 
     return {
         "sales_tax_templates": [t.name for t in sales_taxes],
         "purchase_tax_templates": [t.name for t in purchase_taxes],
         "price_lists": [p.name for p in price_lists],
+        "cost_centers": [c.name for c in cost_centers],
+        "warehouses": [w.name for w in warehouses],
     }
 
 
