@@ -151,12 +151,12 @@ const previewUrl     = ref('')
 const error          = ref('')
 const success        = ref('')
 
-const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v1'
+const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 
 // Returns printer_settings rows for the current user from the billing settings cache
 function getUserPrinterSettings() {
   try {
-    const cached = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_CACHE_KEY) || 'null')
+    const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
     const allRows = cached?.data?.printer_settings || []
     const currentUser = cached?.data?._current_user || ''
     // Filter by current user; fall back to all rows if no user field is set

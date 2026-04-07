@@ -436,8 +436,7 @@ const availableSeries = ref([])
 const userAllowedString = ref('')
 const systemSettings = ref(null)
 
-const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
-const GENERAL_SETTINGS_CACHE_KEY = 'wb-general-settings-v2'
+const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
 // ==================== RECONCILE ====================
@@ -547,8 +546,7 @@ function closeStockLedgerAndReturnToSearch() {
 }
 
 async function syncSettings() {
-  localStorage.removeItem(BILLING_SETTINGS_CACHE_KEY)
-  localStorage.removeItem(GENERAL_SETTINGS_CACHE_KEY)
+  localStorage.removeItem(SETTINGS_CACHE_KEY)
   await fetchSettings(selectedUser.value)
 }
 
@@ -570,7 +568,7 @@ async function fetchSettings(user = null) {
   try {
     // Check cache first
     let settings = null
-    const cached = JSON.parse(localStorage.getItem(BILLING_SETTINGS_CACHE_KEY) || 'null')
+    const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
     const cacheValid = cached &&
       (Date.now() - cached.ts) < BILLING_SETTINGS_TTL &&
       cached.data?._current_user === targetUser
@@ -580,8 +578,7 @@ async function fetchSettings(user = null) {
       settings = await dashboardApi.getBillingSettings(targetUser)
       if (settings) {
         const settingsWithUser = { ...settings, _current_user: targetUser }
-        localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
-        localStorage.setItem(GENERAL_SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
+        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
       }
     }
     
@@ -670,7 +667,17 @@ const filteredUserSeries = computed(() => {
   return all.filter(us => us.user === user)
 })
 
+function cleanupOldKeys() {
+  const keysToRemove = [
+    'wb-general-settings-v1',
+    'wb-general-settings-v2',
+    'wb-billing-settings-v2'
+  ]
+  keysToRemove.forEach(k => localStorage.removeItem(k))
+}
+
 onMounted(async () => {
+  cleanupOldKeys()
   window.addEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))
   window.addEventListener('wb-global-item-search', openItemSearch)
   window.addEventListener('wb-navigate-home', () => router.push('/'))

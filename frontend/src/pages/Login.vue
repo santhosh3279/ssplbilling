@@ -64,7 +64,7 @@ import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
 import { frappeGet } from '../api.js'
 
-const BILLING_SETTINGS_CACHE_KEY = 'wb-billing-settings-v2'
+const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 
 const router = useRouter()
 
@@ -88,11 +88,14 @@ async function handleLogin() {
   try {
     await session.login(email.value.trim(), password.value)
     
+    // Clear old settings keys
+    ;['wb-general-settings-v1', 'wb-general-settings-v2', 'wb-billing-settings-v2'].forEach(k => localStorage.removeItem(k))
+    
     // Pre-load billing settings into localStorage
     try {
       const settings = await dashboardApi.getBillingSettings()
       if (settings) {
-        localStorage.setItem(BILLING_SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
+        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
         if (settings.wb_theme) {
           const t = settings.wb_theme.toLowerCase() === 'dark' ? 'dark' : 'light'
           localStorage.setItem('wb-theme', t)
