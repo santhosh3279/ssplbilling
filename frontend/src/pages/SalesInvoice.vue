@@ -43,41 +43,45 @@
 
       <template #table-extra-rows>
         <!-- Pending row: qty input after item selected -->
-        <tr v-if="pendingItem" class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/10">
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-xl font-mono text-center">+</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ pendingItem.item_code }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl">{{ pendingItem.item_name }}</td>
-          <td class="p-0 border-r border-[var(--color-border)]">
-            <input
-              ref="pendingQtyInput"
-              v-model.number="pendingItem.qty"
-              type="number"
-              min="1"
-              class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter="confirmPendingItem"
-              @keydown.escape="cancelPendingItem"
-            />
-          </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ pendingItem.uom || 'Nos' }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ pendingItem.rate }}</td>
-          <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter qty and press Enter</td>
-        </tr>
+        <template v-if="pendingItem">
+          <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/10">
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-xl font-mono text-center">+</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ pendingItem.item_code }}</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl">{{ pendingItem.item_name }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <input
+                ref="pendingQtyInput"
+                v-model.number="pendingItem.qty"
+                type="number"
+                min="1"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                @keydown.enter.prevent="confirmPendingItem"
+                @keydown.escape="cancelPendingItem"
+              />
+            </td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ pendingItem.rate }}</td>
+            <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter qty and press Enter</td>
+          </tr>
+        </template>
 
         <!-- Barcode input row -->
-        <tr v-else class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5">
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">*</td>
-          <td class="p-0 border-r border-[var(--color-border)]">
-            <input
-              ref="newCodeInput"
-              v-model="newItemCode"
-              class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none placeholder:text-[var(--color-text-muted)]/30"
-              placeholder="Scan or Type Item..."
-              @input="onNewCodeInput"
-              @keydown="handleNewCodeKeydown"
-            />
-          </td>
-          <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
-        </tr>
+        <template v-else>
+          <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5">
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">*</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <input
+                ref="newCodeInput"
+                v-model="newItemCode"
+                class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none placeholder:text-[var(--color-text-muted)]/30"
+                placeholder="Scan or Type Item..."
+                @input="onNewCodeInput"
+                @keydown="handleNewCodeKeydown"
+              />
+            </td>
+            <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
+          </tr>
+        </template>
       </template>
     </Item_Invoice_Template>
 
@@ -251,12 +255,12 @@ function confirmPendingItem() {
     uom: p.uom || 'Nos',
     rate: p.rate || 0,
     discount_percentage: p.discount_percentage || 0,
-    amount: ((p.qty || 1) * (p.rate || 0)).toFixed(2)
+    amount: parseFloat(((p.qty || 1) * (p.rate || 0)).toFixed(2))
   })
   pendingItem.value = null
   newItemCode.value = ''
   quickSearchResults.value = []
-  nextTick(() => { newCodeInput.value?.focus() })
+  nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
 
 function cancelPendingItem() {
