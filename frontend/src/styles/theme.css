@@ -34,18 +34,18 @@
 
 /* ── Dark Theme ── */
 :root.dark {
-  --color-bg:        #091413;   /* page background */
-  --color-highlight: #B0E4CC;   /* primary accent / buttons */
-  --color-lowlight:  #285A48;   /* subtle surfaces / borders */
-  --color-midlight:  #408A71;   /* mid-tone — cards, hover states */
+  --color-bg:        #2d2926;   /* page background */
+  --color-highlight: #6f6e7b;   /* primary accent / buttons */
+  --color-lowlight:  #403f50;   /* subtle surfaces / borders */
+  --color-midlight:  #404040;   /* mid-tone — cards, hover states */
 
   /* Derived semantic aliases */
   --color-surface:        var(--color-lowlight);
   --color-surface-raised: var(--color-midlight);
   --color-border:         var(--color-midlight);
-  --color-text:           #e8f5ef;
-  --color-text-muted:     #8abba8;
-  --color-text-on-highlight: #091413;
+  --color-text:           #f1f1f1;
+  --color-text-muted:     #9da3ae;
+  --color-text-on-highlight: #ffffff;
 
   /* Semantic Colors */
   --color-success: #22c55e;   /* green-500 */
