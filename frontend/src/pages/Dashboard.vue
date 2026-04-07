@@ -258,6 +258,8 @@
           { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 10, rate: 100, amount: 1000 },
           { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 5, rate: 250, amount: 1250 }
         ]"
+        subtotal="2250.00"
+        total-tax="0.00"
         total-amount="2250.00"
         @back="showInvoiceTemplate = false"
         @save="showInvoiceTemplate = false"

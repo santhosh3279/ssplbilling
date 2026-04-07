@@ -104,27 +104,67 @@
           <slot name="bottom-middle"></slot>
         </div>
 
-        <!-- Summary / Right Column -->
-        <div class="flex-1 bg-slate-800/50 p-4 border-l border-slate-700 h-full overflow-y-auto">
-          <slot name="bottom-right">
-            <div class="flex flex-col gap-4">
-              <div class="text-4xl text-slate-500/80">{{ items.length }} items</div>
-              
-              <div class="rounded-xl border border-blue-500/40 bg-blue-950/60 p-4 shadow-2xl">
-                <div class="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-1">Total Amount</div>
-                <div class="flex items-baseline gap-2 text-green-500/70">
-                  <span class="text-[6mm] font-black">₹</span>
-                  <span class="font-mono text-[10.5mm] font-black leading-none">{{ totalAmount }}</span>
-                </div>
-              </div>
+        <!-- Summary / Right Column (Calculation Panel + Actions) -->
+        <table class="flex-1 bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
+          <colgroup>
+            <col style="width:17%"><col style="width:18%"><col style="width:14%"><col style="width:51%">
+          </colgroup>
+          <thead>
+            <tr class="bg-slate-800">
+              <th class="px-2 text-left text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Description</th>
+              <th class="px-2 text-center text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Entry</th>
+              <th class="px-2 text-right text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Amount</th>
+              <th class="px-2 text-center text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <slot name="calculation-rows">
+              <!-- Default Calculation Rows (Props based) -->
+              <tr>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Subtotal</td>
+                <td class="p-0 border-y border-slate-700"></td>
+                <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-700">{{ subtotal }}</td>
+                <td class="border border-slate-700 px-2" rowspan="10">
+                  <slot name="actions">
+                    <div class="flex flex-col gap-2 h-full py-2">
+                      <div class="text-4xl text-slate-500/80">{{ items.length }} items</div>
+                      
+                      <div class="rounded-xl border border-blue-500/40 bg-blue-950/60 p-3.5 shadow-2xl">
+                        <div class="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400/90 mb-1">Total Amount</div>
+                        <div class="flex items-baseline gap-2 text-green-500/70">
+                          <span class="text-[6mm] font-black">₹</span>
+                          <span class="font-mono text-[10.5mm] font-black leading-none">{{ totalAmount }}</span>
+                        </div>
+                      </div>
 
-              <div class="flex gap-2">
-                <button @click="$emit('save')" class="flex-1 rounded py-3 text-xl font-semibold text-white bg-[#285A48] hover:bg-[#1e4538] transition-colors">Save</button>
-                <button @click="$emit('print')" class="flex-1 rounded border border-slate-600 bg-slate-800 py-3 text-xl font-semibold text-slate-300 hover:bg-slate-700 transition-colors">Print</button>
-              </div>
-            </div>
-          </slot>
-        </div>
+                      <!-- Row 1: Save and Print -->
+                      <div class="flex gap-2">
+                        <button @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-white bg-[#285A48] hover:bg-[#1e4538] transition-colors">Save</button>
+                        <button @click="$emit('print')" class="flex-1 rounded border border-slate-600 bg-slate-800 py-2.5 text-center text-xl font-semibold text-slate-300 hover:bg-slate-700 transition-colors">Print</button>
+                      </div>
+
+                      <!-- Row 2: Cancel and Incentive -->
+                      <div class="flex gap-2">
+                        <button @click="$emit('cancel')" class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-2.5 text-center text-xl font-semibold text-red-400 hover:bg-red-900/20 transition-colors">Cancel</button>
+                        <button @click="$emit('incentive')" class="flex-1 rounded border border-indigo-700/50 bg-indigo-900/20 py-2.5 text-center text-xl font-semibold text-indigo-400 hover:bg-indigo-900/40 transition-colors">Incentive</button>
+                      </div>
+                    </div>
+                  </slot>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Tax</td>
+                <td class="p-0 border-y border-slate-700"></td>
+                <td class="px-2 text-right font-mono text-slate-300 text-2xl border border-slate-700">+{{ totalTax }}</td>
+              </tr>
+              <tr v-for="i in 6" :key="i">
+                <td class="px-2 border border-slate-700">&nbsp;</td>
+                <td class="p-0 border border-slate-700"></td>
+                <td class="px-2 border border-slate-700"></td>
+              </tr>
+            </slot>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -156,10 +196,12 @@ const props = defineProps({
       { key: 'amount', label: 'Amount', class: 'w-24', cellClass: 'text-right font-mono' },
     ] 
   },
+  subtotal: { type: [Number, String], default: '0.00' },
+  totalTax: { type: [Number, String], default: '0.00' },
   totalAmount: { type: [Number, String], default: '0.00' }
 })
 
-const emit = defineEmits(['back', 'save', 'print'])
+const emit = defineEmits(['back', 'save', 'print', 'cancel', 'incentive'])
 </script>
 
 <style scoped>
