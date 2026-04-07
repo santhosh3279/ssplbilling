@@ -45,18 +45,28 @@
         <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5">
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">*</td>
           <td class="p-0 border-r border-[var(--color-border)]">
-            <input 
+            <input
               ref="newCodeInput"
               v-model="newItemCode"
               class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none placeholder:text-[var(--color-text-muted)]/30"
               placeholder="Scan or Type Item..."
-              @keydown.enter="handleItemEntry"
+              @input="onNewCodeInput"
+              @keydown="handleNewCodeKeydown"
             />
           </td>
           <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
         </tr>
       </template>
     </Item_Invoice_Template>
+
+    <QuickItemSearch
+      ref="quickSearchRef"
+      :results="quickSearchResults"
+      :price-list="priceList"
+      :anchor-el="quickSearchAnchor"
+      @select="onQuickSearchSelect"
+      @close="quickSearchResults = []"
+    />
 
     <CustomerSearchModal
       v-if="showCustomerModal"
@@ -83,6 +93,8 @@ import { frappeGet } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
+import { searchItemsInCache } from '../services/itemCache.js'
 
 const router = useRouter()
 
@@ -106,6 +118,9 @@ const costCenter = ref(localStorage.getItem('wb-cost-center') || 'None')
 
 const newItemCode = ref('')
 const newCodeInput = ref(null)
+const quickSearchResults = ref([])
+const quickSearchRef = ref(null)
+const quickSearchAnchor = ref(null)
 
 const items = ref([])
 
@@ -148,6 +163,10 @@ function handleIncentive() {
 
 function handleItemEntry() {
   if (!newItemCode.value) return
+  // If quick search is open and has results, let keydown handler pick it
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    return
+  }
   items.value.push({
     item_code: newItemCode.value,
     item_name: 'Newly Added Item',
@@ -157,6 +176,49 @@ function handleItemEntry() {
     amount: 0
   })
   newItemCode.value = ''
+  quickSearchResults.value = []
+}
+
+function onNewCodeInput() {
+  const code = newItemCode.value.trim()
+  if (code.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchAnchor.value = newCodeInput.value
+  } else {
+    quickSearchResults.value = []
+  }
+}
+
+function handleNewCodeKeydown(e) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault()
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      quickSearchResults.value = []
+      return
+    }
+  }
+  if (e.key === 'Enter') {
+    handleItemEntry()
+  }
+}
+
+function onQuickSearchSelect(item) {
+  if (!item) return
+  items.value.push({
+    item_code: item.item_code,
+    item_name: item.item_name,
+    qty: 1,
+    rate: item.price || 0,
+    discount_percentage: 0,
+    amount: item.price || 0
+  })
+  newItemCode.value = ''
+  quickSearchResults.value = []
+  nextTick(() => { newCodeInput.value?.focus() })
 }
 
 function handleCustomerSelected(cust) {
