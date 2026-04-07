@@ -330,6 +330,22 @@ const customerLastInvDate = ref('')
 const customerState = ref('')
 const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
 
+const newItemCode = ref('')
+const newCodeInput = ref(null)
+const quickSearchResults = ref([])
+const quickSearchRef = ref(null)
+const quickSearchAnchor = ref(null)
+const pendingItem = ref(null)
+const pendingQtyInput = ref(null)
+const selectedRowIdx = ref(-1)
+const rowRefs = ref([])
+const editingRowIdx = ref(-1)
+const editingField = ref(null) // 'code' | 'qty' | 'rate' | 'disc'
+const editCodeInput = ref(null)
+const editQtyInput = ref(null)
+const editRateInput = ref(null)
+const editDiscInput = ref(null)
+
 // Watch for item selection/pending to fetch live stock
 watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
   let code = null
