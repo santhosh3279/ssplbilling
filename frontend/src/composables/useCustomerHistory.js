@@ -12,9 +12,11 @@ export function useCustomerHistory() {
   
   const itemStock = ref([])
   const stockLoading = ref(false)
+  const stockCache = new Map()
 
   const itemPrices = ref([])
   const pricesLoading = ref(false)
+  const pricesCache = new Map()
 
   /**
    * Fetch and cache previous sales history for a customer.
@@ -46,16 +48,21 @@ export function useCustomerHistory() {
    * Fetch warehouse-wise stock levels for a specific item.
    */
   async function fetchItemStock(itemCode) {
-    if (!itemCode) {
-      itemStock.value = []
+    if (!itemCode) return
+
+    if (stockCache.has(itemCode)) {
+      itemStock.value = stockCache.get(itemCode)
       return
     }
+
     stockLoading.value = true
     try {
       const data = await frappeGet('ssplbilling.api.stock_api.get_warehouse_stock', {
         item_code: itemCode
       })
-      itemStock.value = data || []
+      const results = data || []
+      stockCache.set(itemCode, results)
+      itemStock.value = results
     } catch (e) {
       console.warn('[customerHistory] Stock fetch failed:', e.message)
       itemStock.value = []
@@ -68,16 +75,21 @@ export function useCustomerHistory() {
    * Fetch available price lists and rates for a specific item.
    */
   async function fetchItemPrices(itemCode) {
-    if (!itemCode) {
-      itemPrices.value = []
+    if (!itemCode) return
+
+    if (pricesCache.has(itemCode)) {
+      itemPrices.value = pricesCache.get(itemCode)
       return
     }
+
     pricesLoading.value = true
     try {
       const res = await frappeGet('ssplbilling.api.pricelist_api.get_item_prices', {
         item_code: itemCode
       })
-      itemPrices.value = res?.prices || []
+      const results = res?.prices || []
+      pricesCache.set(itemCode, results)
+      itemPrices.value = results
     } catch (e) {
       console.warn('[customerHistory] Prices fetch failed:', e.message)
       itemPrices.value = []
@@ -111,6 +123,8 @@ export function useCustomerHistory() {
     stockLoading.value = false
     itemPrices.value = []
     pricesLoading.value = false
+    stockCache.clear()
+    pricesCache.clear()
   }
 
   /**

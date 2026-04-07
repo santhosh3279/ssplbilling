@@ -168,7 +168,7 @@
             </div>
 
             <!-- Warehouse Stock -->
-            <div v-if="itemStock.length" class="border-t border-[var(--color-border)] pt-2">
+            <div v-if="activeItemCode && itemStock.length" class="border-t border-[var(--color-border)] pt-2">
               <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Available Stock:</div>
               <div v-if="stockLoading" class="text-sm text-blue-400 animate-pulse">Updating stock...</div>
               <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
@@ -178,8 +178,9 @@
                 </div>
               </div>
             </div>
+
             <!-- Available Prices -->
-            <div v-if="itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2">
+            <div v-if="activeItemCode && itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2">
               <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Available Prices:</div>
               <div v-if="pricesLoading" class="text-sm text-blue-400 animate-pulse">Updating prices...</div>
               <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
@@ -189,7 +190,7 @@
                 </div>
               </div>
             </div>
-            <div v-else-if="(selectedRowIdx !== -1 || pendingItem) && !historyLoading && !pricesLoading" class="border-t border-[var(--color-border)] pt-2 mt-2 text-sm text-slate-500 italic">
+            <div v-else-if="activeItemCode && !historyLoading && !pricesLoading && !itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2 text-sm text-slate-500 italic">
               No additional price lists available.
             </div>
           </div>
@@ -371,8 +372,6 @@ watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
   if (code) {
     fetchItemStock(code)
     fetchItemPrices(code)
-  } else {
-    clearItemInsights()
   }
 })
 
@@ -431,6 +430,12 @@ const recentInvoices = ref([])
 const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
 
 // Computeds
+const activeItemCode = computed(() => {
+  if (pendingItem.value) return pendingItem.value.item_code
+  if (selectedRowIdx.value !== -1) return items.value[selectedRowIdx.value]?.item_code
+  return null
+})
+
 const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includes('exempt'))
 
 const activeItems = computed(() => items.value.filter(i => !i.deleted))
