@@ -473,6 +473,20 @@ const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includ
 
 const activeItems = computed(() => items.value.filter(i => !i.deleted))
 
+const discountAmt = computed(() => {
+  const p = parseFloat(discountPct.value) || 0
+  const a = parseFloat(discountDirectAmt.value) || 0
+  const grossSubtotal = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
+  if (p > 0) return grossSubtotal * (p / 100)
+  return a
+})
+
+const discountFactor = computed(() => {
+  const grossSubtotal = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
+  if (grossSubtotal <= 0) return 1
+  return (grossSubtotal - discountAmt.value) / grossSubtotal
+})
+
 const selectedItemHistory = computed(() => {
   if (pendingItem.value) return getItemHistoryFromCache(pendingItem.value.item_code)
   if (selectedRowIdx.value === -1) return []
@@ -483,24 +497,28 @@ const selectedItemHistory = computed(() => {
 
 const totalTax = computed(() => {
   if (isExempted.value) return '0.00'
+  const factor = discountFactor.value
   return activeItems.value.reduce((sum, item) => {
     const rate = item.tax_rate || 0
+    const discountedAmt = item.amount * factor
     let tax = 0
     if (isInclusiveTax.value) {
-      tax = item.amount - (item.amount / (1 + rate / 100))
+      tax = discountedAmt - (discountedAmt / (1 + rate / 100))
     } else {
-      tax = item.amount * (rate / 100)
+      tax = discountedAmt * (rate / 100)
     }
     return sum + tax
   }, 0).toFixed(2)
 })
 
 const subtotal = computed(() => {
+  const factor = discountFactor.value
   return activeItems.value.reduce((sum, item) => {
     const rate = item.tax_rate || 0
-    let net = item.amount
+    const discountedAmt = item.amount * factor
+    let net = discountedAmt
     if (isInclusiveTax.value && !isExempted.value) {
-      net = item.amount / (1 + rate / 100)
+      net = discountedAmt / (1 + rate / 100)
     }
     return sum + net
   }, 0).toFixed(2)
@@ -513,8 +531,7 @@ const totalAmount = computed(() => {
     freightAmt.value + 
     packingAmt.value + 
     loadingAmt.value + 
-    otherAmt.value -
-    discountAmt.value
+    otherAmt.value
   ).toFixed(2)
 })
 
