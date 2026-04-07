@@ -617,7 +617,7 @@ function detectPriceChange(item, focusTarget) {
   const cached = lookupItemInCache(item.item_code)
   if (!cached) return false
 
-  const standardRate = applyModifierToRate(parseFloat(cached.price || 0))
+  const standardRate = parseFloat(((cached.price || 0) * combinedFactor(item.item_code)).toFixed(2))
   const currentRate = parseFloat(item.rate || 0)
   const currentDiscount = parseFloat(item.discount || 0)
   
@@ -790,12 +790,17 @@ function applyModifierToRate(baseRate) {
   return parseFloat(((baseRate || 0) * effectiveModifier()).toFixed(2))
 }
 
+function combinedFactor(item_code) {
+  const globalFactor = effectiveModifier()
+  const cpFactor = customerPricing.value[item_code]
+  return cpFactor != null ? globalFactor * cpFactor : globalFactor
+}
+
 watch(ignoreModifier, () => {
-  const factor = effectiveModifier()
   items.value.forEach(item => {
     const base = item._base_rate ?? item.rate
     item._base_rate = base
-    item.rate = parseFloat(((base || 0) * factor).toFixed(2))
+    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
     item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2))
   })
 })
@@ -822,13 +827,8 @@ function setPendingItem(item) {
   const base = item.rate || 0
   item._base_rate = base
   const cpFactor = customerPricing.value[item.item_code]
-  if (cpFactor != null) {
-    item.rate = parseFloat((base * cpFactor).toFixed(2))
-    item._cp_applied = true
-  } else {
-    item.rate = applyModifierToRate(base)
-    item._cp_applied = false
-  }
+  item._cp_applied = cpFactor != null
+  item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
   pendingItem.value = item
   nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
 }
