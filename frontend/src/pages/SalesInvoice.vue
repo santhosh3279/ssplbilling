@@ -614,8 +614,8 @@ function handleIncentive() { alert('Incentive Entry triggered') }
 function detectPriceChange(item, focusTarget) {
   const cached = lookupItemInCache(item.item_code)
   if (!cached) return false
-  
-  const standardRate = parseFloat(cached.price || 0)
+
+  const standardRate = applyModifierToRate(parseFloat(cached.price || 0))
   const currentRate = parseFloat(item.rate || 0)
   const currentDiscount = parseFloat(item.discount || 0)
   
@@ -836,10 +836,7 @@ function confirmPendingItem() {
   }
   items.value.push(newItem)
   pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
-  
-  if (!detectPriceChange(newItem, { type: 'barcode' })) {
-    nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
-  }
+  nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
 
 function cancelPendingItem() { pendingItem.value = null; nextTick(() => { newCodeInput.value?.focus() }) }
