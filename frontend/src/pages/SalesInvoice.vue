@@ -22,6 +22,7 @@
       @print="handlePrint"
       @cancel="handleCancel"
       @incentive="handleIncentive"
+      @party-click="showCustomerModal = true"
     >
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
@@ -35,6 +36,13 @@
         </div>
       </template>
     </Item_Invoice_Template>
+
+    <CustomerSearchModal
+      v-if="showCustomerModal"
+      :show="showCustomerModal"
+      @close="showCustomerModal = false"
+      @selected="handleCustomerSelected"
+    />
 
     <Userseries
       :show="showSeriesModal"
@@ -51,11 +59,13 @@ import { useRouter } from 'vue-router'
 import { frappeGet } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 
 const router = useRouter()
 
 // Page State
 const showSeriesModal = ref(false)
+const showCustomerModal = ref(false)
 const invoiceNo = ref('NEW')
 const customerName = ref('Select Customer...')
 const customerDetails = ref('')
@@ -109,6 +119,12 @@ function handleCancel() {
 
 function handleIncentive() {
   alert('Incentive Entry triggered')
+}
+
+function handleCustomerSelected(cust) {
+  customerName.value = cust.customer_name || cust.name
+  customerDetails.value = cust.mobile || cust.email || ''
+  showCustomerModal.value = false
 }
 
 async function handleSeriesSelected(series) {

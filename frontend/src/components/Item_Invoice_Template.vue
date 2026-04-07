@@ -92,9 +92,12 @@
               <div class="text-xl text-[var(--color-text)] tabular-nums">{{ docNumber }}</div>
             </div>
 
-            <div class="flex-1 flex items-center gap-4 border-l border-[var(--color-border)] pl-6 overflow-hidden">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Party</label>
-              <div class="text-2xl text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
+            <div 
+              class="flex-1 flex items-center gap-4 border-l border-[var(--color-border)] pl-6 overflow-hidden cursor-pointer hover:bg-[var(--color-surface-raised)]/80 transition-colors group"
+              @click="$emit('party-click')"
+            >
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
+              <div class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ partyName || 'Not Selected' }}</div>
               <div v-if="partyDetails" class="flex items-center gap-3 min-w-0">
                 <span class="truncate max-w-[350px] text-lg text-[var(--color-text-muted)] font-normal leading-none">{{ partyDetails }}</span>
               </div>
@@ -395,7 +398,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import',
+  'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import', 'party-click',
   'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
   'toggle-draft-only', 'select-sidebar-item', 'delete-item'
 ])
