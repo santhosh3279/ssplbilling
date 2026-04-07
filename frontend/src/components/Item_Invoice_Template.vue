@@ -103,50 +103,50 @@
         <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;">
           <slot name="bottom-middle">
             <div class="flex flex-col gap-2 p-2">
-              <!-- Export/Import Placeholders -->
+              <!-- Export/Import buttons -->
               <div class="flex gap-1">
-                <div class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-center text-xs font-bold uppercase text-slate-500">Export</div>
-                <div class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-center text-xs font-bold uppercase text-slate-500">Import</div>
+                <button class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400">Export</button>
+                <button class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400">Import</button>
               </div>
 
               <!-- Price List -->
               <div class="flex flex-col gap-0.5">
-                <label class="text-sm font-bold uppercase text-slate-600">Price List</label>
-                <div class="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1 text-base text-slate-200 truncate">{{ priceList }}</div>
+                <label class="text-lg font-bold uppercase text-slate-600">Price List</label>
+                <div class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-xl text-slate-200 truncate">{{ priceList }}</div>
               </div>
 
               <!-- Tax -->
               <div class="flex flex-col gap-0.5">
-                <label class="text-sm font-bold uppercase text-slate-600">Tax Template</label>
-                <div class="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1 text-base text-slate-200 truncate">{{ taxTemplate }}</div>
-                <label class="flex items-center gap-2 mt-1 opacity-50">
-                  <input type="checkbox" :checked="isInclusiveTax" disabled class="h-3 w-3 rounded border-slate-600" />
-                  <span class="text-slate-400 text-[10px] font-bold uppercase">Inclusive Tax</span>
+                <label class="text-lg font-bold uppercase text-slate-600">Tax</label>
+                <div class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-xl text-slate-200 truncate">{{ taxTemplate || '-- None --' }}</div>
+                <label class="flex items-center gap-2 mt-1">
+                  <input type="checkbox" :checked="isInclusiveTax" disabled class="h-4 w-4 rounded border-slate-600 accent-blue-500" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Inclusive Tax</span>
                 </label>
               </div>
 
               <!-- Pricing Rules & Return -->
               <div class="flex flex-col gap-1.5 py-1">
-                <label class="flex items-center gap-2 opacity-50">
-                  <input type="checkbox" :checked="ignoreDiscountRule" disabled class="h-3 w-3 rounded border-slate-600" />
-                  <span class="text-slate-400 text-[10px] font-bold uppercase">Ignore Pricing Rule</span>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" :checked="ignoreDiscountRule" disabled class="h-4 w-4 rounded border-slate-600 accent-amber-500" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Ignore Pricing Rule</span>
                 </label>
-                <label class="flex items-center gap-2 opacity-50">
-                  <input type="checkbox" :checked="isReturn" disabled class="h-3 w-3 rounded border-slate-600" />
-                  <span class="text-slate-400 text-[10px] font-bold uppercase">Return Entry</span>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" :checked="isReturn" disabled class="h-4 w-4 rounded border-slate-600 accent-red-500" />
+                  <span class="text-slate-400 text-lg font-bold uppercase">Sale Return</span>
                 </label>
               </div>
 
               <!-- Warehouse -->
               <div class="flex flex-col gap-0.5">
-                <label class="text-sm font-bold uppercase text-slate-600">Warehouse</label>
-                <div class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-400 truncate">{{ warehouse }}</div>
+                <label class="text-lg font-bold uppercase text-slate-600">Warehouse</label>
+                <div class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-lg text-slate-400 truncate">{{ warehouse || 'None' }}</div>
               </div>
 
               <!-- Cost Center -->
               <div class="flex flex-col gap-0.5">
-                <label class="text-sm font-bold uppercase text-slate-600">Cost Center</label>
-                <div class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-400 truncate">{{ costCenter }}</div>
+                <label class="text-lg font-bold uppercase text-slate-600">Cost Center</label>
+                <div class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-lg text-slate-400 truncate">{{ costCenter || 'None' }}</div>
               </div>
             </div>
           </slot>
@@ -211,9 +211,10 @@
               </tr>
               <!-- Subtotal -->
               <tr class="bg-slate-800/40">
-                <td class="px-2 text-lg text-slate-200/80 border border-slate-700">Subtotal</td>
+                <td class="px-2 text-lg text-slate-200/80 border border-slate-600">Subtotal</td>
                 <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-700">{{ subtotal }}</td>
+                <td class="px-2 text-right font-mono text-slate-100 text-2xl border border-slate-600">{{ subtotal }}</td>
+                <td class="border border-slate-600"></td>
               </tr>
               <!-- Freight -->
               <tr>
@@ -299,8 +300,8 @@ const props = defineProps({
   isInclusiveTax: { type: Boolean, default: false },
   ignoreDiscountRule: { type: Boolean, default: false },
   isReturn: { type: Boolean, default: false },
-  warehouse: { type: String, default: 'None' },
-  costCenter: { type: String, default: 'None' },
+  warehouse: { type: String, default: '' },
+  costCenter: { type: String, default: '' },
 
   // Calculation Panel Props
   itemDiscountTotal: { type: [Number, String], default: '0.00' },
