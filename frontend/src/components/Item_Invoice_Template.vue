@@ -6,23 +6,64 @@
         <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
           <div class="text-xl font-bold uppercase tracking-wider text-slate-500">{{ sidebarTitle }}</div>
         </div>
-        <!-- Placeholder Search -->
-        <div class="p-3 border-b border-slate-700 bg-slate-800/20">
+        
+        <!-- Date Filter -->
+        <div class="flex items-center gap-1 border-b border-slate-700 p-0 bg-slate-900">
+          <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
+          <div class="flex-1 text-center font-bold text-slate-300 text-lg">{{ sidebarDate || 'Select Date' }}</div>
+          <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
+        </div>
+
+        <!-- Search & Series Filters -->
+        <div class="flex flex-col gap-2 border-b border-slate-700 p-3 bg-slate-800/20">
           <input 
             type="text" 
-            placeholder="Search..."
-            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-300 outline-none"
+            :value="sidebarSearch"
+            @input="$emit('update:sidebarSearch', $event.target.value)"
+            placeholder="Search invoice/cust..."
+            class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-[1px] text-2xl text-slate-300 outline-none focus:border-blue-500"
           />
+          <select
+            :value="sidebarSeries"
+            @change="$emit('update:sidebarSeries', $event.target.value)"
+            class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-[1px] text-2xl text-slate-300 outline-none focus:border-blue-500"
+          >
+            <option value="">All Series</option>
+            <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
+          </select>
+          <button
+            @click="$emit('toggle-draft-only')"
+            class="w-full rounded border py-[1px] text-xl font-bold uppercase transition-colors"
+            :class="draftOnly ? 'bg-amber-900/40 border-amber-500 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
+          >
+            {{ draftOnly ? 'Drafts Only' : 'All Bills' }}
+          </button>
         </div>
-        <div class="flex-1 overflow-y-auto p-2">
-          <div class="text-xs text-slate-600 italic px-2 mb-2">Recent Invoices</div>
-          <div v-for="i in 5" :key="i" class="p-2 border-b border-slate-800 hover:bg-slate-800 cursor-pointer rounded transition-colors mb-1">
-            <div class="flex justify-between text-xs font-mono text-blue-400">
-              <span>INV-00{{i}}</span>
-              <span class="text-slate-200">₹{{ i * 1000 }}</span>
+
+        <!-- Bill List -->
+        <div class="flex-1 overflow-y-auto scrollbar-none">
+          <slot name="sidebar-list">
+            <div v-if="sidebarLoading" class="p-4 text-center text-lg text-slate-500">Loading...</div>
+            <div v-else-if="!sidebarItems.length" class="p-4 text-center text-lg text-slate-600 italic">No bills found</div>
+            <div 
+              v-for="(inv, idx) in sidebarItems" 
+              :key="inv.name"
+              @click="$emit('select-sidebar-item', inv)"
+              class="group cursor-pointer border-b border-slate-800 px-2 py-1 transition-colors outline-none hover:bg-slate-800"
+              :class="{ 'bg-blue-900/20 border-l-2 border-l-blue-500': selectedSidebarItemName === inv.name }"
+            >
+              <div class="flex items-center justify-between gap-1">
+                <div class="flex items-center gap-1.5 truncate min-w-0">
+                  <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
+                  <span class="truncate font-mono text-2xl text-blue-400 group-hover:text-blue-300">{{ inv.name }}</span>
+                </div>
+                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums text-slate-200">{{ inv.grand_total }}</span>
+              </div>
+              <div class="truncate text-2xl text-slate-400">
+                {{ inv.customer_name }}
+              </div>
             </div>
-            <div class="text-[10px] text-slate-500 truncate">Sample Customer {{i}}</div>
-          </div>
+          </slot>
         </div>
       </slot>
     </aside>
@@ -294,6 +335,16 @@ const props = defineProps({
     ] 
   },
   
+  // Sidebar Props
+  sidebarDate: { type: String, default: '' },
+  sidebarSearch: { type: String, default: '' },
+  sidebarSeries: { type: String, default: '' },
+  availableSeries: { type: Array, default: () => [] },
+  draftOnly: { type: Boolean, default: false },
+  sidebarLoading: { type: Boolean, default: false },
+  sidebarItems: { type: Array, default: () => [] },
+  selectedSidebarItemName: { type: String, default: '' },
+
   // Settings Panel Props
   priceList: { type: String, default: 'Standard Selling' },
   taxTemplate: { type: String, default: '' },
@@ -320,7 +371,11 @@ const props = defineProps({
   totalAmount: { type: [Number, String], default: '0.00' }
 })
 
-const emit = defineEmits(['back', 'save', 'print', 'cancel', 'incentive'])
+const emit = defineEmits([
+  'back', 'save', 'print', 'cancel', 'incentive',
+  'sidebar-date-change', 'update:sidebarSearch', 'update:sidebarSeries', 
+  'toggle-draft-only', 'select-sidebar-item'
+])
 </script>
 
 <style scoped>

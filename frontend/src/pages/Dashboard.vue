@@ -254,6 +254,16 @@
         party-name="Sample Customer"
         party-details="123 Main Street, Sample City"
         doc-date="06-Apr-2026"
+        sidebar-date="06-04-2026"
+        sidebar-search=""
+        sidebar-series="ALL"
+        :available-series="['ALL', 'RETL', 'WHSL']"
+        :draft-only="true"
+        :sidebar-items="[
+          { name: 'INV-TEMP-001', grand_total: '2250', customer_name: 'Sample Customer', docstatus: 0 },
+          { name: 'INV-TEMP-002', grand_total: '1500', customer_name: 'John Doe', docstatus: 1 }
+        ]"
+        selected-sidebar-item-name="INV-TEMP-001"
         :items="[
           { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 10, rate: 100, amount: 1000 },
           { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 5, rate: 250, amount: 1250 }
