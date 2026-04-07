@@ -38,26 +38,29 @@
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
           tabindex="0"
-          class="border-b border-[var(--color-border)] outline-none cursor-pointer"
-          :class="(selectedRowIdx === index || editingRowIdx === index) ? 'bg-[var(--color-highlight)]/20 ring-inset ring-1 ring-[var(--color-highlight)]/40' : 'hover:bg-[var(--color-surface-raised)]/50'"
+          class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-colors"
+          :class="{
+            'bg-[#B0E4CC] text-black font-bold': selectedRowIdx === index || editingRowIdx === index,
+            'hover:bg-[var(--color-surface-raised)]/50': selectedRowIdx !== index && editingRowIdx !== index
+          }"
           @focus="selectedRowIdx = index"
           @keydown="handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">{{ index + 1 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text-muted)]'">{{ index + 1 }}</td>
 
           <!-- item_code -->
           <td class="p-0 border-r border-[var(--color-border)]">
             <input v-if="editingRowIdx === index && editingField === 'code'"
               ref="editCodeInput"
               v-model="item.item_code"
-              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none"
+              class="w-full bg-white/20 px-2 py-1 text-2xl font-mono text-black outline-none"
               @keydown.enter.prevent="focusEditField('qty', index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-[var(--color-highlight)] text-2xl font-mono">{{ item.item_code }}</span>
+            <span v-else class="block px-2 py-1 text-2xl font-mono" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl font-medium">{{ item.item_name }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-medium" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text)]'">{{ item.item_name }}</td>
 
           <!-- qty -->
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -65,14 +68,14 @@
               ref="editQtyInput"
               v-model.number="item.qty"
               type="number" min="0"
-              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/20 px-2 py-1 text-4xl font-mono text-black outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-[var(--color-text)] text-4xl font-mono text-right tabular-nums">{{ item.qty }}</span>
+            <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ item.uom || 'Nos' }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</td>
 
           <!-- rate -->
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -80,11 +83,11 @@
               ref="editRateInput"
               v-model.number="item.rate"
               type="number" min="0" step="0.01"
-              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/20 px-2 py-1 text-3xl font-mono text-black outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="focusEditField('disc', index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-[var(--color-text)] text-3xl font-mono text-right tabular-nums">{{ item.rate }}</span>
+            <span v-else class="block px-2 py-1 text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
           </td>
 
           <!-- disc % -->
@@ -93,21 +96,22 @@
               ref="editDiscInput"
               v-model.number="item.discount_percentage"
               type="number" min="0" max="100" step="0.5"
-              class="w-full bg-[var(--color-highlight)]/30 px-2 py-1 text-2xl font-mono text-[var(--color-warning)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/20 px-2 py-1 text-2xl font-mono text-black outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="finishRowEdit(index)"
               @keydown.escape="exitEditMode(index)"
             />
-            <span v-else class="block px-2 py-1 text-[var(--color-warning)] text-2xl font-mono text-right">{{ item.discount_percentage || '0' }}</span>
+            <span v-else class="block px-2 py-1 text-2xl font-mono text-right" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-warning)]'">{{ item.discount_percentage || '0' }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)]/80 text-2xl font-mono text-right tabular-nums">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-warning)]/80'">
             {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-2xl font-mono text-right tabular-nums">{{ item.tax_rate ?? 0 }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right tabular-nums">{{ item.amount }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text-muted)]'">{{ item.tax_rate ?? 0 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text)]'">{{ item.amount }}</td>
           <td class="px-2 py-1 text-center">
             <button
-              class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
+              class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
+              :class="selectedRowIdx === index ? 'text-black/60 hover:text-red-700' : 'text-[var(--color-text-muted)]'"
               @click.stop="deleteItem(index)"
             >&times;</button>
           </td>
