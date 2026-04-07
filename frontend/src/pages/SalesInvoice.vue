@@ -262,13 +262,11 @@
             <!-- Income Account -->
             <div class="flex flex-col gap-0.5">
               <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Income Account</label>
-              <select
-                v-model="incomeAccount"
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-              >
-                <option v-for="acc in localAccounts" :key="acc" :value="acc">{{ acc }}</option>
-                <option v-if="!localAccounts.length" :value="incomeAccount">{{ incomeAccount }}</option>
-              </select>
+              <input
+                :value="incomeAccount"
+                readonly
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-base text-[var(--color-text-muted)] outline-none cursor-not-allowed"
+              />
             </div>
           </div>
         </div>
@@ -426,7 +424,7 @@ try { localAccounts.value = JSON.parse(localStorage.getItem('wb-visible-accounts
 
 const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenters.value[0] || 'None')
-const incomeAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
+const incomeAccount = ref(localStorage.getItem('wb-income-account') || 'None')
 const isInclusiveTax = ref(true)
 
 watch(taxTemplate, (val) => {
