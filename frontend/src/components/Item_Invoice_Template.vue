@@ -166,8 +166,8 @@
             <div class="flex flex-col gap-2 p-2">
               <!-- Export/Import buttons -->
               <div class="flex gap-1">
-                <button class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400">Export</button>
-                <button class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400">Import</button>
+                <button @click="$emit('export')" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400 hover:bg-slate-700">Export</button>
+                <button @click="$emit('import')" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-sm font-bold uppercase text-slate-400 hover:bg-slate-700">Import</button>
               </div>
 
               <!-- Price List -->
@@ -180,14 +180,14 @@
               <div class="flex flex-col gap-0.5">
                 <label class="text-lg font-bold uppercase text-slate-600">Tax</label>
                 <div class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-xl text-slate-200 truncate">{{ taxTemplate || '-- None --' }}</div>
-                <label class="flex items-center gap-2 mt-1">
+              </div>
+
+              <!-- 3 Checkboxes: Inclusive, Pricing Rule, Sale Return -->
+              <div class="flex flex-col gap-1.5 py-1">
+                <label class="flex items-center gap-2">
                   <input type="checkbox" :checked="isInclusiveTax" disabled class="h-4 w-4 rounded border-slate-600 accent-blue-500" />
                   <span class="text-slate-400 text-lg font-bold uppercase">Inclusive Tax</span>
                 </label>
-              </div>
-
-              <!-- Pricing Rules & Return -->
-              <div class="flex flex-col gap-1.5 py-1">
                 <label class="flex items-center gap-2">
                   <input type="checkbox" :checked="ignoreDiscountRule" disabled class="h-4 w-4 rounded border-slate-600 accent-amber-500" />
                   <span class="text-slate-400 text-lg font-bold uppercase">Ignore Pricing Rule</span>
@@ -382,7 +382,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  'back', 'save', 'print', 'cancel', 'incentive',
+  'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import',
   'sidebar-date-change', 'update:sidebarSearch', 'update:sidebarSeries', 
   'toggle-draft-only', 'select-sidebar-item'
 ])
