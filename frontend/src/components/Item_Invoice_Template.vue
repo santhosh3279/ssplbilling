@@ -10,7 +10,7 @@
         <!-- Date Filter -->
         <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-0 bg-[var(--color-bg)]">
           <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&larr;</button>
-          <div class="flex-1 text-center font-bold text-[var(--color-text)] text-lg">{{ sidebarDate || 'Select Date' }}</div>
+          <div class="flex-1 text-center font-bold text-[var(--color-text)] text-lg">{{ formatSidebarDate(sidebarDate) }}</div>
           <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&rarr;</button>
         </div>
 
@@ -482,6 +482,14 @@ const emit = defineEmits([
   'update:discountPct', 'update:discountDirectAmt',
   'update:ignoreModifier'
 ])
+
+function formatSidebarDate(dateString) {
+  if (!dateString) return 'Select Date'
+  const d = new Date(dateString)
+  if (isNaN(d)) return dateString
+  // Format as DD-MMM-YYYY
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+}
 </script>
 
 <style scoped>
