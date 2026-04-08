@@ -27,18 +27,19 @@
         </div>
 
         <div class="text-xs text-[var(--color-text-muted)] leading-relaxed">
-          Choose how you want to save this price change. You can save it as a special discount for <span class="text-[var(--color-text)] font-medium">{{ customer }}</span>.
+          Choose how you want to save this price change. You can save it as a special discount for <span class="text-[var(--color-text)] font-medium">{{ customer || supplier || 'this party' }}</span>.
         </div>
       </div>
 
       <div class="flex flex-col gap-2 p-6 pt-0">
-        <button 
-          ref="savePriceYesBtn" 
-          @click="$emit('saveCustomer')" 
-          @keydown="onKeydown" 
-          class="w-full rounded-xl bg-[var(--color-highlight)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 shadow-lg transition-all outline-none focus:ring-2 focus:ring-[var(--color-highlight)]"
+        <button
+          ref="savePriceYesBtn"
+          :disabled="saving"
+          @click="saveForCustomer"
+          @keydown="onKeydown"
+          class="w-full rounded-xl bg-[var(--color-highlight)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 shadow-lg transition-all outline-none focus:ring-2 focus:ring-[var(--color-highlight)] disabled:opacity-50"
         >
-          Save for Customer
+          {{ saving ? 'Saving…' : (customer ? 'Save for Customer' : supplier ? 'Save for Supplier' : 'Save for Party') }}
         </button>
         <button 
           ref="savePriceNoBtn" 
@@ -60,11 +61,13 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+import { frappeGet } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 
 const props = defineProps({
   data: { type: Object, required: true },
   customer: { type: String, default: '' },
+  supplier: { type: String, default: '' },
   priceList: { type: String, default: '' }
 })
 
@@ -74,37 +77,46 @@ useSubwindow()
 
 const savePriceYesBtn = ref(null)
 const savePriceNoBtn = ref(null)
+const saving = ref(false)
 
 onMounted(() => {
-  nextTick(() => {
-    savePriceNoBtn.value?.focus()
-  })
+  nextTick(() => { savePriceNoBtn.value?.focus() })
 })
 
-function onKeydown(e) {
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    // Do nothing as requested: disable the esc button
-    return
+async function saveForCustomer() {
+  if (saving.value) return
+  saving.value = true
+  const { item_code, multiplication_factor } = props.data
+  const party = props.customer || props.supplier
+  try {
+    await frappeGet('ssplbilling.api.customer_pricing_api.save_customer_item_price', {
+      customer: party,
+      item_code,
+      multiplication_factor: multiplication_factor ?? 1
+    })
+    emit('saveCustomer', { item_code, multiplication_factor: multiplication_factor ?? 1 })
+  } catch (e) {
+    console.error('[CustomerPrice] Failed to save:', e)
+    emit('dismiss')
+  } finally {
+    saving.value = false
   }
+}
 
-  if (e.key === 'F4') {
-    e.preventDefault()
-    emit('advanced')
-    return
-  }
+function onKeydown(e) {
+  if (e.key === 'Escape') { e.preventDefault(); return }
+
+  if (e.key === 'F4') { e.preventDefault(); emit('advanced'); return }
 
   const btns = [savePriceYesBtn.value, savePriceNoBtn.value].filter(Boolean)
   const currIdx = btns.indexOf(document.activeElement)
-  
+
   if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
     e.preventDefault()
-    const nextIdx = (currIdx - 1 + btns.length) % btns.length
-    btns[nextIdx]?.focus()
+    btns[(currIdx - 1 + btns.length) % btns.length]?.focus()
   } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
     e.preventDefault()
-    const nextIdx = (currIdx + 1) % btns.length
-    btns[nextIdx]?.focus()
+    btns[(currIdx + 1) % btns.length]?.focus()
   }
 }
 </script>

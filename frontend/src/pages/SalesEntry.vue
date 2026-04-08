@@ -1363,13 +1363,8 @@ function _triggerSavePricePopup(idx, factor) {
 
 async function confirmSavePrice() {
   const { item_code, multiplication_factor, idx } = savePricePopup.value
-  try {
-    await saveCustomerItemPrice(customer.value, item_code, multiplication_factor)
-    customerPricing.value[item_code] = multiplication_factor
-    if (idx != null && items.value[idx]) items.value[idx]._customer_pricing = true
-  } catch (e) {
-    console.error('[CustomerPricing] save failed', e)
-  }
+  customerPricing.value[item_code] = multiplication_factor
+  if (idx != null && items.value[idx]) items.value[idx]._customer_pricing = true
   savePricePopup.value.show = false
   if (idx !== null) goToNextRow(idx)
   else focusNewCode()

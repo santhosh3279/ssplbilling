@@ -1309,13 +1309,8 @@ async function addNewItemAndOpenPricePopup() {
 
 async function confirmSavePrice() {
   const { item_code, multiplication_factor, idx } = savePricePopup.value
-  try {
-    await saveCustomerItemPrice(supplier.value, item_code, multiplication_factor)
-    supplierPricing.value[item_code] = multiplication_factor
-    if (idx != null && items.value[idx]) items.value[idx]._supplier_pricing = true
-  } catch (e) {
-    console.error('[CustomerPricing] save failed', e)
-  }
+  supplierPricing.value[item_code] = multiplication_factor
+  if (idx != null && items.value[idx]) items.value[idx]._supplier_pricing = true
   savePricePopup.value.show = false
   if (idx !== null) goToNextRow(idx)
   else focusNewCode()

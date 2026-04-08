@@ -375,7 +375,7 @@
       :data="priceDetectData"
       :customer="customerName"
       :price-list="priceList"
-      @saveCustomer="saveCustomerPrice"
+      @saveCustomer="onCustomerPriceSaved"
       @updatePricelist="updatePriceList"
       @dismiss="dismissPriceModal"
     />
@@ -669,19 +669,10 @@ function detectPriceChange(item, focusTarget) {
   return false
 }
 
-async function saveCustomerPrice() {
-  if (!priceDetectData.value) return
-  try {
-    await frappeGet('ssplbilling.api.customer_pricing_api.set_customer_pricing', {
-      customer: customerName.value,
-      item_code: priceDetectData.value.item_code,
-      rate: priceDetectData.value.rate
-    })
-    dismissPriceModal()
-  } catch (e) {
-    console.error('Failed to save customer price:', e)
-    dismissPriceModal()
-  }
+function onCustomerPriceSaved({ item_code, multiplication_factor }) {
+  // Update local cache so the blue marker reflects the saved factor immediately
+  customerPricing.value = { ...customerPricing.value, [item_code]: multiplication_factor }
+  dismissPriceModal()
 }
 
 async function updatePriceList() {
