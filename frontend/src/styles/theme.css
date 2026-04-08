@@ -34,7 +34,7 @@
 
 /* ── Dark Theme ── */
 :root.dark {
-  --color-bg:        #1B3C53;   /* page background */
+  --color-bg:        #091413;   /* page background */
   --color-highlight: #6f6e7b;   /* primary accent / buttons */
   --color-lowlight:  #403f50;   /* subtle surfaces / borders */
   --color-midlight:  #404040;   /* mid-tone — cards, hover states */
