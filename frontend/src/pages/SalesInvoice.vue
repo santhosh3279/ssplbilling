@@ -373,9 +373,9 @@
     <CustomerPrice
       v-if="showPriceDetectModal"
       :data="priceDetectData"
-      :customer="customerName"
+      :customer="customerId"
       :price-list="priceList"
-      @saveCustomer="onCustomerPriceSaved"
+      @saved="onCustomerPriceSaved"
       @updatePricelist="updatePriceList"
       @dismiss="dismissPriceModal"
     />
@@ -468,6 +468,7 @@ const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
 const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
 
 const customerName = ref('Select Customer...')
+const customerId = ref('')          // actual Customer doc name (for backend calls)
 const customerDetails = ref('')
 const customerAddress = ref('')
 const customerMobile = ref('')
@@ -645,23 +646,26 @@ function detectPriceChange(item, focusTarget) {
   const cached = lookupItemInCache(item.item_code)
   if (!cached) return false
 
-  const standardRate = parseFloat(((cached.price || 0) * combinedFactor(item.item_code)).toFixed(2))
+  // standard_rate = rate for the currently selected price list — used by CustomerPrice to compute factor
+  const standardRate = getItemRateForPriceList(cached)
   const currentRate = parseFloat(item.rate || 0)
   const currentDiscount = parseFloat(item.discount || 0)
-  
-  // Trigger if rate is different OR if a discount has been applied
-  const rateChanged = Math.abs(standardRate - currentRate) > 0.001
+
+  // effective rate the user intends (discount applied to standard if only discount changed)
+  const effectiveRate = currentDiscount > 0.001
+    ? parseFloat((standardRate * (1 - currentDiscount / 100)).toFixed(2))
+    : currentRate
+
+  const priceListStandard = parseFloat((standardRate * combinedFactor(item.item_code)).toFixed(2))
+  const rateChanged = Math.abs(priceListStandard - currentRate) > 0.001
   const discountChanged = Math.abs(currentDiscount) > 0.001
 
   if (rateChanged || discountChanged) {
-    let factor = 1
-    if (discountChanged) {
-      factor = (1 - currentDiscount / 100)
-    } else if (rateChanged) {
-      factor = standardRate > 0 ? currentRate / standardRate : 1
+    priceDetectData.value = {
+      ...item,
+      standard_rate: standardRate,   // base price list rate → CustomerPrice computes factor from this
+      current_rate: effectiveRate     // what the user actually wants
     }
-    
-    priceDetectData.value = { ...item, multiplication_factor: factor }
     postModalFocusTarget.value = focusTarget
     showPriceDetectModal.value = true
     return true
@@ -669,9 +673,10 @@ function detectPriceChange(item, focusTarget) {
   return false
 }
 
-function onCustomerPriceSaved({ item_code, multiplication_factor }) {
-  // Update local cache so the blue marker reflects the saved factor immediately
-  customerPricing.value = { ...customerPricing.value, [item_code]: multiplication_factor }
+function onCustomerPriceSaved(freshPricing) {
+  if (freshPricing && Object.keys(freshPricing).length) {
+    customerPricing.value = freshPricing
+  }
   dismissPriceModal()
 }
 
@@ -730,11 +735,26 @@ function handleItemEntry() {
 
   const code = newItemCode.value.trim()
   const cached = searchItemsInCache(code)
-  const match = cached.find(i => i.item_code.toLowerCase() === code.toLowerCase()) || cached[0]
-  setPendingItem(match
-    ? { item_code: match.item_code, item_name: match.item_name, qty: 0, rate: getItemRateForPriceList(match, match.uom), uom: match.uom || 'Nos', discount: 0, tax_rate: match.tax_rate || 0, deleted: false }
-    : { item_code: code, item_name: '', qty: 0, rate: 0, uom: 'Nos', discount: 0, tax_rate: 0, deleted: false }
+  
+  // Requirement: Only proceed automatically if there is an EXACT match on code or barcode.
+  // Otherwise, open the detailed search modal.
+  const exactMatch = cached.find(i => 
+    i.item_code.toLowerCase() === code.toLowerCase() || 
+    (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
   )
+
+  if (!exactMatch) {
+    // Unrecognised or partial match — open full item search
+    quickSearchResults.value = [] // Clear quick search to prevent it from stealing keys
+    showItemSearch.value = true
+    return
+  }
+
+  setPendingItem({
+    item_code: exactMatch.item_code, item_name: exactMatch.item_name, qty: 0,
+    rate: getItemRateForPriceList(exactMatch, exactMatch.uom), uom: exactMatch.uom || 'Nos',
+    discount: 0, tax_rate: exactMatch.tax_rate || 0, deleted: false
+  })
 }
 
 function onNewCodeInput() {
@@ -986,6 +1006,7 @@ function cancelPendingItem(skipFocus = false) {
 
 function handleCustomerSelected(cust) {
   customerName.value = cust.label || cust.name
+  customerId.value = cust.name
   customerDetails.value = cust.mobile_no || cust.email || ''
   customerMobile.value = cust.mobile_no || ''
   customerGstin.value = cust.gstin || ''
