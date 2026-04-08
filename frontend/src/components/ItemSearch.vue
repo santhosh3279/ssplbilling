@@ -482,10 +482,10 @@ function handleItemCreated(item) {
 }
 
 function focus() {
-  nextTick(() => {
+  setTimeout(() => {
     searchInput.value?.focus()
     searchInput.value?.select()
-  })
+  }, 0)
 }
 
 function closeSubForm() {
