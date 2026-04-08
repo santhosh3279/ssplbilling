@@ -6,73 +6,73 @@
     @keydown="handleGlobalKeydown"
     tabindex="-1"
   >
-    <div class="flex h-[90vh] w-[95vw] flex-col rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden relative">
+    <div class="flex h-[90vh] w-[95vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden relative">
       <!-- Header -->
-      <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800">
+      <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center justify-between bg-[var(--color-surface-raised)]">
         <div>
-          <div class="text-2xl font-semibold text-slate-200">Detailed Ledger Search</div>
-          <div class="text-lg text-slate-400">Search Customers, Suppliers, and Accounting Ledgers</div>
+          <div class="text-2xl font-semibold text-[var(--color-text)]">Detailed Ledger Search</div>
+          <div class="text-lg text-[var(--color-text-muted)]">Search Customers, Suppliers, and Accounting Ledgers</div>
         </div>
         <div class="flex items-center gap-3">
           <!-- Quick Filter Tabs -->
-          <div class="flex rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-sm mr-4 relative group">
+          <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-sm mr-4 relative group">
             <button
               v-for="t in availableTabs"
               :key="t"
               @click="activeType = t"
               class="px-4 py-1.5 text-sm font-bold transition-all rounded-md"
-              :class="activeType === t ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700'"
+              :class="activeType === t ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
             >
               {{ t }}
             </button>
             <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <kbd class="rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 whitespace-nowrap shadow-sm">Cycle: F7</kbd>
+              <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap shadow-sm">Cycle: F7</kbd>
             </div>
           </div>
 
           <button
             @click="openNewForm"
             v-if="activeType === 'Customer' || activeType === 'Supplier' || activeType === 'Employee'"
-            class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-lg font-semibold text-slate-200 shadow-sm transition-colors hover:bg-slate-600"
+            class="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-lg font-semibold text-[var(--color-text)] shadow-sm transition-colors hover:bg-[var(--color-surface-raised)]"
           >
-            New {{ activeType }} <kbd class="ml-1 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-400">F2</kbd>
+            New {{ activeType }} <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-text-muted)]">F2</kbd>
           </button>
           <button
             @click="openEditForm(results[selectedIdx])"
             v-if="results[selectedIdx] && (results[selectedIdx].type === 'Customer' || results[selectedIdx].type === 'Supplier' || results[selectedIdx].type === 'Employee')"
-            class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-lg font-semibold text-slate-200 shadow-sm transition-colors hover:bg-slate-600"
+            class="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-lg font-semibold text-[var(--color-text)] shadow-sm transition-colors hover:bg-[var(--color-surface-raised)]"
           >
-            Edit Details <kbd class="ml-1 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-400">F3</kbd>
+            Edit Details <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-text-muted)]">F3</kbd>
           </button>
           <button
             @click="preloadLedger"
-            class="flex items-center gap-2 rounded-lg border border-blue-700 bg-blue-900/20 px-4 py-2 text-lg font-semibold text-blue-400 transition-colors"
+            class="flex items-center gap-2 rounded-lg border border-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-2 text-lg font-semibold text-[var(--color-highlight)] transition-colors"
           >
-            🔄 Refresh <kbd class="ml-1 rounded border border-blue-700 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-blue-400">F5</kbd>
+            🔄 Refresh <kbd class="ml-1 rounded border border-[var(--color-highlight)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-highlight)]">F5</kbd>
           </button>
-          <button @click="$emit('close')" class="text-2xl text-slate-500 hover:text-slate-300">✕</button>
+          <button @click="$emit('close')" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
         </div>
       </div>
 
       <!-- Search input -->
-      <div class="border-b border-slate-800 p-4 relative">
+      <div class="border-b border-[var(--color-border)] p-4 relative">
         <input
           ref="searchInput"
           v-model="query"
-          class="w-full rounded border border-slate-600 bg-slate-800 px-4 py-3 text-2xl text-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
           placeholder="Search by Name, Mobile, WhatsApp, GST, City..."
           @keydown.esc.stop="handleEsc"
         />
         <div v-if="loading" class="absolute right-8 top-1/2 -translate-y-1/2">
-          <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+          <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-highlight)] border-t-transparent"></span>
         </div>
       </div>
 
       <!-- Results Table -->
       <div ref="scrollContainer" class="flex-1 overflow-y-auto">
         <table class="w-full text-2xl">
-          <thead class="sticky top-0 bg-slate-800 shadow-sm z-10">
-            <tr class="text-lg font-bold uppercase tracking-wider text-slate-400 border-b border-slate-700">
+          <thead class="sticky top-0 bg-[var(--color-surface-raised)] shadow-sm z-10">
+            <tr class="text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
               <th class="px-5 py-3 text-left w-24">Type</th>
               <th class="px-5 py-3 text-left">Ledger Name</th>
               <th class="px-5 py-3 text-left">Mobile</th>
@@ -80,48 +80,48 @@
               <th class="px-5 py-3 text-right">Balance</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800">
+          <tbody class="divide-y divide-[var(--color-border)]">
             <tr
               v-for="(c, idx) in results"
               :key="c.name"
               class="cursor-pointer transition-colors"
-              :class="selectedIdx === idx ? 'text-black' : 'hover:bg-slate-800/40'"
-              :style="selectedIdx === idx ? { backgroundColor: '#B0E4CC !important' } : {}"
+              :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]' : 'hover:bg-[var(--color-midlight)]/40'"
+              :style="selectedIdx === idx ? { backgroundColor: 'var(--color-selection) !important' } : {}"
               @click="handleSelect(c)"
             >
               <td class="px-5 py-3">
                 <span
                   class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
-                  :class="selectedIdx === idx ? 'bg-black/10 text-black' : {
-                    'bg-blue-900/40 text-blue-400': c.type === 'Customer',
-                    'bg-orange-900/40 text-orange-400': c.type === 'Supplier',
-                    'bg-purple-900/40 text-purple-400': c.type === 'Employee',
-                    'bg-slate-700 text-slate-400': c.type === 'Account'
+                  :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-selection)]' : {
+                    'bg-[var(--color-customer)]/20 text-[var(--color-customer)]': c.type === 'Customer',
+                    'bg-[var(--color-supplier)]/20 text-[var(--color-supplier)]': c.type === 'Supplier',
+                    'bg-[var(--color-employee)]/20 text-[var(--color-employee)]': c.type === 'Employee',
+                    'bg-[var(--color-midlight)] text-[var(--color-text-muted)]': c.type === 'Account'
                   }"
                 >
                   {{ c.type }}
                 </span>
               </td>
               <td class="px-5 py-3">
-                <div class="font-medium" :class="selectedIdx === idx ? 'text-black font-bold' : 'text-slate-200'">{{ c.label }}</div>
+                <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)] font-bold' : 'text-[var(--color-text)]'">{{ c.label }}</div>
               </td>
               <td class="px-5 py-3">
-                <div :class="selectedIdx === idx ? 'text-black' : 'text-slate-300'">{{ c.mobile_no || '--' }}</div>
+                <div :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]' : 'text-[var(--color-text-muted)]'">{{ c.mobile_no || '--' }}</div>
               </td>
               <td class="px-5 py-3">
                 <span
                   v-if="c.group"
                   class="px-2 py-0.5 rounded text-sm font-semibold tracking-tight inline-block"
-                  :class="selectedIdx === idx ? 'bg-black/10 text-black border border-black/20' : getGroupBadgeClass(c)"
+                  :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-selection)] border border-black/20' : getGroupBadgeClass(c)"
                 >
                   {{ c.group }}
                 </span>
-                <span v-else :class="selectedIdx === idx ? 'text-black/60' : 'text-slate-600'">--</span>
+                <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]/60' : 'text-[var(--color-text-muted)]/40'">--</span>
               </td>
               <td class="px-5 py-3 text-right">
                 <span
                   class="font-bold whitespace-nowrap"
-                  :class="selectedIdx === idx ? 'text-black' : ((c.balance || 0) > 0 ? 'text-green-400' : (c.balance || 0) < 0 ? 'text-red-400' : 'text-slate-500')"
+                  :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]' : ((c.balance || 0) > 0 ? 'text-[var(--color-success)]' : (c.balance || 0) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
                 >
                   {{ Math.abs(c.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   <span class="text-xs font-normal uppercase ml-0.5">
@@ -131,7 +131,7 @@
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
-              <td colspan="5" class="px-5 py-12 text-center text-slate-500 text-xl italic">
+              <td colspan="5" class="px-5 py-12 text-center text-[var(--color-text-muted)] text-xl italic">
                 <span v-if="query">No ledgers found matching "{{ query }}"</span>
                 <span v-else>No {{ activeType === 'All' ? '' : activeType }} ledgers found.</span>
               </td>
@@ -141,33 +141,33 @@
       </div>
 
       <!-- Detail Panel -->
-      <div v-if="results[selectedIdx]" class="border-t border-slate-700 bg-slate-800 px-8 py-6">
+      <div v-if="results[selectedIdx]" class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-8 py-6">
         <div class="flex items-start gap-4">
           <div class="flex flex-col shrink-0" style="width: 10%">
-            <span class="text-sm font-bold uppercase text-slate-500 truncate">Last Inv</span>
-            <span class="text-xl font-semibold text-slate-200 truncate">
+            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">Last Inv</span>
+            <span class="text-xl font-semibold text-[var(--color-text)] truncate">
               {{ results[selectedIdx].last_invoice_date
                   ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: '2-digit' })
                   : 'None' }}
             </span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 10%">
-            <span class="text-sm font-bold uppercase text-slate-500 truncate">WhatsApp</span>
-            <span class="text-2xl font-semibold text-slate-200 truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
+            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">WhatsApp</span>
+            <span class="text-2xl font-semibold text-[var(--color-text)] truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 20%">
-            <span class="text-sm font-bold uppercase text-slate-500 truncate">Email</span>
-            <span class="text-xl font-semibold text-slate-200 truncate">{{ results[selectedIdx].email || '--' }}</span>
+            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">Email</span>
+            <span class="text-xl font-semibold text-[var(--color-text)] truncate">{{ results[selectedIdx].email || '--' }}</span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 45%">
-            <span class="text-sm font-bold uppercase text-slate-500 truncate">Address</span>
-            <span class="text-xl text-slate-200 line-clamp-2 leading-tight">
+            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">Address</span>
+            <span class="text-xl text-[var(--color-text)] line-clamp-2 leading-tight">
               {{ getAddressFormatted(results[selectedIdx]) }}
             </span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 15%">
-            <span class="text-sm font-bold uppercase text-slate-500 truncate">GSTIN</span>
-            <span class="text-2xl font-semibold text-slate-200 font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
+            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">GSTIN</span>
+            <span class="text-2xl font-semibold text-[var(--color-text)] font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
           </div>
         </div>
       </div>
@@ -522,22 +522,22 @@ function getGroupBadgeClass(c) {
 
   // 1. Specific Group Name Overrides
   if (group.includes('wholesale')) {
-    return 'bg-blue-900/30 text-blue-300 border border-blue-700/50'
+    return 'bg-[var(--color-customer)]/20 text-[var(--color-customer)] border border-[var(--color-customer)]/50'
   }
   if (group.includes('retail')) {
-    return 'bg-green-900/30 text-green-300 border border-green-700/50'
+    return 'bg-[var(--color-success)]/20 text-[var(--color-success)] border border-[var(--color-success)]/50'
   }
   if (group.includes('gst')) {
-    return 'bg-red-900/30 text-red-300 border border-red-700/50'
+    return 'bg-[var(--color-danger)]/20 text-[var(--color-danger)] border border-[var(--color-danger)]/50'
   }
   if (group === 'all customer groups') {
-    return 'bg-slate-800 text-slate-400 border border-slate-700'
+    return 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]'
   }
 
   // 2. Default Type-based Fallbacks
-  if (type === 'Customer') return 'bg-blue-900/20 text-blue-300 border border-blue-800/50'
-  if (type === 'Supplier') return 'bg-orange-900/20 text-orange-300 border border-orange-800/50'
-  if (type === 'Employee') return 'bg-purple-900/20 text-purple-300 border border-purple-800/50'
-  return 'bg-slate-800 text-slate-400 border border-slate-700'
+  if (type === 'Customer') return 'bg-[var(--color-customer)]/20 text-[var(--color-customer)] border border-[var(--color-customer)]/50'
+  if (type === 'Supplier') return 'bg-[var(--color-supplier)]/20 text-[var(--color-supplier)] border border-[var(--color-supplier)]/50'
+  if (type === 'Employee') return 'bg-[var(--color-employee)]/20 text-[var(--color-employee)] border border-[var(--color-employee)]/50'
+  return 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]'
 }
 </script>

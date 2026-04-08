@@ -30,6 +30,16 @@
   --color-success: #16a34a;   /* green-600 */
   --color-danger:  #dc2626;   /* red-600 */
   --color-warning: #d97706;   /* amber-600 */
+  --color-info:    #3b82f6;   /* blue-500 */
+
+  /* Entity Colors */
+  --color-customer: #3b82f6;  /* blue-500 */
+  --color-supplier: #f97316;  /* orange-500 */
+  --color-employee: #a855f7;  /* purple-500 */
+
+  /* Selection / Active items */
+  --color-selection: #B0E4CC;
+  --color-text-on-selection: #000000;
 }
 
 /* ── Dark Theme ── */
@@ -51,4 +61,14 @@
   --color-success: #22c55e;   /* green-500 */
   --color-danger:  #ef4444;   /* red-500 */
   --color-warning: #f59e0b;   /* amber-500 */
+  --color-info:    #60a5fa;   /* blue-400 */
+
+  /* Entity Colors */
+  --color-customer: #60a5fa;  /* blue-400 */
+  --color-supplier: #fb923c;  /* orange-400 */
+  --color-employee: #c084fc;  /* purple-400 */
+
+  /* Selection / Active items */
+  --color-selection: #1e3a2f;
+  --color-text-on-selection: #ffffff;
 }
