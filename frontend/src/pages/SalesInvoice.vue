@@ -385,6 +385,12 @@
       :invoice-name="invoiceNo"
       @close="showPrintModal = false"
     />
+
+    <JumpToRowModal
+      v-model:show="showJumpModal"
+      :max-rows="items.length"
+      @jump="handleJump"
+    />
   </div>
 </template>
 
@@ -399,6 +405,7 @@ import QuickItemSearch from '../components/QuickItemSearch.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
+import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -460,6 +467,7 @@ const showPrintModal = ref(false)
 const showItemSearch = ref(false)
 const lastEnterTime = ref(0)
 const showPriceDetectModal = ref(false)
+const showJumpModal = ref(false)
 const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
@@ -641,6 +649,12 @@ function handleCancel() {
 }
 
 function handleIncentive() { alert('Incentive Entry triggered') }
+
+function handleJump(targetNo) {
+  if (items.value.length === 0) return
+  let idx = Math.max(0, Math.min(targetNo - 1, items.value.length - 1))
+  focusRow(idx)
+}
 
 function detectPriceChange(item, focusTarget) {
   const cached = lookupItemInCache(item.item_code)
