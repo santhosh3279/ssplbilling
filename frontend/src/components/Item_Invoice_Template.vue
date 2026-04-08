@@ -130,7 +130,7 @@
               </div>
             </div>
 
-            <div v-if="partyModifier !== null" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
+            <div v-if="partyModifier !== null && Number(partyModifier) !== 0" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
               <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Multiplier</span>
               <span class="text-xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">× {{ partyModifier }}</span>
               <input
