@@ -858,7 +858,8 @@ function recalcAmount(idx) {
 }
 
 function effectiveModifier() {
-  return (!ignoreModifier.value && customerModifier.value != null) ? customerModifier.value : 1
+  const mod = (!ignoreModifier.value && customerModifier.value != null) ? customerModifier.value : 1
+  return mod === 0 ? 1 : mod
 }
 
 function applyModifierToRate(baseRate) {
@@ -867,8 +868,11 @@ function applyModifierToRate(baseRate) {
 
 function combinedFactor(item_code) {
   const globalFactor = effectiveModifier()
-  const cpFactor = customerPricing.value[item_code]
-  return cpFactor != null ? globalFactor * cpFactor : globalFactor
+  let cpFactor = customerPricing.value[item_code]
+  if (cpFactor === 0) cpFactor = 1
+  
+  const factor = cpFactor != null ? globalFactor * cpFactor : globalFactor
+  return factor === 0 ? 1 : factor
 }
 
 // Get price for the currently selected price list from the cache
