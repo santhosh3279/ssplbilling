@@ -10,7 +10,7 @@
         <!-- Date Filter -->
         <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-0 bg-[var(--color-bg)]">
           <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&larr;</button>
-          <div class="flex-1 text-center font-bold text-[var(--color-text)] text-lg">{{ formatSidebarDate(sidebarDate) }}</div>
+          <div class="flex-1 text-center font-bold text-[var(--color-text)] text-lg">{{ formatDate(sidebarDate) }}</div>
           <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&rarr;</button>
         </div>
 
@@ -144,7 +144,11 @@
 
             <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
               <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Date</label>
-              <div class="text-xl text-[var(--color-text)] tabular-nums">{{ docDate }}</div>
+              <div class="flex items-center gap-1">
+                <button @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                <div class="text-xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
+                <button @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+              </div>
             </div>
           </slot>
         </div>
@@ -476,14 +480,14 @@ const props = defineProps({
 
 const emit = defineEmits([
   'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import', 'party-click',
-  'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
+  'doc-date-change', 'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
   'toggle-draft-only', 'select-sidebar-item', 'delete-item',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
   'update:ignoreModifier'
 ])
 
-function formatSidebarDate(dateString) {
+function formatDate(dateString) {
   if (!dateString) return 'Select Date'
   const d = new Date(dateString)
   if (isNaN(d)) return dateString

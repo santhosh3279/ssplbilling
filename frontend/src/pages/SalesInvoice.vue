@@ -31,6 +31,7 @@
       :draft-only="draftOnly"
       :sidebar-loading="sidebarLoading"
       @sidebar-date-change="handleSidebarDateChange"
+      @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
       @update:sidebarSeries="sidebarSeries = $event"
       @toggle-draft-only="draftOnly = !draftOnly"
@@ -481,12 +482,18 @@ const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
 const invoiceNo = ref('NEW')
-const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
+const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
 const sidebarSeries = ref('')
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
+
+function handleDocDateChange(days) {
+  const d = new Date(invoiceDate.value)
+  d.setDate(d.getDate() + days)
+  invoiceDate.value = d.toISOString().split('T')[0]
+}
 
 async function fetchRecentInvoices() {
   sidebarLoading.value = true
