@@ -700,7 +700,9 @@ async function handleSave() {
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
-      rate: i.rate
+      rate: i.rate,
+      price_list_rate: i.price_list_rate !== undefined ? i.price_list_rate : i.rate,
+      is_free_item: i.rate === 0 ? 1 : 0
     }))
   }
 

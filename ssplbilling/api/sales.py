@@ -72,17 +72,25 @@ def post_sales_invoice(payload):
     income_account = payload.get("income_account")
     
     for item in payload.get("items", []):
+        rate = frappe.utils.flt(item.get("rate"))
+        price_list_rate = frappe.utils.flt(item.get("price_list_rate", rate))
+        
         item_row = {
             "item_code": item.get("item_code"),
             "qty": item.get("qty"),
-            "rate": item.get("rate"),
+            "rate": rate,
+            "price_list_rate": price_list_rate,
             "warehouse": warehouse,
             "income_account": income_account,
             "cost_center": cost_center
         }
-        # In case we pass price list rate
-        if item.get("price_list_rate"):
-            item_row["price_list_rate"] = item.get("price_list_rate")
+        
+        if rate == 0:
+            item_row["is_free_item"] = 1
+            
+        if frappe.get_meta("Sales Invoice Item").has_field("allow_zero_valuation_rate"):
+            item_row["allow_zero_valuation_rate"] = 1
+            
         doc.append("items", item_row)
         
     # Auto populate taxes
