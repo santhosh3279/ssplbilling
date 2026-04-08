@@ -407,7 +407,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { frappeGet } from '../api'
+import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
@@ -482,6 +482,7 @@ const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
 const invoiceNo = ref('NEW')
+const selectedSeries = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
@@ -677,11 +678,44 @@ function formatDateShort(dateStr) {
   return `${day}-${month}-${year}`
 }
 
-function handleSave() {
+async function handleSave() {
   const active = items.value.filter(i => !i.deleted)
   if (!active.length) { alert('No items to save'); return }
-  alert('Template Save triggered for ' + active.length + ' items')
-  clearHistory()
+  
+  if (!customerId.value) { alert('Please select a customer first.'); return; }
+  if (!selectedSeries.value) { alert('Please select a series first.'); return; }
+
+  const payload = {
+    series: selectedSeries.value,
+    customer: customerId.value,
+    posting_date: invoiceDate.value,
+    price_list: priceList.value,
+    discount_pct: discountPct.value,
+    discount_amt: discountDirectAmt.value,
+    tax_template: taxTemplate.value,
+    cost_center: costCenter.value,
+    warehouse: warehouse.value,
+    income_account: incomeAccount.value,
+    is_inclusive_tax: isInclusiveTax.value ? 1 : 0,
+    items: active.map(i => ({
+      item_code: i.item_code,
+      qty: i.qty,
+      rate: i.rate
+    }))
+  }
+
+  try {
+    const res = await frappePost('ssplbilling.api.sales.post_sales_invoice', { payload: JSON.stringify(payload) })
+    if (res.status === 'success') {
+      alert('Invoice ' + res.name + ' saved successfully!')
+      invoiceNo.value = res.name
+      fetchRecentInvoices()
+      clearHistory()
+    }
+  } catch (error) {
+    console.error('Error saving invoice:', error)
+    alert('Failed to save invoice.')
+  }
 }
 
 function handlePrint() { 
@@ -1099,6 +1133,7 @@ function handleCustomerSelected(cust) {
 
 async function handleSeriesSelected(series) {
   try {
+    selectedSeries.value = series
     const res = await frappeGet('ssplbilling.api.sales_invoice_api.get_series_defaults', { naming_series: series })
     invoiceNo.value = res.invoice_no; priceList.value = res.price_list; taxTemplate.value = res.tax_template
     if (res.warehouse) warehouse.value = res.warehouse
