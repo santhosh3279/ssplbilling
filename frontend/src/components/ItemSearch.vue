@@ -3,7 +3,6 @@
     v-if="show"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
     @click.self="$emit('close')"
-    @keydown="handleGlobalKeydown"
     tabindex="-1"
   >
     <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden relative">
@@ -222,7 +221,65 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'select'])
 
-useSubwindowWatcher(computed(() => props.show))
+useSubwindowWatcher(computed(() => props.show), {
+  ArrowDown: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    selectedIdx.value = Math.min(selectedIdx.value + 1, results.value.length - 1)
+  },
+  ArrowUp: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
+  },
+  'CTRL+E': (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    isDecrypted.value = !isDecrypted.value
+  },
+  Enter: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    const item = results.value[selectedIdx.value]
+    if (item) {
+      e.preventDefault()
+      if (props.skipDateFilter) {
+        emit('select', item)
+      } else {
+        showDateModal.value = true
+      }
+    }
+  },
+  F5: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    preloadItems(true)
+  },
+  F2: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    showCreationModal.value = true
+  },
+  F3: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    openEditModal()
+  },
+  F4: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
+  },
+  Home: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    focus()
+  },
+  Escape: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    emit('close')
+  }
+})
 
 const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, lastParams } = useItemCache()
 const { hasHistory } = useCustomerHistory()
@@ -407,46 +464,6 @@ function handleItemUpdated() {
   focus()
 }
 
-function handleGlobalKeydown(e) {
-  if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
-
-  if (e.key === 'ArrowDown') {
-    e.preventDefault()
-    selectedIdx.value = Math.min(selectedIdx.value + 1, results.value.length - 1)
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault()
-    selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
-  } else if (e.ctrlKey && e.key.toLowerCase() === 'e') {
-    e.preventDefault()
-    isDecrypted.value = !isDecrypted.value
-  } else if (e.key === 'Enter') {
-    const item = results.value[selectedIdx.value]
-    if (item) {
-      e.preventDefault()
-      if (props.skipDateFilter) {
-        emit('select', item)
-      } else {
-        showDateModal.value = true
-      }
-    }
-  } else if (e.key === 'F5') {
-    e.preventDefault()
-    preloadItems(true)
-  } else if (e.key === 'F2') {
-    e.preventDefault()
-    showCreationModal.value = true
-  } else if (e.key === 'F3') {
-    e.preventDefault()
-    openEditModal()
-  } else if (e.key === 'F4') {
-    e.preventDefault()
-    if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
-  } else if (e.key === 'Home') {
-    e.preventDefault()
-    focus()
-  }
-}
-
 function handleDateConfirm(dates) {
   const item = results.value[selectedIdx.value]
   if (item) {
@@ -509,8 +526,9 @@ watch(() => props.show, async (newVal) => {
     query.value = ''
     isDecrypted.value = false
     loadCipherMap()
+    focus() // Focus immediately
     await preloadItems()
-    focus()
+    focus() // Refocus after items load if needed
     if (props.initialQuery) {
       const idx = results.value.findIndex(i => i.item_code === props.initialQuery)
       if (idx >= 0) {
