@@ -401,6 +401,19 @@
       :max-rows="items.length"
       @jump="handleJump"
     />
+
+    <ShortcutPage
+      :show="showShortcutPage"
+      extra-title="Sales Invoice"
+      :extra="[
+        { key: 'F4', desc: 'Select series' },
+        { key: 'F5', desc: 'Print invoice' },
+        { key: 'F6', desc: 'Select customer' },
+        { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
+        { key: 'Delete', desc: 'Delete selected row' },
+      ]"
+      @close="showShortcutPage = false"
+    />
   </div>
 </template>
 
@@ -420,6 +433,9 @@ import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
+import { useShortcuts } from '../services/shortcutManager'
+import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
+import ShortcutPage from '../components/ShortcutPage.vue'
 
 const router = useRouter()
 
@@ -473,6 +489,7 @@ const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, 
 // --- Page & UI State ---
 const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
+const showShortcutPage = ref(false)
 const showPrintModal = ref(false)
 const showItemSearch = ref(false)
 const lastEnterTime = ref(0)
@@ -567,11 +584,28 @@ const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includ
 
 const activeItems = computed(() => items.value.filter(i => !i.deleted))
 
+// Tax computed on undiscounted items (factor = 1) — used to derive base total for discount %
+const taxOnGross = computed(() => {
+  if (isExempted.value) return 0
+  return activeItems.value.reduce((sum, item) => {
+    const rate = item.tax_rate || 0
+    if (isInclusiveTax.value) {
+      return sum + (item.amount - item.amount / (1 + rate / 100))
+    } else {
+      return sum + (item.amount * (rate / 100))
+    }
+  }, 0)
+})
+
 const discountAmt = computed(() => {
   const p = parseFloat(discountPct.value) || 0
   const a = parseFloat(discountDirectAmt.value) || 0
   const grossSubtotal = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
-  if (p > 0) return grossSubtotal * (p / 100)
+  if (p > 0) {
+    const additionalChargesTotal = freightAmt.value + packingAmt.value + loadingAmt.value + otherAmt.value
+    const undiscountedTotal = grossSubtotal + taxOnGross.value + additionalChargesTotal
+    return undiscountedTotal * (p / 100)
+  }
   return a
 })
 
@@ -685,6 +719,28 @@ async function handleSave() {
   if (!customerId.value) { alert('Please select a customer first.'); return; }
   if (!selectedSeries.value) { alert('Please select a series first.'); return; }
 
+  const additionalCharges = []
+  const freight = parseFloat(freightEntry.value) || 0
+  const loading = parseFloat(loadingEntry.value) || 0
+  const packing = parseFloat(packingEntry.value) || 0
+  const other = parseFloat(otherEntry.value) || 0
+  if (freight !== 0) {
+    const acct = localStorage.getItem('wb_freight')
+    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: freight, description: 'Freight' })
+  }
+  if (loading !== 0) {
+    const acct = localStorage.getItem('wb-loading')
+    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: loading, description: 'Loading' })
+  }
+  if (packing !== 0) {
+    const acct = localStorage.getItem('wb-packing')
+    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: packing, description: 'Packing' })
+  }
+  if (other !== 0) {
+    const acct = localStorage.getItem('wb-other-charges')
+    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: other, description: 'Other Charges' })
+  }
+
   const payload = {
     series: selectedSeries.value,
     customer: customerId.value,
@@ -697,6 +753,7 @@ async function handleSave() {
     warehouse: warehouse.value,
     income_account: incomeAccount.value,
     is_inclusive_tax: isInclusiveTax.value ? 1 : 0,
+    additional_charges: additionalCharges,
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
@@ -710,9 +767,33 @@ async function handleSave() {
     const res = await frappePost('ssplbilling.api.sales.post_sales_invoice', { payload: JSON.stringify(payload) })
     if (res.status === 'success') {
       alert('Invoice ' + res.name + ' saved successfully!')
-      invoiceNo.value = res.name
       fetchRecentInvoices()
+
+      // Clear bill for next entry (keep customer)
+      items.value = []
+      pendingItem.value = null
+      newItemCode.value = ''
+      quickSearchResults.value = []
+      selectedRowIdx.value = -1
+      editingRowIdx.value = -1
+      editingField.value = null
+      discountPct.value = ''
+      discountDirectAmt.value = ''
+      freightEntry.value = ''
+      loadingEntry.value = ''
+      packingEntry.value = ''
+      otherEntry.value = ''
       clearHistory()
+
+      // Fetch next invoice number for the same series
+      try {
+        const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
+        invoiceNo.value = next.invoice_no || 'NEW'
+      } catch {
+        invoiceNo.value = 'NEW'
+      }
+
+      nextTick(() => { newCodeInput.value?.focus() })
     }
   } catch (error) {
     console.error('Error saving invoice:', error)
@@ -1136,13 +1217,27 @@ function handleCustomerSelected(cust) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.sales_invoice_api.get_series_defaults', { naming_series: series })
+    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series })
     invoiceNo.value = res.invoice_no; priceList.value = res.price_list; taxTemplate.value = res.tax_template
     if (res.warehouse) warehouse.value = res.warehouse
     if (res.cost_center) costCenter.value = res.cost_center
     showSeriesModal.value = false; showCustomerModal.value = true
   } catch (e) { console.error('[SalesInvoice] Failed to fetch series defaults:', e) }
 }
+
+useShortcuts(salesInvoiceShortcuts({
+  openShortcuts:  () => { showShortcutPage.value = !showShortcutPage.value },
+  openSeries:     () => { showSeriesModal.value = true },
+  print:          () => handlePrint(),
+  selectCustomer: () => { showCustomerModal.value = true },
+  save:           () => handleSave(),
+  cancel:         () => handleCancel(),
+  deleteRow:      () => {
+    if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
+      deleteItem(selectedRowIdx.value)
+    }
+  },
+}))
 
 onMounted(() => {
   fetchRecentInvoices()

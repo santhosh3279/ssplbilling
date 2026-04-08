@@ -97,7 +97,20 @@ def post_sales_invoice(payload):
     doc.set_missing_values()
     if doc.taxes_and_charges:
         doc.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", doc.taxes_and_charges) or [])
-    
+
+    # Additional charges (freight, loading, packing, other)
+    for charge in payload.get("additional_charges", []):
+        amt = frappe.utils.flt(charge.get("tax_amount"))
+        if amt == 0:
+            continue
+        doc.append("taxes", {
+            "charge_type": charge.get("charge_type", "Actual"),
+            "account_head": charge.get("account_head"),
+            "tax_amount": amt,
+            "description": charge.get("description", ""),
+            "cost_center": cost_center or None,
+        })
+
     # Inclusive tax and cost center logic for GST
     is_inclusive = frappe.utils.cint(payload.get("is_inclusive_tax"))
     if cost_center or is_inclusive == 1:
