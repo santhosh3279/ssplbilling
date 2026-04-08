@@ -1,6 +1,7 @@
 import frappe
 import json
 import re
+from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 
 @frappe.whitelist()
 def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=None, draft_only=False):
@@ -86,13 +87,15 @@ def post_sales_invoice(payload):
     # Auto populate taxes
     doc.set_missing_values()
     if doc.taxes_and_charges:
-        doc.append_taxes_from_master()
+        doc.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", doc.taxes_and_charges) or [])
     
-    # Inclusive tax logic for GST
+    # Inclusive tax and cost center logic for GST
     is_inclusive = frappe.utils.cint(payload.get("is_inclusive_tax"))
-    if is_inclusive == 1:
+    if cost_center or is_inclusive == 1:
         for tax in doc.get("taxes", []):
-            if tax.account_head and "GST" in tax.account_head.upper():
+            if cost_center and not tax.cost_center:
+                tax.cost_center = cost_center
+            if is_inclusive == 1 and tax.account_head and "GST" in tax.account_head.upper():
                 tax.included_in_print_rate = 1
 
     doc.calculate_taxes_and_totals()
