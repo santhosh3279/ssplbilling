@@ -53,6 +53,7 @@ def post_sales_invoice(payload):
     doc.set_posting_time = 1
     doc.posting_date = payload.get("posting_date")
     doc.selling_price_list = payload.get("price_list")
+    doc.cost_center = payload.get("cost_center")
     doc.ignore_pricing_rule = 1
     
     # Discount logic
