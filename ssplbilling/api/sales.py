@@ -85,7 +85,7 @@ def post_sales_invoice(payload):
             "cost_center": cost_center
         }
         
-        if rate == 0:
+        if frappe.utils.cint(item.get("is_free_item")) == 1:
             item_row["is_free_item"] = 1
             
         if frappe.get_meta("Sales Invoice Item").has_field("allow_zero_valuation_rate"):
