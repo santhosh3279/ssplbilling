@@ -144,6 +144,16 @@ Both commits are required for every task — the before-commit captures the base
 
 Use conventional commit types: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`.
 
+## Response Format
+
+When summarising changes at the end of a task, include a line-count table for every affected file:
+
+| File | Before | After |
+|------|--------|-------|
+| `path/to/file.vue` | 210 | 245 |
+
+Use `wc -l` (or count from the Read tool output) to get accurate numbers.
+
 ## Key Conventions
 
 - **Python style**: ruff, `line-length = 110`, tab indentation, `target-version = "py314"`, double-quote strings.
