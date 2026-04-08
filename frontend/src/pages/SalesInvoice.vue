@@ -26,6 +26,15 @@
       :income-account="incomeAccount"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentInvoices"
+      :sidebar-search="sidebarSearch"
+      :sidebar-series="sidebarSeries"
+      :draft-only="draftOnly"
+      :sidebar-loading="sidebarLoading"
+      @sidebar-date-change="handleSidebarDateChange"
+      @update:sidebarSearch="sidebarSearch = $event"
+      @update:sidebarSeries="sidebarSeries = $event"
+      @toggle-draft-only="draftOnly = !draftOnly"
+      @select-sidebar-item="handleSelectSidebarItem"
       v-model:freight-entry="freightEntry"
       :freight-amt="freightAmt"
       v-model:packing-entry="packingEntry"
@@ -473,7 +482,42 @@ const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: numbe
 
 const invoiceNo = ref('NEW')
 const invoiceDate = ref(new Date().toLocaleDateString('en-IN'))
-const sidebarDate = ref(new Date().toLocaleDateString('en-IN'))
+const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const sidebarSearch = ref('')
+const sidebarSeries = ref('')
+const draftOnly = ref(false)
+const sidebarLoading = ref(false)
+
+async function fetchRecentInvoices() {
+  sidebarLoading.value = true
+  try {
+    recentInvoices.value = await frappeGet('ssplbilling.api.sales.get_sales_invoices', {
+      query: sidebarSearch.value,
+      limit: 100,
+      posting_date: sidebarDate.value,
+      naming_series: sidebarSeries.value || '',
+      draft_only: draftOnly.value
+    })
+  } catch (e) {
+    recentInvoices.value = []
+  }
+  sidebarLoading.value = false
+}
+
+function handleSidebarDateChange(days) {
+  const d = new Date(sidebarDate.value)
+  d.setDate(d.getDate() + days)
+  sidebarDate.value = d.toISOString().split('T')[0]
+}
+
+watch([sidebarDate, sidebarSearch, sidebarSeries, draftOnly], () => {
+  fetchRecentInvoices()
+})
+
+function handleSelectSidebarItem(item) {
+  // Logic to load invoice can go here, or handled externally
+  console.log("Selected invoice from sidebar:", item.name)
+}
 
 const customerName = ref('Select Customer...')
 const customerId = ref('')          // actual Customer doc name (for backend calls)
@@ -1057,6 +1101,7 @@ async function handleSeriesSelected(series) {
 }
 
 onMounted(() => {
+  fetchRecentInvoices()
   showSeriesModal.value = true
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
