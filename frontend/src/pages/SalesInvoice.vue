@@ -890,33 +890,40 @@ function getItemRateForPriceList(cachedItem, uom = null) {
   const plEntry = (cachedItem.price_lists || []).find(p => p.name === plName)
   if (plEntry) return plEntry.rate
 
-  // 3. Fallback to the main 'price' field (which should match the last requested price list)
+  // 3. Fallback to the main 'price' field
+  // If the lastSync was for this price list, cachedItem.price is correct.
+  // Otherwise, it might be from a previous price list.
   return parseFloat(cachedItem.price || 0)
 }
 
+function updateTableRates() {
+  items.value.forEach((item, idx) => {
+    if (item.deleted) return
+    const cached = lookupItemInCache(item.item_code)
+    if (cached) {
+      const newRate = getItemRateForPriceList(cached, item.uom)
+      item._base_rate = newRate
+      item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+      recalcAmount(idx)
+    }
+  })
+}
+
 // Reprice all rows when price list is changed in settings panel
-watch(priceList, async (newList) => {
+watch(priceList, (newList) => {
   if (!newList) return
   localStorage.setItem('wb-pricelist-selected', newList) // Persist selection
   
-  try {
-    // 1. Refresh cache to get updated 'price' field for the new list
-    await refreshItemCache('Sales', newList, warehouse.value)
-    
-    // 2. Update all existing items in the table
-    items.value.forEach((item, idx) => {
-      const cached = lookupItemInCache(item.item_code)
-      if (cached) {
-        let newRate = getItemRateForPriceList(cached, item.uom)
-        
-        item._base_rate = newRate
-        item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
-        recalcAmount(idx)
-      }
+  // 1. Update UI INSTANTLY using whatever is already in the local cache
+  updateTableRates()
+  
+  // 2. Refresh cache in background to ensure latest rates from server
+  refreshItemCache('Sales', newList, warehouse.value)
+    .then(() => {
+      // 3. Re-run update once background sync completes to catch any changed values
+      updateTableRates()
     })
-  } catch (e) {
-    console.error('[SalesInvoice] Failed to update rates on price list change:', e)
-  }
+    .catch(e => console.warn('[SalesInvoice] Background price refresh failed:', e))
 })
 
 watch(ignoreModifier, () => {
