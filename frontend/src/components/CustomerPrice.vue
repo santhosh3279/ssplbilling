@@ -27,29 +27,19 @@
         </div>
 
         <div class="text-xs text-slate-400 leading-relaxed">
-          Choose how you want to save this price change. You can save it as a special discount for <span class="text-slate-200 font-medium">{{ customer }}</span>, or update the main <span class="text-slate-200 font-medium">{{ priceList }}</span> price list.
+          Choose how you want to save this price change. You can save it as a special discount for <span class="text-slate-200 font-medium">{{ customer }}</span>.
         </div>
       </div>
 
       <div class="flex flex-col gap-2 p-6 pt-0">
-        <div class="flex gap-2">
-          <button 
-            ref="savePriceYesBtn" 
-            @click="$emit('saveCustomer')" 
-            @keydown="onKeydown" 
-            class="flex-1 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-purple-700 shadow-lg shadow-purple-900/20 transition-all outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            Save for Customer
-          </button>
-          <button 
-            ref="updatePricelistBtn" 
-            @click="$emit('updatePricelist')" 
-            @keydown="onKeydown" 
-            class="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 transition-all outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Update Price List
-          </button>
-        </div>
+        <button 
+          ref="savePriceYesBtn" 
+          @click="$emit('saveCustomer')" 
+          @keydown="onKeydown" 
+          class="w-full rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-purple-700 shadow-lg shadow-purple-900/20 transition-all outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          Save for Customer
+        </button>
         <button 
           ref="savePriceNoBtn" 
           @click="$emit('dismiss')" 
@@ -83,7 +73,6 @@ const emit = defineEmits(['saveCustomer', 'updatePricelist', 'dismiss', 'advance
 useSubwindow()
 
 const savePriceYesBtn = ref(null)
-const updatePricelistBtn = ref(null)
 const savePriceNoBtn = ref(null)
 
 onMounted(() => {
@@ -105,7 +94,7 @@ function onKeydown(e) {
     return
   }
 
-  const btns = [savePriceYesBtn.value, updatePricelistBtn.value, savePriceNoBtn.value].filter(Boolean)
+  const btns = [savePriceYesBtn.value, savePriceNoBtn.value].filter(Boolean)
   const currIdx = btns.indexOf(document.activeElement)
   
   if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
