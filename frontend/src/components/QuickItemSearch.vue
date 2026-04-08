@@ -1,32 +1,32 @@
 <template>
   <div 
     v-if="results.length > 0" 
-    class="fixed z-[150] w-[700px] rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden"
+    class="fixed z-[150] w-[700px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden"
     :style="positionStyle"
   >
-    <div class="bg-slate-800 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
-      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Search</span>
-      <span class="text-xs text-slate-500">{{ results.length }} matches</span>
+    <div class="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-border)] flex justify-between items-center">
+      <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Quick Search</span>
+      <span class="text-xs text-[var(--color-text-muted)]">{{ results.length }} matches</span>
     </div>
     
     <div class="max-h-[600px] overflow-y-auto scrollbar-none">
       <div 
         v-for="(item, idx) in results" 
         :key="item.item_code"
-        class="px-4 py-3 cursor-pointer border-b border-slate-800/50 last:border-0"
-        :class="selectedIndex === idx ? 'bg-blue-600/30 ring-2 ring-inset ring-blue-500/50' : 'hover:bg-slate-800/40'"
+        class="px-4 py-3 cursor-pointer border-b border-[var(--color-border)]/50 last:border-0"
+        :class="selectedIndex === idx ? 'bg-[var(--color-highlight)]/30 ring-2 ring-inset ring-[var(--color-highlight)]/50' : 'hover:bg-[var(--color-surface-raised)]/40'"
         @click="$emit('select', item)"
       >
         <div class="flex justify-between items-center gap-4">
           <div class="min-w-0 flex-1">
-            <div class="text-3xl font-normal text-slate-100 truncate">{{ item.item_name }}</div>
-            <div class="text-2xl font-mono text-amber-200/80">{{ item.item_code }}</div>
+            <div class="text-3xl font-normal text-[var(--color-text)] truncate">{{ item.item_name }}</div>
+            <div class="text-2xl font-mono text-[var(--color-warning)]/80">{{ item.item_code }}</div>
           </div>
           <div class="flex flex-col items-end shrink-0">
-            <div class="text-2xl font-mono font-bold text-amber-400">{{ formatPrice(getItemPrice(item)) }}</div>
+            <div class="text-2xl font-mono font-bold text-[var(--color-warning)]">{{ formatPrice(getItemPrice(item)) }}</div>
             <div 
               class="text-sm font-bold" 
-              :class="item.stock > 20 ? 'text-green-500' : item.stock > 0 ? 'text-amber-500' : 'text-red-500'"
+              :class="item.stock > 20 ? 'text-[var(--color-success)]' : item.stock > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'"
             >
               {{ item.stock }} {{ item.uom }}
             </div>
@@ -35,9 +35,9 @@
       </div>
     </div>
     
-    <div class="bg-slate-800/50 px-4 py-2 border-t border-slate-700 flex gap-6">
-      <span class="text-[10px] text-slate-500 uppercase tracking-widest"><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-slate-300">↑↓</kbd> Navigate</span>
-      <span class="text-[10px] text-slate-500 uppercase tracking-widest"><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-slate-300">Enter</kbd> Select</span>
+    <div class="bg-[var(--color-surface-raised)]/50 px-4 py-2 border-t border-[var(--color-border)] flex gap-6">
+      <span class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[var(--color-text)]">↑↓</kbd> Navigate</span>
+      <span class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[var(--color-text)]">Enter</kbd> Select</span>
     </div>
   </div>
 </template>
