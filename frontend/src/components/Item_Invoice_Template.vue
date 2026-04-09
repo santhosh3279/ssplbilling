@@ -444,6 +444,22 @@ function navigateSidebar(idx, dir) {
   }
 }
 
+import { watch, nextTick } from 'vue'
+watch(() => props.selectedSidebarItemName, (newVal) => {
+  if (!newVal) return
+  nextTick(() => {
+    // Find index of the item with this name
+    const idx = props.sidebarItems.findIndex(inv => inv.name === newVal)
+    if (idx !== -1) {
+      const el = sidebarItemRefs.get(idx)
+      if (el) {
+        el.focus({ preventScroll: true })
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
+  })
+})
+
 defineExpose({
   focusSidebar: () => sidebarSearchRef.value?.focus(),
   focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
