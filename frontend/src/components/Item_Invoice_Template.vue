@@ -52,17 +52,17 @@
               tabindex="0"
               @click="$emit('select-sidebar-item', inv)"
               @keydown.enter="$emit('select-sidebar-item', inv)"
-              class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-focus)]/20 focus:border-l-2 focus:border-l-[var(--color-focus)]"
-              :class="{ 'bg-[var(--color-highlight)]/20 border-l-2 border-l-[var(--color-highlight)]': selectedSidebarItemName === inv.name }"
+              class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
+              :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': selectedSidebarItemName === inv.name }"
             >
               <div class="flex items-center justify-between gap-1">
                 <div class="flex items-center gap-1.5 truncate min-w-0">
                   <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
-                  <span class="truncate font-mono text-2xl text-[var(--color-highlight)] group-hover:brightness-125">{{ inv.name }}</span>
+                  <span class="truncate font-mono text-2xl group-hover:brightness-125 group-focus:text-black group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-black font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
                 </div>
-                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums text-[var(--color-text)]">{{ inv.grand_total }}</span>
+                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-black" :class="selectedSidebarItemName === inv.name ? 'text-black' : 'text-[var(--color-text)]'">{{ inv.grand_total }}</span>
               </div>
-              <div class="truncate text-2xl text-[var(--color-text-muted)]">
+              <div class="truncate text-2xl group-focus:text-black" :class="selectedSidebarItemName === inv.name ? 'text-black' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer_name }}
               </div>
             </div>
