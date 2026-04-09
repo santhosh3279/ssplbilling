@@ -68,7 +68,7 @@
           :tabindex="isReadOnly ? -1 : 0"
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
-            'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
+            'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-black': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
             'bg-green-900/20': item._is_free && !item.deleted,
             'opacity-40 bg-red-900/10 grayscale-[0.5]': item.deleted,
             'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
