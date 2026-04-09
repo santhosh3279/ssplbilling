@@ -657,6 +657,7 @@ async function handleSelectSidebarItem(item) {
         uom: i.uom || 'Nos',
         tax_rate: i.tax_rate || 0,
         deleted: false,
+        _is_free: effectiveRate === 0,
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
       }
     })
