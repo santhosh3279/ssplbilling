@@ -1357,6 +1357,17 @@ watch(priceList, (newList) => {
     .catch(e => console.warn('[SalesInvoice] Background price refresh failed:', e))
 })
 
+function reapplyCustomerPricing() {
+  items.value.forEach((item, idx) => {
+    if (item.deleted || item._is_free) return
+    const base = item.price_list_rate || item._base_rate || item.rate
+    item._base_rate = base
+    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
+    item._cp_applied = customerPricing.value[item.item_code] != null
+    recalcAmount(idx)
+  })
+}
+
 watch(ignoreModifier, () => {
   items.value.forEach(item => {
     const base = item._base_rate ?? item.rate
@@ -1462,8 +1473,9 @@ function handleCustomerSelected(cust) {
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
   ignoreModifier.value = false
   customerPricing.value = {}
+  reapplyCustomerPricing()
   frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust.name || cust.label })
-    .then(data => { customerPricing.value = data || {} })
+    .then(data => { customerPricing.value = data || {}; reapplyCustomerPricing() })
     .catch(() => { customerPricing.value = {} })
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
