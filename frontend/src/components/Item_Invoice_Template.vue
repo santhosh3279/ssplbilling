@@ -299,7 +299,7 @@
 
                       <!-- Row 1: Save and Print -->
                       <div class="flex gap-2">
-                        <button @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors">Save</button>
+                        <button @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase">{{ saveButtonText }}</button>
                         <button @click="$emit('print')" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print</button>
                       </div>
 
@@ -324,7 +324,8 @@
                         type="number"
                         :value="discountPct"
                         @input="$emit('update:discountPct', $event.target.value)"
-                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        :disabled="isReadOnly"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
                     </div>
                     <!-- Amt Half -->
@@ -333,7 +334,8 @@
                         type="number"
                         :value="discountDirectAmt"
                         @input="$emit('update:discountDirectAmt', $event.target.value)"
-                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-1 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        :disabled="isReadOnly"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-1 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
                         placeholder="Amt"
                       />
                     </div>
@@ -350,13 +352,14 @@
               </tr>
               <!-- Freight -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
+                <td class="px-2 text-lg text-[var(--color-text-muted)] border border(--color-border)]">Freight</td>
                 <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
                   <input
                     type="number"
                     :value="freightEntry"
                     @input="$emit('update:freightEntry', $event.target.value)"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="isReadOnly"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
@@ -369,7 +372,8 @@
                     type="number"
                     :value="packingEntry"
                     @input="$emit('update:packingEntry', $event.target.value)"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="isReadOnly"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
@@ -382,7 +386,8 @@
                     type="number"
                     :value="loadingEntry"
                     @input="$emit('update:loadingEntry', $event.target.value)"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="isReadOnly"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
@@ -395,7 +400,8 @@
                     type="number"
                     :value="otherEntry"
                     @input="$emit('update:otherEntry', $event.target.value)"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    :disabled="isReadOnly"
+                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
@@ -483,7 +489,9 @@ const props = defineProps({
   otherEntry: { type: String, default: '' },
   otherAmt: { type: [Number, String], default: '0.00' },
   totalTax: { type: [Number, String], default: '0.00' },
-  totalAmount: { type: [Number, String], default: '0.00' }
+  totalAmount: { type: [Number, String], default: '0.00' },
+  saveButtonText: { type: String, default: 'Save' },
+  isReadOnly: { type: Boolean, default: false }
 })
 
 const emit = defineEmits([

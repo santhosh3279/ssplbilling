@@ -31,6 +31,8 @@
       :sidebar-series="sidebarSeries"
       :draft-only="draftOnly"
       :sidebar-loading="sidebarLoading"
+      :save-button-text="saveButtonText"
+      :is-read-only="isReadOnly"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -63,16 +65,16 @@
       <template #row="{ item, index }">
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
-          tabindex="0"
+          :tabindex="isReadOnly ? -1 : 0"
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
-            'bg-[var(--color-lowlight)] font-bold': (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
+            'bg-[var(--color-lowlight)] font-bold': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
             'bg-green-900/20': item._is_free && !item.deleted,
             'opacity-40 bg-red-900/10 grayscale-[0.5]': item.deleted,
-            'hover:bg-[var(--color-surface-raised)]/50': selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
+            'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
           }"
-          @focus="selectedRowIdx = index"
-          @keydown="handleRowKeydown($event, index)"
+          @focus="!isReadOnly && (selectedRowIdx = index)"
+          @keydown="!isReadOnly && handleRowKeydown($event, index)"
         >
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">
             <span v-if="item._cp_applied" class="absolute left-0 inset-y-0 w-[3px] bg-blue-500 rounded-r"></span>
@@ -328,7 +330,7 @@
         </template>
 
         <!-- Barcode input row -->
-        <template v-else>
+        <template v-else-if="!isReadOnly">
           <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5">
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl font-mono text-center">*</td>
             <td class="p-0 border-r border-[var(--color-border)]">
@@ -555,6 +557,12 @@ const sidebarSeries = ref('')
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
 
+const isReadOnly = ref(false)
+const saveButtonText = computed(() => {
+  if (invoiceNo.value === 'NEW') return 'Save'
+  return isReadOnly.value ? 'Modify Bill' : 'Update Bill'
+})
+
 function handleDocDateChange(days) {
   const d = new Date(invoiceDate.value)
   d.setDate(d.getDate() + days)
@@ -646,6 +654,7 @@ async function handleSelectSidebarItem(item) {
     editingRowIdx.value = -1
     pendingItem.value = null
     newItemCode.value = ''
+    isReadOnly.value = true
   } catch (e) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
@@ -838,6 +847,7 @@ async function clearBill() {
   customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
+  isReadOnly.value = false
 
   if (selectedSeries.value) {
     try {
@@ -893,6 +903,16 @@ function handlePageUp() {
 }
 
 async function handleSave() {
+  if (isReadOnly.value && invoiceNo.value !== 'NEW') {
+    isReadOnly.value = false
+    if (items.value.length > 0) {
+      focusRow(0)
+    } else {
+      focusBarcodeInput()
+    }
+    return
+  }
+
   const active = items.value.filter(i => !i.deleted)
   if (!active.length) { alert('No items to save'); return }
   
@@ -964,6 +984,7 @@ async function handleSave() {
     if (res.status === 'success') {
       if (isUpdate) {
         alert('Invoice ' + res.name + ' updated successfully!')
+        isReadOnly.value = true
         fetchRecentInvoices()
         // Stay on the same bill — just refresh items/state from response, keep invoiceNo
         nextTick(() => { newCodeInput.value?.focus() })
