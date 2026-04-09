@@ -49,9 +49,12 @@
             <div
               v-for="(inv, idx) in sidebarItems"
               :key="inv.name"
+              :ref="el => setSidebarItemRef(el, idx)"
               tabindex="0"
               @click="$emit('select-sidebar-item', inv)"
               @keydown.enter="$emit('select-sidebar-item', inv)"
+              @keydown.up.prevent="navigateSidebar(idx, -1)"
+              @keydown.down.prevent="navigateSidebar(idx, 1)"
               class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
               :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': selectedSidebarItemName === inv.name }"
             >
@@ -426,6 +429,20 @@ import { ref } from 'vue'
 
 const sidebarSearchRef = ref(null)
 const sidebarListRef = ref(null)
+const sidebarItemRefs = new Map()
+
+function setSidebarItemRef(el, idx) {
+  if (el) sidebarItemRefs.set(idx, el)
+  else sidebarItemRefs.delete(idx)
+}
+
+function navigateSidebar(idx, dir) {
+  const target = sidebarItemRefs.get(idx + dir)
+  if (target) {
+    target.focus()
+    target.scrollIntoView({ block: 'nearest' })
+  }
+}
 
 defineExpose({
   focusSidebar: () => sidebarSearchRef.value?.focus(),
