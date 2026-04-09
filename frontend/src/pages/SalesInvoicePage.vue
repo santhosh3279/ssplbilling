@@ -119,16 +119,22 @@
         </div>
 
         <!-- Customer Section (Flex-1 to take middle space) -->
-        <div class="flex-1 flex flex-col border-l border-slate-700 pl-6 overflow-hidden cursor-pointer hover:bg-slate-800/40 transition-colors group" @click="openCustomerSearch">
+        <div class="flex-1 flex flex-col border-l border-slate-700 pl-6 overflow-hidden transition-colors group" 
+          :class="billSaved ? 'cursor-default' : 'cursor-pointer hover:bg-slate-800/40'"
+          @click="openCustomerSearch"
+        >
           <!-- Line 1: Name, Mobile, GST, Balance, and Stats -->
           <div class="flex items-center gap-6">
             <div class="flex items-baseline gap-2 min-w-0">
-              <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap group-hover:text-blue-400 transition-colors">Customer</label>
+              <label 
+                class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap transition-colors"
+                :class="!billSaved ? 'group-hover:text-blue-400' : ''"
+              >Customer</label>
               <div
                 ref="customerInput"
                 class="shrink-0 max-w-[400px] truncate text-4xl transition-colors outline-none leading-none"
-                :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
-                tabindex="0"
+                :class="[customer ? 'text-slate-100' : 'text-slate-600 italic', billSaved ? 'cursor-default' : '']"
+                :tabindex="billSaved ? -1 : 0"
                 @keydown.enter.prevent.stop="openCustomerSearch"
                 @keydown.space.prevent.stop="openCustomerSearch"
               >

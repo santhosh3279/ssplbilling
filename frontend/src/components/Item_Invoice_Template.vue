@@ -98,13 +98,17 @@
             </div>
 
             <div 
-              class="flex-1 flex flex-col border-l border-[var(--color-border)] pl-6 overflow-hidden cursor-pointer hover:bg-[var(--color-surface-raised)]/80 transition-colors group"
-              @click="$emit('party-click')"
+              class="flex-1 flex flex-col border-l border-[var(--color-border)] pl-6 overflow-hidden transition-colors group"
+              :class="isReadOnly ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--color-surface-raised)]/80'"
+              @click="!isReadOnly && $emit('party-click')"
             >
               <!-- Line 1: Party Name, Mobile, GST, Balance, Last Inv -->
               <div class="flex items-center gap-6 overflow-hidden">
                 <div class="flex items-baseline gap-2 min-w-0 shrink-0">
-                  <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
+                  <label 
+                    class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
+                    :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
+                  >Party</label>
                   <div class="text-2xl text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
                 </div>
 
