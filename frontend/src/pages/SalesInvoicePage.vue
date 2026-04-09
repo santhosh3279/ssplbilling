@@ -55,9 +55,8 @@
             :key="inv.name"
             :ref="el => setSidebarBillRef(el, idx)"
             @click="loadInvoice(inv.name)"
-            class="group cursor-pointer border-b border-slate-800 px-2 py-1 transition-colors outline-none focus:ring-1 focus:ring-blue-500"
-            :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'border-l-2 border-l-blue-500' : 'bg-slate-900 hover:bg-slate-800'"
-            :style="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? { backgroundColor: '#B0E4CC !important', opacity: '1 !important' } : {}"
+            class="group cursor-pointer border-b border-slate-800 px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
+            :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': savedInvoiceName === inv.name || sidebarFocusedIdx === idx }"
             tabindex="0"
             @focus="sidebarFocusedIdx = idx"
             @blur="sidebarFocusedIdx = -1"
@@ -68,11 +67,11 @@
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1.5 truncate min-w-0">
                 <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="truncate font-mono text-2xl" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">{{ inv.name }}</span>
+                <span class="truncate font-mono text-2xl group-focus:text-black group-focus:font-bold" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-bold' : 'text-blue-400'">{{ inv.name }}</span>
               </div>
-              <span class="shrink-0 font-mono font-normal text-4xl tabular-nums" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black' : 'text-slate-200'">{{ inv.grand_total.toFixed(0) }}</span>
+              <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-black" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black' : 'text-slate-200'">{{ inv.grand_total.toFixed(0) }}</span>
             </div>
-            <div class="truncate text-2xl" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-medium' : 'text-slate-400'">
+            <div class="truncate text-2xl group-focus:text-black" :class="savedInvoiceName === inv.name || sidebarFocusedIdx === idx ? 'text-black font-medium' : 'text-slate-400'">
               {{ inv.custom_customer_name || inv.customer_name }}
               <span v-if="inv.custom_customer_name" class="ml-1 text-lg font-normal opacity-60">({{ inv.customer_name }})</span>
             </div>
@@ -1172,6 +1171,20 @@ function closeCustomerSearchModal() {
 }
 
 // ==================== STATE ====================
+watch(savedInvoiceName, (newVal) => {
+  if (!newVal) return
+  nextTick(() => {
+    const idx = sidebarBills.value.findIndex(inv => inv.name === newVal)
+    if (idx !== -1) {
+      const el = sidebarBillRefs.get(idx)
+      if (el) {
+        el.focus({ preventScroll: true })
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
+  })
+})
+
 const items = ref([])
 const selectedRow = ref(-1)
 const editingOriginalCode = ref(null)  // tracks item_code before user edits an existing row

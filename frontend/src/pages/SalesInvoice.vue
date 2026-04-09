@@ -646,8 +646,6 @@ async function handleSelectSidebarItem(item) {
     editingRowIdx.value = -1
     pendingItem.value = null
     newItemCode.value = ''
-
-    nextTick(() => { newCodeInput.value?.focus() })
   } catch (e) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
