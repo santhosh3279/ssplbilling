@@ -146,7 +146,9 @@
               <input
                 type="checkbox"
                 :checked="!ignoreModifier"
-                class="h-[15px] w-[15px] cursor-pointer accent-[var(--color-warning)]"
+                :disabled="isReadOnly"
+                class="h-[15px] w-[15px] accent-[var(--color-warning)] disabled:opacity-50 disabled:cursor-default"
+                :class="isReadOnly ? '' : 'cursor-pointer'"
                 title="Apply Multiplier"
                 @change="$emit('update:ignoreModifier', !$event.target.checked)"
               />
