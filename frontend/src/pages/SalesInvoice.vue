@@ -1,6 +1,7 @@
 <template>
   <div class="h-screen bg-slate-900 overflow-hidden">
     <Item_Invoice_Template
+      ref="invoiceTemplateRef"
       title="Sales Invoice (Template)"
       :doc-number="invoiceNo"
       :party-name="customerName"
@@ -52,7 +53,7 @@
       @print="handlePrint"
       @cancel="handleCancel"
       @incentive="handleIncentive"
-      @party-click="showCustomerModal = true"
+      @party-click="customerInitialQuery = ''; showCustomerModal = true"
     >
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
@@ -222,11 +223,12 @@
       </template>
 
       <template #bottom-middle>
-        <div class="flex flex-col gap-3 p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+        <div class="flex flex-col gap-3 p-2 max-h-[300px] overflow-y-auto custom-scrollbar" @keydown="handleModifyPanelKeydown">
           <!-- Row 1: Price List -->
           <div class="flex flex-col gap-0.5">
             <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
             <select
+              ref="priceListSelectRef"
               v-model="priceList"
               class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
             >
@@ -239,6 +241,7 @@
           <div class="flex flex-col gap-0.5">
             <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
             <select
+              ref="taxTemplateRef"
               v-model="taxTemplate"
               class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
             >
@@ -250,11 +253,11 @@
           <!-- 3 Checkboxes -->
           <div class="flex flex-col gap-1.5 py-1 border-y border-[var(--color-border)]/30">
             <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" v-model="isInclusiveTax" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
+              <input ref="inclusiveTaxRef" type="checkbox" v-model="isInclusiveTax" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Inclusive Tax</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" v-model="ignoreDiscountRule" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
+              <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Ignore Pricing Rule</span>
             </label>
             <label class="flex items-center gap-3">
@@ -279,6 +282,7 @@
             <div class="flex flex-col gap-0.5">
               <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Cost Center</label>
               <select
+                ref="costCenterRef"
                 v-model="costCenter"
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
               >
@@ -369,7 +373,8 @@
       :show="showCustomerModal"
       skip-date-filter
       initial-type="Customer"
-      @close="showCustomerModal = false"
+      :initial-query="customerInitialQuery"
+      @close="showCustomerModal = false; customerInitialQuery = ''"
       @select="handleCustomerSelected"
     />
 
@@ -402,14 +407,42 @@
       @jump="handleJump"
     />
 
+    <IncentiveEntry
+      :show="showIncentiveModal"
+      doctype="Sales Invoice"
+      :docname="invoiceNo !== 'NEW' ? invoiceNo : ''"
+      :initial-rows="incentiveRows"
+      @close="showIncentiveModal = false"
+      @update:rows="onIncentiveSaved"
+    />
+
+    <CustomAddress
+      v-if="showCustomAddressModal"
+      :initial-data="customAddress"
+      @saved="data => { customAddress = data }"
+      @close="showCustomAddressModal = false"
+    />
+
+    <Warning
+      :show="showClearWarning"
+      title="Clear Bill"
+      message="All items will be removed and a new bill number will be assigned."
+      @close="showClearWarning = false"
+      @confirm="showClearWarning = false; clearBill()"
+    />
+
     <ShortcutPage
       :show="showShortcutPage"
       extra-title="Sales Invoice"
       :extra="[
+        { key: 'F2', desc: 'Clear bill / refresh bill number' },
+        { key: 'F3', desc: 'Focus sidebar bill list' },
         { key: 'F4', desc: 'Select series' },
         { key: 'F5', desc: 'Print invoice' },
-        { key: 'F6', desc: 'Select customer' },
+        { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
+        { key: 'Insert', desc: 'Open incentive entry' },
+        { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
       ]"
       @close="showShortcutPage = false"
@@ -429,6 +462,9 @@ import ItemSearch from '../components/ItemSearch.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
+import IncentiveEntry from '../components/IncentiveEntry.vue'
+import CustomAddress from '../components/CustomAddress.vue'
+import Warning from '../components/Warning.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -490,6 +526,18 @@ const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, 
 const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
 const showShortcutPage = ref(false)
+const showIncentiveModal = ref(false)
+const incentiveRows = ref([])
+const showCustomAddressModal = ref(false)
+const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
+const showClearWarning = ref(false)
+const customerInitialQuery = ref('')
+const invoiceTemplateRef = ref(null)
+const priceListSelectRef = ref(null)
+const taxTemplateRef = ref(null)
+const inclusiveTaxRef = ref(null)
+const ignoreRuleRef = ref(null)
+const costCenterRef = ref(null)
 const showPrintModal = ref(false)
 const showItemSearch = ref(false)
 const lastEnterTime = ref(0)
@@ -539,9 +587,71 @@ watch([sidebarDate, sidebarSearch, sidebarSeries, draftOnly], () => {
   fetchRecentInvoices()
 })
 
-function handleSelectSidebarItem(item) {
-  // Logic to load invoice can go here, or handled externally
-  console.log("Selected invoice from sidebar:", item.name)
+async function handleSelectSidebarItem(item) {
+  try {
+    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: item.name })
+
+    // Header
+    invoiceNo.value = data.name
+    selectedSeries.value = data.naming_series || selectedSeries.value
+    invoiceDate.value = data.posting_date || invoiceDate.value
+
+    // Customer
+    customerId.value = data.customer || ''
+    customerName.value = data.customer_name || 'Select Customer...'
+    customerState.value = data.state || ''
+
+    // Settings
+    if (data.price_list) priceList.value = data.price_list
+    if (data.tax_template) taxTemplate.value = data.tax_template
+    isInclusiveTax.value = data.is_inclusive === 1
+    if (data.cost_center) costCenter.value = data.cost_center
+
+    // Charges
+    freightEntry.value = data.freight_amount || ''
+    packingEntry.value = data.packing_amount || ''
+    loadingEntry.value = data.loading_amount || ''
+    otherEntry.value = data.other_charges_amount || ''
+
+    // Discounts
+    discountPct.value = data.discount_percentage || ''
+    discountDirectAmt.value = data.additional_discount_amount || ''
+
+    // Custom address
+    customAddress.value = {
+      customer_name: data.custom_customer_name || '',
+      mobile_number: data.custom_mobile_number || '',
+      address_line_1: data.custom_address_line1 || '',
+      address_line_2: data.custom_address_line2 || '',
+    }
+
+    // Incentive rows
+    incentiveRows.value = data.incentive_system || []
+
+    // Items — compute amount for each row
+    items.value = (data.items || []).map(i => ({
+      item_code: i.item_code,
+      item_name: i.item_name,
+      qty: i.qty,
+      rate: i.rate,
+      price_list_rate: i.price_list_rate || i.rate,
+      discount: i.discount || 0,
+      uom: i.uom || 'Nos',
+      tax_rate: i.tax_rate || 0,
+      deleted: false,
+      amount: parseFloat(((i.qty || 0) * (i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
+    }))
+
+    selectedRowIdx.value = -1
+    editingRowIdx.value = -1
+    pendingItem.value = null
+    newItemCode.value = ''
+
+    nextTick(() => { newCodeInput.value?.focus() })
+  } catch (e) {
+    console.error('Failed to load invoice:', e)
+    alert('Failed to load invoice: ' + item.name)
+  }
 }
 
 const customerName = ref('Select Customer...')
@@ -712,6 +822,78 @@ function formatDateShort(dateStr) {
   return `${day}-${month}-${year}`
 }
 
+async function clearBill() {
+  items.value = []
+  pendingItem.value = null
+  newItemCode.value = ''
+  quickSearchResults.value = []
+  selectedRowIdx.value = -1
+  editingRowIdx.value = -1
+  editingField.value = null
+  discountPct.value = ''
+  discountDirectAmt.value = ''
+  freightEntry.value = ''
+  loadingEntry.value = ''
+  packingEntry.value = ''
+  otherEntry.value = ''
+  incentiveRows.value = []
+  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  clearHistory()
+  invoiceNo.value = 'NEW'
+
+  if (selectedSeries.value) {
+    try {
+      const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
+      invoiceNo.value = next.invoice_no || 'NEW'
+    } catch {
+      invoiceNo.value = 'NEW'
+    }
+  }
+
+  nextTick(() => { newCodeInput.value?.focus() })
+}
+
+function handleF2() {
+  const hasItems = items.value.some(i => !i.deleted)
+  if (hasItems) {
+    showClearWarning.value = true
+  } else {
+    clearBill()
+  }
+}
+
+function handleF3() {
+  nextTick(() => { invoiceTemplateRef.value?.focusSidebarList() })
+}
+
+function handleModifyPanelKeydown(e) {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+  e.preventDefault()
+  const refs = [
+    priceListSelectRef.value,
+    taxTemplateRef.value,
+    inclusiveTaxRef.value,
+    ignoreRuleRef.value,
+    costCenterRef.value,
+  ].filter(Boolean)
+  const idx = refs.indexOf(document.activeElement)
+  if (e.key === 'ArrowDown') {
+    refs[(idx + 1) % refs.length]?.focus()
+  } else {
+    refs[(idx - 1 + refs.length) % refs.length]?.focus()
+  }
+}
+
+function handlePageUp() {
+  const hasItems = items.value.some(i => !i.deleted)
+  if (hasItems) {
+    customerInitialQuery.value = customerId.value || customerName.value
+    showCustomerModal.value = true
+  } else {
+    showSeriesModal.value = true
+  }
+}
+
 async function handleSave() {
   const active = items.value.filter(i => !i.deleted)
   if (!active.length) { alert('No items to save'); return }
@@ -754,6 +936,11 @@ async function handleSave() {
     income_account: incomeAccount.value,
     is_inclusive_tax: isInclusiveTax.value ? 1 : 0,
     additional_charges: additionalCharges,
+    incentive_rows: incentiveRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 })),
+    custom_customer_name: customAddress.value.customer_name || '',
+    custom_address_line1: customAddress.value.address_line_1 || '',
+    custom_address_line2: customAddress.value.address_line_2 || '',
+    custom_mobile_number: customAddress.value.mobile_number || '',
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
@@ -763,41 +950,61 @@ async function handleSave() {
     }))
   }
 
+  const isUpdate = invoiceNo.value !== 'NEW'
+
   try {
-    const res = await frappePost('ssplbilling.api.sales.post_sales_invoice', { payload: JSON.stringify(payload) })
+    let res
+    if (isUpdate) {
+      res = await frappePost('ssplbilling.api.sales.update_sales_invoice', {
+        invoice_name: invoiceNo.value,
+        payload: JSON.stringify(payload)
+      })
+    } else {
+      res = await frappePost('ssplbilling.api.sales.post_sales_invoice', { payload: JSON.stringify(payload) })
+    }
+
     if (res.status === 'success') {
-      alert('Invoice ' + res.name + ' saved successfully!')
-      fetchRecentInvoices()
+      if (isUpdate) {
+        alert('Invoice ' + res.name + ' updated successfully!')
+        fetchRecentInvoices()
+        // Stay on the same bill — just refresh items/state from response, keep invoiceNo
+        nextTick(() => { newCodeInput.value?.focus() })
+      } else {
+        alert('Invoice ' + res.name + ' saved successfully!')
+        fetchRecentInvoices()
 
-      // Clear bill for next entry (keep customer)
-      items.value = []
-      pendingItem.value = null
-      newItemCode.value = ''
-      quickSearchResults.value = []
-      selectedRowIdx.value = -1
-      editingRowIdx.value = -1
-      editingField.value = null
-      discountPct.value = ''
-      discountDirectAmt.value = ''
-      freightEntry.value = ''
-      loadingEntry.value = ''
-      packingEntry.value = ''
-      otherEntry.value = ''
-      clearHistory()
+        // Clear bill for next entry (keep customer)
+        items.value = []
+        pendingItem.value = null
+        newItemCode.value = ''
+        quickSearchResults.value = []
+        selectedRowIdx.value = -1
+        editingRowIdx.value = -1
+        editingField.value = null
+        discountPct.value = ''
+        discountDirectAmt.value = ''
+        freightEntry.value = ''
+        loadingEntry.value = ''
+        packingEntry.value = ''
+        otherEntry.value = ''
+        incentiveRows.value = []
+        customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+        clearHistory()
 
-      // Fetch next invoice number for the same series
-      try {
-        const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
-        invoiceNo.value = next.invoice_no || 'NEW'
-      } catch {
-        invoiceNo.value = 'NEW'
+        // Fetch next invoice number for the same series
+        try {
+          const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
+          invoiceNo.value = next.invoice_no || 'NEW'
+        } catch {
+          invoiceNo.value = 'NEW'
+        }
+
+        nextTick(() => { newCodeInput.value?.focus() })
       }
-
-      nextTick(() => { newCodeInput.value?.focus() })
     }
   } catch (error) {
     console.error('Error saving invoice:', error)
-    alert('Failed to save invoice.')
+    alert(isUpdate ? 'Failed to update invoice.' : 'Failed to save invoice.')
   }
 }
 
@@ -816,7 +1023,12 @@ function handleCancel() {
   }
 }
 
-function handleIncentive() { alert('Incentive Entry triggered') }
+function handleIncentive() { showIncentiveModal.value = true }
+
+function onIncentiveSaved(rows) {
+  incentiveRows.value = rows
+  showIncentiveModal.value = false
+}
 
 function handleJump(targetNo) {
   if (items.value.length === 0) return
@@ -1012,8 +1224,8 @@ function handleRowKeydown(e, idx) {
   const item = items.value[idx]
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
   if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
-  else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1); else focusBarcodeInput() }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1); else focusBarcodeInput() }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'Escape') { e.preventDefault(); focusBarcodeInput() }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteItem(idx) }
 }
@@ -1128,7 +1340,34 @@ watch(ignoreModifier, () => {
   })
 })
 
-function focusRow(idx) { selectedRowIdx.value = idx; nextTick(() => { rowRefs.value[idx]?.focus() }) }
+function scrollRowToEdge(idx, direction) {
+  const rowEl = rowRefs.value[idx]
+  if (!rowEl) return
+  const container = rowEl.closest('.overflow-y-auto')
+  if (!container) return
+  const rowRect = rowEl.getBoundingClientRect()
+  const cRect = container.getBoundingClientRect()
+  if (direction === 'down') {
+    // Align row bottom with container bottom
+    container.scrollTop += (rowRect.bottom - cRect.bottom)
+  } else {
+    // Align row top with container top (below sticky thead)
+    const thead = container.querySelector('thead')
+    const theadH = thead ? thead.offsetHeight : 0
+    container.scrollTop += (rowRect.top - cRect.top - theadH)
+  }
+}
+
+function focusRow(idx, direction = null) {
+  selectedRowIdx.value = idx
+  nextTick(() => {
+    const el = rowRefs.value[idx]
+    if (!el) return
+    el.focus({ preventScroll: true })
+    if (direction) scrollRowToEdge(idx, direction)
+    else el.scrollIntoView({ block: 'nearest' })
+  })
+}
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
 
 function deleteItem(idx) {
@@ -1221,18 +1460,22 @@ async function handleSeriesSelected(series) {
     invoiceNo.value = res.invoice_no; priceList.value = res.price_list; taxTemplate.value = res.tax_template
     if (res.warehouse) warehouse.value = res.warehouse
     if (res.cost_center) costCenter.value = res.cost_center
-    showSeriesModal.value = false; showCustomerModal.value = true
+    showSeriesModal.value = false; customerInitialQuery.value = ''; showCustomerModal.value = true
   } catch (e) { console.error('[SalesInvoice] Failed to fetch series defaults:', e) }
 }
 
 useShortcuts(salesInvoiceShortcuts({
-  openShortcuts:  () => { showShortcutPage.value = !showShortcutPage.value },
-  openSeries:     () => { showSeriesModal.value = true },
-  print:          () => handlePrint(),
-  selectCustomer: () => { showCustomerModal.value = true },
-  save:           () => handleSave(),
-  cancel:         () => handleCancel(),
-  deleteRow:      () => {
+  openShortcuts:    () => { showShortcutPage.value = !showShortcutPage.value },
+  clearBill:        () => handleF2(),
+  focusModifyPanel: () => handleF3(),
+  openSeries:       () => { showSeriesModal.value = true },
+  print:            () => handlePrint(),
+  openParcelAddress:() => { showCustomAddressModal.value = true },
+  save:             () => handleSave(),
+  cancel:           () => handleCancel(),
+  openIncentive:    () => { showIncentiveModal.value = true },
+  pageUp:           () => handlePageUp(),
+  deleteRow:        () => {
     if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       deleteItem(selectedRowIdx.value)
     }

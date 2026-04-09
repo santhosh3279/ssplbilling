@@ -40,6 +40,9 @@
   /* Selection / Active items */
   --color-selection: #B0E4CC;
   --color-text-on-selection: #000000;
+
+  /* Focus ring */
+  --color-focus: #6EACDA;
 }
 
 /* ── Dark Theme ── */
@@ -71,4 +74,7 @@
   /* Selection / Active items */
   --color-selection: #1e3a2f;
   --color-text-on-selection: #ffffff;
+
+  /* Focus ring */
+  --color-focus: #B0E4CC;
 }

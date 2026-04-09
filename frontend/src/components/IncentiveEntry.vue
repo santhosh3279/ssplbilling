@@ -187,11 +187,9 @@
             >Cancel</button>
             <button
               @click="handleSave"
-              :disabled="saving"
-              class="rounded-lg bg-indigo-600 px-6 py-1.5 text-sm font-black text-white hover:bg-indigo-500 active:scale-95 transition disabled:opacity-50 disabled:pointer-events-none"
+              class="rounded-lg bg-indigo-600 px-6 py-1.5 text-sm font-black text-white hover:bg-indigo-500 active:scale-95 transition"
             >
-              <span v-if="saving">Saving…</span>
-              <span v-else>Save Entries</span>
+              Save Entries
             </button>
           </div>
         </div>
@@ -203,7 +201,7 @@
 
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
-import { frappeGet, frappePost } from '../api.js'
+import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -220,7 +218,6 @@ useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 // ── state ──────────────────────────────────────────────────────────────
 const localRows   = ref([])
 const selectedRow = ref(-1)
-const saving      = ref(false)
 const saveError   = ref('')
 const saved       = ref(false)
 
@@ -247,22 +244,7 @@ watch(() => props.show, async (val) => {
   saved.value = false
   saveError.value = ''
   selectedRow.value = -1
-
-  if (props.docname) {
-    // Load from server
-    try {
-      const data = await frappeGet('ssplbilling.api.incentive_api.get_incentive_system', {
-        doctype: props.doctype,
-        docname: props.docname,
-      })
-      localRows.value = toLocalRows(data || [])
-    } catch {
-      localRows.value = toLocalRows(props.initialRows)
-    }
-  } else {
-    localRows.value = toLocalRows(props.initialRows)
-  }
-
+  localRows.value = toLocalRows(props.initialRows)
   await nextTick()
   newEmpInput.value?.focus()
 })
@@ -406,30 +388,12 @@ function removeRow(idx) {
 }
 
 // ── save ────────────────────────────────────────────────────────────────
-async function handleSave() {
+function handleSave() {
   saveError.value = ''
   const invalid = localRows.value.find(r => !r.employee || !r.role)
   if (invalid) { saveError.value = 'Each row needs an Employee and a Role.'; return }
 
-  saving.value = true
-  try {
-    const payload = localRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 }))
-
-    if (props.docname) {
-      const updated = await frappePost('ssplbilling.api.incentive_api.save_incentive_system', {
-        doctype: props.doctype,
-        docname: props.docname,
-        rows:    JSON.stringify(payload),
-      })
-      localRows.value = toLocalRows(updated || [])
-    }
-
-    emit('update:rows', localRows.value.map(r => ({ employee: r.employee, employee_name: r.employee_name, role: r.role, points: r.points })))
-    saved.value = true
-  } catch (e) {
-    saveError.value = e.message || 'Save failed'
-  } finally {
-    saving.value = false
-  }
+  emit('update:rows', localRows.value.map(r => ({ employee: r.employee, employee_name: r.employee_name, role: r.role, points: r.points || 0 })))
+  saved.value = true
 }
 </script>

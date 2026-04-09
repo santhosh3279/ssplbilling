@@ -16,8 +16,9 @@
 
         <!-- Search & Series Filters -->
         <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3 bg-[var(--color-surface-raised)]/20">
-          <input 
-            type="text" 
+          <input
+            ref="sidebarSearchRef"
+            type="text"
             :value="sidebarSearch"
             @input="$emit('update:sidebarSearch', $event.target.value)"
             placeholder="Search invoice/cust..."
@@ -41,15 +42,17 @@
         </div>
 
         <!-- Bill List -->
-        <div class="flex-1 overflow-y-auto scrollbar-none">
+        <div ref="sidebarListRef" class="flex-1 overflow-y-auto scrollbar-none">
           <slot name="sidebar-list">
             <div v-if="sidebarLoading" class="p-4 text-center text-lg text-[var(--color-text-muted)]">Loading...</div>
             <div v-else-if="!sidebarItems.length" class="p-4 text-center text-lg text-[var(--color-text-muted)] italic">No bills found</div>
-            <div 
-              v-for="(inv, idx) in sidebarItems" 
+            <div
+              v-for="(inv, idx) in sidebarItems"
               :key="inv.name"
+              tabindex="0"
               @click="$emit('select-sidebar-item', inv)"
-              class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none hover:bg-[var(--color-surface-raised)]"
+              @keydown.enter="$emit('select-sidebar-item', inv)"
+              class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-focus)]/20 focus:border-l-2 focus:border-l-[var(--color-focus)]"
               :class="{ 'bg-[var(--color-highlight)]/20 border-l-2 border-l-[var(--color-highlight)]': selectedSidebarItemName === inv.name }"
             >
               <div class="flex items-center justify-between gap-1">
@@ -96,25 +99,25 @@
               @click="$emit('party-click')"
             >
               <!-- Line 1: Party Name, Mobile, GST, Balance, Last Inv -->
-              <div class="flex items-center gap-6">
-                <div class="flex items-baseline gap-2 min-w-0">
+              <div class="flex items-center gap-6 overflow-hidden">
+                <div class="flex items-baseline gap-2 min-w-0 shrink-0">
                   <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap group-hover:text-[var(--color-highlight)] transition-colors">Party</label>
                   <div class="text-2xl text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
                 </div>
 
-                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-xl whitespace-nowrap">
+                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-xl whitespace-nowrap shrink-0">
                   <span class="text-[10px] uppercase text-[var(--color-text-muted)]">Mob:</span>
                   {{ partyMobile }}
                 </div>
-                
-                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-xl whitespace-nowrap">
+
+                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-xl whitespace-nowrap shrink-0">
                   <span class="text-[10px] uppercase text-[var(--color-text-muted)]">GST:</span>
                   {{ partyGstin }}
                 </div>
 
-                <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap">
+                <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap shrink-0">
                   <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
-                  <span 
+                  <span
                     class="text-xl font-bold font-mono"
                     :class="(Number(partyBalance) > 0) ? 'text-[var(--color-success)]' : (Number(partyBalance) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
                   >
@@ -123,16 +126,16 @@
                   </span>
                 </div>
 
-                <div v-if="partyLastInvDate" class="flex items-center gap-2 whitespace-nowrap">
-                  <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Last Inv</span>
-                  <span class="text-xl font-mono text-[var(--color-highlight)]">{{ partyLastInvDate }}</span>
+                <div v-if="partyLastInvDate" class="flex items-center gap-2 whitespace-nowrap shrink overflow-hidden">
+                  <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] shrink-0">Last Inv</span>
+                  <span class="text-xl font-mono text-[var(--color-highlight)] truncate">{{ partyLastInvDate }}</span>
                 </div>
               </div>
             </div>
 
+
             <div v-if="partyModifier !== null && Number(partyModifier) !== 0" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
-              <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Multiplier</span>
-              <span class="text-xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">× {{ partyModifier }}</span>
+              <span class="text-xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">{{ partyModifier }}</span>
               <input
                 type="checkbox"
                 :checked="!ignoreModifier"
@@ -418,6 +421,16 @@
  * Item_Invoice_Template.vue
  * A reusable UI template component based on SalesEntry.vue
  */
+
+import { ref } from 'vue'
+
+const sidebarSearchRef = ref(null)
+const sidebarListRef = ref(null)
+
+defineExpose({
+  focusSidebar: () => sidebarSearchRef.value?.focus(),
+  focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
+})
 
 const props = defineProps({
   title: { type: String, default: 'Invoice' },

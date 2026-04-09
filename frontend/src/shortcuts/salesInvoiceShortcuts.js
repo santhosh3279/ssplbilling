@@ -5,12 +5,16 @@
  */
 
 export const salesInvoiceShortcuts = (handlers) => ({
-  'F1':     handlers.openShortcuts   || (() => {}),
-  'F4':     handlers.openSeries      || (() => {}),
-  'F5':     handlers.print           || (() => {}),
-  'F6':     handlers.selectCustomer  || (() => {}),
-  'F8':     handlers.save            || (() => {}),
-  'CTRL+S': handlers.save            || (() => {}),
-  'ESCAPE': handlers.cancel          || (() => {}),
-  'DELETE': handlers.deleteRow       || (() => {}),
+  'F1':      handlers.openShortcuts    || (() => {}),
+  'F2':      handlers.clearBill        || (() => {}),
+  'F3':      handlers.focusModifyPanel || (() => {}),
+  'F4':      handlers.openSeries       || (() => {}),
+  'F5':      handlers.print            || (() => {}),
+  'F6':      handlers.openParcelAddress|| (() => {}),
+  'F8':      handlers.save             || (() => {}),
+  'CTRL+S':  handlers.save             || (() => {}),
+  'INSERT':  handlers.openIncentive    || (() => {}),
+  'PAGEUP':  handlers.pageUp           || (() => {}),
+  'ESCAPE':  handlers.cancel           || (() => {}),
+  'DELETE':  handlers.deleteRow        || (() => {}),
 })
