@@ -68,7 +68,7 @@
           :tabindex="isReadOnly ? -1 : 0"
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
-            'bg-[var(--color-lowlight)] font-bold': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
+            'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
             'bg-green-900/20': item._is_free && !item.deleted,
             'opacity-40 bg-red-900/10 grayscale-[0.5]': item.deleted,
             'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
@@ -76,7 +76,7 @@
           @focus="!isReadOnly && (selectedRowIdx = index)"
           @keydown="!isReadOnly && handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-black' : 'text-[var(--color-text-muted)]'">
             <span v-if="item._cp_applied" class="absolute left-0 inset-y-0 w-[3px] bg-blue-500 rounded-r"></span>
             <span v-if="item.deleted" class="text-[10px] bg-red-600 text-white px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
             {{ index + 1 }}
