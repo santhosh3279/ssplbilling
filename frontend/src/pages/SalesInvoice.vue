@@ -969,6 +969,7 @@ async function handleSave() {
       qty: i.qty,
       rate: i.rate,
       price_list_rate: i.price_list_rate !== undefined ? i.price_list_rate : i.rate,
+      discount: i.discount || 0,
       is_free_item: i._is_free ? 1 : 0
     }))
   }
