@@ -639,19 +639,27 @@ async function handleSelectSidebarItem(item) {
     // Incentive rows
     incentiveRows.value = data.incentive_system || []
 
-    // Items — compute amount for each row
-    items.value = (data.items || []).map(i => ({
-      item_code: i.item_code,
-      item_name: i.item_name,
-      qty: i.qty,
-      rate: i.rate,
-      price_list_rate: i.price_list_rate || i.rate,
-      discount: i.discount || 0,
-      uom: i.uom || 'Nos',
-      tax_rate: i.tax_rate || 0,
-      deleted: false,
-      amount: parseFloat(((i.qty || 0) * (i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
-    }))
+    // Items — reverse-calc pre-discount rate from stored effective rate + discount%
+    items.value = (data.items || []).map(i => {
+      const discount = i.discount || 0
+      const effectiveRate = i.rate || 0
+      const preDiscountRate = discount > 0
+        ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(2))
+        : effectiveRate
+      return {
+        item_code: i.item_code,
+        item_name: i.item_name,
+        qty: i.qty,
+        rate: preDiscountRate,
+        _base_rate: preDiscountRate,
+        price_list_rate: i.price_list_rate || preDiscountRate,
+        discount,
+        uom: i.uom || 'Nos',
+        tax_rate: i.tax_rate || 0,
+        deleted: false,
+        amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
+      }
+    })
 
     selectedRowIdx.value = -1
     editingRowIdx.value = -1
@@ -967,7 +975,7 @@ async function handleSave() {
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
-      rate: i.rate,
+      rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
       price_list_rate: i.price_list_rate !== undefined ? i.price_list_rate : i.rate,
       discount: i.discount || 0,
       is_free_item: i._is_free ? 1 : 0
