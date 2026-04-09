@@ -425,45 +425,7 @@
  * A reusable UI template component based on SalesEntry.vue
  */
 
-import { ref } from 'vue'
-
-const sidebarSearchRef = ref(null)
-const sidebarListRef = ref(null)
-const sidebarItemRefs = new Map()
-
-function setSidebarItemRef(el, idx) {
-  if (el) sidebarItemRefs.set(idx, el)
-  else sidebarItemRefs.delete(idx)
-}
-
-function navigateSidebar(idx, dir) {
-  const target = sidebarItemRefs.get(idx + dir)
-  if (target) {
-    target.focus()
-    target.scrollIntoView({ block: 'nearest' })
-  }
-}
-
-import { watch, nextTick } from 'vue'
-watch(() => props.selectedSidebarItemName, (newVal) => {
-  if (!newVal) return
-  nextTick(() => {
-    // Find index of the item with this name
-    const idx = props.sidebarItems.findIndex(inv => inv.name === newVal)
-    if (idx !== -1) {
-      const el = sidebarItemRefs.get(idx)
-      if (el) {
-        el.focus({ preventScroll: true })
-        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-      }
-    }
-  })
-})
-
-defineExpose({
-  focusSidebar: () => sidebarSearchRef.value?.focus(),
-  focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
-})
+import { ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
   title: { type: String, default: 'Invoice' },
@@ -532,6 +494,43 @@ const emit = defineEmits([
   'update:discountPct', 'update:discountDirectAmt',
   'update:ignoreModifier'
 ])
+
+const sidebarSearchRef = ref(null)
+const sidebarListRef = ref(null)
+const sidebarItemRefs = new Map()
+
+function setSidebarItemRef(el, idx) {
+  if (el) sidebarItemRefs.set(idx, el)
+  else sidebarItemRefs.delete(idx)
+}
+
+function navigateSidebar(idx, dir) {
+  const target = sidebarItemRefs.get(idx + dir)
+  if (target) {
+    target.focus()
+    target.scrollIntoView({ block: 'nearest' })
+  }
+}
+
+watch(() => props.selectedSidebarItemName, (newVal) => {
+  if (!newVal) return
+  nextTick(() => {
+    // Find index of the item with this name
+    const idx = props.sidebarItems.findIndex(inv => inv.name === newVal)
+    if (idx !== -1) {
+      const el = sidebarItemRefs.get(idx)
+      if (el) {
+        el.focus({ preventScroll: true })
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
+  })
+})
+
+defineExpose({
+  focusSidebar: () => sidebarSearchRef.value?.focus(),
+  focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
+})
 
 function formatDate(dateString) {
   if (!dateString) return 'Select Date'
