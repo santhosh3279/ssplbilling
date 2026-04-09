@@ -74,10 +74,11 @@ def _apply_payload_to_doc(doc, payload):
     warehouse = payload.get("warehouse")
     income_account = payload.get("income_account")
 
-    # Clear address fields so Frappe re-derives them from the customer;
-    # stale addresses from a previous customer cause a ValidationError.
+    # Clear address/contact fields so Frappe re-derives them from the customer;
+    # stale values from a previous customer cause a ValidationError.
     doc.customer_address = None
     doc.shipping_address_name = None
+    doc.contact_person = None
 
     doc.set("items", [])
     for item in payload.get("items", []):
