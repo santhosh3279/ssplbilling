@@ -232,7 +232,8 @@
             <select
               ref="priceListSelectRef"
               v-model="priceList"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+              :disabled="isReadOnly"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] disabled:opacity-50 disabled:cursor-default"
             >
               <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
               <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
@@ -245,7 +246,8 @@
             <select
               ref="taxTemplateRef"
               v-model="taxTemplate"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+              :disabled="isReadOnly"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] disabled:opacity-50 disabled:cursor-default"
             >
               <option value="">-- None --</option>
               <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
@@ -254,16 +256,16 @@
 
           <!-- 3 Checkboxes -->
           <div class="flex flex-col gap-1.5 py-1 border-y border-[var(--color-border)]/30">
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input ref="inclusiveTaxRef" type="checkbox" v-model="isInclusiveTax" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-highlight)]" />
+            <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
+              <input ref="inclusiveTaxRef" type="checkbox" v-model="isInclusiveTax" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-highlight)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Inclusive Tax</span>
             </label>
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)]" />
+            <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
+              <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Ignore Pricing Rule</span>
             </label>
             <label class="flex items-center gap-3">
-              <input type="checkbox" disabled class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-danger)]" />
+              <input type="checkbox" disabled class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Sale Return</span>
             </label>
           </div>

@@ -227,8 +227,8 @@
             <div class="flex flex-col gap-2 p-2">
               <!-- Export/Import buttons -->
               <div class="flex gap-1">
-                <button @click="$emit('export')" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-1 text-sm font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]">Export</button>
-                <button @click="$emit('import')" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-1 text-sm font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]">Import</button>
+                <button @click="$emit('export')" :disabled="isReadOnly" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-1 text-sm font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] disabled:opacity-50 disabled:cursor-default">Export</button>
+                <button @click="$emit('import')" :disabled="isReadOnly" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-1 text-sm font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] disabled:opacity-50 disabled:cursor-default">Import</button>
               </div>
 
               <!-- Price List -->
