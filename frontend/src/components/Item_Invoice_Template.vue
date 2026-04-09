@@ -61,11 +61,11 @@
               <div class="flex items-center justify-between gap-1">
                 <div class="flex items-center gap-1.5 truncate min-w-0">
                   <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
-                  <span class="truncate font-mono text-2xl group-hover:brightness-125 group-focus:text-black group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-black font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
+                  <span class="truncate font-mono text-2xl group-hover:brightness-125 group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
                 </div>
-                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-black" :class="selectedSidebarItemName === inv.name ? 'text-black' : 'text-[var(--color-text)]'">{{ inv.grand_total }}</span>
+                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.grand_total }}</span>
               </div>
-              <div class="truncate text-2xl group-focus:text-black" :class="selectedSidebarItemName === inv.name ? 'text-black' : 'text-[var(--color-text-muted)]'">
+              <div class="truncate text-2xl group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer_name }}
               </div>
             </div>

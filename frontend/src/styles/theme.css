@@ -42,7 +42,8 @@
   --color-text-on-selection: #000000;
 
   /* Focus ring */
-  --color-focus: #6EACDA;
+  --color-focus:         #6EACDA;
+  --color-text-on-focus: #000000;
 }
 
 /* ── Dark Theme ── */
@@ -76,5 +77,6 @@
   --color-text-on-selection: #ffffff;
 
   /* Focus ring */
-  --color-focus: #B0E4CC;
+  --color-focus:         #B0E4CC;
+  --color-text-on-focus: #000000;
 }
