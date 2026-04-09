@@ -414,7 +414,7 @@
     <IncentiveEntry
       :show="showIncentiveModal"
       doctype="Sales Invoice"
-      :docname="invoiceNo !== 'NEW' ? invoiceNo : ''"
+      :docname="isSaved ? invoiceNo : ''"
       :initial-rows="incentiveRows"
       @close="showIncentiveModal = false"
       @update:rows="onIncentiveSaved"
@@ -560,8 +560,9 @@ const draftOnly = ref(false)
 const sidebarLoading = ref(false)
 
 const isReadOnly = ref(false)
+const isSaved = ref(false)
 const saveButtonText = computed(() => {
-  if (invoiceNo.value === 'NEW') return 'Save'
+  if (!isSaved.value) return 'Save'
   return isReadOnly.value ? 'Modify Bill' : 'Update Bill'
 })
 
@@ -657,6 +658,7 @@ async function handleSelectSidebarItem(item) {
     pendingItem.value = null
     newItemCode.value = ''
     isReadOnly.value = true
+    isSaved.value = true
   } catch (e) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
@@ -850,6 +852,7 @@ async function clearBill() {
   clearHistory()
   invoiceNo.value = 'NEW'
   isReadOnly.value = false
+  isSaved.value = false
 
   if (selectedSeries.value) {
     try {
@@ -905,7 +908,7 @@ function handlePageUp() {
 }
 
 async function handleSave() {
-  if (isReadOnly.value && invoiceNo.value !== 'NEW') {
+  if (isReadOnly.value && isSaved.value) {
     isReadOnly.value = false
     if (items.value.length > 0) {
       focusRow(0)
@@ -970,7 +973,7 @@ async function handleSave() {
     }))
   }
 
-  const isUpdate = invoiceNo.value !== 'NEW'
+  const isUpdate = isSaved.value
 
   try {
     let res
@@ -987,6 +990,7 @@ async function handleSave() {
       if (isUpdate) {
         alert('Invoice ' + res.name + ' updated successfully!')
         isReadOnly.value = true
+        isSaved.value = true
         fetchRecentInvoices()
         // Stay on the same bill — just refresh items/state from response, keep invoiceNo
         nextTick(() => { newCodeInput.value?.focus() })
@@ -1013,6 +1017,7 @@ async function handleSave() {
         clearHistory()
 
         // Fetch next invoice number for the same series
+        isSaved.value = false
         try {
           const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
           invoiceNo.value = next.invoice_no || 'NEW'
@@ -1030,7 +1035,7 @@ async function handleSave() {
 }
 
 function handlePrint() { 
-  if (invoiceNo.value === 'NEW') {
+  if (!isSaved.value) {
     alert('Please save the invoice before printing.')
     return
   }
