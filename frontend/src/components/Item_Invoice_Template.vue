@@ -358,14 +358,14 @@
               </tr>
               <!-- Freight -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border(--color-border)]">Freight</td>
-                <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
+                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
+                <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     type="number"
                     :value="freightEntry"
                     @input="$emit('update:freightEntry', $event.target.value)"
                     :disabled="isReadOnly"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
@@ -373,13 +373,13 @@
               <!-- Packing -->
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Packing</td>
-                <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
+                <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     type="number"
                     :value="packingEntry"
                     @input="$emit('update:packingEntry', $event.target.value)"
                     :disabled="isReadOnly"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
@@ -387,13 +387,13 @@
               <!-- Loading -->
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Loading</td>
-                <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
+                <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     type="number"
                     :value="loadingEntry"
                     @input="$emit('update:loadingEntry', $event.target.value)"
                     :disabled="isReadOnly"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
@@ -401,13 +401,13 @@
               <!-- Other -->
               <tr>
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Other</td>
-                <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
+                <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     type="number"
                     :value="otherEntry"
                     @input="$emit('update:otherEntry', $event.target.value)"
                     :disabled="isReadOnly"
-                    class="w-full bg-[var(--color-bg)] text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
