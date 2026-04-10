@@ -89,7 +89,7 @@
             <input v-if="editingRowIdx === index && editingField === 'code'"
               ref="editCodeInput"
               v-model="item.item_code"
-              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40"
+              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @input="onEditCodeInput(index)"
               @keydown="onEditCodeKeydown($event, index)"
             />
@@ -107,7 +107,7 @@
               ref="editQtyInput"
               v-model.number="item.qty"
               type="number" min="0"
-              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
@@ -123,7 +123,7 @@
               ref="editRateInput"
               v-model.number="item.rate"
               type="number" min="0" step="0.01"
-              class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="focusEditField('disc', index)"
               @keydown.escape="exitEditMode(index)"
             />
@@ -136,7 +136,7 @@
               ref="editDiscInput"
               v-model.number="item.discount"
               type="number" min="0" max="100" step="0.5"
-              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="finishRowEdit(index)"
               @keydown.escape="exitEditMode(index)"
             />
@@ -236,7 +236,7 @@
               ref="priceListSelectRef"
               v-model="priceList"
               :disabled="isReadOnly"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40 disabled:opacity-50 disabled:cursor-default"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
             >
               <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
               <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
@@ -250,7 +250,7 @@
               ref="taxTemplateRef"
               v-model="taxTemplate"
               :disabled="isReadOnly"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40 disabled:opacity-50 disabled:cursor-default"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
             >
               <option value="">-- None --</option>
               <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
@@ -291,7 +291,7 @@
               <select
                 ref="costCenterRef"
                 v-model="costCenter"
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               >
                 <option v-for="cc in localCostCenters" :key="cc" :value="cc">{{ cc }}</option>
                 <option v-if="!localCostCenters.length" :value="costCenter">{{ costCenter }}</option>
@@ -324,7 +324,7 @@
                 v-model.number="pendingItem.qty"
                 type="number"
                 min="0"
-                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
@@ -342,7 +342,7 @@
               <input
                 ref="newCodeInput"
                 v-model="newItemCode"
-                class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:bg-[var(--color-focus)]/40 placeholder:text-[var(--color-text-muted)]/30"
+                class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] placeholder:text-[var(--color-text-muted)]/30"
                 placeholder="Scan or Type Item..."
                 @input="onNewCodeInput"
                 @keydown="handleNewCodeKeydown"
