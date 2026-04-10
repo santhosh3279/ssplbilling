@@ -658,7 +658,7 @@ async function handleSelectSidebarItem(item) {
         item_name: i.item_name,
         qty: i.qty,
         rate: preDiscountRate,
-        _base_rate: preDiscountRate,
+        _base_rate: i.price_list_rate || preDiscountRate,
         price_list_rate: i.price_list_rate || preDiscountRate,
         discount,
         uom: i.uom || 'Nos',
@@ -991,7 +991,7 @@ async function handleSave() {
       item_code: i.item_code,
       qty: i.qty,
       rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
-      price_list_rate: i.price_list_rate !== undefined ? i.price_list_rate : i.rate,
+      price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount: i.discount || 0,
       is_free_item: i._is_free ? 1 : 0
     }))
