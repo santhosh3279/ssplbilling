@@ -392,7 +392,6 @@ const todayDay = computed(() => {
 
 // ==================== TILES ====================
 const allTiles = [
-  { id: 'sales-invoice', name: 'Sales Invoice Template', desc: 'Standard invoice entry page', icon: '📄', shortcut: '', tileBg: 'bg-emerald-600' },
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
   { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-[var(--color-highlight)]' },
   { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
@@ -441,7 +440,6 @@ const routeAliases = {
   'stock-reconciliation': '/stock-reconciliation',
   'gst-dummy-ledger': '/gst-dummy-ledger',
   'gst-ledger': '/gst-ledger',
-  'sales-invoice': '/sales-invoice',
   'Cashier-Management': '/Cashier-Management',
   'pricing-rules': '/pricing-rules',
   'barcode-print': '/barcode-print',
