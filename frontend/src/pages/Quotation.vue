@@ -1278,7 +1278,7 @@ function handleRowKeydown(e, idx) {
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') { e.preventDefault(); focusRow(items.value.length - 1, 'down') }
   else if (e.key === 'Home') { e.preventDefault(); focusRow(0, 'up') }
-  else if (e.key === 'Escape') { e.preventDefault(); focusBarcodeInput() }
+  else if (e.key === 'Escape') { e.preventDefault(); if (!items.value.length) router.push('/'); else focusBarcodeInput() }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteItem(idx) }
 }
 
