@@ -394,7 +394,6 @@ const todayDay = computed(() => {
 const allTiles = [
   { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
   { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-[var(--color-highlight)]' },
-  { id: 'purchase', name: 'Purchase Entry', desc: 'Record purchases', icon: '📥', shortcut: 'F2', tileBg: 'bg-emerald-600' },
   { id: 'purchase-invoice', name: 'Purchase Invoice', desc: 'Fast purchase invoice entry', icon: '🧾', shortcut: '', tileBg: 'bg-emerald-700' },
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
   { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
@@ -424,13 +423,12 @@ const tiles = computed(() => {
   return allTiles.filter(t => canAccessTile(t.id))
 })
 
-const readyModules = ['sales', 'quotation', 'purchase', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address']
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
   sales: '/sales',
   quotation: '/quotation',
-  purchase: '/purchase-invoice',
   'purchase-invoice': '/purchase-invoice',
   payment: '/payment',
   'purchase-order': '/purchase-order',
@@ -470,7 +468,7 @@ function openModule(id) {
 
 // ==================== F-KEY SHORTCUTS ====================
 const routeMap = {
-  F1: 'sales', F2: 'purchase', F3: 'payment',
+  F1: 'sales', F2: 'purchase-invoice', F3: 'payment',
   F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
   F7: 'purchase-order', F8: 'journal-contra', F9: 'material-transfer',
   F10: 'quotation',

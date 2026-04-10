@@ -105,7 +105,6 @@ export function canAccessRoute(routeName) {
  */
 const TILE_ROUTE_MAP = {
   'sales':             'SalesInvoice',
-  'purchase':          'PurchaseInvoice',
   'purchase-invoice':  'PurchaseInvoice',
   'quotation':         'Quotation',
   'sales-order':       'SalesOrderEntry',
