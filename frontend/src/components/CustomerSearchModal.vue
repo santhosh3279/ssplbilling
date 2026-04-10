@@ -90,7 +90,7 @@
             >
               <td class="px-2.5 py-1.5">
                 <span
-                  class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
+                  class="px-2 py-0.5 rounded text-2xl font-bold uppercase tracking-tight"
                   :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)]' : {
                     'bg-[var(--color-customer)]/20 text-[var(--color-customer)]': c.type === 'Customer',
                     'bg-[var(--color-supplier)]/20 text-[var(--color-supplier)]': c.type === 'Supplier',
@@ -110,7 +110,7 @@
               <td class="px-2.5 py-1.5">
                 <span
                   v-if="c.group"
-                  class="px-2 py-0.5 rounded text-sm font-semibold tracking-tight inline-block"
+                  class="px-2 py-0.5 rounded text-2xl font-semibold tracking-tight inline-block"
                   :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)] border border-black/20' : getGroupBadgeClass(c)"
                 >
                   {{ c.group }}
