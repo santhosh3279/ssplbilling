@@ -84,15 +84,14 @@
             <tr
               v-for="(c, idx) in results"
               :key="c.name"
-              class="cursor-pointer transition-colors"
-              :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]' : 'hover:bg-[var(--color-midlight)]/40'"
-              :style="selectedIdx === idx ? { backgroundColor: 'var(--color-selection) !important' } : {}"
+              class="cursor-pointer transition-all border-l-4 border-transparent"
+              :class="selectedIdx === idx ? 'bg-[var(--color-focus)] border-l-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold' : 'hover:bg-[var(--color-midlight)]/40'"
               @click="handleSelect(c)"
             >
               <td class="px-5 py-3">
                 <span
                   class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
-                  :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-selection)]' : {
+                  :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)]' : {
                     'bg-[var(--color-customer)]/20 text-[var(--color-customer)]': c.type === 'Customer',
                     'bg-[var(--color-supplier)]/20 text-[var(--color-supplier)]': c.type === 'Supplier',
                     'bg-[var(--color-employee)]/20 text-[var(--color-employee)]': c.type === 'Employee',
@@ -103,25 +102,25 @@
                 </span>
               </td>
               <td class="px-5 py-3">
-                <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)] font-bold' : 'text-[var(--color-text)]'">{{ c.label }}</div>
+                <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ c.label }}</div>
               </td>
               <td class="px-5 py-3">
-                <div :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]' : 'text-[var(--color-text-muted)]'">{{ c.mobile_no || '--' }}</div>
+                <div :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ c.mobile_no || '--' }}</div>
               </td>
               <td class="px-5 py-3">
                 <span
                   v-if="c.group"
                   class="px-2 py-0.5 rounded text-sm font-semibold tracking-tight inline-block"
-                  :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-selection)] border border-black/20' : getGroupBadgeClass(c)"
+                  :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)] border border-black/20' : getGroupBadgeClass(c)"
                 >
                   {{ c.group }}
                 </span>
-                <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]/60' : 'text-[var(--color-text-muted)]/40'">--</span>
+                <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]/40'">--</span>
               </td>
               <td class="px-5 py-3 text-right">
                 <span
                   class="font-bold whitespace-nowrap"
-                  :class="selectedIdx === idx ? 'text-[var(--color-text-on-selection)]' : ((c.balance || 0) > 0 ? 'text-[var(--color-success)]' : (c.balance || 0) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
+                  :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : ((c.balance || 0) > 0 ? 'text-[var(--color-success)]' : (c.balance || 0) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
                 >
                   {{ Math.abs(c.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   <span class="text-xs font-normal uppercase ml-0.5">
