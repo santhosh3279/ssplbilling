@@ -365,7 +365,20 @@
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <select
+                v-if="getItemUoms(pendingItem.item_code).length > 1"
+                ref="pendingUomSelect"
+                v-model="pendingItem.uom"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                @change="onPendingUomChange"
+                @keydown.enter.prevent="pendingQtyInput?.focus()"
+                @keydown.escape="cancelPendingItem"
+              >
+                <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
+              </select>
+              <span v-else class="block px-2 py-1 text-xl text-[var(--color-text-muted)]">{{ pendingItem.uom || 'Nos' }}</span>
+            </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ pendingItem.rate }}</td>
             <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter qty and press Enter</td>
           </tr>
@@ -749,6 +762,7 @@ const editQuickSearchRowIdx = ref(null) // null = barcode entry, number = row ed
 const itemSearchTargetRowIdx = ref(null) // null = barcode entry, number = row edit mode
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
+const pendingUomSelect = ref(null)
 const selectedRowIdx = ref(-1)
 const rowRefs = ref([])
 const editingRowIdx = ref(-1)
@@ -1713,6 +1727,17 @@ function onEditCodeKeydown(e, rowIdx) {
 }
 
 
+function onPendingUomChange() {
+  const p = pendingItem.value
+  if (!p) return
+  const cached = lookupItemInCache(p.item_code)
+  if (cached) {
+    const newRate = getItemRateForPriceList(cached, p.uom)
+    p._base_rate = newRate
+    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(2))
+  }
+}
+
 function setPendingItem(item) {
   const base = item.rate || 0
   item._base_rate = base
@@ -1720,7 +1745,14 @@ function setPendingItem(item) {
   item._cp_applied = cpFactor != null
   item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
   pendingItem.value = item
-  nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
+  nextTick(() => {
+    if (getItemUoms(item.item_code).length > 1) {
+      pendingUomSelect.value?.focus()
+    } else {
+      pendingQtyInput.value?.focus()
+      pendingQtyInput.value?.select()
+    }
+  })
 }
 
 function confirmPendingItem() {
