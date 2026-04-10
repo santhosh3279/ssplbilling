@@ -107,13 +107,26 @@
               type="number" min="0"
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
-              @keydown.escape="exitEditMode(index)"
+              @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <select v-if="editingRowIdx === index && editingField === 'uom'"
+              ref="editUomSelect"
+              v-model="item.uom"
+              class="w-full bg-white/10 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @change="onUomChange(index)"
+              @keydown.enter.prevent="focusEditField('qty', index)"
+              @keydown.escape="exitEditMode(index, true)"
+            >
+              <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
+              <option v-if="!getItemUoms(item.item_code).length" :value="item.uom" class="bg-[var(--color-bg)]">{{ item.uom }}</option>
+            </select>
+            <span v-else class="block px-2 py-1 text-xl" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</span>
+          </td>
 
           <!-- rate -->
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -123,7 +136,7 @@
               type="number" min="0" step="0.01"
               class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="focusEditField('disc', index)"
-              @keydown.escape="exitEditMode(index)"
+              @keydown.escape="exitEditMode(index, true)"
             />
             <span v-else class="block px-2 py-1 text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
           </td>
@@ -136,7 +149,7 @@
               type="number" min="0" max="100" step="0.5"
               class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="finishRowEdit(index)"
-              @keydown.escape="exitEditMode(index)"
+              @keydown.escape="exitEditMode(index, true)"
             />
             <span v-else class="block px-2 py-1 text-2xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ item.discount || '0' }}</span>
           </td>
@@ -339,7 +352,20 @@
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <select
+                v-if="getItemUoms(pendingItem.item_code).length > 1"
+                ref="pendingUomSelect"
+                v-model="pendingItem.uom"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                @change="onPendingUomChange"
+                @keydown.enter.prevent="confirmPendingItem"
+                @keydown.escape="cancelPendingItem"
+              >
+                <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
+              </select>
+              <span v-else class="block px-2 py-1 text-xl text-[var(--color-text-muted)]">{{ pendingItem.uom || 'Nos' }}</span>
+            </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ pendingItem.rate }}</td>
             <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter qty and press Enter</td>
           </tr>
@@ -700,12 +726,14 @@ const editQuickSearchRowIdx = ref(null)
 const itemSearchTargetRowIdx = ref(null)
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
+const pendingUomSelect = ref(null)
 const selectedRowIdx = ref(-1)
 const rowRefs = ref([])
 const editingRowIdx = ref(-1)
-const editingField = ref(null)
+const editingField = ref(null) // 'code' | 'qty' | 'uom' | 'rate' | 'disc'
 const editCodeInput = ref(null)
 const editQtyInput = ref(null)
+const editUomSelect = ref(null)
 const editRateInput = ref(null)
 const editDiscInput = ref(null)
 
@@ -1261,7 +1289,12 @@ function handlePendingQtyKeydown(e) {
 
     if (pendingItem.value.qty > 0) {
       e.preventDefault()
-      confirmPendingItem()
+      if (getItemUoms(pendingItem.value.item_code).length > 1) {
+        pendingUomSelect.value?.focus()
+        if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
+      } else {
+        confirmPendingItem()
+      }
     }
   } else if (e.key === 'Escape') {
     cancelPendingItem()
@@ -1274,7 +1307,14 @@ function handlePendingQtyKeydown(e) {
 function handleRowKeydown(e, idx) {
   const item = items.value[idx]
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-  if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
+  if (e.key === 'Enter' && !item.deleted && !item._is_free) {
+    e.preventDefault()
+    if (getItemUoms(item.item_code).length > 1) {
+      focusEditField('uom', idx)
+    } else {
+      focusEditField('qty', idx)
+    }
+  }
   else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') { e.preventDefault(); focusRow(items.value.length - 1, 'down') }
@@ -1286,14 +1326,68 @@ function handleRowKeydown(e, idx) {
 function focusEditField(field, idx) {
   if (items.value[idx]?.deleted || items.value[idx]?._is_free) return
   editingRowIdx.value = idx; editingField.value = field; selectedRowIdx.value = idx
-  const inputMap = { code: editCodeInput, qty: editQtyInput, rate: editRateInput, disc: editDiscInput }
-  nextTick(() => { const el = inputMap[field]?.value; el?.focus(); el?.select() })
+  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput }
+  nextTick(() => {
+    const el = inputMap[field]?.value
+    if (!el) return
+    el.focus()
+    if (el.select) el.select()
+    if (field === 'uom' && el.showPicker) el.showPicker()
+  })
 }
 
-function exitEditMode(idx) {
+function exitEditMode(idx, cancel = false) {
+  if (cancel) {
+    clearItem(idx)
+    editingRowIdx.value = -1
+    editingField.value = null
+    quickSearchResults.value = []
+    editQuickSearchRowIdx.value = null
+    focusBarcodeInput()
+    return
+  }
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
   quickSearchResults.value = []; editQuickSearchRowIdx.value = null
   nextTick(() => { rowRefs.value[idx]?.focus() })
+}
+
+function clearItem(idx) {
+  if (idx !== -1 && items.value[idx]) {
+    items.value.splice(idx, 1)
+    if (editingRowIdx.value === idx) {
+      editingRowIdx.value = -1
+      editingField.value = null
+    }
+  }
+}
+
+function getItemUoms(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  if (!cached || !cached.uoms) return []
+  return cached.uoms.map(u => u.uom)
+}
+
+function onUomChange(idx) {
+  const item = items.value[idx]
+  if (!item) return
+  const cached = lookupItemInCache(item.item_code)
+  if (cached) {
+    const newRate = getItemRateForPriceList(cached, item.uom)
+    item._base_rate = newRate
+    item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+    recalcAmount(idx)
+  }
+}
+
+function onPendingUomChange() {
+  const p = pendingItem.value
+  if (!p) return
+  const cached = lookupItemInCache(p.item_code)
+  if (cached) {
+    const newRate = getItemRateForPriceList(cached, p.uom)
+    p._base_rate = newRate
+    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(2))
+  }
 }
 
 function finishRowEdit(idx) {
@@ -1441,7 +1535,11 @@ function onQuickSearchSelect(item) {
     const rowIdx = editQuickSearchRowIdx.value
     editQuickSearchRowIdx.value = null
     applyItemToRow(rowIdx, item)
-    focusEditField('qty', rowIdx)
+    if (getItemUoms(item.item_code).length > 1) {
+      focusEditField('uom', rowIdx)
+    } else {
+      focusEditField('qty', rowIdx)
+    }
     return
   }
   newItemCode.value = ''
@@ -1454,11 +1552,14 @@ function onQuickSearchSelect(item) {
 function applyItemToRow(rowIdx, item) {
   const row = items.value[rowIdx]
   if (!row) return
+  const isSameItem = row.item_code === item.item_code
   row.item_code = item.item_code
   row.item_name = item.item_name
-  row.uom = item.uom || 'Nos'
+  if (!isSameItem) {
+    row.uom = item.uom || 'Nos'
+  }
   row.tax_rate = item.tax_rate || 0
-  const base = getItemRateForPriceList(item, item.uom)
+  const base = getItemRateForPriceList(item, isSameItem ? row.uom : item.uom)
   row._base_rate = base
   const cpFactor = customerPricing.value[item.item_code]
   row._cp_applied = cpFactor != null
@@ -1547,7 +1648,11 @@ function onEditCodeKeydown(e, rowIdx) {
     )
     if (exactMatch) {
       applyItemToRow(rowIdx, exactMatch)
-      focusEditField('qty', rowIdx)
+      if (getItemUoms(exactMatch.item_code).length > 1) {
+        focusEditField('uom', rowIdx)
+      } else {
+        focusEditField('qty', rowIdx)
+      }
     } else {
       openItemSearch(code, rowIdx)
     }
@@ -1555,7 +1660,18 @@ function onEditCodeKeydown(e, rowIdx) {
     e.preventDefault()
     quickSearchResults.value = []
     editQuickSearchRowIdx.value = null
-    exitEditMode(rowIdx)
+    exitEditMode(rowIdx, true)
+  }
+}
+
+function onPendingUomChange() {
+  const p = pendingItem.value
+  if (!p) return
+  const cached = lookupItemInCache(p.item_code)
+  if (cached) {
+    const newRate = getItemRateForPriceList(cached, p.uom)
+    p._base_rate = newRate
+    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(2))
   }
 }
 
@@ -1566,7 +1682,10 @@ function setPendingItem(item) {
   item._cp_applied = cpFactor != null
   item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
   pendingItem.value = item
-  nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
+  nextTick(() => {
+    pendingQtyInput.value?.focus()
+    pendingQtyInput.value?.select()
+  })
 }
 
 function confirmPendingItem() {
