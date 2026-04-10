@@ -1170,9 +1170,10 @@ function handleNewCodeKeydown(e) {
 
     if (isDouble) {
       e.preventDefault()
+      cancelPendingItem(true)
+      newItemCode.value = ''
       quickSearchResults.value = []
       lastEnterTime.value = 0
-      openItemSearch(newItemCode.value.trim())
       return
     }
   }
