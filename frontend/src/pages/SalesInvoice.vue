@@ -1244,13 +1244,14 @@ function handleNewCodeKeydown(e) {
 
     if (isDouble) {
       e.preventDefault()
-      cancelPendingItem(true)
-      newItemCode.value = ''
       quickSearchResults.value = []
       lastEnterTime.value = 0
+      openItemSearch(newItemCode.value.trim())
       return
     }
   }
+
+  if (e.key === 'ArrowRight') { e.preventDefault(); openItemSearch(newItemCode.value.trim()); return }
 
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
