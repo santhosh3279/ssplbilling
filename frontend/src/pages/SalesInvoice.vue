@@ -1306,9 +1306,8 @@ function finishRowEdit(idx) {
   const item = items.value[idx]
   if (item && isReturn.value) item.qty = -Math.abs(item.qty || 0)
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
-  
-  const item = items.value[idx]
-  const nextTarget = idx < items.value.length - 1 
+
+  const nextTarget = idx < items.value.length - 1
     ? { type: 'row', index: idx + 1 } 
     : { type: 'barcode' }
 
