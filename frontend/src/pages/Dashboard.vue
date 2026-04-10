@@ -392,7 +392,7 @@ const todayDay = computed(() => {
 
 // ==================== TILES ====================
 const allTiles = [
-  { id: 'sales', name: 'Sales Entry', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
+  { id: 'sales', name: 'Sales Invoice', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
   { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-[var(--color-highlight)]' },
   { id: 'purchase-invoice', name: 'Purchase Invoice', desc: 'Fast purchase invoice entry', icon: '🧾', shortcut: '', tileBg: 'bg-emerald-700' },
   { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
@@ -643,7 +643,7 @@ async function fetchSettings(user = null) {
     }
     
     systemSettings.value = settings
-    // Sync user's zoom to localStorage so Sales Entry can use it
+    // Sync user's zoom to localStorage so Sales Invoice can use it
     if (settings && settings.user_zoom) {
       localStorage.setItem('wb-zoom', settings.user_zoom)
     }
