@@ -394,7 +394,7 @@
               </tr>
               <!-- Loading -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Loading</td>
+                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">{{ loadingLabel }}</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     ref="loadingRef"
@@ -504,6 +504,7 @@ const props = defineProps({
   packingAmt: { type: [Number, String], default: '0.00' },
   loadingEntry: { type: String, default: '' },
   loadingAmt: { type: [Number, String], default: '0.00' },
+  loadingLabel: { type: String, default: 'Loading' },
   otherEntry: { type: String, default: '' },
   otherAmt: { type: [Number, String], default: '0.00' },
   totalTax: { type: [Number, String], default: '0.00' },

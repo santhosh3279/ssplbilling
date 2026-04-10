@@ -44,6 +44,7 @@
       :packing-amt="packingAmt"
       v-model:loading-entry="loadingEntry"
       :loading-amt="loadingAmt"
+      loading-label="Tax Paid"
       v-model:other-entry="otherEntry"
       :other-amt="otherAmt"
       v-model:discount-pct="discountPct"
@@ -896,8 +897,8 @@ async function handleSave() {
     if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: freight, description: 'Freight' })
   }
   if (loading !== 0) {
-    const acct = localStorage.getItem('wb-loading')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: loading, description: 'Loading' })
+    const acct = localStorage.getItem('wb-tax-paid-on-purchase')
+    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: loading, description: 'Tax Paid' })
   }
   if (packing !== 0) {
     const acct = localStorage.getItem('wb-packing')
