@@ -10,6 +10,8 @@ export const salesInvoiceShortcuts = (handlers) => ({
   'F3':      handlers.focusModifyPanel || (() => {}),
   'F4':      handlers.openSeries       || (() => {}),
   'F5':      handlers.print            || (() => {}),
+  'CTRL+M':  handlers.modify           || (() => {}),
+  'CTRL+P':  handlers.print            || (() => {}),
   'F6':      handlers.openParcelAddress|| (() => {}),
   'F8':      handlers.save             || (() => {}),
   'CTRL+S':  handlers.save             || (() => {}),

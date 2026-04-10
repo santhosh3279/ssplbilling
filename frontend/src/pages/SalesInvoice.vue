@@ -1061,12 +1061,22 @@ async function handleSave() {
   }
 }
 
-function handlePrint() { 
+function handleModify() {
+  if (!isReadOnly.value || !isSaved.value) return
+  isReadOnly.value = false
+  if (items.value.length > 0) {
+    focusRow(0)
+  } else {
+    focusBarcodeInput()
+  }
+}
+
+function handlePrint() {
   if (!isSaved.value) {
     alert('Please save the invoice before printing.')
     return
   }
-  showPrintModal.value = true 
+  showPrintModal.value = true
 }
 
 function handleCancel() {
@@ -1665,6 +1675,7 @@ useShortcuts(salesInvoiceShortcuts({
   clearBill:        () => handleF2(),
   focusModifyPanel: () => handleF3(),
   openSeries:       () => { showSeriesModal.value = true },
+  modify:           () => handleModify(),
   print:            () => handlePrint(),
   openParcelAddress:() => { showCustomAddressModal.value = true },
   save:             () => handleSave(),
