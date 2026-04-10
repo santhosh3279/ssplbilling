@@ -486,7 +486,7 @@ def update_purchase_invoice(data=None, **kwargs):
     if not pi.posting_time:
         pi.posting_time = frappe.utils.nowtime()
     
-    pi.additional_discount_percentage = float(data.get("discount_percentage", 0))
+    pi.additional_discount_percentage = float(data.get("discount_percentage") or 0)
     if data.get("tax_template"):
         pi.taxes_and_charges = data["tax_template"]
     elif "tax_template" in data:
