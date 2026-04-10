@@ -338,6 +338,10 @@ def get_quotation(quotation_name):
 		"price_list": qt.selling_price_list or "",
 		"docstatus": qt.docstatus,
 		"status": qt.status,
+		"custom_customer_name": qt.custom_customer_name or "",
+		"custom_address_line1": qt.custom_address_line1 or "",
+		"custom_address_line2": qt.custom_address_line2 or "",
+		"custom_mobile_number": qt.custom_mobile_number or "",
 		"items": items,
 	}
 
@@ -398,6 +402,11 @@ def create_quotation(data):
 		if frappe.get_meta("Quotation Item").has_field("allow_zero_valuation_rate"):
 			row["allow_zero_valuation_rate"] = 1
 		qt.append("items", row)
+
+	qt.custom_customer_name = data.get("custom_customer_name") or ""
+	qt.custom_address_line1 = data.get("custom_address_line1") or ""
+	qt.custom_address_line2 = data.get("custom_address_line2") or ""
+	qt.custom_mobile_number = data.get("custom_mobile_number") or ""
 
 	qt.flags.ignore_permissions = True
 	qt.save()
@@ -473,6 +482,11 @@ def update_quotation(data):
 		if frappe.get_meta("Quotation Item").has_field("allow_zero_valuation_rate"):
 			row["allow_zero_valuation_rate"] = 1
 		qt.append("items", row)
+
+	qt.custom_customer_name = data.get("custom_customer_name") or ""
+	qt.custom_address_line1 = data.get("custom_address_line1") or ""
+	qt.custom_address_line2 = data.get("custom_address_line2") or ""
+	qt.custom_mobile_number = data.get("custom_mobile_number") or ""
 
 	qt.flags.ignore_permissions = True
 	qt.save()

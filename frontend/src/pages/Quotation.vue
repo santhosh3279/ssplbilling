@@ -600,6 +600,14 @@ async function handleSelectSidebarItem(item) {
     discountPct.value = data.discount_percentage || ''
     discountDirectAmt.value = data.additional_discount_amount || ''
 
+    // Custom address
+    customAddress.value = {
+      customer_name: data.custom_customer_name || '',
+      mobile_number: data.custom_mobile_number || '',
+      address_line_1: data.custom_address_line1 || '',
+      address_line_2: data.custom_address_line2 || '',
+    }
+
     // Items — reverse-calc pre-discount rate from stored effective rate + discount%
     items.value = (data.items || []).map(i => {
       const discount = i.discount || 0
@@ -813,6 +821,7 @@ async function clearBill() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
+  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
   isReadOnly.value = false
@@ -918,6 +927,10 @@ async function handleSave() {
     additional_discount_amount: parseFloat(discountDirectAmt.value) || 0,
     tax_template: taxTemplate.value,
     is_inclusive: isInclusiveTax.value ? 1 : 0,
+    custom_customer_name: customAddress.value.customer_name || '',
+    custom_address_line1: customAddress.value.address_line_1 || '',
+    custom_address_line2: customAddress.value.address_line_2 || '',
+    custom_mobile_number: customAddress.value.mobile_number || '',
     taxes,
     items: active.map(i => ({
       item_code: i.item_code,
@@ -1003,6 +1016,7 @@ async function closePrintModal() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
+  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   clearHistory()
 
   isSaved.value = false
