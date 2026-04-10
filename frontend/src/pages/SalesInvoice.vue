@@ -1361,7 +1361,7 @@ function handleRowKeydown(e, idx) {
     if (!items.value.length) {
       router.push('/')
     } else {
-      if (!items.value[idx].deleted) deleteItem(idx)
+      clearItem(idx)
       focusBarcodeInput()
     }
   }
@@ -1377,9 +1377,7 @@ function focusEditField(field, idx) {
 
 function exitEditMode(idx, cancel = false) {
   if (cancel) {
-    if (idx !== -1 && items.value[idx] && !items.value[idx].deleted) {
-      deleteItem(idx)
-    }
+    clearItem(idx)
     editingRowIdx.value = -1
     editingField.value = null
     quickSearchResults.value = []
@@ -1548,6 +1546,16 @@ function deleteItem(idx) {
   const item = items.value[idx]; if (!item) return
   item.deleted = !item.deleted
   if (item.deleted && editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null }
+}
+
+function clearItem(idx) {
+  if (idx !== -1 && items.value[idx]) {
+    items.value.splice(idx, 1)
+    if (editingRowIdx.value === idx) {
+      editingRowIdx.value = -1
+      editingField.value = null
+    }
+  }
 }
 
 function onQuickSearchSelect(item) {
