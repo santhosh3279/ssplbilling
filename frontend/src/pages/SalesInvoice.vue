@@ -89,7 +89,7 @@
             <input v-if="editingRowIdx === index && editingField === 'code'"
               ref="editCodeInput"
               v-model="item.item_code"
-              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none"
+              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40"
               @input="onEditCodeInput(index)"
               @keydown="onEditCodeKeydown($event, index)"
             />
@@ -107,7 +107,7 @@
               ref="editQtyInput"
               v-model.number="item.qty"
               type="number" min="0"
-              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
@@ -123,7 +123,7 @@
               ref="editRateInput"
               v-model.number="item.rate"
               type="number" min="0" step="0.01"
-              class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="focusEditField('disc', index)"
               @keydown.escape="exitEditMode(index)"
             />
@@ -136,7 +136,7 @@
               ref="editDiscInput"
               v-model.number="item.discount"
               type="number" min="0" max="100" step="0.5"
-              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="finishRowEdit(index)"
               @keydown.escape="exitEditMode(index)"
             />

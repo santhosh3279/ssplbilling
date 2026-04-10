@@ -333,7 +333,7 @@
                         @input="$emit('update:discountPct', $event.target.value)"
                         @keydown="$emit('discount-pct-keydown', $event)"
                         :disabled="isReadOnly"
-                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right outline-none focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
                     </div>
                     <!-- Amt Half -->
@@ -345,7 +345,7 @@
                         @input="$emit('update:discountDirectAmt', $event.target.value)"
                         @keydown.enter.prevent="freightRef?.focus(); freightRef?.select()"
                         :disabled="isReadOnly"
-                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-1 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-1 outline-none focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
                         placeholder="Amt"
                       />
                     </div>
@@ -371,7 +371,7 @@
                     @input="$emit('update:freightEntry', $event.target.value)"
                     @keydown.enter.prevent="packingRef?.focus(); packingRef?.select()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
@@ -387,7 +387,7 @@
                     @input="$emit('update:packingEntry', $event.target.value)"
                     @keydown.enter.prevent="loadingRef?.focus(); loadingRef?.select()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
@@ -403,7 +403,7 @@
                     @input="$emit('update:loadingEntry', $event.target.value)"
                     @keydown.enter.prevent="otherRef?.focus(); otherRef?.select()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
@@ -419,7 +419,7 @@
                     @input="$emit('update:otherEntry', $event.target.value)"
                     @keydown.enter.prevent="saveBtnRef?.focus()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
                 <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
