@@ -1621,7 +1621,11 @@ function onQuickSearchSelect(item) {
     const rowIdx = editQuickSearchRowIdx.value
     editQuickSearchRowIdx.value = null
     applyItemToRow(rowIdx, item)
-    focusEditField('qty', rowIdx)
+    if (getItemUoms(item.item_code).length > 1) {
+      focusEditField('uom', rowIdx)
+    } else {
+      focusEditField('qty', rowIdx)
+    }
     return
   }
   newItemCode.value = ''
@@ -1730,7 +1734,11 @@ function onEditCodeKeydown(e, rowIdx) {
     )
     if (exactMatch) {
       applyItemToRow(rowIdx, exactMatch)
-      focusEditField('qty', rowIdx)
+      if (getItemUoms(exactMatch.item_code).length > 1) {
+        focusEditField('uom', rowIdx)
+      } else {
+        focusEditField('qty', rowIdx)
+      }
     } else {
       openItemSearch(code, rowIdx)
     }
