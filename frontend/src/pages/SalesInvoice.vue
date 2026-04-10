@@ -236,7 +236,7 @@
               ref="priceListSelectRef"
               v-model="priceList"
               :disabled="isReadOnly"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] disabled:opacity-50 disabled:cursor-default"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40 disabled:opacity-50 disabled:cursor-default"
             >
               <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
               <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
@@ -250,7 +250,7 @@
               ref="taxTemplateRef"
               v-model="taxTemplate"
               :disabled="isReadOnly"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] disabled:opacity-50 disabled:cursor-default"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40 disabled:opacity-50 disabled:cursor-default"
             >
               <option value="">-- None --</option>
               <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
@@ -291,7 +291,7 @@
               <select
                 ref="costCenterRef"
                 v-model="costCenter"
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)]/40"
               >
                 <option v-for="cc in localCostCenters" :key="cc" :value="cc">{{ cc }}</option>
                 <option v-if="!localCostCenters.length" :value="costCenter">{{ costCenter }}</option>
@@ -324,7 +324,7 @@
                 v-model.number="pendingItem.qty"
                 type="number"
                 min="0"
-                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)]/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
@@ -342,7 +342,7 @@
               <input
                 ref="newCodeInput"
                 v-model="newItemCode"
-                class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none placeholder:text-[var(--color-text-muted)]/30"
+                class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:bg-[var(--color-focus)]/40 placeholder:text-[var(--color-text-muted)]/30"
                 placeholder="Scan or Type Item..."
                 @input="onNewCodeInput"
                 @keydown="handleNewCodeKeydown"
