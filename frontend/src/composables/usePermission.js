@@ -24,6 +24,7 @@ export const BILLER_ROUTES = new Set([
   'SalesEntry',
   'SalesInvoice',
   'PurchaseEntry',
+  'PurchaseInvoice',
   'QuotationEntry',
   'Quotation',
   'SalesOrderEntry',
@@ -107,7 +108,8 @@ export function canAccessRoute(routeName) {
  */
 const TILE_ROUTE_MAP = {
   'sales':             'SalesEntry',
-  'purchase':          'PurchaseEntry',
+  'purchase':          'PurchaseInvoice',
+  'purchase-invoice':  'PurchaseInvoice',
   'quotation':         'QuotationEntry',
   'sales-order':       'SalesOrderEntry',
   'cashier':           'CashierDesk',
