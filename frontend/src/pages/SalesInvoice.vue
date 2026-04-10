@@ -1375,6 +1375,18 @@ function updateTableRates() {
   })
 }
 
+// Negate / restore all row qtys when Sale Return is toggled
+watch(isReturn, (val) => {
+  items.value.forEach((item, idx) => {
+    if (item.deleted || item._is_free) return
+    item.qty = val ? -Math.abs(item.qty || 0) : Math.abs(item.qty || 0)
+    recalcAmount(idx)
+  })
+  if (pendingItem.value) {
+    pendingItem.value.qty = val ? -Math.abs(pendingItem.value.qty || 0) : Math.abs(pendingItem.value.qty || 0)
+  }
+})
+
 // Reprice all rows when price list is changed in settings panel
 watch(priceList, (newList) => {
   if (!newList) return
