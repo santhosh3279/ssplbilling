@@ -623,6 +623,7 @@ async function handleSelectSidebarItem(item) {
     if (data.tax_template) taxTemplate.value = data.tax_template
     isInclusiveTax.value = data.is_inclusive === 1
     isReturn.value = data.is_return === 1
+    ignoreModifier.value = data.customer_rate_multiplier === 0
     if (data.cost_center) costCenter.value = data.cost_center
 
     // Charges
@@ -981,6 +982,7 @@ async function handleSave() {
     income_account: incomeAccount.value,
     is_inclusive_tax: isInclusiveTax.value ? 1 : 0,
     is_return: isReturn.value ? 1 : 0,
+    customer_rate_multiplier: ignoreModifier.value ? 0 : 1,
     additional_charges: additionalCharges,
     incentive_rows: incentiveRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 })),
     custom_customer_name: customAddress.value.customer_name || '',

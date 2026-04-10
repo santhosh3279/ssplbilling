@@ -132,6 +132,7 @@ def get_sales_invoice(invoice_name):
         "tax_template": si.taxes_and_charges or "",
         "is_inclusive": is_inclusive,
         "is_return": frappe.utils.cint(si.is_return),
+        "customer_rate_multiplier": frappe.utils.cint(si.custom_customer_rate_multiplier),
         "cost_center": cost_center or "",
         "price_list": si.selling_price_list or "",
         "docstatus": si.docstatus,
