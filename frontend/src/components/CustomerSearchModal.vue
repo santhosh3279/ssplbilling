@@ -70,14 +70,14 @@
 
       <!-- Results Table -->
       <div ref="scrollContainer" class="flex-1 overflow-y-auto">
-        <table class="w-full text-2xl">
+        <table class="w-full text-4xl">
           <thead class="sticky top-0 bg-[var(--color-surface-raised)] shadow-sm z-10">
-            <tr class="text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
-              <th class="px-5 py-3 text-left w-24">Type</th>
-              <th class="px-5 py-3 text-left">Ledger Name</th>
-              <th class="px-5 py-3 text-left">Mobile</th>
-              <th class="px-5 py-3 text-left">Group</th>
-              <th class="px-5 py-3 text-right">Balance</th>
+            <tr class="text-3xl font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
+              <th class="px-2.5 py-1.5 text-left w-24">Type</th>
+              <th class="px-2.5 py-1.5 text-left">Ledger Name</th>
+              <th class="px-2.5 py-1.5 text-left">Mobile</th>
+              <th class="px-2.5 py-1.5 text-left">Group</th>
+              <th class="px-2.5 py-1.5 text-right">Balance</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--color-border)]">
@@ -88,7 +88,7 @@
               :class="selectedIdx === idx ? 'bg-[var(--color-focus)] border-l-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold' : 'hover:bg-[var(--color-midlight)]/40'"
               @click="handleSelect(c)"
             >
-              <td class="px-5 py-3">
+              <td class="px-2.5 py-1.5">
                 <span
                   class="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-tight"
                   :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)]' : {
@@ -101,13 +101,13 @@
                   {{ c.type }}
                 </span>
               </td>
-              <td class="px-5 py-3">
+              <td class="px-2.5 py-1.5">
                 <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ c.label }}</div>
               </td>
-              <td class="px-5 py-3">
+              <td class="px-2.5 py-1.5">
                 <div :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ c.mobile_no || '--' }}</div>
               </td>
-              <td class="px-5 py-3">
+              <td class="px-2.5 py-1.5">
                 <span
                   v-if="c.group"
                   class="px-2 py-0.5 rounded text-sm font-semibold tracking-tight inline-block"
@@ -117,7 +117,7 @@
                 </span>
                 <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]/40'">--</span>
               </td>
-              <td class="px-5 py-3 text-right">
+              <td class="px-2.5 py-1.5 text-right">
                 <span
                   class="font-bold whitespace-nowrap"
                   :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : ((c.balance || 0) > 0 ? 'text-[var(--color-success)]' : (c.balance || 0) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
