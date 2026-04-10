@@ -1397,7 +1397,13 @@ function focusEditField(field, idx) {
   if (items.value[idx]?.deleted || items.value[idx]?._is_free) return
   editingRowIdx.value = idx; editingField.value = field; selectedRowIdx.value = idx
   const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput }
-  nextTick(() => { const el = inputMap[field]?.value; el?.focus(); el?.select?.() || el?.focus?.() })
+  nextTick(() => {
+    const el = inputMap[field]?.value
+    if (!el) return
+    el.focus()
+    if (el.select) el.select()
+    if (field === 'uom' && el.showPicker) el.showPicker()
+  })
 }
 
 function exitEditMode(idx, cancel = false) {
@@ -1748,6 +1754,7 @@ function setPendingItem(item) {
   nextTick(() => {
     if (getItemUoms(item.item_code).length > 1) {
       pendingUomSelect.value?.focus()
+      if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
     } else {
       pendingQtyInput.value?.focus()
       pendingQtyInput.value?.select()
