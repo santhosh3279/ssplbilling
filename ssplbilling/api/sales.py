@@ -102,6 +102,12 @@ def _apply_payload_to_doc(doc, payload):
         doc.append("items", item_row)
 
     doc.set_missing_values()
+    # set_missing_values() overwrites item warehouses with each item's default warehouse;
+    # re-apply the invoice-level warehouse so all rows use the correct one.
+    if warehouse:
+        for row in doc.items:
+            row.warehouse = warehouse
+
     if doc.taxes_and_charges:
         doc.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", doc.taxes_and_charges) or [])
 
