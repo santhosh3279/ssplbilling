@@ -305,7 +305,7 @@
 
                       <!-- Row 1: Save and Print -->
                       <div class="flex gap-2">
-                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase">{{ saveButtonText }}</button>
+                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-green-600/70 focus:outline-none">{{ saveButtonText }}</button>
                         <button @click="$emit('print')" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print</button>
                       </div>
 
