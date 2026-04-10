@@ -24,7 +24,7 @@ Instructional context for Gemini CLI when working on the **ssplbilling** project
     - `doctype/`: Custom Frappe DocTypes.
 - `frontend/`: Vue 3 Single Page Application.
     - `src/api.js`: Central API service layer (canonical fetch transport).
-    - `src/pages/`: Main application views (SalesEntry, PurchaseEntry, Cashierpage, etc.).
+    - `src/pages/`: Main application views (SalesInvoice, PurchaseEntry, Cashierpage, etc.).
     - `src/components/`: Reusable Vue components (Search modals, Print options).
     - `src/shortcuts/`: Keyboard shortcut definitions.
     - `src/services/`: Auxiliary services (IndexedDB wrapper, Dashboard API).
@@ -44,7 +44,7 @@ Instructional context for Gemini CLI when working on the **ssplbilling** project
 ## Architecture & Workflows
 
 ### 1. Two-Step Billing Workflow
-1.  **Sales Entry** (`/sales`): Operator enters items and saves a **Draft** Sales Invoice.
+1.  **Sales Invoice** (`/sales-invoice`): Operator enters items and saves a **Draft** Sales Invoice.
 2.  **Cashier Entry** (`/cashier`): Cashier selects the draft, processes the payment split (Cash/UPI), and submits the invoice.
 
 ### 2. Purchase Workflow
