@@ -88,8 +88,8 @@
               ref="editCodeInput"
               v-model="item.item_code"
               class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none"
-              @keydown.enter.prevent="focusEditField('qty', index)"
-              @keydown.escape="exitEditMode(index)"
+              @input="onEditCodeInput(index)"
+              @keydown="onEditCodeKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-2xl font-mono" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
           </td>
@@ -699,6 +699,8 @@ const quickSearchAnchor = ref(null)
 const showItemSearch = ref(false)
 const itemSearchRef = ref(null)
 const itemSearchInitialQuery = ref('')
+const editQuickSearchRowIdx = ref(null) // null = barcode entry, number = row edit mode
+const itemSearchTargetRowIdx = ref(null) // null = barcode entry, number = row edit mode
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const selectedRowIdx = ref(-1)
@@ -1291,6 +1293,7 @@ function focusEditField(field, idx) {
 
 function exitEditMode(idx) {
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
+  quickSearchResults.value = []; editQuickSearchRowIdx.value = null
   nextTick(() => { rowRefs.value[idx]?.focus() })
 }
 
@@ -1441,15 +1444,40 @@ function deleteItem(idx) {
 
 function onQuickSearchSelect(item) {
   if (!item) return
-  quickSearchResults.value = []; newItemCode.value = ''
+  quickSearchResults.value = []
+  if (editQuickSearchRowIdx.value !== null) {
+    const rowIdx = editQuickSearchRowIdx.value
+    editQuickSearchRowIdx.value = null
+    applyItemToRow(rowIdx, item)
+    focusEditField('qty', rowIdx)
+    return
+  }
+  newItemCode.value = ''
   setPendingItem({
     item_code: item.item_code, item_name: item.item_name, qty: 0, rate: getItemRateForPriceList(item, item.uom),
     uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
   })
 }
 
-function openItemSearch(query) {
+function applyItemToRow(rowIdx, item) {
+  const row = items.value[rowIdx]
+  if (!row) return
+  row.item_code = item.item_code
+  row.item_name = item.item_name
+  row.uom = item.uom || 'Nos'
+  row.tax_rate = item.tax_rate || 0
+  const base = getItemRateForPriceList(item, item.uom)
+  row._base_rate = base
+  const cpFactor = customerPricing.value[item.item_code]
+  row._cp_applied = cpFactor != null
+  row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+  recalcAmount(rowIdx)
+}
+
+function openItemSearch(query, targetRowIdx = null) {
   quickSearchResults.value = []
+  editQuickSearchRowIdx.value = null
+  itemSearchTargetRowIdx.value = targetRowIdx
   itemSearchInitialQuery.value = query || ''
   showItemSearch.value = true
   nextTick(() => { itemSearchRef.value?.focus() })
@@ -1457,16 +1485,86 @@ function openItemSearch(query) {
 
 function closeItemSearch() {
   showItemSearch.value = false
-  nextTick(() => { newCodeInput.value?.focus() })
+  const rowIdx = itemSearchTargetRowIdx.value
+  itemSearchTargetRowIdx.value = null
+  if (rowIdx !== null) {
+    nextTick(() => { focusEditField('code', rowIdx) })
+  } else {
+    nextTick(() => { newCodeInput.value?.focus() })
+  }
 }
 
 function onItemSearchSelect(item) {
   showItemSearch.value = false
+  const rowIdx = itemSearchTargetRowIdx.value
+  itemSearchTargetRowIdx.value = null
+  if (rowIdx !== null) {
+    applyItemToRow(rowIdx, item)
+    focusEditField('qty', rowIdx)
+    return
+  }
   newItemCode.value = ''
   setPendingItem({
     item_code: item.item_code, item_name: item.item_name, qty: 0, rate: getItemRateForPriceList(item, item.uom),
     uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
   })
+}
+
+function onEditCodeInput(rowIdx) {
+  const code = (items.value[rowIdx]?.item_code || '').trim()
+  if (code.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchAnchor.value = editCodeInput.value
+    editQuickSearchRowIdx.value = rowIdx
+  } else {
+    quickSearchResults.value = []
+    editQuickSearchRowIdx.value = null
+  }
+}
+
+function onEditCodeKeydown(e, rowIdx) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const code = (items.value[rowIdx]?.item_code || '').trim()
+      const exactMatch = quickSearchResults.value.find(i =>
+        i.item_code.toLowerCase() === code.toLowerCase() ||
+        (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
+      )
+      if (exactMatch) {
+        quickSearchRef.value.handleQuickSearchKeydown(e)
+      } else {
+        openItemSearch(code, rowIdx)
+      }
+      return
+    } else if (e.key === 'Escape') {
+      e.preventDefault(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return
+    }
+    return
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    const code = (items.value[rowIdx]?.item_code || '').trim()
+    const cached = searchItemsInCache(code)
+    const exactMatch = cached.find(i =>
+      i.item_code.toLowerCase() === code.toLowerCase() ||
+      (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
+    )
+    if (exactMatch) {
+      applyItemToRow(rowIdx, exactMatch)
+      focusEditField('qty', rowIdx)
+    } else {
+      openItemSearch(code, rowIdx)
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    quickSearchResults.value = []
+    editQuickSearchRowIdx.value = null
+    exitEditMode(rowIdx)
+  }
 }
 
 
