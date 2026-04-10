@@ -128,31 +128,35 @@ All billing state lives in **`composables/useBilling.js`** — a Vue 3 composabl
 
 ## Git Workflow
 
-**Before starting any task**, commit the current state with a description of what is about to be done:
+> **MANDATORY — do this for every task without exception.**
+
+**Step 1 — before touching any file**, run the pre-task checkpoint commit:
 
 ```bash
 git add -A && git commit -m "chore: checkpoint before <brief description of upcoming task>"
 ```
 
-**After completing a task**, commit with a description of what was done:
+**Step 2 — after the task is fully done**, run the post-task commit:
 
 ```bash
 git add -A && git commit -m "<type>: <description of what was done>"
 ```
 
-Both commits are required for every task — the before-commit captures the baseline, the after-commit records the change.
+Both commits are required for every task, no matter how small. The before-commit captures the baseline; the after-commit records the change. Skipping either is not allowed.
 
 Use conventional commit types: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`.
 
 ## Response Format
 
-When summarising changes at the end of a task, include a line-count table for every affected file:
+> **MANDATORY — include this at the end of every response that changes files.**
 
-| File | Before | After |
-|------|--------|-------|
-| `path/to/file.vue` | 210 | 245 |
+After completing a task, always include a line-count table for every affected file:
 
-Use `wc -l` (or count from the Read tool output) to get accurate numbers.
+| File | Before | After | +/- |
+|------|--------|-------|-----|
+| `path/to/file.vue` | 210 | 245 | +35 |
+
+Use `wc -l` to get accurate counts. Never estimate or skip this table.
 
 ## Key Conventions
 

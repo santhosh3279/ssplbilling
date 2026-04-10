@@ -108,6 +108,7 @@
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index)"
+              @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
@@ -360,17 +361,7 @@
       @close="quickSearchResults = []"
     />
 
-    <ItemSearch
-      v-if="showItemSearch"
-      :show="showItemSearch"
-      search-type="Sales"
-      :price-list="priceList"
-      :warehouse="warehouse"
-      :initial-query="newItemCode"
-      skip-date-filter
-      @close="showItemSearch = false; focusBarcodeInput()"
-      @select="onItemSearchSelect"
-    />
+
 
     <CustomerSearchModal
       v-if="showCustomerModal"
@@ -462,7 +453,7 @@ import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
-import ItemSearch from '../components/ItemSearch.vue'
+
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
@@ -543,7 +534,7 @@ const inclusiveTaxRef = ref(null)
 const ignoreRuleRef = ref(null)
 const costCenterRef = ref(null)
 const showPrintModal = ref(false)
-const showItemSearch = ref(false)
+
 const lastEnterTime = ref(0)
 const showPriceDetectModal = ref(false)
 const showJumpModal = ref(false)
@@ -1173,12 +1164,7 @@ function handleItemEntry() {
     (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
   )
 
-  if (!exactMatch) {
-    // Unrecognised or partial match — open full item search
-    quickSearchResults.value = [] // Clear quick search to prevent it from stealing keys
-    showItemSearch.value = true
-    return
-  }
+  if (!exactMatch) return
 
   setPendingItem({
     item_code: exactMatch.item_code, item_name: exactMatch.item_name, qty: 0,
@@ -1208,15 +1194,27 @@ function handleNewCodeKeydown(e) {
       cancelPendingItem(true)
       newItemCode.value = ''
       quickSearchResults.value = []
-      showItemSearch.value = true
       lastEnterTime.value = 0
       return
     }
   }
 
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const code = newItemCode.value.trim()
+      const exactMatch = quickSearchResults.value.find(i =>
+        i.item_code.toLowerCase() === code.toLowerCase() ||
+        (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
+      )
+      if (exactMatch) {
+        quickSearchRef.value.handleQuickSearchKeydown(e)
+      } else {
+        quickSearchResults.value = []
+      }
+      return
     } else if (e.key === 'Escape') {
       e.preventDefault(); quickSearchResults.value = []; return
     }
@@ -1226,10 +1224,7 @@ function handleNewCodeKeydown(e) {
     if (!newItemCode.value) return
     handleItemEntry()
   }
-  else if (e.key === 'ArrowRight') {
-    e.preventDefault()
-    showItemSearch.value = true
-  }
+
   else if (e.key === 'ArrowUp' && items.value.length > 0) { e.preventDefault(); focusRow(items.value.length - 1) }
 }
 
@@ -1242,7 +1237,6 @@ function handlePendingQtyKeydown(e) {
     if (isDouble && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
       e.preventDefault()
       cancelPendingItem(true)
-      showItemSearch.value = true
       lastEnterTime.value = 0
       return
     }
@@ -1252,6 +1246,9 @@ function handlePendingQtyKeydown(e) {
       confirmPendingItem()
     }
   } else if (e.key === 'Escape') {
+    cancelPendingItem()
+  } else if (e.key === 'Backspace' && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
+    e.preventDefault()
     cancelPendingItem()
   }
 }
@@ -1432,15 +1429,6 @@ function onQuickSearchSelect(item) {
   })
 }
 
-function onItemSearchSelect(item) {
-  showItemSearch.value = false
-  if (!item) return
-  newItemCode.value = ''
-  setPendingItem({
-    item_code: item.item_code, item_name: item.item_name, qty: 0, rate: item.price || getItemRateForPriceList(item, item.uom),
-    uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
-  })
-}
 
 function setPendingItem(item) {
   const base = item.rate || 0

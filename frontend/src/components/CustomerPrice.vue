@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+  <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-[2px]" v-if="!showPriceListUpdate">
     <div class="w-[420px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-highlight)]/40 shadow-2xl">
       <div class="bg-[var(--color-highlight)]/20 px-6 py-4 flex items-center gap-3 border-b border-[var(--color-highlight)]/30">
         <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-highlight)]/40 text-xl text-[var(--color-highlight)]">💰</div>
@@ -62,12 +62,21 @@
       </div>
     </div>
   </div>
+  <PriceListUpdate
+    v-if="showPriceListUpdate"
+    :is-sub-window="true"
+    :item-code="data.item_code"
+    :selected-price-list="priceList"
+    @close="showPriceListUpdate = false"
+    @saved="showPriceListUpdate = false"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
+import PriceListUpdate from '../pages/PriceListUpdate.vue'
 
 const props = defineProps({
   data: { type: Object, required: true },   // { item_code, item_name, standard_rate, current_rate }
@@ -82,6 +91,7 @@ useSubwindow()
 const savePriceYesBtn = ref(null)
 const savePriceNoBtn = ref(null)
 const saving = ref(false)
+const showPriceListUpdate = ref(false)
 
 // Core calculation: factor = user rate ÷ price list rate
 const multiplicationFactor = computed(() => {
@@ -119,7 +129,7 @@ async function saveForCustomer() {
 
 function onKeydown(e) {
   if (e.key === 'Escape') { e.preventDefault(); return }
-  if (e.key === 'F4') { e.preventDefault(); emit('advanced'); return }
+  if (e.key === 'F4') { e.preventDefault(); showPriceListUpdate.value = true; return }
 
   const btns = [savePriceYesBtn.value, savePriceNoBtn.value].filter(Boolean)
   const currIdx = btns.indexOf(document.activeElement)

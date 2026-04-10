@@ -217,27 +217,11 @@ def update_item(data):
 			"supplier_part_no": data.get("supplier_part_no") or "",
 		})
 
+	if data.get("standard_rate") is not None:
+		item.standard_rate = float(data["standard_rate"])
+
 	item.flags.ignore_permissions = True
 	item.save()
-
-	# Update selling price
-	if data.get("standard_rate") is not None:
-		rate = float(data["standard_rate"])
-		price_name = frappe.db.get_value(
-			"Item Price",
-			{"item_code": item_code, "selling": 1},
-			"name",
-		)
-		if price_name:
-			frappe.db.set_value("Item Price", price_name, "price_list_rate", rate)
-		else:
-			price_doc = frappe.new_doc("Item Price")
-			price_doc.item_code = item_code
-			price_doc.price_list = "Standard Selling"
-			price_doc.price_list_rate = rate
-			price_doc.selling = 1
-			price_doc.flags.ignore_permissions = True
-			price_doc.insert()
 
 	return {"item_code": item.item_code, "item_name": item.item_name}
 
