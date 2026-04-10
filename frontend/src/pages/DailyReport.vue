@@ -229,7 +229,7 @@ function handleRowClick(row) {
   if (activeTab.value === 'Invoice') {
     router.push({ name: 'SalesInvoice', query: { invoice: row.name } })
   } else if (activeTab.value === 'Quotation') {
-    router.push({ name: 'QuotationEntry', query: { quotation: row.name } })
+    router.push({ name: 'Quotation', query: { quotation: row.name } })
   }
 }
 

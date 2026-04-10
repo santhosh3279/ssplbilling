@@ -16,15 +16,13 @@
  *   admin    → all routes
  *   accounts → PayRec, JournalContraEntry, Reports; sees all GL accounts
  *   cashier  → biller routes + CashierDesk, PurchaseSubmit, CustomerLedger, PayRec, JournalContraEntry
- *   biller   → SalesInvoice, PurchaseEntry, QuotationEntry, SalesOrderEntry, ParcelAddress, BarcodePrintPage, LoadingReceipt
+ *   biller   → SalesInvoice, PurchaseInvoice, Quotation, SalesOrderEntry, ParcelAddress, BarcodePrintPage, LoadingReceipt
  */
 
 // Route names accessible by biller
 export const BILLER_ROUTES = new Set([
   'SalesInvoice',
-  'PurchaseEntry',
   'PurchaseInvoice',
-  'QuotationEntry',
   'Quotation',
   'SalesOrderEntry',
   'ParcelAddress',
@@ -109,7 +107,7 @@ const TILE_ROUTE_MAP = {
   'sales':             'SalesInvoice',
   'purchase':          'PurchaseInvoice',
   'purchase-invoice':  'PurchaseInvoice',
-  'quotation':         'QuotationEntry',
+  'quotation':         'Quotation',
   'sales-order':       'SalesOrderEntry',
   'cashier':           'CashierDesk',
   'purchase-submit':   'PurchaseSubmit',
@@ -131,7 +129,6 @@ const TILE_ROUTE_MAP = {
   'gst-dummy-ledger':  'GstDummyLedger',
   'gst-ledger':        'GstLedger',
   'daily-report':      'DailyReport',
-  'sales-invoice':     'SalesInvoice',
   'reconcile':         'Dashboard',
   'invoice-template':  'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',
