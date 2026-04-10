@@ -25,6 +25,7 @@ export const BILLER_ROUTES = new Set([
   'SalesInvoice',
   'PurchaseEntry',
   'QuotationEntry',
+  'Quotation',
   'SalesOrderEntry',
   'ParcelAddress',
   'BarcodePrintPage',

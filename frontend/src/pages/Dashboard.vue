@@ -429,7 +429,7 @@ const readyModules = ['sales', 'quotation', 'purchase', 'cashier', 'purchase-sub
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
   sales: '/sales',
-  quotation: '/quotation',
+  quotation: '/quotation-new',
   purchase: '/purchase',
   payment: '/payment',
   'purchase-order': '/purchase-order',

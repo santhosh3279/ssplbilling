@@ -7,6 +7,7 @@ import SalesEntry from './pages/SalesEntry.vue'
 import SalesInvoice from './pages/SalesInvoice.vue'
 import SalesInvoicePage from './pages/SalesInvoicePage.vue'
 import QuotationEntry from './pages/QuotationEntry.vue'
+import Quotation from './pages/Quotation.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
 import BarcodePrintPage from './pages/BarcodePrintPage.vue'
@@ -72,6 +73,11 @@ const routes = [
     path: '/quotation',
     name: 'QuotationEntry',
     component: QuotationEntry,
+  },
+  {
+    path: '/quotation-new',
+    name: 'Quotation',
+    component: Quotation,
   },
   {
     path: '/purchase',
