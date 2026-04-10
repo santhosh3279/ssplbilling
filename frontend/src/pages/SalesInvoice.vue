@@ -1122,8 +1122,12 @@ async function closePrintModal() {
 }
 
 function handleCancel() {
-  items.value = []
-  clearHistory()
+  if (items.value.length === 0) {
+    router.push('/')
+  } else {
+    items.value = []
+    clearHistory()
+  }
 }
 
 function handleIncentive() { showIncentiveModal.value = true }
@@ -1304,6 +1308,15 @@ function handleNewCodeKeydown(e) {
   if (e.key === 'Enter') {
     if (!newItemCode.value) return
     handleItemEntry()
+  }
+
+  else if (e.key === 'Escape') {
+    e.preventDefault()
+    if (items.value.length === 0) {
+      router.push('/')
+    } else {
+      handleCancel()
+    }
   }
 
   else if (e.key === 'ArrowUp' && items.value.length > 0) { e.preventDefault(); focusRow(items.value.length - 1) }
