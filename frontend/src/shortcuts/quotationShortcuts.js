@@ -10,6 +10,7 @@ export const quotationShortcuts = (handlers) => ({
   'F3':      handlers.focusModifyPanel || (() => {}),
   'F4':      handlers.openSeries       || (() => {}),
   'F5':      handlers.print            || (() => {}),
+  'F6':      handlers.openCustomAddress|| (() => {}),
   'CTRL+M':  handlers.modify           || (() => {}),
   'CTRL+P':  handlers.print            || (() => {}),
   'F8':      handlers.save             || (() => {}),

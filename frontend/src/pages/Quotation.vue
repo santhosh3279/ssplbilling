@@ -407,6 +407,13 @@
       @confirm="showClearWarning = false; clearBill()"
     />
 
+    <CustomAddress
+      v-if="showCustomAddressModal"
+      :initial-data="customAddress"
+      @saved="data => { customAddress = data }"
+      @close="showCustomAddressModal = false"
+    />
+
     <ShortcutPage
       :show="showShortcutPage"
       extra-title="Quotation"
@@ -415,6 +422,7 @@
         { key: 'F3', desc: 'Focus sidebar list' },
         { key: 'F4', desc: 'Select series' },
         { key: 'F5', desc: 'Print quotation' },
+        { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save quotation' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
@@ -437,6 +445,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
+import CustomAddress from '../components/CustomAddress.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -496,6 +505,8 @@ const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
 const showShortcutPage = ref(false)
 const showClearWarning = ref(false)
+const showCustomAddressModal = ref(false)
+const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
 const customerInitialQuery = ref('')
 const invoiceTemplateRef = ref(null)
 const priceListSelectRef = ref(null)
@@ -1552,15 +1563,16 @@ async function handleSeriesSelected(series) {
 }
 
 useShortcuts(quotationShortcuts({
-  openShortcuts:    () => { showShortcutPage.value = !showShortcutPage.value },
-  clearBill:        () => handleF2(),
-  focusModifyPanel: () => handleF3(),
-  openSeries:       () => { showSeriesModal.value = true },
-  modify:           () => handleModify(),
-  print:            () => handlePrint(),
-  save:             () => handleSave(),
-  cancel:           () => handleCancel(),
-  pageUp:           () => handlePageUp(),
+  openShortcuts:      () => { showShortcutPage.value = !showShortcutPage.value },
+  clearBill:          () => handleF2(),
+  focusModifyPanel:   () => handleF3(),
+  openSeries:         () => { showSeriesModal.value = true },
+  modify:             () => handleModify(),
+  print:              () => handlePrint(),
+  openCustomAddress:  () => { showCustomAddressModal.value = true },
+  save:               () => handleSave(),
+  cancel:             () => handleCancel(),
+  pageUp:             () => handlePageUp(),
   deleteRow:        () => {
     if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       deleteItem(selectedRowIdx.value)
