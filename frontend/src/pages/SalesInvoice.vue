@@ -1122,7 +1122,11 @@ async function closePrintModal() {
 }
 
 function handleCancel() {
-  router.push('/')
+  if (activeItems.value.length === 0) {
+    router.push('/')
+  } else {
+    focusBarcodeInput()
+  }
 }
 
 function handleIncentive() { showIncentiveModal.value = true }
@@ -1307,6 +1311,7 @@ function handleNewCodeKeydown(e) {
 
   else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     handleCancel()
   }
 
@@ -1349,7 +1354,8 @@ function handleRowKeydown(e, idx) {
   else if (e.key === 'Home') { e.preventDefault(); focusRow(0, 'up') }
   else if (e.key === 'Escape') {
     e.preventDefault()
-    if (!items.value.length) {
+    e.stopPropagation()
+    if (activeItems.value.length === 0) {
       router.push('/')
     } else {
       clearItem(idx)
