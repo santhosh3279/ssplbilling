@@ -13,7 +13,7 @@ fixtures = [
 	{
 		"dt": "Custom Field",
 		"filters": [
-			["dt", "in", ["Item", "Employee", "Sales Invoice", "Purchase Invoice", "Stock Entry", "Customer", "Supplier"]],
+			["dt", "in", ["Item", "Employee", "Sales Invoice", "Purchase Invoice", "Stock Entry", "Customer", "Supplier", "Quotation"]],
 			[
 				"fieldname",
 				"in",
@@ -31,6 +31,7 @@ fixtures = [
 					"custom_address_line1",
 					"custom_address_line2",
 					"custom_mobile_number",
+					"customer_rate_multiplier",
 				],
 			],
 		],
