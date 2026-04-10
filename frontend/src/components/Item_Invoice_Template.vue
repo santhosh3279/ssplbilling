@@ -297,7 +297,7 @@
                           <div class="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
                           <div class="text-[12px] font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
                         </div>
-                        <div class="flex items-baseline gap-2 text-[var(--color-success)] font-bold">
+                        <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                           <span class="text-[6mm] font-black">₹</span>
                           <span class="font-mono text-[10.5mm] font-black leading-none">{{ totalAmount }}</span>
                         </div>
