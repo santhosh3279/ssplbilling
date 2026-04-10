@@ -131,6 +131,7 @@ def get_sales_invoice(invoice_name):
         "outstanding_amount": float(si.outstanding_amount or 0),
         "tax_template": si.taxes_and_charges or "",
         "is_inclusive": is_inclusive,
+        "is_return": frappe.utils.cint(si.is_return),
         "cost_center": cost_center or "",
         "price_list": si.selling_price_list or "",
         "docstatus": si.docstatus,

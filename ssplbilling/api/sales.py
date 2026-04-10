@@ -68,6 +68,7 @@ def _apply_payload_to_doc(doc, payload):
     doc.additional_discount_percentage = discount_pct if discount_pct > 0 else 0
     doc.discount_amount = discount_amt if discount_amt > 0 else 0
 
+    doc.is_return = frappe.utils.cint(payload.get("is_return"))
     doc.taxes_and_charges = payload.get("tax_template")
 
     cost_center = payload.get("cost_center")

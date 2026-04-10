@@ -22,6 +22,7 @@
       :price-list="priceList"
       :tax-template="taxTemplate"
       :is-inclusive-tax="isInclusiveTax"
+      :is-return="isReturn"
       :warehouse="warehouse"
       :cost-center="costCenter"
       :income-account="incomeAccount"
@@ -265,8 +266,8 @@
               <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Ignore Pricing Rule</span>
             </label>
-            <label class="flex items-center gap-3">
-              <input type="checkbox" disabled class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
+            <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
+              <input type="checkbox" v-model="isReturn" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Sale Return</span>
             </label>
           </div>
@@ -513,6 +514,7 @@ const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.va
 const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenters.value[0] || 'None')
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
 const isInclusiveTax = ref(true)
+const isReturn = ref(false)
 
 // --- Additional Charges ---
 const freightEntry = ref('')
@@ -620,6 +622,7 @@ async function handleSelectSidebarItem(item) {
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
     isInclusiveTax.value = data.is_inclusive === 1
+    isReturn.value = data.is_return === 1
     if (data.cost_center) costCenter.value = data.cost_center
 
     // Charges
@@ -869,6 +872,7 @@ async function clearBill() {
   customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
+  isReturn.value = false
   isReadOnly.value = false
   isSaved.value = false
 
@@ -976,6 +980,7 @@ async function handleSave() {
     warehouse: warehouse.value,
     income_account: incomeAccount.value,
     is_inclusive_tax: isInclusiveTax.value ? 1 : 0,
+    is_return: isReturn.value ? 1 : 0,
     additional_charges: additionalCharges,
     incentive_rows: incentiveRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 })),
     custom_customer_name: customAddress.value.customer_name || '',
@@ -1298,6 +1303,8 @@ function exitEditMode(idx) {
 }
 
 function finishRowEdit(idx) {
+  const item = items.value[idx]
+  if (item && isReturn.value) item.qty = -Math.abs(item.qty || 0)
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
   
   const item = items.value[idx]
@@ -1581,11 +1588,12 @@ function setPendingItem(item) {
 function confirmPendingItem() {
   if (!pendingItem.value || pendingItem.value.qty <= 0) return
   const p = pendingItem.value
+  const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
   const newItem = {
-    item_code: p.item_code, item_name: p.item_name, qty: p.qty, uom: p.uom || 'Nos',
+    item_code: p.item_code, item_name: p.item_name, qty, uom: p.uom || 'Nos',
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0, _cp_applied: !!p._cp_applied,
     discount: p.discount || 0, tax_rate: p.tax_rate || 0,
-    amount: parseFloat(((p.qty) * (p.rate || 0)).toFixed(2)),
+    amount: parseFloat((qty * (p.rate || 0)).toFixed(2)),
     deleted: false, _rowKey: makeRowKey()
   }
   items.value.push(newItem)
