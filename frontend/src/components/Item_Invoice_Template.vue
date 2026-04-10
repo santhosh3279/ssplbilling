@@ -339,9 +339,11 @@
                     <!-- Amt Half -->
                     <div class="flex flex-1 items-center">
                       <input
+                        ref="discountAmtRef"
                         type="number"
                         :value="discountDirectAmt"
                         @input="$emit('update:discountDirectAmt', $event.target.value)"
+                        @keydown.enter.prevent="freightRef?.focus(); freightRef?.select()"
                         :disabled="isReadOnly"
                         class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-1 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
                         placeholder="Amt"
@@ -363,9 +365,11 @@
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
+                    ref="freightRef"
                     type="number"
                     :value="freightEntry"
                     @input="$emit('update:freightEntry', $event.target.value)"
+                    @keydown.enter.prevent="packingRef?.focus(); packingRef?.select()"
                     :disabled="isReadOnly"
                     class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
@@ -377,9 +381,11 @@
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Packing</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
+                    ref="packingRef"
                     type="number"
                     :value="packingEntry"
                     @input="$emit('update:packingEntry', $event.target.value)"
+                    @keydown.enter.prevent="loadingRef?.focus(); loadingRef?.select()"
                     :disabled="isReadOnly"
                     class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
@@ -391,9 +397,11 @@
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Loading</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
+                    ref="loadingRef"
                     type="number"
                     :value="loadingEntry"
                     @input="$emit('update:loadingEntry', $event.target.value)"
+                    @keydown.enter.prevent="otherRef?.focus(); otherRef?.select()"
                     :disabled="isReadOnly"
                     class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
@@ -405,9 +413,11 @@
                 <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Other</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
+                    ref="otherRef"
                     type="number"
                     :value="otherEntry"
                     @input="$emit('update:otherEntry', $event.target.value)"
+                    @keydown.enter.prevent="saveBtnRef?.focus()"
                     :disabled="isReadOnly"
                     class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
@@ -515,6 +525,11 @@ const emit = defineEmits([
 const sidebarSearchRef = ref(null)
 const sidebarListRef = ref(null)
 const discountPctRef = ref(null)
+const discountAmtRef = ref(null)
+const freightRef = ref(null)
+const packingRef = ref(null)
+const loadingRef = ref(null)
+const otherRef = ref(null)
 const saveBtnRef = ref(null)
 const sidebarItemRefs = new Map()
 
@@ -550,6 +565,7 @@ defineExpose({
   focusSidebar: () => sidebarSearchRef.value?.focus(),
   focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
   focusDiscountPct: () => { discountPctRef.value?.focus(); discountPctRef.value?.select() },
+  focusDiscountAmt: () => { discountAmtRef.value?.focus(); discountAmtRef.value?.select() },
   focusSaveBtn: () => saveBtnRef.value?.focus(),
 })
 

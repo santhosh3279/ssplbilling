@@ -1063,7 +1063,8 @@ async function handleSave() {
 }
 
 function handleDiscountPctKeydown(e) {
-  if (e.key === 'End') { e.preventDefault(); invoiceTemplateRef.value?.focusSaveBtn() }
+  if (e.key === 'Enter') { e.preventDefault(); invoiceTemplateRef.value?.focusDiscountAmt() }
+  else if (e.key === 'End') { e.preventDefault(); invoiceTemplateRef.value?.focusSaveBtn() }
 }
 
 function handleModify() {
