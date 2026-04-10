@@ -311,8 +311,8 @@
 
                       <!-- Row 2: Cancel and Incentive -->
                       <div class="flex gap-2">
-                        <button @click="$emit('cancel')" class="flex-1 rounded border border-[var(--color-danger)]/50 bg-[var(--color-danger)]/10 py-2.5 text-center text-xl font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/20 transition-colors">Cancel</button>
-                        <button @click="$emit('incentive')" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">Incentive</button>
+                        <button @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
+                        <button @click="$emit('incentive')" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
                       </div>
                     </div>
                   </slot>
