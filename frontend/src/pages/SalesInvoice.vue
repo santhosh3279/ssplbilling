@@ -407,7 +407,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
-      @close="showPrintModal = false"
+      @close="closePrintModal"
     />
 
     <JumpToRowModal
@@ -550,6 +550,7 @@ const inclusiveTaxRef = ref(null)
 const ignoreRuleRef = ref(null)
 const costCenterRef = ref(null)
 const showPrintModal = ref(false)
+const pendingClearAfterPrint = ref(false)
 
 const lastEnterTime = ref(0)
 const showPriceDetectModal = ref(false)
@@ -1016,44 +1017,16 @@ async function handleSave() {
 
     if (res.status === 'success') {
       if (isUpdate) {
-        alert('Invoice ' + res.name + ' updated successfully!')
         isReadOnly.value = true
         isSaved.value = true
         fetchRecentInvoices()
-        // Stay on the same bill — just refresh items/state from response, keep invoiceNo
-        nextTick(() => { newCodeInput.value?.focus() })
+        pendingClearAfterPrint.value = false
+        showPrintModal.value = true
       } else {
-        alert('Invoice ' + res.name + ' saved successfully!')
+        invoiceNo.value = res.name
         fetchRecentInvoices()
-
-        // Clear bill for next entry (keep customer)
-        items.value = []
-        pendingItem.value = null
-        newItemCode.value = ''
-        quickSearchResults.value = []
-        selectedRowIdx.value = -1
-        editingRowIdx.value = -1
-        editingField.value = null
-        discountPct.value = ''
-        discountDirectAmt.value = ''
-        freightEntry.value = ''
-        loadingEntry.value = ''
-        packingEntry.value = ''
-        otherEntry.value = ''
-        incentiveRows.value = []
-        customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
-        clearHistory()
-
-        // Fetch next invoice number for the same series
-        isSaved.value = false
-        try {
-          const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
-          invoiceNo.value = next.invoice_no || 'NEW'
-        } catch {
-          invoiceNo.value = 'NEW'
-        }
-
-        nextTick(() => { newCodeInput.value?.focus() })
+        pendingClearAfterPrint.value = true
+        showPrintModal.value = true
       }
     }
   } catch (error) {
@@ -1083,6 +1056,40 @@ function handlePrint() {
     return
   }
   showPrintModal.value = true
+}
+
+async function closePrintModal() {
+  showPrintModal.value = false
+  if (!pendingClearAfterPrint.value) return
+  pendingClearAfterPrint.value = false
+
+  // Clear bill for next entry (keep customer)
+  items.value = []
+  pendingItem.value = null
+  newItemCode.value = ''
+  quickSearchResults.value = []
+  selectedRowIdx.value = -1
+  editingRowIdx.value = -1
+  editingField.value = null
+  discountPct.value = ''
+  discountDirectAmt.value = ''
+  freightEntry.value = ''
+  loadingEntry.value = ''
+  packingEntry.value = ''
+  otherEntry.value = ''
+  incentiveRows.value = []
+  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  clearHistory()
+
+  isSaved.value = false
+  try {
+    const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
+    invoiceNo.value = next.invoice_no || 'NEW'
+  } catch {
+    invoiceNo.value = 'NEW'
+  }
+
+  nextTick(() => { newCodeInput.value?.focus() })
 }
 
 function handleCancel() {
