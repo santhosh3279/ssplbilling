@@ -291,8 +291,8 @@
               <select
                 ref="costCenterRef"
                 v-model="costCenter"
-                :disabled="isReadOnly"
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
+                disabled
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none disabled:opacity-50 disabled:cursor-default"
               >
                 <option v-for="cc in localCostCenters" :key="cc" :value="cc">{{ cc }}</option>
                 <option v-if="!localCostCenters.length" :value="costCenter">{{ costCenter }}</option>
