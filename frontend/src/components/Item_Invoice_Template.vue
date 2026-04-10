@@ -305,7 +305,7 @@
 
                       <!-- Row 1: Save and Print -->
                       <div class="flex gap-2">
-                        <button @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase">{{ saveButtonText }}</button>
+                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase">{{ saveButtonText }}</button>
                         <button @click="$emit('print')" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print</button>
                       </div>
 
@@ -327,9 +327,11 @@
                     <div class="flex flex-1 items-center border-r border-[var(--color-border)]/50">
                       <span class="px-1 text-[var(--color-text-muted)] font-bold">%</span>
                       <input
+                        ref="discountPctRef"
                         type="number"
                         :value="discountPct"
                         @input="$emit('update:discountPct', $event.target.value)"
+                        @keydown="$emit('discount-pct-keydown', $event)"
                         :disabled="isReadOnly"
                         class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right outline-none focus:bg-[var(--color-highlight)]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
@@ -506,11 +508,14 @@ const emit = defineEmits([
   'toggle-draft-only', 'select-sidebar-item', 'delete-item',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
-  'update:ignoreModifier'
+  'update:ignoreModifier',
+  'discount-pct-keydown'
 ])
 
 const sidebarSearchRef = ref(null)
 const sidebarListRef = ref(null)
+const discountPctRef = ref(null)
+const saveBtnRef = ref(null)
 const sidebarItemRefs = new Map()
 
 function setSidebarItemRef(el, idx) {
@@ -544,6 +549,8 @@ watch(() => props.selectedSidebarItemName, (newVal) => {
 defineExpose({
   focusSidebar: () => sidebarSearchRef.value?.focus(),
   focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
+  focusDiscountPct: () => { discountPctRef.value?.focus(); discountPctRef.value?.select() },
+  focusSaveBtn: () => saveBtnRef.value?.focus(),
 })
 
 function formatDate(dateString) {

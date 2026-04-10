@@ -54,6 +54,7 @@
       @back="goBack"
       @save="handleSave"
       @print="handlePrint"
+      @discount-pct-keydown="handleDiscountPctKeydown"
       @cancel="handleCancel"
       @incentive="handleIncentive"
       @party-click="customerInitialQuery = ''; showCustomerModal = true"
@@ -1061,6 +1062,10 @@ async function handleSave() {
   }
 }
 
+function handleDiscountPctKeydown(e) {
+  if (e.key === 'End') { e.preventDefault(); invoiceTemplateRef.value?.focusSaveBtn() }
+}
+
 function handleModify() {
   if (!isReadOnly.value || !isSaved.value) return
   isReadOnly.value = false
@@ -1265,6 +1270,7 @@ function handleNewCodeKeydown(e) {
   }
 
   else if (e.key === 'ArrowUp' && items.value.length > 0) { e.preventDefault(); focusRow(items.value.length - 1) }
+  else if (e.key === 'End') { e.preventDefault(); invoiceTemplateRef.value?.focusDiscountPct() }
 }
 
 function handlePendingQtyKeydown(e) {
@@ -1298,6 +1304,8 @@ function handleRowKeydown(e, idx) {
   if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
   else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
+  else if (e.key === 'End') { e.preventDefault(); focusRow(items.value.length - 1, 'down') }
+  else if (e.key === 'Home') { e.preventDefault(); focusRow(0, 'up') }
   else if (e.key === 'Escape') { e.preventDefault(); focusBarcodeInput() }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteItem(idx) }
 }
