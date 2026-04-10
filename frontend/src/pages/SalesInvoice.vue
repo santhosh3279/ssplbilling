@@ -985,6 +985,7 @@ async function handleSave() {
     customer_rate_multiplier: ignoreModifier.value ? 0 : 1,
     additional_charges: additionalCharges,
     incentive_rows: incentiveRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 })),
+    place_of_supply: customerState.value || '',
     custom_customer_name: customAddress.value.customer_name || '',
     custom_address_line1: customAddress.value.address_line_1 || '',
     custom_address_line2: customAddress.value.address_line_2 || '',

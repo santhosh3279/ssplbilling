@@ -2,6 +2,7 @@ import frappe
 import json
 import re
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+from india_compliance.gst_india.constants import STATE_NUMBERS
 
 @frappe.whitelist()
 def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=None, draft_only=False):
@@ -67,6 +68,12 @@ def _apply_payload_to_doc(doc, payload):
     discount_amt = frappe.utils.flt(payload.get("discount_amt"))
     doc.additional_discount_percentage = discount_pct if discount_pct > 0 else 0
     doc.discount_amount = discount_amt if discount_amt > 0 else 0
+
+    state_name = payload.get("place_of_supply") or ""
+    if state_name and state_name in STATE_NUMBERS:
+        doc.place_of_supply = f"{STATE_NUMBERS[state_name]}-{state_name}"
+    elif state_name:
+        doc.place_of_supply = state_name
 
     doc.is_return = frappe.utils.cint(payload.get("is_return"))
     doc.customer_rate_multiplier = frappe.utils.cint(payload.get("customer_rate_multiplier"))
