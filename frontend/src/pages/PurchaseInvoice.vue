@@ -318,12 +318,12 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button ref="saveBtnRef" @click="handleSave" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-green-600/70 focus:outline-none">{{ saveButtonText }}</button>
+            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted" class="flex-1 rounded py-2.5 text-center text-xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted ? 'bg-slate-700/40 text-slate-500 cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-green-600/70'">{{ saveButtonText }}</button>
             <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-slate-700/40 bg-slate-800/30 text-slate-600 cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
-            <button @click="handleIncentive" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
+            <button @click="handleIncentive" :disabled="isSubmitted" class="flex-1 rounded border py-2.5 text-center text-xl font-semibold transition-colors" :class="isSubmitted ? 'border-slate-700/40 bg-slate-800/20 text-slate-500 cursor-not-allowed' : 'border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]'">Incentive</button>
           </div>
         </div>
       </template>
@@ -557,8 +557,10 @@ const sidebarLoading = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
+const isSubmitted = ref(false)
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
+  if (isSubmitted.value) return 'Submitted'
   return isReadOnly.value ? 'Modify Bill' : 'Update Bill'
 })
 
@@ -650,6 +652,7 @@ async function handleSelectSidebarItem(item) {
     newItemCode.value = ''
     isReadOnly.value = true
     isSaved.value = true
+    isSubmitted.value = data.docstatus === 1
   } catch (e) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
@@ -858,6 +861,7 @@ async function clearBill() {
   isReturn.value = false
   isReadOnly.value = false
   isSaved.value = false
+  isSubmitted.value = false
 
   if (selectedSeries.value) {
     try {
@@ -912,6 +916,7 @@ function handlePageUp() {
 }
 
 async function handleSave() {
+  if (isSubmitted.value) return
   if (isReadOnly.value && isSaved.value) {
     isReadOnly.value = false
     if (items.value.length > 0) {

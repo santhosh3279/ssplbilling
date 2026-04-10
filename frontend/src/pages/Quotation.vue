@@ -300,6 +300,28 @@
         </div>
       </template>
 
+      <template #actions>
+        <div class="flex flex-col gap-2 h-full py-2">
+          <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
+            <div class="flex justify-between items-start mb-1">
+              <div class="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
+              <div class="text-[12px] font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
+            </div>
+            <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+              <span class="text-[6mm] font-black">₹</span>
+              <span class="font-mono text-[10.5mm] font-black leading-none">{{ totalAmount }}</span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted" class="flex-1 rounded py-2.5 text-center text-xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted ? 'bg-slate-700/40 text-slate-500 cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-green-600/70'">{{ saveButtonText }}</button>
+            <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-slate-700/40 bg-slate-800/30 text-slate-600 cursor-not-allowed'">Print</button>
+          </div>
+          <div class="flex gap-2">
+            <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
+          </div>
+        </div>
+      </template>
+
       <template #table-extra-rows>
         <!-- Pending row: qty input after item selected -->
         <template v-if="pendingItem">
@@ -540,8 +562,10 @@ const sidebarLoading = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
+const isSubmitted = ref(false)
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
+  if (isSubmitted.value) return 'Submitted'
   return isReadOnly.value ? 'Modify Bill' : 'Update Bill'
 })
 
@@ -644,6 +668,7 @@ async function handleSelectSidebarItem(item) {
     newItemCode.value = ''
     isReadOnly.value = true
     isSaved.value = true
+    isSubmitted.value = data.docstatus === 1
   } catch (e) {
     console.error('Failed to load quotation:', e)
     alert('Failed to load quotation: ' + item.name)
@@ -834,6 +859,7 @@ async function clearBill() {
   invoiceNo.value = 'NEW'
   isReadOnly.value = false
   isSaved.value = false
+  isSubmitted.value = false
 
   if (selectedSeries.value) {
     try {
@@ -889,6 +915,7 @@ function handlePageUp() {
 }
 
 async function handleSave() {
+  if (isSubmitted.value) return
   if (isReadOnly.value && isSaved.value) {
     isReadOnly.value = false
     if (items.value.length > 0) {
