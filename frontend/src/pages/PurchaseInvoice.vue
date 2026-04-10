@@ -305,6 +305,29 @@
         </div>
       </template>
 
+      <template #actions>
+        <div class="flex flex-col gap-2 h-full py-2">
+          <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
+            <div class="flex justify-between items-start mb-1">
+              <div class="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
+              <div class="text-[12px] font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
+            </div>
+            <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+              <span class="text-[6mm] font-black">₹</span>
+              <span class="font-mono text-[10.5mm] font-black leading-none">{{ totalAmount }}</span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button ref="saveBtnRef" @click="handleSave" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-green-600/70 focus:outline-none">{{ saveButtonText }}</button>
+            <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-slate-700/40 bg-slate-800/30 text-slate-600 cursor-not-allowed'">Print</button>
+          </div>
+          <div class="flex gap-2">
+            <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
+            <button @click="handleIncentive" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
+          </div>
+        </div>
+      </template>
+
       <template #table-extra-rows>
         <!-- Pending row: qty input after item selected -->
         <template v-if="pendingItem">
