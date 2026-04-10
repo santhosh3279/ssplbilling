@@ -1083,7 +1083,7 @@ function detectPriceChange(item, focusTarget) {
   const cached = lookupItemInCache(item.item_code)
   if (!cached) return false
 
-  const standardRate = getItemRateForPriceList(cached)
+  const standardRate = getItemRateForPriceList(cached, item.uom)
   const currentRate = parseFloat(item.rate || 0)
   const currentDiscount = parseFloat(item.discount || 0)
 
@@ -1121,7 +1121,8 @@ async function updatePriceList() {
     await frappeGet('ssplbilling.api.pricelist_api.update_item_price', {
       item_code: priceDetectData.value.item_code,
       price_list: priceList.value,
-      rate: priceDetectData.value.rate
+      rate: priceDetectData.value.rate,
+      uom: priceDetectData.value.uom || ''
     })
     dismissPriceModal()
   } catch (e) {
