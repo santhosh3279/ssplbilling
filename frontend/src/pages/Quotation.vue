@@ -442,7 +442,7 @@ import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import { useShortcuts } from '../services/shortcutManager'
-import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
+import { quotationShortcuts } from '../shortcuts/quotationShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 
 const router = useRouter()
@@ -1551,17 +1551,15 @@ async function handleSeriesSelected(series) {
   } catch (e) { console.error('[Quotation] Failed to fetch next quotation number:', e) }
 }
 
-useShortcuts(salesInvoiceShortcuts({
+useShortcuts(quotationShortcuts({
   openShortcuts:    () => { showShortcutPage.value = !showShortcutPage.value },
   clearBill:        () => handleF2(),
   focusModifyPanel: () => handleF3(),
   openSeries:       () => { showSeriesModal.value = true },
   modify:           () => handleModify(),
   print:            () => handlePrint(),
-  openParcelAddress:() => {},
   save:             () => handleSave(),
   cancel:           () => handleCancel(),
-  openIncentive:    () => {},
   pageUp:           () => handlePageUp(),
   deleteRow:        () => {
     if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
