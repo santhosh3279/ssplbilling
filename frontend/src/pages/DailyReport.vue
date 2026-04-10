@@ -227,7 +227,7 @@ async function fetchAvailableSeries() {
 
 function handleRowClick(row) {
   if (activeTab.value === 'Invoice') {
-    router.push({ name: 'SalesEntry', query: { invoice: row.name } })
+    router.push({ name: 'SalesInvoice', query: { invoice: row.name } })
   } else if (activeTab.value === 'Quotation') {
     router.push({ name: 'QuotationEntry', query: { quotation: row.name } })
   }

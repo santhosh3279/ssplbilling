@@ -16,12 +16,11 @@
  *   admin    → all routes
  *   accounts → PayRec, JournalContraEntry, Reports; sees all GL accounts
  *   cashier  → biller routes + CashierDesk, PurchaseSubmit, CustomerLedger, PayRec, JournalContraEntry
- *   biller   → SalesEntry, PurchaseEntry, QuotationEntry, SalesOrderEntry, ParcelAddress, BarcodePrintPage, LoadingReceipt
+ *   biller   → SalesInvoice, PurchaseEntry, QuotationEntry, SalesOrderEntry, ParcelAddress, BarcodePrintPage, LoadingReceipt
  */
 
 // Route names accessible by biller
 export const BILLER_ROUTES = new Set([
-  'SalesEntry',
   'SalesInvoice',
   'PurchaseEntry',
   'PurchaseInvoice',
@@ -107,7 +106,7 @@ export function canAccessRoute(routeName) {
  * identified by its route id (path segment, e.g. 'sales', 'cashier').
  */
 const TILE_ROUTE_MAP = {
-  'sales':             'SalesEntry',
+  'sales':             'SalesInvoice',
   'purchase':          'PurchaseInvoice',
   'purchase-invoice':  'PurchaseInvoice',
   'quotation':         'QuotationEntry',

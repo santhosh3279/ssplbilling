@@ -501,7 +501,7 @@
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { fetchLedger, fetchVoucherDetail, frappeGet } from '../api.js'
-import SalesEntry from './SalesEntry.vue'
+import SalesEntry from './SalesInvoice.vue'
 import StockLedger from './StockLedger.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import ItemSearch from '../components/ItemSearch.vue'
