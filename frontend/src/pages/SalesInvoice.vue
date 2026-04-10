@@ -108,14 +108,27 @@
               v-model.number="item.qty"
               type="number" min="0"
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
+              @keydown.enter.prevent="item.qty > 0 && focusEditField('uom', index)"
               @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <select v-if="editingRowIdx === index && editingField === 'uom'"
+              ref="editUomSelect"
+              v-model="item.uom"
+              class="w-full bg-white/10 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @change="onUomChange(index)"
+              @keydown.enter.prevent="focusEditField('rate', index)"
+              @keydown.escape="exitEditMode(index, true)"
+            >
+              <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
+              <option v-if="!getItemUoms(item.item_code).length" :value="item.uom" class="bg-[var(--color-bg)]">{{ item.uom }}</option>
+            </select>
+            <span v-else class="block px-2 py-1 text-xl" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</span>
+          </td>
 
           <!-- rate -->
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -739,9 +752,10 @@ const pendingQtyInput = ref(null)
 const selectedRowIdx = ref(-1)
 const rowRefs = ref([])
 const editingRowIdx = ref(-1)
-const editingField = ref(null) // 'code' | 'qty' | 'rate' | 'disc'
+const editingField = ref(null) // 'code' | 'qty' | 'uom' | 'rate' | 'disc'
 const editCodeInput = ref(null)
 const editQtyInput = ref(null)
+const editUomSelect = ref(null)
 const editRateInput = ref(null)
 const editDiscInput = ref(null)
 
@@ -1368,8 +1382,8 @@ function handleRowKeydown(e, idx) {
 function focusEditField(field, idx) {
   if (items.value[idx]?.deleted || items.value[idx]?._is_free) return
   editingRowIdx.value = idx; editingField.value = field; selectedRowIdx.value = idx
-  const inputMap = { code: editCodeInput, qty: editQtyInput, rate: editRateInput, disc: editDiscInput }
-  nextTick(() => { const el = inputMap[field]?.value; el?.focus(); el?.select() })
+  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput }
+  nextTick(() => { const el = inputMap[field]?.value; el?.focus(); el?.select?.() || el?.focus?.() })
 }
 
 function exitEditMode(idx, cancel = false) {
@@ -1385,6 +1399,24 @@ function exitEditMode(idx, cancel = false) {
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
   quickSearchResults.value = []; editQuickSearchRowIdx.value = null
   nextTick(() => { rowRefs.value[idx]?.focus() })
+}
+
+function getItemUoms(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  if (!cached || !cached.uoms) return []
+  return cached.uoms.map(u => u.uom)
+}
+
+function onUomChange(idx) {
+  const item = items.value[idx]
+  if (!item) return
+  const cached = lookupItemInCache(item.item_code)
+  if (cached) {
+    const newRate = getItemRateForPriceList(cached, item.uom)
+    item._base_rate = newRate
+    item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+    recalcAmount(idx)
+  }
 }
 
 function finishRowEdit(idx) {
