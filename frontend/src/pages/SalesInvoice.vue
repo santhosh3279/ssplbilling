@@ -361,6 +361,18 @@
       @close="quickSearchResults = []"
     />
 
+    <ItemSearch
+      ref="itemSearchRef"
+      :show="showItemSearch"
+      search-type="Sales"
+      :price-list="priceList"
+      :warehouse="warehouse"
+      :skip-date-filter="true"
+      :initial-query="itemSearchInitialQuery"
+      @close="closeItemSearch"
+      @select="onItemSearchSelect"
+    />
+
 
 
     <CustomerSearchModal
@@ -453,6 +465,7 @@ import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
+import ItemSearch from '../components/ItemSearch.vue'
 
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
@@ -683,6 +696,9 @@ const newCodeInput = ref(null)
 const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
+const showItemSearch = ref(false)
+const itemSearchRef = ref(null)
+const itemSearchInitialQuery = ref('')
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const selectedRowIdx = ref(-1)
@@ -1164,7 +1180,10 @@ function handleItemEntry() {
     (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
   )
 
-  if (!exactMatch) return
+  if (!exactMatch) {
+    openItemSearch(code)
+    return
+  }
 
   setPendingItem({
     item_code: exactMatch.item_code, item_name: exactMatch.item_name, qty: 0,
@@ -1212,7 +1231,7 @@ function handleNewCodeKeydown(e) {
       if (exactMatch) {
         quickSearchRef.value.handleQuickSearchKeydown(e)
       } else {
-        quickSearchResults.value = []
+        openItemSearch(code)
       }
       return
     } else if (e.key === 'Escape') {
@@ -1423,6 +1442,27 @@ function deleteItem(idx) {
 function onQuickSearchSelect(item) {
   if (!item) return
   quickSearchResults.value = []; newItemCode.value = ''
+  setPendingItem({
+    item_code: item.item_code, item_name: item.item_name, qty: 0, rate: getItemRateForPriceList(item, item.uom),
+    uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
+  })
+}
+
+function openItemSearch(query) {
+  quickSearchResults.value = []
+  itemSearchInitialQuery.value = query || ''
+  showItemSearch.value = true
+  nextTick(() => { itemSearchRef.value?.focus() })
+}
+
+function closeItemSearch() {
+  showItemSearch.value = false
+  nextTick(() => { newCodeInput.value?.focus() })
+}
+
+function onItemSearchSelect(item) {
+  showItemSearch.value = false
+  newItemCode.value = ''
   setPendingItem({
     item_code: item.item_code, item_name: item.item_name, qty: 0, rate: getItemRateForPriceList(item, item.uom),
     uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
