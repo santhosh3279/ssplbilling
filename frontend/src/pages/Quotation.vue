@@ -265,6 +265,10 @@
               <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Ignore Pricing Rule</span>
             </label>
+            <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
+              <input ref="halfTaxDiscountRef" type="checkbox" v-model="halfTaxDiscount" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-success)] disabled:opacity-50" />
+              <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Half Tax Discount</span>
+            </label>
           </div>
 
           <!-- Additional Info -->
@@ -513,6 +517,8 @@ const priceListSelectRef = ref(null)
 const taxTemplateRef = ref(null)
 const inclusiveTaxRef = ref(null)
 const ignoreRuleRef = ref(null)
+const halfTaxDiscountRef = ref(null)
+const halfTaxDiscount = ref(false)
 const costCenterRef = ref(null)
 const showPrintModal = ref(false)
 const pendingClearAfterPrint = ref(false)
@@ -588,6 +594,7 @@ async function handleSelectSidebarItem(item) {
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
     isInclusiveTax.value = data.is_inclusive === 1
+    halfTaxDiscount.value = data.custom_half_tax_discount === 1
     if (data.cost_center) costCenter.value = data.cost_center
 
     // Charges
@@ -822,6 +829,7 @@ async function clearBill() {
   packingEntry.value = ''
   otherEntry.value = ''
   customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  halfTaxDiscount.value = false
   clearHistory()
   invoiceNo.value = 'NEW'
   isReadOnly.value = false
@@ -927,6 +935,7 @@ async function handleSave() {
     additional_discount_amount: parseFloat(discountDirectAmt.value) || 0,
     tax_template: taxTemplate.value,
     is_inclusive: isInclusiveTax.value ? 1 : 0,
+    custom_half_tax_discount: halfTaxDiscount.value ? 1 : 0,
     custom_customer_name: customAddress.value.customer_name || '',
     custom_address_line1: customAddress.value.address_line_1 || '',
     custom_address_line2: customAddress.value.address_line_2 || '',
@@ -1347,6 +1356,19 @@ watch(ignoreModifier, () => {
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
     item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2))
+  })
+})
+
+watch(halfTaxDiscount, (enabled) => {
+  items.value = items.value.map(item => {
+    if (item.deleted) return item
+    if (enabled) {
+      const t = item.tax_rate || 0
+      const disc = t > 0 ? parseFloat(((t / (2 * (100 + t))) * 100).toFixed(4)) : 0
+      return { ...item, discount: disc }
+    } else {
+      return { ...item, discount: 0 }
+    }
   })
 })
 

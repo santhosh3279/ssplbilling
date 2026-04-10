@@ -342,6 +342,7 @@ def get_quotation(quotation_name):
 		"custom_address_line1": qt.custom_address_line1 or "",
 		"custom_address_line2": qt.custom_address_line2 or "",
 		"custom_mobile_number": qt.custom_mobile_number or "",
+		"custom_half_tax_discount": qt.custom_half_tax_discount or 0,
 		"items": items,
 	}
 
@@ -407,6 +408,7 @@ def create_quotation(data):
 	qt.custom_address_line1 = data.get("custom_address_line1") or ""
 	qt.custom_address_line2 = data.get("custom_address_line2") or ""
 	qt.custom_mobile_number = data.get("custom_mobile_number") or ""
+	qt.custom_half_tax_discount = 1 if data.get("custom_half_tax_discount") else 0
 
 	qt.flags.ignore_permissions = True
 	qt.save()
@@ -487,6 +489,7 @@ def update_quotation(data):
 	qt.custom_address_line1 = data.get("custom_address_line1") or ""
 	qt.custom_address_line2 = data.get("custom_address_line2") or ""
 	qt.custom_mobile_number = data.get("custom_mobile_number") or ""
+	qt.custom_half_tax_discount = 1 if data.get("custom_half_tax_discount") else 0
 
 	qt.flags.ignore_permissions = True
 	qt.save()

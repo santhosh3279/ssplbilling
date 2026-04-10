@@ -61,6 +61,13 @@ CUSTOM_FIELDS = {
 			"insert_after": "custom_mobile_number",
 			"default": "1",
 		},
+		{
+			"fieldname": "custom_half_tax_discount",
+			"fieldtype": "Check",
+			"label": "Half Tax Discount",
+			"insert_after": "customer_rate_multiplier",
+			"default": "0",
+		},
 	],
 	"Supplier": [
 		{

@@ -32,6 +32,7 @@ fixtures = [
 					"custom_address_line2",
 					"custom_mobile_number",
 					"customer_rate_multiplier",
+					"custom_half_tax_discount",
 				],
 			],
 		],
