@@ -143,30 +143,30 @@
       <div v-if="results[selectedIdx]" class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-8 py-6">
         <div class="flex items-start gap-4">
           <div class="flex flex-col shrink-0" style="width: 10%">
-            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">Last Inv</span>
-            <span class="text-xl font-semibold text-[var(--color-text)] truncate">
+            <span class="text-2xl font-bold uppercase text-[var(--color-text-muted)] truncate">Last Inv</span>
+            <span class="text-4xl font-semibold text-[var(--color-text)] truncate">
               {{ results[selectedIdx].last_invoice_date
                   ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: '2-digit' })
                   : 'None' }}
             </span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 10%">
-            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">WhatsApp</span>
-            <span class="text-2xl font-semibold text-[var(--color-text)] truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
+            <span class="text-2xl font-bold uppercase text-[var(--color-text-muted)] truncate">WhatsApp</span>
+            <span class="text-4xl font-semibold text-[var(--color-text)] truncate">{{ results[selectedIdx].whatsapp || '--' }}</span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 20%">
-            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">Email</span>
-            <span class="text-xl font-semibold text-[var(--color-text)] truncate">{{ results[selectedIdx].email || '--' }}</span>
+            <span class="text-2xl font-bold uppercase text-[var(--color-text-muted)] truncate">Email</span>
+            <span class="text-4xl font-semibold text-[var(--color-text)] truncate">{{ results[selectedIdx].email || '--' }}</span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 45%">
-            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">Address</span>
-            <span class="text-xl text-[var(--color-text)] line-clamp-2 leading-tight">
+            <span class="text-2xl font-bold uppercase text-[var(--color-text-muted)] truncate">Address</span>
+            <span class="text-4xl text-[var(--color-text)] line-clamp-2 leading-tight">
               {{ getAddressFormatted(results[selectedIdx]) }}
             </span>
           </div>
           <div class="flex flex-col shrink-0" style="width: 15%">
-            <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] truncate">GSTIN</span>
-            <span class="text-2xl font-semibold text-[var(--color-text)] font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
+            <span class="text-2xl font-bold uppercase text-[var(--color-text-muted)] truncate">GSTIN</span>
+            <span class="text-4xl font-semibold text-[var(--color-text)] font-mono truncate">{{ results[selectedIdx].gstin || '--' }}</span>
           </div>
         </div>
       </div>
