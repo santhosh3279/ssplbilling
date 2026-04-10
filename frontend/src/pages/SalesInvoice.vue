@@ -109,7 +109,7 @@
               type="number" min="0"
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
-              @keydown.escape="exitEditMode(index)"
+              @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
@@ -125,7 +125,7 @@
               type="number" min="0" step="0.01"
               class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="focusEditField('disc', index)"
-              @keydown.escape="exitEditMode(index)"
+              @keydown.escape="exitEditMode(index, true)"
             />
             <span v-else class="block px-2 py-1 text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
           </td>
@@ -138,7 +138,7 @@
               type="number" min="0" max="100" step="0.5"
               class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="finishRowEdit(index)"
-              @keydown.escape="exitEditMode(index)"
+              @keydown.escape="exitEditMode(index, true)"
             />
             <span v-else class="block px-2 py-1 text-2xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ item.discount || '0' }}</span>
           </td>
@@ -1356,7 +1356,15 @@ function handleRowKeydown(e, idx) {
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') { e.preventDefault(); focusRow(items.value.length - 1, 'down') }
   else if (e.key === 'Home') { e.preventDefault(); focusRow(0, 'up') }
-  else if (e.key === 'Escape') { e.preventDefault(); if (!items.value.length) router.push('/'); else focusBarcodeInput() }
+  else if (e.key === 'Escape') {
+    e.preventDefault()
+    if (!items.value.length) {
+      router.push('/')
+    } else {
+      if (!items.value[idx].deleted) deleteItem(idx)
+      focusBarcodeInput()
+    }
+  }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteItem(idx) }
 }
 
@@ -1367,7 +1375,18 @@ function focusEditField(field, idx) {
   nextTick(() => { const el = inputMap[field]?.value; el?.focus(); el?.select() })
 }
 
-function exitEditMode(idx) {
+function exitEditMode(idx, cancel = false) {
+  if (cancel) {
+    if (idx !== -1 && items.value[idx] && !items.value[idx].deleted) {
+      deleteItem(idx)
+    }
+    editingRowIdx.value = -1
+    editingField.value = null
+    quickSearchResults.value = []
+    editQuickSearchRowIdx.value = null
+    focusBarcodeInput()
+    return
+  }
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
   quickSearchResults.value = []; editQuickSearchRowIdx.value = null
   nextTick(() => { rowRefs.value[idx]?.focus() })
@@ -1652,7 +1671,7 @@ function onEditCodeKeydown(e, rowIdx) {
     e.preventDefault()
     quickSearchResults.value = []
     editQuickSearchRowIdx.value = null
-    exitEditMode(rowIdx)
+    exitEditMode(rowIdx, true)
   }
 }
 
