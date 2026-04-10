@@ -9,6 +9,7 @@ import SalesInvoicePage from './pages/SalesInvoicePage.vue'
 import QuotationEntry from './pages/QuotationEntry.vue'
 import Quotation from './pages/Quotation.vue'
 import PurchaseEntry from './pages/PurchaseEntry.vue'
+import PurchaseInvoice from './pages/PurchaseInvoice.vue'
 import PriceListUpdate from './pages/PriceListUpdate.vue'
 import BarcodePrintPage from './pages/BarcodePrintPage.vue'
 import CashierDesk from './pages/CashierDesk.vue'
@@ -83,6 +84,11 @@ const routes = [
     path: '/purchase',
     name: 'PurchaseEntry',
     component: PurchaseEntry,
+  },
+  {
+    path: '/purchase-invoice',
+    name: 'PurchaseInvoice',
+    component: PurchaseInvoice,
   },
   {
     path: '/pricelist-update',
