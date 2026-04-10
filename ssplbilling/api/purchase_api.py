@@ -400,7 +400,7 @@ def get_purchase_invoice(invoice_name):
 
     freight_amount = _actual_charge("freight")
     packing_amount = _actual_charge("packing")
-    loading_amount = _actual_charge("loading")
+    loading_amount = _actual_charge("tax paid") or _actual_charge("loading")
     other_charges_amount = _actual_charge("other")
 
     incentive_system = []
