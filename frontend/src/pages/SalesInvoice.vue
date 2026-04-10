@@ -1375,7 +1375,14 @@ function handlePendingQtyKeydown(e) {
 function handleRowKeydown(e, idx) {
   const item = items.value[idx]
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-  if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
+  if (e.key === 'Enter' && !item.deleted && !item._is_free) {
+    e.preventDefault()
+    if (getItemUoms(item.item_code).length > 1) {
+      focusEditField('uom', idx)
+    } else {
+      focusEditField('qty', idx)
+    }
+  }
   else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') { e.preventDefault(); focusRow(items.value.length - 1, 'down') }
@@ -1627,11 +1634,14 @@ function onQuickSearchSelect(item) {
 function applyItemToRow(rowIdx, item) {
   const row = items.value[rowIdx]
   if (!row) return
+  const isSameItem = row.item_code === item.item_code
   row.item_code = item.item_code
   row.item_name = item.item_name
-  row.uom = item.uom || 'Nos'
+  if (!isSameItem) {
+    row.uom = item.uom || 'Nos'
+  }
   row.tax_rate = item.tax_rate || 0
-  const base = getItemRateForPriceList(item, item.uom)
+  const base = getItemRateForPriceList(item, isSameItem ? row.uom : item.uom)
   row._base_rate = base
   const cpFactor = customerPricing.value[item.item_code]
   row._cp_applied = cpFactor != null
