@@ -431,7 +431,7 @@ const readyModules = ['sales', 'quotation', 'purchase', 'purchase-invoice', 'cas
 const routeAliases = {
   sales: '/sales',
   quotation: '/quotation-new',
-  purchase: '/purchase',
+  purchase: '/purchase-invoice',
   'purchase-invoice': '/purchase-invoice',
   payment: '/payment',
   'purchase-order': '/purchase-order',
