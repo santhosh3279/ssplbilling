@@ -19,45 +19,45 @@
         <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
           <!-- Already Allocated Section -->
           <div v-if="invoice?.advances && invoice.advances.length > 0" class="space-y-3">
-            <h4 class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-3">Previously Allocated</h4>
+            <h4 class="text-[16px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-3">Previously Allocated</h4>
             <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-6 py-3 flex items-center justify-between gap-8">
               <div class="flex items-center gap-6 flex-1">
-                <span class="text-[28px] font-black text-[var(--color-info)] min-w-[220px] leading-tight">{{ adv.reference_name }}</span>
-                <span class="text-[15px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</span>
+                <span class="text-[25px] font-black text-[var(--color-info)] min-w-[200px] leading-tight">{{ adv.reference_name }}</span>
+                <span class="text-[14px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</span>
               </div>
-              <span class="text-[28px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
+              <span class="text-[25px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
             </div>
           </div>
 
           <!-- Unallocated Section -->
           <div v-if="localUnallocated.length > 0" class="space-y-3">
-            <h4 class="text-[18px] font-black uppercase tracking-widest text-amber-500 px-3">Available Unallocated Cash</h4>
-            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-md flex items-center gap-8 group hover:border-[var(--color-focus)]/50 transition-colors">
+            <h4 class="text-[16px] font-black uppercase tracking-widest text-amber-500 px-3">Available Unallocated Cash</h4>
+            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-md flex items-center gap-8 group hover:border-[var(--color-focus)]/50 transition-colors">
               <!-- Name & Date -->
-              <div class="flex flex-col gap-0.5 min-w-[300px]">
-                <div class="text-[28px] font-black text-[var(--color-text)] truncate leading-tight">{{ pe.name }}</div>
-                <div class="text-[15px] font-bold text-[var(--color-text-muted)] uppercase whitespace-nowrap tracking-wider">{{ formatDate(pe.posting_date) }}</div>
+              <div class="flex flex-col gap-0.5 min-w-[280px]">
+                <div class="text-[25px] font-black text-[var(--color-text)] truncate leading-tight">{{ pe.name }}</div>
+                <div class="text-[14px] font-bold text-[var(--color-text-muted)] uppercase whitespace-nowrap tracking-wider">{{ formatDate(pe.posting_date) }}</div>
               </div>
 
               <!-- Mode & Balance -->
               <div class="flex items-center gap-6 flex-1">
-                <div class="px-3 py-1 rounded-lg bg-[var(--color-surface-raised)] text-[14px] font-black text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ pe.mode_of_payment }}</div>
+                <div class="px-3 py-1 rounded-lg bg-[var(--color-surface-raised)] text-[13px] font-black text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ pe.mode_of_payment }}</div>
                 <div class="flex flex-col">
-                  <span class="text-[12px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Balance</span>
-                  <span class="text-[28px] font-black text-[var(--color-success)] font-mono leading-none">₹{{ fmt(pe.unallocated_amount) }}</span>
+                  <span class="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Balance</span>
+                  <span class="text-[25px] font-black text-[var(--color-success)] font-mono leading-none">₹{{ fmt(pe.unallocated_amount) }}</span>
                 </div>
               </div>
               
               <!-- Adjust Input -->
               <div class="flex items-center gap-4">
-                <div class="text-[15px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust</div>
-                <div class="w-56 relative">
+                <div class="text-[14px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust</div>
+                <div class="w-48 relative">
                   <input
                     :ref="el => allocationInputs[index] = el"
                     type="number"
                     v-model.number="pe.amount_to_allocate"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] py-3 px-5 text-right font-mono text-[28px] font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 px-4 text-right font-mono text-[25px] font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
                     @keydown.enter="focusNextAllocation(index)"
                   />
                 </div>
@@ -69,20 +69,20 @@
         <!-- Modal Footer -->
         <div class="p-6 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-4">
           <div class="flex justify-between items-center px-4">
-            <span class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Adjust</span>
-            <span class="text-[40px] font-black text-[var(--color-info)] font-mono leading-none">₹{{ fmt(totalAmountToAllocate) }}</span>
+            <span class="text-[16px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Adjust</span>
+            <span class="text-[36px] font-black text-[var(--color-info)] font-mono leading-none">₹{{ fmt(totalAmountToAllocate) }}</span>
           </div>
 
           <button
             ref="allocateButton"
             @click="submit"
             :disabled="!totalAmountToAllocate || isSubmitting"
-            class="w-full rounded-2xl bg-[var(--color-highlight)] py-5 text-[18px] font-black uppercase tracking-widest text-white shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-[0.98] disabled:opacity-30 transition-all flex items-center justify-center gap-3"
+            class="w-full rounded-2xl bg-[var(--color-highlight)] py-4 text-[16px] font-black uppercase tracking-widest text-white shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-[0.98] disabled:opacity-30 transition-all flex items-center justify-center gap-3"
           >
             <span v-if="isSubmitting">Applying...</span>
             <template v-else>
               <span>Confirm & Apply Adjustments</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </template>
           </button>
         </div>
