@@ -372,7 +372,7 @@
                 v-model="pendingItem.uom"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                 @change="onPendingUomChange"
-                @keydown.enter.prevent="pendingQtyInput?.focus()"
+                @keydown.enter.prevent="confirmPendingItem"
                 @keydown.escape="cancelPendingItem"
               >
                 <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
@@ -1363,7 +1363,12 @@ function handlePendingQtyKeydown(e) {
 
     if (pendingItem.value.qty > 0) {
       e.preventDefault()
-      confirmPendingItem()
+      if (getItemUoms(pendingItem.value.item_code).length > 1) {
+        pendingUomSelect.value?.focus()
+        if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
+      } else {
+        confirmPendingItem()
+      }
     }
   } else if (e.key === 'Escape') {
     cancelPendingItem()
