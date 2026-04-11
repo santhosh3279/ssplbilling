@@ -79,11 +79,11 @@
       <!-- Top Nav Bar -->
       <div class="flex items-center justify-between border-b border-[var(--color-border)]/60 bg-[var(--color-surface-raised)]/60 px-4 py-1">
         <div class="flex items-center gap-3">
-          <button v-if="showBackButton" class="rounded px-2 py-0.5 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back</button>
-          <span v-if="showBackButton" class="text-[var(--color-border)] text-xs">|</span>
-          <span class="text-xs font-semibold text-[var(--color-text)]">{{ title }}</span>
+          <button v-if="showBackButton" class="rounded px-2 py-0.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back</button>
+          <span v-if="showBackButton" class="text-[var(--color-border)] text-xl">|</span>
+          <span class="text-xl font-semibold text-[var(--color-text)]">{{ title }}</span>
         </div>
-        <div class="flex items-center gap-3 text-[10px] text-[var(--color-text-muted)]">
+        <div class="flex items-center gap-3 text-lg text-[var(--color-text-muted)]">
           <slot name="header-right"></slot>
         </div>
       </div>
@@ -94,7 +94,7 @@
           <slot name="header-bar">
             <!-- Default Header Layout -->
             <div v-if="docNumber" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6">
-              <div class="text-xl text-[var(--color-text)] tabular-nums font-mono">{{ docNumber }}</div>
+              <div class="text-4xl text-[var(--color-text)] tabular-nums font-mono">{{ docNumber }}</div>
             </div>
 
             <div 
@@ -106,48 +106,48 @@
               <div class="flex items-center gap-6 overflow-hidden">
                 <div class="flex items-baseline gap-2 min-w-0 shrink-0">
                   <label 
-                    class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
+                    class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
                     :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
                   >Party</label>
-                  <div class="text-2xl text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
+                  <div class="text-4xl text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
                 </div>
 
-                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-xl whitespace-nowrap shrink-0">
-                  <span class="text-[10px] uppercase text-[var(--color-text-muted)]">Mob:</span>
+                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
+                  <span class="text-xl uppercase text-[var(--color-text-muted)]">Mob:</span>
                   {{ partyMobile }}
                 </div>
 
-                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-xl whitespace-nowrap shrink-0">
-                  <span class="text-[10px] uppercase text-[var(--color-text-muted)]">GST:</span>
+                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-3xl whitespace-nowrap shrink-0">
+                  <span class="text-xl uppercase text-[var(--color-text-muted)]">GST:</span>
                   {{ partyGstin }}
                 </div>
 
                 <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap shrink-0">
-                  <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
+                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
                   <span
-                    class="text-xl font-bold font-mono"
+                    class="text-3xl font-bold font-mono"
                     :class="(Number(partyBalance) > 0) ? 'text-[var(--color-success)]' : (Number(partyBalance) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
                   >
                     ₹ {{ Math.abs(partyBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-                    <span class="text-[10px]">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
+                    <span class="text-xl">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
                   </span>
                 </div>
 
                 <div v-if="partyLastInvDate" class="flex items-center gap-2 whitespace-nowrap shrink overflow-hidden">
-                  <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] shrink-0">Last Inv</span>
-                  <span class="text-xl font-mono text-[var(--color-highlight)] truncate">{{ partyLastInvDate }}</span>
+                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)] shrink-0">Last Inv</span>
+                  <span class="text-3xl font-mono text-[var(--color-highlight)] truncate">{{ partyLastInvDate }}</span>
                 </div>
               </div>
             </div>
 
 
             <div v-if="partyModifier !== null && Number(partyModifier) !== 0" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
-              <span class="text-xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">{{ partyModifier }}</span>
+              <span class="text-3xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">{{ partyModifier }}</span>
               <input
                 type="checkbox"
                 :checked="!ignoreModifier"
                 :disabled="isReadOnly"
-                class="h-[15px] w-[15px] accent-[var(--color-warning)] disabled:opacity-50 disabled:cursor-default"
+                class="h-[25px] w-[25px] accent-[var(--color-warning)] disabled:opacity-50 disabled:cursor-default"
                 :class="isReadOnly ? '' : 'cursor-pointer'"
                 title="Apply Multiplier"
                 @change="$emit('update:ignoreModifier', !$event.target.checked)"
@@ -155,11 +155,11 @@
             </div>
 
             <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Date</label>
+              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Date</label>
               <div class="flex items-center gap-1">
-                <button @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
-                <div class="text-xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
-                <button @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+                <button @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
+                <button @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
               </div>
             </div>
           </slot>
