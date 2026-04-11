@@ -278,14 +278,6 @@
 
       <!-- UNALLOCATED CASH PANEL -->
       <aside class="flex w-80 flex-col border-l border-[var(--color-border)] bg-[var(--color-bg)] z-10 shrink-0">
-        <div class="p-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/30">
-          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-info)] flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Payment Reconciliation
-          </h3>
-          <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] uppercase truncate">For {{ selectedInvoice?.customer || '---' }}</p>
-        </div>
-
         <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
           <!-- Placeholder when empty -->
           <div v-if="!selectedInvoice || (unallocatedPayments.length === 0 && !(selectedInvoice?.advances && selectedInvoice.advances.length > 0))" class="flex h-full flex-col items-center justify-center text-center p-6 opacity-40">
