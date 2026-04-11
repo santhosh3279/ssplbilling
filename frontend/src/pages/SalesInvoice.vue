@@ -1365,7 +1365,6 @@ function handlePendingQtyKeydown(e) {
       e.preventDefault()
       if (getItemUoms(pendingItem.value.item_code).length > 1) {
         pendingUomSelect.value?.focus()
-        if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
       } else {
         confirmPendingItem()
       }
