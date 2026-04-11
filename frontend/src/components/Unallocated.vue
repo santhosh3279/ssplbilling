@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { frappePost } from '../api'
 
 const props = defineProps({
@@ -107,7 +107,14 @@ const isSubmitting = ref(false)
 const allocationInputs = ref([])
 const allocateButton = ref(null)
 
+const handleEsc = (e) => {
+  if (e.key === 'Escape' && props.show) {
+    emit('close')
+  }
+}
+
 onMounted(() => {
+  window.addEventListener('keydown', handleEsc)
   if (props.show) {
     nextTick(() => {
       if (allocationInputs.value[0]) {
@@ -116,6 +123,10 @@ onMounted(() => {
       }
     })
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleEsc)
 })
 
 // Also watch 'show' prop if the component is kept alive
