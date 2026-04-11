@@ -47,7 +47,7 @@
                   ref="dateInput"
                   type="date"
                   v-model="filterDate"
-                  class="bg-transparent border-none text-[15px] font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
+                  class="bg-transparent border-none text-[18px] font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
                   @change="loadInvoices"
                 />
               </div>
