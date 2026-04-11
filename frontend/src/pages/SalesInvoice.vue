@@ -1300,7 +1300,7 @@ function onNewCodeInput() {
       setTimeout(() => {
         pendingQtyInput.value?.focus()
         pendingQtyInput.value?.select()
-      }, isScanner ? 0 : 400)
+      }, isScanner ? 100 : 400)
     }
   } else {
     quickSearchResults.value = []
@@ -1713,7 +1713,7 @@ function onEditCodeInput(rowIdx) {
       quickSearchResults.value = []
       setTimeout(() => {
         focusEditField('qty', rowIdx)
-      }, isScanner ? 0 : 400)
+      }, isScanner ? 100 : 400)
     }
   } else {
     quickSearchResults.value = []

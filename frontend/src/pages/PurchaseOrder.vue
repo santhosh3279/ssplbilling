@@ -1104,7 +1104,7 @@ function onEditCodeInput(rowIdx) {
     const exactMatch = quickSearchResults.value.find(i => i.barcodes && i.barcodes.split(',').some(b => b.trim() === code))
     if (exactMatch) {
       applyItemToRow(rowIdx, exactMatch); quickSearchResults.value = []
-      setTimeout(() => { focusEditField('qty', rowIdx) }, isScanner ? 0 : 400)
+      setTimeout(() => { focusEditField('qty', rowIdx) }, isScanner ? 100 : 400)
     }
   }
   else { quickSearchResults.value = []; editQuickSearchRowIdx.value = null }
@@ -1222,7 +1222,7 @@ function onNewCodeInput() {
     const exactMatch = quickSearchResults.value.find(i => i.barcodes && i.barcodes.split(',').some(b => b.trim() === code))
     if (exactMatch) {
       onQuickSearchSelect(exactMatch)
-      setTimeout(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() }, isScanner ? 0 : 400)
+      setTimeout(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() }, isScanner ? 100 : 400)
     }
   }
   else quickSearchResults.value = []
