@@ -167,7 +167,7 @@
                 <span
                   class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider"
                   :class="selectedInvoice?.name === inv.name
-                    ? 'bg-[var(--color-focus)]/50 text-white'
+                    ? 'bg-[var(--color-focus)]/50 text-[var(--color-text-on-focus)]'
                     : inv.docstatus === 0 
                       ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
                       : (inv.outstanding_amount <= 0.01 ? 'bg-green-900/40 text-[var(--color-success)]' : 'bg-rose-900/40 text-[var(--color-danger)]')"
@@ -182,8 +182,8 @@
                 </div>
               </div>
               <div class="flex items-center justify-between mb-0.5">
-                <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-                <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : (inv.grand_total < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.grand_total) }}</div>
+                <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
+                <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : (inv.grand_total < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.grand_total) }}</div>
               </div>
               <div class="truncate text-[16.5px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
