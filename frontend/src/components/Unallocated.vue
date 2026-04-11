@@ -16,48 +16,48 @@
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
           <!-- Already Allocated Section -->
           <div v-if="invoice?.advances && invoice.advances.length > 0" class="space-y-2">
-            <h4 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-2">Previously Allocated</h4>
-            <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-4 py-2 flex items-center justify-between gap-6">
-              <div class="flex items-center gap-4 flex-1">
-                <span class="text-sm font-black text-[var(--color-info)] min-w-[140px]">{{ adv.reference_name }}</span>
-                <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</span>
+            <h4 class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-3">Previously Allocated</h4>
+            <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-6 py-2.5 flex items-center justify-between gap-8">
+              <div class="flex items-center gap-6 flex-1">
+                <span class="text-lg font-black text-[var(--color-info)] min-w-[180px]">{{ adv.reference_name }}</span>
+                <span class="text-[12px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</span>
               </div>
-              <span class="text-lg font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
+              <span class="text-2xl font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
             </div>
           </div>
 
           <!-- Unallocated Section -->
           <div v-if="localUnallocated.length > 0" class="space-y-2">
-            <h4 class="text-[10px] font-black uppercase tracking-widest text-amber-500 px-2">Available Unallocated Cash</h4>
-            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 shadow-sm flex items-center gap-6 group hover:border-[var(--color-focus)]/50 transition-colors">
+            <h4 class="text-[15px] font-black uppercase tracking-widest text-amber-500 px-3">Available Unallocated Cash</h4>
+            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2.5 shadow-sm flex items-center gap-8 group hover:border-[var(--color-focus)]/50 transition-colors">
               <!-- Name & Date -->
-              <div class="flex items-center gap-4 min-w-[220px]">
-                <div class="text-sm font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
-                <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ formatDate(pe.posting_date) }}</div>
+              <div class="flex items-center gap-6 min-w-[280px]">
+                <div class="text-lg font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+                <div class="text-[12px] font-bold text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ formatDate(pe.posting_date) }}</div>
               </div>
 
               <!-- Mode & Balance -->
-              <div class="flex items-center gap-4 flex-1">
-                <div class="px-2 py-0.5 rounded bg-[var(--color-surface-raised)] text-[9px] font-black text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ pe.mode_of_payment }}</div>
-                <div class="flex items-center gap-2">
-                  <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Balance</span>
-                  <span class="text-base font-black text-[var(--color-success)] font-mono">₹{{ fmt(pe.unallocated_amount) }}</span>
+              <div class="flex items-center gap-6 flex-1">
+                <div class="px-3 py-1 rounded bg-[var(--color-surface-raised)] text-[11px] font-black text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ pe.mode_of_payment }}</div>
+                <div class="flex items-center gap-3">
+                  <span class="text-[12px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Balance</span>
+                  <span class="text-2xl font-black text-[var(--color-success)] font-mono">₹{{ fmt(pe.unallocated_amount) }}</span>
                 </div>
               </div>
               
               <!-- Adjust Input -->
-              <div class="flex items-center gap-3">
-                <div class="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust</div>
-                <div class="w-40 relative">
+              <div class="flex items-center gap-4">
+                <div class="text-[15px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust</div>
+                <div class="w-48 relative">
                   <input
                     :ref="el => allocationInputs[index] = el"
                     type="number"
                     v-model.number="pe.amount_to_allocate"
                     @focus="$event.target.select()"
-                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 px-3 text-right font-mono text-base font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
+                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-right font-mono text-2xl font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
                     @keydown.enter="focusNextAllocation(index)"
                   />
                 </div>
