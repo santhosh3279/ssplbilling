@@ -1353,14 +1353,16 @@ function onEditCodeKeydown(e, rowIdx) {
     } else if (e.key === 'Enter') {
       e.preventDefault()
       const code = (items.value[rowIdx]?.item_code || '').trim()
-      const exactMatch = quickSearchResults.value.find(i =>
-        i.item_code.toLowerCase() === code.toLowerCase() ||
-        (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
-      )
-      if (exactMatch) {
-        quickSearchRef.value.handleQuickSearchKeydown(e)
+      const match = lookupItemInCache(code)
+      if (match) {
+        applyItemToRow(rowIdx, match)
+        if (getItemUoms(match.item_code).length > 1) {
+          focusEditField('uom', rowIdx)
+        } else {
+          focusEditField('qty', rowIdx)
+        }
       } else {
-        openItemSearch(code, rowIdx)
+        quickSearchRef.value.handleQuickSearchKeydown(e)
       }
       return
     } else if (e.key === 'Escape') {
@@ -1372,14 +1374,10 @@ function onEditCodeKeydown(e, rowIdx) {
   if (e.key === 'Enter') {
     e.preventDefault()
     const code = (items.value[rowIdx]?.item_code || '').trim()
-    const cached = searchItemsInCache(code)
-    const exactMatch = cached.find(i =>
-      i.item_code.toLowerCase() === code.toLowerCase() ||
-      (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
-    )
-    if (exactMatch) {
-      applyItemToRow(rowIdx, exactMatch)
-      if (getItemUoms(exactMatch.item_code).length > 1) {
+    const match = lookupItemInCache(code)
+    if (match) {
+      applyItemToRow(rowIdx, match)
+      if (getItemUoms(match.item_code).length > 1) {
         focusEditField('uom', rowIdx)
       } else {
         focusEditField('qty', rowIdx)
