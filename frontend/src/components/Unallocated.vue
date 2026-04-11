@@ -10,7 +10,7 @@
               <div class="w-[250px] shrink-0 text-[18.75px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</div>
               <div class="flex-1 text-[14px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</div>
               <div class="w-[180px] shrink-0 text-right text-[25px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</div>
-              <div class="w-48 shrink-0"></div> <!-- Spacer to match bottom grid -->
+              <div class="w-48 shrink-0"></div> <!-- Spacer for Adjust Input -->
             </div>
           </div>
 
@@ -35,7 +35,8 @@
             <!-- Table Rows -->
             <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-md flex items-center gap-6 group hover:border-[var(--color-focus)]/50 transition-colors">
               <!-- Name -->
-              <div class="w-[250px] shrink-0 text-[18.75px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>              
+              <div class="w-[250px] shrink-0 text-[18.75px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+
               <!-- Date -->
               <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
 
