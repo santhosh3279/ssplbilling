@@ -596,6 +596,7 @@ const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1
 const showClearWarning = ref(false)
 const customerInitialQuery = ref('')
 const invoiceTemplateRef = ref(null)
+const saveBtnRef = ref(null)
 const priceListSelectRef = ref(null)
 const taxTemplateRef = ref(null)
 const inclusiveTaxRef = ref(null)
@@ -1096,7 +1097,7 @@ async function handleSave() {
 
 function handleDiscountPctKeydown(e) {
   if (e.key === 'Enter') { e.preventDefault(); invoiceTemplateRef.value?.focusDiscountAmt() }
-  else if (e.key === 'End') { e.preventDefault(); invoiceTemplateRef.value?.focusSaveBtn() }
+  else if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
 }
 
 function handleModify() {
