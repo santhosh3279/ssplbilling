@@ -365,7 +365,7 @@
                 v-model="pendingItem.uom"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                 @change="onPendingUomChange"
-                @keydown.enter.prevent="confirmPendingItem"
+                @keydown.enter.prevent="openPriceListUpdate"
                 @keydown.escape="cancelPendingItem"
               >
                 <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
@@ -483,6 +483,15 @@
 
     <!-- Hidden file input for CSV import -->
     <input ref="csvImportRef" type="file" accept=".csv" class="hidden" @change="onCsvFileSelected" />
+
+    <PriceListUpdate
+      v-if="showPriceListUpdate && pendingItem"
+      :is-sub-window="true"
+      :item-code="pendingItem.item_code"
+      :selected-price-list="priceList"
+      @close="onPriceListUpdateClose"
+      @saved="onPriceListUpdateSaved"
+    />
   </div>
 </template>
 
@@ -505,6 +514,7 @@ import { encryptPrice } from '../encryption.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
+import PriceListUpdate from './PriceListUpdate.vue'
 
 const router = useRouter()
 
@@ -569,6 +579,7 @@ const costCenterRef = ref(null)
 const showPrintModal = ref(false)
 const pendingClearAfterPrint = ref(false)
 const showJumpModal = ref(false)
+const showPriceListUpdate = ref(false)
 
 const lastEnterTime = ref(0)
 
@@ -1414,6 +1425,30 @@ function setPendingItem(item) {
   })
 }
 
+function openPriceListUpdate() {
+  if (!pendingItem.value || pendingItem.value.qty <= 0) return
+  showPriceListUpdate.value = true
+}
+
+function onPriceListUpdateSaved(data) {
+  showPriceListUpdate.value = false
+  if (pendingItem.value && data.changedPrices?.length) {
+    const pl = data.changedPrices.find(p => p.price_list === priceList.value)
+    if (pl) {
+      const uomRate = pl.uom_rates?.[pendingItem.value.uom]
+      const newRate = uomRate != null ? uomRate : (pl.rate ?? pendingItem.value.rate)
+      pendingItem.value.rate = newRate
+      pendingItem.value._base_rate = newRate
+    }
+  }
+  confirmPendingItem()
+}
+
+function onPriceListUpdateClose() {
+  showPriceListUpdate.value = false
+  confirmPendingItem()
+}
+
 function confirmPendingItem() {
   if (!pendingItem.value || pendingItem.value.qty <= 0) return
   const p = pendingItem.value
@@ -1568,7 +1603,7 @@ function handlePendingQtyKeydown(e) {
         pendingUomSelect.value?.focus()
         if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
       } else {
-        confirmPendingItem()
+        openPriceListUpdate()
       }
     }
   } else if (e.key === 'Escape') {
