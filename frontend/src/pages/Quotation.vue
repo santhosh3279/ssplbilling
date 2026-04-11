@@ -1198,22 +1198,17 @@ function handleItemEntry() {
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) return
 
   const code = newItemCode.value.trim()
-  const cached = searchItemsInCache(code)
+  const match = lookupItemInCache(code)
 
-  const exactMatch = cached.find(i =>
-    i.item_code.toLowerCase() === code.toLowerCase() ||
-    (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
-  )
-
-  if (!exactMatch) {
+  if (!match) {
     openItemSearch(code)
     return
   }
 
   setPendingItem({
-    item_code: exactMatch.item_code, item_name: exactMatch.item_name, qty: 0,
-    rate: getItemRateForPriceList(exactMatch, exactMatch.uom), uom: exactMatch.uom || 'Nos',
-    discount: 0, tax_rate: exactMatch.tax_rate || 0, deleted: false
+    item_code: match.item_code, item_name: match.item_name, qty: 0,
+    rate: getItemRateForPriceList(match, match.uom), uom: match.uom || 'Nos',
+    discount: 0, tax_rate: match.tax_rate || 0, deleted: false
   })
 }
 

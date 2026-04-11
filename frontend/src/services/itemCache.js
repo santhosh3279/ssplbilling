@@ -80,17 +80,41 @@ export async function refreshDiscountRuleCache() {
 
 /**
  * Look up an item by code or barcode in the local cache.
+ * If found via barcode, returns the item with the barcode's specific UOM.
  */
 export function lookupItemInCache(code) {
   if (!code) return null
   const cleanCode = code.trim().toLowerCase()
-  const found = items.value.find(i => (i.item_code || '').toLowerCase() === cleanCode)
-  if (!found) return null
-  // Augment with persisted UOMs if the live cache entry is missing them
-  if (!found.uoms?.length && storedUoms[found.item_code]?.length) {
-    found.uoms = storedUoms[found.item_code]
+  
+  // 1. Check direct item_code match
+  let found = items.value.find(i => (i.item_code || '').toLowerCase() === cleanCode)
+  if (found) {
+    const item = { ...found }
+    if (!item.uoms?.length && storedUoms[item.item_code]?.length) {
+      item.uoms = storedUoms[item.item_code]
+    }
+    return item
   }
-  return found
+
+  // 2. Check barcode match
+  found = items.value.find(i => {
+    const detailed = i.barcodes_detailed || []
+    return detailed.some(b => (b.barcode || '').toLowerCase() === cleanCode)
+  })
+
+  if (found) {
+    const item = { ...found }
+    const match = item.barcodes_detailed.find(b => (b.barcode || '').toLowerCase() === cleanCode)
+    if (match && match.uom) {
+      item.uom = match.uom // Use the UOM linked to this specific barcode
+    }
+    if (!item.uoms?.length && storedUoms[item.item_code]?.length) {
+      item.uoms = storedUoms[item.item_code]
+    }
+    return item
+  }
+
+  return null
 }
 
 /**

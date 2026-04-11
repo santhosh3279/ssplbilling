@@ -210,14 +210,19 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	all_barcodes = frappe.get_all(
 		"Item Barcode",
 		filters={"parent": ["in", item_codes]},
-		fields=["parent as item_code", "barcode"],
+		fields=["parent as item_code", "barcode", "uom"],
 	)
 	item_barcodes_map = {}
 	for row in all_barcodes:
-		item_barcodes_map.setdefault(row.item_code, []).append(row.barcode)
+		item_barcodes_map.setdefault(row.item_code, []).append({
+			"barcode": row.barcode,
+			"uom": row.uom or item_map[row.item_code].uom
+		})
 	
 	for i in items:
-		i["barcodes"] = ",".join(item_barcodes_map.get(i.item_code, []))
+		i["barcodes_detailed"] = item_barcodes_map.get(i.item_code, [])
+		# Maintain backward compatibility for comma-separated search if needed
+		i["barcodes"] = ",".join([b["barcode"] for b in i["barcodes_detailed"]])
 
 	return items
 
