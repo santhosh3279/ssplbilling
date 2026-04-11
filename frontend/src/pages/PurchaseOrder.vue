@@ -1090,15 +1090,8 @@ function onEditCodeInput(rowIdx) {
 function onEditCodeKeydown(e, rowIdx) {
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return }
-    else if (e.key === 'Enter') {
-      e.preventDefault(); const code = (items.value[rowIdx]?.item_code || '').trim(); const match = lookupItemInCache(code)
-      if (match) {
-        applyItemToRow(rowIdx, match)
-        if (getItemUoms(match.item_code).length > 1) focusEditField('uom', rowIdx)
-        else focusEditField('qty', rowIdx)
-      } else quickSearchRef.value.handleQuickSearchKeydown(e)
-      return
-    } else if (e.key === 'Escape') { e.preventDefault(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return }
+    else if (e.key === 'Enter') { e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return }
+    else if (e.key === 'Escape') { e.preventDefault(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return }
   }
   if (e.key === 'Enter') {
     e.preventDefault(); const code = (items.value[rowIdx]?.item_code || '').trim(); const match = lookupItemInCache(code)
@@ -1208,12 +1201,8 @@ function handleNewCodeKeydown(e) {
   if (e.key === 'ArrowRight') { e.preventDefault(); openItemSearch(newItemCode.value.trim()); return }
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return }
-    else if (e.key === 'Enter') {
-      e.preventDefault(); const code = newItemCode.value.trim(); const exactMatch = quickSearchResults.value.find(i => i.item_code.toLowerCase() === code.toLowerCase() || (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase())))
-      if (exactMatch) { const barcodeItem = lookupItemInCache(code); if (barcodeItem) onQuickSearchSelect(barcodeItem); else quickSearchRef.value.handleQuickSearchKeydown(e) }
-      else openItemSearch(code)
-      return
-    } else if (e.key === 'Escape') { e.preventDefault(); quickSearchResults.value = []; return }
+    else if (e.key === 'Enter') { e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return }
+    else if (e.key === 'Escape') { e.preventDefault(); quickSearchResults.value = []; return }
   }
   if (e.key === 'Enter') { if (!newItemCode.value) return; handleItemEntry() }
   else if (e.key === 'ArrowUp' && items.value.length > 0) { e.preventDefault(); focusRow(items.value.length - 1) }

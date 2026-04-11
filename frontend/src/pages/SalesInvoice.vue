@@ -1314,21 +1314,7 @@ function handleNewCodeKeydown(e) {
       e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      const code = newItemCode.value.trim()
-      const exactMatch = quickSearchResults.value.find(i =>
-        i.item_code.toLowerCase() === code.toLowerCase() ||
-        (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
-      )
-      if (exactMatch) {
-        const barcodeItem = lookupItemInCache(code)
-        if (barcodeItem) {
-          onQuickSearchSelect(barcodeItem)
-        } else {
-          quickSearchRef.value.handleQuickSearchKeydown(e)
-        }
-      } else {
-        openItemSearch(code)
-      }
+      quickSearchRef.value.handleQuickSearchKeydown(e)
       return
     } else if (e.key === 'Escape') {
       e.preventDefault(); quickSearchResults.value = []; return
@@ -1707,18 +1693,7 @@ function onEditCodeKeydown(e, rowIdx) {
       e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      const code = (items.value[rowIdx]?.item_code || '').trim()
-      const match = lookupItemInCache(code)
-      if (match) {
-        applyItemToRow(rowIdx, match)
-        if (getItemUoms(match.item_code).length > 1) {
-          focusEditField('uom', rowIdx)
-        } else {
-          focusEditField('qty', rowIdx)
-        }
-      } else {
-        quickSearchRef.value.handleQuickSearchKeydown(e)
-      }
+      quickSearchRef.value.handleQuickSearchKeydown(e)
       return
     } else if (e.key === 'Escape') {
       e.preventDefault(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return
