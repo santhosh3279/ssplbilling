@@ -35,7 +35,11 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
     """
     draft_only = frappe.parse_json(draft_only)
 
-    filters = [["docstatus", "!=", 2], ["posting_date", "=", posting_date or frappe.utils.today()]]
+    filters = [["docstatus", "!=", 2]]
+
+    # If no search query, restrict by date
+    if not query:
+        filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
 
     if draft_only:
         filters.append(["docstatus", "=", 0])
@@ -43,19 +47,27 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
         # If showing submitted bills, only show those with an outstanding balance
         filters.append(["outstanding_amount", ">", 0.01])
 
-    if naming_series:
-        if isinstance(naming_series, str) and "," in naming_series:
-            naming_series = [s.strip() for s in naming_series.split(",") if s.strip()]
-        
-        if isinstance(naming_series, (list, tuple)):
-            filters.append(["naming_series", "in", naming_series])
-        else:
-            filters.append(["naming_series", "=", naming_series])
-    else:
+    if query:
+        # When searching, we don't filter by specific series, 
+        # but we MUST still restrict to allowed series for security.
         from ssplbilling.api.dashboard_api import get_allowed_series
         allowed = get_allowed_series(doctype="Sales Invoice")
         if allowed:
             filters.append(["naming_series", "in", allowed])
+    else:
+        if naming_series:
+            if isinstance(naming_series, str) and "," in naming_series:
+                naming_series = [s.strip() for s in naming_series.split(",") if s.strip()]
+            
+            if isinstance(naming_series, (list, tuple)):
+                filters.append(["naming_series", "in", naming_series])
+            else:
+                filters.append(["naming_series", "=", naming_series])
+        else:
+            from ssplbilling.api.dashboard_api import get_allowed_series
+            allowed = get_allowed_series(doctype="Sales Invoice")
+            if allowed:
+                filters.append(["naming_series", "in", allowed])
 
     if query:
         # Create a flexible bill number search (e.g., "EO141" -> "%EO%141%")
