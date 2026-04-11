@@ -166,7 +166,7 @@
                     <div class="flex flex-col gap-1">
                       <input v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-slate-200 outline-none w-48" placeholder="Barcode..." />
                       <select v-model="row.uom" class="bg-transparent border-none p-0 text-sm font-bold text-slate-500 uppercase outline-none cursor-pointer hover:text-blue-400 transition-colors">
-                        <option v-for="u in metadata.uoms" :key="u.name" :value="u.name" class="bg-slate-800 text-slate-200">{{ u.name }}</option>
+                        <option v-for="u in availableUoms" :key="u" :value="u" class="bg-slate-800 text-slate-200">{{ u }}</option>
                       </select>
                     </div>
                     <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
@@ -450,6 +450,14 @@ const filteredHSNCodes = computed(() => {
   return metadata.value.hsn_codes
     .filter(h => h.name.toLowerCase().includes(q) || (h.description || '').toLowerCase().includes(q))
     .slice(0, 50)
+})
+
+const availableUoms = computed(() => {
+  const list = [form.value.stock_uom]
+  form.value.uom_conversions.forEach(c => {
+    if (c.uom && !list.includes(c.uom)) list.push(c.uom)
+  })
+  return list
 })
 
 const canSubmit = computed(() => {
