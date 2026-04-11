@@ -33,6 +33,8 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
+      :show-submit-button="true"
+      :is-draft="!isSubmitted"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -52,6 +54,7 @@
       :discount-amt="discountAmt"
       @back="goBack"
       @save="handleSave"
+      @submit="handleSubmit"
       @print="handlePrint"
       @discount-pct-keydown="handleDiscountPctKeydown"
       @cancel="handleCancel"
@@ -331,6 +334,7 @@
           </div>
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
+            <button v-if="isReadOnly && !isSubmitted" @click="handleSubmit" class="flex-1 rounded border border-green-700 bg-green-600/20 py-2.5 text-center text-3xl font-semibold text-green-400 hover:bg-green-600/30 transition-all uppercase active:scale-95">Submit</button>
           </div>
         </div>
       </template>
@@ -1092,6 +1096,24 @@ async function closePrintModal() {
   }
 
   nextTick(() => { newCodeInput.value?.focus() })
+}
+
+async function handleSubmit() {
+  if (!isSaved.value || isSubmitted.value) return
+  if (!confirm(`Are you sure you want to SUBMIT Quotation ${invoiceNo.value}?`)) return
+
+  try {
+    const res = await frappePost('ssplbilling.api.quotation_api.submit_quotation', {
+      quotation_name: invoiceNo.value
+    })
+    if (res.status === 'Submitted') {
+      isSubmitted.value = true
+      isReadOnly.value = true
+      fetchRecentQuotations()
+    }
+  } catch (e) {
+    alert('Failed to submit quotation: ' + e.message)
+  }
 }
 
 function handleCancel() {

@@ -314,10 +314,11 @@
                         <button @click="$emit('print')" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-slate-700/40 bg-slate-800/30 text-slate-600 cursor-not-allowed'">Print</button>
                       </div>
 
-                      <!-- Row 2: Cancel and Incentive -->
+                      <!-- Row 2: Cancel and Incentive/Submit -->
                       <div class="flex gap-2">
                         <button @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
-                        <button @click="$emit('incentive')" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
+                        <button v-if="showSubmitButton" v-show="isDraft && isReadOnly" @click="$emit('submit')" class="flex-1 rounded border border-green-700 bg-green-600/20 py-2.5 text-center text-3xl font-semibold text-green-400 hover:bg-green-600/30 transition-colors uppercase">Submit</button>
+                        <button v-else-if="!showSubmitButton" @click="$emit('incentive')" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
                       </div>
                     </div>
                   </slot>
@@ -511,11 +512,13 @@ const props = defineProps({
   totalTax: { type: [Number, String], default: '0.00' },
   totalAmount: { type: [Number, String], default: '0.00' },
   saveButtonText: { type: String, default: 'Save' },
-  isReadOnly: { type: Boolean, default: false }
+  isReadOnly: { type: Boolean, default: false },
+  showSubmitButton: { type: Boolean, default: false },
+  isDraft: { type: Boolean, default: false }
 })
 
 const emit = defineEmits([
-  'back', 'save', 'print', 'cancel', 'incentive', 'export', 'import', 'party-click',
+  'back', 'save', 'print', 'cancel', 'incentive', 'submit', 'export', 'import', 'party-click',
   'doc-date-change', 'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
   'toggle-draft-only', 'select-sidebar-item', 'delete-item',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
