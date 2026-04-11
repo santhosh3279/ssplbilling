@@ -281,7 +281,7 @@
           <template v-else>
             <div class="space-y-3">
               <!-- Reconcile Alert -->
-              <div v-if="unallocatedPayments.length > 0" 
+              <div v-if="unallocatedPayments.length > 0 && (selectedInvoice.grand_total || 0) > 0" 
                 @click="showReconcileModal = true"
                 class="bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-amber-900/30 transition-all group"
               >
@@ -907,7 +907,7 @@ async function selectInvoice(inv) {
     
     unallocatedAmountTotal.value = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
 
-    if (unallocatedPayments.value.length > 0) {
+    if (unallocatedPayments.value.length > 0 && (details.outstanding_amount || details.grand_total) > 0) {
       showReconcileModal.value = true
     }    
   } catch (e) {
@@ -1125,7 +1125,7 @@ function handleEnter(e) {
   // 2. Navigation Logic
   if (active.tagName !== 'INPUT' && active !== postButton.value) {
     // If we just selected a bill, go to side panel if exists, else cash
-    if (unallocatedPayments.value.length > 0) {
+    if (unallocatedPayments.value.length > 0 && (selectedInvoice.value.grand_total || 0) > 0) {
       showReconcileModal.value = true
     } else if (isCredit.value) {
       dueDateInput.value?.focus()
