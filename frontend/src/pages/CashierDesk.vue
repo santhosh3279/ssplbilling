@@ -356,8 +356,28 @@
                 </button>
               </div>
 
+              <!-- Posting Date Selector -->
+              <div class="flex flex-col gap-1.5 pb-2">
+                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] ml-1">Posting Date</label>
+                <div class="flex items-center justify-between gap-1.5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-1">
+                  <button @click="adjustPostingDate(-1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  <div class="flex-1 text-center">
+                    <input
+                      type="date"
+                      v-model="postingDate"
+                      class="bg-transparent border-none text-xs font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
+                    />
+                  </div>
+                  <button @click="adjustPostingDate(1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
+              </div>
+
               <!-- Input Grid -->
-              <div v-if="!isCredit" class="space-y-3">
+              <div v-if="!isCredit" class="space-y-2">
                 <div class="group relative">
                   <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cashLabel }}</div>
                   <input
@@ -365,7 +385,7 @@
                     type="number"
                     v-model="payments.cash"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
@@ -375,7 +395,7 @@
                     type="number"
                     v-model="payments.upi"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
@@ -385,7 +405,7 @@
                     type="number"
                     v-model="payments.card"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
@@ -395,7 +415,7 @@
                     type="number"
                     v-model="payments.credit"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
@@ -405,7 +425,7 @@
                     type="number"
                     v-model="payments.discount"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 transition-all"
                   />
                 </div>
               </div>
@@ -445,26 +465,6 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   {{ successMsg }}
                 </p>
-              </div>
-
-              <!-- Posting Date Selector -->
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] ml-1">Posting Date</label>
-                <div class="flex items-center justify-between gap-1.5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-1">
-                  <button @click="adjustPostingDate(-1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                  </button>
-                  <div class="flex-1 text-center">
-                    <input
-                      type="date"
-                      v-model="postingDate"
-                      class="bg-transparent border-none text-xs font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
-                    />
-                  </div>
-                  <button @click="adjustPostingDate(1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                  </button>
-                </div>
               </div>
 
               <!-- Action Button -->
