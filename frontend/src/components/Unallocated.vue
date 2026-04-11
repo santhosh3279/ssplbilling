@@ -2,20 +2,6 @@
   <transition name="fade">
     <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
       <div class="flex w-full max-w-[80vw] flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden max-h-[90vh]">
-        <!-- Modal Header -->
-        <div class="p-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/30 flex items-center justify-between">
-          <div>
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-info)] flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              Payment Reconciliation
-            </h3>
-            <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Adjust pending ledger cash for this bill</p>
-          </div>
-          <button @click="$emit('close')" class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-raised)] transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
-        </div>
-
         <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
           <!-- Already Allocated Section -->
           <div v-if="invoice?.advances && invoice.advances.length > 0" class="mb-8 space-y-3">
@@ -26,11 +12,16 @@
               <div class="w-[180px] shrink-0 text-right text-[25px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</div>
               <div class="w-48 shrink-0"></div> <!-- Spacer to match bottom grid -->
             </div>
-            </div>
+          </div>
 
-            <!-- Unallocated Section -->
-            <div v-if="localUnallocated.length > 0" class="space-y-3">
-            <h4 class="text-[16px] font-black uppercase tracking-widest text-amber-500 px-3 mb-4">Available Unallocated Cash</h4>
+          <!-- Unallocated Section -->
+          <div v-if="localUnallocated.length > 0" class="space-y-3">
+            <div class="flex items-center justify-between px-3 mb-4">
+              <h4 class="text-[16px] font-black uppercase tracking-widest text-amber-500">Available Unallocated Cash</h4>
+              <button @click="$emit('close')" class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-raised)] transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
 
             <!-- Table Header -->
             <div class="px-6 py-2 flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-60">
