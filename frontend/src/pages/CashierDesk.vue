@@ -58,14 +58,35 @@
 
             <!-- Series, Toggle & Sync -->
             <div class="flex items-center gap-2">
-              <select
-                v-model="sidebarSeries"
-                @change="loadInvoices"
-                class="w-[30%] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 px-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all"
-              >
-                <option value="" v-if="availableSeries.length > 1">All Allowed</option>
-                <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
-              </select>
+              <div class="w-[30%] relative series-dropdown-container">
+                <button 
+                  @click="showSeriesDropdown = !showSeriesDropdown"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 px-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
+                >
+                  <span class="truncate">{{ sidebarSeries.length === availableSeries.length ? 'All' : (sidebarSeries.length > 0 ? sidebarSeries[0] + (sidebarSeries.length > 1 ? '..' : '') : 'None') }}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                
+                <!-- Dropdown Menu -->
+                <div v-if="showSeriesDropdown" class="absolute top-full left-0 mt-1 w-48 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
+                  <div class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 hover:bg-[var(--color-surface-raised)] cursor-pointer select-none" @click="toggleAllSeries">
+                    <input 
+                      type="checkbox" 
+                      :checked="sidebarSeries.length === availableSeries.length" 
+                      class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+                    />
+                    <span class="text-[11px] font-bold uppercase tracking-wider">All Series</span>
+                  </div>
+                  <div v-for="s in availableSeries" :key="s" class="px-3 py-1.5 flex items-center gap-2 hover:bg-[var(--color-surface-raised)] cursor-pointer select-none" @click="toggleSeries(s)">
+                    <input 
+                      type="checkbox" 
+                      :checked="isSeriesSelected(s)" 
+                      class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+                    />
+                    <span class="text-[11px] font-bold uppercase tracking-wider">{{ s }}</span>
+                  </div>
+                </div>
+              </div>
 
               <button
                 @click="showUnpaid = !showUnpaid; loadInvoices()"
@@ -635,8 +656,33 @@ const filterDate = ref(getTodayIST())
 const postingDate = ref(getTodayIST())
 const searchQuery = ref('')
 const showUnpaid = ref(false)
-const sidebarSeries = ref('')
+const sidebarSeries = ref([])
+const showSeriesDropdown = ref(false)
 const availableSeries = ref([])
+
+// Toggle individual series
+function toggleSeries(series) {
+  const idx = sidebarSeries.value.indexOf(series)
+  if (idx > -1) {
+    sidebarSeries.value.splice(idx, 1)
+  } else {
+    sidebarSeries.value.push(series)
+  }
+  loadInvoices()
+}
+
+function isSeriesSelected(series) {
+  return sidebarSeries.value.includes(series)
+}
+
+function toggleAllSeries() {
+  if (sidebarSeries.value.length === availableSeries.value.length) {
+    sidebarSeries.value = []
+  } else {
+    sidebarSeries.value = [...availableSeries.value]
+  }
+  loadInvoices()
+}
 
 const showCardRefModal = ref(false)
 const showPrintModal = ref(false)
@@ -797,7 +843,7 @@ async function checkDayOpening() {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, showUnpaid.value, sidebarSeries.value)
+    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, showUnpaid.value, sidebarSeries.value.join(','))
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
@@ -835,8 +881,8 @@ async function fetchSeriesList() {
     }
 
     availableSeries.value = finalSeries
-    if (availableSeries.value.length === 1 && !sidebarSeries.value) {
-      sidebarSeries.value = availableSeries.value[0]
+    if (sidebarSeries.value.length === 0 && availableSeries.value.length > 0) {
+      sidebarSeries.value = [...availableSeries.value]
       loadInvoices()
     }
   } catch (e) {
@@ -1283,8 +1329,16 @@ watch(postingDate, () => {
 })
 
 // ==================== LIFECYCLE ====================
+const handleSeriesClickAway = (e) => {
+  if (!e.target.closest('.series-dropdown-container')) {
+    showSeriesDropdown.value = false
+  }
+}
+
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus())
+  window.addEventListener('click', handleSeriesClickAway)
+  
   initAccountsFromLocalStorage()
   fetchSeriesList()
   loadInvoices()
@@ -1298,6 +1352,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
+  window.removeEventListener('click', handleSeriesClickAway)
   window.removeEventListener('keydown', handleKeydown)
 })
 

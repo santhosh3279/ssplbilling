@@ -44,7 +44,13 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
         filters.append(["outstanding_amount", ">", 0.01])
 
     if naming_series:
-        filters.append(["naming_series", "=", naming_series])
+        if isinstance(naming_series, str) and "," in naming_series:
+            naming_series = [s.strip() for s in naming_series.split(",") if s.strip()]
+        
+        if isinstance(naming_series, (list, tuple)):
+            filters.append(["naming_series", "in", naming_series])
+        else:
+            filters.append(["naming_series", "=", naming_series])
     else:
         from ssplbilling.api.dashboard_api import get_allowed_series
         allowed = get_allowed_series(doctype="Sales Invoice")
