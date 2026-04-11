@@ -1,27 +1,27 @@
 <template>
-  <div class="flex h-screen flex-col bg-slate-900 font-sans text-slate-200 overflow-hidden">
+  <div class="flex h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] overflow-hidden">
     <!-- TOP NAVBAR -->
-    <header class="flex h-14 items-center justify-between border-b border-slate-700 bg-slate-800 px-6 z-20 shrink-0">
+    <header class="flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 z-20 shrink-0">
       <div class="flex items-center gap-4">
-        <button @click="$router.push('/')" class="mr-2 flex items-center gap-1.5 rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-all active:scale-95">
+        <button @click="$router.push('/')" class="mr-2 flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-raised)]/50 px-2.5 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-white transition-all active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Back
         </button>
-        <div class="flex items-center gap-2 font-bold text-blue-400">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
+        <div class="flex items-center gap-2 font-bold text-[var(--color-info)]">
+          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
           </div>
-          <span class="text-sm font-black tracking-widest uppercase text-slate-200">Cashier Desk</span>
+          <span class="text-sm font-black tracking-widest uppercase text-[var(--color-text)]">Cashier Desk</span>
         </div>
       </div>
 
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2">
           <div class="text-right">
-            <div class="text-xs font-bold text-slate-300">{{ session.fullName.value }}</div>
-            <div class="truncate text-[10px] text-slate-600">{{ session.user.value }}</div>
+            <div class="text-xs font-bold text-[var(--color-text)]">{{ session.fullName.value }}</div>
+            <div class="truncate text-[10px] text-[var(--color-text-muted)]">{{ session.user.value }}</div>
           </div>
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 text-xs font-black text-slate-300 border border-slate-600">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--color-surface-raised)] to-[var(--color-border)] text-xs font-black text-[var(--color-text)] border border-[var(--color-border)]">
             {{ userInitials }}
           </div>
         </div>
@@ -31,15 +31,15 @@
     <!-- MAIN CONTENT -->
     <div class="flex flex-1 overflow-hidden">
       <!-- LEFT ASIDE: INVOICE LIST & CONTROLS -->
-      <aside class="flex w-72 flex-col border-r border-slate-700 bg-slate-900 z-10 shrink-0">
+      <aside class="flex w-72 flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] z-10 shrink-0">
         
         <!-- SIDE PANEL CONTROLS -->
-        <div class="p-3 border-b border-slate-700 space-y-3 bg-slate-800/30">
+        <div class="p-3 border-b border-[var(--color-border)] space-y-3 bg-[var(--color-surface)]/30">
           <!-- Date & Toggle Section -->
           <div class="flex flex-col gap-2.5">
             <!-- Date Navigator -->
-            <div class="flex items-center justify-between gap-1.5 bg-slate-800 rounded-xl border border-slate-700 p-1">
-              <button @click="adjustDate(-1)" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-colors">
+            <div class="flex items-center justify-between gap-1.5 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-1">
+              <button @click="adjustDate(-1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               </button>
               <div class="flex-1 text-center">
@@ -47,11 +47,11 @@
                   ref="dateInput"
                   type="date"
                   v-model="filterDate"
-                  class="bg-transparent border-none text-xs font-black text-slate-300 focus:ring-0 p-0 text-center cursor-pointer w-full"
+                  class="bg-transparent border-none text-xs font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
                   @change="loadInvoices"
                 />
               </div>
-              <button @click="adjustDate(1)" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-colors">
+              <button @click="adjustDate(1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
               </button>
             </div>
@@ -61,14 +61,14 @@
               <select
                 v-model="sidebarSeries"
                 @change="loadInvoices"
-                class="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-300 outline-none focus:border-blue-500 transition-all"
+                class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all"
               >
                 <option value="">All Series</option>
                 <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
               </select>
               <button
                 @click="loadInvoices"
-                class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all active:scale-90"
+                class="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-white transition-all active:scale-90"
                 title="Sync Bills"
               >
                 <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
@@ -80,8 +80,8 @@
               @click="showUnpaid = !showUnpaid; loadInvoices()"
               class="w-full rounded-xl border py-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all"
               :class="showUnpaid 
-                ? 'bg-rose-900/30 border-rose-500/50 text-rose-400' 
-                : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750 hover:text-slate-300'"
+                ? 'bg-rose-900/30 border-rose-500/50 text-[var(--color-danger)]' 
+                : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'"
             >
               {{ showUnpaid ? 'Showing Unpaid Bills' : 'Showing Drafts Only' }}
             </button>
@@ -93,23 +93,23 @@
               v-model="searchQuery"
               @input="debouncedSearch"
               placeholder="Search bills..."
-              class="w-full rounded-xl border border-slate-700 bg-slate-800 py-2.5 pl-9 pr-3 text-xs font-bold text-slate-300 placeholder-slate-600 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-9 pr-3 text-xs font-bold text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all"
             />
-            <svg class="absolute left-3 top-2.5 text-slate-600 group-focus-within:text-blue-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <svg class="absolute left-3 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <div v-if="loadingList" class="flex flex-col items-center justify-center py-12 gap-3">
-            <div class="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-            <span class="text-xs font-bold text-slate-600 uppercase tracking-widest">Loading...</span>
+            <div class="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-focus)] border-t-transparent"></div>
+            <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Loading...</span>
           </div>
           <div v-else-if="invoices.length === 0" class="flex flex-col items-center justify-center py-12 text-center px-6">
-            <div class="mb-3 rounded-xl bg-slate-800 p-4 text-slate-600">
+            <div class="mb-3 rounded-xl bg-[var(--color-surface)] p-4 text-[var(--color-text-muted)]">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
             </div>
-            <div class="text-sm font-bold text-slate-600">No bills found</div>
-            <div class="text-[10px] text-slate-700 uppercase tracking-widest mt-1">Try changing the date</div>
+            <div class="text-sm font-bold text-[var(--color-text-muted)]">No bills found</div>
+            <div class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest mt-1">Try changing the date</div>
           </div>
           <div v-else class="p-2 space-y-1">
             <button
@@ -119,31 +119,31 @@
               @click="selectInvoice(inv)"
               class="group flex w-full flex-col rounded-lg p-3 text-left transition-all active:scale-[0.98]"
               :class="selectedInvoice?.name === inv.name
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400'"
+                ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] shadow-lg'
+                : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
             >
               <div class="flex items-center justify-between mb-1">
                 <span
                   class="rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider"
                   :class="selectedInvoice?.name === inv.name
-                    ? 'bg-blue-500/50 text-white'
+                    ? 'bg-[var(--color-focus)]/50 text-white'
                     : inv.docstatus === 0 
-                      ? 'bg-slate-700 text-slate-500' 
-                      : (inv.outstanding_amount <= 0.01 ? 'bg-green-900/40 text-green-400' : 'bg-rose-900/40 text-rose-400')"
+                      ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
+                      : (inv.outstanding_amount <= 0.01 ? 'bg-green-900/40 text-[var(--color-success)]' : 'bg-rose-900/40 text-[var(--color-danger)]')"
                 >
                   {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
                 </span>
-                <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-blue-200' : 'text-slate-600'">
+                <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                   {{ inv.posting_time }}
                 </span>
               </div>
-              <div class="text-sm font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-slate-200'">{{ inv.name }}</div>
-              <div class="truncate text-[11px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-blue-100' : 'text-slate-500'">
+              <div class="text-sm font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
+              <div class="truncate text-[11px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
               </div>
-              <div class="mt-2 flex items-center justify-between border-t pt-2" :class="selectedInvoice?.name === inv.name ? 'border-blue-500/50' : 'border-slate-700'">
+              <div class="mt-2 flex items-center justify-between border-t pt-2" :class="selectedInvoice?.name === inv.name ? 'border-[var(--color-focus)]/50' : 'border-[var(--color-border)]'">
                 <span class="text-[10px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
-                <div class="font-mono text-xs font-bold" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-emerald-400'">₹{{ fmt(inv.grand_total) }}</div>
+                <div class="font-mono text-xs font-bold" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
               </div>
             </button>
           </div>
@@ -151,20 +151,20 @@
       </aside>
 
       <!-- CENTER: INVOICE PREVIEW -->
-      <main class="flex flex-1 flex-col bg-slate-900 overflow-hidden relative">
-        <div v-if="!selectedInvoice" class="flex flex-1 flex-col items-center justify-center text-slate-700">
+      <main class="flex flex-1 flex-col bg-[var(--color-bg)] overflow-hidden relative">
+        <div v-if="!selectedInvoice" class="flex flex-1 flex-col items-center justify-center text-[var(--color-text-muted)]">
           <div class="mb-6 h-28 w-28 opacity-20">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
           </div>
-          <div class="text-base font-bold text-slate-600">Select a bill to process payment</div>
-          <div class="mt-3 flex items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-slate-700">
+          <div class="text-base font-bold text-[var(--color-text-muted)]">Select a bill to process payment</div>
+          <div class="mt-3 flex items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
             <span class="flex items-center gap-1">
-              <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">↑</kbd>
-              <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">↓</kbd>
+              <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">↑</kbd>
+              <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">↓</kbd>
               Navigate
             </span>
             <span class="flex items-center gap-1">
-              <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">ENTER</kbd>
+              <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">ENTER</kbd>
               Select
             </span>
           </div>
@@ -172,22 +172,22 @@
 
         <template v-else>
           <!-- Invoice Header -->
-          <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-3 z-10">
+          <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 z-10">
             <div class="flex items-center gap-4">
               <div>
-                <h2 class="text-lg font-bold text-slate-100 leading-none mb-1">{{ selectedInvoice.name }}</h2>
-                <div class="flex items-center gap-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <span class="text-blue-400">{{ selectedInvoice.customer }}</span>
-                  <span class="h-1 w-1 rounded-full bg-slate-600"></span>
+                <h2 class="text-lg font-bold text-[var(--color-text)] leading-none mb-1">{{ selectedInvoice.name }}</h2>
+                <div class="flex items-center gap-3 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <span class="text-[var(--color-info)]">{{ selectedInvoice.customer }}</span>
+                  <span class="h-1 w-1 rounded-full bg-[var(--color-border)]"></span>
                   <span>{{ formatDate(selectedInvoice.posting_date) }}</span>
                 </div>
               </div>
               <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded-lg bg-green-900/30 px-3 py-1 border border-green-500/30">
-                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">Paid</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-success)]">Paid</span>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <button @click="showPrintModal = true" class="rounded-lg border border-slate-700 bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all flex items-center gap-2">
+              <button @click="showPrintModal = true" class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
                 Print
               </button>
@@ -197,28 +197,28 @@
           <!-- Items Table -->
           <div class="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
             <div v-if="loadingPreview" class="flex flex-col items-center justify-center h-64 gap-3">
-              <div class="h-7 w-7 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-              <span class="text-xs font-bold text-slate-600 uppercase tracking-[0.2em]">Loading details...</span>
+              <div class="h-7 w-7 animate-spin rounded-full border-2 border-[var(--color-focus)] border-t-transparent"></div>
+              <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Loading details...</span>
             </div>
-            <div v-else class="rounded-xl border border-slate-700 bg-slate-800 overflow-hidden">
+            <div v-else class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
               <table class="w-full text-left border-collapse">
                 <thead>
-                  <tr class="bg-slate-700/50 text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-700">
+                  <tr class="bg-[var(--color-surface-raised)]/50 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
                     <th class="px-5 py-3">Item Details</th>
                     <th class="px-5 py-3 text-right">Qty</th>
                     <th class="px-5 py-3 text-right">Rate</th>
                     <th class="px-5 py-3 text-right">Amount</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-700/50">
-                  <tr v-for="item in previewItems" :key="item.name" class="hover:bg-slate-700/30 transition-colors">
+                <tbody class="divide-y divide-[var(--color-border)]/50">
+                  <tr v-for="item in previewItems" :key="item.name" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
                     <td class="px-5 py-3">
-                      <div class="text-sm font-bold text-slate-200">{{ item.item_name }}</div>
-                      <div class="text-[10px] font-medium text-slate-600 mt-0.5">{{ item.item_code }}</div>
+                      <div class="text-sm font-bold text-[var(--color-text)]">{{ item.item_name }}</div>
+                      <div class="text-[10px] font-medium text-[var(--color-text-muted)] mt-0.5">{{ item.item_code }}</div>
                     </td>
-                    <td class="px-5 py-3 text-right font-mono text-sm font-bold text-slate-400">{{ item.qty }} {{ item.uom }}</td>
-                    <td class="px-5 py-3 text-right font-mono text-sm font-bold text-slate-400">₹{{ fmt(item.rate) }}</td>
-                    <td class="px-5 py-3 text-right font-mono text-sm font-black text-slate-200">₹{{ fmt(item.qty * item.rate) }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-sm font-bold text-[var(--color-text-muted)]">{{ item.qty }} {{ item.uom }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-sm font-bold text-[var(--color-text-muted)]">₹{{ fmt(item.rate) }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-sm font-black text-[var(--color-text)]">₹{{ fmt(item.qty * item.rate) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -226,21 +226,21 @@
           </div>
 
           <!-- Summary Bar -->
-          <div class="border-t border-slate-700 bg-slate-800 px-6 py-4">
+          <div class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
             <div class="flex items-end justify-between">
               <div class="flex gap-6">
                 <div class="space-y-0.5">
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Total Qty</div>
-                  <div class="text-xl font-black tracking-tight text-slate-200">{{ previewItems.reduce((acc, i) => acc + i.qty, 0) }}</div>
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Total Qty</div>
+                  <div class="text-xl font-black tracking-tight text-[var(--color-text)]">{{ previewItems.reduce((acc, i) => acc + i.qty, 0) }}</div>
                 </div>
                 <div class="space-y-0.5">
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Items</div>
-                  <div class="text-xl font-black tracking-tight text-slate-200">{{ previewItems.length }}</div>
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Items</div>
+                  <div class="text-xl font-black tracking-tight text-[var(--color-text)]">{{ previewItems.length }}</div>
                 </div>
               </div>
               <div class="flex flex-col items-end gap-0.5">
-                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Grand Total</div>
-                <div class="text-3xl font-black tracking-tighter text-slate-100 font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
+                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
+                <div class="text-3xl font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
               </div>
             </div>
           </div>
@@ -248,51 +248,51 @@
       </main>
 
       <!-- UNALLOCATED CASH PANEL -->
-      <aside v-if="selectedInvoice && (unallocatedPayments.length > 0 || (selectedInvoice.advances && selectedInvoice.advances.length > 0))" class="flex w-80 flex-col border-l border-slate-700 bg-slate-900 z-10 shrink-0">
-        <div class="p-4 border-b border-slate-700 bg-slate-800/30">
-          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 flex items-center gap-2">
+      <aside v-if="selectedInvoice && (unallocatedPayments.length > 0 || (selectedInvoice.advances && selectedInvoice.advances.length > 0))" class="flex w-80 flex-col border-l border-[var(--color-border)] bg-[var(--color-bg)] z-10 shrink-0">
+        <div class="p-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/30">
+          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-info)] flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             Payment Reconciliation
           </h3>
-          <p class="mt-1 text-[10px] font-bold text-slate-500 uppercase truncate">For {{ selectedInvoice?.customer }}</p>
+          <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] uppercase truncate">For {{ selectedInvoice?.customer }}</p>
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
           <!-- Already Allocated Section -->
           <div v-if="selectedInvoice.advances && selectedInvoice.advances.length > 0" class="space-y-2">
-            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-600 px-1">Already Allocated</h4>
-            <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" class="rounded-xl border border-blue-900/30 bg-blue-900/10 p-2.5">
+            <h4 class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-1">Already Allocated</h4>
+            <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 p-2.5">
               <div class="flex justify-between items-start">
-                <span class="text-[10px] font-black text-blue-400 truncate">{{ adv.reference_name }}</span>
-                <span class="text-[10px] font-black text-slate-200 font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
+                <span class="text-[10px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</span>
+                <span class="text-[10px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
               </div>
-              <p class="mt-1 text-[8px] font-bold text-slate-500 italic uppercase">In this journal entry this amount is allocated</p>
+              <p class="mt-1 text-[8px] font-bold text-[var(--color-text-muted)] italic uppercase">In this journal entry this amount is allocated</p>
             </div>
           </div>
 
           <!-- Unallocated Section -->
           <div v-if="unallocatedPayments.length > 0" class="space-y-2">
-            <h4 class="text-[9px] font-black uppercase tracking-widest text-slate-600 px-1">Unallocated Cash</h4>
-            <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-xl border border-slate-700 bg-slate-800 p-3 shadow-sm hover:border-slate-600 transition-colors space-y-3">
+            <h4 class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-1">Unallocated Cash</h4>
+            <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm hover:border-[var(--color-border)] transition-colors space-y-3">
               <div class="flex justify-between items-start">
                 <div class="overflow-hidden">
-                  <div class="text-[11px] font-black text-slate-200 truncate">{{ pe.name }}</div>
-                  <div class="text-[9px] font-bold text-slate-500 uppercase">{{ formatDate(pe.posting_date) }}</div>
+                  <div class="text-[11px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+                  <div class="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
                 </div>
                 <div class="text-right">
-                  <div class="text-[10px] font-black text-emerald-400 font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
-                  <div class="text-[8px] font-bold text-slate-600 uppercase">{{ pe.mode_of_payment }}</div>
+                  <div class="text-[10px] font-black text-[var(--color-success)] font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
+                  <div class="text-[8px] font-bold text-[var(--color-text-muted)] uppercase">{{ pe.mode_of_payment }}</div>
                 </div>
               </div>
               
               <div class="relative group">
-                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-600 uppercase">Alloc</div>
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-[var(--color-text-muted)] uppercase">Alloc</div>
                 <input
                   :ref="el => allocationInputs[index] = el"
                   type="number"
                   v-model.number="pe.amount_to_allocate"
                   @focus="$event.target.select()"
-                  class="w-full rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-10 pr-3 text-right font-mono text-xs font-black text-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all outline-none"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 pl-10 pr-3 text-right font-mono text-xs font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-1 focus:ring-[var(--color-focus)]/20 transition-all outline-none"
                   @keydown.enter="focusNextAllocation(index)"
                 />
               </div>
@@ -300,17 +300,17 @@
           </div>
         </div>
 
-        <div v-if="unallocatedPayments.length > 0" class="p-4 border-t border-slate-700 bg-slate-800/50 space-y-3">
+        <div v-if="unallocatedPayments.length > 0" class="p-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-3">
           <div class="flex justify-between items-center px-1">
-            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Total to Allocate</span>
-            <span class="text-xs font-black text-blue-400 font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
+            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Allocate</span>
+            <span class="text-xs font-black text-[var(--color-info)] font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
           </div>
 
           <button
             ref="allocateButton"
             @click="submitAllocation"
             :disabled="!totalAmountToAllocate || isSubmitting"
-            class="w-full rounded-xl bg-blue-600 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-900/40 hover:bg-blue-500 active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+            class="w-full rounded-xl bg-[var(--color-highlight)] py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
           >
             <span>Confirm Allocations</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -319,52 +319,52 @@
       </aside>
 
       <!-- RIGHT ASIDE: PAYMENT CONTROLS -->
-      <aside class="flex w-[380px] flex-col border-l border-slate-700 bg-slate-800 z-10 shrink-0">
-        <div class="p-5 border-b border-slate-700 bg-slate-800/50">
-          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 flex items-center gap-2">
-            <div class="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+      <aside class="flex w-[380px] flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] z-10 shrink-0">
+        <div class="p-5 border-b border-[var(--color-border)] bg-[var(--color-surface)]/50">
+          <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-4 flex items-center gap-2">
+            <div class="h-1.5 w-1.5 rounded-full bg-[var(--color-highlight)]"></div>
             Payment Settlement
           </h3>
 
           <div v-if="!selectedInvoice" class="flex flex-col items-center justify-center h-64 text-center">
-            <p class="text-xs font-bold text-slate-600 leading-relaxed px-10">Select a bill from the left to enable payment processing</p>
+            <p class="text-xs font-bold text-[var(--color-text-muted)] leading-relaxed px-10">Select a bill from the left to enable payment processing</p>
           </div>
 
           <template v-else>
             <div class="space-y-3">
               <!-- Summary Mini-Card -->
-              <div class="relative rounded-xl bg-slate-900 border border-slate-700 p-4">
+              <div class="relative rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] p-4">
                 <!-- Credit Badge -->
-                <div v-if="isCredit" class="absolute -top-2 -right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg animate-pulse ring-4 ring-slate-900">
+                <div v-if="isCredit" class="absolute -top-2 -right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-danger)] text-white shadow-lg animate-pulse ring-4 ring-[var(--color-bg)]">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                 </div>
 
                 <div class="flex justify-between items-start mb-4">
                   <div>
-                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">Bill Amount</div>
-                    <div class="text-2xl font-black tracking-tight text-slate-100 font-mono">
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Bill Amount</div>
+                    <div class="text-2xl font-black tracking-tight text-[var(--color-text)] font-mono">
                       ₹{{ fmt(amountToCollect) }}
                     </div>
                   </div>
                   <div class="text-right">
-                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">Status</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Status</div>
                     <span class="inline-flex rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border"
-                      :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-rose-400' : 'bg-emerald-900/30 border-emerald-700 text-emerald-400'">
+                      :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-[var(--color-danger)]' : 'bg-emerald-900/30 border-emerald-700 text-[var(--color-success)]'">
                       {{ isCredit ? 'Credit' : 'Cash' }}
                     </span>
                   </div>
                 </div>
 
-                <div class="space-y-2 border-t border-slate-700 pt-3">
+                <div class="space-y-2 border-t border-[var(--color-border)] pt-3">
                   <div class="flex justify-between items-center text-xs">
-                    <span class="font-bold text-slate-600">Paid Amount</span>
-                    <span class="font-mono font-bold text-slate-300">₹{{ fmt(totalPaid) }}</span>
+                    <span class="font-bold text-[var(--color-text-muted)]">Paid Amount</span>
+                    <span class="font-mono font-bold text-[var(--color-text)]">₹{{ fmt(totalPaid) }}</span>
                   </div>
                   <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold uppercase tracking-widest" :class="balance <= 0.01 ? 'text-emerald-400' : 'text-slate-500'">
+                    <span class="text-xs font-bold uppercase tracking-widest" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
                       {{ balance <= 0.01 ? 'Change Return' : 'Balance Due' }}
                     </span>
-                    <span class="text-xl font-black font-mono" :class="balance <= 0.01 ? 'text-emerald-400' : 'text-blue-400'">
+                    <span class="text-xl font-black font-mono" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-info)]'">
                       ₹{{ fmt(Math.abs(balance)) }}
                     </span>
                   </div>
@@ -376,7 +376,7 @@
                 <button
                   @click="toggleCredit(false)"
                   class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
-                  :class="!isCredit ? 'bg-emerald-900/30 border-emerald-700 text-emerald-400 shadow-lg' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750'"
+                  :class="!isCredit ? 'bg-emerald-900/30 border-emerald-700 text-[var(--color-success)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                   Cash Bill
@@ -384,7 +384,7 @@
                 <button
                   @click="toggleCredit(true)"
                   class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
-                  :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-rose-400 shadow-lg' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750'"
+                  :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-[var(--color-danger)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   Credit
@@ -394,53 +394,53 @@
               <!-- Input Grid -->
               <div v-if="!isCredit" class="space-y-2">
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-blue-400 transition-colors uppercase">{{ cashLabel }}</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cashLabel }}</div>
                   <input
                     ref="cashInput"
                     type="number"
                     v-model="payments.cash"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-16 pr-4 text-right font-mono font-black text-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-2 focus:ring-[var(--color-focus)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-teal-400 transition-colors uppercase">{{ upiLabel }}</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-teal-400 transition-colors uppercase">{{ upiLabel }}</div>
                   <input
                     ref="upiInput"
                     type="number"
                     v-model="payments.upi"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-16 pr-4 text-right font-mono font-black text-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-sky-400 transition-colors uppercase">{{ cardLabel }}</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
                   <input
                     ref="cardInput"
                     type="number"
                     v-model="payments.card"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-16 pr-4 text-right font-mono font-black text-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-rose-400 transition-colors uppercase">Credit</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-danger)] transition-colors uppercase">Credit</div>
                   <input
                     ref="creditInput"
                     type="number"
                     v-model="payments.credit"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-16 pr-4 text-right font-mono font-black text-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600 group-focus-within:text-amber-400 transition-colors uppercase">{{ discountLabel }}</div>
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-warning)] transition-colors uppercase">{{ discountLabel }}</div>
                   <input
                     ref="discountInput"
                     type="number"
                     v-model="payments.discount"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-16 pr-4 text-right font-mono font-black text-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
                   />
                 </div>
               </div>
@@ -448,9 +448,9 @@
               <!-- Credit Fields -->
               <div v-else class="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div class="rounded-xl border border-rose-800/60 bg-rose-900/20 p-4">
-                  <label class="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-2 ml-1">Promise Date (Due Date)</label>
+                  <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)] block mb-2 ml-1">Promise Date (Due Date)</label>
                   <div class="relative group">
-                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-rose-500 group-focus-within:text-rose-400 transition-colors">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-danger)] group-focus-within:text-[var(--color-danger)] transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                     </div>
                     <input
@@ -460,10 +460,10 @@
                       @input="handleDueDateInput"
                       @keydown.backspace="handleDueDateKeyDown"
                       placeholder="DDMM or DD/MM/YYYY"
-                      class="w-full rounded-xl border border-rose-700/50 bg-slate-900 py-4 pl-12 pr-4 text-center font-mono font-black text-xl text-slate-100 placeholder-slate-700 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all outline-none"
+                      class="w-full rounded-xl border border-rose-700/50 bg-[var(--color-bg)] py-4 pl-12 pr-4 text-center font-mono font-black text-xl text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all outline-none"
                     />
                   </div>
-                  <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-500/80 bg-rose-900/30 rounded-lg p-2 border border-rose-800/40">
+                  <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)]/80 bg-rose-900/30 rounded-lg p-2 border border-rose-800/40">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m5 15 7 7 7-7"/></svg>
                     Credit Ledger Posting Enabled
                   </div>
@@ -472,11 +472,11 @@
 
               <!-- Status Messages -->
               <div class="min-h-[20px]">
-                <p v-if="errorMsg" class="text-[11px] font-bold text-rose-400 flex items-center gap-1.5">
+                <p v-if="errorMsg" class="text-[11px] font-bold text-[var(--color-danger)] flex items-center gap-1.5">
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
                   {{ errorMsg }}
                 </p>
-                <p v-if="successMsg" class="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
+                <p v-if="successMsg" class="text-[11px] font-bold text-[var(--color-success)] flex items-center gap-1.5">
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   {{ successMsg }}
                 </p>
@@ -484,19 +484,19 @@
 
               <!-- Posting Date Selector -->
               <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 ml-1">Posting Date</label>
-                <div class="flex items-center justify-between gap-1.5 bg-slate-900 rounded-xl border border-slate-700 p-1">
-                  <button @click="adjustPostingDate(-1)" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-colors">
+                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] ml-1">Posting Date</label>
+                <div class="flex items-center justify-between gap-1.5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-1">
+                  <button @click="adjustPostingDate(-1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   </button>
                   <div class="flex-1 text-center">
                     <input
                       type="date"
                       v-model="postingDate"
-                      class="bg-transparent border-none text-xs font-black text-slate-300 focus:ring-0 p-0 text-center cursor-pointer w-full"
+                      class="bg-transparent border-none text-xs font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
                     />
                   </div>
-                  <button @click="adjustPostingDate(1)" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-colors">
+                  <button @click="adjustPostingDate(1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
                 </div>
@@ -508,7 +508,7 @@
                 @click="processPayment"
                 :disabled="!canSubmit"
                 class="group w-full rounded-xl py-4 font-black uppercase tracking-[0.2em] text-sm transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
-                :class="isCredit ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-900/40' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/40'"
+                :class="isCredit ? 'bg-[var(--color-danger)] hover:bg-[var(--color-danger)] text-white shadow-lg shadow-[var(--color-danger)]/40' : 'bg-[var(--color-highlight)] hover:bg-[var(--color-highlight)] text-white shadow-lg shadow-[var(--color-focus)]/40'"
               >
                 <div v-if="isSubmitting" class="flex items-center justify-center gap-3">
                   <div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -526,37 +526,37 @@
     </div>
 
     <!-- CARD REFERENCE MODAL -->
-    <div v-if="showCardRefModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-      <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700 animate-in fade-in zoom-in duration-200">
-        <div class="p-5 border-b border-slate-700 flex justify-between items-center">
-          <h3 class="text-sm font-bold uppercase tracking-widest text-slate-300 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+    <div v-if="showCardRefModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-bg)]/80 backdrop-blur-sm">
+      <div class="w-full max-w-md bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
+        <div class="p-5 border-b border-[var(--color-border)] flex justify-between items-center">
+          <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)] flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-info)]"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
             Card / {{ cardLabel }} Reference
           </h3>
-          <button @click="showCardRefModal = false" class="text-slate-600 hover:text-slate-300 transition-colors">
+          <button @click="showCardRefModal = false" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
         <div class="p-6 space-y-5">
           <div class="rounded-lg bg-sky-900/30 border border-sky-700/50 p-3">
-            <p class="text-[11px] font-bold text-sky-400 leading-relaxed uppercase tracking-wider">Enter the authorization or reference number for the card payment.</p>
+            <p class="text-[11px] font-bold text-[var(--color-info)] leading-relaxed uppercase tracking-wider">Enter the authorization or reference number for the card payment.</p>
           </div>
           <input
             ref="cardRefInput"
             v-model="cardRefNo"
             @keydown.enter="confirmCardRef"
-            class="w-full rounded-xl border border-slate-700 bg-slate-900 py-4 px-5 font-mono font-black text-slate-200 placeholder-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all outline-none"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-4 px-5 font-mono font-black text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20 transition-all outline-none"
             placeholder="Enter card reference..."
           />
           <div class="flex gap-3">
             <button
               @click="showCardRefModal = false"
-              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-slate-500 bg-slate-700 hover:bg-slate-600 transition-all active:scale-95"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95"
             >Cancel</button>
             <button
               @click="confirmCardRef"
               :disabled="!cardRefNo"
-              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-white bg-[var(--color-info)] hover:bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >Confirm & Post</button>
           </div>
         </div>
@@ -565,28 +565,28 @@
 
     <!-- DAY OPENING CHECK MODAL -->
     <transition name="fade">
-      <div v-if="showOpeningRequiredModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
-        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-amber-700/50 bg-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
+      <div v-if="showOpeningRequiredModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-amber-700/50 bg-[var(--color-surface)] shadow-2xl animate-in zoom-in-95 duration-200">
           <div class="bg-amber-900/30 border-b border-amber-700/40 p-6 flex flex-col items-center text-center">
-            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-900/50 text-amber-400 border border-amber-700/50">
+            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-900/50 text-[var(--color-warning)] border border-amber-700/50">
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
             </div>
-            <h2 class="mb-2 text-lg font-black text-slate-100 uppercase tracking-tight">Day Opening Required</h2>
-            <p class="text-sm font-medium text-slate-400 leading-relaxed">
+            <h2 class="mb-2 text-lg font-black text-[var(--color-text)] uppercase tracking-tight">Day Opening Required</h2>
+            <p class="text-sm font-medium text-[var(--color-text-muted)] leading-relaxed">
               Please record the Day Opening Box Cash before processing any payments for today.
             </p>
           </div>
           <div class="flex flex-col gap-2 p-5">
             <button
               @click="$router.push('/Cashier-Management')"
-              class="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 active:scale-[0.98] transition-all"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-highlight)] px-4 py-3 text-sm font-bold text-white hover:bg-[var(--color-highlight)] active:scale-[0.98] transition-all"
             >
               <span>Record Opening Now</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </button>
             <button
               @click="$router.push('/')"
-              class="w-full px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-400 transition-colors"
+              class="w-full px-4 py-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-muted)] transition-colors"
             >Back to Dashboard</button>
           </div>
         </div>
@@ -1280,11 +1280,11 @@ useShortcuts(cashierpageShortcuts({
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--color-border);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--color-surface-raised);
 }
 
 input::-webkit-outer-spin-button,
