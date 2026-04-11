@@ -2,22 +2,47 @@
   <div class="flex h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] overflow-hidden">
     <!-- TOP NAVBAR -->
     <header class="flex h-14 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 z-20 shrink-0">
-      <div class="flex items-center gap-4">
-        <button @click="$router.push('/')" class="mr-2 flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-raised)]/50 px-2.5 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-white transition-all active:scale-95">
+      <div class="flex items-center gap-4 overflow-hidden">
+        <button @click="$router.push('/')" class="shrink-0 mr-2 flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-raised)]/50 px-2.5 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-white transition-all active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Back
         </button>
-        <div class="flex items-center gap-2 font-bold text-[var(--color-info)]">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        
+        <!-- App Title / Selected Invoice Info -->
+        <div class="flex items-center gap-4 overflow-hidden">
+          <div v-if="!selectedInvoice" class="flex items-center gap-2 font-bold text-[var(--color-info)]">
+            <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            </div>
+            <span class="text-sm font-black tracking-widest uppercase text-[var(--color-text)] whitespace-nowrap">Cashier Desk</span>
           </div>
-          <span class="text-sm font-black tracking-widest uppercase text-[var(--color-text)]">Cashier Desk</span>
+          
+          <div v-else class="flex items-center gap-4 overflow-hidden animate-fade-in">
+            <div class="flex flex-col overflow-hidden">
+              <div class="flex items-center gap-2">
+                <h2 class="text-sm font-black text-[var(--color-text)] leading-none truncate">{{ selectedInvoice.name }}</h2>
+                <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded px-1.5 py-0.5 bg-green-900/30 border border-green-500/30">
+                  <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-success)]">Paid</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 mt-1 truncate">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)] truncate">{{ selectedInvoice.customer }}</span>
+                <span class="h-0.5 w-0.5 rounded-full bg-[var(--color-border)]"></span>
+                <span class="text-[10px] font-bold text-[var(--color-text-muted)]">{{ formatDate(selectedInvoice.posting_date) }}</span>
+              </div>
+            </div>
+            
+            <button @click="showPrintModal = true" class="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print
+            </button>
+          </div>
         </div>
       </div>
 
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2">
-          <div class="text-right">
+          <div class="text-right hidden sm:block">
             <div class="text-xs font-bold text-[var(--color-text)]">{{ session.fullName.value }}</div>
             <div class="truncate text-[10px] text-[var(--color-text-muted)]">{{ session.user.value }}</div>
           </div>
@@ -195,29 +220,6 @@
         </div>
 
         <template v-else>
-          <!-- Invoice Header -->
-          <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 z-10">
-            <div class="flex items-center gap-4">
-              <div>
-                <h2 class="text-lg font-bold text-[var(--color-text)] leading-none mb-1">{{ selectedInvoice.name }}</h2>
-                <div class="flex items-center gap-3 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  <span class="text-[var(--color-info)]">{{ selectedInvoice.customer }}</span>
-                  <span class="h-1 w-1 rounded-full bg-[var(--color-border)]"></span>
-                  <span>{{ formatDate(selectedInvoice.posting_date) }}</span>
-                </div>
-              </div>
-              <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded-lg bg-green-900/30 px-3 py-1 border border-green-500/30">
-                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-success)]">Paid</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button @click="showPrintModal = true" class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-                Print
-              </button>
-            </div>
-          </div>
-
           <!-- Items Table -->
           <div class="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
             <div v-if="loadingPreview" class="flex flex-col items-center justify-center h-64 gap-3">
