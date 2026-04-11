@@ -357,55 +357,55 @@
               </div>
 
               <!-- Input Grid -->
-              <div v-if="!isCredit" class="space-y-2">
+              <div v-if="!isCredit" class="space-y-3">
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cashLabel }}</div>
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cashLabel }}</div>
                   <input
                     ref="cashInput"
                     type="number"
                     v-model="payments.cash"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-2 focus:ring-[var(--color-focus)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-teal-400 transition-colors uppercase">{{ upiLabel }}</div>
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-teal-400 transition-colors uppercase">{{ upiLabel }}</div>
                   <input
                     ref="upiInput"
                     type="number"
                     v-model="payments.upi"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
                   <input
                     ref="cardInput"
                     type="number"
                     v-model="payments.card"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-danger)] transition-colors uppercase">Credit</div>
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-danger)] transition-colors uppercase">Credit</div>
                   <input
                     ref="creditInput"
                     type="number"
                     v-model="payments.credit"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-warning)] transition-colors uppercase">{{ discountLabel }}</div>
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-warning)] transition-colors uppercase">{{ discountLabel }}</div>
                   <input
                     ref="discountInput"
                     type="number"
                     v-model="payments.discount"
                     @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3.5 pl-16 pr-4 text-right font-mono font-black text-[var(--color-text)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-5 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 transition-all"
                   />
                 </div>
               </div>
