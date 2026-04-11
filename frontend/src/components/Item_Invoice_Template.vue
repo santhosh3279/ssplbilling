@@ -172,16 +172,16 @@
           <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]">
             <thead>
               <tr class="sticky top-0 z-10 bg-[var(--color-lowlight)] border-b border-[var(--color-border)]">
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-32">Barcode</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-16">Qty</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-14">UOM</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-24">Rate</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-24">Disc %</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-warning)] w-24">DISC</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-24">Tax %</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text)] w-24">Amount</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Barcode</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-16">Qty</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-14">UOM</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Rate</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Disc %</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-warning)] w-24">DISC</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Tax %</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Amount</th>
                 <th class="border-b border-[var(--color-border)] w-8"></th>
               </tr>
             </thead>
