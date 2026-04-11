@@ -51,7 +51,8 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
         # When searching, we don't filter by specific series, 
         # but we MUST still restrict to allowed series for security.
         from ssplbilling.api.dashboard_api import get_allowed_series
-        allowed = get_allowed_series(doctype="Sales Invoice")
+        res = get_allowed_series(doctype="Sales Invoice")
+        allowed = res.get("allowed_series") if isinstance(res, dict) else res
         if allowed:
             filters.append(["naming_series", "in", allowed])
     else:
@@ -65,7 +66,8 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
                 filters.append(["naming_series", "=", naming_series])
         else:
             from ssplbilling.api.dashboard_api import get_allowed_series
-            allowed = get_allowed_series(doctype="Sales Invoice")
+            res = get_allowed_series(doctype="Sales Invoice")
+            allowed = res.get("allowed_series") if isinstance(res, dict) else res
             if allowed:
                 filters.append(["naming_series", "in", allowed])
 
