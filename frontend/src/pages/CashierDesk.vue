@@ -563,7 +563,7 @@
       :show="showReconcileModal"
       :invoice="selectedInvoice"
       :unallocated="unallocatedPayments"
-      @close="showReconcileModal = false"
+      @close="handleReconcileClose"
       @success="handleAllocationSuccess"
     />
 
@@ -1064,6 +1064,14 @@ async function confirmCardRef() {
   if (!cardRefNo.value) return
   showCardRefModal.value = false
   await processPayment()
+}
+
+function handleReconcileClose() {
+  showReconcileModal.value = false
+  nextTick(() => {
+    cashInput.value?.focus()
+    cashInput.value?.select()
+  })
 }
 
 function handleAllocationSuccess(res) {
