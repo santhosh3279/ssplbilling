@@ -45,6 +45,11 @@ def get_sales_invoices(query="", limit=20, posting_date=None, show_unpaid=False,
 
     if naming_series:
         filters.append(["naming_series", "=", naming_series])
+    else:
+        from ssplbilling.api.dashboard_api import get_allowed_series
+        allowed = get_allowed_series(doctype="Sales Invoice")
+        if allowed:
+            filters.append(["naming_series", "in", allowed])
 
     if query:
         # Create a flexible bill number search (e.g., "EO141" -> "%EO%141%")

@@ -63,7 +63,7 @@
                 @change="loadInvoices"
                 class="w-[30%] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 px-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all"
               >
-                <option value="">All Series</option>
+                <option value="" v-if="availableSeries.length > 1">All Allowed</option>
                 <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
               </select>
 
@@ -809,6 +809,10 @@ async function fetchSeriesList() {
   try {
     const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' })
     availableSeries.value = res.allowed_series || []
+    if (availableSeries.value.length === 1 && !sidebarSeries.value) {
+      sidebarSeries.value = availableSeries.value[0]
+      loadInvoices()
+    }
   } catch (e) {
     console.warn('[CashierDesk] Could not fetch series list:', e)
   }
