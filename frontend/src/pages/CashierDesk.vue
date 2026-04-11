@@ -227,21 +227,21 @@
             <div v-else class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
               <table class="w-full text-left border-collapse">
                 <thead>
-                  <tr class="bg-[var(--color-surface-raised)]/50 text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
-                    <th class="px-5 py-3">Item Details</th>
-                    <th class="px-5 py-3 text-right">Qty</th>
-                    <th class="px-5 py-3 text-right">Rate</th>
-                    <th class="px-5 py-3 text-right">Amount</th>
+                  <tr class="bg-[var(--color-surface-raised)]/50 text-[15px] uppercase tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
+                    <th class="px-3 py-1.5 font-medium">Item Details</th>
+                    <th class="px-3 py-1.5 text-right font-medium">Qty</th>
+                    <th class="px-3 py-1.5 text-right font-medium">Rate</th>
+                    <th class="px-3 py-1.5 text-right font-medium">Amount</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]/50">
                   <tr v-for="item in previewItems" :key="item.name" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
-                    <td class="px-5 py-3">
-                      <div class="text-[21px] font-bold text-[var(--color-text)]">{{ item.item_name }}</div>
+                    <td class="px-3 py-1.5">
+                      <div class="text-[21px] text-[var(--color-text)]">{{ item.item_name }}</div>
                     </td>
-                    <td class="px-5 py-3 text-right font-mono text-[21px] font-bold text-[var(--color-text-muted)]">{{ item.qty }} {{ item.uom }}</td>
-                    <td class="px-5 py-3 text-right font-mono text-[21px] font-bold text-[var(--color-text-muted)]">₹{{ fmt(item.rate) }}</td>
-                    <td class="px-5 py-3 text-right font-mono text-[21px] font-black text-[var(--color-text)]">₹{{ fmt(item.qty * item.rate) }}</td>
+                    <td class="px-3 py-1.5 text-right font-mono text-[21px] text-[var(--color-text-muted)]">{{ item.qty }} {{ item.uom }}</td>
+                    <td class="px-3 py-1.5 text-right font-mono text-[21px] text-[var(--color-text-muted)]">{{ fmt(item.rate) }}</td>
+                    <td class="px-3 py-1.5 text-right font-mono text-[21px] text-[var(--color-text)]">{{ fmt(item.qty * item.rate) }}</td>
                   </tr>
                 </tbody>
               </table>
