@@ -413,10 +413,10 @@
               <!-- Credit Fields -->
               <div v-else class="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div class="rounded-xl border border-rose-800/60 bg-rose-900/20 p-4">
-                  <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)] block mb-2 ml-1">Promise Date (Due Date)</label>
+                  <label class="text-[15px] font-black uppercase tracking-widest text-[var(--color-danger)] block mb-2 ml-1">Promise Date (Due Date)</label>
                   <div class="relative group">
                     <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-danger)] group-focus-within:text-[var(--color-danger)] transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                     </div>
                     <input
                       ref="dueDateInput"
@@ -425,7 +425,7 @@
                       @input="handleDueDateInput"
                       @keydown.backspace="handleDueDateKeyDown"
                       placeholder="DDMM or DD/MM/YYYY"
-                      class="w-full rounded-xl border border-rose-700/50 bg-[var(--color-bg)] py-4 pl-12 pr-4 text-center font-mono font-black text-xl text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all outline-none"
+                      class="w-full rounded-2xl border border-rose-700/50 bg-[var(--color-bg)] py-5 pl-12 pr-4 text-center font-mono font-black text-[30px] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-rose-500 focus:ring-8 focus:ring-rose-500/10 transition-all outline-none"
                     />
                   </div>
                   <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)]/80 bg-rose-900/30 rounded-lg p-2 border border-rose-800/40">
