@@ -101,7 +101,7 @@
               v-model.number="item.qty"
               type="number" min="0"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
+              @keydown.enter.prevent="item.qty > 0 && openRowPriceListUpdate(index)"
               @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
@@ -485,9 +485,9 @@
     <input ref="csvImportRef" type="file" accept=".csv" class="hidden" @change="onCsvFileSelected" />
 
     <PriceListUpdate
-      v-if="showPriceListUpdate && pendingItem"
+      v-if="showPriceListUpdate && priceListUpdateItemCode"
       :is-sub-window="true"
-      :item-code="pendingItem.item_code"
+      :item-code="priceListUpdateItemCode"
       :selected-price-list="priceList"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
@@ -580,6 +580,11 @@ const showPrintModal = ref(false)
 const pendingClearAfterPrint = ref(false)
 const showJumpModal = ref(false)
 const showPriceListUpdate = ref(false)
+const editRowPriceUpdateIdx = ref(null) // null = pending-item context, number = row-edit context
+const priceListUpdateItemCode = computed(() => {
+  if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.item_code || ''
+  return pendingItem.value?.item_code || ''
+})
 
 const lastEnterTime = ref(0)
 
@@ -1427,26 +1432,55 @@ function setPendingItem(item) {
 
 function openPriceListUpdate() {
   if (!pendingItem.value || pendingItem.value.qty <= 0) return
+  editRowPriceUpdateIdx.value = null
+  showPriceListUpdate.value = true
+}
+
+function openRowPriceListUpdate(idx) {
+  editRowPriceUpdateIdx.value = idx
   showPriceListUpdate.value = true
 }
 
 function onPriceListUpdateSaved(data) {
   showPriceListUpdate.value = false
-  if (pendingItem.value && data.changedPrices?.length) {
-    const pl = data.changedPrices.find(p => p.price_list === priceList.value)
-    if (pl) {
-      const uomRate = pl.uom_rates?.[pendingItem.value.uom]
-      const newRate = uomRate != null ? uomRate : (pl.rate ?? pendingItem.value.rate)
-      pendingItem.value.rate = newRate
-      pendingItem.value._base_rate = newRate
+  if (editRowPriceUpdateIdx.value !== null) {
+    const idx = editRowPriceUpdateIdx.value
+    editRowPriceUpdateIdx.value = null
+    const item = items.value[idx]
+    if (item && data.changedPrices?.length) {
+      const pl = data.changedPrices.find(p => p.price_list === priceList.value)
+      if (pl) {
+        const uomRate = pl.uom_rates?.[item.uom]
+        const newRate = uomRate != null ? uomRate : (pl.rate ?? item.rate)
+        item.rate = newRate
+        item._base_rate = newRate
+        recalcAmount(idx)
+      }
     }
+    focusEditField('rate', idx)
+  } else {
+    if (pendingItem.value && data.changedPrices?.length) {
+      const pl = data.changedPrices.find(p => p.price_list === priceList.value)
+      if (pl) {
+        const uomRate = pl.uom_rates?.[pendingItem.value.uom]
+        const newRate = uomRate != null ? uomRate : (pl.rate ?? pendingItem.value.rate)
+        pendingItem.value.rate = newRate
+        pendingItem.value._base_rate = newRate
+      }
+    }
+    confirmPendingItem()
   }
-  confirmPendingItem()
 }
 
 function onPriceListUpdateClose() {
   showPriceListUpdate.value = false
-  confirmPendingItem()
+  if (editRowPriceUpdateIdx.value !== null) {
+    const idx = editRowPriceUpdateIdx.value
+    editRowPriceUpdateIdx.value = null
+    focusEditField('rate', idx)
+  } else {
+    confirmPendingItem()
+  }
 }
 
 function confirmPendingItem() {
