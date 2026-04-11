@@ -16,7 +16,6 @@ import JournalContraEntry from './pages/JournalContraEntry.vue'
 import MaterialTransfer from './pages/MaterialTransfer.vue'
 import CashierManagement from './pages/CashierManagement.vue'
 import PricingRuleSync from './pages/PricingRuleSync.vue'
-import PurchaseOrder from './pages/PurchaseOrder.vue'
 import SalesOrderEntry from './pages/SalesOrderEntry.vue'
 import IncentiveLedger from './pages/IncentiveLedger.vue'
 import Reports from './pages/Reports.vue'
@@ -121,11 +120,6 @@ const routes = [
     path: '/pricing-rules',
     name: 'PricingRuleSync',
     component: PricingRuleSync,
-  },
-  {
-    path: '/purchase-order',
-    name: 'PurchaseOrder',
-    component: PurchaseOrder,
   },
   {
     path: '/sales-order',

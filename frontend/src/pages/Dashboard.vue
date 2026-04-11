@@ -400,7 +400,6 @@ const allTiles = [
   { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
   { id: 'Cashier-Management', name: 'Cashier Management', desc: 'Daily reconciliation & denominations', icon: '📓', shortcut: '', tileBg: 'bg-emerald-700' },
   { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
-  { id: 'purchase-order', name: 'Purchase Order', desc: 'Create & manage purchase orders', icon: '📋', shortcut: 'F7', tileBg: 'bg-sky-600' },
   { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
   { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
   { id: 'stock-reconciliation', name: 'Stock Reconciliation', desc: 'Adjust stock levels', icon: '⚖️', shortcut: '', tileBg: 'bg-[var(--color-midlight)]' },
@@ -423,7 +422,7 @@ const tiles = computed(() => {
   return allTiles.filter(t => canAccessTile(t.id))
 })
 
-const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address']
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -431,7 +430,6 @@ const routeAliases = {
   quotation: '/quotation',
   'purchase-invoice': '/purchase-invoice',
   payment: '/payment',
-  'purchase-order': '/purchase-order',
   'sales-order': '/sales-order',
   'journal-contra': '/journal-contra',
   'material-transfer': '/material-transfer',
