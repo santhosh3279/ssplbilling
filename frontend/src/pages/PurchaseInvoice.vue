@@ -1288,11 +1288,12 @@ function applyItemToRow(rowIdx, item) {
   const isSameItem = row.item_code === item.item_code
   row.item_code = item.item_code
   row.item_name = item.item_name
-  if (!isSameItem) {
+  // Update UOM if it's a different item, OR if this specific match came from a barcode scan
+  if (!isSameItem || item._from_barcode) {
     row.uom = item.uom || 'Nos'
   }
   row.tax_rate = item.tax_rate || 0
-  const base = getItemRateForPriceList(item, isSameItem ? row.uom : item.uom)
+  const base = getItemRateForPriceList(item, row.uom)
   row._base_rate = base
   row.rate = base
   recalcAmount(rowIdx)

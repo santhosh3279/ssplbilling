@@ -107,6 +107,7 @@ export function lookupItemInCache(code) {
     const match = item.barcodes_detailed.find(b => (b.barcode || '').toLowerCase() === cleanCode)
     if (match && match.uom) {
       item.uom = match.uom // Use the UOM linked to this specific barcode
+      item._from_barcode = true
     }
     if (!item.uoms?.length && storedUoms[item.item_code]?.length) {
       item.uoms = storedUoms[item.item_code]
