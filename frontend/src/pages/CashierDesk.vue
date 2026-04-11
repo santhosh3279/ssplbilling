@@ -34,14 +34,14 @@
       <aside class="flex w-[360px] flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] z-10 shrink-0">
         
         <!-- SIDE PANEL CONTROLS -->
-        <div class="p-4 border-b border-[var(--color-border)] space-y-4 bg-[var(--color-surface)]/30">
+        <div class="p-2 border-b border-[var(--color-border)] space-y-2 bg-[var(--color-surface)]/30">
           <!-- Date & Toggle Section -->
-          <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2">
             <!-- Date Navigator -->
             <div class="flex items-center gap-2">
-              <div class="flex-1 flex items-center justify-between gap-2 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-1.5">
-                <button @click="adjustDate(-1)" class="rounded-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              <div class="flex-1 flex items-center justify-between gap-2 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-1">
+                <button @click="adjustDate(-1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
                 <div class="flex-1 text-center">
                   <input
@@ -52,16 +52,16 @@
                     @change="loadInvoices"
                   />
                 </div>
-                <button @click="adjustDate(1)" class="rounded-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                <button @click="adjustDate(1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </button>
               </div>
               <button
                 @click="loadInvoices"
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-white transition-all active:scale-90"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-white transition-all active:scale-90"
                 title="Sync Bills"
               >
-                <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
               </button>
             </div>
 
@@ -70,10 +70,10 @@
               <div class="flex-1 relative series-dropdown-container">
                 <button 
                   @click="showSeriesDropdown = !showSeriesDropdown"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-10"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
                 >
                   <span class="truncate">{{ sidebarSeries.length === availableSeries.length ? 'All Series' : (sidebarSeries.length > 0 ? sidebarSeries[0] + (sidebarSeries.length > 1 ? '..' : '') : 'None') }}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
                 
                 <!-- Dropdown Menu -->
@@ -99,7 +99,7 @@
 
               <button
                 @click="showUnpaid = !showUnpaid; loadInvoices()"
-                class="w-[35%] rounded-xl border py-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all truncate px-2 h-10"
+                class="w-[35%] rounded-xl border py-1.5 text-[10px] font-black uppercase tracking-[0.1em] transition-all truncate px-2 h-9"
                 :class="showUnpaid 
                   ? 'bg-rose-900/30 border-rose-500/50 text-[var(--color-danger)]' 
                   : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'"
@@ -115,9 +115,9 @@
               v-model="searchQuery"
               @input="debouncedSearch"
               placeholder="Search bills..."
-              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 pl-11 pr-4 text-[15px] font-bold text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-10 pr-3 text-[15px] font-bold text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all"
             />
-            <svg class="absolute left-4 top-3.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
         </div>
 
