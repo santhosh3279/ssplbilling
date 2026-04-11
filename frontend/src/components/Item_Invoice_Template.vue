@@ -77,13 +77,17 @@
     <!-- MAIN CONTENT -->
     <div class="flex flex-1 flex-col overflow-hidden bg-[var(--color-bg)]">
       <!-- Top Nav Bar -->
-      <div class="flex items-center justify-between border-b border-[var(--color-border)]/60 bg-[var(--color-surface-raised)]/60 px-4 py-1">
+      <div
+        class="flex items-center justify-between border-b border-[var(--color-border)]/60 px-4 py-2"
+        :style="titleBarColor ? { backgroundColor: titleBarColor } : {}"
+        :class="!titleBarColor ? 'bg-[var(--color-surface-raised)]/60' : ''"
+      >
         <div class="flex items-center gap-3">
-          <button v-if="showBackButton" class="rounded px-2 py-0.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back</button>
-          <span v-if="showBackButton" class="text-[var(--color-border)] text-xl">|</span>
-          <span class="text-xl font-semibold text-[var(--color-text)]">{{ title }}</span>
+          <button v-if="showBackButton" class="rounded px-2 py-1 text-2xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back</button>
+          <span v-if="showBackButton" class="text-[var(--color-border)] text-2xl">|</span>
+          <span class="text-2xl font-semibold text-[var(--color-text)]">{{ title }}</span>
         </div>
-        <div class="flex items-center gap-3 text-lg text-[var(--color-text-muted)]">
+        <div class="flex items-center gap-3 text-xl text-[var(--color-text-muted)]">
           <slot name="header-right"></slot>
         </div>
       </div>
@@ -452,6 +456,7 @@ const props = defineProps({
   showSidebar: { type: Boolean, default: true },
   sidebarTitle: { type: String, default: 'Modify Bills' },
   showBackButton: { type: Boolean, default: true },
+  titleBarColor: { type: String, default: '' },
   docNumber: { type: String, default: '' },
   partyName: { type: String, default: '' },
   partyDetails: { type: String, default: '' }, // Deprecated or for generic info
