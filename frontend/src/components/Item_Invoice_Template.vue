@@ -90,76 +90,75 @@
 
       <!-- Header Bar (Series / Customer / Date) -->
       <div class="border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2">
-        <div class="flex items-center gap-6">
+        <div class="flex flex-col gap-2">
           <slot name="header-bar">
-            <!-- Default Header Layout -->
-            <div v-if="docNumber" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6">
-              <div class="text-4xl text-[var(--color-text)] tabular-nums font-mono">{{ docNumber }}</div>
-            </div>
+            <!-- Line 1: Doc Number and Party Name -->
+            <div class="flex items-center gap-6">
+              <div v-if="docNumber" class="flex items-center gap-2 border-r border-[var(--color-border)] pr-6">
+                <div class="text-4xl text-[var(--color-text)] tabular-nums font-mono font-bold">{{ docNumber }}</div>
+              </div>
 
-            <div 
-              class="flex-1 flex flex-col border-l border-[var(--color-border)] pl-6 overflow-hidden transition-colors group"
-              :class="isReadOnly ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--color-surface-raised)]/80'"
-              @click="!isReadOnly && $emit('party-click')"
-            >
-              <!-- Line 1: Party Name, Mobile, GST, Balance, Last Inv -->
-              <div class="flex items-center gap-6 overflow-hidden">
-                <div class="flex items-baseline gap-2 min-w-0 shrink-0">
-                  <label 
-                    class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
-                    :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
-                  >Party</label>
-                  <div class="text-4xl text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
-                </div>
-
-                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
-                  <span class="text-xl uppercase text-[var(--color-text-muted)]">Mob:</span>
-                  {{ partyMobile }}
-                </div>
-
-                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-3xl whitespace-nowrap shrink-0">
-                  <span class="text-xl uppercase text-[var(--color-text-muted)]">GST:</span>
-                  {{ partyGstin }}
-                </div>
-
-                <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap shrink-0">
-                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
-                  <span
-                    class="text-3xl font-bold font-mono"
-                    :class="(Number(partyBalance) > 0) ? 'text-[var(--color-success)]' : (Number(partyBalance) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
-                  >
-                    ₹ {{ Math.abs(partyBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-                    <span class="text-xl">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
-                  </span>
-                </div>
-
-                <div v-if="partyLastInvDate" class="flex items-center gap-2 whitespace-nowrap shrink overflow-hidden">
-                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)] shrink-0">Last Inv</span>
-                  <span class="text-3xl font-mono text-[var(--color-highlight)] truncate">{{ partyLastInvDate }}</span>
-                </div>
+              <div 
+                class="flex-1 flex items-baseline gap-3 overflow-hidden transition-colors group"
+                :class="isReadOnly ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--color-surface-raised)]/80'"
+                @click="!isReadOnly && $emit('party-click')"
+              >
+                <label 
+                  class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
+                  :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
+                >Party</label>
+                <div class="text-5xl font-bold text-[var(--color-text)] truncate">{{ partyName || 'Not Selected' }}</div>
               </div>
             </div>
 
+            <!-- Line 2: Secondary Details -->
+            <div class="flex items-center gap-8 border-t border-[var(--color-border)]/30 pt-2">
+              <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
+                <span class="text-xl uppercase text-[var(--color-text-muted)]">Mob:</span>
+                {{ partyMobile }}
+              </div>
 
-            <div v-if="partyModifier !== null && Number(partyModifier) !== 0" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
-              <span class="text-3xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">{{ partyModifier }}</span>
-              <input
-                type="checkbox"
-                :checked="!ignoreModifier"
-                :disabled="isReadOnly"
-                class="h-[25px] w-[25px] accent-[var(--color-warning)] disabled:opacity-50 disabled:cursor-default"
-                :class="isReadOnly ? '' : 'cursor-pointer'"
-                title="Apply Multiplier"
-                @change="$emit('update:ignoreModifier', !$event.target.checked)"
-              />
-            </div>
+              <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-3xl whitespace-nowrap shrink-0">
+                <span class="text-xl uppercase text-[var(--color-text-muted)]">GST:</span>
+                {{ partyGstin }}
+              </div>
 
-            <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
-              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Date</label>
-              <div class="flex items-center gap-1">
-                <button @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
-                <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
-                <button @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+              <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap shrink-0">
+                <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
+                <span
+                  class="text-3xl font-bold font-mono"
+                  :class="(Number(partyBalance) > 0) ? 'text-[var(--color-success)]' : (Number(partyBalance) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
+                >
+                  ₹ {{ Math.abs(partyBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                  <span class="text-xl">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
+                </span>
+              </div>
+
+              <div v-if="partyLastInvDate" class="flex items-center gap-2 whitespace-nowrap shrink overflow-hidden">
+                <span class="text-xl font-bold uppercase text-[var(--color-text-muted)] shrink-0">Last Inv</span>
+                <span class="text-3xl font-mono text-[var(--color-highlight)] truncate">{{ partyLastInvDate }}</span>
+              </div>
+
+              <div v-if="partyModifier !== null && Number(partyModifier) !== 0" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
+                <span class="text-3xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">{{ partyModifier }}</span>
+                <input
+                  type="checkbox"
+                  :checked="!ignoreModifier"
+                  :disabled="isReadOnly"
+                  class="h-[25px] w-[25px] accent-[var(--color-warning)] disabled:opacity-50 disabled:cursor-default"
+                  :class="isReadOnly ? '' : 'cursor-pointer'"
+                  title="Apply Multiplier"
+                  @change="$emit('update:ignoreModifier', !$event.target.checked)"
+                />
+              </div>
+
+              <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
+                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Date</label>
+                <div class="flex items-center gap-1">
+                  <button @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                  <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
+                  <button @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+                </div>
               </div>
             </div>
           </slot>
