@@ -1655,17 +1655,6 @@ function onUomChange(idx) {
   }
 }
 
-function onPendingUomChange() {
-  const p = pendingItem.value
-  if (!p) return
-  const cached = lookupItemInCache(p.item_code)
-  if (cached) {
-    const newRate = getItemRateForPriceList(cached, p.uom)
-    p._base_rate = newRate
-    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(2))
-  }
-}
-
 function finishRowEdit(idx) {
   const item = items.value[idx]
   if (item && isReturn.value) item.qty = -Math.abs(item.qty || 0)
