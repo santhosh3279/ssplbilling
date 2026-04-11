@@ -1114,10 +1114,8 @@ async function closePrintModal() {
 }
 
 function handleCancel() {
-  if (confirm('Clear all items?')) {
-    items.value = []
-    clearHistory()
-  }
+  items.value = []
+  clearHistory()
 }
 
 function handleIncentive() { showIncentiveModal.value = true }
