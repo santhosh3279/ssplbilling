@@ -121,7 +121,7 @@
               v-model="item.uom"
               class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @change="onUomChange(index)"
-              @keydown.enter.prevent="focusEditField('qty', index)"
+              @keydown.enter.prevent="focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index, true)"
             >
               <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)] text-3xl">{{ u }}</option>
