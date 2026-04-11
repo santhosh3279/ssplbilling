@@ -62,7 +62,7 @@
     >
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
-        <span class="text-blue-400 font-bold uppercase tracking-widest">Live Template Mode</span>
+        <span class="text-blue-400 font-bold uppercase tracking-widest">{{ session.fullName.value || session.user.value }}</span>
       </template>
 
       <template #row="{ item, index }">
@@ -531,6 +531,7 @@ import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import { useShortcuts } from '../services/shortcutManager'
+import { session } from '../session'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 
