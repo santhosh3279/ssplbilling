@@ -72,7 +72,7 @@
           @focus="!isReadOnly && (selectedRowIdx = index)"
           @keydown="!isReadOnly && handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-black' : 'text-[var(--color-text-muted)]'">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-black' : 'text-[var(--color-text-muted)]'">
             <span v-if="item.deleted" class="text-[10px] bg-red-600 text-white px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
             {{ index + 1 }}
           </td>
@@ -82,14 +82,14 @@
             <input v-if="editingRowIdx === index && editingField === 'code'"
               ref="editCodeInput"
               v-model="item.item_code"
-              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @input="onEditCodeInput(index)"
               @keydown="onEditCodeKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-2xl font-mono" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
+            <span v-else class="block px-2 py-1 text-4xl font-mono" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
             {{ item.item_name }}
             <span v-if="item._is_free" class="ml-1 rounded bg-green-600 text-white px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
           </td>
@@ -100,27 +100,27 @@
               ref="editQtyInput"
               v-model.number="item.qty"
               type="number" min="0"
-              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
-            <span v-else class="block px-2 py-1 text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
 
           <td class="p-0 border-r border-[var(--color-border)]">
             <select v-if="editingRowIdx === index && editingField === 'uom'"
               ref="editUomSelect"
               v-model="item.uom"
-              class="w-full bg-white/10 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @change="onUomChange(index)"
               @keydown.enter.prevent="focusEditField('qty', index)"
               @keydown.escape="exitEditMode(index, true)"
             >
-              <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
-              <option v-if="!getItemUoms(item.item_code).length" :value="item.uom" class="bg-[var(--color-bg)]">{{ item.uom }}</option>
+              <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)] text-3xl">{{ u }}</option>
+              <option v-if="!getItemUoms(item.item_code).length" :value="item.uom" class="bg-[var(--color-bg)] text-3xl">{{ item.uom }}</option>
             </select>
-            <span v-else class="block px-2 py-1 text-xl" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</span>
+            <span v-else class="block px-2 py-1 text-3xl" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</span>
           </td>
 
           <!-- rate -->
@@ -129,11 +129,11 @@
               ref="editRateInput"
               v-model.number="item.rate"
               type="number" min="0" step="0.01"
-              class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="focusEditField('disc', index)"
               @keydown.escape="exitEditMode(index, true)"
             />
-            <span v-else class="block px-2 py-1 text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
+            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
           </td>
 
           <!-- disc % -->
@@ -142,20 +142,20 @@
               ref="editDiscInput"
               v-model.number="item.discount"
               type="number" min="0" max="100" step="0.5"
-              class="w-full bg-white/10 px-2 py-1 text-2xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown.enter.prevent="finishRowEdit(index)"
               @keydown.escape="exitEditMode(index, true)"
             />
-            <span v-else class="block px-2 py-1 text-2xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ item.discount || '0' }}</span>
+            <span v-else class="block px-2 py-1 text-4xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ item.discount || '0' }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
             {{ item.discount ? (item.rate * (1 - item.discount / 100)).toFixed(2) : '—' }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-2xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
             {{ isExempted ? 0 : (item.tax_rate ?? 0) }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.amount }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.amount }}</td>
           <td class="px-2 py-1 text-center">
             <button
               class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
