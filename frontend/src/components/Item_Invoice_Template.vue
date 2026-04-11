@@ -278,7 +278,7 @@
         </div>
 
         <!-- Summary / Right Column (Calculation Panel + Actions) -->
-        <table class="flex-1 bg-[var(--color-surface-raised)]/50 border-collapse text-xs border border-[var(--color-border)] h-full" style="table-layout:fixed">
+        <table class="flex-1 bg-[var(--color-surface-raised)]/50 border-collapse text-base border border-[var(--color-border)] h-full" style="table-layout:fixed">
           <colgroup>
             <col style="width:17%"><col style="width:18%"><col style="width:14%"><col style="width:51%">
           </colgroup>
@@ -287,33 +287,33 @@
               <!-- Default Calculation Rows (Props based) -->
               <!-- Item Discount -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Item Discount</td>
-                <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)] italic">Auto</td>
-                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-2xl border border-[var(--color-border)]">-{{ itemDiscountTotal }}</td>
+                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Item Discount</td>
+                <td class="p-0 border-y border-[var(--color-border)] text-center text-lg text-[var(--color-text-muted)] italic">Auto</td>
+                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ itemDiscountTotal }}</td>
                 <td class="border border-[var(--color-border)] px-2 bg-[var(--color-bg)] align-top" rowspan="11">
                   <slot name="actions">
                     <div class="flex flex-col gap-2 h-full py-2">
                       <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
                         <div class="flex justify-between items-start mb-1">
-                          <div class="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
-                          <div class="text-[12px] font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
+                          <div class="text-lg font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
+                          <div class="text-xl font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
                         </div>
                         <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                          <span class="text-[6mm] font-black">₹</span>
-                          <span class="font-mono text-[10.5mm] font-black leading-none">{{ totalAmount }}</span>
+                          <span class="text-[9mm] font-black">₹</span>
+                          <span class="font-mono text-[15.75mm] font-black leading-none">{{ totalAmount }}</span>
                         </div>
                       </div>
 
                       <!-- Row 1: Save and Print -->
                       <div class="flex gap-2">
-                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-green-600/70 focus:outline-none">{{ saveButtonText }}</button>
-                        <button @click="$emit('print')" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-slate-700/40 bg-slate-800/30 text-slate-600 cursor-not-allowed'">Print</button>
+                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-green-600/70 focus:outline-none">{{ saveButtonText }}</button>
+                        <button @click="$emit('print')" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-slate-700/40 bg-slate-800/30 text-slate-600 cursor-not-allowed'">Print</button>
                       </div>
 
                       <!-- Row 2: Cancel and Incentive -->
                       <div class="flex gap-2">
-                        <button @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
-                        <button @click="$emit('incentive')" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
+                        <button @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
+                        <button @click="$emit('incentive')" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
                       </div>
                     </div>
                   </slot>
@@ -321,12 +321,12 @@
               </tr>
               <!-- Global Discount -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Discount</td>
-                <td class="p-0 border-y border-[var(--color-border)] text-center text-[10px] text-[var(--color-text-muted)]">
+                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Discount</td>
+                <td class="p-0 border-y border-[var(--color-border)] text-center text-lg text-[var(--color-text-muted)]">
                   <div class="flex h-full items-stretch">
                     <!-- Pct Half -->
                     <div class="flex flex-1 items-center border-r border-[var(--color-border)]/50">
-                      <span class="px-1 text-[var(--color-text-muted)] font-bold">%</span>
+                      <span class="px-1 text-[var(--color-text-muted)] font-bold text-lg">%</span>
                       <input
                         ref="discountPctRef"
                         type="number"
@@ -334,7 +334,7 @@
                         @input="$emit('update:discountPct', $event.target.value)"
                         @keydown="$emit('discount-pct-keydown', $event)"
                         :disabled="isReadOnly"
-                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-3xl py-1 text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
                     </div>
                     <!-- Amt Half -->
@@ -346,24 +346,24 @@
                         @input="$emit('update:discountDirectAmt', $event.target.value)"
                         @keydown.enter.prevent="freightRef?.focus(); freightRef?.select()"
                         :disabled="isReadOnly"
-                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-1 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
+                        class="w-full bg-transparent text-[var(--color-text)] font-mono text-3xl py-1 text-right px-1 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
                         placeholder="Amt"
                       />
                     </div>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-2xl border border-[var(--color-border)]">-{{ Number(discountAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ Number(discountAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Subtotal -->
               <tr class="bg-[var(--color-surface-raised)]/40">
-                <td class="px-2 text-lg text-[var(--color-text)]/80 border border-[var(--color-border)]">Subtotal</td>
+                <td class="px-2 text-2xl text-[var(--color-text)]/80 border border-[var(--color-border)]">Subtotal</td>
                 <td class="p-0 border-y border-[var(--color-border)]"></td>
-                <td class="px-2 text-right font-mono text-[var(--color-text)] text-2xl border border-[var(--color-border)]">{{ subtotal }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ subtotal }}</td>
                 <td class="border border-[var(--color-border)]"></td>
               </tr>
               <!-- Freight -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
+                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     ref="freightRef"
@@ -372,14 +372,14 @@
                     @input="$emit('update:freightEntry', $event.target.value)"
                     @keydown.enter.prevent="packingRef?.focus(); packingRef?.select()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-3xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Packing -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Packing</td>
+                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Packing</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     ref="packingRef"
@@ -388,14 +388,14 @@
                     @input="$emit('update:packingEntry', $event.target.value)"
                     @keydown.enter.prevent="loadingRef?.focus(); loadingRef?.select()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-3xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Loading -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">{{ loadingLabel }}</td>
+                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">{{ loadingLabel }}</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     ref="loadingRef"
@@ -404,14 +404,14 @@
                     @input="$emit('update:loadingEntry', $event.target.value)"
                     @keydown.enter.prevent="otherRef?.focus(); otherRef?.select()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-3xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Other -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Other</td>
+                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Other</td>
                 <td class="p-0 border-y border-[var(--color-border)]">
                   <input
                     ref="otherRef"
@@ -420,16 +420,16 @@
                     @input="$emit('update:otherEntry', $event.target.value)"
                     @keydown.enter.prevent="saveBtnRef?.focus()"
                     :disabled="isReadOnly"
-                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    class="w-full bg-transparent text-[var(--color-text)] font-mono text-3xl py-1 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
                 </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-2xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
               </tr>
               <!-- Tax -->
               <tr>
-                <td class="px-2 text-lg text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
+                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
                 <td class="p-0 border-y border-[var(--color-border)]"></td>
-                <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-2xl border border-[var(--color-border)]">+{{ totalTax }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ totalTax }}</td>
               </tr>
               <tr v-for="i in 2" :key="i">
                 <td class="px-2 border border-[var(--color-border)]">&nbsp;</td>
