@@ -2,7 +2,8 @@
   <div class="h-screen bg-slate-900 overflow-hidden">
     <Item_Invoice_Template
       ref="invoiceTemplateRef"
-      title="Sales Invoice (Template)"
+      title="SALES INVOICE"
+      title-bar-color="#b2dfb0"
       :doc-number="invoiceNo"
       :party-name="customerName"
       :party-details="customerDetails"
