@@ -70,11 +70,12 @@ def create_item(data):
 		item.gst_hsn_code = data.get("hsn_sac")
 	
 	# Add to barcodes child table
-	item.append("barcodes", {"barcode": barcode})
+	item.append("barcodes", {"barcode": barcode, "uom": item.stock_uom})
 	for row in (data.get("extra_barcodes") or []):
 		extra = (row.get("barcode") or "").strip()
+		uom = row.get("uom") or item.stock_uom
 		if extra and extra != barcode:
-			item.append("barcodes", {"barcode": extra})
+			item.append("barcodes", {"barcode": extra, "uom": uom})
 
 	# UOM conversions child table
 	stock_uom = data.get("stock_uom", "Nos")
@@ -136,7 +137,7 @@ def get_item_for_edit(item_code):
 
 	# Extra barcodes (all except the primary/item_code barcode)
 	extra_barcodes = [
-		{"barcode": row.barcode}
+		{"barcode": row.barcode, "uom": row.uom}
 		for row in item.barcodes
 		if row.barcode != item.item_code
 	]
@@ -188,11 +189,12 @@ def update_item(data):
 	# Update barcodes (keep primary, replace extras)
 	primary_barcode = item.item_code
 	item.barcodes = []
-	item.append("barcodes", {"barcode": primary_barcode})
+	item.append("barcodes", {"barcode": primary_barcode, "uom": item.stock_uom})
 	for row in (data.get("extra_barcodes") or []):
 		extra = (row.get("barcode") or "").strip()
+		uom = row.get("uom") or item.stock_uom
 		if extra and extra != primary_barcode:
-			item.append("barcodes", {"barcode": extra})
+			item.append("barcodes", {"barcode": extra, "uom": uom})
 
 	# Update UOM conversions
 	stock_uom = data.get("stock_uom") or item.stock_uom

@@ -162,8 +162,13 @@
                     <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
                     <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
                   </div>
-                  <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[4px] rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] relative group shrink-0">
-                    <input v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-slate-200 outline-none w-48" placeholder="Barcode..." />
+                  <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[12px] rounded-xl border border-slate-600 bg-slate-800 px-[16px] py-[8px] relative group shrink-0">
+                    <div class="flex flex-col gap-1">
+                      <input v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-slate-200 outline-none w-48" placeholder="Barcode..." />
+                      <select v-model="row.uom" class="bg-transparent border-none p-0 text-sm font-bold text-slate-500 uppercase outline-none cursor-pointer hover:text-blue-400 transition-colors">
+                        <option v-for="u in metadata.uoms" :key="u.name" :value="u.name" class="bg-slate-800 text-slate-200">{{ u.name }}</option>
+                      </select>
+                    </div>
                     <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
                   </div>
                 </div>
@@ -354,7 +359,7 @@ const form = ref({
 })
 
 function addBarcodeRow() {
-  form.value.extra_barcodes.push({ barcode: '' })
+  form.value.extra_barcodes.push({ barcode: '', uom: form.value.stock_uom })
 }
 
 function removeBarcodeRow(idx) {
