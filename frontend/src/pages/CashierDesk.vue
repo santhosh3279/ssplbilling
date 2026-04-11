@@ -140,12 +140,12 @@
                   </span>
                 </div>
               </div>
-              <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-              <div class="flex items-center justify-between mt-1 gap-2">
-                <div class="truncate text-[13.75px]" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                  {{ inv.customer }}
-                </div>
+              <div class="flex items-center justify-between mb-1">
+                <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
                 <div class="font-mono text-[18px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
+              </div>
+              <div class="truncate text-[13.75px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                {{ inv.customer }}
               </div>
             </button>
           </div>
