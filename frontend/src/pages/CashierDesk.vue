@@ -56,35 +56,35 @@
               </button>
             </div>
 
-            <!-- Series & Sync -->
-            <div class="flex items-center gap-2.5">
+            <!-- Series, Toggle & Sync -->
+            <div class="flex items-center gap-2">
               <select
                 v-model="sidebarSeries"
                 @change="loadInvoices"
-                class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 px-4 text-[12.5px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all"
+                class="w-[30%] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 px-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all"
               >
                 <option value="">All Series</option>
                 <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
               </select>
+
+              <button
+                @click="showUnpaid = !showUnpaid; loadInvoices()"
+                class="flex-1 rounded-xl border py-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all truncate px-2"
+                :class="showUnpaid 
+                  ? 'bg-rose-900/30 border-rose-500/50 text-[var(--color-danger)]' 
+                  : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'"
+              >
+                {{ showUnpaid ? 'Unpaid' : 'Drafts' }}
+              </button>
+
               <button
                 @click="loadInvoices"
-                class="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-white transition-all active:scale-90"
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-white transition-all active:scale-90"
                 title="Sync Bills"
               >
-                <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
               </button>
             </div>
-
-            <!-- Unpaid Toggle -->
-            <button
-              @click="showUnpaid = !showUnpaid; loadInvoices()"
-              class="w-full rounded-xl border py-2.5 text-[12.5px] font-black uppercase tracking-[0.1em] transition-all"
-              :class="showUnpaid 
-                ? 'bg-rose-900/30 border-rose-500/50 text-[var(--color-danger)]' 
-                : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'"
-            >
-              {{ showUnpaid ? 'Showing Unpaid Bills' : 'Showing Drafts Only' }}
-            </button>
           </div>
 
           <!-- Search Bar -->
@@ -142,7 +142,7 @@
               </div>
               <div class="flex items-center justify-between mb-0.5">
                 <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-                <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
+                <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">{{ fmt(inv.grand_total) }}</div>
               </div>
               <div class="truncate text-[16.5px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
