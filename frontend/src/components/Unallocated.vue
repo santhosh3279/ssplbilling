@@ -21,17 +21,17 @@
           <div v-if="invoice?.advances && invoice.advances.length > 0" class="mb-8 space-y-3">
             <h4 class="text-[16px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-3">Previously Allocated</h4>
             <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-6 py-3 flex items-center gap-6">
-              <div class="w-[250px] shrink-0 text-[25px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</div>
+              <div class="w-[250px] shrink-0 text-[18.75px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</div>
               <div class="flex-1 text-[14px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</div>
               <div class="w-[180px] shrink-0 text-right text-[25px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</div>
               <div class="w-48 shrink-0"></div> <!-- Spacer to match bottom grid -->
             </div>
-          </div>
+            </div>
 
-          <!-- Unallocated Section -->
-          <div v-if="localUnallocated.length > 0" class="space-y-3">
+            <!-- Unallocated Section -->
+            <div v-if="localUnallocated.length > 0" class="space-y-3">
             <h4 class="text-[16px] font-black uppercase tracking-widest text-amber-500 px-3 mb-4">Available Unallocated Cash</h4>
-            
+
             <!-- Table Header -->
             <div class="px-6 py-2 flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-60">
               <div class="w-[250px] shrink-0">Reference No</div>
@@ -44,8 +44,7 @@
             <!-- Table Rows -->
             <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-md flex items-center gap-6 group hover:border-[var(--color-focus)]/50 transition-colors">
               <!-- Name -->
-              <div class="w-[250px] shrink-0 text-[25px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
-              
+              <div class="w-[250px] shrink-0 text-[18.75px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>              
               <!-- Date -->
               <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
 
