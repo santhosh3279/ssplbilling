@@ -1239,6 +1239,10 @@ function handleItemEntry() {
 }
 
 function onNewCodeInput() {
+  const now = Date.now()
+  const isScanner = (now - lastInputTime.value < 50)
+  lastInputTime.value = now
+
   const code = newItemCode.value.trim()
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code)
@@ -1253,7 +1257,7 @@ function onNewCodeInput() {
       setTimeout(() => {
         pendingQtyInput.value?.focus()
         pendingQtyInput.value?.select()
-      }, 400)
+      }, isScanner ? 0 : 400)
     }
   } else {
     quickSearchResults.value = []
@@ -1628,7 +1632,13 @@ function onItemSearchSelect(item) {
   })
 }
 
+const lastInputTime = ref(0)
+
 function onEditCodeInput(rowIdx) {
+  const now = Date.now()
+  const isScanner = (now - lastInputTime.value < 50)
+  lastInputTime.value = now
+
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code)
@@ -1644,7 +1654,7 @@ function onEditCodeInput(rowIdx) {
       quickSearchResults.value = []
       setTimeout(() => {
         focusEditField('qty', rowIdx)
-      }, 400)
+      }, isScanner ? 0 : 400)
     }
   } else {
     quickSearchResults.value = []

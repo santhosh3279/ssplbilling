@@ -1090,7 +1090,13 @@ function onItemSearchSelect(item) {
   })
 }
 
+const lastInputTime = ref(0)
+
 function onEditCodeInput(rowIdx) {
+  const now = Date.now()
+  const isScanner = (now - lastInputTime.value < 50)
+  lastInputTime.value = now
+
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code); quickSearchAnchor.value = editCodeInput.value; editQuickSearchRowIdx.value = rowIdx
@@ -1098,7 +1104,7 @@ function onEditCodeInput(rowIdx) {
     const exactMatch = quickSearchResults.value.find(i => i.barcodes && i.barcodes.split(',').some(b => b.trim() === code))
     if (exactMatch) {
       applyItemToRow(rowIdx, exactMatch); quickSearchResults.value = []
-      setTimeout(() => { focusEditField('qty', rowIdx) }, 400)
+      setTimeout(() => { focusEditField('qty', rowIdx) }, isScanner ? 0 : 400)
     }
   }
   else { quickSearchResults.value = []; editQuickSearchRowIdx.value = null }
@@ -1205,6 +1211,10 @@ function handleItemEntry() {
 }
 
 function onNewCodeInput() {
+  const now = Date.now()
+  const isScanner = (now - lastInputTime.value < 50)
+  lastInputTime.value = now
+
   const code = newItemCode.value.trim()
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code); quickSearchAnchor.value = newCodeInput.value
@@ -1212,7 +1222,7 @@ function onNewCodeInput() {
     const exactMatch = quickSearchResults.value.find(i => i.barcodes && i.barcodes.split(',').some(b => b.trim() === code))
     if (exactMatch) {
       onQuickSearchSelect(exactMatch)
-      setTimeout(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() }, 400)
+      setTimeout(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() }, isScanner ? 0 : 400)
     }
   }
   else quickSearchResults.value = []
