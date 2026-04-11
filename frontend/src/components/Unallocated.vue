@@ -16,41 +16,49 @@
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
           <!-- Already Allocated Section -->
-          <div v-if="invoice?.advances && invoice.advances.length > 0" class="space-y-3">
+          <div v-if="invoice?.advances && invoice.advances.length > 0" class="mb-8 space-y-3">
             <h4 class="text-[16px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-3">Previously Allocated</h4>
-            <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-6 py-3 flex items-center justify-between gap-8">
-              <div class="flex items-center gap-6 flex-1">
-                <span class="text-[25px] font-black text-[var(--color-info)] min-w-[200px] leading-tight">{{ adv.reference_name }}</span>
-                <span class="text-[14px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</span>
-              </div>
-              <span class="text-[25px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
+            <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-6 py-3 flex items-center gap-6">
+              <div class="w-[250px] shrink-0 text-[25px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</div>
+              <div class="flex-1 text-[14px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</div>
+              <div class="w-[180px] shrink-0 text-right text-[25px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</div>
+              <div class="w-48 shrink-0"></div> <!-- Spacer to match bottom grid -->
             </div>
           </div>
 
           <!-- Unallocated Section -->
           <div v-if="localUnallocated.length > 0" class="space-y-3">
-            <h4 class="text-[16px] font-black uppercase tracking-widest text-amber-500 px-3">Available Unallocated Cash</h4>
-            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-md flex items-center gap-8 group hover:border-[var(--color-focus)]/50 transition-colors">
-              <!-- Name & Date -->
-              <div class="flex flex-col gap-0.5 min-w-[280px]">
-                <div class="text-[25px] font-black text-[var(--color-text)] truncate leading-tight">{{ pe.name }}</div>
-                <div class="text-[14px] font-bold text-[var(--color-text-muted)] uppercase whitespace-nowrap tracking-wider">{{ formatDate(pe.posting_date) }}</div>
+            <h4 class="text-[16px] font-black uppercase tracking-widest text-amber-500 px-3 mb-4">Available Unallocated Cash</h4>
+            
+            <!-- Table Header -->
+            <div class="px-6 py-2 flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-60">
+              <div class="w-[250px] shrink-0">Reference No</div>
+              <div class="w-[120px] shrink-0">Date</div>
+              <div class="w-[120px] shrink-0">Type</div>
+              <div class="w-[180px] shrink-0 text-right">Balance</div>
+              <div class="flex-1 text-right">Adjustment Amount</div>
+            </div>
+
+            <!-- Table Rows -->
+            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-md flex items-center gap-6 group hover:border-[var(--color-focus)]/50 transition-colors">
+              <!-- Name -->
+              <div class="w-[250px] shrink-0 text-[25px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+              
+              <!-- Date -->
+              <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
+
+              <!-- Type -->
+              <div class="w-[120px] shrink-0">
+                <span class="px-2 py-0.5 rounded bg-[var(--color-surface-raised)] text-[11px] font-black text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ pe.mode_of_payment }}</span>
               </div>
 
-              <!-- Mode & Balance -->
-              <div class="flex items-center gap-6 flex-1">
-                <div class="px-3 py-1 rounded-lg bg-[var(--color-surface-raised)] text-[13px] font-black text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ pe.mode_of_payment }}</div>
-                <div class="flex flex-col">
-                  <span class="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Balance</span>
-                  <span class="text-[25px] font-black text-[var(--color-success)] font-mono leading-none">₹{{ fmt(pe.unallocated_amount) }}</span>
-                </div>
-              </div>
+              <!-- Balance -->
+              <div class="w-[180px] shrink-0 text-right text-[25px] font-black text-[var(--color-success)] font-mono">₹{{ fmt(pe.unallocated_amount) }}</div>
               
               <!-- Adjust Input -->
-              <div class="flex items-center gap-4">
-                <div class="text-[14px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust</div>
+              <div class="flex-1 flex justify-end">
                 <div class="w-48 relative">
                   <input
                     :ref="el => allocationInputs[index] = el"
