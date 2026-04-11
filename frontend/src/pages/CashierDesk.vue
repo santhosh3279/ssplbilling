@@ -261,15 +261,15 @@
                 <!-- Compact Reconcile Alert -->
                 <button v-if="unallocatedPayments.length > 0 && (selectedInvoice.grand_total || 0) > 0" 
                   @click="showReconcileModal = true"
-                  class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-3 hover:bg-amber-500/20 transition-all group shadow-sm"
+                  class="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-10 py-3 flex items-center gap-5 hover:bg-amber-500/20 transition-all group shadow-md min-w-[240px]"
                   title="Unallocated cash available to adjust"
                 >
-                  <div class="h-6 w-6 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <div class="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform text-2xl font-black">
+                    ₹
                   </div>
                   <div class="text-left">
-                    <div class="text-[9px] font-black uppercase tracking-widest text-amber-500 leading-none">Unallocated</div>
-                    <div class="text-[14px] font-black text-amber-200/80 font-mono leading-none mt-1">₹{{ fmt(unallocatedAmountTotal) }}</div>
+                    <div class="text-[13.5px] font-black uppercase tracking-widest text-amber-500 leading-none">Unallocated</div>
+                    <div class="text-[21px] font-black text-amber-200/80 font-mono leading-none mt-1.5">₹{{ fmt(unallocatedAmountTotal) }}</div>
                   </div>
                 </button>
 
