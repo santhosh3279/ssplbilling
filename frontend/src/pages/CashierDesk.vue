@@ -569,86 +569,13 @@
     </transition>
 
     <!-- RECONCILIATION MODAL -->
-    <transition name="fade">
-      <div v-if="showReconcileModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
-        <div class="flex w-full max-w-lg flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden max-h-[90vh]">
-          <!-- Modal Header -->
-          <div class="p-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/30 flex items-center justify-between">
-            <div>
-              <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-info)] flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                Payment Reconciliation
-              </h3>
-              <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Adjust pending ledger cash for this bill</p>
-            </div>
-            <button @click="showReconcileModal = false" class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-raised)] transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            </button>
-          </div>
-
-          <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-            <!-- Already Allocated Section -->
-            <div v-if="selectedInvoice?.advances && selectedInvoice.advances.length > 0" class="space-y-3">
-              <h4 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Previously Allocated</h4>
-              <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" class="rounded-2xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 p-4">
-                <div class="flex justify-between items-start">
-                  <span class="text-sm font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</span>
-                  <span class="text-sm font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
-                </div>
-                <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] italic uppercase">Amount already adjusted in this invoice</p>
-              </div>
-            </div>
-
-            <!-- Unallocated Section -->
-            <div v-if="unallocatedPayments.length > 0" class="space-y-3">
-              <h4 class="text-[10px] font-black uppercase tracking-widest text-amber-500">Available Unallocated Cash</h4>
-              <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
-                <div class="flex justify-between items-start">
-                  <div class="overflow-hidden">
-                    <div class="text-sm font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
-                    <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
-                  </div>
-                  <div class="text-right">
-                    <div class="text-[18px] font-black text-[var(--color-success)] font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
-                    <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{{ pe.mode_of_payment }}</div>
-                  </div>
-                </div>
-                
-                <div class="relative group">
-                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust Amount</div>
-                  <input
-                    :ref="el => allocationInputs[index] = el"
-                    type="number"
-                    v-model.number="pe.amount_to_allocate"
-                    @focus="$event.target.select()"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-32 pr-4 text-right font-mono text-base font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
-                    @keydown.enter="focusNextAllocation(index)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Modal Footer -->
-          <div class="p-6 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-4">
-            <div class="flex justify-between items-center px-2">
-              <span class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Adjust</span>
-              <span class="text-2xl font-black text-[var(--color-info)] font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
-            </div>
-
-            <button
-              ref="allocateButton"
-              @click="submitAllocation"
-              :disabled="!totalAmountToAllocate || isSubmitting"
-              class="w-full rounded-2xl bg-[var(--color-highlight)] py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-3"
-            >
-              <span>Confirm & Apply Adjustments</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <Unallocated
+      :show="showReconcileModal"
+      :invoice="selectedInvoice"
+      :unallocated="unallocatedPayments"
+      @close="showReconcileModal = false"
+      @success="handleAllocationSuccess"
+    />
 
     <!-- PRINT OPTIONS MODAL -->
     <PrintOptionsModal
@@ -666,6 +593,7 @@ import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchD
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import Unallocated from '../components/Unallocated.vue'
 
 /**
  * HELPER: getTodayIST
@@ -730,13 +658,7 @@ const previewItems = ref([])
 const unallocatedPayments = ref([])
 const allocatedAdvances = ref([])
 const unallocatedAmountTotal = ref(0)
-const allocationInputs = ref([])
-const allocateButton = ref(null)
 const postButton = ref(null)
-
-const totalAmountToAllocate = computed(() => {
-  return unallocatedPayments.value.reduce((acc, p) => acc + (Number(p.amount_to_allocate) || 0), 0)
-})
 
 const isCredit = ref(false)
 const dueDate = ref('')
@@ -1155,65 +1077,35 @@ async function confirmCardRef() {
   await processPayment()
 }
 
-async function submitAllocation() {
-  if (totalAmountToAllocate.value <= 0) {
-    unallocatedPayments.value = []
-    return
+function handleAllocationSuccess(res) {
+  selectedInvoice.value.outstanding_amount = res.outstanding
+  selectedInvoice.value.posting_date = res.posting_date
+  selectedInvoice.value.due_date = res.due_date
+  selectedInvoice.value.advances = res.advances || []
+
+  // Update sidebar list if needed
+  const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
+  if (idx !== -1) {
+    invoices.value[idx].posting_date = res.posting_date
   }
-  
-  try {
-    const allocations = unallocatedPayments.value
-      .filter(p => (Number(p.amount_to_allocate) || 0) > 0.005)
-      .map(p => ({
-        reference_name: p.name,
-        reference_row: p.reference_row,
-        reference_type: p.reference_type,
-        allocated_amount: p.amount_to_allocate
-      }))
 
-    if (allocations.length === 0) {
-      unallocatedPayments.value = []
-      return
-    }
+  unallocatedPayments.value = []
+  showReconcileModal.value = false
 
-    const res = await frappePost('ssplbilling.api.cashier_api.update_invoice_advances', {
-      invoice_name: selectedInvoice.value.name,
-      allocations: allocations
-    })
-    
-    if (res.status === 'success') {
-      selectedInvoice.value.outstanding_amount = res.outstanding
-      selectedInvoice.value.posting_date = res.posting_date
-      selectedInvoice.value.due_date = res.due_date
-
-      // Update sidebar list if needed
-      const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
-      if (idx !== -1) {
-        invoices.value[idx].posting_date = res.posting_date
-      }
-
-      unallocatedPayments.value = []
-      showReconcileModal.value = false
-
-      const remaining = parseFloat((res.outstanding || 0).toFixed(2))
-      if (remaining <= 0.01) {
-        // Advances fully cover the invoice — just submit
-        payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
-        successMsg.value = "Advances cover full amount. Click Post Settlement to finalise."
-        nextTick(() => postButton.value?.focus())
-      } else {
-        // Pre-fill cash with the remaining balance and guide user to payment fields
-        payments.value = { cash: remaining, upi: 0, card: 0, discount: 0 }
-        successMsg.value = `₹${fmt(remaining)} remaining after advance allocation.`
-        nextTick(() => { cashInput.value?.focus(); cashInput.value?.select() })
-      }
-      setTimeout(() => successMsg.value = '', 4000)
-    }
-  } catch (e) {
-    errorMsg.value = "Allocation failed: " + e.message
+  const remaining = parseFloat((res.outstanding || 0).toFixed(2))
+  if (remaining <= 0.01) {
+    // Advances fully cover the invoice — just submit
+    payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
+    successMsg.value = "Advances cover full amount. Click Post Settlement to finalise."
+    nextTick(() => postButton.value?.focus())
+  } else {
+    // Pre-fill cash with the remaining balance and guide user to payment fields
+    payments.value = { cash: remaining, upi: 0, card: 0, discount: 0 }
+    successMsg.value = `₹${fmt(remaining)} remaining after advance allocation.`
+    nextTick(() => { cashInput.value?.focus(); cashInput.value?.select() })
   }
+  setTimeout(() => successMsg.value = '', 4000)
 }
-
 // Shortcut Handlers
 function navigateBills(dir) {
   if (!invoices.value.length) return
@@ -1235,42 +1127,22 @@ function navigateBills(dir) {
 function handleEnter(e) {
   const active = document.activeElement
   
-  // 1. If no invoice selected, focus first bill (handled by navigateBills usually, but if enter pressed on main body)
+  // 1. If no invoice selected, focus first bill
   if (!selectedInvoice.value) {
     if (invoices.value.length) selectInvoice(invoices.value[0])
     return
   }
 
   // 2. Navigation Logic
-  if (active.tagName !== 'INPUT' && active !== allocateButton.value && active !== postButton.value) {
+  if (active.tagName !== 'INPUT' && active !== postButton.value) {
     // If we just selected a bill, go to side panel if exists, else cash
     if (unallocatedPayments.value.length > 0) {
-      allocationInputs.value[0]?.focus()
-      allocationInputs.value[0]?.select()
+      showReconcileModal.value = true
     } else if (isCredit.value) {
       dueDateInput.value?.focus()
     } else {
       cashInput.value?.focus()
     }
-    return
-  }
-
-  // 3. Sequential Input Navigation
-  if (unallocatedPayments.value.length > 0) {
-    const allocIdx = allocationInputs.value.findIndex(el => el === active)
-    if (allocIdx !== -1) {
-      if (allocIdx + 1 < unallocatedPayments.value.length) {
-        allocationInputs.value[allocIdx + 1]?.focus()
-        allocationInputs.value[allocIdx + 1]?.select()
-      } else {
-        allocateButton.value?.focus()
-      }
-      return
-    }
-  }
-
-  if (active === allocateButton.value) {
-    submitAllocation() // focus is managed inside submitAllocation based on remaining balance
     return
   }
 
