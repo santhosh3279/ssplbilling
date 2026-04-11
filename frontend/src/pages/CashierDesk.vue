@@ -141,11 +141,11 @@
                 </div>
               </div>
               <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-              <div class="truncate text-[13.75px] mt-1" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                {{ inv.customer }}
-              </div>
-              <div class="mt-2.5 flex items-center justify-end border-t pt-2.5" :class="selectedInvoice?.name === inv.name ? 'border-[var(--color-focus)]/50' : 'border-[var(--color-border)]'">
-                <div class="font-mono text-[15px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
+              <div class="flex items-center justify-between mt-1 gap-2">
+                <div class="truncate text-[13.75px]" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                  {{ inv.customer }}
+                </div>
+                <div class="font-mono text-[15px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
               </div>
             </button>
           </div>
