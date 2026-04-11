@@ -163,7 +163,7 @@
             <button
               class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
               :class="item.deleted ? 'text-red-500 hover:text-red-400 font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-red-700' : 'text-[var(--color-text-muted)]')"
-              @click.stop="deleteItem(index)"
+              @click.stop="selectedRowIdx = index; deleteItem(index)"
             >
               {{ item.deleted ? 'Undo' : '×' }}
             </button>
