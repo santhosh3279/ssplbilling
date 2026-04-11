@@ -1380,14 +1380,7 @@ function handlePendingQtyKeydown(e) {
 function handleRowKeydown(e, idx) {
   const item = items.value[idx]
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-  if (e.key === 'Enter' && !item.deleted && !item._is_free) {
-    e.preventDefault()
-    if (getItemUoms(item.item_code).length > 1) {
-      focusEditField('uom', idx)
-    } else {
-      focusEditField('qty', idx)
-    }
-  }
+  if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('qty', idx) }
   else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') { e.preventDefault(); focusRow(items.value.length - 1, 'down') }
