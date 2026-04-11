@@ -178,7 +178,7 @@
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-16">Qty</th>
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-14">UOM</th>
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Rate</th>
-                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Disc %</th>
+                <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Disc %</th>
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-warning)] w-24">DISC</th>
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Tax %</th>
                 <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Amount</th>
