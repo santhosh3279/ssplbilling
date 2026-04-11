@@ -13,20 +13,20 @@
       <div 
         v-for="(item, idx) in results" 
         :key="item.item_code"
-        class="px-4 py-3 cursor-pointer border-b border-[var(--color-border)]/50 last:border-0"
-        :class="selectedIndex === idx ? 'bg-[var(--color-highlight)]/30 ring-2 ring-inset ring-[var(--color-highlight)]/50' : 'hover:bg-[var(--color-surface-raised)]/40'"
+        class="px-4 py-3 cursor-pointer border-b border-[var(--color-border)]/50 last:border-0 transition-all"
+        :class="selectedIndex === idx ? 'bg-[var(--color-focus)] border-l-4 border-l-[var(--color-focus)] font-bold' : 'hover:bg-[var(--color-surface-raised)]/40'"
         @click="$emit('select', item)"
       >
         <div class="flex justify-between items-center gap-4">
           <div class="min-w-0 flex-1">
-            <div class="text-3xl font-normal text-[var(--color-text)] truncate">{{ item.item_name }}</div>
-            <div class="text-2xl font-mono text-[var(--color-warning)]/80">{{ item.item_code }}</div>
+            <div class="text-3xl font-normal truncate" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
+            <div class="text-2xl font-mono" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">{{ item.item_code }}</div>
           </div>
           <div class="flex flex-col items-end shrink-0">
-            <div class="text-2xl font-mono font-bold text-[var(--color-warning)]">{{ formatPrice(getItemPrice(item)) }}</div>
+            <div class="text-2xl font-mono font-bold" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ formatPrice(getItemPrice(item)) }}</div>
             <div 
               class="text-sm font-bold" 
-              :class="item.stock > 20 ? 'text-[var(--color-success)]' : item.stock > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'"
+              :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : (item.stock > 20 ? 'text-[var(--color-success)]' : item.stock > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]')"
             >
               {{ item.stock }} {{ item.uom }}
             </div>
