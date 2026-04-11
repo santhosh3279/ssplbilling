@@ -21,7 +21,7 @@
         <div v-if="selectedInvoice" class="flex-1 flex items-center justify-between gap-4 overflow-hidden animate-fade-in">
           <!-- Left: Bill No & Customer -->
           <div class="flex items-center gap-4 overflow-hidden">
-            <h2 class="text-lg font-black text-[var(--color-text)] leading-none truncate shrink-0">{{ selectedInvoice.name }}</h2>
+            <h2 class="text-[27px] font-medium text-[var(--color-text)] leading-none truncate shrink-0">{{ selectedInvoice.name }}</h2>
             <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded px-1.5 py-0.5 bg-green-900/30 border border-green-500/30 shrink-0">
               <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-success)]">Paid</span>
             </div>
