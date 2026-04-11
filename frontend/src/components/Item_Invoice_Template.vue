@@ -431,11 +431,6 @@
                 <td class="p-0 border-y border-[var(--color-border)]"></td>
                 <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ totalTax }}</td>
               </tr>
-              <tr v-for="i in 2" :key="i">
-                <td class="px-2 border border-[var(--color-border)]">&nbsp;</td>
-                <td class="p-0 border border-[var(--color-border)]"></td>
-                <td class="px-2 border border-[var(--color-border)]"></td>
-              </tr>
             </slot>
           </tbody>
         </table>
