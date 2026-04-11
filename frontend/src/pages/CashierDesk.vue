@@ -257,9 +257,26 @@
                   <div class="text-xl font-black tracking-tight text-[var(--color-text)]">{{ previewItems.length }}</div>
                 </div>
               </div>
-              <div class="flex items-center gap-4 bg-[var(--color-info)]/10 px-4 py-2 rounded-xl border border-[var(--color-info)]/20 shadow-sm">
-                <div class="text-[15px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
-                <div class="text-[36px] font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
+              <div class="flex items-center gap-3">
+                <!-- Compact Reconcile Alert -->
+                <button v-if="unallocatedPayments.length > 0 && (selectedInvoice.grand_total || 0) > 0" 
+                  @click="showReconcileModal = true"
+                  class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-3 hover:bg-amber-500/20 transition-all group shadow-sm"
+                  title="Unallocated cash available to adjust"
+                >
+                  <div class="h-6 w-6 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </div>
+                  <div class="text-left">
+                    <div class="text-[9px] font-black uppercase tracking-widest text-amber-500 leading-none">Unallocated</div>
+                    <div class="text-[14px] font-black text-amber-200/80 font-mono leading-none mt-1">₹{{ fmt(unallocatedAmountTotal) }}</div>
+                  </div>
+                </button>
+
+                <div class="flex items-center gap-4 bg-[var(--color-info)]/10 px-4 py-2 rounded-xl border border-[var(--color-info)]/20 shadow-sm">
+                  <div class="text-[15px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
+                  <div class="text-[36px] font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -280,23 +297,6 @@
 
           <template v-else>
             <div class="space-y-3">
-              <!-- Reconcile Alert -->
-              <div v-if="unallocatedPayments.length > 0 && (selectedInvoice.grand_total || 0) > 0" 
-                @click="showReconcileModal = true"
-                class="bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-amber-900/30 transition-all group"
-              >
-                <div class="flex items-center gap-3">
-                  <div class="h-8 w-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  </div>
-                  <div>
-                    <div class="text-[10px] font-black uppercase tracking-widest text-amber-500">Unallocated Cash Found</div>
-                    <div class="text-[11px] font-bold text-amber-200/70 leading-none mt-0.5">₹{{ fmt(unallocatedAmountTotal) }} available to adjust</div>
-                  </div>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 opacity-50 group-hover:translate-x-1 transition-all"><path d="m9 18 6-6-6-6"/></svg>
-              </div>
-
               <!-- Summary Mini-Card -->
               <div class="relative rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] p-4">
                 <!-- Credit Badge -->
