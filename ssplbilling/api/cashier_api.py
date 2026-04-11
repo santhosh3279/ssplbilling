@@ -365,7 +365,7 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 			"docstatus": 1,
 			"unallocated_amount": [">", 0],
 		},
-		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no"],
+		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no", "paid_amount"],
 	)
 
 	results = []
@@ -373,6 +373,7 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 		results.append({
 			"name": pe.name,
 			"unallocated_amount": float(pe.unallocated_amount),
+			"total_amount": float(pe.paid_amount),
 			"posting_date": str(pe.posting_date),
 			"mode_of_payment": pe.mode_of_payment or "Cash",
 			"reference_no": pe.reference_no,
@@ -387,6 +388,7 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 			jea.parent as name,
 			jea.name as reference_row,
 			(jea.credit_in_account_currency - jea.debit_in_account_currency) as unallocated_amount,
+			je.total_amount,
 			je.posting_date,
 			je.cheque_no as reference_no
 		FROM `tabJournal Entry Account` jea
@@ -423,6 +425,7 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 				"name": je.name,
 				"reference_row": je.reference_row,
 				"unallocated_amount": available,
+				"total_amount": float(je.total_amount),
 				"posting_date": str(je.posting_date),
 				"mode_of_payment": "Journal Entry",
 				"reference_no": je.reference_no,
