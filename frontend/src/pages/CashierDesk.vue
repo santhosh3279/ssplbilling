@@ -145,7 +145,7 @@
                 <div class="truncate text-[13.75px]" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                   {{ inv.customer }}
                 </div>
-                <div class="font-mono text-[15px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
+                <div class="font-mono text-[18px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
               </div>
             </button>
           </div>
@@ -241,8 +241,8 @@
                 </div>
               </div>
               <div class="flex flex-col items-end gap-0.5">
-                <div class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
-                <div class="text-3xl font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
+                <div class="text-[15px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
+                <div class="text-[45px] font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
               </div>
             </div>
           </div>
@@ -271,8 +271,8 @@
             <h4 class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-1">Already Allocated</h4>
             <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 p-2.5">
               <div class="flex justify-between items-start">
-                <span class="text-[10px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</span>
-                <span class="text-[10px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
+                <span class="text-[15px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</span>
+                <span class="text-[15px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
               </div>
               <p class="mt-1 text-[8px] font-bold text-[var(--color-text-muted)] italic uppercase">In this journal entry this amount is allocated</p>
             </div>
@@ -288,8 +288,8 @@
                   <div class="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
                 </div>
                 <div class="text-right">
-                  <div class="text-[10px] font-black text-[var(--color-success)] font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
-                  <div class="text-[8px] font-bold text-[var(--color-text-muted)] uppercase">{{ pe.mode_of_payment }}</div>
+                  <div class="text-[15px] font-black text-[var(--color-success)] font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
+                  <div class="text-[12px] font-bold text-[var(--color-text-muted)] uppercase">{{ pe.mode_of_payment }}</div>
                 </div>
               </div>
               
@@ -310,8 +310,8 @@
 
         <div v-if="unallocatedPayments.length > 0" class="p-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-3">
           <div class="flex justify-between items-center px-1">
-            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Allocate</span>
-            <span class="text-xs font-black text-[var(--color-info)] font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
+            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Allocate</span>
+            <span class="text-[18px] font-black text-[var(--color-info)] font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
           </div>
 
           <button
@@ -349,8 +349,8 @@
 
                 <div class="flex justify-between items-start mb-4">
                   <div>
-                    <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Bill Amount</div>
-                    <div class="text-2xl font-black tracking-tight text-[var(--color-text)] font-mono">
+                    <div class="text-[15px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Bill Amount</div>
+                    <div class="text-[36px] font-black tracking-tight text-[var(--color-text)] font-mono">
                       ₹{{ fmt(amountToCollect) }}
                     </div>
                   </div>
@@ -364,15 +364,15 @@
                 </div>
 
                 <div class="space-y-2 border-t border-[var(--color-border)] pt-3">
-                  <div class="flex justify-between items-center text-xs">
-                    <span class="font-bold text-[var(--color-text-muted)]">Paid Amount</span>
-                    <span class="font-mono font-bold text-[var(--color-text)]">₹{{ fmt(totalPaid) }}</span>
+                  <div class="flex justify-between items-center">
+                    <span class="text-[18px] font-bold text-[var(--color-text-muted)]">Paid Amount</span>
+                    <span class="font-mono font-bold text-[var(--color-text)] text-[18px]">₹{{ fmt(totalPaid) }}</span>
                   </div>
                   <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold uppercase tracking-widest" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
+                    <span class="text-[18px] font-bold uppercase tracking-widest" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
                       {{ balance <= 0.01 ? 'Change Return' : 'Balance Due' }}
                     </span>
-                    <span class="text-xl font-black font-mono" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-info)]'">
+                    <span class="text-[30px] font-black font-mono" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-info)]'">
                       ₹{{ fmt(Math.abs(balance)) }}
                     </span>
                   </div>
