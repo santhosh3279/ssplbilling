@@ -56,6 +56,7 @@
       @save="handleSave"
       @print="handlePrint"
       @discount-pct-keydown="handleDiscountPctKeydown"
+      @other-entry-enter="saveBtnRef?.focus()"
       @cancel="handleCancel"
       @incentive="handleIncentive"
       @party-click="customerInitialQuery = ''; showCustomerModal = true"
@@ -1096,7 +1097,8 @@ async function handleSave() {
 }
 
 function handleDiscountPctKeydown(e) {
-  if (e.key === 'Enter' || e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
+  if (e.key === 'Enter') { e.preventDefault(); invoiceTemplateRef.value?.focusDiscountAmt() }
+  else if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
 }
 
 function handleModify() {

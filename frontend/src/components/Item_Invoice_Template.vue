@@ -422,7 +422,7 @@
                     type="number"
                     :value="otherEntry"
                     @input="$emit('update:otherEntry', $event.target.value)"
-                    @keydown.enter.prevent="saveBtnRef?.focus()"
+                    @keydown.enter.prevent="$emit('other-entry-enter'); saveBtnRef?.focus()"
                     :disabled="isReadOnly"
                     class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                   />
@@ -521,7 +521,7 @@ const emit = defineEmits([
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
   'update:ignoreModifier',
-  'discount-pct-keydown'
+  'discount-pct-keydown', 'other-entry-enter'
 ])
 
 const sidebarSearchRef = ref(null)
