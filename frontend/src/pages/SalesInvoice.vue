@@ -244,12 +244,12 @@
         <div class="flex flex-col gap-3 p-2 max-h-[300px] overflow-y-auto custom-scrollbar" @keydown="handleModifyPanelKeydown">
           <!-- Row 1: Price List -->
           <div class="flex flex-col gap-0.5">
-            <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
+            <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
             <select
               ref="priceListSelectRef"
               v-model="priceList"
               :disabled="isReadOnly"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
             >
               <option v-for="pl in localPriceLists" :key="pl" :value="pl">{{ pl }}</option>
               <option v-if="!localPriceLists.length" value="Standard Selling">Standard Selling</option>
@@ -258,12 +258,12 @@
 
           <!-- Row 2: Tax Template -->
           <div class="flex flex-col gap-0.5">
-            <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
+            <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
             <select
               ref="taxTemplateRef"
               v-model="taxTemplate"
               :disabled="isReadOnly"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
             >
               <option value="">-- None --</option>
               <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
@@ -273,16 +273,16 @@
           <!-- 3 Checkboxes -->
           <div class="flex flex-col gap-1.5 py-1 border-y border-[var(--color-border)]/30">
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input ref="inclusiveTaxRef" type="checkbox" v-model="isInclusiveTax" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-highlight)] disabled:opacity-50" />
-              <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Inclusive Tax</span>
+              <input ref="inclusiveTaxRef" type="checkbox" v-model="isInclusiveTax" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-highlight)] disabled:opacity-50" />
+              <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Inclusive Tax</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-warning)] disabled:opacity-50" />
-              <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Ignore Pricing Rule</span>
+              <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-warning)] disabled:opacity-50" />
+              <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Ignore Pricing Rule</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input type="checkbox" v-model="isReturn" :disabled="isReadOnly" class="h-[18px] w-[18px] rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
-              <span class="text-[var(--color-text-muted)] text-[15px] font-bold uppercase">Sale Return</span>
+              <input type="checkbox" v-model="isReturn" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
+              <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Sale Return</span>
             </label>
           </div>
 
@@ -290,22 +290,22 @@
           <div class="grid grid-cols-2 gap-2">
             <!-- Warehouse (Readonly) -->
             <div class="flex flex-col gap-0.5">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Warehouse</label>
+              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Warehouse</label>
               <input
                 :value="warehouse"
                 readonly
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-base text-[var(--color-text-muted)] outline-none cursor-not-allowed"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-2xl text-[var(--color-text-muted)] outline-none cursor-not-allowed"
               />
             </div>
 
             <!-- Cost Center -->
             <div class="flex flex-col gap-0.5">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Cost Center</label>
+              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Cost Center</label>
               <select
                 ref="costCenterRef"
                 v-model="costCenter"
                 disabled
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none disabled:opacity-50 disabled:cursor-default"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none disabled:opacity-50 disabled:cursor-default"
               >
                 <option v-for="cc in localCostCenters" :key="cc" :value="cc">{{ cc }}</option>
                 <option v-if="!localCostCenters.length" :value="costCenter">{{ costCenter }}</option>
@@ -314,11 +314,11 @@
 
             <!-- wb-income-account -->
             <div class="flex flex-col gap-0.5">
-              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">wb-income-account</label>
+              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">wb-income-account</label>
               <input
                 :value="incomeAccount"
                 readonly
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-base text-[var(--color-text-muted)] outline-none cursor-not-allowed"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-2xl text-[var(--color-text-muted)] outline-none cursor-not-allowed"
               />
             </div>
           </div>
