@@ -18,25 +18,25 @@
 
       <!-- Col 2: Selected Invoice Info (Centered exactly above main section) -->
       <div class="flex items-center justify-between px-6 h-full overflow-hidden">
-        <div v-if="selectedInvoice" class="flex items-center gap-4 overflow-hidden animate-fade-in">
-          <div class="flex flex-col overflow-hidden">
-            <div class="flex items-center gap-2">
-              <h2 class="text-sm font-black text-[var(--color-text)] leading-none truncate">{{ selectedInvoice.name }}</h2>
-              <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded px-1.5 py-0.5 bg-green-900/30 border border-green-500/30">
-                <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-success)]">Paid</span>
-              </div>
+        <div v-if="selectedInvoice" class="flex-1 flex items-center justify-between gap-4 overflow-hidden animate-fade-in">
+          <!-- Left: Bill No & Customer -->
+          <div class="flex items-center gap-4 overflow-hidden">
+            <h2 class="text-lg font-black text-[var(--color-text)] leading-none truncate shrink-0">{{ selectedInvoice.name }}</h2>
+            <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded px-1.5 py-0.5 bg-green-900/30 border border-green-500/30 shrink-0">
+              <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-success)]">Paid</span>
             </div>
-            <div class="flex items-center gap-2 mt-1 truncate">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)] truncate">{{ selectedInvoice.customer }}</span>
-              <span class="h-0.5 w-0.5 rounded-full bg-[var(--color-border)]"></span>
-              <span class="text-[10px] font-bold text-[var(--color-text-muted)] whitespace-nowrap">{{ formatDate(selectedInvoice.posting_date) }}</span>
-            </div>
+            <div class="h-4 w-[1px] bg-[var(--color-border)] shrink-0"></div>
+            <span class="text-sm font-bold uppercase tracking-wider text-[var(--color-info)] truncate">{{ selectedInvoice.customer }}</span>
           </div>
           
-          <button @click="showPrintModal = true" class="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-            Print
-          </button>
+          <!-- Right: Date & Print -->
+          <div class="flex items-center gap-4 shrink-0">
+            <span class="text-[11px] font-bold text-[var(--color-text-muted)] whitespace-nowrap">{{ formatDate(selectedInvoice.posting_date) }}</span>
+            <button @click="showPrintModal = true" class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print
+            </button>
+          </div>
         </div>
         <div v-else class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] italic opacity-50">
           No Bill Selected
