@@ -1770,13 +1770,8 @@ function setPendingItem(item) {
   item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
   pendingItem.value = item
   nextTick(() => {
-    if (getItemUoms(item.item_code).length > 1) {
-      pendingUomSelect.value?.focus()
-      if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
-    } else {
-      pendingQtyInput.value?.focus()
-      pendingQtyInput.value?.select()
-    }
+    pendingQtyInput.value?.focus()
+    pendingQtyInput.value?.select()
   })
 }
 
