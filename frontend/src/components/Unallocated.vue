@@ -90,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { frappePost } from '../api'
 
 const props = defineProps({
@@ -105,6 +105,29 @@ const localUnallocated = ref([])
 const isSubmitting = ref(false)
 const allocationInputs = ref([])
 const allocateButton = ref(null)
+
+onMounted(() => {
+  if (props.show) {
+    nextTick(() => {
+      if (allocationInputs.value[0]) {
+        allocationInputs.value[0].focus()
+        allocationInputs.value[0].select()
+      }
+    })
+  }
+})
+
+// Also watch 'show' prop if the component is kept alive
+watch(() => props.show, (isShown) => {
+  if (isShown) {
+    nextTick(() => {
+      if (allocationInputs.value[0]) {
+        allocationInputs.value[0].focus()
+        allocationInputs.value[0].select()
+      }
+    })
+  }
+})
 
 // Sync local state when props change
 watch(() => props.unallocated, (newVal) => {
