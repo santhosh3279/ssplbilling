@@ -117,12 +117,12 @@
               :key="inv.name"
               :data-inv-name="inv.name"
               @click="selectInvoice(inv)"
-              class="group flex w-full flex-col rounded-xl p-4 text-left transition-all active:scale-[0.98]"
+              class="group flex w-full flex-col rounded-xl p-2 text-left transition-all active:scale-[0.98]"
               :class="selectedInvoice?.name === inv.name
                 ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] shadow-lg'
                 : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
             >
-              <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center justify-between mb-0.5">
                 <span
                   class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider"
                   :class="selectedInvoice?.name === inv.name
@@ -140,11 +140,11 @@
                   </span>
                 </div>
               </div>
-              <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center justify-between mb-0.5">
                 <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
                 <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
               </div>
-              <div class="truncate text-[16.5px] mt-1" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+              <div class="truncate text-[16.5px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
               </div>
             </button>
