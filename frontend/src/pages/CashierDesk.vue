@@ -123,16 +123,19 @@
                 : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
             >
               <div class="flex items-center justify-between mb-1.5">
-                <span
-                  class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider"
-                  :class="selectedInvoice?.name === inv.name
-                    ? 'bg-[var(--color-focus)]/50 text-white'
-                    : inv.docstatus === 0 
-                      ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
-                      : (inv.outstanding_amount <= 0.01 ? 'bg-green-900/40 text-[var(--color-success)]' : 'bg-rose-900/40 text-[var(--color-danger)]')"
-                >
-                  {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
-                </span>
+                <div class="flex items-center gap-2">
+                  <span
+                    class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider"
+                    :class="selectedInvoice?.name === inv.name
+                      ? 'bg-[var(--color-focus)]/50 text-white'
+                      : inv.docstatus === 0 
+                        ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
+                        : (inv.outstanding_amount <= 0.01 ? 'bg-green-900/40 text-[var(--color-success)]' : 'bg-rose-900/40 text-[var(--color-danger)]')"
+                  >
+                    {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
+                  </span>
+                  <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
+                </div>
                 <span class="text-[15px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                   {{ inv.posting_time }}
                 </span>
@@ -141,8 +144,7 @@
               <div class="truncate text-[13.75px] mt-1" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
               </div>
-              <div class="mt-2.5 flex items-center justify-between border-t pt-2.5" :class="selectedInvoice?.name === inv.name ? 'border-[var(--color-focus)]/50' : 'border-[var(--color-border)]'">
-                <span class="text-[12.5px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
+              <div class="mt-2.5 flex items-center justify-end border-t pt-2.5" :class="selectedInvoice?.name === inv.name ? 'border-[var(--color-focus)]/50' : 'border-[var(--color-border)]'">
                 <div class="font-mono text-[15px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">₹{{ fmt(inv.grand_total) }}</div>
               </div>
             </button>
