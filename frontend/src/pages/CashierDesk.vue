@@ -276,75 +276,6 @@
         </template>
       </main>
 
-      <!-- UNALLOCATED CASH PANEL -->
-      <aside class="flex w-80 flex-col border-l border-[var(--color-border)] bg-[var(--color-bg)] z-10 shrink-0">
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
-          <!-- Placeholder when empty -->
-          <div v-if="!selectedInvoice || (unallocatedPayments.length === 0 && !(selectedInvoice?.advances && selectedInvoice.advances.length > 0))" class="flex h-full flex-col items-center justify-center text-center p-6 opacity-40">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 text-[var(--color-text-muted)]"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">No pending reconciliation</p>
-          </div>
-
-          <!-- Already Allocated Section -->
-          <div v-if="selectedInvoice?.advances && selectedInvoice.advances.length > 0" class="space-y-2">
-            <h4 class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-1">Already Allocated</h4>
-            <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 p-2.5">
-              <div class="flex justify-between items-start">
-                <span class="text-[15px] font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</span>
-                <span class="text-[15px] font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
-              </div>
-              <p class="mt-1 text-[8px] font-bold text-[var(--color-text-muted)] italic uppercase">In this journal entry this amount is allocated</p>
-            </div>
-          </div>
-
-          <!-- Unallocated Section -->
-          <div v-if="unallocatedPayments.length > 0" class="space-y-2">
-            <h4 class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-1">Unallocated Cash</h4>
-            <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm hover:border-[var(--color-border)] transition-colors space-y-3">
-              <div class="flex justify-between items-start">
-                <div class="overflow-hidden">
-                  <div class="text-[11px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
-                  <div class="text-[9px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
-                </div>
-                <div class="text-right">
-                  <div class="text-[15px] font-black text-[var(--color-success)] font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
-                  <div class="text-[12px] font-bold text-[var(--color-text-muted)] uppercase">{{ pe.mode_of_payment }}</div>
-                </div>
-              </div>
-              
-              <div class="relative group">
-                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-[var(--color-text-muted)] uppercase">Alloc</div>
-                <input
-                  :ref="el => allocationInputs[index] = el"
-                  type="number"
-                  v-model.number="pe.amount_to_allocate"
-                  @focus="$event.target.select()"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 pl-10 pr-3 text-right font-mono text-xs font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-1 focus:ring-[var(--color-focus)]/20 transition-all outline-none"
-                  @keydown.enter="focusNextAllocation(index)"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="unallocatedPayments.length > 0" class="p-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-3">
-          <div class="flex justify-between items-center px-1">
-            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Allocate</span>
-            <span class="text-[18px] font-black text-[var(--color-info)] font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
-          </div>
-
-          <button
-            ref="allocateButton"
-            @click="submitAllocation"
-            :disabled="!totalAmountToAllocate || isSubmitting"
-            class="w-full rounded-xl bg-[var(--color-highlight)] py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
-          >
-            <span>Confirm Allocations</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </button>
-        </div>
-      </aside>
-
       <!-- RIGHT ASIDE: PAYMENT CONTROLS -->
       <aside class="flex w-[380px] flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] z-10 shrink-0">
         <div class="p-5 border-b border-[var(--color-border)] bg-[var(--color-surface)]/50">
@@ -359,6 +290,23 @@
 
           <template v-else>
             <div class="space-y-3">
+              <!-- Reconcile Alert -->
+              <div v-if="unallocatedPayments.length > 0" 
+                @click="showReconcileModal = true"
+                class="bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-amber-900/30 transition-all group"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="h-8 w-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </div>
+                  <div>
+                    <div class="text-[10px] font-black uppercase tracking-widest text-amber-500">Unallocated Cash Found</div>
+                    <div class="text-[11px] font-bold text-amber-200/70 leading-none mt-0.5">₹{{ fmt(unallocatedAmountTotal) }} available to adjust</div>
+                  </div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 opacity-50 group-hover:translate-x-1 transition-all"><path d="m9 18 6-6-6-6"/></svg>
+              </div>
+
               <!-- Summary Mini-Card -->
               <div class="relative rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] p-4">
                 <!-- Credit Badge -->
@@ -620,6 +568,88 @@
       </div>
     </transition>
 
+    <!-- RECONCILIATION MODAL -->
+    <transition name="fade">
+      <div v-if="showReconcileModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
+        <div class="flex w-full max-w-lg flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden max-h-[90vh]">
+          <!-- Modal Header -->
+          <div class="p-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/30 flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-info)] flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Payment Reconciliation
+              </h3>
+              <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Adjust pending ledger cash for this bill</p>
+            </div>
+            <button @click="showReconcileModal = false" class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-raised)] transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+            <!-- Already Allocated Section -->
+            <div v-if="selectedInvoice?.advances && selectedInvoice.advances.length > 0" class="space-y-3">
+              <h4 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Previously Allocated</h4>
+              <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" class="rounded-2xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 p-4">
+                <div class="flex justify-between items-start">
+                  <span class="text-sm font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</span>
+                  <span class="text-sm font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
+                </div>
+                <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] italic uppercase">Amount already adjusted in this invoice</p>
+              </div>
+            </div>
+
+            <!-- Unallocated Section -->
+            <div v-if="unallocatedPayments.length > 0" class="space-y-3">
+              <h4 class="text-[10px] font-black uppercase tracking-widest text-amber-500">Available Unallocated Cash</h4>
+              <div v-for="(pe, index) in unallocatedPayments" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
+                <div class="flex justify-between items-start">
+                  <div class="overflow-hidden">
+                    <div class="text-sm font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+                    <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-[18px] font-black text-[var(--color-success)] font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
+                    <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{{ pe.mode_of_payment }}</div>
+                  </div>
+                </div>
+                
+                <div class="relative group">
+                  <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust Amount</div>
+                  <input
+                    :ref="el => allocationInputs[index] = el"
+                    type="number"
+                    v-model.number="pe.amount_to_allocate"
+                    @focus="$event.target.select()"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-32 pr-4 text-right font-mono text-base font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
+                    @keydown.enter="focusNextAllocation(index)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="p-6 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-4">
+            <div class="flex justify-between items-center px-2">
+              <span class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total to Adjust</span>
+              <span class="text-2xl font-black text-[var(--color-info)] font-mono">₹{{ fmt(totalAmountToAllocate) }}</span>
+            </div>
+
+            <button
+              ref="allocateButton"
+              @click="submitAllocation"
+              :disabled="!totalAmountToAllocate || isSubmitting"
+              class="w-full rounded-2xl bg-[var(--color-highlight)] py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-3"
+            >
+              <span>Confirm & Apply Adjustments</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- PRINT OPTIONS MODAL -->
     <PrintOptionsModal
       v-if="showPrintModal"
@@ -684,12 +714,14 @@ function toggleAllSeries() {
 
 const showCardRefModal = ref(false)
 const showPrintModal = ref(false)
+const showReconcileModal = ref(false)
 const cardRefNo = ref('')
 const showOpeningRequiredModal = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
 useSubwindowWatcher(showPrintModal)
+useSubwindowWatcher(showReconcileModal)
 useSubwindowWatcher(showOpeningRequiredModal)
 
 const invoices = ref([])
@@ -963,7 +995,10 @@ async function selectInvoice(inv) {
     })
     
     unallocatedAmountTotal.value = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
-    
+
+    if (unallocatedPayments.value.length > 0) {
+      showReconcileModal.value = true
+    }    
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
   } finally {
@@ -1158,9 +1193,9 @@ async function submitAllocation() {
       }
 
       unallocatedPayments.value = []
+      showReconcileModal.value = false
 
       const remaining = parseFloat((res.outstanding || 0).toFixed(2))
-
       if (remaining <= 0.01) {
         // Advances fully cover the invoice — just submit
         payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
