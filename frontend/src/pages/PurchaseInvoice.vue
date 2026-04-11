@@ -1114,8 +1114,14 @@ async function closePrintModal() {
 }
 
 function handleCancel() {
-  items.value = []
-  clearHistory()
+  if (items.value.length === 0) {
+    router.push('/')
+  } else {
+    selectedRowIdx.value = -1
+    editingRowIdx.value = -1
+    editingField.value = null
+    focusBarcodeInput()
+  }
 }
 
 function handleIncentive() { showIncentiveModal.value = true }

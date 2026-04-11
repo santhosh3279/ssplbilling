@@ -973,7 +973,16 @@ async function handleSubmit() {
   }
 }
 
-function handleCancel() { if (confirm('Clear all items?')) items.value = []; clearHistory() }
+function handleCancel() {
+  if (items.value.length === 0) {
+    router.push('/')
+  } else {
+    selectedRowIdx.value = -1
+    editingRowIdx.value = -1
+    editingField.value = null
+    focusBarcodeInput()
+  }
+}
 function handleIncentive() { showIncentiveModal.value = true }
 
 function handleJump(targetNo) {
