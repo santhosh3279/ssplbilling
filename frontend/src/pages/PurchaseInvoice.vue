@@ -1277,11 +1277,9 @@ function focusRow(idx, direction = null) {
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
 
 function deleteItem(idx) {
-  if (idx === -1 || !items.value[idx]) return
-  items.value.splice(idx, 1)
-  if (editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null }
-  if (selectedRowIdx.value >= items.value.length) selectedRowIdx.value = items.value.length - 1
-  if (items.value.length === 0) focusBarcodeInput()
+  const item = items.value[idx]; if (!item) return
+  item.deleted = !item.deleted
+  if (item.deleted && editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null }
 }
 
 function onQuickSearchSelect(item) {
