@@ -1251,7 +1251,12 @@ function handleNewCodeKeydown(e) {
         (i.barcodes && i.barcodes.split(',').some(b => b.trim().toLowerCase() === code.toLowerCase()))
       )
       if (exactMatch) {
-        quickSearchRef.value.handleQuickSearchKeydown(e)
+        const barcodeItem = lookupItemInCache(code)
+        if (barcodeItem) {
+          onQuickSearchSelect(barcodeItem)
+        } else {
+          quickSearchRef.value.handleQuickSearchKeydown(e)
+        }
       } else {
         openItemSearch(code)
       }
