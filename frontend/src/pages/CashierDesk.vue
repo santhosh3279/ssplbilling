@@ -807,8 +807,34 @@ async function loadInvoices() {
 
 async function fetchSeriesList() {
   try {
-    const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' })
-    availableSeries.value = res.allowed_series || []
+    // 1. Try to get intersection from localStorage
+    const storedAllowed = localStorage.getItem('wb-allowed-series')
+    const storedDtSeries = localStorage.getItem('wb-series-sales-invoice')
+    
+    let finalSeries = []
+
+    if (storedAllowed && storedDtSeries) {
+      try {
+        const allowedPrefixes = JSON.parse(storedAllowed)
+        const dtSeries = JSON.parse(storedDtSeries)
+        if (Array.isArray(allowedPrefixes) && Array.isArray(dtSeries)) {
+          finalSeries = dtSeries.filter(s => {
+            const prefix = (s || '').split('.')[0]
+            return allowedPrefixes.includes(prefix)
+          })
+        }
+      } catch (e) {
+        console.warn('[CashierDesk] Local series parsing failed:', e)
+      }
+    }
+
+    // 2. If intersection empty or not possible, fallback to backend
+    if (!finalSeries.length) {
+      const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' })
+      finalSeries = res.allowed_series || []
+    }
+
+    availableSeries.value = finalSeries
     if (availableSeries.value.length === 1 && !sidebarSeries.value) {
       sidebarSeries.value = availableSeries.value[0]
       loadInvoices()
