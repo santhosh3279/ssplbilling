@@ -1096,8 +1096,7 @@ async function handleSave() {
 }
 
 function handleDiscountPctKeydown(e) {
-  if (e.key === 'Enter') { e.preventDefault(); invoiceTemplateRef.value?.focusDiscountAmt() }
-  else if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
+  if (e.key === 'Enter' || e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
 }
 
 function handleModify() {
