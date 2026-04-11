@@ -1362,6 +1362,18 @@ function onEditCodeInput(rowIdx) {
     quickSearchResults.value = searchItemsInCache(code)
     quickSearchAnchor.value = editCodeInput.value
     editQuickSearchRowIdx.value = rowIdx
+
+    // Auto-select on exact barcode match
+    const exactMatch = quickSearchResults.value.find(i => 
+      i.barcodes && i.barcodes.split(',').some(b => b.trim() === code)
+    )
+    if (exactMatch) {
+      applyItemToRow(rowIdx, exactMatch)
+      quickSearchResults.value = []
+      setTimeout(() => {
+        focusEditField('qty', rowIdx)
+      }, 400)
+    }
   } else {
     quickSearchResults.value = []
     editQuickSearchRowIdx.value = null
@@ -1556,6 +1568,18 @@ function onNewCodeInput() {
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code)
     quickSearchAnchor.value = newCodeInput.value
+
+    // Auto-select on exact barcode match
+    const exactMatch = quickSearchResults.value.find(i => 
+      i.barcodes && i.barcodes.split(',').some(b => b.trim() === code)
+    )
+    if (exactMatch) {
+      onQuickSearchSelect(exactMatch)
+      setTimeout(() => {
+        pendingQtyInput.value?.focus()
+        pendingQtyInput.value?.select()
+      }, 400)
+    }
   } else {
     quickSearchResults.value = []
   }
