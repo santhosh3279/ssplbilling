@@ -601,7 +601,6 @@ function getTodayIST() {
 const filterDate = ref(getTodayIST())
 const postingDate = ref(getTodayIST())
 const searchQuery = ref('')
-const showUnpaid = ref(false)
 const sidebarSeries = ref([])
 const showSeriesDropdown = ref(false)
 const availableSeries = ref([])
@@ -785,7 +784,7 @@ async function checkDayOpening() {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, showUnpaid.value, sidebarSeries.value.join(','))
+    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, sidebarSeries.value.join(','))
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {

@@ -381,23 +381,22 @@ export async function fetchDashboardSettings(user = null) {
 // ─── Cashier / Draft Invoice Helpers ─────────────────────────────────────────
 
 /**
- * Fetch all Draft or Unpaid Submitted Sales Invoices, optionally filtered by query.
+ * Fetch all Draft Sales Invoices, optionally filtered by query.
  *
  * PYTHON CALL: ssplbilling.api.cashier_api.get_sales_invoices
  *
  * @param {string} [query]  Search text (invoice name or customer name)
  * @param {number} [limit]  Max rows to return (default 50)
  * @param {string} [postingDate]
- * @param {boolean} [showUnpaid]
  * @returns {Promise<Array<{name,customer,customer_name,posting_date,grand_total,outstanding_amount,docstatus}>>}
  */
-export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "", showUnpaid = false, namingSeries = "") {
+export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "", namingSeries = "") {
   return frappeGet("ssplbilling.api.cashier_api.get_sales_invoices", {
     query,
     limit,
     ...(postingDate && { posting_date: postingDate }),
     ...(namingSeries && { naming_series: namingSeries }),
-    draft_only: !showUnpaid
+    draft_only: true
   });
 }
 
