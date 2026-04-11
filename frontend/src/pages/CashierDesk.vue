@@ -125,16 +125,6 @@
                   </div>
                 </div>
               </div>
-
-              <button
-                @click="showUnpaid = !showUnpaid; loadInvoices()"
-                class="w-[35%] rounded-xl border py-1.5 text-[10px] font-black uppercase tracking-[0.1em] transition-all truncate px-2 h-9"
-                :class="showUnpaid 
-                  ? 'bg-rose-900/30 border-rose-500/50 text-[var(--color-danger)]' 
-                  : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'"
-              >
-                {{ showUnpaid ? 'Unpaid' : 'Drafts' }}
-              </button>
             </div>
           </div>
 
