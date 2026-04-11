@@ -18,42 +18,49 @@
 
         <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
           <!-- Already Allocated Section -->
-          <div v-if="invoice?.advances && invoice.advances.length > 0" class="space-y-3">
-            <h4 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Previously Allocated</h4>
-            <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-2xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 p-4">
-              <div class="flex justify-between items-start">
-                <span class="text-sm font-black text-[var(--color-info)] truncate">{{ adv.reference_name }}</span>
-                <span class="text-sm font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
+          <div v-if="invoice?.advances && invoice.advances.length > 0" class="space-y-2">
+            <h4 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] px-2">Previously Allocated</h4>
+            <div v-for="adv in invoice.advances" :key="adv.reference_name" class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/10 px-4 py-2 flex items-center justify-between gap-6">
+              <div class="flex items-center gap-4 flex-1">
+                <span class="text-sm font-black text-[var(--color-info)] min-w-[140px]">{{ adv.reference_name }}</span>
+                <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase italic">Already adjusted in this invoice</span>
               </div>
-              <p class="mt-1 text-[10px] font-bold text-[var(--color-text-muted)] italic uppercase">Amount already adjusted in this invoice</p>
+              <span class="text-lg font-black text-[var(--color-text)] font-mono">₹{{ fmt(adv.allocated_amount) }}</span>
             </div>
           </div>
 
           <!-- Unallocated Section -->
-          <div v-if="localUnallocated.length > 0" class="space-y-3">
-            <h4 class="text-[10px] font-black uppercase tracking-widest text-amber-500">Available Unallocated Cash</h4>
-            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
-              <div class="flex justify-between items-start">
-                <div class="overflow-hidden">
-                  <div class="text-sm font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
-                  <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>
-                </div>
-                <div class="text-right">
-                  <div class="text-[18px] font-black text-[var(--color-success)] font-mono whitespace-nowrap">₹{{ fmt(pe.unallocated_amount) }}</div>
-                  <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{{ pe.mode_of_payment }}</div>
+          <div v-if="localUnallocated.length > 0" class="space-y-2">
+            <h4 class="text-[10px] font-black uppercase tracking-widest text-amber-500 px-2">Available Unallocated Cash</h4>
+            <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 shadow-sm flex items-center gap-6 group hover:border-[var(--color-focus)]/50 transition-colors">
+              <!-- Name & Date -->
+              <div class="flex items-center gap-4 min-w-[220px]">
+                <div class="text-sm font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+                <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ formatDate(pe.posting_date) }}</div>
+              </div>
+
+              <!-- Mode & Balance -->
+              <div class="flex items-center gap-4 flex-1">
+                <div class="px-2 py-0.5 rounded bg-[var(--color-surface-raised)] text-[9px] font-black text-[var(--color-text-muted)] uppercase whitespace-nowrap">{{ pe.mode_of_payment }}</div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Balance</span>
+                  <span class="text-base font-black text-[var(--color-success)] font-mono">₹{{ fmt(pe.unallocated_amount) }}</span>
                 </div>
               </div>
               
-              <div class="relative group">
-                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust Amount</div>
-                <input
-                  :ref="el => allocationInputs[index] = el"
-                  type="number"
-                  v-model.number="pe.amount_to_allocate"
-                  @focus="$event.target.select()"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-32 pr-4 text-right font-mono text-base font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
-                  @keydown.enter="focusNextAllocation(index)"
-                />
+              <!-- Adjust Input -->
+              <div class="flex items-center gap-3">
+                <div class="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Adjust</div>
+                <div class="w-40 relative">
+                  <input
+                    :ref="el => allocationInputs[index] = el"
+                    type="number"
+                    v-model.number="pe.amount_to_allocate"
+                    @focus="$event.target.select()"
+                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 px-3 text-right font-mono text-base font-black text-[var(--color-info)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all outline-none"
+                    @keydown.enter="focusNextAllocation(index)"
+                  />
+                </div>
               </div>
             </div>
           </div>
