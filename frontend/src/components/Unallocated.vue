@@ -1,7 +1,7 @@
 <template>
   <transition name="fade">
     <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
-      <div class="flex w-full max-w-lg flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden max-h-[90vh]">
+      <div class="flex w-full max-w-[80vw] flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden max-h-[90vh]">
         <!-- Modal Header -->
         <div class="p-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]/30 flex items-center justify-between">
           <div>
