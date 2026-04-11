@@ -136,31 +136,41 @@
       </header>
 
       <div class="flex flex-row items-start justify-between gap-8 px-10 py-10">
-        <!-- Left: Tiles -->
-        <div class="flex-shrink-0">
-          <div class="grid grid-cols-3 gap-2">
-            <div
-              v-for="tile in tiles"
-              :key="tile.id"
-              class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
-              :style="{ width: '70mm', height: '15mm' }"
-              @click="openModule(tile.id)"
-            >
-              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
-                {{ tile.icon }}
+        <!-- Left: Bucketed Tiles -->
+        <div class="flex-shrink-0 space-y-4">
+          <template v-for="bucket in BUCKETS" :key="bucket.id">
+            <div v-if="tilesInBucket(bucket.id).length > 0">
+              <!-- Bucket Label -->
+              <div class="mb-1.5 flex items-center gap-2">
+                <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">{{ bucket.label }}</span>
+                <div class="h-px flex-1 bg-[var(--color-border)]"></div>
               </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
-                <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
+              <!-- Tile Grid -->
+              <div class="grid grid-cols-3 gap-2">
+                <div
+                  v-for="tile in tilesInBucket(bucket.id)"
+                  :key="tile.id"
+                  class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
+                  :style="{ width: '70mm', height: '15mm' }"
+                  @click="openModule(tile.id)"
+                >
+                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
+                    {{ tile.icon }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
+                    <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
+                  </div>
+                  <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-mono text-[10px] font-black text-[var(--color-text)] opacity-70">
+                    {{ tile.shortcut }}
+                  </span>
+                </div>
               </div>
-              <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-mono text-[10px] font-black text-[var(--color-text)] opacity-70">
-                {{ tile.shortcut }}
-              </span>
             </div>
-          </div>
+          </template>
         </div>
 
-        <!-- Right: Clock -->
+        <!-- Right: Clock (unchanged) -->
         <div class="flex-shrink-0 flex flex-col items-center gap-1 pt-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] backdrop-blur-sm shadow-xl">
           <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{{ todayDate }}</div>
           <div class="text-lg font-black text-[var(--color-text)] uppercase tracking-wider mb-2 drop-shadow-sm">{{ todayDay }}</div>
@@ -391,31 +401,46 @@ const todayDay = computed(() => {
 
 
 // ==================== TILES ====================
+
+const BUCKETS = [
+  { id: 'sale',     label: 'Sale' },
+  { id: 'purchase', label: 'Purchase' },
+  { id: 'ledger',   label: 'Ledger View' },
+  { id: 'sspl',     label: 'SSPL Special' },
+  { id: 'report',   label: 'Report' },
+]
+
 const allTiles = [
-  { id: 'sales', name: 'Sales Invoice', desc: 'Create sales invoices', icon: '🧾', shortcut: 'F1', tileBg: 'bg-blue-600' },
-  { id: 'quotation', name: 'Quotation Entry', desc: 'Create quotations', icon: '📄', shortcut: 'F10', tileBg: 'bg-[var(--color-highlight)]' },
-  { id: 'purchase-invoice', name: 'Purchase Invoice', desc: 'Fast purchase invoice entry', icon: '🧾', shortcut: '', tileBg: 'bg-emerald-700' },
-  { id: 'payment', name: 'Payment & Receipt Entry', desc: 'Manage payments and receipts', icon: '💸', shortcut: 'F3', tileBg: 'bg-amber-500' },
-  { id: 'purchase-submit', name: 'Purchase Desk', desc: 'Confirm & submit purchases', icon: '📥', shortcut: 'F4', tileBg: 'bg-teal-600' },
-  { id: 'cashier', name: 'Cashier Desk', desc: 'Modern payment desk', icon: '🏧', shortcut: 'F5', tileBg: 'bg-indigo-600' },
-  { id: 'Cashier-Management', name: 'Cashier Management', desc: 'Daily reconciliation & denominations', icon: '📓', shortcut: '', tileBg: 'bg-emerald-700' },
-  { id: 'ledger', name: 'Customer Ledger', desc: 'View customer account history', icon: '📋', shortcut: 'F6', tileBg: 'bg-purple-600' },
-  { id: 'purchase-order', name: 'Purchase Order', desc: 'Create & manage purchase orders', icon: '📋', shortcut: 'F7', tileBg: 'bg-sky-600' },
-  { id: 'journal-contra', name: 'Journal & Contra', desc: 'General ledger entries', icon: '📒', shortcut: 'F8', tileBg: 'bg-rose-600' },
-  { id: 'material-transfer', name: 'Material Transfer', desc: 'Transfer items between warehouses', icon: '🚚', shortcut: 'F9', tileBg: 'bg-cyan-700' },
-  { id: 'stock-reconciliation', name: 'Stock Reconciliation', desc: 'Adjust stock levels', icon: '⚖️', shortcut: '', tileBg: 'bg-[var(--color-midlight)]' },
-  { id: 'daily-report', name: 'Daily Report', desc: 'Daily operations summary', icon: '📊', shortcut: '', tileBg: 'bg-cyan-600' },
-  { id: 'pricing-rules', name: 'Pricing Rules', desc: 'Sync & manage pricing rules', icon: '🏷️', shortcut: '', tileBg: 'bg-indigo-500' },
-  { id: 'barcode-print', name: 'Print Barcodes', desc: 'Print item barcodes', icon: '🔖', shortcut: '', tileBg: 'bg-slate-600' },
-  { id: 'incentive-ledger', name: 'Incentive Ledger', desc: 'Employee incentives', icon: '🏆', shortcut: '', tileBg: 'bg-yellow-600' },
-  { id: 'loading-receipt', name: 'Loading Receipt', desc: 'Generate loading receipts', icon: '🚚', shortcut: '', tileBg: 'bg-orange-700' },
-  { id: 'reconcile', name: 'Pay Reconcile', desc: 'Reconcile payments', icon: '🔗', shortcut: '', tileBg: 'bg-gray-600' },
-  { id: 'parcel-address', name: 'Parcel Address', desc: 'Manage parcel addresses', icon: '📦', shortcut: '', tileBg: 'bg-rose-500' },
-  { id: 'gst-dummy-ledger', name: 'GST Dummy Ledger', desc: 'Manage dummy GST entries', icon: '📖', shortcut: '', tileBg: 'bg-indigo-900' },
-  { id: 'gst-ledger', name: 'GST Ledger', desc: 'View GST Quotation ledger', icon: '📜', shortcut: '', tileBg: 'bg-indigo-800' },
-  { id: 'sales-order', name: 'Sales Order', desc: 'Create & manage sales orders', icon: '📝', shortcut: '', tileBg: 'bg-orange-600' },
-  { id: 'invoice-template', name: 'Invoice Template', desc: 'Reusable invoice UI template', icon: '🎨', shortcut: '', tileBg: 'bg-slate-600' },
-  { id: 'reports', name: 'Reports', desc: 'Business reports and analytics', icon: '📊', shortcut: '', tileBg: 'bg-violet-600' },
+  // ── Sale ──
+  { id: 'sales',              bucket: 'sale',     name: 'Sales Invoice',         desc: 'Create sales invoices',                    icon: '🧾', shortcut: 'F1'  },
+  { id: 'quotation',          bucket: 'sale',     name: 'Quotation',             desc: 'Create quotations',                        icon: '📄', shortcut: 'F10' },
+  { id: 'cashier',            bucket: 'sale',     name: 'Cashier Desk',          desc: 'Modern payment desk',                      icon: '🏧', shortcut: 'F5'  },
+  { id: 'sales-order',        bucket: 'sale',     name: 'Sales Order',           desc: 'Create & manage sales orders',             icon: '📝', shortcut: ''    },
+  { id: 'Cashier-Management', bucket: 'sale',     name: 'Cashier Management',    desc: 'Daily reconciliation & denominations',     icon: '📓', shortcut: ''    },
+  // ── Purchase ──
+  { id: 'purchase-invoice',   bucket: 'purchase', name: 'Purchase Invoice',      desc: 'Fast purchase invoice entry',              icon: '🧾', shortcut: ''    },
+  { id: 'purchase-order',     bucket: 'purchase', name: 'Purchase Order',        desc: 'Create & manage purchase orders',          icon: '📋', shortcut: 'F7'  },
+  { id: 'purchase-submit',    bucket: 'purchase', name: 'Purchase Desk',         desc: 'Confirm & submit purchases',               icon: '📥', shortcut: 'F4'  },
+  // ── Ledger View ──
+  { id: 'stock-ledger',       bucket: 'ledger',   name: 'Stock',                 desc: 'View stock movement by item',              icon: '📦', shortcut: ''    },
+  { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'F6'  },
+  { id: 'gst-ledger',         bucket: 'ledger',   name: 'GST Ledger',            desc: 'View GST Quotation ledger',                icon: '📜', shortcut: ''    },
+  { id: 'incentive-ledger',   bucket: 'ledger',   name: 'Incentive Ledger',      desc: 'Employee incentives',                      icon: '🏆', shortcut: ''    },
+  // ── SSPL Special ──
+  { id: 'loading-receipt',    bucket: 'sspl',     name: 'Loading Receipt',       desc: 'Generate loading receipts',                icon: '🚚', shortcut: ''    },
+  { id: 'parcel-address',     bucket: 'sspl',     name: 'Parcel Address',        desc: 'Manage parcel addresses',                  icon: '📦', shortcut: ''    },
+  { id: 'gst-dummy-ledger',   bucket: 'sspl',     name: 'GST Dummy Ledger',      desc: 'Manage dummy GST entries',                 icon: '📖', shortcut: ''    },
+  { id: 'pricing-rules',      bucket: 'sspl',     name: 'Pricing Rule',          desc: 'Sync & manage pricing rules',              icon: '🏷️', shortcut: ''    },
+  { id: 'payment',            bucket: 'sspl',     name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
+  { id: 'journal-contra',     bucket: 'sspl',     name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
+  { id: 'material-transfer',  bucket: 'sspl',     name: 'Material Transfer',     desc: 'Transfer items between warehouses',        icon: '🔄', shortcut: 'F9'  },
+  { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
+  { id: 'reconcile',          bucket: 'sspl',     name: 'Pay Reconcile',         desc: 'Reconcile payments',                       icon: '🔗', shortcut: ''    },
+  { id: 'barcode-print',      bucket: 'sspl',     name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
+  { id: 'invoice-template',   bucket: 'sspl',     name: 'Invoice Template',      desc: 'Reusable invoice UI template',             icon: '🎨', shortcut: ''    },
+  // ── Report ──
+  { id: 'daily-report',       bucket: 'report',   name: 'Daily Report',          desc: 'Daily operations summary',                 icon: '📊', shortcut: ''    },
+  { id: 'reports',            bucket: 'report',   name: 'Reports',               desc: 'Business reports and analytics',           icon: '📈', shortcut: ''    },
 ]
 
 const tiles = computed(() => {
@@ -423,7 +448,11 @@ const tiles = computed(() => {
   return allTiles.filter(t => canAccessTile(t.id))
 })
 
-const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address']
+function tilesInBucket(bucketId) {
+  return tiles.value.filter(t => t.bucket === bucketId)
+}
+
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -455,6 +484,10 @@ function openModule(id) {
   }
   if (id === 'invoice-template') {
     showInvoiceTemplate.value = true
+    return
+  }
+  if (id === 'stock-ledger') {
+    openItemSearch()
     return
   }
   if (routeAliases[id]) {
