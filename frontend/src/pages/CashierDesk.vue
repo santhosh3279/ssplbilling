@@ -238,7 +238,6 @@
                   <tr v-for="item in previewItems" :key="item.name" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
                     <td class="px-5 py-3">
                       <div class="text-[21px] font-bold text-[var(--color-text)]">{{ item.item_name }}</div>
-                      <div class="text-[15px] font-medium text-[var(--color-text-muted)] mt-0.5">{{ item.item_code }}</div>
                     </td>
                     <td class="px-5 py-3 text-right font-mono text-[21px] font-bold text-[var(--color-text-muted)]">{{ item.qty }} {{ item.uom }}</td>
                     <td class="px-5 py-3 text-right font-mono text-[21px] font-bold text-[var(--color-text-muted)]">₹{{ fmt(item.rate) }}</td>
