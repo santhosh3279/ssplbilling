@@ -164,7 +164,7 @@
               </div>
               <div class="flex items-center justify-between mb-0.5">
                 <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-                <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : 'text-[var(--color-success)]'">{{ fmt(inv.grand_total) }}</div>
+                <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-white' : (inv.grand_total < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.grand_total) }}</div>
               </div>
               <div class="truncate text-[16.5px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
