@@ -25,7 +25,7 @@
           <!-- Print -->
           <button
             v-if="ledgerData"
-            @click="printLedger"
+            @click="showPrintModal = true"
             class="flex items-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
             title="Print ledger"
           >
@@ -200,16 +200,7 @@
 
       <!-- Table -->
       <template v-else-if="ledgerData">
-        <!-- Print-only header -->
-        <div class="hidden print:block px-6 pt-6 pb-2">
-          <div class="text-lg font-bold">General Ledger — {{ ledgerData.label }}</div>
-          <div class="text-xs text-gray-500 mt-0.5">
-            {{ ledgerData.party_type }} · {{ fmtDate(ledgerData.from_date) }} to {{ fmtDate(ledgerData.to_date) }}
-            &nbsp;|&nbsp; Opening: ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }} {{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}
-            &nbsp;|&nbsp; Closing: ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }} {{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}
-          </div>
-        </div>
-        <table id="gl-print-table" class="w-full border-collapse" :style="{ fontSize: `${(13 * zoom) / 100}px` }">
+        <table class="w-full border-collapse" :style="{ fontSize: `${(13 * zoom) / 100}px` }">
           <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
               <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
@@ -314,6 +305,14 @@
         </table>
       </template>
     </div>
+
+    <!-- Print Modal -->
+    <PrintOptionsModal
+      v-if="showPrintModal && ledgerData"
+      :invoice-name="ledgerData.party"
+      doctype="General Ledger"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
@@ -322,6 +321,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import * as XLSX from 'xlsx'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 const router = useRouter()
 
@@ -342,6 +342,7 @@ const expandedIdx = ref(null)
 // ── UI ──
 const zoom = ref(100)
 const partyInputRef = ref(null)
+const showPrintModal = ref(false)
 
 // ── Party search ──
 let searchTimer = null
@@ -446,11 +447,6 @@ function voucherBadge(type) {
   return map[type] || 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'
 }
 
-// ── Print ──
-function printLedger() {
-  window.print()
-}
-
 // ── Excel export ──
 function exportExcel() {
   if (!ledgerData.value) return
@@ -529,20 +525,4 @@ function openInErpNext(voucherType, voucherNo) {
 
 <style scoped>
 * { font-weight: 400; }
-
-@media print {
-  /* Hide everything outside the table */
-  header, .border-b.bg-\[var\(--color-surface\)\] { display: none !important; }
-
-  /* Reset page */
-  :deep(body), :global(body) { background: white !important; color: black !important; }
-
-  table { font-size: 10px !important; width: 100% !important; border-collapse: collapse !important; }
-  th, td { border: 1px solid #ccc !important; padding: 3px 6px !important; color: black !important; background: white !important; }
-  thead { display: table-header-group; }
-  button { display: none !important; }
-
-  /* Show print-only header */
-  .print\:block { display: block !important; }
-}
 </style>
