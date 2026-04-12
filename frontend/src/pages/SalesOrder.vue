@@ -2,7 +2,7 @@
   <div class="h-screen bg-[var(--color-bg)] overflow-hidden">
     <Item_Invoice_Template
       ref="invoiceTemplateRef"
-      title="SALES INVOICE"
+      title="SALES ORDER"
       title-bar-color="#b2dfb0"
       :doc-number="invoiceNo"
       :party-name="customerName"
@@ -35,6 +35,8 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
+      :show-submit-button="true"
+      :is-draft="isSaved && !isSubmitted"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -54,6 +56,7 @@
       :discount-amt="discountAmt"
       @back="goBack"
       @save="handleSave"
+      @submit="handleSalesOrderSubmit"
       @print="handlePrint"
       @discount-pct-keydown="handleDiscountPctKeydown"
       @other-entry-enter="saveBtnRef?.focus()"
@@ -442,7 +445,7 @@
 
     <Userseries
       :show="showSeriesModal"
-      doctype="Sales Invoice"
+      doctype="Sales Order"
       @close="showSeriesModal = false"
       @selected="handleSeriesSelected"
     />
@@ -495,15 +498,14 @@
 
     <ShortcutPage
       :show="showShortcutPage"
-      extra-title="Sales Invoice"
+      extra-title="Sales Order"
       :extra="[
-        { key: 'F2', desc: 'Clear bill / refresh bill number' },
-        { key: 'F3', desc: 'Focus sidebar bill list' },
+        { key: 'F2', desc: 'Clear order / refresh order number' },
+        { key: 'F3', desc: 'Focus sidebar order list' },
         { key: 'F4', desc: 'Select series' },
-        { key: 'F5', desc: 'Print invoice' },
+        { key: 'F5', desc: 'Print order' },
         { key: 'F6', desc: 'Open Custom Address' },
-        { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
-        { key: 'Insert', desc: 'Open incentive entry' },
+        { key: 'F8 / Ctrl+S', desc: 'Save order' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
       ]"
@@ -628,7 +630,7 @@ const isSubmitted = ref(false)
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
   if (isSubmitted.value) return 'Submitted'
-  return isReadOnly.value ? 'Modify Bill' : 'Update Bill'
+  return isReadOnly.value ? 'Modify Order' : 'Update Order'
 })
 
 function handleDocDateChange(days) {
@@ -640,12 +642,11 @@ function handleDocDateChange(days) {
 async function fetchRecentInvoices() {
   sidebarLoading.value = true
   try {
-    recentInvoices.value = await frappeGet('ssplbilling.api.sales.get_sales_invoices', {
+    recentInvoices.value = await frappeGet('ssplbilling.api.sales_order_api.get_sales_orders', {
       query: sidebarSearch.value,
       limit: 100,
-      posting_date: sidebarDate.value,
-      naming_series: sidebarSeries.value || '',
-      draft_only: draftOnly.value
+      transaction_date: sidebarDate.value,
+      show_submitted: !draftOnly.value
     })
   } catch (e) {
     recentInvoices.value = []
@@ -665,12 +666,12 @@ watch([sidebarDate, sidebarSearch, sidebarSeries, draftOnly], () => {
 
 async function handleSelectSidebarItem(item) {
   try {
-    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: item.name })
+    const data = await frappeGet('ssplbilling.api.sales_order_api.get_sales_order', { order_name: item.name })
 
     // Header
     invoiceNo.value = data.name
     selectedSeries.value = data.naming_series || selectedSeries.value
-    invoiceDate.value = data.posting_date || invoiceDate.value
+    invoiceDate.value = data.transaction_date || invoiceDate.value
 
     // Customer
     customerId.value = data.customer || ''
@@ -681,8 +682,6 @@ async function handleSelectSidebarItem(item) {
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
     isInclusiveTax.value = data.is_inclusive === 1
-    isReturn.value = data.is_return === 1
-    ignoreModifier.value = data.customer_rate_multiplier === 0
     if (data.cost_center) costCenter.value = data.cost_center
 
     // Charges
@@ -694,17 +693,6 @@ async function handleSelectSidebarItem(item) {
     // Discounts
     discountPct.value = data.discount_percentage || ''
     discountDirectAmt.value = data.additional_discount_amount || ''
-
-    // Custom address
-    customAddress.value = {
-      customer_name: data.custom_customer_name || '',
-      mobile_number: data.custom_mobile_number || '',
-      address_line_1: data.custom_address_line1 || '',
-      address_line_2: data.custom_address_line2 || '',
-    }
-
-    // Incentive rows
-    incentiveRows.value = data.incentive_system || []
 
     // Items — reverse-calc pre-discount rate from stored effective rate + discount%
     items.value = (data.items || []).map(i => {
@@ -737,8 +725,8 @@ async function handleSelectSidebarItem(item) {
     isSaved.value = true
     isSubmitted.value = data.docstatus === 1
   } catch (e) {
-    console.error('Failed to load invoice:', e)
-    alert('Failed to load invoice: ' + item.name)
+    console.error('Failed to load sales order:', e)
+    alert('Failed to load sales order: ' + item.name)
   }
 }
 
@@ -942,8 +930,8 @@ async function clearBill() {
 
   if (selectedSeries.value) {
     try {
-      const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
-      invoiceNo.value = next.invoice_no || 'NEW'
+      const nextNo = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: selectedSeries.value })
+      invoiceNo.value = nextNo || 'NEW'
     } catch {
       invoiceNo.value = 'NEW'
     }
@@ -1011,89 +999,73 @@ async function handleSave() {
   if (!customerId.value) { alert('Please select a customer first.'); return; }
   if (!selectedSeries.value) { alert('Please select a series first.'); return; }
 
-  const additionalCharges = []
+  const taxes = []
   const freight = parseFloat(freightEntry.value) || 0
   const loading = parseFloat(loadingEntry.value) || 0
   const packing = parseFloat(packingEntry.value) || 0
   const other = parseFloat(otherEntry.value) || 0
   if (freight !== 0) {
     const acct = localStorage.getItem('wb_freight')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: freight, description: 'Freight' })
+    if (acct) taxes.push({ charge_type: 'Actual', account_head: acct, tax_amount: freight, description: 'Freight' })
   }
   if (loading !== 0) {
     const acct = localStorage.getItem('wb-loading')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: loading, description: 'Loading' })
+    if (acct) taxes.push({ charge_type: 'Actual', account_head: acct, tax_amount: loading, description: 'Loading' })
   }
   if (packing !== 0) {
     const acct = localStorage.getItem('wb-packing')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: packing, description: 'Packing' })
+    if (acct) taxes.push({ charge_type: 'Actual', account_head: acct, tax_amount: packing, description: 'Packing' })
   }
   if (other !== 0) {
     const acct = localStorage.getItem('wb-other-charges')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: other, description: 'Other Charges' })
+    if (acct) taxes.push({ charge_type: 'Actual', account_head: acct, tax_amount: other, description: 'Other Charges' })
   }
 
+  const isUpdate = isSaved.value
+
   const payload = {
-    series: selectedSeries.value,
+    naming_series: selectedSeries.value,
     customer: customerId.value,
-    posting_date: invoiceDate.value,
-    price_list: priceList.value,
-    discount_pct: discountPct.value,
-    discount_amt: discountDirectAmt.value,
+    date: invoiceDate.value,
+    discount_percentage: parseFloat(discountPct.value) || 0,
+    additional_discount_amount: parseFloat(discountDirectAmt.value) || 0,
     tax_template: taxTemplate.value,
-    cost_center: costCenter.value,
-    warehouse: warehouse.value,
-    income_account: incomeAccount.value,
-    is_inclusive_tax: isInclusiveTax.value ? 1 : 0,
-    is_return: isReturn.value ? 1 : 0,
-    customer_rate_multiplier: ignoreModifier.value ? 0 : 1,
-    additional_charges: additionalCharges,
-    incentive_rows: incentiveRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 })),
-    place_of_supply: customerState.value || '',
-    custom_customer_name: customAddress.value.customer_name || '',
-    custom_address_line1: customAddress.value.address_line_1 || '',
-    custom_address_line2: customAddress.value.address_line_2 || '',
-    custom_mobile_number: customAddress.value.mobile_number || '',
+    is_inclusive: isInclusiveTax.value ? 1 : 0,
+    taxes,
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
       rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
-      discount: i.discount || 0,
-      is_free_item: i._is_free ? 1 : 0
+      discount_percentage: i.discount || 0,
     }))
   }
 
-  const isUpdate = isSaved.value
+  if (isUpdate) {
+    payload.order_name = invoiceNo.value
+  }
 
   try {
     let res
     if (isUpdate) {
-      res = await frappePost('ssplbilling.api.sales.update_sales_invoice', {
-        invoice_name: invoiceNo.value,
-        payload: JSON.stringify(payload)
-      })
+      res = await frappePost('ssplbilling.api.sales_order_api.update_sales_order', { data: JSON.stringify(payload) })
     } else {
-      res = await frappePost('ssplbilling.api.sales.post_sales_invoice', { payload: JSON.stringify(payload) })
+      res = await frappePost('ssplbilling.api.sales_order_api.create_sales_order', { data: JSON.stringify(payload) })
     }
 
-    if (res.status === 'success') {
-      if (isUpdate) {
-        isReadOnly.value = true
-        isSaved.value = true
-        fetchRecentInvoices()
-        pendingClearAfterPrint.value = false
-        showPrintModal.value = true
-      } else {
-        invoiceNo.value = res.name
-        fetchRecentInvoices()
+    if (res.order_name) {
+      invoiceNo.value = res.order_name
+      isReadOnly.value = true
+      isSaved.value = true
+      fetchRecentInvoices()
+      if (!isUpdate) {
         pendingClearAfterPrint.value = true
-        showPrintModal.value = true
       }
+      showPrintModal.value = true
     }
   } catch (error) {
-    console.error('Error saving invoice:', error)
-    alert(isUpdate ? 'Failed to update invoice.' : 'Failed to save invoice.')
+    console.error('Error saving sales order:', error)
+    alert(isUpdate ? 'Failed to update sales order.' : 'Failed to save sales order.')
   }
 }
 
@@ -1145,8 +1117,8 @@ async function closePrintModal() {
 
   isSaved.value = false
   try {
-    const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
-    invoiceNo.value = next.invoice_no || 'NEW'
+    const nextNo = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: selectedSeries.value })
+    invoiceNo.value = nextNo || 'NEW'
   } catch {
     invoiceNo.value = 'NEW'
   }
@@ -1167,6 +1139,21 @@ function handleIncentive() { showIncentiveModal.value = true }
 function onIncentiveSaved(rows) {
   incentiveRows.value = rows
   showIncentiveModal.value = false
+}
+
+async function handleSalesOrderSubmit() {
+  if (!isSaved.value || isSubmitted.value) return
+  try {
+    const res = await frappePost('ssplbilling.api.sales_order_api.submit_sales_order', { order_name: invoiceNo.value })
+    if (res.order_name) {
+      isSubmitted.value = true
+      isReadOnly.value = true
+      fetchRecentInvoices()
+    }
+  } catch (e) {
+    console.error('Failed to submit sales order:', e)
+    alert('Failed to submit sales order.')
+  }
 }
 
 function handleJump(targetNo) {
@@ -1836,12 +1823,10 @@ function handleCustomerSelected(cust) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series })
-    invoiceNo.value = res.invoice_no; priceList.value = res.price_list; taxTemplate.value = res.tax_template
-    if (res.warehouse) warehouse.value = res.warehouse
-    if (res.cost_center) costCenter.value = res.cost_center
+    const nextNo = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: series })
+    invoiceNo.value = nextNo || 'NEW'
     showSeriesModal.value = false; customerInitialQuery.value = ''; showCustomerModal.value = true
-  } catch (e) { console.error('[SalesInvoice] Failed to fetch series defaults:', e) }
+  } catch (e) { console.error('[SalesOrder] Failed to fetch next order no:', e) }
 }
 
 useShortcuts(salesInvoiceShortcuts({

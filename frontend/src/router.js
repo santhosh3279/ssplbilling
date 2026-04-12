@@ -18,6 +18,7 @@ import CashierManagement from './pages/CashierManagement.vue'
 import PricingRuleSync from './pages/PricingRuleSync.vue'
 import PurchaseOrder from './pages/PurchaseOrder.vue'
 import SalesOrderEntry from './pages/SalesOrderEntry.vue'
+import SalesOrder from './pages/SalesOrder.vue'
 import IncentiveLedger from './pages/IncentiveLedger.vue'
 import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
@@ -130,7 +131,7 @@ const routes = [
   {
     path: '/sales-order',
     name: 'SalesOrderEntry',
-    component: SalesOrderEntry,
+    component: SalesOrder,
   },
   {
     path: '/incentive-ledger',
