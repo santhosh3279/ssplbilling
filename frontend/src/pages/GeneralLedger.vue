@@ -21,7 +21,29 @@
           </span>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <!-- Print -->
+          <button
+            v-if="ledgerData"
+            @click="printLedger"
+            class="flex items-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
+            title="Print ledger"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print
+          </button>
+
+          <!-- Excel -->
+          <button
+            v-if="ledgerData"
+            @click="exportExcel"
+            class="flex items-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-success)] hover:text-[var(--color-success)] transition-colors"
+            title="Export to Excel"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Excel
+          </button>
+
           <!-- Zoom -->
           <div class="flex items-center rounded border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
             <button @click="zoom = Math.max(60, zoom - 10)" class="flex h-7 w-7 items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&minus;</button>
@@ -178,7 +200,16 @@
 
       <!-- Table -->
       <template v-else-if="ledgerData">
-        <table class="w-full border-collapse" :style="{ fontSize: `${(13 * zoom) / 100}px` }">
+        <!-- Print-only header -->
+        <div class="hidden print:block px-6 pt-6 pb-2">
+          <div class="text-lg font-bold">General Ledger — {{ ledgerData.label }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">
+            {{ ledgerData.party_type }} · {{ fmtDate(ledgerData.from_date) }} to {{ fmtDate(ledgerData.to_date) }}
+            &nbsp;|&nbsp; Opening: ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }} {{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}
+            &nbsp;|&nbsp; Closing: ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }} {{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}
+          </div>
+        </div>
+        <table id="gl-print-table" class="w-full border-collapse" :style="{ fontSize: `${(13 * zoom) / 100}px` }">
           <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
               <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
@@ -290,6 +321,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+import * as XLSX from 'xlsx'
 
 const router = useRouter()
 
@@ -414,6 +446,73 @@ function voucherBadge(type) {
   return map[type] || 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'
 }
 
+// ── Print ──
+function printLedger() {
+  window.print()
+}
+
+// ── Excel export ──
+function exportExcel() {
+  if (!ledgerData.value) return
+  const d = ledgerData.value
+
+  const rows = []
+
+  // Title rows
+  rows.push([`General Ledger — ${d.label}`])
+  rows.push([`${d.party_type}  |  ${fmtDate(d.from_date)} to ${fmtDate(d.to_date)}`])
+  rows.push([])
+
+  // Header
+  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Account', 'Against', 'Remarks', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
+
+  // Opening row
+  rows.push([
+    `Opening (before ${fmtDate(d.from_date)})`, '', '', '', '', '',
+    d.opening_balance > 0 ? d.opening_balance : '',
+    d.opening_balance < 0 ? Math.abs(d.opening_balance) : '',
+    Math.abs(d.opening_balance),
+  ])
+
+  // Entry rows
+  for (const e of d.entries) {
+    rows.push([
+      fmtDate(e.date),
+      e.voucher_type,
+      e.voucher_no,
+      e.account,
+      e.against,
+      e.remarks,
+      e.debit || '',
+      e.credit || '',
+      Math.abs(e.balance),
+    ])
+  }
+
+  // Closing row
+  rows.push([])
+  rows.push([
+    'Closing Balance', '', '', '', '', '',
+    d.total_debit,
+    d.total_credit,
+    Math.abs(d.closing_balance),
+  ])
+
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+
+  // Column widths
+  ws['!cols'] = [
+    { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 28 }, { wch: 28 },
+    { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 16 },
+  ]
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'General Ledger')
+
+  const filename = `GL_${d.party}_${d.from_date}_${d.to_date}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
+
 function openInErpNext(voucherType, voucherNo) {
   const dtMap = {
     'Sales Invoice': 'sales-invoice',
@@ -430,4 +529,20 @@ function openInErpNext(voucherType, voucherNo) {
 
 <style scoped>
 * { font-weight: 400; }
+
+@media print {
+  /* Hide everything outside the table */
+  header, .border-b.bg-\[var\(--color-surface\)\] { display: none !important; }
+
+  /* Reset page */
+  :deep(body), :global(body) { background: white !important; color: black !important; }
+
+  table { font-size: 10px !important; width: 100% !important; border-collapse: collapse !important; }
+  th, td { border: 1px solid #ccc !important; padding: 3px 6px !important; color: black !important; background: white !important; }
+  thead { display: table-header-group; }
+  button { display: none !important; }
+
+  /* Show print-only header */
+  .print\:block { display: block !important; }
+}
 </style>
