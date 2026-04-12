@@ -250,6 +250,34 @@
             >Import CSV</button>
           </div>
 
+          <!-- Supplier Invoice Info -->
+          <div class="grid grid-cols-2 gap-2 border-b border-[var(--color-border)]/30 pb-3">
+            <div class="flex flex-col gap-0.5">
+              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Supp. Inv No</label>
+              <input
+                ref="supplierInvoiceNoRef"
+                v-model="supplierInvoiceNo"
+                :disabled="isReadOnly"
+                placeholder="Bill No"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
+              />
+            </div>
+            <div class="flex flex-col gap-0.5">
+              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Supp. Inv Date</label>
+              <div class="flex gap-1 items-center">
+                <button @click="handleSupplierInvoiceDateChange(-1)" :disabled="isReadOnly" class="rounded bg-[var(--color-bg)] border border-[var(--color-border)] px-2 py-0.5 text-xl hover:bg-[var(--color-midlight)] disabled:opacity-50">←</button>
+                <input
+                  ref="supplierInvoiceDateInputRef"
+                  type="date"
+                  v-model="supplierInvoiceDate"
+                  :disabled="isReadOnly"
+                  class="flex-1 min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)]"
+                />
+                <button @click="handleSupplierInvoiceDateChange(1)" :disabled="isReadOnly" class="rounded bg-[var(--color-bg)] border border-[var(--color-border)] px-2 py-0.5 text-xl hover:bg-[var(--color-midlight)] disabled:opacity-50">→</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Row 1: Price List -->
           <div class="flex flex-col gap-0.5">
             <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
@@ -551,6 +579,15 @@ const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenter
 const isInclusiveTax = ref(false)
 const isReturn = ref(false)
 
+const supplierInvoiceNo = ref('')
+const supplierInvoiceDate = ref(new Date().toISOString().split('T')[0])
+
+function handleSupplierInvoiceDateChange(days) {
+  const d = new Date(supplierInvoiceDate.value)
+  d.setDate(d.getDate() + days)
+  supplierInvoiceDate.value = d.toISOString().split('T')[0]
+}
+
 // --- Additional Charges ---
 const freightEntry = ref('')
 const packingEntry = ref('')
@@ -577,6 +614,8 @@ const priceListSelectRef = ref(null)
 const taxTemplateRef = ref(null)
 const inclusiveTaxRef = ref(null)
 const costCenterRef = ref(null)
+const supplierInvoiceNoRef = ref(null)
+const supplierInvoiceDateInputRef = ref(null)
 const showPrintModal = ref(false)
 const pendingClearAfterPrint = ref(false)
 const showJumpModal = ref(false)
@@ -646,6 +685,8 @@ async function handleSelectSidebarItem(item) {
     invoiceNo.value = data.name
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.posting_date || invoiceDate.value
+    supplierInvoiceNo.value = data.bill_no || ''
+    supplierInvoiceDate.value = data.bill_date || data.posting_date || new Date().toISOString().split('T')[0]
 
     supplierId.value = data.supplier || ''
     supplierName.value = data.supplier_name || data.customer_name || 'Select Supplier...'
@@ -900,6 +941,8 @@ async function clearBill() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
+  supplierInvoiceNo.value = ''
+  supplierInvoiceDate.value = new Date().toISOString().split('T')[0]
   incentiveRows.value = []
   clearHistory()
   invoiceNo.value = 'NEW'
@@ -937,6 +980,8 @@ function handleModifyPanelKeydown(e) {
   if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
   e.preventDefault()
   const refs = [
+    supplierInvoiceNoRef.value,
+    supplierInvoiceDateInputRef.value,
     priceListSelectRef.value,
     taxTemplateRef.value,
     inclusiveTaxRef.value,
@@ -1002,6 +1047,8 @@ async function handleSave() {
   const payload = {
     naming_series: selectedSeries.value,
     supplier: supplierId.value,
+    bill_no: supplierInvoiceNo.value,
+    bill_date: supplierInvoiceDate.value,
     date: invoiceDate.value,
     price_list: priceList.value,
     discount_percentage: discountPct.value,
@@ -1098,6 +1145,8 @@ async function closePrintModal() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
+  supplierInvoiceNo.value = ''
+  supplierInvoiceDate.value = new Date().toISOString().split('T')[0]
   incentiveRows.value = []
   clearHistory()
 

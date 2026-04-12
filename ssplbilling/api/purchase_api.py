@@ -210,6 +210,7 @@ def create_purchase_invoice(data=None, **kwargs):
     pi = frappe.new_doc("Purchase Invoice")
     pi.supplier = data["supplier"]
     pi.bill_no = data.get("bill_no")
+    pi.bill_date = data.get("bill_date")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.set_posting_time = 1
     pi.posting_time = frappe.utils.nowtime()
@@ -420,6 +421,8 @@ def get_purchase_invoice(invoice_name):
         "supplier": pi.supplier,
         "supplier_name": pi.supplier_name,
         "customer_name": pi.supplier_name,
+        "bill_no": pi.bill_no or "",
+        "bill_date": str(pi.bill_date) if pi.bill_date else "",
         "state": party_state,
         "posting_date": str(pi.posting_date),
         "naming_series": pi.naming_series or "",
@@ -479,6 +482,7 @@ def update_purchase_invoice(data=None, **kwargs):
 
     pi.is_return = data.get("is_return", 0)
     pi.bill_no = data.get("bill_no")
+    pi.bill_date = data.get("bill_date")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.set_posting_time = 1
     # Do not overwrite posting_time if it's already set on existing document,
