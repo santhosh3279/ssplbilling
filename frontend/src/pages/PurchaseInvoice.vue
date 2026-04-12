@@ -110,6 +110,7 @@
                   :disabled="isReadOnly"
                   placeholder="Bill No"
                   class="bg-transparent border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] placeholder:text-[var(--color-text-muted)] w-48"
+                  @keydown.enter.prevent="supplierInvoiceDateInputRef?.focus()"
                 />
               </div>
 
@@ -127,6 +128,7 @@
                     v-model="supplierInvoiceDate"
                     :disabled="isReadOnly"
                     class="bg-transparent border-none p-0 text-4xl font-bold text-[var(--color-text)] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)] w-56"
+                    @keydown.enter.prevent="focusBarcodeInput()"
                   />
                   <button 
                     @click="handleSupplierInvoiceDateChange(1)" 
@@ -1644,7 +1646,7 @@ function handleSupplierSelected(party) {
   }
   fetchCustomerSalesHistory(party.name)
   showSupplierModal.value = false
-  nextTick(() => { newCodeInput.value?.focus() })
+  nextTick(() => { supplierInvoiceNoRef.value?.focus() })
 }
 
 async function handleSeriesSelected(series) {
