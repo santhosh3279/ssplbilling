@@ -86,6 +86,10 @@ def create_item(data):
 		if uom_name and uom_name != stock_uom:
 			item.append("uoms", {"uom": uom_name, "conversion_factor": factor})
 
+	# Tax template
+	if data.get("item_tax_template"):
+		item.append("taxes", {"item_tax_template": data["item_tax_template"]})
+
 	# Add supplier mapping
 	if data.get("supplier"):
 		item.append("supplier_items", {

@@ -298,6 +298,25 @@ useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 const isEditMode = computed(() => !!props.editItemCode)
 
+// ── Field cache (item_group, hsn_sac, stock_uom, item_tax_template, supplier) ─
+const CACHE_KEY = 'ic-field-cache'
+
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') } catch { return {} }
+}
+
+function saveCache() {
+  const c = {
+    item_group:        form.value.item_group,
+    hsn_sac:           form.value.hsn_sac,
+    stock_uom:         form.value.stock_uom,
+    item_tax_template: form.value.item_tax_template,
+    supplier:          form.value.supplier,
+    supplier_label:    supplierSearch.value,
+  }
+  localStorage.setItem(CACHE_KEY, JSON.stringify(c))
+}
+
 async function loadForEdit(itemCode) {
   try {
     const data = await getItemForEdit(itemCode)
@@ -545,6 +564,7 @@ async function handleSubmit() {
         supplier: form.value.supplier || '',
         supplier_part_no: form.value.supplier_part_no || '',
       })
+      saveCache()
       alert(`Item ${res.item_code} updated successfully!`)
       emit('created', {
         item_code: res.item_code,
@@ -561,6 +581,7 @@ async function handleSubmit() {
         supplier: form.value.supplier || '',
         supplier_part_no: form.value.supplier_part_no || '',
       })
+      saveCache()
       alert(`Item ${res.name} created successfully!`)
       emit('created', {
         item_code: res.item_code,
@@ -579,22 +600,23 @@ async function handleSubmit() {
 }
 
 function resetForm() {
+  const cache = loadCache()
   form.value = {
     item_name: '',
     item_print_name: '',
     barcode: '',
-    item_group: metadata.value.item_groups[0]?.name || '',
-    hsn_sac: '',
-    stock_uom: 'Nos',
+    item_group:        cache.item_group        || metadata.value.item_groups[0]?.name || '',
+    hsn_sac:           cache.hsn_sac           || '',
+    stock_uom:         cache.stock_uom         || 'Nos',
+    item_tax_template: cache.item_tax_template || '',
     standard_rate: 0,
     safety_stock: 0,
-    item_tax_template: '',
-    supplier: '',
+    supplier:          cache.supplier          || '',
     supplier_part_no: '',
     uom_conversions: [],
     extra_barcodes: [],
   }
-  supplierSearch.value = ''
+  supplierSearch.value  = cache.supplier_label || ''
   supplierOptions.value = []
   isBarcodeManual.value = false
   autoBarcode.value = ''
@@ -616,6 +638,7 @@ watch(() => props.show, async (newVal) => {
 
 onMounted(async () => {
   if (props.show) {
+    if (!isEditMode.value) resetForm()
     await loadMetadata()
     if (isEditMode.value) {
       await loadForEdit(props.editItemCode)
