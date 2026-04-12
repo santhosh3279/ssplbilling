@@ -88,7 +88,7 @@ def create_item(data):
 
 	# Tax template
 	if data.get("item_tax_template"):
-		item.append("taxes", {"item_tax_template": data["item_tax_template"]})
+		item.set("taxes", [{"item_tax_template": data["item_tax_template"]}])
 
 	# Add supplier mapping
 	if data.get("supplier"):
@@ -211,9 +211,10 @@ def update_item(data):
 			item.append("uoms", {"uom": uom_name, "conversion_factor": factor})
 
 	# Update tax template
-	item.taxes = []
 	if data.get("item_tax_template"):
-		item.append("taxes", {"item_tax_template": data["item_tax_template"]})
+		item.set("taxes", [{"item_tax_template": data["item_tax_template"]}])
+	else:
+		item.set("taxes", [])
 
 	# Update supplier items (replace first entry)
 	item.supplier_items = []

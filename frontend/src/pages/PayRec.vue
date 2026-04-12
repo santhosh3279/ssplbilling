@@ -92,40 +92,40 @@
     <div class="flex-1 overflow-hidden p-6">
       <div class="h-full flex flex-col bg-[var(--color-surface)] rounded-2xl shadow-sm border border-[var(--color-border)] overflow-hidden">
         <!-- TABLE -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
-          <table class="w-full border-collapse">
-            <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-              <tr class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] text-left">
-                <th class="px-4 py-2 w-12 text-center">#</th>
-                <th class="px-2 py-2 min-w-[300px]">Ledger / Party</th>
-                <th class="px-4 py-2 w-80 text-right">Balance</th>
-                <th class="px-4 py-2 w-80 text-right">Debit (₹)</th>
-                <th class="px-4 py-2 w-80 text-right">Credit (₹)</th>
-                <th class="px-4 py-2 w-80 text-right">New Bal</th>
-                <th class="px-4 py-2 w-12"></th>
+        <div class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/5">
+          <table class="w-full border-collapse border border-[var(--color-border)] table-fixed">
+            <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b-2 border-[var(--color-border)]">
+              <tr class="text-[11px] font-black uppercase tracking-wider text-[var(--color-text-muted)] text-left">
+                <th class="px-3 py-3 w-14 text-center border-r border-[var(--color-border)]">#</th>
+                <th class="px-4 py-3 min-w-[400px] border-r border-[var(--color-border)]">Ledger / Party</th>
+                <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">Current Balance</th>
+                <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">Debit (₹)</th>
+                <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">Credit (₹)</th>
+                <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">New Balance</th>
+                <th class="px-4 py-3 w-14 border-r border-[var(--color-border)]"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-700">
+            <tbody class="bg-[var(--color-bg)]">
               <tr
                 v-for="(row, idx) in rows"
                 :key="idx"
-                class="group hover:bg-[var(--color-surface)]/40 transition-colors"
-                :class="{ 'bg-[var(--color-info)]/20': activeRowIdx === idx }"
+                class="group transition-colors border-b border-[var(--color-border)] hover:bg-slate-500/5 even:bg-slate-500/5"
+                :class="{ 'bg-[var(--color-info)]/10': activeRowIdx === idx }"
               >
-                <td class="px-4 py-0.5 text-center text-sm font-bold text-[var(--color-text-muted)]">
+                <td class="px-3 py-0 text-center text-sm font-bold text-[var(--color-text-muted)] border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/20">
                   {{ idx + 1 }}
                 </td>
-                <td class="px-2 py-0.5">
+                <td class="p-0 border-r border-[var(--color-border)] relative">
                   <div
                     :ref="el => { if (el) ledgerRefs[idx] = el }"
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-2xl font-bold cursor-pointer hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-[var(--color-info)] focus:bg-[var(--color-surface-raised)] focus:border-[var(--color-info)]"
+                    class="w-full h-[52px] px-4 flex items-center justify-between cursor-pointer group/input outline-none focus:bg-[var(--color-surface-raised)] focus:ring-inset focus:ring-2 focus:ring-[var(--color-info)] transition-all"
                     :class="row.account ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'"
                   >
                     <div class="flex items-center gap-2 truncate">
-                      <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
+                      <span class="text-xl font-black truncate">{{ row.account_name || 'Select Ledger...' }}</span>
                       <span
                         v-if="row.account && getResolvedLabel(row.account)"
                         class="shrink-0 px-2 py-0.5 rounded bg-[var(--color-info)]/20 text-[var(--color-info)] text-[10px] font-black uppercase tracking-tighter"
@@ -133,15 +133,15 @@
                         {{ getResolvedLabel(row.account) }}
                       </span>
                     </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-hover/input:text-[var(--color-info)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-hover/input:text-[var(--color-info)] opacity-0 group-hover/input:opacity-100 transition-opacity"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
-                <td class="px-2 py-0 text-right">
-                  <div v-if="row.account" class="text-2xl font-bold text-[var(--color-text-muted)] font-mono whitespace-nowrap">
+                <td class="px-4 py-0 text-right border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/10">
+                  <div v-if="row.account" class="text-xl font-bold text-[var(--color-text-muted)] font-mono whitespace-nowrap">
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
-                <td class="px-2 py-0">
+                <td class="p-0 border-r border-[var(--color-border)]">
                   <input
                     :ref="el => { if (el) debitRefs[idx] = el }"
                     v-model.number="row.debit"
@@ -151,12 +151,12 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] transition-all disabled:opacity-20"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/20 animate-blink' : 'border-transparent focus:border-[var(--color-info)]'"
+                    class="w-full h-[52px] bg-transparent px-4 text-right font-mono text-2xl font-black text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] focus:ring-inset focus:ring-2 focus:ring-[var(--color-info)] transition-all disabled:opacity-10"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-2 py-0">
+                <td class="p-0 border-r border-[var(--color-border)]">
                   <input
                     :ref="el => { if (el) creditRefs[idx] = el }"
                     v-model.number="row.credit"
@@ -166,25 +166,35 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] transition-all disabled:opacity-20"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/20 animate-blink' : 'border-transparent focus:border-[var(--color-info)]'"
+                    class="w-full h-[52px] bg-transparent px-4 text-right font-mono text-2xl font-black text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] focus:ring-inset focus:ring-2 focus:ring-[var(--color-info)] transition-all disabled:opacity-10"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-2 py-0 text-right">
-                  <div v-if="row.account" class="text-2xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">
+                <td class="px-4 py-0 text-right border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/10">
+                  <div v-if="row.account" class="text-xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
-                <td class="px-4 py-1 text-center">
+                <td class="px-0 py-0 text-center border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/5">
                   <button
                     @click="removeRow(idx)"
-                    class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors opacity-0 group-hover:opacity-100"
+                    class="w-full h-full text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
                     tabindex="-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                   </button>
                 </td>
+              </tr>
+              <!-- Empty buffer rows to give more excel feel -->
+              <tr v-for="i in 3" :key="'empty-'+i" class="border-b border-[var(--color-border)]/50 h-[52px]">
+                <td class="border-r border-[var(--color-border)]/50 bg-[var(--color-surface-raised)]/5"></td>
+                <td class="border-r border-[var(--color-border)]/50"></td>
+                <td class="border-r border-[var(--color-border)]/50"></td>
+                <td class="border-r border-[var(--color-border)]/50"></td>
+                <td class="border-r border-[var(--color-border)]/50"></td>
+                <td class="border-r border-[var(--color-border)]/50"></td>
+                <td class="border-r border-[var(--color-border)]/50"></td>
               </tr>
             </tbody>
           </table>
