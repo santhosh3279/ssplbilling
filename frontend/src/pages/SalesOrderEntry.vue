@@ -1,30 +1,30 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen flex flex-col bg-slate-900'">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-[var(--color-bg)]' : 'h-screen flex flex-col bg-[var(--color-bg)]'">
     <div class="flex h-full flex-col">
 
     <!-- Top Bar -->
-    <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5">
+    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
       <div class="flex items-center gap-3">
-        <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700" @click="handleBack">&larr; Dashboard</button>
-        <span class="text-sm text-slate-600">|</span>
-        <span class="text-sm font-semibold text-slate-200">Sales Order</span>
+        <button class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="handleBack">&larr; Dashboard</button>
+        <span class="text-sm text-[var(--color-text-muted)]">|</span>
+        <span class="text-sm font-semibold text-[var(--color-text)]">Sales Order</span>
       </div>
-      <div class="flex items-center gap-3 text-sm text-slate-400">
-        <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden mr-4">
-          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
-          <div class="flex flex-col items-center justify-center border-x border-slate-700 bg-slate-900 px-3 min-w-[50px]">
-            <span class="text-[9px] font-bold uppercase tracking-tight text-slate-500 leading-none">Zoom</span>
-            <span class="text-[11px] font-bold text-slate-300 leading-tight">{{ zoomPercent }}%</span>
+      <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
+        <div class="flex items-center rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden mr-4">
+          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&minus;</button>
+          <div class="flex flex-col items-center justify-center border-x border-[var(--color-border)] bg-[var(--color-bg)] px-3 min-w-[50px]">
+            <span class="text-[9px] font-bold uppercase tracking-tight text-[var(--color-text-muted)] leading-none">Zoom</span>
+            <span class="text-[11px] font-bold text-[var(--color-text)] leading-tight">{{ zoomPercent }}%</span>
           </div>
-          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
+          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&plus;</button>
         </div>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate rows</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next column</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> {{ billSaved ? 'New Order' : 'Back' }}</span>
-        <div class="ml-2 h-4 w-px bg-slate-700"></div>
-        <div class="flex items-center gap-1.5 font-bold text-blue-400">
-          <span class="text-[10px] text-slate-500 font-medium">HI</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Up/Down</kbd> Navigate rows</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Tab</kbd> Next column</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+S</kbd> Save</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> {{ billSaved ? 'New Order' : 'Back' }}</span>
+        <div class="ml-2 h-4 w-px bg-[var(--color-surface-raised)]"></div>
+        <div class="flex items-center gap-1.5 font-bold text-[var(--color-info)]">
+          <span class="text-[10px] text-[var(--color-text-muted)] font-medium">HI</span>
           <span class="truncate max-w-[120px] uppercase tracking-wide">{{ (session.fullName.value || 'User').split('@')[0] }}</span>
         </div>
       </div>
@@ -32,34 +32,34 @@
 
     <div class="flex flex-1 overflow-hidden">
       <!-- SIDEBAR: Sales Orders -->
-      <aside class="flex w-[15%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
-        <div class="border-b border-slate-700 bg-slate-800 p-2 text-center">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Sales Orders</div>
+      <aside class="flex w-[15%] flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden shrink-0">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-center">
+          <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Sales Orders</div>
         </div>
 
         <!-- Date Filter -->
-        <div class="flex items-center gap-1 border-b border-slate-700 p-1.5 bg-slate-900">
-          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&larr;</button>
+        <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-1.5 bg-[var(--color-bg)]">
+          <button @click="changeSidebarDate(-1)" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]">&larr;</button>
           <input
             type="date"
             v-model="sidebarDate"
-            class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
+            class="w-full bg-transparent text-xs font-bold text-[var(--color-text)] outline-none"
           />
-          <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300">&rarr;</button>
+          <button @click="changeSidebarDate(1)" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]">&rarr;</button>
         </div>
 
         <!-- Search & Filters -->
-        <div class="flex flex-col gap-1.5 border-b border-slate-700 p-2 bg-slate-800/20">
+        <div class="flex flex-col gap-1.5 border-b border-[var(--color-border)] p-2 bg-[var(--color-surface)]/20">
           <input
             type="text"
             v-model="sidebarSearch"
             placeholder="Search order/customer..."
-            class="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-[11px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           />
           <button
             @click="showSubmitted = !showSubmitted"
             class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
-            :class="showSubmitted ? 'bg-blue-900/40 border-blue-500 text-blue-300' : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'"
+            :class="showSubmitted ? 'bg-[var(--color-info)]/40 border-[var(--color-info)] text-[var(--color-info)]' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
           >
             {{ showSubmitted ? 'Showing All' : 'Drafts Only' }}
           </button>
@@ -67,62 +67,62 @@
 
         <!-- Order List -->
         <div class="flex-1 overflow-y-auto">
-          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-slate-500">Loading...</div>
-          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-slate-600 italic">No orders found</div>
+          <div v-if="sidebarLoading" class="p-4 text-center text-xs text-[var(--color-text-muted)]">Loading...</div>
+          <div v-else-if="!sidebarBills.length" class="p-4 text-center text-xs text-[var(--color-text-muted)] italic">No orders found</div>
           <div
             v-for="(inv, idx) in sidebarBills"
             :key="inv.name"
             :ref="el => setSidebarBillRef(el, idx)"
-            class="group border-b border-slate-800 bg-slate-900 p-2.5 transition-colors hover:bg-slate-800 outline-none focus:bg-slate-800 focus:ring-1 focus:ring-blue-500"
-            :class="{ 'bg-slate-800 border-l-2 border-l-blue-500': savedOrderName === inv.name }"
+            class="group border-b border-[var(--color-border)] bg-[var(--color-bg)] p-2.5 transition-colors hover:bg-[var(--color-surface)] outline-none focus:bg-[var(--color-surface)] focus:ring-1 focus:ring-[var(--color-info)]"
+            :class="{ 'bg-[var(--color-surface)] border-l-2 border-l-blue-500': savedOrderName === inv.name }"
             tabindex="0"
             @keydown.up.prevent="navigateSidebarBill(idx, -1)"
             @keydown.down.prevent="navigateSidebarBill(idx, 1)"
           >
             <div class="flex items-center justify-between gap-1 cursor-pointer" @click="loadOrder(inv.name)" @keydown.enter="loadOrder(inv.name)">
               <div class="flex items-center gap-2 truncate min-w-0">
-                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-green-500' : 'bg-blue-500'"></span>
-                <span class="truncate font-mono text-[15px] font-bold text-blue-400">{{ inv.name }}</span>
+                <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-info)]'"></span>
+                <span class="truncate font-mono text-[15px] font-bold text-[var(--color-info)]">{{ inv.name }}</span>
               </div>
               <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tighter shrink-0" :class="{
-                'bg-slate-700 text-slate-400': inv.status === 'Draft',
-                'bg-green-900/40 text-green-400': inv.status === 'To Deliver and Bill',
-                'bg-blue-900/40 text-blue-400': inv.status === 'Submitted',
-                'bg-red-900/40 text-red-400': inv.status === 'Cancelled'
+                'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]': inv.status === 'Draft',
+                'bg-[var(--color-success)]/40 text-[var(--color-success)]': inv.status === 'To Deliver and Bill',
+                'bg-[var(--color-info)]/40 text-[var(--color-info)]': inv.status === 'Submitted',
+                'bg-[var(--color-danger)]/40 text-[var(--color-danger)]': inv.status === 'Cancelled'
               }">{{ (inv.status || 'Draft')[0] }}</span>
             </div>
-            <div class="mt-0.5 truncate text-[11px] text-slate-400 cursor-pointer" @click="loadOrder(inv.name)">{{ inv.customer_name }}</div>
-            <div class="text-[20px] font-bold text-slate-200 tabular-nums cursor-pointer" @click="loadOrder(inv.name)">&#8377;{{ inv.grand_total.toFixed(0) }}</div>
+            <div class="mt-0.5 truncate text-[11px] text-[var(--color-text-muted)] cursor-pointer" @click="loadOrder(inv.name)">{{ inv.customer_name }}</div>
+            <div class="text-[20px] font-bold text-[var(--color-text)] tabular-nums cursor-pointer" @click="loadOrder(inv.name)">&#8377;{{ inv.grand_total.toFixed(0) }}</div>
             <button
               v-if="inv.docstatus === 0"
               @click.stop="submitOrder(inv.name)"
-              class="mt-1 w-full rounded border border-green-700/50 bg-green-900/20 py-0.5 text-center text-[10px] font-semibold text-green-400 hover:bg-green-900/40 transition"
+              class="mt-1 w-full rounded border border-[var(--color-success)]/50 bg-[var(--color-success)]/20 py-0.5 text-center text-[10px] font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/40 transition"
             >Submit</button>
           </div>
         </div>
       </aside>
 
       <!-- MAIN CONTENT -->
-      <div class="flex flex-1 flex-col overflow-hidden bg-slate-900">
+      <div class="flex flex-1 flex-col overflow-hidden bg-[var(--color-bg)]">
         <!-- Subheader: Series / Customer / Dates -->
-        <div class="border-b border-slate-700 bg-slate-800 px-4 py-2 shrink-0">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 shrink-0">
           <div class="flex items-center gap-6">
             <!-- Order No -->
-            <div class="flex items-center gap-2 border-l border-slate-700 pl-6">
-              <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">SO No</label>
-              <div class="text-xl font-bold text-slate-100 tabular-nums" style="font-family: 'Poppins', sans-serif">
+            <div class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">SO No</label>
+              <div class="text-xl font-bold text-[var(--color-text)] tabular-nums" style="font-family: 'Poppins', sans-serif">
                 {{ nextOrderNo }}
               </div>
             </div>
 
             <!-- Customer Section -->
-            <div class="flex-1 flex items-center gap-4 border-l border-slate-700 pl-6 overflow-hidden">
-              <label class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Customer</label>
+            <div class="flex-1 flex items-center gap-4 border-l border-[var(--color-border)] pl-6 overflow-hidden">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Customer</label>
               <div class="flex items-baseline gap-4 min-w-0">
                 <div
                   ref="customerInput"
-                  class="shrink-0 max-w-[300px] truncate text-xl font-bold transition-colors cursor-pointer outline-none hover:text-blue-400 focus:text-blue-400 leading-none"
-                  :class="customer ? 'text-slate-100' : 'text-slate-600 italic'"
+                  class="shrink-0 max-w-[300px] truncate text-xl font-bold transition-colors cursor-pointer outline-none hover:text-[var(--color-info)] focus:text-[var(--color-info)] leading-none"
+                  :class="customer ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'"
                   style="font-family: 'Poppins', sans-serif"
                   @click="openCustomerSearch"
                   tabindex="0"
@@ -132,24 +132,24 @@
                   {{ custSearch || 'Not Selected' }}
                 </div>
                 <div v-if="selectedCustomerDetails" class="flex items-center gap-3 min-w-0">
-                  <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-slate-400 font-normal leading-none">
+                  <span v-if="selectedCustomerDetails.address_line1" class="truncate max-w-[350px] text-xl text-[var(--color-text-muted)] font-normal leading-none">
                     {{ selectedCustomerDetails.address_line1 }}{{ selectedCustomerDetails.city ? ', ' + selectedCustomerDetails.city : '' }}
                   </span>
-                  <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-slate-500 font-bold leading-none">
+                  <span v-if="selectedCustomerDetails.mobile_no" class="whitespace-nowrap text-[10px] text-[var(--color-text-muted)] font-bold leading-none">
                     PH: {{ selectedCustomerDetails.mobile_no }}
                   </span>
                 </div>
               </div>
               <div v-if="selectedCustomerDetails" class="flex items-center gap-6 ml-auto mr-6">
                 <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
-                  <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Last Inv</span>
-                  <span class="text-sm text-slate-300 font-medium">
+                  <span class="text-[8px] uppercase tracking-wider text-[var(--color-text-muted)] font-bold mb-0.5">Last Inv</span>
+                  <span class="text-sm text-[var(--color-text)] font-medium">
                     {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
                   </span>
                 </div>
-                <div v-if="selectedCustomerDetails.balance !== undefined" class="flex flex-col items-end leading-none border-l border-slate-700 pl-6">
-                  <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Ledger Bal</span>
-                  <span :class="selectedCustomerDetails.balance > 0 ? 'text-green-400' : 'text-red-400'" class="text-xl font-bold tabular-nums">
+                <div v-if="selectedCustomerDetails.balance !== undefined" class="flex flex-col items-end leading-none border-l border-[var(--color-border)] pl-6">
+                  <span class="text-[8px] uppercase tracking-wider text-[var(--color-text-muted)] font-bold mb-0.5">Ledger Bal</span>
+                  <span :class="selectedCustomerDetails.balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'" class="text-xl font-bold tabular-nums">
                     &#8377;{{ Math.abs(selectedCustomerDetails.balance || 0).toFixed(2) }}
                     <span class="text-[10px] font-bold">{{ selectedCustomerDetails.balance > 0 ? 'DR' : 'CR' }}</span>
                   </span>
@@ -158,26 +158,26 @@
             </div>
 
             <!-- Order Date -->
-            <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
-              <label class="text-[10px] font-bold uppercase text-slate-500">Order Date</label>
+            <div class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Order Date</label>
               <input
                 ref="dateInput"
                 v-model="billDate"
                 type="date"
                 :disabled="billDocStatus !== 0"
-                class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
+                class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-0.5 text-xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-surface)] disabled:text-[var(--color-text-muted)] tabular-nums"
                 style="font-family: 'Poppins', sans-serif"
               />
             </div>
 
             <!-- Delivery Date -->
-            <div class="flex items-center gap-3 border-l border-slate-700 pl-6 whitespace-nowrap">
-              <label class="text-[10px] font-bold uppercase text-slate-500">Delivery</label>
+            <div class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
+              <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Delivery</label>
               <input
                 v-model="deliveryDate"
                 type="date"
                 :disabled="billDocStatus !== 0"
-                class="rounded border border-slate-600 bg-slate-900 px-2 py-0.5 text-xl font-bold text-slate-100 outline-none focus:border-blue-500 disabled:bg-slate-800 disabled:text-slate-500 tabular-nums"
+                class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-0.5 text-xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-surface)] disabled:text-[var(--color-text-muted)] tabular-nums"
                 style="font-family: 'Poppins', sans-serif"
               />
             </div>
@@ -187,20 +187,20 @@
         <!-- ITEM TABLE -->
         <div class="flex flex-[7] flex-col overflow-hidden">
           <div class="flex-1 overflow-y-auto">
-            <table class="w-full text-sm border-collapse border-l border-t border-slate-700">
+            <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]">
               <thead>
-                <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-                  <th class="w-8 border-r border-b border-slate-700 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">#</th>
-                  <th class="w-32 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Item Code</th>
-                  <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Item Name</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Qty</th>
-                  <th class="w-14 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">UOM</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Disc %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-amber-500">Disc Rate</th>
-                  <th class="w-16 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Tax %</th>
-                  <th class="w-24 border-r border-b border-slate-700 px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-300">Amount</th>
-                  <th class="w-8 border-b border-slate-700"></th>
+                <tr class="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                  <th class="w-8 border-r border-b border-[var(--color-border)] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
+                  <th class="w-32 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Item Code</th>
+                  <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
+                  <th class="w-16 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Qty</th>
+                  <th class="w-14 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">UOM</th>
+                  <th class="w-24 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Rate</th>
+                  <th class="w-16 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Disc %</th>
+                  <th class="w-24 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-warning)]">Disc Rate</th>
+                  <th class="w-16 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Tax %</th>
+                  <th class="w-24 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Amount</th>
+                  <th class="w-8 border-b border-[var(--color-border)]"></th>
                 </tr>
               </thead>
               <tbody>
@@ -209,89 +209,89 @@
                   :key="idx"
                   :ref="el => setRowRef(el, idx)"
                   tabindex="-1"
-                  class="cursor-pointer border-b border-slate-700 outline-none transition-colors"
+                  class="cursor-pointer border-b border-[var(--color-border)] outline-none transition-colors"
                   :class="{
-                    'bg-blue-900/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted,
-                    'bg-red-900/10': item.deleted,
-                    'hover:bg-slate-800/40': !item.deleted && selectedRow !== idx
+                    'bg-[var(--color-info)]/30 border-l-2 border-l-blue-500': selectedRow === idx && !item.deleted,
+                    'bg-[var(--color-danger)]/10': item.deleted,
+                    'hover:bg-[var(--color-surface)]/40': !item.deleted && selectedRow !== idx
                   }"
                   :style="{ fontSize: dynamicRowStyle.fontSize }"
                   @click="selectRow(idx)"
                   @keydown="onRowKeydown($event, idx)"
                 >
-                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-red-900/30 text-red-400' : 'bg-slate-800 text-slate-400'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span>
+                  <td class="px-3 border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full font-bold" :class="item.deleted ? 'bg-[var(--color-danger)]/30 text-[var(--color-danger)]' : 'bg-[var(--color-surface)] text-[var(--color-text-muted)]'" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">{{ idx + 1 }}</span>
                   </td>
-                  <td class="p-0 border-r border-slate-700">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
+                  <td class="p-0 border-r border-[var(--color-border)]">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="billDocStatus !== 0" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-bg)]" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="font-mono" :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-muted)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
-                  <td class="px-2 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span :class="item.deleted ? 'text-red-900/50 line-through' : 'text-slate-200'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span>
-                    <span v-if="item.deleted" class="ml-1 font-semibold text-red-500" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span>
+                  <td class="px-2 border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <span :class="item.deleted ? 'text-[var(--color-danger)]/50 line-through' : 'text-[var(--color-text)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</span>
+                    <span v-if="item.deleted" class="ml-1 font-semibold text-[var(--color-danger)]" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">DELETED</span>
                   </td>
-                  <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
+                  <td class="px-2 py-0 border-r border-[var(--color-border)] text-right">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="billDocStatus !== 0" min="1" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-[var(--color-text)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.shift.tab.prevent="focusField('code', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
-                  <td class="p-0 border-r border-slate-700">
-                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="billDocStatus !== 0" class="w-full rounded border border-transparent bg-transparent font-mono text-slate-200 outline-none focus:border-blue-500 focus:bg-slate-800 disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('qty', idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.shift.tab.prevent="focusField('code', idx)">
+                  <td class="p-0 border-r border-[var(--color-border)]">
+                    <select v-if="selectedRow === idx && !item.deleted && (item.uoms || []).length > 1" :ref="el => setRef(el, 'uom', idx)" v-model="item.uom" :disabled="billDocStatus !== 0" class="w-full rounded border border-transparent bg-transparent font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('qty', idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.shift.tab.prevent="focusField('code', idx)">
                       <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
-                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
+                    <span v-else class="px-2 font-mono" :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-muted)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</span>
                   </td>
-                  <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
+                  <td class="px-2 py-0 border-r border-[var(--color-border)] text-right">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="billDocStatus !== 0" step="0.01" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-[var(--color-text)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('discount', idx)" @keydown.tab.prevent="focusField('discount', idx)" @keydown.shift.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.rate.toFixed(2) }}</span>
                   </td>
-                  <td class="px-2 py-0 border-r border-slate-700 text-right">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-slate-200 focus:border-blue-500 focus:bg-slate-800 focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
+                  <td class="px-2 py-0 border-r border-[var(--color-border)] text-right">
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'discount', idx)" type="number" v-model.number="item.discount" :disabled="billDocStatus !== 0" step="0.5" min="0" max="100" class="w-full rounded border border-transparent bg-transparent text-right font-mono text-[var(--color-text)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] focus:outline-none disabled:cursor-not-allowed appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.shift.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="block text-right font-mono" :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.discount || 0 }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : (item.discount ? 'text-amber-400' : 'text-slate-600')" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                  <td class="px-2 text-right border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <span class="font-mono" :class="item.deleted ? 'text-[var(--color-text-muted)]' : (item.discount ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]')" :style="{ fontSize: dynamicRowStyle.fontSize }">
                       {{ item.discount ? (item.rate * (1 - item.discount / 100)).toFixed(2) : '—' }}
                     </span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="font-mono" :class="item.deleted ? 'text-slate-600' : 'text-slate-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : 0) }}</span>
+                  <td class="px-2 text-right border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <span class="font-mono" :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-muted)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ isExempted ? 0 : (item.tax_rate != null ? item.tax_rate : 0) }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700 font-mono font-semibold" :class="item.deleted ? 'text-slate-600 line-through' : 'text-slate-200'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">
+                  <td class="px-2 text-right border-r border-[var(--color-border)] font-mono font-semibold" :class="item.deleted ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-text)]'" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">
                     {{ item.deleted ? '' : (item.qty * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2) }}
                   </td>
                   <td class="px-2 text-center" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <button v-if="!item.deleted" class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400" :style="{ fontSize: dynamicRowStyle.fontSize }" @click.stop="softDelete(idx)">&times;</button>
-                    <button v-else class="rounded px-1 py-0.5 font-semibold text-blue-500 hover:bg-blue-900/30 hover:text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }" @click.stop="restoreItem(idx)">&larr;</button>
+                    <button v-if="!item.deleted" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)]" :style="{ fontSize: dynamicRowStyle.fontSize }" @click.stop="softDelete(idx)">&times;</button>
+                    <button v-else class="rounded px-1 py-0.5 font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 hover:text-[var(--color-info)]" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }" @click.stop="restoreItem(idx)">&larr;</button>
                   </td>
                 </tr>
 
                 <!-- NEW ENTRY ROW -->
-                <tr v-if="billDocStatus === 0" class="border-b border-slate-700" :class="selectedRow === -1 ? 'bg-blue-900/20' : 'bg-slate-800/30'" :style="{ fontSize: dynamicRowStyle.fontSize }">
-                  <td class="px-3 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 font-bold text-blue-400" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span>
+                <tr v-if="billDocStatus === 0" class="border-b border-[var(--color-border)]" :class="selectedRow === -1 ? 'bg-[var(--color-info)]/20' : 'bg-[var(--color-surface)]/30'" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                  <td class="px-3 border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-info)]/50 font-bold text-[var(--color-info)]" :style="{ fontSize: `${(8 * zoomPercent) / 100}px` }">+</span>
                   </td>
-                  <td class="p-0 border-r border-slate-700">
-                    <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code / Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" />
+                  <td class="p-0 border-r border-[var(--color-border)]">
+                    <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/50" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code / Barcode" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" />
                   </td>
-                  <td class="px-2 text-slate-400 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
-                  <td class="px-0 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-slate-600 bg-slate-800 text-right font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" />
+                  <td class="px-2 text-[var(--color-text-muted)] border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.item_name || '--' }}</td>
+                  <td class="px-0 text-right border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <input ref="newQtyInput" v-model.number="newQty" type="number" min="1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-right font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" @keydown.shift.tab.prevent="focusNewCode" />
                   </td>
-                  <td class="p-0 border-r border-slate-700">
-                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-slate-600 bg-slate-800 font-mono text-slate-200 outline-none focus:border-blue-500 appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusNewQty" @keydown.tab.prevent="focusNewQty" @keydown.shift.tab.prevent="focusNewCode">
+                  <td class="p-0 border-r border-[var(--color-border)]">
+                    <select v-if="(newPending.uoms || []).length > 1" ref="newUomSelect" v-model="newPending.uom" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none" style="padding:0" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusNewQty" @keydown.tab.prevent="focusNewQty" @keydown.shift.tab.prevent="focusNewCode">
                       <option v-for="u in newPending.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
                     </select>
-                    <span v-else class="px-2 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ newPending.uom || '--' }}</span>
+                    <span v-else class="px-2 text-[var(--color-text-muted)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom, fontSize: dynamicRowStyle.fontSize }">{{ newPending.uom || '--' }}</span>
                   </td>
-                  <td class="px-2 text-right border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span v-if="newPending.rate" class="font-mono text-slate-300">{{ newPending.rate.toFixed(2) }}</span>
-                    <span v-else class="text-slate-600">--</span>
+                  <td class="px-2 text-right border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <span v-if="newPending.rate" class="font-mono text-[var(--color-text)]">{{ newPending.rate.toFixed(2) }}</span>
+                    <span v-else class="text-[var(--color-text-muted)]">--</span>
                   </td>
-                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">0</td>
-                  <td class="px-2 text-right font-mono text-slate-600 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">—</td>
-                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ isExempted ? 0 : (newPending.tax_rate ?? 0) }}</td>
-                  <td class="px-2 text-right font-mono text-slate-500 border-r border-slate-700" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '--' }}</td>
-                  <td class="border-slate-700"></td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">0</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">—</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ isExempted ? 0 : (newPending.tax_rate ?? 0) }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] border-r border-[var(--color-border)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ newPending.rate ? (newQty * newPending.rate).toFixed(2) : '--' }}</td>
+                  <td class="border-[var(--color-border)]"></td>
                 </tr>
               </tbody>
             </table>
@@ -299,114 +299,114 @@
         </div>
 
         <!-- BOTTOM PANEL -->
-        <div class="flex flex-[4] border-t border-slate-700 bg-slate-900 overflow-hidden">
+        <div class="flex flex-[4] border-t border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden">
 
           <!-- Warehouse Stock Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:260px;max-width:320px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-              Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span>
+          <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:260px;max-width:320px;scrollbar-width:none">
+            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              Warehouse Stock<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-[var(--color-text-muted)]">{{ selectedItemData.item_code }}</span>
             </div>
             <table v-if="selectedItemData && selectedItemData.stock && selectedItemData.stock.length" class="w-full border-collapse text-[10px]" style="table-layout:fixed">
               <colgroup><col style="width:70%"><col style="width:30%"></colgroup>
               <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Warehouse</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Actual</th>
+                <tr class="bg-[var(--color-surface)]">
+                  <th class="px-1 py-0.5 text-left font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Warehouse</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Actual</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold border border-slate-700" :class="s.actual_qty > 20 ? 'text-green-400' : s.actual_qty > 0 ? 'text-amber-400' : 'text-red-400'">{{ s.actual_qty }}</td>
+                <tr v-for="s in selectedItemData.stock" :key="s.warehouse" class="hover:bg-[var(--color-surface)]/40">
+                  <td class="px-1 py-0.5 text-[var(--color-text-muted)] border border-[var(--color-border)] overflow-hidden text-ellipsis whitespace-nowrap" :title="s.warehouse">{{ s.warehouse }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono font-bold border border-[var(--color-border)]" :class="s.actual_qty > 20 ? 'text-[var(--color-success)]' : s.actual_qty > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'">{{ s.actual_qty }}</td>
                 </tr>
               </tbody>
             </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No stock data' : 'Select a row to see stock' }}</div>
+            <div v-else class="px-2 py-2 text-[10px] text-[var(--color-text-muted)]">{{ selectedItemData ? 'No stock data' : 'Select a row to see stock' }}</div>
           </div>
 
           <!-- Price Lists Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:170px;max-width:200px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-              Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span>
+          <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:170px;max-width:200px;scrollbar-width:none">
+            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              Price Lists<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-[var(--color-text-muted)]">{{ selectedItemData.item_code }}</span>
             </div>
             <table v-if="selectedItemData && selectedItemData.priceLists && selectedItemData.priceLists.length" class="w-full border-collapse text-[10px]">
               <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">List</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
+                <tr class="bg-[var(--color-surface)]">
+                  <th class="px-1 py-0.5 text-left font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">List</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Rate</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="pl in selectedItemData.priceLists" :key="pl.name" class="hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 text-slate-400 border border-slate-700 truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold text-amber-400 border border-slate-700 text-base">&#8377;{{ (pl.rate || 0).toFixed(2) }}</td>
+                <tr v-for="pl in selectedItemData.priceLists" :key="pl.name" class="hover:bg-[var(--color-surface)]/40">
+                  <td class="px-1 py-0.5 text-[var(--color-text-muted)] border border-[var(--color-border)] truncate max-w-[90px]" :title="pl.name">{{ pl.name }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono font-bold text-[var(--color-warning)] border border-[var(--color-border)] text-base">&#8377;{{ (pl.rate || 0).toFixed(2) }}</td>
                 </tr>
               </tbody>
             </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
+            <div v-else class="px-2 py-2 text-[10px] text-[var(--color-text-muted)]">{{ selectedItemData ? 'No price lists' : 'Select a row to see prices' }}</div>
           </div>
 
           <!-- Previous Sales Orders Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:200px;max-width:240px;scrollbar-width:none">
-            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-              Previous Orders<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-slate-600">{{ selectedItemData.item_code }}</span>
+          <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:200px;max-width:240px;scrollbar-width:none">
+            <div class="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              Previous Orders<span v-if="selectedItemData" class="ml-1 font-normal normal-case text-[var(--color-text-muted)]">{{ selectedItemData.item_code }}</span>
             </div>
             <table v-if="selectedItemData && selectedItemData.previousPurchases && selectedItemData.previousPurchases.length" class="w-full border-collapse text-[10px]">
               <thead>
-                <tr class="bg-slate-800">
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Order</th>
-                  <th class="px-1 py-0.5 text-left font-semibold text-slate-500 border border-slate-700">Date</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Rate</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Qty</th>
-                  <th class="px-1 py-0.5 text-right font-semibold text-slate-500 border border-slate-700">Disc%</th>
+                <tr class="bg-[var(--color-surface)]">
+                  <th class="px-1 py-0.5 text-left font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Order</th>
+                  <th class="px-1 py-0.5 text-left font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Date</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Rate</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Qty</th>
+                  <th class="px-1 py-0.5 text-right font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">Disc%</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="hover:bg-slate-800/40">
-                  <td class="px-1 py-0.5 font-medium text-blue-400 border border-slate-700 truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
-                  <td class="px-1 py-0.5 text-slate-500 border border-slate-700 whitespace-nowrap">{{ p.date }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono font-bold text-slate-300 border border-slate-700">&#8377;{{ p.rate.toFixed(2) }}</td>
-                  <td class="px-1 py-0.5 text-right font-mono text-slate-400 border border-slate-700">{{ p.qty }}</td>
-                  <td class="px-1 py-0.5 text-right font-bold border border-slate-700" :class="p.discount > 0 ? 'text-red-400' : 'text-slate-600'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
+                <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="hover:bg-[var(--color-surface)]/40">
+                  <td class="px-1 py-0.5 font-medium text-[var(--color-info)] border border-[var(--color-border)] truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
+                  <td class="px-1 py-0.5 text-[var(--color-text-muted)] border border-[var(--color-border)] whitespace-nowrap">{{ p.date }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono font-bold text-[var(--color-text)] border border-[var(--color-border)]">&#8377;{{ p.rate.toFixed(2) }}</td>
+                  <td class="px-1 py-0.5 text-right font-mono text-[var(--color-text-muted)] border border-[var(--color-border)]">{{ p.qty }}</td>
+                  <td class="px-1 py-0.5 text-right font-bold border border-[var(--color-border)]" :class="p.discount > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
                 </tr>
               </tbody>
             </table>
-            <div v-else class="px-2 py-2 text-[10px] text-slate-600">{{ selectedItemData ? 'No previous orders' : 'Select a row to see history' }}</div>
+            <div v-else class="px-2 py-2 text-[10px] text-[var(--color-text-muted)]">{{ selectedItemData ? 'No previous orders' : 'Select a row to see history' }}</div>
           </div>
 
           <!-- Settings Panel -->
-          <div class="flex flex-col border-r border-slate-700 bg-slate-900 overflow-y-auto scrollbar-none" style="min-width:210px;max-width:240px;scrollbar-width:none">
+          <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:210px;max-width:240px;scrollbar-width:none">
             <div class="flex flex-col gap-2 p-2">
               <div class="flex gap-1">
-                <button @click="exportItems" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Export</button>
-                <button @click="openImportModal" class="flex-1 rounded border border-slate-700 bg-slate-800 py-1 text-[10px] font-bold uppercase text-slate-400 hover:text-blue-400 hover:border-blue-600 transition-colors">Import</button>
+                <button @click="exportItems" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] py-1 text-[10px] font-bold uppercase text-[var(--color-text-muted)] hover:text-[var(--color-info)] hover:border-[var(--color-info)] transition-colors">Export</button>
+                <button @click="openImportModal" class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] py-1 text-[10px] font-bold uppercase text-[var(--color-text-muted)] hover:text-[var(--color-info)] hover:border-[var(--color-info)] transition-colors">Import</button>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Warehouse</label>
-                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                <label class="text-[9px] font-bold uppercase text-[var(--color-text-muted)]">Warehouse</label>
+                <select v-model="defaultWarehouse" disabled class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-[10px] text-[var(--color-text-muted)] outline-none cursor-not-allowed">
                   <option :value="defaultWarehouse">{{ defaultWarehouse || 'None' }}</option>
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Price List</label>
-                <select v-model="priceList" :disabled="billDocStatus !== 0" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
+                <label class="text-[9px] font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
+                <select v-model="priceList" :disabled="billDocStatus !== 0" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-[10px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-surface)]">
                   <option v-for="pl in availablePriceLists" :key="pl" :value="pl">{{ pl }}</option>
                 </select>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Tax Template</label>
-                <select v-model="taxTemplate" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-800">
+                <label class="text-[9px] font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
+                <select v-model="taxTemplate" :disabled="billDocStatus !== 0 || billSaved" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-[10px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-surface)]">
                   <option value="">None</option>
                   <option v-for="t in availableTaxTemplates" :key="t" :value="t">{{ t }}</option>
                 </select>
                 <label class="flex items-center gap-2 mt-1 cursor-pointer select-none">
-                  <input type="checkbox" v-model="isInclusiveTax" :disabled="billDocStatus !== 0 || billSaved" class="h-4 w-4 rounded border-slate-600 accent-blue-500 cursor-pointer disabled:cursor-not-allowed" />
-                  <span class="text-slate-400 text-[10px] font-bold uppercase">Inclusive Tax</span>
+                  <input type="checkbox" v-model="isInclusiveTax" :disabled="billDocStatus !== 0 || billSaved" class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-info)] cursor-pointer disabled:cursor-not-allowed" />
+                  <span class="text-[var(--color-text-muted)] text-[10px] font-bold uppercase">Inclusive Tax</span>
                 </label>
               </div>
               <div class="flex flex-col gap-0.5">
-                <label class="text-[9px] font-bold uppercase text-slate-600">Cost Center</label>
-                <select v-model="costCenter" disabled class="w-full rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-[10px] text-slate-400 outline-none cursor-not-allowed">
+                <label class="text-[9px] font-bold uppercase text-[var(--color-text-muted)]">Cost Center</label>
+                <select v-model="costCenter" disabled class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-[10px] text-[var(--color-text-muted)] outline-none cursor-not-allowed">
                   <option :value="costCenter">{{ costCenter || 'None' }}</option>
                 </select>
               </div>
@@ -414,83 +414,83 @@
           </div>
 
           <!-- Bill Summary Table -->
-          <table class="flex-1 bg-slate-800/50 border-collapse text-xs border border-slate-700 h-full" style="table-layout:fixed">
+          <table class="flex-1 bg-[var(--color-surface)]/50 border-collapse text-xs border border-[var(--color-border)] h-full" style="table-layout:fixed">
             <colgroup>
               <col style="width:21%"><col style="width:18%"><col style="width:20%"><col style="width:41%">
             </colgroup>
             <thead>
-              <tr class="bg-slate-800">
-                <th class="px-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Description</th>
-                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Entry</th>
-                <th class="px-2 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Amount</th>
-                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 border border-slate-700">Actions</th>
+              <tr class="bg-[var(--color-surface)]">
+                <th class="px-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Description</th>
+                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Entry</th>
+                <th class="px-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Amount</th>
+                <th class="px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Item Discount</td>
-                <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
-                <td class="border border-slate-700 px-2" rowspan="7">
+                <td class="px-2 text-lg text-[var(--color-text-muted)]/80 border border-[var(--color-border)]">Item Discount</td>
+                <td class="p-0 border-y border-[var(--color-border)]"></td>
+                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-2xl border border-[var(--color-border)]">-&#8377;{{ itemDiscountTotal.toFixed(2) }}</td>
+                <td class="border border-[var(--color-border)] px-2" rowspan="7">
                   <div class="flex flex-col gap-2 h-full py-2">
-                    <div class="text-[10px] text-slate-500">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Order Total</div>
-                    <div class="font-mono text-4xl font-bold text-blue-500 leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>
-                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-green-900/30 px-2 py-1 text-xs text-green-400">
+                    <div class="text-[10px] text-[var(--color-text-muted)]">{{ activeItems.length }} item{{ activeItems.length !== 1 ? 's' : '' }}{{ deletedCount > 0 ? ' (' + deletedCount + ' deleted)' : '' }}</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Order Total</div>
+                    <div class="font-mono text-4xl font-bold text-[var(--color-info)] leading-none">&#8377;{{ grandTotal.toFixed(2) }}</div>
+                    <div v-if="billSaved" class="flex items-center justify-between rounded bg-[var(--color-success)]/30 px-2 py-1 text-xs text-[var(--color-success)]">
                       <span class="font-bold">{{ savedOrderName }}</span>
                       <span class="font-semibold uppercase text-[10px]">Saved</span>
                     </div>
-                    <button v-if="billSaved && billDocStatus === 0" @click="submitOrder()" class="w-full rounded border border-green-600/50 bg-green-900/20 py-1.5 text-center text-xs font-semibold text-green-400 transition hover:bg-green-900/40">Submit Order</button>
-                    <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-amber-600/50 bg-amber-900/20 py-1.5 text-center text-xs font-semibold text-amber-400 transition hover:bg-amber-900/30">✏ Edit Order</button>
-                    <button v-else-if="!billSaved" ref="saveButton" @click="saveOrder" class="w-full rounded py-1.5 text-center text-xs font-semibold text-white transition shadow" :class="savedOrderName ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'">{{ savedOrderName ? 'Update Order' : 'Save Order (Ctrl+S)' }}</button>
+                    <button v-if="billSaved && billDocStatus === 0" @click="submitOrder()" class="w-full rounded border border-[var(--color-success)]/50 bg-[var(--color-success)]/20 py-1.5 text-center text-xs font-semibold text-[var(--color-success)] transition hover:bg-[var(--color-success)]/40">Submit Order</button>
+                    <button v-if="billSaved && billDocStatus === 0" @click="enterEditMode" class="w-full rounded border border-[var(--color-warning)]/50 bg-[var(--color-warning)]/20 py-1.5 text-center text-xs font-semibold text-[var(--color-warning)] transition hover:bg-[var(--color-warning)]/30">✏ Edit Order</button>
+                    <button v-else-if="!billSaved" ref="saveButton" @click="saveOrder" class="w-full rounded py-1.5 text-center text-xs font-semibold text-[var(--color-text-on-highlight)] transition shadow" :class="savedOrderName ? 'bg-[var(--color-supplier)] hover:bg-[var(--color-supplier)]' : 'bg-[var(--color-info)] hover:bg-[var(--color-info)]'">{{ savedOrderName ? 'Update Order' : 'Save Order (Ctrl+S)' }}</button>
                     <div class="flex gap-1">
-                      <button class="flex-1 rounded border border-red-900/50 bg-red-900/10 py-1.5 text-center text-xs font-semibold text-red-400 hover:bg-red-900/20" @click="cancelOrder">{{ billSaved ? 'New Order' : 'Cancel' }}</button>
+                      <button class="flex-1 rounded border border-[var(--color-danger)]/50 bg-[var(--color-danger)]/10 py-1.5 text-center text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/20" @click="cancelOrder">{{ billSaved ? 'New Order' : 'Cancel' }}</button>
                     </div>
                   </div>
                 </td>
               </tr>
               <tr>
-                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Subtotal</td>
-                <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono text-slate-200 text-2xl border border-slate-700">&#8377;{{ subtotal.toFixed(2) }}</td>
+                <td class="px-2 text-lg text-[var(--color-text-muted)]/80 border border-[var(--color-border)]">Subtotal</td>
+                <td class="p-0 border-y border-[var(--color-border)]"></td>
+                <td class="px-2 text-right font-mono text-[var(--color-text)] text-2xl border border-[var(--color-border)]">&#8377;{{ subtotal.toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Discount</td>
-                <td class="p-0 border-y border-slate-700">
+                <td class="px-2 text-lg text-[var(--color-text-muted)]/80 border border-[var(--color-border)]">Discount</td>
+                <td class="p-0 border-y border-[var(--color-border)]">
                   <div class="flex h-full">
-                    <div class="flex flex-1 items-center border-r border-slate-700">
-                      <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'pct'; discountDirectAmt = 0" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
-                      <span class="shrink-0 px-1 text-slate-500 text-xs">%</span>
+                    <div class="flex flex-1 items-center border-r border-[var(--color-border)]">
+                      <input ref="discountInput" type="number" v-model.number="discountPct" :disabled="billDocStatus !== 0" min="0" max="100" step="0.5" class="w-full bg-transparent text-right font-mono text-[var(--color-text)] outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'pct'; discountDirectAmt = 0" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
+                      <span class="shrink-0 px-1 text-[var(--color-text-muted)] text-xs">%</span>
                     </div>
                     <div class="flex flex-1 items-center">
-                      <span class="shrink-0 px-1 text-slate-500 text-xs">&#8377;</span>
-                      <input type="number" v-model.number="discountDirectAmt" :disabled="billDocStatus !== 0" min="0" step="0.5" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'amt'; discountPct = 0" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
+                      <span class="shrink-0 px-1 text-[var(--color-text-muted)] text-xs">&#8377;</span>
+                      <input type="number" v-model.number="discountDirectAmt" :disabled="billDocStatus !== 0" min="0" step="0.5" class="w-full bg-transparent text-right font-mono text-[var(--color-text)] outline-none appearance-none disabled:cursor-not-allowed" style="padding:0 2px" @input="discountInputMode = 'amt'; discountPct = 0" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
                     </div>
                   </div>
                 </td>
-                <td class="px-2 text-right font-mono text-red-400 text-2xl border border-slate-700">-&#8377;{{ discountAmt.toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-2xl border border-[var(--color-border)]">-&#8377;{{ discountAmt.toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Freight</td>
-                <td class="p-0 border-y border-slate-700">
-                  <input ref="freightInput" type="number" v-model.number="freightAmt" :disabled="billDocStatus !== 0" min="0" step="1" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="width:100%;height:100%;display:block;padding:0 2px" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
+                <td class="px-2 text-lg text-[var(--color-text-muted)]/80 border border-[var(--color-border)]">Freight</td>
+                <td class="p-0 border-y border-[var(--color-border)]">
+                  <input ref="freightInput" type="number" v-model.number="freightAmt" :disabled="billDocStatus !== 0" min="0" step="1" class="w-full bg-transparent text-right font-mono text-[var(--color-text)] outline-none appearance-none disabled:cursor-not-allowed" style="width:100%;height:100%;display:block;padding:0 2px" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-info)] text-2xl border border-[var(--color-border)]">+&#8377;{{ (freightAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-lg text-slate-400/80 border border-slate-700">Loading</td>
-                <td class="p-0 border-y border-slate-700">
-                  <input ref="loadingInput" type="number" v-model.number="loadingAmt" :disabled="billDocStatus !== 0" min="0" step="1" class="w-full bg-transparent text-right font-mono text-slate-200 outline-none appearance-none disabled:cursor-not-allowed" style="width:100%;height:100%;display:block;padding:0 2px" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
+                <td class="px-2 text-lg text-[var(--color-text-muted)]/80 border border-[var(--color-border)]">Loading</td>
+                <td class="p-0 border-y border-[var(--color-border)]">
+                  <input ref="loadingInput" type="number" v-model.number="loadingAmt" :disabled="billDocStatus !== 0" min="0" step="1" class="w-full bg-transparent text-right font-mono text-[var(--color-text)] outline-none appearance-none disabled:cursor-not-allowed" style="width:100%;height:100%;display:block;padding:0 2px" @keydown.enter="saveButton?.focus()" @keydown.tab.prevent="saveButton?.focus()" />
                 </td>
-                <td class="px-2 text-right font-mono text-blue-400 text-2xl border border-slate-700">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
+                <td class="px-2 text-right font-mono text-[var(--color-info)] text-2xl border border-[var(--color-border)]">+&#8377;{{ (loadingAmt || 0).toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="px-2 text-lg text-slate-200/80 font-bold border border-slate-700">Grand Total</td>
-                <td class="p-0 border-y border-slate-700"></td>
-                <td class="px-2 text-right font-mono font-bold text-blue-400 text-2xl border border-slate-700">&#8377;{{ grandTotal.toFixed(2) }}</td>
+                <td class="px-2 text-lg text-[var(--color-text)]/80 font-bold border border-[var(--color-border)]">Grand Total</td>
+                <td class="p-0 border-y border-[var(--color-border)]"></td>
+                <td class="px-2 text-right font-mono font-bold text-[var(--color-info)] text-2xl border border-[var(--color-border)]">&#8377;{{ grandTotal.toFixed(2) }}</td>
               </tr>
               <tr>
-                <td class="border border-slate-700 bg-transparent" colspan="3"></td>
+                <td class="border border-[var(--color-border)] bg-transparent" colspan="3"></td>
               </tr>
             </tbody>
           </table>
@@ -540,10 +540,10 @@
       @click.self="showSeriesDropdown = false"
       @keydown.escape.capture="showSeriesDropdown = false"
     >
-      <div class="w-[360px] overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
-        <div class="border-b border-slate-700 bg-slate-800 px-5 py-3">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Series</div>
-          <div class="mt-0.5 text-[10px] text-slate-600">↑ ↓ navigate · Enter select · 1–9 quick pick</div>
+      <div class="w-[360px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Select Series</div>
+          <div class="mt-0.5 text-[10px] text-[var(--color-text-muted)]">↑ ↓ navigate · Enter select · 1–9 quick pick</div>
         </div>
         <div class="p-3 flex flex-col gap-2">
           <button
@@ -551,21 +551,21 @@
             :key="s"
             class="flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus:outline-none"
             :class="idx === seriesHighlightIdx
-              ? 'border-blue-500 bg-blue-600/30 text-white ring-1 ring-blue-500'
+              ? 'border-[var(--color-info)] bg-[var(--color-info)]/30 text-[var(--color-text-on-highlight)] ring-1 ring-[var(--color-info)]'
               : s === billSeries
-                ? 'border-blue-700 bg-blue-900/20 text-blue-300'
-                : 'border-slate-700 bg-slate-800 text-slate-200'"
+                ? 'border-[var(--color-info)] bg-[var(--color-info)]/20 text-[var(--color-info)]'
+                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'"
             @click="selectSeries(s)"
             @mouseenter="seriesHighlightIdx = idx"
           >
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm font-black text-slate-300">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] font-mono text-sm font-black text-[var(--color-text)]">
               {{ idx + 1 }}
             </span>
             <span class="font-bold tracking-wide">{{ s }}</span>
-            <span v-if="s === billSeries" class="ml-auto text-[10px] font-bold text-blue-400">ACTIVE</span>
+            <span v-if="s === billSeries" class="ml-auto text-[10px] font-bold text-[var(--color-info)]">ACTIVE</span>
           </button>
         </div>
-        <div class="border-t border-slate-700 bg-slate-800/50 px-5 py-2 text-[10px] text-slate-600 text-center">
+        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 px-5 py-2 text-[10px] text-[var(--color-text-muted)] text-center">
           Esc to close
         </div>
       </div>
@@ -573,32 +573,32 @@
 
     <!-- IMPORT OPTIONS MODAL -->
     <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showImportModal = false">
-      <div class="w-[400px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
-        <div class="bg-blue-900/20 px-6 py-4 border-b border-blue-900/30">
-          <div class="text-xl font-bold text-slate-100">Import Items</div>
+      <div class="w-[400px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
+        <div class="bg-[var(--color-info)]/20 px-6 py-4 border-b border-[var(--color-info)]/30">
+          <div class="text-xl font-bold text-[var(--color-text)]">Import Items</div>
         </div>
         <div class="p-6">
-          <p class="text-sm text-slate-400 mb-4">Choose where to pull the Rate and Discount from:</p>
+          <p class="text-sm text-[var(--color-text-muted)] mb-4">Choose where to pull the Rate and Discount from:</p>
           <div class="flex flex-col gap-3">
             <label class="flex items-center gap-3 cursor-pointer group">
-              <input type="radio" v-model="importOption" value="Master" class="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 focus:ring-blue-500" />
+              <input type="radio" v-model="importOption" value="Master" class="w-4 h-4 text-[var(--color-info)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-info)]" />
               <div class="flex flex-col">
-                <span class="text-slate-200 font-semibold group-hover:text-blue-400">Master (Price List)</span>
-                <span class="text-[10px] text-slate-500">Pull current rates from ERPNext Price List</span>
+                <span class="text-[var(--color-text)] font-semibold group-hover:text-[var(--color-info)]">Master (Price List)</span>
+                <span class="text-[10px] text-[var(--color-text-muted)]">Pull current rates from ERPNext Price List</span>
               </div>
             </label>
             <label class="flex items-center gap-3 cursor-pointer group">
-              <input type="radio" v-model="importOption" value="File" class="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 focus:ring-blue-500" />
+              <input type="radio" v-model="importOption" value="File" class="w-4 h-4 text-[var(--color-info)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-info)]" />
               <div class="flex flex-col">
-                <span class="text-slate-200 font-semibold group-hover:text-blue-400">Import File</span>
-                <span class="text-[10px] text-slate-500">Keep rates exactly as specified in the file</span>
+                <span class="text-[var(--color-text)] font-semibold group-hover:text-[var(--color-info)]">Import File</span>
+                <span class="text-[10px] text-[var(--color-text-muted)]">Keep rates exactly as specified in the file</span>
               </div>
             </label>
           </div>
         </div>
-        <div class="flex justify-end gap-3 border-t border-slate-800 bg-slate-800/50 px-6 py-4">
-          <button @click="showImportModal = false" class="rounded-xl border border-slate-600 bg-slate-800 px-6 py-2 text-sm font-bold text-slate-300 hover:bg-slate-700 transition-all">Cancel</button>
-          <button @click="openFilePicker" class="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white hover:bg-blue-700 shadow-md transition-all">Select File</button>
+        <div class="flex justify-end gap-3 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 px-6 py-4">
+          <button @click="showImportModal = false" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all">Cancel</button>
+          <button @click="openFilePicker" class="rounded-xl bg-[var(--color-info)] px-6 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] shadow-md transition-all">Select File</button>
         </div>
       </div>
     </div>
@@ -607,25 +607,25 @@
 
     <!-- DISCARD ORDER MODAL -->
     <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
-      <div class="w-[450px] overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
-        <div class="bg-amber-900/20 px-6 py-6 flex items-center gap-4 border-b border-amber-900/30">
-          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-900/40 text-2xl text-amber-500">⚠️</div>
+      <div class="w-[450px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
+        <div class="bg-[var(--color-warning)]/20 px-6 py-6 flex items-center gap-4 border-b border-[var(--color-warning)]/30">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-warning)]/40 text-2xl text-[var(--color-warning)]">⚠️</div>
           <div>
-            <div class="text-xl font-bold text-slate-100">Discard Unsaved Order?</div>
-            <div class="text-sm text-amber-400">You have unsaved items in this order.</div>
+            <div class="text-xl font-bold text-[var(--color-text)]">Discard Unsaved Order?</div>
+            <div class="text-sm text-[var(--color-warning)]">You have unsaved items in this order.</div>
           </div>
         </div>
         <div class="p-6">
-          <p class="text-slate-400 leading-relaxed">Are you sure you want to go back to the dashboard? All unsaved changes will be permanently lost.</p>
+          <p class="text-[var(--color-text-muted)] leading-relaxed">Are you sure you want to go back to the dashboard? All unsaved changes will be permanently lost.</p>
         </div>
-        <div class="flex justify-end gap-3 border-t border-slate-800 bg-slate-800/50 px-6 py-4">
+        <div class="flex justify-end gap-3 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 px-6 py-4">
           <button
             ref="stayHereBtn"
-            class="rounded-xl border border-slate-600 bg-slate-800 px-6 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 transition-all shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2.5 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all shadow-sm focus:ring-2 focus:ring-[var(--color-info)] outline-none"
             @click="showDiscardModal = false"
           >Stay Here</button>
           <button
-            class="rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-red-700 shadow-md hover:shadow-lg transition-all"
+            class="rounded-xl bg-[var(--color-danger)] px-6 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-danger)] shadow-md hover:shadow-lg transition-all"
             @click="router.push('/')"
           >Discard & Exit</button>
         </div>

@@ -1,13 +1,13 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-    <div class="w-40 rounded-2xl bg-slate-800 p-6 shadow-2xl border-2 border-blue-500 animate-in zoom-in duration-100">
-      <div class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 text-center">Go to Row</div>
-      <div class="text-6xl font-black text-blue-400 text-center tabular-nums">
+    <div class="w-40 rounded-2xl bg-[var(--color-surface)] p-6 shadow-2xl border-2 border-[var(--color-info)] animate-in zoom-in duration-100">
+      <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2 text-center">Go to Row</div>
+      <div class="text-6xl font-black text-[var(--color-info)] text-center tabular-nums">
         {{ rowInput }}
       </div>
-      <div class="mt-4 flex justify-center gap-2 text-[10px] font-medium text-slate-400">
-        <span><kbd class="rounded border border-slate-600 px-1 bg-slate-700 text-slate-300">Enter</kbd> Jump</span>
-        <span><kbd class="rounded border border-slate-600 px-1 bg-slate-700 text-slate-300">Esc</kbd> Cancel</span>
+      <div class="mt-4 flex justify-center gap-2 text-[10px] font-medium text-[var(--color-text-muted)]">
+        <span><kbd class="rounded border border-[var(--color-border)] px-1 bg-[var(--color-surface-raised)] text-[var(--color-text)]">Enter</kbd> Jump</span>
+        <span><kbd class="rounded border border-[var(--color-border)] px-1 bg-[var(--color-surface-raised)] text-[var(--color-text)]">Esc</kbd> Cancel</span>
       </div>
     </div>
   </div>

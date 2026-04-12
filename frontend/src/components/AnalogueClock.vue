@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex items-center justify-center h-48 w-48 rounded-full border-4 border-slate-700 bg-[#F5F5DC] shadow-2xl overflow-hidden">
+  <div class="relative flex items-center justify-center h-48 w-48 rounded-full border-4 border-[var(--color-border)] bg-[#F5F5DC] shadow-2xl overflow-hidden">
     <!-- Subtle Inner Shadow Overlay -->
     <div class="absolute inset-0 rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)] pointer-events-none"></div>
 

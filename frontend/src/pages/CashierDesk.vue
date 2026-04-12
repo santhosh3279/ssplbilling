@@ -4,12 +4,12 @@
     <header class="grid grid-cols-[360px_1fr_700px] h-14 items-center border-b border-[var(--color-border)] bg-[var(--color-surface)] z-20 shrink-0 overflow-hidden">
       <!-- Col 1: App Title & Navigation -->
       <div class="flex items-center px-6 gap-4 border-r border-[var(--color-border)] h-full">
-        <button @click="$router.push('/')" class="shrink-0 flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-raised)]/50 px-2.5 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-white transition-all active:scale-95">
+        <button @click="$router.push('/')" class="shrink-0 flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-raised)]/50 px-2.5 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] transition-all active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Back
         </button>
         <div class="flex items-center gap-2 font-bold text-[var(--color-info)] truncate">
-          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-white">
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
           </div>
           <span class="text-sm font-black tracking-widest uppercase text-[var(--color-text)] truncate">Cashier Desk</span>
@@ -22,7 +22,7 @@
           <!-- Left: Bill No & Customer -->
           <div class="flex items-center gap-4 overflow-hidden">
             <h2 class="text-[21.6px] font-medium text-[var(--color-text)] leading-none truncate shrink-0">{{ selectedInvoice.name }}</h2>
-            <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded px-1.5 py-0.5 bg-green-900/30 border border-green-500/30 shrink-0">
+            <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded px-1.5 py-0.5 bg-[var(--color-success)]/30 border border-[var(--color-success)]/30 shrink-0">
               <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-success)]">Paid</span>
             </div>
             <div class="h-4 w-[1px] bg-[var(--color-border)] shrink-0"></div>
@@ -87,7 +87,7 @@
               </div>
               <button
                 @click="loadInvoices"
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-white transition-all active:scale-90"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-all active:scale-90"
                 title="Sync Bills"
               >
                 <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
@@ -170,7 +170,7 @@
                     ? 'bg-[var(--color-focus)]/50 text-[var(--color-text-on-focus)]'
                     : inv.docstatus === 0 
                       ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
-                      : (inv.outstanding_amount <= 0.01 ? 'bg-green-900/40 text-[var(--color-success)]' : 'bg-rose-900/40 text-[var(--color-danger)]')"
+                      : (inv.outstanding_amount <= 0.01 ? 'bg-[var(--color-success)]/40 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/40 text-[var(--color-danger)]')"
                 >
                   {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
                 </span>
@@ -261,15 +261,15 @@
                 <!-- Compact Reconcile Alert -->
                 <button v-if="unallocatedPayments.length > 0 && (selectedInvoice.grand_total || 0) > 0" 
                   @click="showReconcileModal = true"
-                  class="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-10 py-3 flex items-center gap-5 hover:bg-amber-500/20 transition-all group shadow-md min-w-[240px]"
+                  class="bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-2xl px-10 py-3 flex items-center gap-5 hover:bg-[var(--color-warning)]/20 transition-all group shadow-md min-w-[240px]"
                   title="Unallocated cash available to adjust"
                 >
-                  <div class="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform text-2xl font-black">
+                  <div class="h-10 w-10 rounded-xl bg-[var(--color-warning)]/20 flex items-center justify-center text-[var(--color-warning)] group-hover:scale-110 transition-transform text-2xl font-black">
                     ₹
                   </div>
                   <div class="text-left">
-                    <div class="text-[13.5px] font-black uppercase tracking-widest text-amber-500 leading-none">Unallocated</div>
-                    <div class="text-[21px] font-black text-amber-200/80 font-mono leading-none mt-1.5">₹{{ fmt(unallocatedAmountTotal) }}</div>
+                    <div class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-warning)] leading-none">Unallocated</div>
+                    <div class="text-[21px] font-black text-[var(--color-warning)]/80 font-mono leading-none mt-1.5">₹{{ fmt(unallocatedAmountTotal) }}</div>
                   </div>
                 </button>
 
@@ -300,7 +300,7 @@
               <!-- Summary Mini-Card -->
               <div class="relative rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] p-4">
                 <!-- Credit Badge -->
-                <div v-if="isCredit" class="absolute -top-2 -right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-danger)] text-white shadow-lg animate-pulse ring-4 ring-[var(--color-bg)]">
+                <div v-if="isCredit" class="absolute -top-2 -right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-danger)] text-[var(--color-text-on-highlight)] shadow-lg animate-pulse ring-4 ring-[var(--color-bg)]">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                 </div>
 
@@ -314,7 +314,7 @@
                   <div class="text-right">
                     <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Status</div>
                     <span class="inline-flex rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border"
-                      :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-[var(--color-danger)]' : 'bg-emerald-900/30 border-emerald-700 text-[var(--color-success)]'">
+                      :class="isCredit ? 'bg-[var(--color-danger)]/40 border-[var(--color-danger)] text-[var(--color-danger)]' : 'bg-[var(--color-success)]/30 border-[var(--color-success)] text-[var(--color-success)]'">
                       {{ isCredit ? 'Credit' : 'Cash' }}
                     </span>
                   </div>
@@ -341,7 +341,7 @@
                 <button
                   @click="toggleCredit(false)"
                   class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
-                  :class="!isCredit ? 'bg-emerald-900/30 border-emerald-700 text-[var(--color-success)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+                  :class="!isCredit ? 'bg-[var(--color-success)]/30 border-[var(--color-success)] text-[var(--color-success)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                   Cash Bill
@@ -349,7 +349,7 @@
                 <button
                   @click="toggleCredit(true)"
                   class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
-                  :class="isCredit ? 'bg-rose-900/40 border-rose-700 text-[var(--color-danger)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+                  :class="isCredit ? 'bg-[var(--color-danger)]/40 border-[var(--color-danger)] text-[var(--color-danger)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   Credit
@@ -389,13 +389,13 @@
                   />
                 </div>
                 <div class="group relative">
-                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-teal-400 transition-colors uppercase">{{ upiLabel }}</div>
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</div>
                   <input
                     ref="upiInput"
                     type="number"
                     v-model="payments.upi"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
@@ -415,7 +415,7 @@
                     type="number"
                     v-model="payments.credit"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-danger)] focus:ring-4 focus:ring-[var(--color-danger)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
@@ -425,14 +425,14 @@
                     type="number"
                     v-model="payments.discount"
                     @focus="$event.target.select()"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-warning)] focus:ring-4 focus:ring-amber-500/20 transition-all"
                   />
                 </div>
               </div>
 
               <!-- Credit Fields -->
               <div v-else class="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div class="rounded-xl border border-rose-800/60 bg-rose-900/20 p-4">
+                <div class="rounded-xl border border-[var(--color-danger)]/60 bg-[var(--color-danger)]/20 p-4">
                   <label class="text-[15px] font-black uppercase tracking-widest text-[var(--color-danger)] block mb-2 ml-1">Promise Date (Due Date)</label>
                   <div class="relative group">
                     <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-danger)] group-focus-within:text-[var(--color-danger)] transition-colors">
@@ -445,10 +445,10 @@
                       @input="handleDueDateInput"
                       @keydown.backspace="handleDueDateKeyDown"
                       placeholder="DDMM or DD/MM/YYYY"
-                      class="w-full rounded-2xl border border-rose-700/50 bg-[var(--color-bg)] py-5 pl-12 pr-4 text-center font-mono font-black text-[30px] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-rose-500 focus:ring-8 focus:ring-rose-500/10 transition-all outline-none"
+                      class="w-full rounded-2xl border border-[var(--color-danger)]/50 bg-[var(--color-bg)] py-5 pl-12 pr-4 text-center font-mono font-black text-[30px] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-danger)] focus:ring-8 focus:ring-[var(--color-danger)]/10 transition-all outline-none"
                     />
                   </div>
-                  <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)]/80 bg-rose-900/30 rounded-lg p-2 border border-rose-800/40">
+                  <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)]/80 bg-[var(--color-danger)]/30 rounded-lg p-2 border border-[var(--color-danger)]/40">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m5 15 7 7 7-7"/></svg>
                     Credit Ledger Posting Enabled
                   </div>
@@ -474,8 +474,8 @@
                 :disabled="!canSubmit"
                 class="group w-full rounded-xl py-4 font-black uppercase tracking-[0.2em] text-sm transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
                 :class="isCredit 
-                  ? 'bg-[var(--color-danger)] hover:bg-[var(--color-danger)] text-white shadow-lg shadow-[var(--color-danger)]/40' 
-                  : 'bg-[var(--color-success)]/70 hover:bg-[var(--color-success)]/80 text-white shadow-lg shadow-[var(--color-success)]/20'"
+                  ? 'bg-[var(--color-danger)] hover:bg-[var(--color-danger)] text-[var(--color-text-on-highlight)] shadow-lg shadow-[var(--color-danger)]/40' 
+                  : 'bg-[var(--color-success)]/70 hover:bg-[var(--color-success)]/80 text-[var(--color-text-on-highlight)] shadow-lg shadow-[var(--color-success)]/20'"
               >
                 <div v-if="isSubmitting" class="flex items-center justify-center gap-3">
                   <div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -505,7 +505,7 @@
           </button>
         </div>
         <div class="p-6 space-y-5">
-          <div class="rounded-lg bg-sky-900/30 border border-sky-700/50 p-3">
+          <div class="rounded-lg bg-[var(--color-info)]/30 border border-[var(--color-info)]/50 p-3">
             <p class="text-[11px] font-bold text-[var(--color-info)] leading-relaxed uppercase tracking-wider">Enter the authorization or reference number for the card payment.</p>
           </div>
           <input
@@ -523,7 +523,7 @@
             <button
               @click="confirmCardRef"
               :disabled="!cardRefNo"
-              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-white bg-[var(--color-info)] hover:bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] hover:bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >Confirm & Post</button>
           </div>
         </div>
@@ -533,9 +533,9 @@
     <!-- DAY OPENING CHECK MODAL -->
     <transition name="fade">
       <div v-if="showOpeningRequiredModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
-        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-amber-700/50 bg-[var(--color-surface)] shadow-2xl animate-in zoom-in-95 duration-200">
-          <div class="bg-amber-900/30 border-b border-amber-700/40 p-6 flex flex-col items-center text-center">
-            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-900/50 text-[var(--color-warning)] border border-amber-700/50">
+        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--color-warning)]/50 bg-[var(--color-surface)] shadow-2xl animate-in zoom-in-95 duration-200">
+          <div class="bg-[var(--color-warning)]/30 border-b border-[var(--color-warning)]/40 p-6 flex flex-col items-center text-center">
+            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-warning)]/50 text-[var(--color-warning)] border border-[var(--color-warning)]/50">
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
             </div>
             <h2 class="mb-2 text-lg font-black text-[var(--color-text)] uppercase tracking-tight">Day Opening Required</h2>
@@ -546,7 +546,7 @@
           <div class="flex flex-col gap-2 p-5">
             <button
               @click="$router.push('/Cashier-Management')"
-              class="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-highlight)] px-4 py-3 text-sm font-bold text-white hover:bg-[var(--color-highlight)] active:scale-[0.98] transition-all"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-highlight)] px-4 py-3 text-sm font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-highlight)] active:scale-[0.98] transition-all"
             >
               <span>Record Opening Now</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>

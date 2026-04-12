@@ -1,27 +1,27 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-900">
+  <div class="flex min-h-screen items-center justify-center bg-[var(--color-bg)]">
     <div class="w-full max-w-sm">
       <!-- Logo -->
       <div class="mb-8 text-center">
-        <div class="mb-2 text-3xl font-bold text-slate-100">SSPL<span class="font-light text-slate-400">Billing</span></div>
-        <p class="text-sm text-slate-500">Sign in to your account</p>
+        <div class="mb-2 text-3xl font-bold text-[var(--color-text)]">SSPL<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
+        <p class="text-sm text-[var(--color-text-muted)]">Sign in to your account</p>
       </div>
 
       <!-- Login Card -->
-      <div class="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-sm">
+      <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
         <!-- Error -->
-        <div v-if="errorMsg" class="mb-4 rounded-lg bg-red-900/20 px-4 py-2.5 text-sm text-red-400">
+        <div v-if="errorMsg" class="mb-4 rounded-lg bg-[var(--color-danger)]/20 px-4 py-2.5 text-sm text-[var(--color-danger)]">
           {{ errorMsg }}
         </div>
 
         <!-- Email -->
         <div class="mb-4 flex flex-col gap-1.5">
-          <label class="text-xs font-semibold text-slate-400">Email or Username</label>
+          <label class="text-xs font-semibold text-[var(--color-text-muted)]">Email or Username</label>
           <input
             ref="emailInput"
             v-model="email"
             type="text"
-            class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 outline-none transition focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500"
+            class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-info)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)]"
             placeholder="user@company.com"
             @keydown.enter="focusPassword"
           />
@@ -29,12 +29,12 @@
 
         <!-- Password -->
         <div class="mb-6 flex flex-col gap-1.5">
-          <label class="text-xs font-semibold text-slate-400">Password</label>
+          <label class="text-xs font-semibold text-[var(--color-text-muted)]">Password</label>
           <input
             ref="passwordInput"
             v-model="password"
             type="password"
-            class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 outline-none transition focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500"
+            class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-info)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)]"
             placeholder="••••••••"
             @keydown.enter="handleLogin"
           />
@@ -42,7 +42,7 @@
 
         <!-- Login Button -->
         <button
-          class="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          class="w-full rounded-lg bg-[var(--color-info)] py-2.5 text-sm font-semibold text-[var(--color-text-on-highlight)] transition hover:bg-[var(--color-info)] disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="loading"
           @click="handleLogin"
         >
@@ -50,7 +50,7 @@
         </button>
       </div>
 
-      <p class="mt-6 text-center text-xs text-slate-500">
+      <p class="mt-6 text-center text-xs text-[var(--color-text-muted)]">
         Powered by ERPNext
       </p>
     </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-slate-900 overflow-hidden">
+  <div class="h-screen bg-[var(--color-bg)] overflow-hidden">
     <Item_Invoice_Template
       ref="invoiceTemplateRef"
       title="SALES INVOICE"
@@ -63,7 +63,7 @@
     >
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
-        <span class="text-blue-400 font-bold uppercase tracking-widest">{{ session.fullName.value || session.user.value }}</span>
+        <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">{{ session.fullName.value || session.user.value }}</span>
       </template>
 
       <template #row="{ item, index }">
@@ -73,16 +73,16 @@
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
             'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
-            'bg-green-900/20': item._is_free && !item.deleted,
-            'opacity-40 bg-red-900/10 grayscale-[0.5]': item.deleted,
+            'bg-[var(--color-success)]/20': item._is_free && !item.deleted,
+            'opacity-40 bg-[var(--color-danger)]/10 grayscale-[0.5]': item.deleted,
             'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
           }"
           @focus="!isReadOnly && (selectedRowIdx = index)"
           @keydown="!isReadOnly && handleRowKeydown($event, index)"
         >
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-black' : 'text-[var(--color-text-muted)]'">
-            <span v-if="item._cp_applied" class="absolute left-0 inset-y-0 w-[3px] bg-blue-500 rounded-r"></span>
-            <span v-if="item.deleted" class="text-[10px] bg-red-600 text-white px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
+            <span v-if="item._cp_applied" class="absolute left-0 inset-y-0 w-[3px] bg-[var(--color-info)] rounded-r"></span>
+            <span v-if="item.deleted" class="text-[10px] bg-[var(--color-danger)] text-[var(--color-text-on-highlight)] px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
             {{ index + 1 }}
           </td>
 
@@ -100,7 +100,7 @@
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
             {{ item.item_name }}
-            <span v-if="item._is_free" class="ml-1 rounded bg-green-600 text-white px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
+            <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
           </td>
 
           <!-- qty -->
@@ -168,7 +168,7 @@
           <td class="px-2 py-1 text-center">
             <button
               class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
-              :class="item.deleted ? 'text-red-500 hover:text-red-400 font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-red-700' : 'text-[var(--color-text-muted)]')"
+              :class="item.deleted ? 'text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
               @click.stop="selectedRowIdx = index; deleteItem(index)"
             >
               {{ item.deleted ? 'Undo' : '×' }}
@@ -180,13 +180,13 @@
       <template #bottom-left>
         <div class="flex flex-col h-full overflow-hidden">
           <div class="flex-1 overflow-y-auto px-4 pb-4 pt-2 scrollbar-none">
-            <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-slate-400 italic">
+            <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-[var(--color-text-muted)] italic">
               Scan an item or select a row to see history.
             </div>
-            <div v-else-if="historyLoading" class="text-sm text-blue-400 animate-pulse">
+            <div v-else-if="historyLoading" class="text-sm text-[var(--color-info)] animate-pulse">
               Fetching history...
             </div>
-            <div v-else-if="!selectedItemHistory.length" class="text-sm text-slate-500 italic">
+            <div v-else-if="!selectedItemHistory.length" class="text-sm text-[var(--color-text-muted)] italic">
               No previous history found for this customer.
             </div>
             <div v-else class="max-h-[110px] overflow-y-auto mb-4 custom-scrollbar">
@@ -215,11 +215,11 @@
             <!-- Warehouse Stock -->
             <div v-if="activeItemCode && itemStock.length" class="border-t border-[var(--color-border)] pt-2">
               <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Available Stock:</div>
-              <div v-if="stockLoading" class="text-sm text-blue-400 animate-pulse">Updating stock...</div>
+              <div v-if="stockLoading" class="text-sm text-[var(--color-info)] animate-pulse">Updating stock...</div>
               <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
                 <div v-for="s in itemStock" :key="s.warehouse" class="flex justify-between items-center text-lg font-mono leading-none">
                   <span class="text-[var(--color-text-muted)] truncate mr-2">{{ s.warehouse.split(' - ')[0] }}</span>
-                  <span :class="s.qty > 0 ? 'text-green-400' : 'text-red-400'" class="font-bold">{{ s.qty }}</span>
+                  <span :class="s.qty > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'" class="font-bold">{{ s.qty }}</span>
                 </div>
               </div>
             </div>
@@ -227,7 +227,7 @@
             <!-- Available Prices -->
             <div v-if="activeItemCode && itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2">
               <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Available Prices:</div>
-              <div v-if="pricesLoading" class="text-sm text-blue-400 animate-pulse">Updating prices...</div>
+              <div v-if="pricesLoading" class="text-sm text-[var(--color-info)] animate-pulse">Updating prices...</div>
               <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
                 <div v-for="p in itemPrices" :key="p.price_list" class="flex justify-between items-center text-lg font-mono leading-none">
                   <span class="text-[var(--color-text-muted)] truncate mr-2">{{ p.price_list }}</span>
@@ -235,7 +235,7 @@
                 </div>
               </div>
             </div>
-            <div v-else-if="activeItemCode && !historyLoading && !pricesLoading && !itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2 text-sm text-slate-500 italic">
+            <div v-else-if="activeItemCode && !historyLoading && !pricesLoading && !itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2 text-sm text-[var(--color-text-muted)] italic">
               No additional price lists available.
             </div>
           </div>
@@ -340,12 +340,12 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted ? 'bg-slate-700/40 text-slate-500 cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-green-600/70'">{{ saveButtonText }}</button>
-            <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-slate-700/40 bg-slate-800/30 text-slate-600 cursor-not-allowed'">Print</button>
+            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]/70'">{{ saveButtonText }}</button>
+            <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
-            <button @click="handleIncentive" :disabled="isSubmitted" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isSubmitted ? 'border-slate-700/40 bg-slate-800/20 text-slate-500 cursor-not-allowed' : 'border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]'">Incentive</button>
+            <button @click="handleIncentive" :disabled="isSubmitted" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isSubmitted ? 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/20 text-[var(--color-text-muted)] cursor-not-allowed' : 'border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]'">Incentive</button>
           </div>
         </div>
       </template>

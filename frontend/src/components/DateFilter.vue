@@ -1,19 +1,19 @@
 <template>
   <div v-if="show" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/70" @click.self="$emit('close')">
-    <div class="w-[400px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
-      <div class="border-b border-slate-700 px-5 py-4 bg-slate-800">
-        <div class="text-xl font-bold text-slate-200">Select Date Range</div>
-        <div class="text-sm text-slate-400">
+    <div class="w-[400px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
+      <div class="border-b border-[var(--color-border)] px-5 py-4 bg-[var(--color-surface)]">
+        <div class="text-xl font-bold text-[var(--color-text)]">Select Date Range</div>
+        <div class="text-sm text-[var(--color-text-muted)]">
           {{ customerName }}
         </div>
       </div>
       <div class="flex flex-col gap-4 px-6 py-5">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">From Date (DD/MM/YYYY)</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">From Date (DD/MM/YYYY)</label>
           <input
             ref="fromDateInput"
             v-model="dateData.fromDisplay"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-xl font-mono text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xl font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="DD/MM/YYYY"
             maxlength="10"
             @input="e => onInput(e, 'from')"
@@ -24,11 +24,11 @@
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">To Date (DD/MM/YYYY)</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">To Date (DD/MM/YYYY)</label>
           <input
             ref="toDateInput"
             v-model="dateData.toDisplay"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-xl font-mono text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xl font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="DD/MM/YYYY"
             maxlength="10"
             @input="e => onInput(e, 'to')"
@@ -39,10 +39,10 @@
           />
         </div>
       </div>
-      <div class="flex justify-end gap-3 border-t border-slate-700 px-6 py-4 bg-slate-800">
-        <button class="rounded border border-slate-600 bg-slate-700 px-5 py-2 font-semibold text-slate-300 hover:bg-slate-600" @click="$emit('close')">Cancel</button>
-        <button class="rounded bg-blue-600 px-6 py-2 font-bold text-white shadow-md active:scale-95 hover:bg-blue-700" @click="confirmDate">
-          Confirm <kbd class="ml-1 rounded border border-blue-500 bg-blue-500 px-1.5 py-0.5 font-mono text-xs">Enter</kbd>
+      <div class="flex justify-end gap-3 border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
+        <button class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2 font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]" @click="$emit('close')">Cancel</button>
+        <button class="rounded bg-[var(--color-info)] px-6 py-2 font-bold text-[var(--color-text-on-highlight)] shadow-md active:scale-95 hover:bg-[var(--color-info)]" @click="confirmDate">
+          Confirm <kbd class="ml-1 rounded border border-[var(--color-info)] bg-[var(--color-info)] px-1.5 py-0.5 font-mono text-xs">Enter</kbd>
         </button>
       </div>
     </div>

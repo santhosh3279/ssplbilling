@@ -3,16 +3,16 @@
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
     @click.self="$emit('close')"
   >
-    <div class="w-[540px] overflow-hidden rounded-2xl bg-slate-800 shadow-2xl border border-slate-600">
+    <div class="w-[540px] overflow-hidden rounded-2xl bg-[var(--color-surface)] shadow-2xl border border-[var(--color-border)]">
 
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-slate-700 px-6 py-4">
+      <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
         <div>
-          <div class="text-[10px] font-bold uppercase tracking-widest text-slate-500">{{ title }}</div>
-          <div class="text-base font-bold text-white">BOX Cash Entry</div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{{ title }}</div>
+          <div class="text-base font-bold text-[var(--color-text-on-highlight)]">BOX Cash Entry</div>
         </div>
         <button
-          class="rounded-lg border border-slate-600 bg-slate-700 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-slate-600"
+          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)]"
           @click="$emit('close')"
         >
           ✕ Close
@@ -25,20 +25,20 @@
         <!-- Row 1: Date (editable) + Opening/Closing (read-only) -->
         <div class="grid grid-cols-2 gap-4">
           <div class="relative">
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</label>
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</label>
             <div class="flex items-center gap-2">
               <input
                 type="text"
                 v-model="displayDate"
                 @blur="onDisplayDateBlur"
                 @keydown.enter.prevent="onDisplayDateBlur"
-                class="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-300 font-mono focus:border-blue-500 outline-none"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm text-[var(--color-text)] font-mono focus:border-[var(--color-info)] outline-none"
                 placeholder="DD-MMM-YYYY"
               />
               <button
                 type="button"
                 @click="datePicker?.showPicker()"
-                class="flex h-9 w-10 items-center justify-center rounded-lg border border-slate-600 bg-slate-700 text-slate-400 transition hover:bg-slate-600 hover:text-white"
+                class="flex h-9 w-10 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]"
                 title="Open Calendar"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -52,8 +52,8 @@
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Opening or Closing</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2.5 text-sm text-slate-300 font-mono">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Opening or Closing</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2.5 text-sm text-[var(--color-text)] font-mono">
               {{ form.opening_or_closing }}
             </div>
           </div>
@@ -62,15 +62,15 @@
         <!-- Row 2: Cash Account + User -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Cash Account</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm font-mono"
-                 :class="form.cash ? 'text-slate-200' : 'text-slate-500 italic'">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Account</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm font-mono"
+                 :class="form.cash ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'">
               {{ form.cash || (loadingSettings ? 'Loading…' : 'Not configured') }}
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">User</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-300 font-mono">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">User</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm text-[var(--color-text)] font-mono">
               {{ form.user }}
             </div>
           </div>
@@ -79,17 +79,17 @@
         <!-- Row 3: Cash Ledger Balance (read-only) + Difference (computed) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Cash Ledger Balance</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm font-mono"
-                 :class="loadingBalance ? 'text-slate-500 italic' : (ledgerBalance >= 0 ? 'text-emerald-400' : 'text-red-400')">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Ledger Balance</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm font-mono"
+                 :class="loadingBalance ? 'text-[var(--color-text-muted)] italic' : (ledgerBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
               {{ loadingBalance ? 'Fetching…' : Math.abs(ledgerBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
               <span v-if="!loadingBalance" class="text-[10px] ml-1">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Difference</label>
-            <div class="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm font-mono"
-                 :class="difference >= 0 ? 'text-emerald-400' : 'text-red-400'">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Difference</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm font-mono"
+                 :class="difference >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
               {{ difference.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </div>
           </div>
@@ -97,37 +97,37 @@
 
         <!-- Denomination Section -->
         <div>
-          <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-t border-slate-700 pt-4">
+          <div class="mb-3 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-t border-[var(--color-border)] pt-4">
             BOX Cash Denomination
           </div>
           <div class="grid grid-cols-2 gap-x-6 gap-y-2">
             <!-- Left column: denominations -->
             <div class="space-y-2">
               <div v-for="(d, i) in denominations" :key="d" class="flex items-center gap-2">
-                <label class="w-12 shrink-0 text-right text-sm font-semibold text-slate-300">{{ d }}</label>
-                <span class="text-slate-500 text-xs">×</span>
+                <label class="w-12 shrink-0 text-right text-sm font-semibold text-[var(--color-text)]">{{ d }}</label>
+                <span class="text-[var(--color-text-muted)] text-xs">×</span>
                 <input
                   :ref="el => { if (el) denomInputRefs[i] = el }"
                   v-model.number="form.denominations[d]"
                   type="number"
                   min="0"
                   placeholder="0"
-                  class="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-1.5 text-sm text-white placeholder-slate-500 outline-none focus:border-blue-500"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm text-[var(--color-text-on-highlight)] placeholder-slate-500 outline-none focus:border-[var(--color-info)]"
                   @keydown.enter.prevent="onDenomEnter(i)"
                   @keydown.down.prevent="denomInputRefs[i + 1]?.focus()"
                   @keydown.up.prevent="denomInputRefs[i - 1]?.focus()"
                   @focus="$event.target.select()"
                 />
-                <span class="w-20 shrink-0 text-right text-xs text-slate-400 font-mono">
+                <span class="w-20 shrink-0 text-right text-xs text-[var(--color-text-muted)] font-mono">
                   {{ ((form.denominations[d] || 0) * d).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </span>
               </div>
             </div>
 
             <!-- Right column: total -->
-            <div class="flex flex-col items-center justify-center rounded-xl bg-slate-700/50 border border-slate-600 p-4 gap-1">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">BOX Total</div>
-              <div class="text-3xl font-black text-emerald-400 font-mono">
+            <div class="flex flex-col items-center justify-center rounded-xl bg-[var(--color-surface-raised)]/50 border border-[var(--color-border)] p-4 gap-1">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">BOX Total</div>
+              <div class="text-3xl font-black text-[var(--color-success)] font-mono">
                 {{ total.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
               </div>
             </div>
@@ -135,24 +135,24 @@
         </div>
 
         <!-- Error -->
-        <div v-if="saveError" class="rounded-lg bg-red-900/40 border border-red-700 px-4 py-2 text-sm text-red-300">
+        <div v-if="saveError" class="rounded-lg bg-[var(--color-danger)]/40 border border-[var(--color-danger)] px-4 py-2 text-sm text-[var(--color-danger)]">
           {{ saveError }}
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between border-t border-slate-700 px-6 py-4">
-        <div v-if="savedName" class="text-xs text-emerald-400 font-mono">Saved: {{ savedName }}</div>
-        <div v-else class="text-xs text-slate-600">Fill denominations and save</div>
+      <div class="flex items-center justify-between border-t border-[var(--color-border)] px-6 py-4">
+        <div v-if="savedName" class="text-xs text-[var(--color-success)] font-mono">Saved: {{ savedName }}</div>
+        <div v-else class="text-xs text-[var(--color-text-muted)]">Fill denominations and save</div>
         <div class="flex gap-3">
           <button
-            class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+            class="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]"
             @click="$emit('close')"
           >
             Cancel
           </button>
           <button
-            class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition disabled:opacity-50"
+            class="rounded-lg bg-[var(--color-info)] px-5 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition disabled:opacity-50"
             :disabled="saving || !form.cash"
             @click="handleSave"
           >

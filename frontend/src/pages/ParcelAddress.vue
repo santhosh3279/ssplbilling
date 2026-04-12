@@ -1,23 +1,23 @@
 <template>
-  <div class="h-screen flex flex-col bg-slate-900">
+  <div class="h-screen flex flex-col bg-[var(--color-bg)]">
 
     <!-- ── TOP BAR ───────────────────────────────────────────────── -->
-    <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-3 shadow-sm shrink-0">
+    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-sm shrink-0">
       <div class="flex items-center gap-6">
-        <button class="rounded px-4 py-2 text-2xl text-slate-400 hover:bg-slate-700 transition" @click="router.push('/')">&larr; Dashboard</button>
-        <span class="text-3xl text-slate-600">|</span>
-        <span class="text-3xl font-bold text-slate-100 uppercase tracking-tight">Parcel Address</span>
-        <span v-if="docName" class="rounded bg-slate-700 px-4 py-2 font-mono text-xl text-blue-300">{{ docName }}</span>
-        <span class="text-3xl text-slate-600">|</span>
+        <button class="rounded px-4 py-2 text-2xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition" @click="router.push('/')">&larr; Dashboard</button>
+        <span class="text-3xl text-[var(--color-text-muted)]">|</span>
+        <span class="text-3xl font-bold text-[var(--color-text)] uppercase tracking-tight">Parcel Address</span>
+        <span v-if="docName" class="rounded bg-[var(--color-surface-raised)] px-4 py-2 font-mono text-xl text-[var(--color-info)]">{{ docName }}</span>
+        <span class="text-3xl text-[var(--color-text-muted)]">|</span>
         <div class="flex items-center gap-3">
-          <span class="text-lg font-bold uppercase text-slate-500">Today</span>
-          <span class="font-mono text-3xl font-black text-green-400">{{ todayCount }} parcel{{ todayCount !== 1 ? 's' : '' }}</span>
+          <span class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Today</span>
+          <span class="font-mono text-3xl font-black text-[var(--color-success)]">{{ todayCount }} parcel{{ todayCount !== 1 ? 's' : '' }}</span>
         </div>
       </div>
-      <div class="flex items-center gap-6 text-xl text-slate-400">
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-3 py-1 font-mono text-lg text-slate-300">Tab</kbd> Next field</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-3 py-1 font-mono text-lg text-slate-300">End</kbd> Save</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-3 py-1 font-mono text-lg text-slate-300">Esc</kbd> Back</span>
+      <div class="flex items-center gap-6 text-xl text-[var(--color-text-muted)]">
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 font-mono text-lg text-[var(--color-text)]">Tab</kbd> Next field</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 font-mono text-lg text-[var(--color-text)]">End</kbd> Save</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 font-mono text-lg text-[var(--color-text)]">Esc</kbd> Back</span>
       </div>
     </header>
 
@@ -25,21 +25,21 @@
     <div class="flex flex-1 overflow-hidden">
 
       <!-- ── LEFT SIDEBAR (30%) ─────────────────────────────────── -->
-      <aside class="flex w-[30%] shrink-0 flex-col border-r border-slate-700 bg-slate-800 overflow-hidden">
+      <aside class="flex w-[30%] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
 
         <!-- Date navigator -->
-        <div class="flex items-center justify-between border-b border-slate-700 px-3 py-3 shrink-0">
+        <div class="flex items-center justify-between border-b border-[var(--color-border)] px-3 py-3 shrink-0">
           <button
-            class="flex h-10 w-10 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition text-2xl font-bold"
+            class="flex h-10 w-10 items-center justify-center rounded text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition text-2xl font-bold"
             title="Previous day"
             @click="shiftDate(-1)"
           >&#8592;</button>
           <div class="flex flex-col items-center leading-none">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</span>
-            <span class="text-xl font-bold text-slate-200 tabular-nums">{{ sidebarDateLabel }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</span>
+            <span class="text-xl font-bold text-[var(--color-text)] tabular-nums">{{ sidebarDateLabel }}</span>
           </div>
           <button
-            class="flex h-10 w-10 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition text-2xl font-bold"
+            class="flex h-10 w-10 items-center justify-center rounded text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition text-2xl font-bold"
             title="Next day"
             @click="shiftDate(1)"
           >&#8594;</button>
@@ -48,10 +48,10 @@
         <!-- Entry list -->
         <div class="flex-1 overflow-y-auto">
           <div v-if="sidebarLoading" class="flex items-center justify-center py-8">
-            <span class="text-xl text-slate-500">Loading...</span>
+            <span class="text-xl text-[var(--color-text-muted)]">Loading...</span>
           </div>
           <div v-else-if="!sidebarEntries.length" class="flex items-center justify-center py-8 px-3 text-center">
-            <span class="text-xl italic text-slate-600">No entries</span>
+            <span class="text-xl italic text-[var(--color-text-muted)]">No entries</span>
           </div>
           <div v-else class="flex flex-col divide-y divide-slate-700">
             <button
@@ -59,24 +59,24 @@
               :key="e.name"
               class="w-full px-4 py-4 text-left transition"
               :class="docName === e.name
-                ? 'bg-blue-600/30 border-l-8 border-blue-500'
-                : 'hover:bg-slate-700 border-l-8 border-transparent'"
+                ? 'bg-[var(--color-info)]/30 border-l-8 border-[var(--color-info)]'
+                : 'hover:bg-[var(--color-surface-raised)] border-l-8 border-transparent'"
               @click="loadEntry(e.name)"
             >
               <div class="flex items-center justify-between gap-3">
-                <div class="truncate font-mono text-xl font-bold" :class="docName === e.name ? 'text-blue-300' : 'text-slate-400'">{{ e.name }}</div>
-                <div class="shrink-0 text-xl font-bold" :class="docName === e.name ? 'text-blue-200' : 'text-slate-400'">{{ e.number_of_packages }} pkg</div>
+                <div class="truncate font-mono text-xl font-bold" :class="docName === e.name ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">{{ e.name }}</div>
+                <div class="shrink-0 text-xl font-bold" :class="docName === e.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ e.number_of_packages }} pkg</div>
               </div>
-              <div class="truncate text-2xl text-slate-300 mt-2">{{ e.recipient_name }}</div>
-              <div v-if="e.mobile_number" class="truncate text-xl text-slate-500">{{ e.mobile_number }}</div>
-              <div v-if="e.address_line_1" class="truncate text-xl text-slate-600">{{ e.address_line_1 }}</div>
+              <div class="truncate text-2xl text-[var(--color-text)] mt-2">{{ e.recipient_name }}</div>
+              <div v-if="e.mobile_number" class="truncate text-xl text-[var(--color-text-muted)]">{{ e.mobile_number }}</div>
+              <div v-if="e.address_line_1" class="truncate text-xl text-[var(--color-text-muted)]">{{ e.address_line_1 }}</div>
             </button>
           </div>
         </div>
 
         <!-- Sidebar footer -->
-        <div class="shrink-0 border-t border-slate-700 px-4 py-3 text-center">
-          <span class="text-xl font-bold uppercase tracking-wider text-slate-600">{{ sidebarEntries.length }} entr{{ sidebarEntries.length !== 1 ? 'ies' : 'y' }}</span>
+        <div class="shrink-0 border-t border-[var(--color-border)] px-4 py-3 text-center">
+          <span class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ sidebarEntries.length }} entr{{ sidebarEntries.length !== 1 ? 'ies' : 'y' }}</span>
         </div>
       </aside>
 
@@ -86,19 +86,19 @@
           <div class="max-w-6xl mx-auto flex flex-col gap-8">
 
             <!-- Name + Mobile + Packages -->
-            <div class="rounded-[32px] border border-slate-700 bg-slate-800 p-6 flex flex-col gap-6">
-              <div class="text-base font-bold uppercase tracking-[0.2em] text-slate-500">Recipient Details</div>
+            <div class="rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 flex flex-col gap-6">
+              <div class="text-base font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Recipient Details</div>
 
               <div class="flex gap-6">
                 <!-- Name -->
                 <div class="flex flex-1 flex-col gap-3">
-                  <label class="text-xl font-bold uppercase text-slate-400">Name <span class="text-red-400">*</span></label>
+                  <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Name <span class="text-[var(--color-danger)]">*</span></label>
                   <input
                     ref="nameInput"
                     v-model="form.recipient_name"
                     type="text"
                     placeholder="Recipient name"
-                    class="rounded-2xl border-2 border-slate-600 bg-slate-900 px-3 py-2.5 text-5xl text-slate-200 outline-none focus:border-blue-500"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                     @keydown.enter.prevent="focusMobile"
                     @keydown.tab.prevent="focusMobile"
                   />
@@ -106,13 +106,13 @@
 
                 <!-- Mobile -->
                 <div class="flex w-[400px] flex-col gap-3">
-                  <label class="text-xl font-bold uppercase text-slate-400">Mobile Number</label>
+                  <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Mobile Number</label>
                   <input
                     ref="mobileInput"
                     v-model="form.mobile_number"
                     type="text"
                     placeholder="Mobile"
-                    class="rounded-2xl border-2 border-slate-600 bg-slate-900 px-3 py-2.5 text-5xl text-slate-200 outline-none focus:border-blue-500"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                     @keydown.enter.prevent="focusPackages"
                     @keydown.tab.prevent="focusPackages"
                   />
@@ -120,14 +120,14 @@
 
                 <!-- Packages -->
                 <div class="flex w-64 flex-col gap-3">
-                  <label class="text-xl font-bold uppercase text-slate-400">Pkgs</label>
+                  <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Pkgs</label>
                   <input
                     ref="packagesInput"
                     v-model.number="form.number_of_packages"
                     type="number"
                     min="1"
                     step="1"
-                    class="rounded-2xl border-2 border-slate-600 bg-slate-900 px-3 py-2.5 text-5xl text-right font-bold text-slate-200 outline-none focus:border-blue-500 tabular-nums"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-right font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] tabular-nums"
                     @keydown.enter.prevent="focusLine1"
                     @keydown.tab.prevent="focusLine1"
                   />
@@ -136,42 +136,42 @@
             </div>
 
             <!-- Address -->
-            <div class="rounded-[32px] border border-slate-700 bg-slate-800 p-6 flex flex-col gap-6">
-              <div class="text-base font-bold uppercase tracking-[0.2em] text-slate-500">Address</div>
+            <div class="rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 flex flex-col gap-6">
+              <div class="text-base font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Address</div>
 
               <div class="flex flex-col gap-6">
                 <div class="flex flex-col gap-3">
-                  <label class="text-xl font-bold uppercase text-slate-400">Address Line 1</label>
+                  <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Address Line 1</label>
                   <input
                     ref="line1Input"
                     v-model="form.address_line_1"
                     type="text"
                     placeholder="Street / Building"
-                    class="rounded-2xl border-2 border-slate-600 bg-slate-900 px-3 py-2.5 text-5xl text-slate-200 outline-none focus:border-blue-500"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                     @keydown.enter.prevent="focusLine2"
                     @keydown.tab.prevent="focusLine2"
                   />
                 </div>
                 <div class="flex flex-col gap-3">
-                  <label class="text-xl font-bold uppercase text-slate-400">Address Line 2</label>
+                  <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Address Line 2</label>
                   <input
                     ref="line2Input"
                     v-model="form.address_line_2"
                     type="text"
                     placeholder="Area / Landmark"
-                    class="rounded-2xl border-2 border-slate-600 bg-slate-900 px-3 py-2.5 text-5xl text-slate-200 outline-none focus:border-blue-500"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                     @keydown.enter.prevent="focusLine3"
                     @keydown.tab.prevent="focusLine3"
                   />
                 </div>
                 <div class="flex flex-col gap-3">
-                  <label class="text-xl font-bold uppercase text-slate-400">Address Line 3</label>
+                  <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Address Line 3</label>
                   <input
                     ref="line3Input"
                     v-model="form.address_line_3"
                     type="text"
                     placeholder="City / PIN"
-                    class="rounded-2xl border-2 border-slate-600 bg-slate-900 px-3 py-2.5 text-5xl text-slate-200 outline-none focus:border-blue-500"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                     @keydown.enter.prevent="saveEntry"
                   />
                 </div>
@@ -185,17 +185,17 @@
         <div class="mt-6 flex gap-6 justify-end shrink-0">
           <button
             @click="clearForm"
-            class="rounded-3xl border-2 border-slate-700 bg-slate-800 px-10 py-4 text-3xl font-bold text-slate-300 hover:bg-slate-700 transition"
+            class="rounded-3xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-10 py-4 text-3xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition"
           >Clear</button>
           <button
             v-if="docName"
             @click="showPrint = true"
-            class="rounded-3xl border-2 border-slate-600 bg-slate-700 px-10 py-4 text-3xl font-bold text-slate-200 hover:bg-slate-600 transition flex items-center gap-6"
+            class="rounded-3xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-10 py-4 text-3xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition flex items-center gap-6"
           >🖨 Print</button>
           <button
             @click="saveEntry"
             :disabled="saving"
-            class="rounded-3xl bg-blue-600 px-16 py-4 text-3xl font-bold text-white shadow-lg hover:bg-blue-700 active:scale-95 transition-all disabled:bg-slate-700 disabled:text-slate-500"
+            class="rounded-3xl bg-[var(--color-info)] px-16 py-4 text-3xl font-bold text-[var(--color-text-on-highlight)] shadow-lg hover:bg-[var(--color-info)] active:scale-95 transition-all disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)]"
           >
             {{ saving ? 'Saving...' : docName ? 'Update' : 'Save' }}
           </button>

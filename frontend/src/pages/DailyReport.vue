@@ -1,24 +1,24 @@
 <template>
-  <div class="flex h-screen flex-col bg-slate-900 font-sans text-slate-200 overflow-hidden text-[14px] font-normal">
+  <div class="flex h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] overflow-hidden text-[14px] font-normal">
     <!-- HEADER -->
-    <header class="flex h-14 shrink-0 items-center justify-between border-b border-slate-700 bg-slate-800 px-6 shadow-sm">
+    <header class="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-sm">
       <div class="flex items-center gap-4">
         <button
           @click="$router.push('/')"
-          class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-100 transition-colors"
+          class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-[14px] font-normal tracking-tight text-slate-100">Daily Reports</h1>
+        <h1 class="text-[14px] font-normal tracking-tight text-[var(--color-text)]">Daily Reports</h1>
       </div>
 
       <div class="flex items-center gap-4">
         <!-- Series Filter (only for Invoice tab) -->
-        <div v-if="activeTab === 'Invoice'" class="flex items-center gap-3 bg-slate-700 px-4 py-1.5 rounded-xl border border-slate-600 shadow-sm">
-          <label class="text-[12px] font-normal uppercase tracking-widest text-slate-400">Series</label>
+        <div v-if="activeTab === 'Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
+          <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Series</label>
           <select 
             v-model="seriesFilter"
-            class="bg-transparent text-[14px] font-normal text-slate-200 outline-none focus:text-blue-400 min-w-[120px]"
+            class="bg-transparent text-[14px] font-normal text-[var(--color-text)] outline-none focus:text-[var(--color-info)] min-w-[120px]"
             @change="fetchReport"
           >
             <option value="">All Series</option>
@@ -26,35 +26,35 @@
           </select>
         </div>
 
-        <div class="flex items-center gap-3 bg-slate-700 px-4 py-1.5 rounded-xl border border-slate-600 shadow-sm">
-          <label class="text-[12px] font-normal uppercase tracking-widest text-slate-400">From</label>
+        <div class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
+          <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">From</label>
           <div class="flex items-center gap-1">
-            <button @click="adjustDate('from', -1)" class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all">
+            <button @click="adjustDate('from', -1)" class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
             <input
               type="date"
               v-model="fromDate"
-              class="bg-transparent text-[14px] font-normal text-slate-200 outline-none focus:text-blue-400 w-36"
+              class="bg-transparent text-[14px] font-normal text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-36"
               @change="fetchReport"
             />
-            <button @click="adjustDate('from', 1)" class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all">
+            <button @click="adjustDate('from', 1)" class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </button>
           </div>
 
-          <label class="text-[12px] font-normal uppercase tracking-widest text-slate-400 ml-2">To</label>
+          <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] ml-2">To</label>
           <div class="flex items-center gap-1">
-            <button @click="adjustDate('to', -1)" class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all">
+            <button @click="adjustDate('to', -1)" class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
             <input
               type="date"
               v-model="toDate"
-              class="bg-transparent text-[14px] font-normal text-slate-200 outline-none focus:text-blue-400 w-36"
+              class="bg-transparent text-[14px] font-normal text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-36"
               @change="fetchReport"
             />
-            <button @click="adjustDate('to', 1)" class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all">
+            <button @click="adjustDate('to', 1)" class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </button>
           </div>
@@ -63,33 +63,33 @@
     </header>
 
     <!-- TABS -->
-    <div class="flex border-b border-slate-700 bg-slate-800 px-6">
+    <div class="flex border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6">
       <button
         v-for="tab in tabs"
         :key="tab.value"
         @click="activeTab = tab.value"
         class="px-6 py-3 text-[14px] font-normal transition-all relative"
-        :class="activeTab === tab.value ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'"
+        :class="activeTab === tab.value ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
       >
         {{ tab.label }}
-        <div v-if="activeTab === tab.value" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
+        <div v-if="activeTab === tab.value" class="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-info)]"></div>
       </button>
     </div>
 
     <!-- CONTENT -->
     <div class="flex-1 overflow-auto p-6 custom-scrollbar">
       <div v-if="loading" class="flex h-full items-center justify-center">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-info)] border-t-transparent"></div>
       </div>
       
-      <div v-else-if="!reportData.length" class="flex h-full items-center justify-center text-slate-500 italic">
+      <div v-else-if="!reportData.length" class="flex h-full items-center justify-center text-[var(--color-text-muted)] italic">
         No data found for the selected date range.
       </div>
 
-      <div v-else class="rounded-xl border border-slate-700 bg-slate-800 overflow-hidden shadow-sm">
+      <div v-else class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
         <table class="w-full border-collapse">
           <thead>
-            <tr class="bg-slate-700 text-slate-400 text-left border-b border-slate-600">
+            <tr class="bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] text-left border-b border-[var(--color-border)]">
               <th v-for="col in columns" :key="col.key" class="px-4 py-3 font-normal">{{ col.label }}</th>
             </tr>
           </thead>
@@ -97,17 +97,17 @@
             <tr 
               v-for="row in reportData" 
               :key="row.name" 
-              class="hover:bg-slate-750 transition-colors cursor-pointer"
+              class="hover:bg-[var(--color-surface-raised)] transition-colors cursor-pointer"
               @click="handleRowClick(row)"
             >
-              <td v-for="col in columns" :key="col.key" class="px-4 py-3 font-normal text-slate-300">
+              <td v-for="col in columns" :key="col.key" class="px-4 py-3 font-normal text-[var(--color-text)]">
                 <template v-if="col.type === 'currency'">
                   ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </template>
                 <template v-else-if="col.key === 'docstatus'">
                   <span 
                     class="px-2 py-0.5 rounded text-[12px]"
-                    :class="row[col.key] === 1 ? 'bg-green-900/30 text-green-400' : 'bg-amber-900/30 text-amber-400'"
+                    :class="row[col.key] === 1 ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/30 text-[var(--color-warning)]'"
                   >
                     {{ row[col.key] === 1 ? 'Submitted' : 'Draft' }}
                   </span>
@@ -247,7 +247,7 @@ onMounted(() => {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-.bg-slate-750 { background-color: rgba(30, 41, 59, 0.5); }
+.bg-[var(--color-surface-raised)] { background-color: rgba(30, 41, 59, 0.5); }
 
 /* Ensure no bold text globally in this component */
 * { font-weight: 400 !important; }

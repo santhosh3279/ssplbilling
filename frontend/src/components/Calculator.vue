@@ -5,39 +5,39 @@
     @click.self="close"
   >
     <div
-      class="w-80 overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl"
+      class="w-80 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
       @keydown.esc="close"
     >
       <!-- Display -->
-      <div class="p-6 bg-slate-800/50">
-        <div class="text-right text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 h-4">
+      <div class="p-6 bg-[var(--color-surface)]/50">
+        <div class="text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-1 h-4">
           {{ prevInput }} {{ operator }}
         </div>
-        <div class="text-right text-4xl font-black text-white font-mono truncate">
+        <div class="text-right text-4xl font-black text-[var(--color-text-on-highlight)] font-mono truncate">
           {{ display || '0' }}
         </div>
       </div>
 
       <!-- Buttons Grid -->
-      <div class="grid grid-cols-4 gap-px bg-slate-800 p-1">
+      <div class="grid grid-cols-4 gap-px bg-[var(--color-surface)] p-1">
         <button
           v-for="btn in buttons"
           :key="btn.label"
           @click="handleInput(btn)"
           class="h-16 text-xl font-bold transition-all active:scale-95"
           :class="[
-            btn.type === 'operator' ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' :
-            btn.type === 'action' ? 'bg-slate-800 text-rose-400 hover:bg-slate-700' :
-            'bg-slate-900 text-slate-200 hover:bg-slate-800'
+            btn.type === 'operator' ? 'bg-[var(--color-surface)] text-[var(--color-info)] hover:bg-[var(--color-surface-raised)]' :
+            btn.type === 'action' ? 'bg-[var(--color-surface)] text-[var(--color-danger)] hover:bg-[var(--color-surface-raised)]' :
+            'bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-surface)]'
           ]"
         >
           {{ btn.label }}
         </button>
       </div>
 
-      <div class="p-4 bg-slate-900 text-center">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-          Press <kbd class="rounded border border-slate-700 bg-slate-800 px-1 py-0.5 text-slate-300">ESC</kbd> to Close
+      <div class="p-4 bg-[var(--color-bg)] text-center">
+        <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-tighter">
+          Press <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-[var(--color-text)]">ESC</kbd> to Close
         </span>
       </div>
     </div>

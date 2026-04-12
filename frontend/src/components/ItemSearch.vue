@@ -31,7 +31,7 @@
           <button
             @click="isDecrypted = !isDecrypted"
             class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all"
-            :class="isDecrypted ? 'border-amber-500 bg-amber-900/20 text-amber-500' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]'"
+            :class="isDecrypted ? 'border-[var(--color-warning)] bg-[var(--color-warning)]/20 text-[var(--color-warning)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]'"
           >
             <span>{{ isDecrypted ? '🔓' : '🔒' }}</span>
             {{ isDecrypted ? 'Decrypt' : 'Encrypt' }}
@@ -46,7 +46,7 @@
           <div class="flex flex-wrap items-start gap-x-10 gap-y-3">
             <div class="flex flex-col min-w-[150px]">
               <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Current Stock</span>
-              <span class="text-3xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-red-500' : 'text-green-600'">
+              <span class="text-3xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
               </span>
             </div>
@@ -98,11 +98,11 @@
               <td class="p-[5px]">
                 <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
               </td>
-              <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-amber-600'">
+              <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-warning)]'">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
               <td class="p-[5px] text-right">
-                <span :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : (item.stock <= 0 ? 'text-red-500' : 'text-[var(--color-text)]')">
+                <span :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : (item.stock <= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]')">
                   {{ item.stock || 0 }}
                 </span>
               </td>
@@ -131,7 +131,7 @@
             <tbody>
               <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-[var(--color-midlight)]/30">
                 <td class="border border-[var(--color-border)] px-2 py-1 text-xl text-[var(--color-text-muted)] truncate">{{ uom }}</td>
-                <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right font-mono text-amber-600 text-3xl tracking-widest">
+                <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right font-mono text-[var(--color-warning)] text-3xl tracking-widest">
                   {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : '--' }}
                 </td>
               </tr>

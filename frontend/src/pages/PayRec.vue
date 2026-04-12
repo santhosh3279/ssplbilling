@@ -1,39 +1,39 @@
 <template>
-  <div class="flex h-screen flex-col bg-slate-900 font-sans text-slate-100">
+  <div class="flex h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)]">
     <!-- HEADER -->
-    <header class="flex h-14 shrink-0 items-center justify-between border-b border-slate-700 bg-slate-800 px-6 shadow-sm">
+    <header class="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-sm">
       <div class="flex items-center gap-4">
         <button
           @click="$router.push('/')"
-          class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-100 transition-colors"
+          class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-lg font-bold tracking-tight text-slate-100 uppercase">{{ entryTypeLabel }}</h1>
-        <div class="h-4 w-px bg-slate-600 mx-2"></div>
+        <h1 class="text-lg font-bold tracking-tight text-[var(--color-text)] uppercase">{{ entryTypeLabel }}</h1>
+        <div class="h-4 w-px bg-[var(--color-surface-raised)] mx-2"></div>
         
         <!-- Selection Box for All Entry Types -->
         <div class="flex items-center gap-3">
-          <div class="flex rounded-lg bg-slate-700 p-1">
+          <div class="flex rounded-lg bg-[var(--color-surface-raised)] p-1">
             <button
               v-for="type in entryTypes"
               :key="type.value"
               @click="entryType = type.value"
               class="rounded-md px-4 py-1.5 text-lg font-bold transition-all flex items-center gap-1.5"
-              :class="entryType === type.value ? `bg-slate-800 text-${type.color}-400 shadow-sm` : 'text-slate-400 hover:text-slate-200'"
+              :class="entryType === type.value ? `bg-[var(--color-surface)] text-${type.color}-400 shadow-sm` : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >
               <span>{{ type.label }}</span>
             </button>
           </div>
 
           <div 
-            class="flex items-center gap-2 bg-slate-700 p-1 rounded-lg border transition-all"
-            :class="journalTypes.includes(entryType) ? 'border-violet-500 bg-slate-800/50 shadow-sm' : 'border-slate-600 opacity-60 hover:opacity-100'"
+            class="flex items-center gap-2 bg-[var(--color-surface-raised)] p-1 rounded-lg border transition-all"
+            :class="journalTypes.includes(entryType) ? 'border-[var(--color-info)] bg-[var(--color-surface)]/50 shadow-sm' : 'border-[var(--color-border)] opacity-60 hover:opacity-100'"
           >
-            <span class="text-lg font-bold text-slate-400 ml-1 tracking-tight">GENERAL</span>
+            <span class="text-lg font-bold text-[var(--color-text-muted)] ml-1 tracking-tight">GENERAL</span>
             <select
               v-model="entryType"
-              class="rounded-md bg-slate-800 border-none px-3 py-1.5 text-lg font-bold text-slate-200 outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+              class="rounded-md bg-[var(--color-surface)] border-none px-3 py-1.5 text-lg font-bold text-[var(--color-text)] outline-none focus:ring-1 focus:ring-[var(--color-info)] transition-all cursor-pointer"
             >
               <option v-if="!journalTypes.includes(entryType)" disabled :value="entryType">-- Select --</option>
               <option v-for="type in journalTypes" :key="type" :value="type">
@@ -46,24 +46,24 @@
 
       <div class="flex items-center gap-4">
         <!-- Keyboard hints -->
-        <div class="flex items-center gap-3 text-[11px] text-slate-500">
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">INS</kbd> Add Row</span>
-          <span class="text-slate-700">|</span>
+        <div class="flex items-center gap-3 text-[11px] text-[var(--color-text-muted)]">
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">INS</kbd> Add Row</span>
+          <span class="text-[var(--color-text-muted)]">|</span>
           <span class="flex items-center gap-1">
-            <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">INS</kbd>
-            <span class="text-slate-500">while picking account →</span>
-            <span class="font-bold text-slate-400">Show All Accounts</span>
+            <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">INS</kbd>
+            <span class="text-[var(--color-text-muted)]">while picking account →</span>
+            <span class="font-bold text-[var(--color-text-muted)]">Show All Accounts</span>
           </span>
-          <span class="text-slate-700">|</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">F9</kbd> Save</span>
+          <span class="text-[var(--color-text-muted)]">|</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F9</kbd> Save</span>
         </div>
 
-        <div class="flex items-center gap-3 bg-slate-700 px-4 py-1.5 rounded-xl border border-slate-600 shadow-sm">
-          <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">Posting Date</label>
+        <div class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
+          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</label>
           <div class="flex items-center gap-1">
             <button
               @click="changeDate(-1)"
-              class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all"
+              class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all"
               tabindex="-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -72,14 +72,14 @@
               ref="dateInput"
               v-model="displayDate"
               type="text"
-              class="bg-transparent text-xl font-black text-slate-200 outline-none focus:text-blue-400 w-44 font-mono"
+              class="bg-transparent text-xl font-black text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-44 font-mono"
               placeholder="DD/MM/YYYY"
               @focus="e => e.target.select()"
               @input="onDateInput"
             />
             <button
               @click="changeDate(1)"
-              class="p-1 hover:bg-slate-600 rounded-md text-slate-400 hover:text-blue-400 transition-all"
+              class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all"
               tabindex="-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -90,12 +90,12 @@
     </header>
 
     <div class="flex-1 overflow-hidden p-6">
-      <div class="h-full flex flex-col bg-slate-800 rounded-2xl shadow-sm border border-slate-700 overflow-hidden">
+      <div class="h-full flex flex-col bg-[var(--color-surface)] rounded-2xl shadow-sm border border-[var(--color-border)] overflow-hidden">
         <!-- TABLE -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <table class="w-full border-collapse">
-            <thead class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-              <tr class="text-xs font-bold uppercase tracking-wider text-slate-400 text-left">
+            <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+              <tr class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] text-left">
                 <th class="px-4 py-2 w-12 text-center">#</th>
                 <th class="px-2 py-2 min-w-[300px]">Ledger / Party</th>
                 <th class="px-4 py-2 w-80 text-right">Balance</th>
@@ -109,10 +109,10 @@
               <tr
                 v-for="(row, idx) in rows"
                 :key="idx"
-                class="group hover:bg-slate-800/40 transition-colors"
-                :class="{ 'bg-blue-900/20': activeRowIdx === idx }"
+                class="group hover:bg-[var(--color-surface)]/40 transition-colors"
+                :class="{ 'bg-[var(--color-info)]/20': activeRowIdx === idx }"
               >
-                <td class="px-4 py-0.5 text-center text-sm font-bold text-slate-500">
+                <td class="px-4 py-0.5 text-center text-sm font-bold text-[var(--color-text-muted)]">
                   {{ idx + 1 }}
                 </td>
                 <td class="px-2 py-0.5">
@@ -121,23 +121,23 @@
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-2xl font-bold cursor-pointer hover:border-slate-600 hover:bg-slate-700 transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-700 focus:border-blue-500"
-                    :class="row.account ? 'text-slate-100' : 'text-slate-600 italic'"
+                    class="w-full rounded-lg border border-transparent px-3 py-0.5 text-2xl font-bold cursor-pointer hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] transition-all flex items-center justify-between group/input outline-none focus:ring-2 focus:ring-[var(--color-info)] focus:bg-[var(--color-surface-raised)] focus:border-[var(--color-info)]"
+                    :class="row.account ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'"
                   >
                     <div class="flex items-center gap-2 truncate">
                       <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
                       <span
                         v-if="row.account && getResolvedLabel(row.account)"
-                        class="shrink-0 px-2 py-0.5 rounded bg-blue-900/20 text-blue-400 text-[10px] font-black uppercase tracking-tighter"
+                        class="shrink-0 px-2 py-0.5 rounded bg-[var(--color-info)]/20 text-[var(--color-info)] text-[10px] font-black uppercase tracking-tighter"
                       >
                         {{ getResolvedLabel(row.account) }}
                       </span>
                     </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600 group-hover/input:text-blue-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-hover/input:text-[var(--color-info)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
                 <td class="px-2 py-0 text-right">
-                  <div v-if="row.account" class="text-2xl font-bold text-slate-400 font-mono whitespace-nowrap">
+                  <div v-if="row.account" class="text-2xl font-bold text-[var(--color-text-muted)] font-mono whitespace-nowrap">
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
@@ -151,8 +151,8 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-100 outline-none focus:bg-slate-700 transition-all disabled:opacity-20"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'border-rose-500 bg-red-900/20 animate-blink' : 'border-transparent focus:border-blue-500'"
+                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] transition-all disabled:opacity-20"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/20 animate-blink' : 'border-transparent focus:border-[var(--color-info)]'"
                     placeholder="0.00"
                   />
                 </td>
@@ -166,20 +166,20 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-slate-100 outline-none focus:bg-slate-700 transition-all disabled:opacity-20"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'border-rose-500 bg-red-900/20 animate-blink' : 'border-transparent focus:border-blue-500'"
+                    class="w-full rounded-lg border bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] transition-all disabled:opacity-20"
+                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/20 animate-blink' : 'border-transparent focus:border-[var(--color-info)]'"
                     placeholder="0.00"
                   />
                 </td>
                 <td class="px-2 py-0 text-right">
-                  <div v-if="row.account" class="text-2xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-blue-400' : 'text-slate-400'">
+                  <div v-if="row.account" class="text-2xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
                 <td class="px-4 py-1 text-center">
                   <button
                     @click="removeRow(idx)"
-                    class="text-slate-600 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
+                    class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors opacity-0 group-hover:opacity-100"
                     tabindex="-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
@@ -192,7 +192,7 @@
           <div class="p-2">
             <button
               @click="addRow"
-              class="flex items-center gap-2 rounded-xl border border-dashed border-slate-600 px-4 py-2 text-xs font-bold text-slate-500 hover:border-blue-500 hover:text-blue-400 hover:bg-blue-900/20 transition-all w-full justify-center"
+              class="flex items-center gap-2 rounded-xl border border-dashed border-[var(--color-border)] px-4 py-2 text-xs font-bold text-[var(--color-text-muted)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] hover:bg-[var(--color-info)]/20 transition-all w-full justify-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               Add New Row (INS)
@@ -201,34 +201,34 @@
         </div>
 
         <!-- FOOTER: TOTALS -->
-        <div class="shrink-0 bg-slate-800 border-t border-slate-700 p-6 flex flex-col gap-4">
+        <div class="shrink-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] p-6 flex flex-col gap-4">
           <!-- ERROR ALERT -->
-          <div v-if="validationError" class="flex items-center gap-2 bg-red-900/20 text-red-400 px-4 py-2 rounded-lg border border-red-700 text-xs font-bold" :class="errorBlink ? 'animate-blink' : ''">
+          <div v-if="validationError" class="flex items-center gap-2 bg-[var(--color-danger)]/20 text-[var(--color-danger)] px-4 py-2 rounded-lg border border-[var(--color-danger)] text-xs font-bold" :class="errorBlink ? 'animate-blink' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
             {{ validationError }}
           </div>
 
           <!-- LINKED REFERENCES TABLE -->
-          <div v-if="linkedReferences.length > 0" class="rounded-xl border border-blue-800/40 bg-blue-900/10 overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-2 border-b border-blue-800/30 bg-blue-900/20">
-              <span class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-400">
+          <div v-if="linkedReferences.length > 0" class="rounded-xl border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-[var(--color-info)]/30 bg-[var(--color-info)]/20">
+              <span class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-info)]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 Linked to {{ linkedReferences.length }} Reference{{ linkedReferences.length !== 1 ? 's' : '' }}
               </span>
               <div class="flex items-center gap-4">
-                <span class="text-[10px] font-bold text-slate-400">
-                  Total Linked: <span class="text-blue-300 font-black font-mono">₹{{ fmt(totalAllocated) }}</span>
+                <span class="text-[10px] font-bold text-[var(--color-text-muted)]">
+                  Total Linked: <span class="text-[var(--color-info)] font-black font-mono">₹{{ fmt(totalAllocated) }}</span>
                 </span>
                 <button
                   @click="linkedReferences = []"
-                  class="text-[10px] font-bold text-slate-500 hover:text-rose-400 transition-colors uppercase tracking-wider"
+                  class="text-[10px] font-bold text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors uppercase tracking-wider"
                   tabindex="-1"
                 >Clear All</button>
               </div>
             </div>
             <table class="w-full border-collapse">
               <thead>
-                <tr class="text-[9px] font-black uppercase tracking-widest text-slate-500 border-b border-blue-800/30">
+                <tr class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-info)]/30">
                   <th class="px-4 py-1.5 text-left">Reference</th>
                   <th class="px-4 py-1.5 text-left">Date</th>
                   <th class="px-4 py-1.5 text-right">Invoice Amt</th>
@@ -238,16 +238,16 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-blue-900/30">
-                <tr v-for="(ref, i) in linkedReferences" :key="ref.ref_name" class="hover:bg-blue-900/20 transition-colors">
-                  <td class="px-4 py-1.5 font-mono text-xs font-bold text-blue-400">{{ ref.ref_name }}</td>
-                  <td class="px-4 py-1.5 text-xs text-slate-400 whitespace-nowrap">{{ ref.ref_date }}</td>
-                  <td class="px-4 py-1.5 text-right font-mono text-xs text-slate-400">₹{{ fmt(ref.grand_total) }}</td>
-                  <td class="px-4 py-1.5 text-right font-mono text-xs text-amber-400">₹{{ fmt(ref.outstanding_amount) }}</td>
-                  <td class="px-4 py-1.5 text-right font-mono text-xs font-black text-emerald-400">₹{{ fmt(ref.alloc_amount) }}</td>
+                <tr v-for="(ref, i) in linkedReferences" :key="ref.ref_name" class="hover:bg-[var(--color-info)]/20 transition-colors">
+                  <td class="px-4 py-1.5 font-mono text-xs font-bold text-[var(--color-info)]">{{ ref.ref_name }}</td>
+                  <td class="px-4 py-1.5 text-xs text-[var(--color-text-muted)] whitespace-nowrap">{{ ref.ref_date }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xs text-[var(--color-text-muted)]">₹{{ fmt(ref.grand_total) }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xs text-[var(--color-warning)]">₹{{ fmt(ref.outstanding_amount) }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xs font-black text-[var(--color-success)]">₹{{ fmt(ref.alloc_amount) }}</td>
                   <td class="px-3 py-1.5 text-center">
                     <button
                       @click="linkedReferences.splice(i, 1)"
-                      class="text-slate-600 hover:text-rose-400 transition-colors"
+                      class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors"
                       tabindex="-1"
                       title="Remove reference"
                     >
@@ -263,21 +263,21 @@
             <div class="flex-1 max-w-xl">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Reference No</label>
+                  <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 block">Reference No</label>
                   <input
                     v-model="referenceNo"
                     type="text"
-                    class="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-2 text-xl font-bold text-slate-200 outline-none focus:border-blue-500 transition-all shadow-sm"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all shadow-sm"
                     placeholder="Cheque / UTR"
                   />
                 </div>
                 <div>
-                  <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Remarks</label>
+                  <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 block">Remarks</label>
                   <input
                     ref="remarksInput"
                     v-model="userRemarks"
                     @keydown.enter.prevent="handleRemarksEnter"
-                    class="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-2 text-xl font-bold text-slate-200 outline-none focus:border-blue-500 transition-all shadow-sm"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all shadow-sm"
                     placeholder="Notes..."
                   />
                 </div>
@@ -285,19 +285,19 @@
             </div>
             <div class="flex gap-12 ml-12">
               <div v-if="entryType !== 'Opening Entry'" class="text-right">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Debit</div>
-                <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalDebit) }}</div>
+                <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Total Debit</div>
+                <div class="text-2xl font-black text-[var(--color-text)] font-mono">₹ {{ fmt(totalDebit) }}</div>
               </div>
               <div v-if="entryType !== 'Opening Entry'" class="text-right">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Credit</div>
-                <div class="text-2xl font-black text-slate-100 font-mono">₹ {{ fmt(totalCredit) }}</div>
+                <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Total Credit</div>
+                <div class="text-2xl font-black text-[var(--color-text)] font-mono">₹ {{ fmt(totalCredit) }}</div>
               </div>
-              <div class="text-right border-l border-slate-700 pl-12" :class="{ 'border-none': entryType === 'Opening Entry' }">
+              <div class="text-right border-l border-[var(--color-border)] pl-12" :class="{ 'border-none': entryType === 'Opening Entry' }">
                 <div v-if="entryType !== 'Opening Entry'">
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difference</div>
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Difference</div>
                   <div
                     class="text-2xl font-black font-mono"
-                    :class="Math.abs(difference) < 0.01 ? 'text-emerald-400' : 'text-rose-400'"
+                    :class="Math.abs(difference) < 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
                   >
                     ₹ {{ fmt(difference) }}
                   </div>
@@ -309,11 +309,11 @@
                     @click="saveEntry"
                     @keydown.enter="saveEntry"
                     :disabled="isSubmitting || !canSave"
-                    class="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3 text-base font-bold text-white shadow-lg shadow-blue-900/50 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    class="flex items-center gap-2 rounded-xl bg-[var(--color-info)] px-8 py-3 text-base font-bold text-[var(--color-text-on-highlight)] shadow-lg shadow-blue-900/50 hover:bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <span v-if="isSubmitting" class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-1"></span>
                     <span>Save Entry</span>
-                    <kbd class="ml-2 rounded border border-blue-400 bg-blue-500 px-2 py-0.5 font-mono text-xs text-blue-100">F9</kbd>
+                    <kbd class="ml-2 rounded border border-[var(--color-info)] bg-[var(--color-info)] px-2 py-0.5 font-mono text-xs text-[var(--color-text-on-focus)]">F9</kbd>
                   </button>
                 </div>
               </div>
@@ -325,35 +325,35 @@
 
     <!-- OUTSTANDING INVOICES / RECONCILIATION MODAL -->
     <div v-if="showOutstandingModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="confirmOutstanding">
-      <div class="w-[860px] max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl">
+      <div class="w-[860px] max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-4">
+        <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
           <div>
-            <div class="text-base font-bold text-slate-100">Reconciliation Overview</div>
-            <div class="text-xs text-slate-400 mt-0.5">
+            <div class="text-base font-bold text-[var(--color-text)]">Reconciliation Overview</div>
+            <div class="text-xs text-[var(--color-text-muted)] mt-0.5">
               {{ rows[0].account_name }}
               <span v-if="outstandingInvoices.length"> &mdash; {{ outstandingInvoices.length }} pending bill{{ outstandingInvoices.length !== 1 ? 's' : '' }}</span>
-              <span v-if="unlinkedPayments.length" class="text-violet-400"> &middot; {{ unlinkedPayments.length }} unlinked payment{{ unlinkedPayments.length !== 1 ? 's' : '' }}</span>
+              <span v-if="unlinkedPayments.length" class="text-[var(--color-info)]"> &middot; {{ unlinkedPayments.length }} unlinked payment{{ unlinkedPayments.length !== 1 ? 's' : '' }}</span>
             </div>
           </div>
           <div class="flex items-center gap-4">
             <div class="text-right">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">New Receipt</div>
-              <div class="font-mono text-2xl font-bold text-blue-400">₹{{ fmt(isReceipt ? rows[0].credit : rows[0].debit) }}</div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">New Receipt</div>
+              <div class="font-mono text-2xl font-bold text-[var(--color-info)]">₹{{ fmt(isReceipt ? rows[0].credit : rows[0].debit) }}</div>
             </div>
-            <div v-if="unlinkedPayments.length" class="text-right border-l border-slate-700 pl-4">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-violet-400">Unlinked Float</div>
-              <div class="font-mono text-2xl font-bold text-violet-400">₹{{ fmt(unlinkedTotal) }}</div>
+            <div v-if="unlinkedPayments.length" class="text-right border-l border-[var(--color-border)] pl-4">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)]">Unlinked Float</div>
+              <div class="font-mono text-2xl font-bold text-[var(--color-info)]">₹{{ fmt(unlinkedTotal) }}</div>
             </div>
-            <div class="text-right border-l border-slate-700 pl-4">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Allocating</div>
-              <div class="font-mono text-2xl font-bold" :class="outstandingAllocatedTotal > (isReceipt ? rows[0].credit : rows[0].debit) + 0.005 ? 'text-red-400' : 'text-emerald-400'">
+            <div class="text-right border-l border-[var(--color-border)] pl-4">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Allocating</div>
+              <div class="font-mono text-2xl font-bold" :class="outstandingAllocatedTotal > (isReceipt ? rows[0].credit : rows[0].debit) + 0.005 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 ₹{{ fmt(outstandingAllocatedTotal) }}
               </div>
             </div>
-            <div v-if="outstandingInvoices.length" class="text-right border-l border-slate-700 pl-4">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Outstanding</div>
-              <div class="font-mono text-2xl font-bold text-amber-400">₹{{ fmt(outstandingInvoices.reduce((s, i) => s + i.outstanding_amount, 0)) }}</div>
+            <div v-if="outstandingInvoices.length" class="text-right border-l border-[var(--color-border)] pl-4">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Total Outstanding</div>
+              <div class="font-mono text-2xl font-bold text-[var(--color-warning)]">₹{{ fmt(outstandingInvoices.reduce((s, i) => s + i.outstanding_amount, 0)) }}</div>
             </div>
           </div>
         </div>
@@ -361,7 +361,7 @@
         <!-- Reconciliation hint when both exist -->
         <div
           v-if="unlinkedPayments.length > 0 && outstandingInvoices.length > 0"
-          class="flex items-center gap-2 bg-violet-900/20 border-b border-violet-800/40 px-6 py-2 text-[11px] font-bold text-violet-300"
+          class="flex items-center gap-2 bg-[var(--color-info)]/20 border-b border-[var(--color-info)]/40 px-6 py-2 text-[11px] font-bold text-[var(--color-info)]"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
           This customer has ₹{{ fmt(unlinkedTotal) }} in unlinked payments. Use Cashier Desk to reconcile them against the outstanding bills below.
@@ -372,12 +372,12 @@
 
           <!-- OUTSTANDING BILLS section -->
           <div v-if="outstandingInvoices.length > 0">
-            <div class="sticky top-0 z-10 bg-slate-800/90 backdrop-blur-sm px-6 py-2 border-b border-slate-700">
-              <span class="text-[10px] font-black uppercase tracking-widest text-amber-400">Outstanding Bills</span>
+            <div class="sticky top-0 z-10 bg-[var(--color-surface)]/90 backdrop-blur-sm px-6 py-2 border-b border-[var(--color-border)]">
+              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-warning)]">Outstanding Bills</span>
             </div>
             <table class="w-full border-collapse">
-              <thead class="bg-slate-800 border-b border-slate-700">
-                <tr class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                <tr class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                   <th class="px-4 py-2 text-left">Invoice</th>
                   <th class="px-4 py-2 text-left">Date</th>
                   <th class="px-4 py-2 text-center">Days</th>
@@ -388,17 +388,17 @@
               </thead>
               <tbody class="divide-y divide-slate-800">
                 <tr v-for="(inv, i) in outstandingInvoices" :key="inv.name"
-                  class="transition-colors" :class="inv._alloc > 0 ? 'bg-blue-900/10' : 'hover:bg-slate-800/40'">
-                  <td class="px-4 py-2 font-mono text-sm font-bold text-blue-400">{{ inv.name }}</td>
-                  <td class="px-4 py-2 text-sm text-slate-400 whitespace-nowrap">{{ inv.posting_date }}</td>
+                  class="transition-colors" :class="inv._alloc > 0 ? 'bg-[var(--color-info)]/10' : 'hover:bg-[var(--color-surface)]/40'">
+                  <td class="px-4 py-2 font-mono text-sm font-bold text-[var(--color-info)]">{{ inv.name }}</td>
+                  <td class="px-4 py-2 text-sm text-[var(--color-text-muted)] whitespace-nowrap">{{ inv.posting_date }}</td>
                   <td class="px-4 py-2 text-center">
                     <span class="rounded-full px-2 py-0.5 text-xs font-bold"
-                      :class="inv._days > 90 ? 'bg-red-900/40 text-red-400' : inv._days > 30 ? 'bg-amber-900/40 text-amber-400' : 'bg-slate-700 text-slate-400'">
+                      :class="inv._days > 90 ? 'bg-[var(--color-danger)]/40 text-[var(--color-danger)]' : inv._days > 30 ? 'bg-[var(--color-warning)]/40 text-[var(--color-warning)]' : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'">
                       {{ inv._days }}d
                     </span>
                   </td>
-                  <td class="px-4 py-2 text-right font-mono text-sm text-slate-400">₹{{ fmt(inv.grand_total) }}</td>
-                  <td class="px-4 py-2 text-right font-mono font-bold text-amber-400">₹{{ fmt(inv.outstanding_amount) }}</td>
+                  <td class="px-4 py-2 text-right font-mono text-sm text-[var(--color-text-muted)]">₹{{ fmt(inv.grand_total) }}</td>
+                  <td class="px-4 py-2 text-right font-mono font-bold text-[var(--color-warning)]">₹{{ fmt(inv.outstanding_amount) }}</td>
                   <td class="px-3 py-1.5 text-right">
                     <input
                       v-model.number="inv._alloc"
@@ -409,7 +409,7 @@
                       :ref="el => { if (el) outstandingAllocRefs[i] = el }"
                       @focus="e => e.target.select()"
                       @keydown.enter.prevent="focusNextAllocOrProceed(i)"
-                      class="w-32 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-sm font-bold text-slate-100 outline-none focus:border-blue-500 focus:bg-slate-700"
+                      class="w-32 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:bg-[var(--color-surface-raised)]"
                       placeholder="0.00"
                     />
                   </td>
@@ -420,12 +420,12 @@
 
           <!-- UNLINKED PAYMENTS section -->
           <div v-if="unlinkedPayments.length > 0">
-            <div class="sticky top-0 z-10 bg-slate-800/90 backdrop-blur-sm px-6 py-2 border-b border-violet-800/30" :class="outstandingInvoices.length ? 'border-t border-slate-700 mt-2' : ''">
-              <span class="text-[10px] font-black uppercase tracking-widest text-violet-400">Unlinked Payments (Floating)</span>
+            <div class="sticky top-0 z-10 bg-[var(--color-surface)]/90 backdrop-blur-sm px-6 py-2 border-b border-[var(--color-info)]/30" :class="outstandingInvoices.length ? 'border-t border-[var(--color-border)] mt-2' : ''">
+              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Payments (Floating)</span>
             </div>
             <table class="w-full border-collapse">
-              <thead class="bg-slate-800 border-b border-slate-700">
-                <tr class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                <tr class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                   <th class="px-4 py-2 text-left">Reference</th>
                   <th class="px-4 py-2 text-left">Date</th>
                   <th class="px-4 py-2 text-left">Mode</th>
@@ -435,13 +435,13 @@
               </thead>
               <tbody class="divide-y divide-slate-800">
                 <tr v-for="pe in unlinkedPayments" :key="pe.name + (pe.reference_row || '')"
-                  class="hover:bg-slate-800/40 transition-colors">
-                  <td class="px-4 py-2 font-mono text-sm font-bold text-violet-400">{{ pe.name }}</td>
-                  <td class="px-4 py-2 text-sm text-slate-400 whitespace-nowrap">{{ pe.posting_date }}</td>
-                  <td class="px-4 py-2 text-sm text-slate-400">{{ pe.mode_of_payment }}</td>
-                  <td class="px-4 py-2 text-right font-mono font-bold text-violet-300">₹{{ fmt(pe.unallocated_amount) }}</td>
+                  class="hover:bg-[var(--color-surface)]/40 transition-colors">
+                  <td class="px-4 py-2 font-mono text-sm font-bold text-[var(--color-info)]">{{ pe.name }}</td>
+                  <td class="px-4 py-2 text-sm text-[var(--color-text-muted)] whitespace-nowrap">{{ pe.posting_date }}</td>
+                  <td class="px-4 py-2 text-sm text-[var(--color-text-muted)]">{{ pe.mode_of_payment }}</td>
+                  <td class="px-4 py-2 text-right font-mono font-bold text-[var(--color-info)]">₹{{ fmt(pe.unallocated_amount) }}</td>
                   <td class="px-4 py-2">
-                    <span class="rounded-full bg-violet-900/30 border border-violet-700/40 px-2 py-0.5 text-[10px] font-bold text-violet-400 uppercase tracking-wider">
+                    <span class="rounded-full bg-[var(--color-info)]/30 border border-[var(--color-info)]/40 px-2 py-0.5 text-[10px] font-bold text-[var(--color-info)] uppercase tracking-wider">
                       Unreconciled
                     </span>
                   </td>
@@ -451,23 +451,23 @@
           </div>
 
           <!-- Empty state when neither exists (shouldn't normally show but guard) -->
-          <div v-if="!outstandingInvoices.length && !unlinkedPayments.length" class="flex flex-col items-center justify-center py-16 text-slate-600">
+          <div v-if="!outstandingInvoices.length && !unlinkedPayments.length" class="flex flex-col items-center justify-center py-16 text-[var(--color-text-muted)]">
             <div class="text-sm font-bold">No outstanding bills or unlinked payments</div>
           </div>
 
         </div>
 
         <!-- Footer -->
-        <div class="flex items-center justify-between border-t border-slate-700 bg-slate-800/50 px-6 py-3">
-          <div class="text-xs text-slate-500">
+        <div class="flex items-center justify-between border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 px-6 py-3">
+          <div class="text-xs text-[var(--color-text-muted)]">
             <span v-if="outstandingInvoices.length">Enter amount to allocate per bill · Enter on last row proceeds</span>
-            <span v-else class="text-violet-400">No outstanding bills. Unlinked payments shown for reference.</span>
+            <span v-else class="text-[var(--color-info)]">No outstanding bills. Unlinked payments shown for reference.</span>
           </div>
           <div class="flex items-center gap-3">
             <button
               v-if="outstandingInvoices.length"
               @click="outstandingInvoices.forEach(i => i._alloc = 0)"
-              class="rounded-lg border border-slate-600 px-4 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-800 transition-all"
+              class="rounded-lg border border-[var(--color-border)] px-4 py-1.5 text-xs font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] transition-all"
             >
               Clear
             </button>
@@ -475,7 +475,7 @@
               ref="outstandingProceedBtn"
               @click="confirmOutstanding"
               @keydown.enter.prevent="confirmOutstanding"
-              class="rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg"
+              class="rounded-xl bg-[var(--color-info)] px-6 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] transition-all shadow-lg"
             >
               Proceed &rarr;
             </button>

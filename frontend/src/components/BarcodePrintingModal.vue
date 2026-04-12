@@ -3,19 +3,19 @@
     v-if="show"
     class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm"
   >
-    <div class="flex h-[90vh] w-[80vw] flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
+    <div class="flex h-[90vh] w-[80vw] flex-col rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
       <!-- Header -->
-      <div class="border-b border-slate-700 px-6 py-4 flex items-center justify-between bg-slate-800">
+      <div class="border-b border-[var(--color-border)] px-6 py-4 flex items-center justify-between bg-[var(--color-surface)]">
         <div>
-          <div class="text-xl font-bold text-slate-100">Barcode Printing</div>
+          <div class="text-xl font-bold text-[var(--color-text)]">Barcode Printing</div>
           <div class="flex items-center gap-3 mt-0.5">
-            <span class="text-xs text-slate-400">Manage items and quantities to print</span>
-            <span v-if="billNo" class="rounded bg-slate-700 px-2 py-0.5 text-xs font-bold text-blue-300">
+            <span class="text-xs text-[var(--color-text-muted)]">Manage items and quantities to print</span>
+            <span v-if="billNo" class="rounded bg-[var(--color-surface-raised)] px-2 py-0.5 text-xs font-bold text-[var(--color-info)]">
               Bill: {{ billNo }}
             </span>
           </div>
         </div>
-        <button @click="$emit('close')" :disabled="printing" class="text-2xl text-slate-500 hover:text-slate-300 disabled:opacity-40">✕</button>
+        <button @click="$emit('close')" :disabled="printing" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-40">✕</button>
       </div>
 
       <div class="flex-1 flex flex-col p-6 gap-5 overflow-hidden">
@@ -24,11 +24,11 @@
         <div class="flex gap-4">
           <!-- Printer Select -->
           <div class="flex flex-col gap-1.5 flex-1">
-            <label class="text-[10px] font-bold uppercase text-slate-500">Printer</label>
+            <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Printer</label>
             <div class="relative">
               <select
                 v-model="selectedPrinter"
-                class="w-full appearance-none rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                class="w-full appearance-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)] disabled:opacity-50"
                 :disabled="loadingResources || printing"
               >
                 <option value="">— Select Printer —</option>
@@ -36,18 +36,18 @@
                   {{ p.printer_name }}{{ p.is_default ? ' ★' : '' }}
                 </option>
               </select>
-              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">▾</span>
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">▾</span>
             </div>
-            <span v-if="!printers.length && !loadingResources" class="text-[10px] text-red-400">No printers configured</span>
+            <span v-if="!printers.length && !loadingResources" class="text-[10px] text-[var(--color-danger)]">No printers configured</span>
           </div>
 
           <!-- Template Select -->
           <div class="flex flex-col gap-1.5 flex-1">
-            <label class="text-[10px] font-bold uppercase text-slate-500">Print Template</label>
+            <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Print Template</label>
             <div class="relative">
               <select
                 v-model="selectedTemplate"
-                class="w-full appearance-none rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                class="w-full appearance-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)] disabled:opacity-50"
                 :disabled="loadingResources || printing"
               >
                 <option value="">— Select Template —</option>
@@ -55,25 +55,25 @@
                   {{ t.template_name }}
                 </option>
               </select>
-              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">▾</span>
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">▾</span>
             </div>
-            <span v-if="!templates.length && !loadingResources" class="text-[10px] text-red-400">No Barcode templates found</span>
+            <span v-if="!templates.length && !loadingResources" class="text-[10px] text-[var(--color-danger)]">No Barcode templates found</span>
           </div>
 
-          <div v-if="loadingResources" class="flex items-end pb-2 text-xs text-slate-500 italic">
+          <div v-if="loadingResources" class="flex items-end pb-2 text-xs text-[var(--color-text-muted)] italic">
             Loading…
           </div>
         </div>
 
         <!-- Item Search -->
         <div class="flex flex-col gap-2">
-          <label class="text-[10px] font-bold uppercase text-slate-500">Add Item to List</label>
+          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Add Item to List</label>
           <div class="relative">
             <input
               ref="itemInput"
               v-model="query"
               :disabled="printing"
-              class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-lg text-slate-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-lg text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)] disabled:opacity-50"
               placeholder="Start typing item code or name..."
               @keydown.down.prevent="moveSelection(1)"
               @keydown.up.prevent="moveSelection(-1)"
@@ -81,28 +81,28 @@
             />
 
             <!-- Search Results Dropdown -->
-            <div v-if="showResults && results.length" class="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-2xl custom-scrollbar">
+            <div v-if="showResults && results.length" class="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl custom-scrollbar">
               <div
                 v-for="(item, idx) in results"
                 :key="item.item_code"
-                class="flex items-center justify-between border-b border-slate-700/50 px-4 py-2.5 cursor-pointer hover:bg-slate-700"
-                :class="{ 'bg-slate-700': selectedIdx === idx }"
+                class="flex items-center justify-between border-b border-[var(--color-border)]/50 px-4 py-2.5 cursor-pointer hover:bg-[var(--color-surface-raised)]"
+                :class="{ 'bg-[var(--color-surface-raised)]': selectedIdx === idx }"
                 @click="selectItem(item)"
               >
                 <div class="flex flex-col">
-                  <span class="font-mono text-sm font-bold text-blue-400">{{ item.item_code }}</span>
-                  <span class="text-xs text-slate-300">{{ item.item_name }}</span>
+                  <span class="font-mono text-sm font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
+                  <span class="text-xs text-[var(--color-text)]">{{ item.item_name }}</span>
                 </div>
-                <span class="text-[10px] font-bold text-slate-500 uppercase">{{ item.uom }}</span>
+                <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{{ item.uom }}</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Items Table -->
-        <div class="flex-1 overflow-auto border border-slate-700 rounded-xl bg-slate-800/30">
+        <div class="flex-1 overflow-auto border border-[var(--color-border)] rounded-xl bg-[var(--color-surface)]/30">
           <table class="w-full border-collapse">
-            <thead class="sticky top-0 z-10 bg-slate-800 text-[10px] font-bold uppercase text-slate-500">
+            <thead class="sticky top-0 z-10 bg-[var(--color-surface)] text-[10px] font-bold uppercase text-[var(--color-text-muted)]">
               <tr>
                 <th class="px-4 py-3 text-left">Item Code</th>
                 <th class="px-4 py-3 text-left">Item Name</th>
@@ -111,28 +111,28 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50">
-              <tr v-for="(item, idx) in itemsToPrint" :key="idx" class="hover:bg-slate-700/30 transition-colors">
-                <td class="px-4 py-3 font-mono text-sm text-blue-400">{{ item.item_code }}</td>
-                <td class="px-4 py-3 text-sm text-slate-200">{{ item.item_name }}</td>
+              <tr v-for="(item, idx) in itemsToPrint" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
+                <td class="px-4 py-3 font-mono text-sm text-[var(--color-info)]">{{ item.item_code }}</td>
+                <td class="px-4 py-3 text-sm text-[var(--color-text)]">{{ item.item_name }}</td>
                 <td class="px-4 py-3 text-right">
                   <div class="flex items-center justify-end gap-2">
-                    <button :disabled="printing" @click="item.qty = Math.max(1, item.qty - 1)" class="h-8 w-8 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-40">&minus;</button>
+                    <button :disabled="printing" @click="item.qty = Math.max(1, item.qty - 1)" class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] disabled:opacity-40">&minus;</button>
                     <input
                       type="number"
                       v-model.number="item.qty"
                       min="1"
                       :disabled="printing"
-                      class="h-8 w-16 rounded border border-slate-600 bg-slate-900 text-center text-sm font-bold text-slate-100 outline-none focus:border-blue-500 disabled:opacity-40"
+                      class="h-8 w-16 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-center text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-40"
                     />
-                    <button :disabled="printing" @click="item.qty++" class="h-8 w-8 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-40">&plus;</button>
+                    <button :disabled="printing" @click="item.qty++" class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] disabled:opacity-40">&plus;</button>
                   </div>
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <button :disabled="printing" @click="removeItem(idx)" class="text-slate-500 hover:text-red-400 transition-colors disabled:opacity-40">✕</button>
+                  <button :disabled="printing" @click="removeItem(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors disabled:opacity-40">✕</button>
                 </td>
               </tr>
               <tr v-if="!itemsToPrint.length">
-                <td colspan="4" class="px-4 py-12 text-center text-slate-500 italic">
+                <td colspan="4" class="px-4 py-12 text-center text-[var(--color-text-muted)] italic">
                   No items added yet. Search and select items to print.
                 </td>
               </tr>
@@ -144,20 +144,20 @@
         <div
           v-if="statusMsg"
           class="rounded-lg px-4 py-2.5 text-sm font-bold text-center"
-          :class="statusError ? 'bg-red-900/60 text-red-300 border border-red-700' : 'bg-green-900/60 text-green-300 border border-green-700'"
+          :class="statusError ? 'bg-[var(--color-danger)]/60 text-[var(--color-danger)] border border-[var(--color-danger)]' : 'bg-[var(--color-success)]/60 text-[var(--color-success)] border border-[var(--color-success)]'"
         >
           {{ statusMsg }}
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="border-t border-slate-700 bg-slate-800/50 px-6 py-4 flex items-center justify-between">
+      <div class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 px-6 py-4 flex items-center justify-between">
         <div class="flex gap-4">
-          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 text-slate-300 mr-1">ESC</kbd> Close
+          <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+            <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-[var(--color-text)] mr-1">ESC</kbd> Close
           </span>
-          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 text-slate-300 mr-1">ENTER</kbd> Print
+          <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+            <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-[var(--color-text)] mr-1">ENTER</kbd> Print
           </span>
         </div>
 
@@ -165,14 +165,14 @@
           <button
             v-if="itemsToPrint.length && !printing"
             @click="itemsToPrint = []"
-            class="px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-200"
+            class="px-4 py-2.5 text-sm font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
           >
             Clear All
           </button>
           <button
             @click="triggerPrint"
             :disabled="!canPrint || printing"
-            class="min-w-[160px] rounded-xl bg-orange-600 px-8 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-orange-700 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            class="min-w-[160px] rounded-xl bg-[var(--color-supplier)] px-8 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-supplier)] disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <span v-if="printing" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
             {{ printing ? 'Sending to Printer…' : 'Print Barcodes' }}

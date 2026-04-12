@@ -1,18 +1,18 @@
 <template>
   <div
     v-if="show"
-    class="w-[640px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden"
+    class="w-[640px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden"
     @keydown="handleKeydown"
   >
     <!-- Header -->
-    <div class="border-b border-slate-700 px-5 py-4 bg-slate-800 flex items-start justify-between">
+    <div class="border-b border-[var(--color-border)] px-5 py-4 bg-[var(--color-surface)] flex items-start justify-between">
       <div>
-        <div class="text-xl font-bold text-slate-200">
+        <div class="text-xl font-bold text-[var(--color-text)]">
           {{ isEdit ? 'Edit Supplier' : 'New Supplier' }}
         </div>
-        <div class="text-sm text-slate-400 flex items-center gap-2 mt-0.5">
+        <div class="text-sm text-[var(--color-text-muted)] flex items-center gap-2 mt-0.5">
           <template v-if="isEdit && loading">
-            <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent"></span>
+            <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></span>
             Loading from ERPNext…
           </template>
           <template v-else>
@@ -20,7 +20,7 @@
           </template>
         </div>
       </div>
-      <button @click="$emit('close')" class="text-slate-500 hover:text-slate-300 text-xl leading-none mt-0.5">✕</button>
+      <button @click="$emit('close')" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl leading-none mt-0.5">✕</button>
     </div>
 
     <!-- Form -->
@@ -29,11 +29,11 @@
       <!-- Supplier Type / Supplier Group -->
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Supplier Type *</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Type *</label>
           <select
             ref="typeInput"
             v-model="form.supplier_type"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base font-semibold text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             @keydown.esc.stop="$emit('close')"
           >
             <option value="Company">Company</option>
@@ -42,11 +42,11 @@
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Supplier Group *</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Group *</label>
           <select
             ref="groupInput"
             v-model="form.supplier_group"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             @keydown.esc.stop="$emit('close')"
           >
             <option value="">— Select Group —</option>
@@ -57,11 +57,11 @@
 
       <!-- Supplier Name -->
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Supplier Name *</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Name *</label>
         <input
           ref="nameInput"
           v-model="form.supplier_name"
-          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base font-semibold text-slate-200 outline-none focus:border-blue-500"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           placeholder="Full name"
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="focusNext"
@@ -71,12 +71,12 @@
       <!-- GSTIN + GST Category badge -->
       <div class="flex flex-col gap-1.5">
         <div class="flex items-center justify-between">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">GSTIN</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">GSTIN</label>
           <span
             class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
             :class="gstCategory === 'Registered Regular'
-              ? 'bg-green-900/30 text-green-400'
-              : 'bg-slate-700 text-slate-500'"
+              ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]'
+              : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
           >
             {{ gstCategory }}
           </span>
@@ -84,7 +84,7 @@
         <input
           ref="gstinInput"
           v-model="form.gstin"
-          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 font-mono text-base uppercase text-slate-200 outline-none focus:border-blue-500"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           placeholder="22AAAAA0000A1Z5"
           maxlength="15"
           @keydown.esc.stop="$emit('close')"
@@ -95,11 +95,11 @@
       <!-- Mobile / WhatsApp / Email -->
       <div class="grid grid-cols-3 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number</label>
           <input
             ref="mobileInput"
             v-model="form.mobile"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="10-digit mobile"
             maxlength="10"
             @keydown.esc.stop="$emit('close')"
@@ -107,11 +107,11 @@
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">WhatsApp</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp</label>
           <input
             ref="whatsappInput"
             v-model="form.whatsapp"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="10-digit whatsapp"
             maxlength="10"
             @keydown.esc.stop="$emit('close')"
@@ -119,12 +119,12 @@
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
           <input
             ref="emailInput"
             v-model="form.email"
             type="email"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="email@example.com"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -134,11 +134,11 @@
 
       <!-- Address Line 1 -->
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1</label>
         <input
           ref="addr1Input"
           v-model="form.address_line1"
-          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           placeholder="Street / Building"
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="focusNext"
@@ -147,11 +147,11 @@
 
       <!-- Address Line 2 -->
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 2</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
         <input
           ref="addr2Input"
           v-model="form.address_line2"
-          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           placeholder="Area / Landmark (optional)"
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="focusNext"
@@ -161,22 +161,22 @@
       <!-- City / Pincode / State -->
       <div class="grid grid-cols-3 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">City</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
           <input
             ref="cityInput"
             v-model="form.city"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="City"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pincode</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
           <input
             ref="pincodeInput"
             v-model="form.pincode"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="678XXX"
             maxlength="6"
             @keydown.esc.stop="$emit('close')"
@@ -184,11 +184,11 @@
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">State</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
           <select
             ref="stateInput"
             v-model="form.state"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             @keydown.esc.stop="$emit('close')"
           >
             <option value="">Select State</option>
@@ -199,23 +199,23 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex justify-end gap-3 border-t border-slate-700 px-6 py-4 bg-slate-800">
+    <div class="flex justify-end gap-3 border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
       <button
-        class="rounded border border-slate-600 bg-slate-700 px-5 py-2 font-semibold text-slate-300 transition-colors hover:bg-slate-600"
+        class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2 font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-raised)]"
         @click="$emit('close')"
       >
         Cancel
       </button>
       <button
-        class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-        :class="isEdit ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'"
+        class="rounded px-6 py-2 font-bold text-[var(--color-text-on-highlight)] shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+        :class="isEdit ? 'bg-[var(--color-supplier)] hover:bg-[var(--color-supplier)]' : 'bg-[var(--color-info)] hover:bg-[var(--color-info)]'"
         :disabled="saving || loading"
         @click="submit"
       >
         {{ saving ? (isEdit ? 'Updating...' : 'Saving...') : (isEdit ? 'Update Details' : 'Save & Select') }}
         <kbd
           class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm"
-          :class="isEdit ? 'border-orange-500 bg-orange-500' : 'border-blue-500 bg-blue-500'"
+          :class="isEdit ? 'border-[var(--color-supplier)] bg-[var(--color-supplier)]' : 'border-[var(--color-info)] bg-[var(--color-info)]'"
         >End</kbd>
       </button>
     </div>

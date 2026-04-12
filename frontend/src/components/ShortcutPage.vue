@@ -1,27 +1,27 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm" @click.self="$emit('close')">
-    <div class="w-[720px] max-h-[85vh] overflow-y-auto rounded-xl bg-slate-900 border border-slate-700 shadow-2xl">
+    <div class="w-[720px] max-h-[85vh] overflow-y-auto rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-5 py-3 rounded-t-xl sticky top-0">
-        <div class="text-sm font-bold uppercase tracking-wider text-slate-300">Keyboard Shortcuts</div>
+      <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 rounded-t-xl sticky top-0">
+        <div class="text-sm font-bold uppercase tracking-wider text-[var(--color-text)]">Keyboard Shortcuts</div>
         <div class="flex items-center gap-3">
-          <kbd class="rounded border border-slate-600 bg-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">F1</kbd>
-          <span class="text-[10px] text-slate-500">to toggle</span>
-          <button @click="$emit('close')" class="ml-2 rounded px-2 py-0.5 text-slate-400 hover:bg-slate-700 hover:text-slate-200 text-lg leading-none">&times;</button>
+          <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">F1</kbd>
+          <span class="text-[10px] text-[var(--color-text-muted)]">to toggle</span>
+          <button @click="$emit('close')" class="ml-2 rounded px-2 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] text-lg leading-none">&times;</button>
         </div>
       </div>
 
       <div class="p-5 grid grid-cols-2 gap-6">
         <!-- Navigation -->
         <section>
-          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Navigation</div>
+          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Navigation</div>
           <table class="w-full border-collapse text-xs">
             <tbody>
-              <tr v-for="s in navigationShortcuts" :key="s.key" class="border-b border-slate-800 last:border-0">
+              <tr v-for="s in navigationShortcuts" :key="s.key" class="border-b border-[var(--color-border)] last:border-0">
                 <td class="py-1.5 pr-4 w-28">
-                  <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-300 whitespace-nowrap">{{ s.key }}</kbd>
+                  <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)] whitespace-nowrap">{{ s.key }}</kbd>
                 </td>
-                <td class="py-1.5 text-slate-400">{{ s.desc }}</td>
+                <td class="py-1.5 text-[var(--color-text-muted)]">{{ s.desc }}</td>
               </tr>
             </tbody>
           </table>
@@ -29,14 +29,14 @@
 
         <!-- Bill Actions -->
         <section>
-          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Bill Actions</div>
+          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Bill Actions</div>
           <table class="w-full border-collapse text-xs">
             <tbody>
-              <tr v-for="s in billShortcuts" :key="s.key" class="border-b border-slate-800 last:border-0">
+              <tr v-for="s in billShortcuts" :key="s.key" class="border-b border-[var(--color-border)] last:border-0">
                 <td class="py-1.5 pr-4 w-28">
-                  <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-300 whitespace-nowrap">{{ s.key }}</kbd>
+                  <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)] whitespace-nowrap">{{ s.key }}</kbd>
                 </td>
-                <td class="py-1.5 text-slate-400">{{ s.desc }}</td>
+                <td class="py-1.5 text-[var(--color-text-muted)]">{{ s.desc }}</td>
               </tr>
             </tbody>
           </table>
@@ -44,14 +44,14 @@
 
         <!-- Row / Item -->
         <section>
-          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Row / Item</div>
+          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Row / Item</div>
           <table class="w-full border-collapse text-xs">
             <tbody>
-              <tr v-for="s in rowShortcuts" :key="s.key" class="border-b border-slate-800 last:border-0">
+              <tr v-for="s in rowShortcuts" :key="s.key" class="border-b border-[var(--color-border)] last:border-0">
                 <td class="py-1.5 pr-4 w-28">
-                  <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-300 whitespace-nowrap">{{ s.key }}</kbd>
+                  <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)] whitespace-nowrap">{{ s.key }}</kbd>
                 </td>
-                <td class="py-1.5 text-slate-400">{{ s.desc }}</td>
+                <td class="py-1.5 text-[var(--color-text-muted)]">{{ s.desc }}</td>
               </tr>
             </tbody>
           </table>
@@ -59,14 +59,14 @@
 
         <!-- Page Specific (slot for overrides) -->
         <section v-if="extra && extra.length">
-          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">{{ extraTitle || 'Page Shortcuts' }}</div>
+          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ extraTitle || 'Page Shortcuts' }}</div>
           <table class="w-full border-collapse text-xs">
             <tbody>
-              <tr v-for="s in extra" :key="s.key" class="border-b border-slate-800 last:border-0">
+              <tr v-for="s in extra" :key="s.key" class="border-b border-[var(--color-border)] last:border-0">
                 <td class="py-1.5 pr-4 w-28">
-                  <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-300 whitespace-nowrap">{{ s.key }}</kbd>
+                  <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)] whitespace-nowrap">{{ s.key }}</kbd>
                 </td>
-                <td class="py-1.5 text-slate-400">{{ s.desc }}</td>
+                <td class="py-1.5 text-[var(--color-text-muted)]">{{ s.desc }}</td>
               </tr>
             </tbody>
           </table>

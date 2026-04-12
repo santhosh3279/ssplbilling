@@ -43,7 +43,7 @@
           </div>
         </div>
 
-        <div v-if="!allowedSeries.length" class="py-12 text-center text-slate-500 italic">
+        <div v-if="!allowedSeries.length" class="py-12 text-center text-[var(--color-text-muted)] italic">
           No allowed series found for your user profile.
         </div>
       </div>

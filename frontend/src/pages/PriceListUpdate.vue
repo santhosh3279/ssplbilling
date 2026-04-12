@@ -1,93 +1,93 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[210] flex items-center justify-center bg-black/80 backdrop-blur-md p-4' : 'min-h-screen bg-slate-900 flex flex-col'">
-    <div :class="isSubWindow ? 'flex h-[70vh] w-[70vw] flex-col overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl' : 'flex flex-1 flex-col'">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[210] flex items-center justify-center bg-black/80 backdrop-blur-md p-4' : 'min-h-screen bg-[var(--color-bg)] flex flex-col'">
+    <div :class="isSubWindow ? 'flex h-[70vh] w-[70vw] flex-col overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl' : 'flex flex-1 flex-col'">
       <!-- Header -->
-      <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-4">
+      <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
         <div class="flex items-center gap-4">
           <button
             v-if="isSubWindow"
-            class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700"
+            class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
             @click="$emit('close')"
           >
             &larr; Back to Entry
           </button>
           <button
             v-else
-            class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700"
+            class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
             @click="router.push('/')"
           >
             &larr; Dashboard
           </button>
-          <h1 class="text-xl font-bold text-slate-100">Update Item Prices</h1>
-          <div v-if="itemCode" class="rounded-full bg-blue-900/20 px-3 py-1 text-sm font-bold text-blue-400">
+          <h1 class="text-xl font-bold text-[var(--color-text)]">Update Item Prices</h1>
+          <div v-if="itemCode" class="rounded-full bg-[var(--color-info)]/20 px-3 py-1 text-sm font-bold text-[var(--color-info)]">
             {{ itemCode }}
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-xs text-slate-400">
-            <kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">F8</kbd> Save All
-            <kbd class="ml-2 rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> Close
+          <span class="text-xs text-[var(--color-text-muted)]">
+            <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">F8</kbd> Save All
+            <kbd class="ml-2 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">Esc</kbd> Close
           </span>
         </div>
       </header>
 
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto p-6">
-        <div class="mx-auto max-w-4xl rounded-xl border border-slate-700 bg-slate-800 shadow-sm overflow-hidden">
+        <div class="mx-auto max-w-4xl rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden">
           <div v-if="loading" class="flex items-center justify-center py-20">
-            <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-info)] border-t-transparent"></div>
           </div>
 
           <div v-else-if="!itemCode && !isSubWindow" class="p-10 text-center">
-            <div class="mb-4 text-slate-400">Please provide an item code to update prices.</div>
+            <div class="mb-4 text-[var(--color-text-muted)]">Please provide an item code to update prices.</div>
             <input
               v-model="manualItemCode"
-              class="rounded border border-slate-600 bg-slate-800 px-4 py-2 text-slate-200 outline-none focus:border-blue-500"
+              class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
               placeholder="Enter Item Code..."
               @keydown.enter="loadPrices(manualItemCode)"
             />
           </div>
 
           <table v-else class="w-full text-left border-collapse">
-            <thead class="bg-slate-800 border-b border-slate-700">
+            <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <tr>
-                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Price List</th>
-                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
-                <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Current Rate</th>
+                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Price List</th>
+                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Type</th>
+                <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Current Rate</th>
                 <!-- One "New Rate" column per UOM -->
                 <th
                   v-for="u in uoms"
                   :key="u.uom"
                   class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider"
-                  :class="u.uom === stockUom ? 'text-blue-400' : 'text-amber-400'"
+                  :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'"
                 >
                   New Rate
                   <span class="block font-normal normal-case text-[10px] mt-0.5 opacity-80">
-                    {{ u.uom }}<span v-if="u.conversion_factor !== 1" class="ml-1 text-slate-500">×{{ u.conversion_factor }}</span>
+                    {{ u.uom }}<span v-if="u.conversion_factor !== 1" class="ml-1 text-[var(--color-text-muted)]">×{{ u.conversion_factor }}</span>
                   </span>
                 </th>
-                <th v-if="selectedPriceList" class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Disc %</th>
+                <th v-if="selectedPriceList" class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Disc %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
               <tr
                 v-for="(p, idx) in prices"
                 :key="p.price_list"
-                class="hover:bg-slate-800/40 transition-colors"
-                :class="{ 'bg-blue-900/30': activeRow === idx }"
+                class="hover:bg-[var(--color-surface)]/40 transition-colors"
+                :class="{ 'bg-[var(--color-info)]/30': activeRow === idx }"
                 @click="activeRow = idx"
               >
                 <td class="px-4 py-3">
-                  <div class="font-semibold text-slate-100">{{ p.price_list }}</div>
-                  <div v-if="p.price_list === selectedPriceList" class="text-[10px] font-bold text-blue-400 uppercase">Selected in entry</div>
+                  <div class="font-semibold text-[var(--color-text)]">{{ p.price_list }}</div>
+                  <div v-if="p.price_list === selectedPriceList" class="text-[10px] font-bold text-[var(--color-info)] uppercase">Selected in entry</div>
                 </td>
                 <td class="px-4 py-3">
                   <div class="flex gap-1">
-                    <span v-if="p.buying" class="rounded bg-green-900/20 px-1.5 py-0.5 text-[10px] font-bold text-green-400">BUY</span>
-                    <span v-if="p.selling" class="rounded bg-blue-900/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-400">SELL</span>
+                    <span v-if="p.buying" class="rounded bg-[var(--color-success)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-success)]">BUY</span>
+                    <span v-if="p.selling" class="rounded bg-[var(--color-info)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-info)]">SELL</span>
                   </div>
                 </td>
-                <td class="px-4 py-3 text-right font-mono text-slate-400">
+                <td class="px-4 py-3 text-right font-mono text-[var(--color-text-muted)]">
                   &#8377;{{ p.original_rate.toFixed(2) }}
                 </td>
                 <!-- Rate input per UOM -->
@@ -101,8 +101,8 @@
                     type="number"
                     v-model.number="p.uom_rates[u.uom]"
                     step="0.01"
-                    class="w-28 rounded border bg-slate-800 px-2 py-1.5 text-right font-mono font-bold text-slate-200 outline-none focus:ring-1 transition-colors"
-                    :class="u.uom === stockUom ? 'border-slate-600 focus:border-blue-500 focus:ring-blue-500/20' : 'border-amber-800/40 focus:border-amber-500 focus:ring-amber-500/20'"
+                    class="w-28 rounded border bg-[var(--color-surface)] px-2 py-1.5 text-right font-mono font-bold text-[var(--color-text)] outline-none focus:ring-1 transition-colors"
+                    :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
                     @keydown.enter.prevent="onRateEnter(idx, uidx)"
                     @keydown.up.prevent="moveVertical(idx, -1, uidx)"
                     @keydown.down.prevent="moveVertical(idx, 1, uidx)"
@@ -117,12 +117,12 @@
                     step="0.5"
                     min="0"
                     max="100"
-                    class="w-20 rounded border border-blue-500 bg-blue-900/20 px-3 py-1.5 text-right font-mono font-bold text-blue-300 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    class="w-20 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 px-3 py-1.5 text-right font-mono font-bold text-[var(--color-info)] outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20"
                     @keydown.enter.prevent="onDiscEnter(idx)"
                     @keydown.up.prevent="moveVertical(idx, -1, uoms.length - 1)"
                     @keydown.down.prevent="moveVertical(idx, 1, uoms.length - 1)"
                   />
-                  <span v-else class="text-slate-600">--</span>
+                  <span v-else class="text-[var(--color-text-muted)]">--</span>
                 </td>
               </tr>
             </tbody>
@@ -131,20 +131,20 @@
       </main>
 
       <!-- Footer -->
-      <footer class="border-t border-slate-700 bg-slate-800 px-6 py-4">
+      <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
         <div class="mx-auto max-w-4xl flex items-center justify-between">
-          <div class="text-sm text-slate-400">
-            Total Price Lists: <span class="font-bold text-slate-200">{{ prices.length }}</span>
+          <div class="text-sm text-[var(--color-text-muted)]">
+            Total Price Lists: <span class="font-bold text-[var(--color-text)]">{{ prices.length }}</span>
           </div>
           <div class="flex gap-3">
             <button
-              class="rounded-lg border border-slate-600 bg-slate-700 px-6 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-600"
+              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]"
               @click="isSubWindow ? $emit('close') : router.push('/')"
             >
               Cancel
             </button>
             <button
-              class="rounded-lg bg-blue-600 px-8 py-2 text-sm font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95"
+              class="rounded-lg bg-[var(--color-info)] px-8 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-info)] active:scale-95"
               @click="saveAll"
               :disabled="saving"
             >

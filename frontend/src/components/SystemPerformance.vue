@@ -1,20 +1,20 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col">
+  <div v-if="show" class="fixed inset-0 z-[100] bg-[var(--color-bg)] flex flex-col">
 
     <!-- Header -->
-    <header class="sticky top-0 z-40 border-b border-slate-700 bg-slate-800 px-6 py-3">
+    <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button
             @click="$emit('close')"
-            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
           >
             ← Close
           </button>
-          <span class="text-slate-600">|</span>
-          <h1 class="text-sm font-bold text-slate-100">System Performance</h1>
+          <span class="text-[var(--color-text-muted)]">|</span>
+          <h1 class="text-sm font-bold text-[var(--color-text)]">System Performance</h1>
         </div>
-        <span class="text-[10px] text-slate-500">Refreshes every 10s</span>
+        <span class="text-[10px] text-[var(--color-text-muted)]">Refreshes every 10s</span>
       </div>
     </header>
 
@@ -26,14 +26,14 @@
           <!-- Left Column: Usage Stats -->
           <div class="space-y-6">
             <!-- RAM Card -->
-            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
               <div class="mb-4 flex items-center justify-between">
                 <div>
-                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">RAM Usage</div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">RAM Usage</div>
                   <div class="mt-1 text-3xl font-black" :class="ramColor">
                     {{ stats.ram_percent }}%
                   </div>
-                  <div class="text-sm text-slate-400">
+                  <div class="text-sm text-[var(--color-text-muted)]">
                     {{ stats.ram_used_gb }} GB used of {{ stats.ram_total_gb }} GB
                   </div>
                 </div>
@@ -41,7 +41,7 @@
                   <span class="text-xl">💾</span>
                 </div>
               </div>
-              <div class="h-3 w-full overflow-hidden rounded-full bg-slate-700">
+              <div class="h-3 w-full overflow-hidden rounded-full bg-[var(--color-surface-raised)]">
                 <div
                   class="h-full rounded-full transition-all duration-700"
                   :class="ramBarColor"
@@ -52,7 +52,7 @@
                 <button
                   @click="clearRam"
                   :disabled="clearing"
-                  class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-50"
+                  class="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)] disabled:opacity-50"
                 >
                   <span v-if="clearing">Running...</span>
                   <span v-else>🧹 Clear RAM Cache</span>
@@ -61,20 +61,20 @@
             </div>
 
             <!-- CPU Card -->
-            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
               <div class="mb-4 flex items-center justify-between">
                 <div>
-                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">CPU Usage</div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">CPU Usage</div>
                   <div class="mt-1 text-3xl font-black" :class="cpuColor">
                     {{ stats.cpu_percent }}%
                   </div>
-                  <div class="text-sm text-slate-400">Across all cores</div>
+                  <div class="text-sm text-[var(--color-text-muted)]">Across all cores</div>
                 </div>
                 <div class="flex h-14 w-14 items-center justify-center rounded-full border-4" :class="cpuBorderColor">
                   <span class="text-xl">⚡</span>
                 </div>
               </div>
-              <div class="h-3 w-full overflow-hidden rounded-full bg-slate-700">
+              <div class="h-3 w-full overflow-hidden rounded-full bg-[var(--color-surface-raised)]">
                 <div
                   class="h-full rounded-full transition-all duration-700"
                   :class="cpuBarColor"
@@ -87,24 +87,24 @@
           <!-- Right Column: Site & Users -->
           <div class="space-y-6">
             <!-- Active Users Card -->
-            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
               <div class="mb-4 flex items-center justify-between">
                 <div>
-                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Users</div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Active Users</div>
                   <div class="mt-1 flex items-end gap-3">
                     <div>
-                      <div class="text-3xl font-black text-emerald-400">{{ sessionData.unique_ips }}</div>
-                      <div class="text-sm text-slate-400">{{ sessionData.unique_ips === 1 ? 'computer' : 'computers' }}</div>
+                      <div class="text-3xl font-black text-[var(--color-success)]">{{ sessionData.unique_ips }}</div>
+                      <div class="text-sm text-[var(--color-text-muted)]">{{ sessionData.unique_ips === 1 ? 'computer' : 'computers' }}</div>
                     </div>
-                    <div class="mb-1 text-slate-600">/</div>
+                    <div class="mb-1 text-[var(--color-text-muted)]">/</div>
                     <div>
-                      <div class="text-xl font-bold text-slate-300">{{ sessionData.unique_users }}</div>
-                      <div class="text-sm text-slate-400">{{ sessionData.unique_users === 1 ? 'user' : 'users' }}</div>
+                      <div class="text-xl font-bold text-[var(--color-text)]">{{ sessionData.unique_users }}</div>
+                      <div class="text-sm text-[var(--color-text-muted)]">{{ sessionData.unique_users === 1 ? 'user' : 'users' }}</div>
                     </div>
                   </div>
-                  <div class="mt-1 text-[10px] text-slate-500">active in last 15 min</div>
+                  <div class="mt-1 text-[10px] text-[var(--color-text-muted)]">active in last 15 min</div>
                 </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-emerald-500">
+                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[var(--color-success)]">
                   <span class="text-xl">👥</span>
                 </div>
               </div>
@@ -112,26 +112,26 @@
                 <div
                   v-for="s in sessionData.sessions"
                   :key="s.user + s.ip"
-                  class="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2"
+                  class="flex items-center justify-between rounded-lg bg-[var(--color-bg)]/60 px-3 py-2"
                 >
                   <div class="flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span>
-                    <span class="text-xs font-semibold text-slate-200">{{ s.user }}</span>
+                    <span class="h-2 w-2 rounded-full bg-[var(--color-success)] shrink-0"></span>
+                    <span class="text-xs font-semibold text-[var(--color-text)]">{{ s.user }}</span>
                   </div>
-                  <span class="font-mono text-[10px] text-slate-400">{{ s.ip }}</span>
+                  <span class="font-mono text-[10px] text-[var(--color-text-muted)]">{{ s.ip }}</span>
                 </div>
               </div>
-              <div v-else class="mt-2 text-xs text-slate-500 text-center py-2">No active sessions</div>
+              <div v-else class="mt-2 text-xs text-[var(--color-text-muted)] text-center py-2">No active sessions</div>
             </div>
 
             <!-- Backup Card -->
-            <div class="rounded-xl border border-slate-700 bg-slate-800 p-6">
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
               <div class="mb-4 flex items-center justify-between">
                 <div>
-                  <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Site Backup</div>
-                  <div class="mt-1 text-sm text-slate-300">Run <span class="font-mono text-[11px] text-slate-400">frappe_backup.sh</span> manually</div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Site Backup</div>
+                  <div class="mt-1 text-sm text-[var(--color-text)]">Run <span class="font-mono text-[11px] text-[var(--color-text-muted)]">frappe_backup.sh</span> manually</div>
                 </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-blue-500">
+                <div class="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[var(--color-info)]">
                   <span class="text-xl">💾</span>
                 </div>
               </div>
@@ -139,7 +139,7 @@
                 <button
                   @click="runBackup"
                   :disabled="backing"
-                  class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-600 disabled:opacity-50"
+                  class="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)] disabled:opacity-50"
                 >
                   <span v-if="backing">Backing up...</span>
                   <span v-else>📦 Manual Backup</span>
@@ -151,36 +151,36 @@
         </div>
 
         <!-- Terminal -->
-        <div v-if="terminalVisible" class="rounded-xl border border-slate-600 bg-black overflow-hidden shadow-2xl">
+        <div v-if="terminalVisible" class="rounded-xl border border-[var(--color-border)] bg-black overflow-hidden shadow-2xl">
           <!-- Title bar -->
-          <div class="flex items-center gap-2 border-b border-slate-700 bg-slate-800 px-4 py-2">
-            <span class="h-3 w-3 rounded-full bg-red-500"></span>
-            <span class="h-3 w-3 rounded-full bg-amber-500"></span>
-            <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
-            <span class="ml-2 text-[11px] font-semibold text-slate-400">bash — erpdev@server</span>
+          <div class="flex items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
+            <span class="h-3 w-3 rounded-full bg-[var(--color-danger)]"></span>
+            <span class="h-3 w-3 rounded-full bg-[var(--color-warning)]"></span>
+            <span class="h-3 w-3 rounded-full bg-[var(--color-success)]"></span>
+            <span class="ml-2 text-[11px] font-semibold text-[var(--color-text-muted)]">bash — erpdev@server</span>
           </div>
           <!-- Output -->
           <div ref="terminalEl" class="min-h-32 max-h-72 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed">
             <div v-for="(line, i) in terminalLines" :key="i">
               <!-- prompt + command line -->
               <div v-if="line.type === 'cmd'" class="flex">
-                <span class="select-none text-emerald-400">erpdev@server:~$&nbsp;</span>
-                <span class="text-slate-100">{{ line.text }}</span>
-                <span v-if="i === terminalLines.length - 1 && line.typing" class="animate-pulse text-slate-100">▌</span>
+                <span class="select-none text-[var(--color-success)]">erpdev@server:~$&nbsp;</span>
+                <span class="text-[var(--color-text)]">{{ line.text }}</span>
+                <span v-if="i === terminalLines.length - 1 && line.typing" class="animate-pulse text-[var(--color-text)]">▌</span>
               </div>
               <!-- stdout output -->
-              <div v-else-if="line.type === 'out'" class="text-slate-300 whitespace-pre">{{ line.text }}</div>
+              <div v-else-if="line.type === 'out'" class="text-[var(--color-text)] whitespace-pre">{{ line.text }}</div>
               <!-- success -->
-              <div v-else-if="line.type === 'ok'" class="text-emerald-400">{{ line.text }}</div>
+              <div v-else-if="line.type === 'ok'" class="text-[var(--color-success)]">{{ line.text }}</div>
               <!-- error -->
-              <div v-else-if="line.type === 'err'" class="text-red-400">{{ line.text }}</div>
+              <div v-else-if="line.type === 'err'" class="text-[var(--color-danger)]">{{ line.text }}</div>
               <!-- blank -->
               <div v-else>&nbsp;</div>
             </div>
             <!-- idle cursor after all done -->
             <div v-if="terminalDone" class="flex">
-              <span class="select-none text-emerald-400">erpdev@server:~$&nbsp;</span>
-              <span class="animate-pulse text-slate-100">▌</span>
+              <span class="select-none text-[var(--color-success)]">erpdev@server:~$&nbsp;</span>
+              <span class="animate-pulse text-[var(--color-text)]">▌</span>
             </div>
           </div>
         </div>
@@ -393,10 +393,10 @@ onUnmounted(stopPolling)
 
 // ── color helpers ─────────────────────────────────────────────────────────────
 
-const ramColor      = computed(() => stats.value.ram_percent >= 80 ? 'text-red-400'     : stats.value.ram_percent >= 60 ? 'text-amber-400' : 'text-emerald-400')
-const ramBarColor   = computed(() => stats.value.ram_percent >= 80 ? 'bg-red-500'       : stats.value.ram_percent >= 60 ? 'bg-amber-500'   : 'bg-emerald-500')
-const ramBorderColor= computed(() => stats.value.ram_percent >= 80 ? 'border-red-500'   : stats.value.ram_percent >= 60 ? 'border-amber-500': 'border-emerald-500')
-const cpuColor      = computed(() => stats.value.cpu_percent >= 80 ? 'text-red-400'     : stats.value.cpu_percent >= 60 ? 'text-amber-400' : 'text-emerald-400')
-const cpuBarColor   = computed(() => stats.value.cpu_percent >= 80 ? 'bg-red-500'       : stats.value.cpu_percent >= 60 ? 'bg-amber-500'   : 'bg-emerald-500')
-const cpuBorderColor= computed(() => stats.value.cpu_percent >= 80 ? 'border-red-500'   : stats.value.cpu_percent >= 60 ? 'border-amber-500': 'border-emerald-500')
+const ramColor      = computed(() => stats.value.ram_percent >= 80 ? 'text-[var(--color-danger)]'     : stats.value.ram_percent >= 60 ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]')
+const ramBarColor   = computed(() => stats.value.ram_percent >= 80 ? 'bg-[var(--color-danger)]'       : stats.value.ram_percent >= 60 ? 'bg-[var(--color-warning)]'   : 'bg-[var(--color-success)]')
+const ramBorderColor= computed(() => stats.value.ram_percent >= 80 ? 'border-[var(--color-danger)]'   : stats.value.ram_percent >= 60 ? 'border-[var(--color-warning)]': 'border-[var(--color-success)]')
+const cpuColor      = computed(() => stats.value.cpu_percent >= 80 ? 'text-[var(--color-danger)]'     : stats.value.cpu_percent >= 60 ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]')
+const cpuBarColor   = computed(() => stats.value.cpu_percent >= 80 ? 'bg-[var(--color-danger)]'       : stats.value.cpu_percent >= 60 ? 'bg-[var(--color-warning)]'   : 'bg-[var(--color-success)]')
+const cpuBorderColor= computed(() => stats.value.cpu_percent >= 80 ? 'border-[var(--color-danger)]'   : stats.value.cpu_percent >= 60 ? 'border-[var(--color-warning)]': 'border-[var(--color-success)]')
 </script>

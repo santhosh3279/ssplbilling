@@ -1,87 +1,87 @@
 <template>
-  <div class="relative min-h-screen bg-slate-900 text-slate-200 font-sans overflow-x-hidden">
+  <div class="relative min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans overflow-x-hidden">
 
     <!-- TOP NAVIGATION BAR -->
-    <nav class="fixed top-0 left-0 right-0 z-50 flex h-20 items-center justify-between border-b border-slate-800 bg-slate-900/80 px-8 backdrop-blur-xl">
+    <nav class="fixed top-0 left-0 right-0 z-50 flex h-20 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/80 px-8 backdrop-blur-xl">
       <div class="flex items-center gap-8">
         <!-- Back Button -->
         <button
-          class="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:bg-slate-700 hover:text-white active:scale-95 shadow-lg"
+          class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-xs font-bold text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] active:scale-95 shadow-lg"
           @click="router.push('/')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Dashboard
         </button>
 
-        <div class="h-8 w-px bg-slate-800"></div>
+        <div class="h-8 w-px bg-[var(--color-surface)]"></div>
 
         <!-- Page Title -->
         <h1 class="text-xl font-black tracking-tighter uppercase">
-          <span class="text-emerald-400">Cashier</span> <span class="text-slate-500 font-light">Management</span>
+          <span class="text-[var(--color-success)]">Cashier</span> <span class="text-[var(--color-text-muted)] font-light">Management</span>
         </h1>
       </div>
 
       <!-- Date Navigation -->
       <div class="flex items-center gap-1.5">
         <button @click="shiftDate(-1)"
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white active:scale-95">
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div class="flex flex-col items-center rounded-xl border px-4 py-1.5 min-w-[160px]"
-             :class="isToday ? 'border-emerald-700/50 bg-emerald-900/20' : 'border-amber-700/50 bg-amber-900/20'">
+             :class="isToday ? 'border-[var(--color-success)]/50 bg-[var(--color-success)]/20' : 'border-[var(--color-warning)]/50 bg-[var(--color-warning)]/20'">
           <div class="text-[9px] font-black uppercase tracking-[0.2em]"
-               :class="isToday ? 'text-emerald-600' : 'text-amber-600'">
+               :class="isToday ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
             {{ isToday ? 'Today' : 'Past Date' }}
           </div>
-          <div class="font-mono text-xs font-black text-white leading-tight">{{ formatDateDisplay(currentDate) }}</div>
+          <div class="font-mono text-xs font-black text-[var(--color-text-on-highlight)] leading-tight">{{ formatDateDisplay(currentDate) }}</div>
         </div>
         <button @click="shiftDate(1)" :disabled="isToday"
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <button v-if="!isToday" @click="currentDate = new Date().toLocaleDateString('en-CA')"
-          class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400 transition hover:bg-slate-700 hover:text-white">
+          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]">
           Today
         </button>
       </div>
 
       <!-- Today's Sales Summary -->
       <div class="flex items-center gap-3">
-        <div class="flex flex-col items-end rounded-2xl border border-slate-700 bg-slate-800/60 px-4 py-2 shadow-inner">
-          <div class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Total Sales</div>
-          <div class="font-mono text-xl font-black text-emerald-400 leading-none">
+        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-4 py-2 shadow-inner">
+          <div class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Total Sales</div>
+          <div class="font-mono text-xl font-black text-[var(--color-success)] leading-none">
             {{ totalSales.toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
           </div>
         </div>
-        <div class="flex flex-col items-end rounded-2xl border border-slate-700 bg-slate-800/60 px-4 py-2 shadow-inner">
-          <div class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Bills</div>
-          <div class="font-mono text-xl font-black text-white leading-none">{{ filteredBills.length }}</div>
+        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-4 py-2 shadow-inner">
+          <div class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Bills</div>
+          <div class="font-mono text-xl font-black text-[var(--color-text-on-highlight)] leading-none">{{ filteredBills.length }}</div>
         </div>
       </div>
 
       <!-- Live Ledger Closing Balance -->
       <div class="flex items-center gap-4">
-        <div class="flex flex-col items-end rounded-2xl border border-slate-700 bg-slate-800/60 px-5 py-2.5 shadow-inner backdrop-blur-sm">
+        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-5 py-2.5 shadow-inner backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-0.5">
-            <div class="h-1.5 w-1.5 rounded-full animate-pulse" :class="liveLedgerLoading ? 'bg-amber-500' : 'bg-emerald-500'"></div>
-            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Live Cash Ledger</span>
+            <div class="h-1.5 w-1.5 rounded-full animate-pulse" :class="liveLedgerLoading ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'"></div>
+            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Live Cash Ledger</span>
           </div>
           <div class="flex items-baseline gap-2">
             <span class="font-mono text-2xl font-black leading-none"
-                  :class="liveLedgerBalance >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                  :class="liveLedgerBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
               {{ liveLedgerLoading ? '…' : Math.abs(liveLedgerBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </span>
             <span v-if="!liveLedgerLoading" class="text-xs font-black"
-                  :class="liveLedgerBalance >= 0 ? 'text-emerald-600' : 'text-red-600'">
+                  :class="liveLedgerBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
               {{ liveLedgerBalance >= 0 ? 'DR' : 'CR' }}
             </span>
           </div>
-          <div class="text-[9px] text-slate-600 font-mono mt-0.5 truncate max-w-[200px]">{{ liveLedgerAccount || '—' }}</div>
+          <div class="text-[9px] text-[var(--color-text-muted)] font-mono mt-0.5 truncate max-w-[200px]">{{ liveLedgerAccount || '—' }}</div>
         </div>
         <button
           @click="refreshLiveLedger"
           :disabled="liveLedgerLoading"
-          class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white disabled:opacity-40"
+          class="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] disabled:opacity-40"
           title="Refresh ledger balance"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="liveLedgerLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
@@ -96,15 +96,15 @@
       <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar min-w-0" style="width: 40%; flex-shrink: 0;">
 
       <!-- BOX Cash table card -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/60 shadow-2xl flex-shrink-0">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl flex-shrink-0">
         <!-- Table header -->
-        <div class="bg-slate-900/80 px-3 py-2 border-b border-slate-700">
-          <div class="text-sm font-black uppercase tracking-widest text-slate-400">BOX Cash — Daily Summary</div>
+        <div class="bg-[var(--color-bg)]/80 px-3 py-2 border-b border-[var(--color-border)]">
+          <div class="text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">BOX Cash — Daily Summary</div>
         </div>
         <div class="overflow-y-auto custom-scrollbar flex-1">
           <table class="w-full" style="font-size: 1.1rem;">
             <thead>
-              <tr class="border-b border-slate-700 text-xs font-black uppercase tracking-widest text-slate-500">
+              <tr class="border-b border-[var(--color-border)] text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-3 py-2 text-left">Session</th>
                 <th class="px-2 py-2 text-right">BOX</th>
                 <th class="px-2 py-2 text-right">Ledger</th>
@@ -115,119 +115,119 @@
             <tbody class="divide-y divide-slate-700/50">
 
               <!-- Opening row -->
-              <tr class="hover:bg-slate-700/20 transition">
+              <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-3 py-3">
                   <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full bg-blue-500 flex-shrink-0"></span>
+                    <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-white leading-tight">Opening</div>
+                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Opening</div>
                       <button @click="openModal('Cashier Opening')"
-                        class="text-xs text-blue-400 hover:text-blue-300 font-bold">+ Record</button>
+                        class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
                   </div>
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black text-emerald-400">
+                <td class="px-2 py-3 text-right font-mono font-black text-[var(--color-success)]">
                   {{ openingTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black" :class="openingLedger >= 0 ? 'text-sky-400' : 'text-red-400'">
+                <td class="px-2 py-3 text-right font-mono font-black" :class="openingLedger >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(openingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span class="text-xs ml-1">{{ openingLedger >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="(openingTotal-openingLedger)===0 ? 'text-slate-500' : (openingTotal-openingLedger)>0 ? 'text-emerald-400' : 'text-red-400'">
+                    :class="(openingTotal-openingLedger)===0 ? 'text-[var(--color-text-muted)]' : (openingTotal-openingLedger)>0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                   {{ (openingTotal-openingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
                 <td class="px-2 py-3 text-center">
                   <button v-if="(openingTotal-openingLedger)!==0" @click="openContra('Opening', openingTotal-openingLedger)"
-                    class="rounded bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-black text-amber-400 hover:bg-amber-500/30 transition whitespace-nowrap">
+                    class="rounded bg-[var(--color-warning)]/20 border border-[var(--color-warning)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-warning)] hover:bg-[var(--color-warning)]/30 transition whitespace-nowrap">
                     Contra
                   </button>
                 </td>
               </tr>
 
               <!-- Mid-Day-1 row -->
-              <tr class="hover:bg-slate-700/20 transition">
+              <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-3 py-3">
                   <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full bg-indigo-500 flex-shrink-0"></span>
+                    <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-white leading-tight">Mid-Day-1</div>
+                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Mid-Day-1</div>
                       <button @click="openModal('Mid-Day-1')"
-                        class="text-xs text-indigo-400 hover:text-indigo-300 font-bold">+ Record</button>
+                        class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
                   </div>
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black text-emerald-400">
+                <td class="px-2 py-3 text-right font-mono font-black text-[var(--color-success)]">
                   {{ md1Total.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black" :class="md1Ledger >= 0 ? 'text-sky-400' : 'text-red-400'">
+                <td class="px-2 py-3 text-right font-mono font-black" :class="md1Ledger >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(md1Ledger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span class="text-xs ml-1">{{ md1Ledger >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="(md1Total-md1Ledger)===0 ? 'text-slate-500' : (md1Total-md1Ledger)>0 ? 'text-emerald-400' : 'text-red-400'">
+                    :class="(md1Total-md1Ledger)===0 ? 'text-[var(--color-text-muted)]' : (md1Total-md1Ledger)>0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                   {{ (md1Total-md1Ledger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-center text-slate-600">—</td>
+                <td class="px-2 py-3 text-center text-[var(--color-text-muted)]">—</td>
               </tr>
 
               <!-- Mid-Day-2 row -->
-              <tr class="hover:bg-slate-700/20 transition">
+              <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-3 py-3">
                   <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full bg-violet-500 flex-shrink-0"></span>
+                    <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-white leading-tight">Mid-Day-2</div>
+                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Mid-Day-2</div>
                       <button @click="openModal('Mid-Day-2')"
-                        class="text-xs text-violet-400 hover:text-violet-300 font-bold">+ Record</button>
+                        class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
                   </div>
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black text-emerald-400">
+                <td class="px-2 py-3 text-right font-mono font-black text-[var(--color-success)]">
                   {{ md2Total.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black" :class="md2Ledger >= 0 ? 'text-sky-400' : 'text-red-400'">
+                <td class="px-2 py-3 text-right font-mono font-black" :class="md2Ledger >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(md2Ledger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span class="text-xs ml-1">{{ md2Ledger >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="(md2Total-md2Ledger)===0 ? 'text-slate-500' : (md2Total-md2Ledger)>0 ? 'text-emerald-400' : 'text-red-400'">
+                    :class="(md2Total-md2Ledger)===0 ? 'text-[var(--color-text-muted)]' : (md2Total-md2Ledger)>0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                   {{ (md2Total-md2Ledger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-center text-slate-600">—</td>
+                <td class="px-2 py-3 text-center text-[var(--color-text-muted)]">—</td>
               </tr>
 
               <!-- Closing row -->
-              <tr class="hover:bg-slate-700/20 transition">
+              <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-3 py-3">
                   <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full bg-rose-500 flex-shrink-0"></span>
+                    <span class="h-3 w-3 rounded-full bg-[var(--color-danger)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-white leading-tight">Closing</div>
+                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Closing</div>
                       <button @click="openModal('Closing')"
-                        class="text-xs text-rose-400 hover:text-rose-300 font-bold">+ Record</button>
+                        class="text-xs text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold">+ Record</button>
                     </div>
                   </div>
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black text-emerald-400">
+                <td class="px-2 py-3 text-right font-mono font-black text-[var(--color-success)]">
                   {{ closingTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-right font-mono font-black" :class="closingLedger >= 0 ? 'text-sky-400' : 'text-red-400'">
+                <td class="px-2 py-3 text-right font-mono font-black" :class="closingLedger >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(closingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span class="text-xs ml-1">{{ closingLedger >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="(closingTotal-closingLedger)===0 ? 'text-slate-500' : (closingTotal-closingLedger)>0 ? 'text-emerald-400' : 'text-red-400'">
+                    :class="(closingTotal-closingLedger)===0 ? 'text-[var(--color-text-muted)]' : (closingTotal-closingLedger)>0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                   {{ (closingTotal-closingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
                 <td class="px-2 py-3 text-center">
                   <template v-if="(closingTotal-closingLedger)!==0">
                     <span v-if="Math.abs(liveLedgerBalance-closingTotal)<0.01"
-                      class="inline-flex items-center rounded bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-xs font-black text-emerald-400 whitespace-nowrap">
+                      class="inline-flex items-center rounded bg-[var(--color-success)]/20 border border-[var(--color-success)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-success)] whitespace-nowrap">
                       ✓ Adjusted
                     </span>
                     <button v-else @click="openContra('Closing', closingTotal-closingLedger)"
-                      class="rounded bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-black text-amber-400 hover:bg-amber-500/30 transition whitespace-nowrap">
+                      class="rounded bg-[var(--color-warning)]/20 border border-[var(--color-warning)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-warning)] hover:bg-[var(--color-warning)]/30 transition whitespace-nowrap">
                       Contra
                     </button>
                   </template>
@@ -235,38 +235,38 @@
               </tr>
 
               <!-- UPI row — separator + teal accent -->
-              <tr class="border-t-2 border-teal-700/40 bg-teal-900/10 hover:bg-teal-900/20 transition">
+              <tr class="border-t-2 border-[var(--color-success)]/40 bg-[var(--color-success)]/10 hover:bg-[var(--color-success)]/20 transition">
                 <td class="px-3 py-3">
                   <div class="flex items-center gap-2">
-                    <span class="h-3 w-3 rounded-full bg-teal-500 flex-shrink-0"></span>
+                    <span class="h-3 w-3 rounded-full bg-[var(--color-success)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-teal-300 leading-tight">UPI</div>
+                      <div class="font-black text-[var(--color-success)] leading-tight">UPI</div>
                       <button @click="refreshUpi" :disabled="upiLoading"
-                        class="text-xs text-teal-500 hover:text-teal-400 font-bold disabled:opacity-40">↺ Refresh</button>
+                        class="text-xs text-[var(--color-success)] hover:text-[var(--color-success)] font-bold disabled:opacity-40">↺ Refresh</button>
                     </div>
                   </div>
                 </td>
                 <!-- Opening -->
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="upiLoading ? 'text-slate-500' : (upiOpening >= 0 ? 'text-teal-400' : 'text-red-400')">
-                  <div class="text-xs font-black text-slate-500 mb-0.5">Opening</div>
+                    :class="upiLoading ? 'text-[var(--color-text-muted)]' : (upiOpening >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
+                  <div class="text-xs font-black text-[var(--color-text-muted)] mb-0.5">Opening</div>
                   {{ upiLoading ? '…' : Math.abs(upiOpening).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span v-if="!upiLoading" class="text-xs ml-1">{{ upiOpening >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
                 <!-- Closing -->
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="upiLoading ? 'text-slate-500' : (upiClosing >= 0 ? 'text-emerald-400' : 'text-red-400')">
-                  <div class="text-xs font-black text-slate-500 mb-0.5">Closing</div>
+                    :class="upiLoading ? 'text-[var(--color-text-muted)]' : (upiClosing >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
+                  <div class="text-xs font-black text-[var(--color-text-muted)] mb-0.5">Closing</div>
                   {{ upiLoading ? '…' : Math.abs(upiClosing).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span v-if="!upiLoading" class="text-xs ml-1">{{ upiClosing >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
                 <!-- Day's UPI -->
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="upiLoading ? 'text-slate-500' : (upiDiff===0 ? 'text-slate-400' : upiDiff>0 ? 'text-emerald-400' : 'text-red-400')">
-                  <div class="text-xs font-black text-slate-500 mb-0.5">Day's UPI</div>
+                    :class="upiLoading ? 'text-[var(--color-text-muted)]' : (upiDiff===0 ? 'text-[var(--color-text-muted)]' : upiDiff>0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
+                  <div class="text-xs font-black text-[var(--color-text-muted)] mb-0.5">Day's UPI</div>
                   {{ upiLoading ? '…' : upiDiff.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-center text-slate-700">—</td>
+                <td class="px-2 py-3 text-center text-[var(--color-text-muted)]">—</td>
               </tr>
 
             </tbody>
@@ -277,7 +277,7 @@
 
       <!-- Export Button -->
       <button @click="exportToExcel"
-        class="flex items-center justify-center gap-2 rounded-xl border border-emerald-700/50 bg-emerald-900/20 px-4 py-3 text-xs font-black uppercase tracking-widest text-emerald-400 transition hover:bg-emerald-900/40 active:scale-95 disabled:opacity-30 disabled:grayscale shadow-lg shadow-emerald-900/20">
+        class="flex items-center justify-center gap-2 rounded-xl border border-[var(--color-success)]/50 bg-[var(--color-success)]/20 px-4 py-3 text-xs font-black uppercase tracking-widest text-[var(--color-success)] transition hover:bg-[var(--color-success)]/40 active:scale-95 disabled:opacity-30 disabled:grayscale shadow-lg shadow-emerald-900/20">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export Daily Cashier Report
       </button>
@@ -286,12 +286,12 @@
       <!-- end left panel -->
 
       <!-- SECOND 30%: Today's Bills table -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
         <!-- Header -->
-        <div class="flex items-center justify-between bg-slate-900/80 px-3 py-2 border-b border-slate-700 flex-shrink-0">
+        <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-3 py-2 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
-            <div class="text-[9px] font-black uppercase tracking-widest text-slate-400">Today's Bills</div>
-            <div class="text-[9px] text-slate-600 font-mono">
+            <div class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Today's Bills</div>
+            <div class="text-[9px] text-[var(--color-text-muted)] font-mono">
               {{ filteredBills.length }}{{ filteredBills.length !== todayBills.length ? '/' + todayBills.length : '' }} invoices
             </div>
           </div>
@@ -300,29 +300,29 @@
             <div class="relative">
               <button @click="showSeriesFilter = !showSeriesFilter"
                 :class="['flex items-center gap-1 rounded-lg border px-2 py-1 text-[9px] font-black uppercase tracking-widest transition',
-                  selectedSeries.length ? 'border-blue-500/60 bg-blue-500/10 text-blue-400' : 'border-slate-700 bg-slate-800 text-slate-500 hover:text-slate-300']">
+                  selectedSeries.length ? 'border-[var(--color-info)]/60 bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]']">
                 <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 Series{{ selectedSeries.length ? ` (${selectedSeries.length})` : '' }}
               </button>
               <!-- Dropdown -->
               <div v-if="showSeriesFilter"
-                class="absolute right-0 top-full mt-1 z-30 min-w-[140px] rounded-xl border border-slate-600 bg-slate-800 shadow-2xl overflow-hidden">
-                <div class="px-2 py-1.5 border-b border-slate-700 flex items-center justify-between">
-                  <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">Filter Series</span>
+                class="absolute right-0 top-full mt-1 z-30 min-w-[140px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+                <div class="px-2 py-1.5 border-b border-[var(--color-border)] flex items-center justify-between">
+                  <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Filter Series</span>
                   <button @click="selectedSeries = []; showSeriesFilter = false"
-                    class="text-[9px] text-slate-500 hover:text-slate-300 font-bold">Clear</button>
+                    class="text-[9px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] font-bold">Clear</button>
                 </div>
-                <div v-if="availableSeries.length === 0" class="px-3 py-2 text-[10px] text-slate-600">No series found</div>
+                <div v-if="availableSeries.length === 0" class="px-3 py-2 text-[10px] text-[var(--color-text-muted)]">No series found</div>
                 <label v-for="s in availableSeries" :key="s"
-                  class="flex items-center gap-2 px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 cursor-pointer transition">
+                  class="flex items-center gap-2 px-3 py-2 text-xs text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/50 cursor-pointer transition">
                   <input type="checkbox" :value="s" v-model="selectedSeries"
-                    class="rounded accent-blue-500 w-3 h-3 cursor-pointer" />
+                    class="rounded accent-[var(--color-info)] w-3 h-3 cursor-pointer" />
                   <span class="font-mono text-[10px]">{{ s }}</span>
                 </label>
               </div>
             </div>
             <button @click="fetchTodayBills" :disabled="billsLoading"
-              class="flex items-center justify-center h-6 w-6 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition disabled:opacity-40">
+              class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="billsLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             </button>
           </div>
@@ -330,59 +330,59 @@
         <!-- Table -->
         <div class="overflow-y-auto custom-scrollbar flex-1">
           <table class="w-full text-xs">
-            <thead class="sticky top-0 bg-slate-900/95 z-10">
-              <tr class="border-b border-slate-700 text-[9px] font-black uppercase tracking-widest text-slate-500">
+            <thead class="sticky top-0 bg-[var(--color-bg)]/95 z-10">
+              <tr class="border-b border-[var(--color-border)] text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-2 py-2 text-left">Bill</th>
-                <th class="px-1 py-2 text-right text-emerald-600">Cash</th>
-                <th class="px-1 py-2 text-right text-teal-600">UPI</th>
-                <th class="px-1 py-2 text-right text-blue-600">Card</th>
-                <th class="px-1 py-2 text-right text-slate-500">Unpaid</th>
+                <th class="px-1 py-2 text-right text-[var(--color-success)]">Cash</th>
+                <th class="px-1 py-2 text-right text-[var(--color-success)]">UPI</th>
+                <th class="px-1 py-2 text-right text-[var(--color-info)]">Card</th>
+                <th class="px-1 py-2 text-right text-[var(--color-text-muted)]">Unpaid</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/40">
               <tr v-if="billsLoading">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-slate-500">Loading…</td>
+                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">Loading…</td>
               </tr>
               <tr v-else-if="filteredBills.length === 0">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-slate-600">No bills today</td>
+                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">No bills today</td>
               </tr>
-              <tr v-for="bill in filteredBills" :key="bill.name" class="hover:bg-slate-700/20 transition">
+              <tr v-for="bill in filteredBills" :key="bill.name" class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-2 py-1.5">
-                  <div class="font-black text-white text-[10px] leading-tight">{{ bill.name }}</div>
-                  <div class="text-[9px] text-slate-500 truncate max-w-[80px]">{{ bill.customer }}</div>
+                  <div class="font-black text-[var(--color-text-on-highlight)] text-[10px] leading-tight">{{ bill.name }}</div>
+                  <div class="text-[9px] text-[var(--color-text-muted)] truncate max-w-[80px]">{{ bill.customer }}</div>
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
-                    :class="getMopAmount(bill, 'cash') > 0 ? 'text-emerald-400 font-black' : 'text-slate-700'">
+                    :class="getMopAmount(bill, 'cash') > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'cash') > 0 ? getMopAmount(bill, 'cash').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
-                    :class="getMopAmount(bill, 'upi') > 0 ? 'text-teal-400 font-black' : 'text-slate-700'">
+                    :class="getMopAmount(bill, 'upi') > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'upi') > 0 ? getMopAmount(bill, 'upi').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
-                    :class="getMopAmount(bill, 'card') > 0 ? 'text-blue-400 font-black' : 'text-slate-700'">
+                    :class="getMopAmount(bill, 'card') > 0 ? 'text-[var(--color-info)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'card') > 0 ? getMopAmount(bill, 'card').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
-                    :class="getMopAmount(bill, 'credit') > 0 ? 'text-slate-300 font-black' : 'text-slate-700'">
+                    :class="getMopAmount(bill, 'credit') > 0 ? 'text-[var(--color-text)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'credit') > 0 ? getMopAmount(bill, 'credit').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
               </tr>
             </tbody>
             <!-- Totals row -->
-            <tfoot v-if="filteredBills.length > 0" class="sticky bottom-0 bg-slate-900/95 border-t border-slate-600">
+            <tfoot v-if="filteredBills.length > 0" class="sticky bottom-0 bg-[var(--color-bg)]/95 border-t border-[var(--color-border)]">
               <tr class="text-[9px] font-black uppercase">
-                <td class="px-2 py-1.5 text-slate-400">Total</td>
-                <td class="px-1 py-1.5 text-right font-mono text-emerald-400">
+                <td class="px-2 py-1.5 text-[var(--color-text-muted)]">Total</td>
+                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-success)]">
                   {{ billTotals.cash > 0 ? billTotals.cash.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-teal-400">
+                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-success)]">
                   {{ billTotals.upi > 0 ? billTotals.upi.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-blue-400">
+                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-info)]">
                   {{ billTotals.card > 0 ? billTotals.card.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-slate-300">
+                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-text)]">
                   {{ billTotals.credit > 0 ? billTotals.credit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
               </tr>
@@ -392,82 +392,82 @@
       </div>
 
       <!-- THIRD 30%: Cash Ledger for today -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
         <!-- Header -->
-        <div class="flex items-center justify-between bg-slate-900/80 px-3 py-2 border-b border-slate-700 flex-shrink-0">
+        <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-3 py-2 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
-            <div class="text-[9px] font-black uppercase tracking-widest text-slate-400">Cash Ledger</div>
-            <div class="text-[9px] text-slate-600 font-mono truncate max-w-[140px]">{{ localStorage.getItem('wb-cash') || '—' }}</div>
+            <div class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cash Ledger</div>
+            <div class="text-[9px] text-[var(--color-text-muted)] font-mono truncate max-w-[140px]">{{ localStorage.getItem('wb-cash') || '—' }}</div>
           </div>
           <button @click="fetchCashLedgerEntries" :disabled="cashLedgerEntriesLoading"
-            class="flex items-center justify-center h-6 w-6 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition disabled:opacity-40">
+            class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="cashLedgerEntriesLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
           </button>
         </div>
         <!-- Table -->
         <div class="overflow-y-auto custom-scrollbar flex-1">
           <table class="w-full text-xs">
-            <thead class="sticky top-0 bg-slate-900/95 z-10">
-              <tr class="border-b border-slate-700 text-[9px] font-black uppercase tracking-widest text-slate-500">
+            <thead class="sticky top-0 bg-[var(--color-bg)]/95 z-10">
+              <tr class="border-b border-[var(--color-border)] text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-2 py-2 text-left">Time</th>
                 <th class="px-1 py-2 text-left">Voucher</th>
-                <th class="px-1 py-2 text-right text-emerald-600">DR</th>
-                <th class="px-1 py-2 text-right text-red-600">CR</th>
+                <th class="px-1 py-2 text-right text-[var(--color-success)]">DR</th>
+                <th class="px-1 py-2 text-right text-[var(--color-danger)]">CR</th>
                 <th class="px-1 py-2 text-right">Balance</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/40">
               <!-- Opening balance row -->
-              <tr class="bg-slate-900/40">
-                <td class="px-2 py-1.5 text-[9px] text-slate-600">—</td>
-                <td colspan="2" class="px-1 py-1.5 text-[9px] font-black text-slate-500 uppercase tracking-widest">Opening</td>
+              <tr class="bg-[var(--color-bg)]/40">
+                <td class="px-2 py-1.5 text-[9px] text-[var(--color-text-muted)]">—</td>
+                <td colspan="2" class="px-1 py-1.5 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Opening</td>
                 <td class="px-1 py-1.5"></td>
                 <td class="px-1 py-1.5 text-right font-mono font-black text-[10px]"
-                    :class="cashLedgerOpening >= 0 ? 'text-sky-400' : 'text-red-400'">
+                    :class="cashLedgerOpening >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(cashLedgerOpening).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span class="text-[8px]">{{ cashLedgerOpening >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
               </tr>
               <tr v-if="cashLedgerEntriesLoading">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-slate-500">Loading…</td>
+                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">Loading…</td>
               </tr>
               <tr v-else-if="cashLedgerEntries.length === 0 && !cashLedgerEntriesLoading">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-slate-600">No entries today</td>
+                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">No entries today</td>
               </tr>
               <tr v-for="entry in cashLedgerEntries" :key="entry.voucher_no + entry.debit + entry.credit"
-                  class="hover:bg-slate-700/20 transition">
-                <td class="px-2 py-1.5 font-mono text-[9px] text-slate-500 whitespace-nowrap">{{ entry.time }}</td>
+                  class="hover:bg-[var(--color-surface-raised)]/20 transition">
+                <td class="px-2 py-1.5 font-mono text-[9px] text-[var(--color-text-muted)] whitespace-nowrap">{{ entry.time }}</td>
                 <td class="px-1 py-1.5">
-                  <div class="font-black text-white text-[9px] leading-tight truncate max-w-[70px]">{{ entry.voucher_no }}</div>
-                  <div v-if="entry.party" class="text-[8px] text-slate-500 truncate max-w-[70px]">{{ entry.party }}</div>
+                  <div class="font-black text-[var(--color-text-on-highlight)] text-[9px] leading-tight truncate max-w-[70px]">{{ entry.voucher_no }}</div>
+                  <div v-if="entry.party" class="text-[8px] text-[var(--color-text-muted)] truncate max-w-[70px]">{{ entry.party }}</div>
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
-                    :class="entry.debit > 0 ? 'text-emerald-400 font-black' : 'text-slate-700'">
+                    :class="entry.debit > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ entry.debit > 0 ? entry.debit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
-                    :class="entry.credit > 0 ? 'text-red-400 font-black' : 'text-slate-700'">
+                    :class="entry.credit > 0 ? 'text-[var(--color-danger)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ entry.credit > 0 ? entry.credit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono font-black text-[10px]"
-                    :class="entry.balance >= 0 ? 'text-sky-400' : 'text-red-400'">
+                    :class="entry.balance >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(entry.balance).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
                   <span class="text-[8px]">{{ entry.balance >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
               </tr>
             </tbody>
             <!-- Closing balance row -->
-            <tfoot v-if="cashLedgerEntries.length > 0" class="sticky bottom-0 bg-slate-900/95 border-t border-slate-600">
+            <tfoot v-if="cashLedgerEntries.length > 0" class="sticky bottom-0 bg-[var(--color-bg)]/95 border-t border-[var(--color-border)]">
               <tr>
-                <td colspan="2" class="px-2 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400">Closing</td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px] text-emerald-400 font-black">
+                <td colspan="2" class="px-2 py-1.5 text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Closing</td>
+                <td class="px-1 py-1.5 text-right font-mono text-[10px] text-[var(--color-success)] font-black">
                   {{ cashLedgerEntries.reduce((s, e) => s + e.debit, 0).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px] text-red-400 font-black">
+                <td class="px-1 py-1.5 text-right font-mono text-[10px] text-[var(--color-danger)] font-black">
                   {{ cashLedgerEntries.reduce((s, e) => s + e.credit, 0).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono font-black text-[10px]"
-                    :class="(cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening) >= 0 ? 'text-sky-300' : 'text-red-400'">
+                    :class="(cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening) >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
                   <span class="text-[8px]">{{ (cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening) >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
@@ -503,10 +503,10 @@
     <transition name="slide-up">
       <div
         v-if="contraSuccessMsg"
-        class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-3 rounded-2xl bg-emerald-700 border border-emerald-500 px-6 py-4 shadow-2xl shadow-emerald-900/50"
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-3 rounded-2xl bg-[var(--color-success)] border border-[var(--color-success)] px-6 py-4 shadow-2xl shadow-emerald-900/50"
       >
         <span class="text-xl">✅</span>
-        <span class="text-sm font-bold text-white">{{ contraSuccessMsg }}</span>
+        <span class="text-sm font-bold text-[var(--color-text-on-highlight)]">{{ contraSuccessMsg }}</span>
       </div>
     </transition>
   </div>

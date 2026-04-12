@@ -1,19 +1,19 @@
 <template>
-  <div class="flex min-h-screen flex-col bg-slate-900">
+  <div class="flex min-h-screen flex-col bg-[var(--color-bg)]">
 
     <!-- Top Bar -->
-    <header class="sticky top-0 z-40 border-b border-slate-700 bg-slate-800 px-6 py-3">
+    <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button
-            class="rounded-lg px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-700 hover:text-white"
+            class="rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]"
             @click="router.push('/')"
           >
             ← Back
           </button>
           <div>
-            <h1 class="text-lg font-bold text-white uppercase tracking-wider">REPORT</h1>
-            <p class="text-xs text-slate-400">Business reports and analytics</p>
+            <h1 class="text-lg font-bold text-[var(--color-text-on-highlight)] uppercase tracking-wider">REPORT</h1>
+            <p class="text-xs text-[var(--color-text-muted)]">Business reports and analytics</p>
           </div>
         </div>
       </div>
@@ -21,74 +21,74 @@
 
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar with Buttons -->
-      <aside class="w-80 border-r border-slate-700 bg-slate-800/30 p-6 space-y-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Tax Register</h3>
+      <aside class="w-80 border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 space-y-4">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">Tax Register</h3>
         <div class="flex flex-col gap-3">
           <button
-            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-violet-600/20 hover:border-violet-500/50 hover:text-white transition-all active:scale-[0.98]"
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text-on-highlight)] transition-all active:scale-[0.98]"
             @click="openModal('invoice')"
           >
             <span class="text-xl">📊</span>
             <div class="text-left">
               <div class="font-semibold">Sales Tax Register</div>
-              <div class="text-xs text-slate-500">Submitted Sales Invoices</div>
+              <div class="text-xs text-[var(--color-text-muted)]">Submitted Sales Invoices</div>
             </div>
           </button>
 
           <button
-            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-700/50 hover:border-slate-500 hover:text-white transition-all active:scale-[0.98]"
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/50 hover:border-[var(--color-border)] hover:text-[var(--color-text-on-highlight)] transition-all active:scale-[0.98]"
             @click="openModal('quotation')"
           >
             <span class="text-xl">📄</span>
             <div class="text-left">
               <div class="font-semibold">Quotation Register</div>
-              <div class="text-xs text-slate-500">All Quotations</div>
+              <div class="text-xs text-[var(--color-text-muted)]">All Quotations</div>
             </div>
           </button>
 
           <button
-            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-emerald-600/20 hover:border-emerald-500/50 hover:text-white transition-all active:scale-[0.98]"
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text-on-highlight)] transition-all active:scale-[0.98]"
             @click="openModal('hsn')"
           >
             <span class="text-xl">📋</span>
             <div class="text-left">
               <div class="font-semibold">HSN Summary</div>
-              <div class="text-xs text-slate-500">Sales HSN-wise summary</div>
+              <div class="text-xs text-[var(--color-text-muted)]">Sales HSN-wise summary</div>
             </div>
           </button>
 
           <button
-            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-teal-600/20 hover:border-teal-500/50 hover:text-white transition-all active:scale-[0.98]"
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text-on-highlight)] transition-all active:scale-[0.98]"
             @click="openModal('quotation_hsn')"
           >
             <span class="text-xl">📊</span>
             <div class="text-left">
               <div class="font-semibold">Quotation HSN Summary</div>
-              <div class="text-xs text-slate-500">Quotation HSN-wise summary</div>
+              <div class="text-xs text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
             </div>
           </button>
 
           <button
-            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-amber-600/20 hover:border-amber-500/50 hover:text-white transition-all active:scale-[0.98]"
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border-[var(--color-warning)]/50 hover:text-[var(--color-text-on-highlight)] transition-all active:scale-[0.98]"
             @click="openModal('item_summary')"
           >
             <span class="text-xl">📦</span>
             <div class="text-left">
               <div class="font-semibold">Item Sales Summary</div>
-              <div class="text-xs text-slate-500">Total items sold by code</div>
+              <div class="text-xs text-[var(--color-text-muted)]">Total items sold by code</div>
             </div>
           </button>
 
-          <hr class="border-slate-700 my-1" />
+          <hr class="border-[var(--color-border)] my-1" />
 
           <button
-            class="flex items-center gap-3 rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-indigo-600/20 hover:border-indigo-500/50 hover:text-white transition-all active:scale-[0.98]"
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text-on-highlight)] transition-all active:scale-[0.98]"
             @click="router.push('/store-sale-report')"
           >
             <span class="text-xl">🏪</span>
             <div class="text-left">
               <div class="font-semibold">Store Sale Report</div>
-              <div class="text-xs text-slate-500">Sales by store (Direct Income)</div>
+              <div class="text-xs text-[var(--color-text-muted)]">Sales by store (Direct Income)</div>
             </div>
           </button>
         </div>
@@ -96,11 +96,11 @@
 
       <!-- Body placeholder -->
       <main class="flex-1 flex items-center justify-center p-12">
-        <div class="text-center text-slate-500 max-w-sm">
-          <div class="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-800 text-4xl shadow-inner border border-slate-700">
+        <div class="text-center text-[var(--color-text-muted)] max-w-sm">
+          <div class="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--color-surface)] text-4xl shadow-inner border border-[var(--color-border)]">
             📈
           </div>
-          <h2 class="text-xl font-bold text-slate-300 mb-2">Ready to analyze?</h2>
+          <h2 class="text-xl font-bold text-[var(--color-text)] mb-2">Ready to analyze?</h2>
           <p class="text-sm leading-relaxed">Select a report from the sidebar on the left to generate and download your data.</p>
         </div>
       </main>
@@ -113,16 +113,16 @@
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
         @click.self="showModal = false"
       >
-        <div class="w-full max-w-md rounded-2xl bg-slate-800 shadow-2xl border border-slate-600">
+        <div class="w-full max-w-md rounded-2xl bg-[var(--color-surface)] shadow-2xl border border-[var(--color-border)]">
 
           <!-- Modal header -->
-          <div class="flex items-center justify-between border-b border-slate-700 px-6 py-4">
+          <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
             <div>
-              <h2 class="text-base font-bold text-white">{{ modalConfig.title }}</h2>
-              <p class="text-xs text-slate-400 mt-0.5">{{ modalConfig.subtitle }}</p>
+              <h2 class="text-base font-bold text-[var(--color-text-on-highlight)]">{{ modalConfig.title }}</h2>
+              <p class="text-xs text-[var(--color-text-muted)] mt-0.5">{{ modalConfig.subtitle }}</p>
             </div>
             <button
-              class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
+              class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]"
               @click="showModal = false"
             >
               ✕
@@ -133,12 +133,12 @@
           <div class="px-6 py-5 space-y-4">
             <!-- Series selector -->
             <div>
-              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {{ modalConfig.seriesLabel }}
               </label>
               <select
                 v-model="selectedSeries"
-                class="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm text-[var(--color-text-on-highlight)] focus:border-[var(--color-info)] focus:outline-none"
               >
                 <option value="" disabled>— Select a series —</option>
                 <option v-for="s in currentSeriesList" :key="s" :value="s">{{ s }}</option>
@@ -148,26 +148,26 @@
             <!-- Date range -->
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">From Date</label>
+                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">From Date</label>
                 <input
                   v-model="fromDate"
                   type="date"
-                  class="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm text-[var(--color-text-on-highlight)] focus:border-[var(--color-info)] focus:outline-none"
                 />
               </div>
               <div>
-                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">To Date</label>
+                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">To Date</label>
                 <input
                   v-model="toDate"
                   type="date"
-                  class="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm text-[var(--color-text-on-highlight)] focus:border-[var(--color-info)] focus:outline-none"
                 />
               </div>
             </div>
 
             <div class="flex justify-start">
               <button
-                class="text-xs font-medium text-violet-400 hover:text-violet-300 transition-colors"
+                class="text-xs font-medium text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
                 @click="setLastMonth"
               >
                 📅 Set Last Month
@@ -175,19 +175,19 @@
             </div>
 
             <!-- Error -->
-            <p v-if="modalError" class="text-xs text-red-400">{{ modalError }}</p>
+            <p v-if="modalError" class="text-xs text-[var(--color-danger)]">{{ modalError }}</p>
           </div>
 
           <!-- Modal footer -->
-          <div class="flex justify-end gap-2 border-t border-slate-700 px-6 py-4">
+          <div class="flex justify-end gap-2 border-t border-[var(--color-border)] px-6 py-4">
             <button
-              class="rounded-lg px-4 py-2 text-sm text-slate-400 hover:bg-slate-700 hover:text-white"
+              class="rounded-lg px-4 py-2 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]"
               @click="showModal = false"
             >
               Cancel
             </button>
             <button
-              class="flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
+              class="flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
               :class="modalConfig.btnClass"
               :disabled="generating || !selectedSeries"
               @click="generateReport"
@@ -275,7 +275,7 @@ const modalConfig = computed(() => {
       title: 'Quotation Tax Register',
       subtitle: 'GST-wise summary of quotations (Draft & Submitted)',
       seriesLabel: 'Quotation Series',
-      btnClass: 'bg-slate-600 hover:bg-slate-700',
+      btnClass: 'bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)]',
       sheetName: 'Quotation Tax Register',
       filePrefix: 'QuotationTaxRegister',
       noDataMsg: 'No quotations found for the selected criteria.',
@@ -287,7 +287,7 @@ const modalConfig = computed(() => {
       title: 'HSN Summary',
       subtitle: 'HSN-wise summary of submitted sales invoices',
       seriesLabel: 'Invoice Series',
-      btnClass: 'bg-emerald-600 hover:bg-emerald-700',
+      btnClass: 'bg-[var(--color-success)] hover:bg-[var(--color-success)]',
       sheetName: 'HSN Summary',
       filePrefix: 'HSNSummary',
       noDataMsg: 'No HSN data found for the selected criteria.',
@@ -299,7 +299,7 @@ const modalConfig = computed(() => {
       title: 'Quotation HSN Summary',
       subtitle: 'HSN-wise summary of quotations (Draft & Submitted)',
       seriesLabel: 'Quotation Series',
-      btnClass: 'bg-teal-600 hover:bg-teal-700',
+      btnClass: 'bg-[var(--color-success)] hover:bg-[var(--color-success)]',
       sheetName: 'Quotation HSN Summary',
       filePrefix: 'QuotationHSNSummary',
       noDataMsg: 'No HSN data found for the selected criteria.',
@@ -311,7 +311,7 @@ const modalConfig = computed(() => {
       title: 'Item Sales Summary',
       subtitle: 'Consolidated sales by item code',
       seriesLabel: 'Invoice Series',
-      btnClass: 'bg-amber-600 hover:bg-amber-700',
+      btnClass: 'bg-[var(--color-warning)] hover:bg-[var(--color-warning)]',
       sheetName: 'Item Sales Summary',
       filePrefix: 'ItemSalesSummary',
       noDataMsg: 'No sales data found for the selected criteria.',
@@ -322,7 +322,7 @@ const modalConfig = computed(() => {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
     seriesLabel: 'Invoice Series',
-    btnClass: 'bg-violet-600 hover:bg-violet-700',
+    btnClass: 'bg-[var(--color-info)] hover:bg-[var(--color-info)]',
     sheetName: 'Sales Tax Register',
     filePrefix: 'SalesTaxRegister',
     noDataMsg: 'No submitted invoices found for the selected criteria.',

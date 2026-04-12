@@ -21,9 +21,9 @@
               <span class="truncate text-[10px] text-[var(--color-text-muted)]">{{ session.user.value }}</span>
               <span class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"
                 :class="{
-                  'bg-amber-500/20 text-amber-400': userRole === 'admin',
-                  'bg-blue-500/20 text-blue-400': userRole === 'cashier',
-                  'bg-green-500/20 text-green-400': userRole === 'biller',
+                  'bg-[var(--color-warning)]/20 text-[var(--color-warning)]': userRole === 'admin',
+                  'bg-[var(--color-info)]/20 text-[var(--color-info)]': userRole === 'cashier',
+                  'bg-[var(--color-success)]/20 text-[var(--color-success)]': userRole === 'biller',
                 }"
               >{{ userRole }}</span>
             </div>
@@ -34,7 +34,7 @@
             class="flex items-center justify-center rounded bg-[var(--color-surface-raised)] p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
             title="Sync Settings"
           >
-            <svg class="h-4 w-4" :class="{'animate-spin text-blue-400': isSyncing}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="h-4 w-4" :class="{'animate-spin text-[var(--color-info)]': isSyncing}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>
@@ -67,10 +67,10 @@
           </div>
           <div v-if="selectedUser !== session.user.value" class="mt-1.5 flex items-center gap-1.5 px-1">
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-warning)] opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-warning)]"></span>
             </span>
-            <span class="text-[10px] font-medium text-amber-400/90 italic">Previewing User Mode</span>
+            <span class="text-[10px] font-medium text-[var(--color-warning)]/90 italic">Previewing User Mode</span>
           </div>
         </div>
 
@@ -115,7 +115,7 @@
           ⚙️ SSPL Settings
         </button>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-[var(--color-midlight)]"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[var(--color-midlight)]"
           @click="handleLogout"
         >
           🚪 Logout
@@ -257,7 +257,7 @@
     />
 
     <!-- INVOICE TEMPLATE FULL SCREEN MODAL -->
-    <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-slate-900">
+    <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
       <Item_Invoice_Template
         title="Template Preview"
         doc-number="INV-TEMP-001"
@@ -301,10 +301,10 @@
           <span>Sample Header Extra Info</span>
         </template>
         <template #bottom-left>
-          <div class="p-4 text-slate-500">Sample Insights Content</div>
+          <div class="p-4 text-[var(--color-text-muted)]">Sample Insights Content</div>
         </template>
         <template #bottom-middle>
-          <div class="p-4 text-slate-500">Sample Settings Content</div>
+          <div class="p-4 text-[var(--color-text-muted)]">Sample Settings Content</div>
         </template>
       </Item_Invoice_Template>
     </div>

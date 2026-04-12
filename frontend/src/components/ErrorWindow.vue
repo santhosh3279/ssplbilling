@@ -1,30 +1,30 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-    <div class="w-[500px] overflow-hidden rounded-2xl bg-slate-900 border border-red-900/50 shadow-2xl">
-      <div class="bg-red-900/20 px-6 py-4 border-b border-red-900/30 flex items-center justify-between">
+    <div class="w-[500px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-danger)]/50 shadow-2xl">
+      <div class="bg-[var(--color-danger)]/20 px-6 py-4 border-b border-[var(--color-danger)]/30 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="text-2xl">⚠️</span>
-          <h2 class="text-xl font-bold text-red-400 uppercase tracking-wider">Error Occurred</h2>
+          <h2 class="text-xl font-bold text-[var(--color-danger)] uppercase tracking-wider">Error Occurred</h2>
         </div>
-        <button @click="$emit('close')" class="text-slate-500 hover:text-slate-300 text-2xl font-bold">&times;</button>
+        <button @click="$emit('close')" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-2xl font-bold">&times;</button>
       </div>
       
       <div class="p-6">
-        <div class="bg-slate-950 rounded-lg p-4 border border-slate-800 max-h-[300px] overflow-y-auto scrollbar-none mb-4">
-          <p class="text-slate-300 font-mono text-sm whitespace-pre-wrap leading-relaxed">{{ message }}</p>
+        <div class="bg-[var(--color-bg)] rounded-lg p-4 border border-[var(--color-border)] max-h-[300px] overflow-y-auto scrollbar-none mb-4">
+          <p class="text-[var(--color-text)] font-mono text-sm whitespace-pre-wrap leading-relaxed">{{ message }}</p>
         </div>
         
         <div class="flex justify-end gap-3">
           <button 
             @click="copyError" 
-            class="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-5 py-2 text-sm font-bold text-slate-300 hover:bg-slate-700 transition-all active:scale-95"
+            class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-2 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all active:scale-95"
           >
-            <span v-if="copied" class="text-green-400">Copied!</span>
+            <span v-if="copied" class="text-[var(--color-success)]">Copied!</span>
             <span v-else>Copy Error</span>
           </button>
           <button 
             @click="$emit('close')" 
-            class="rounded-xl bg-red-600 px-8 py-2 text-sm font-bold text-white hover:bg-red-700 shadow-md transition-all active:scale-95"
+            class="rounded-xl bg-[var(--color-danger)] px-8 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-danger)] shadow-md transition-all active:scale-95"
           >
             Dismiss
           </button>

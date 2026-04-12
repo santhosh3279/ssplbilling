@@ -2,36 +2,36 @@
   <div v-if="show" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="$emit('close')">
 
     <!-- Panel 70vw × 70vh centred -->
-    <div class="flex flex-col bg-slate-900 shadow-2xl border border-slate-700 rounded-xl overflow-hidden" style="width:70vw;height:70vh" @keydown.end.prevent="handleSave" @click.stop>
+    <div class="flex flex-col bg-[var(--color-bg)] shadow-2xl border border-[var(--color-border)] rounded-xl overflow-hidden" style="width:70vw;height:70vh" @keydown.end.prevent="handleSave" @click.stop>
 
       <!-- HEADER -->
-      <header class="flex h-11 shrink-0 items-center justify-between border-b border-slate-700 bg-slate-800 px-4">
+      <header class="flex h-11 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4">
         <div class="flex items-center gap-3">
           <button
             @click="$emit('close')"
-            class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition"
+            class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition"
           >&larr; Close</button>
-          <span class="text-sm text-slate-600">|</span>
-          <span class="text-sm font-semibold text-slate-200">Incentive Entries</span>
-          <span v-if="docname" class="font-mono text-xs text-blue-400">{{ docname }}</span>
+          <span class="text-sm text-[var(--color-text-muted)]">|</span>
+          <span class="text-sm font-semibold text-[var(--color-text)]">Incentive Entries</span>
+          <span v-if="docname" class="font-mono text-xs text-[var(--color-info)]">{{ docname }}</span>
         </div>
-        <div class="flex items-center gap-3 text-xs text-slate-400">
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next field</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Del</kbd> Remove row</span>
-          <span v-if="saved" class="rounded-full bg-emerald-500/20 px-3 py-0.5 font-bold uppercase tracking-widest text-emerald-400">Saved</span>
+        <div class="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Tab</kbd> Next field</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Up/Down</kbd> Navigate</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Del</kbd> Remove row</span>
+          <span v-if="saved" class="rounded-full bg-[var(--color-success)]/20 px-3 py-0.5 font-bold uppercase tracking-widest text-[var(--color-success)]">Saved</span>
         </div>
       </header>
 
       <!-- TABLE -->
       <div class="flex-1 overflow-y-auto">
-        <table class="w-full border-collapse border-l border-t border-slate-700 text-sm">
+        <table class="w-full border-collapse border-l border-t border-[var(--color-border)] text-sm">
           <thead>
-            <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-              <th class="w-8 border-r border-b border-slate-700 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">#</th>
-              <th class="border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Employee</th>
-              <th class="w-36 border-r border-b border-slate-700 px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-300">Role</th>
-              <th class="w-8 border-b border-slate-700"></th>
+            <tr class="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+              <th class="w-8 border-r border-b border-[var(--color-border)] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
+              <th class="border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Employee</th>
+              <th class="w-36 border-r border-b border-[var(--color-border)] px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Role</th>
+              <th class="w-8 border-b border-[var(--color-border)]"></th>
             </tr>
           </thead>
           <tbody>
@@ -40,19 +40,19 @@
               v-for="(row, idx) in localRows"
               :key="idx"
               tabindex="-1"
-              class="cursor-pointer border-b border-slate-700 outline-none transition-colors"
+              class="cursor-pointer border-b border-[var(--color-border)] outline-none transition-colors"
               :class="selectedRow === idx
-                ? 'bg-blue-900/30 border-l-2 border-l-blue-500'
-                : 'hover:bg-slate-800/50'"
+                ? 'bg-[var(--color-info)]/30 border-l-2 border-l-blue-500'
+                : 'hover:bg-[var(--color-surface)]/50'"
               @click="selectRow(idx)"
               @keydown="onRowKeydown($event, idx)"
             >
-              <td class="px-3 py-2 border-r border-slate-700">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold text-slate-400">{{ idx + 1 }}</span>
+              <td class="px-3 py-2 border-r border-[var(--color-border)]">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-surface)] text-[10px] font-bold text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
               </td>
 
               <!-- Employee -->
-              <td class="px-2 py-1 border-r border-slate-700 relative">
+              <td class="px-2 py-1 border-r border-[var(--color-border)] relative">
                 <template v-if="selectedRow === idx">
                   <input
                     :ref="el => setRef(el, 'emp', idx)"
@@ -66,31 +66,31 @@
                     @keydown.up.prevent="moveRow(idx, -1)"
                     @keydown.delete.stop
                     placeholder="Search employee…"
-                    class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-0.5 font-mono text-slate-200 outline-none focus:border-blue-500"
+                    class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                   />
                   <div
                     v-if="row.showDrop && row.dropResults.length"
-                    class="absolute left-2 top-full z-20 mt-0.5 w-72 overflow-hidden rounded-xl border border-slate-600 bg-slate-800 shadow-2xl"
+                    class="absolute left-2 top-full z-20 mt-0.5 w-72 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl"
                   >
                     <div
                       v-for="emp in row.dropResults"
                       :key="emp.name"
                       @mousedown.prevent="pickEmployee(idx, emp)"
-                      class="flex cursor-pointer flex-col px-4 py-2 hover:bg-slate-700 transition-colors"
+                      class="flex cursor-pointer flex-col px-4 py-2 hover:bg-[var(--color-surface-raised)] transition-colors"
                     >
-                      <span class="text-sm font-bold text-slate-200">{{ emp.employee_name }}</span>
-                      <span class="text-[10px] font-mono text-slate-500">{{ emp.name }}{{ emp.designation ? ' · ' + emp.designation : '' }}</span>
+                      <span class="text-sm font-bold text-[var(--color-text)]">{{ emp.employee_name }}</span>
+                      <span class="text-[10px] font-mono text-[var(--color-text-muted)]">{{ emp.name }}{{ emp.designation ? ' · ' + emp.designation : '' }}</span>
                     </div>
                   </div>
                 </template>
                 <template v-else>
-                  <div class="font-semibold text-slate-200">{{ row.employee_name || '—' }}</div>
-                  <div v-if="row.employee" class="font-mono text-[10px] text-slate-500">{{ row.employee }}</div>
+                  <div class="font-semibold text-[var(--color-text)]">{{ row.employee_name || '—' }}</div>
+                  <div v-if="row.employee" class="font-mono text-[10px] text-[var(--color-text-muted)]">{{ row.employee }}</div>
                 </template>
               </td>
 
               <!-- Role -->
-              <td class="px-2 py-1 border-r border-slate-700">
+              <td class="px-2 py-1 border-r border-[var(--color-border)]">
                 <select
                   v-if="selectedRow === idx"
                   :ref="el => setRef(el, 'role', idx)"
@@ -99,33 +99,33 @@
                   @keydown.enter.prevent="goToNextRow(idx)"
                   @keydown.down.prevent="moveRow(idx, 1)"
                   @keydown.up.prevent="moveRow(idx, -1)"
-                  class="w-full rounded border border-slate-600 bg-slate-800 px-1 py-0.5 text-sm font-bold text-slate-200 outline-none focus:border-blue-500"
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                 >
                   <option value="">— Select —</option>
                   <option value="Biller">Biller</option>
                   <option value="Sales">Sales</option>
                 </select>
-                <span v-else class="font-semibold" :class="row.role ? 'text-slate-200' : 'text-slate-600'">{{ row.role || '—' }}</span>
+                <span v-else class="font-semibold" :class="row.role ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'">{{ row.role || '—' }}</span>
               </td>
 
               <!-- Delete -->
               <td class="px-2 py-2 text-center">
                 <button
                   @click.stop="removeRow(idx)"
-                  class="rounded px-1 py-0.5 text-slate-600 hover:bg-red-900/30 hover:text-red-400 transition-colors"
+                  class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)] transition-colors"
                 >&times;</button>
               </td>
             </tr>
 
             <!-- NEW ENTRY ROW -->
             <tr
-              class="border-b border-slate-700"
-              :class="selectedRow === -1 ? 'bg-blue-900/20' : 'bg-slate-800/30'"
+              class="border-b border-[var(--color-border)]"
+              :class="selectedRow === -1 ? 'bg-[var(--color-info)]/20' : 'bg-[var(--color-surface)]/30'"
             >
-              <td class="px-3 py-2 border-r border-slate-700">
-                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900/50 text-[10px] font-bold text-blue-400">+</span>
+              <td class="px-3 py-2 border-r border-[var(--color-border)]">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-info)]/50 text-[10px] font-bold text-[var(--color-info)]">+</span>
               </td>
-              <td class="px-2 py-1 border-r border-slate-700 relative">
+              <td class="px-2 py-1 border-r border-[var(--color-border)] relative">
                 <input
                   ref="newEmpInput"
                   v-model="newEmpSearch"
@@ -136,30 +136,30 @@
                   @keydown.tab.prevent="newRoleInput?.focus()"
                   @keydown.up.prevent="moveRow(localRows.length - 1, 0)"
                   placeholder="Search employee…"
-                  class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-slate-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50"
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/50"
                 />
                 <div
                   v-if="newShowDrop && newDropResults.length"
-                  class="absolute left-2 top-full z-20 mt-0.5 w-72 overflow-hidden rounded-xl border border-slate-600 bg-slate-800 shadow-2xl"
+                  class="absolute left-2 top-full z-20 mt-0.5 w-72 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl"
                 >
                   <div
                     v-for="emp in newDropResults"
                     :key="emp.name"
                     @mousedown.prevent="pickNewEmployee(emp)"
-                    class="flex cursor-pointer flex-col px-4 py-2 hover:bg-slate-700 transition-colors"
+                    class="flex cursor-pointer flex-col px-4 py-2 hover:bg-[var(--color-surface-raised)] transition-colors"
                   >
-                    <span class="text-sm font-bold text-slate-200">{{ emp.employee_name }}</span>
-                    <span class="text-[10px] font-mono text-slate-500">{{ emp.name }}{{ emp.designation ? ' · ' + emp.designation : '' }}</span>
+                    <span class="text-sm font-bold text-[var(--color-text)]">{{ emp.employee_name }}</span>
+                    <span class="text-[10px] font-mono text-[var(--color-text-muted)]">{{ emp.name }}{{ emp.designation ? ' · ' + emp.designation : '' }}</span>
                   </div>
                 </div>
               </td>
-              <td class="px-2 py-1 border-r border-slate-700">
+              <td class="px-2 py-1 border-r border-[var(--color-border)]">
                 <select
                   ref="newRoleInput"
                   v-model="newRole"
                   @keydown.tab.prevent="addNewRow"
                   @keydown.enter.prevent="addNewRow"
-                  class="w-full rounded border border-slate-600 bg-slate-800 px-1 py-1 text-sm font-bold text-slate-200 outline-none focus:border-blue-500"
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                 >
                   <option value="">— Select —</option>
                   <option value="Biller">Biller</option>
@@ -173,21 +173,21 @@
       </div>
 
       <!-- FOOTER -->
-      <div class="shrink-0 border-t border-slate-700 bg-slate-800 px-4 py-2.5">
+      <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4 text-[10px] text-slate-500">
+          <div class="flex items-center gap-4 text-[10px] text-[var(--color-text-muted)]">
             <span>{{ localRows.length }} employee{{ localRows.length !== 1 ? 's' : '' }}</span>
-            <span v-if="saveError" class="text-red-400">{{ saveError }}</span>
+            <span v-if="saveError" class="text-[var(--color-danger)]">{{ saveError }}</span>
             <span v-else class="italic">Points auto-calculated on document submit.</span>
           </div>
           <div class="flex gap-2">
             <button
               @click="$emit('close')"
-              class="rounded-lg border border-slate-600 px-4 py-1.5 text-sm font-bold text-slate-300 hover:bg-slate-700 transition"
+              class="rounded-lg border border-[var(--color-border)] px-4 py-1.5 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition"
             >Cancel</button>
             <button
               @click="handleSave"
-              class="rounded-lg bg-indigo-600 px-6 py-1.5 text-sm font-black text-white hover:bg-indigo-500 active:scale-95 transition"
+              class="rounded-lg bg-[var(--color-info)] px-6 py-1.5 text-sm font-black text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition"
             >
               Save Entries
             </button>

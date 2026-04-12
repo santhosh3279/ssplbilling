@@ -4,17 +4,17 @@
     class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
     @click.self="$emit('close')"
   >
-    <div class="w-[90vw] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="w-[90vw] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
-      <div class="p-[12px] bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+      <div class="p-[12px] bg-[var(--color-surface)] border-b border-[var(--color-border)] flex justify-between items-center">
         <div class="flex items-baseline gap-4">
-          <h3 class="text-5xl font-bold text-slate-100">{{ isEditMode ? 'Edit Item' : 'Create New Item' }}</h3>
-          <span class="text-slate-600 text-2xl">|</span>
-          <p class="text-2xl text-slate-400">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
+          <h3 class="text-5xl font-bold text-[var(--color-text)]">{{ isEditMode ? 'Edit Item' : 'Create New Item' }}</h3>
+          <span class="text-[var(--color-text-muted)] text-2xl">|</span>
+          <p class="text-2xl text-[var(--color-text-muted)]">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
         </div>
         <button
           @click="$emit('close')"
-          class="text-slate-500 hover:text-slate-300 transition-colors px-[20px] py-[12px] hover:bg-slate-700 rounded-full"
+          class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors px-[20px] py-[12px] hover:bg-[var(--color-surface-raised)] rounded-full"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
@@ -26,42 +26,42 @@
           <!-- Left Section: Primary Identification & Mapping -->
           <div class="flex-1 space-y-[16px]">
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Item Name *</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Name *</label>
               <input
                 ref="itemNameInput"
                 v-model="form.item_name"
                 type="text"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-4xl font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
                 placeholder="Enter full item name..."
                 @keydown.enter.prevent="itemPrintNameInput?.focus()"
               />
             </div>
 
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Barcode / Code</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Barcode / Code</label>
               <div class="relative">
                 <input
                   ref="barcodeInput"
                   v-model="form.barcode"
                   type="text"
                   :disabled="isEditMode"
-                  class="w-full rounded-xl border border-slate-600 bg-slate-800 pl-[20px] pr-[30px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-[20px] pr-[30px] py-[12px] font-mono text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Barcode..."
                   @focus="e => e.target.select()"
                   @keydown.enter.prevent="itemGroupInput?.focus()"
                 />
                 <div v-if="isFetchingBarcode" class="absolute right-[8px] top-1/2 -translate-y-1/2">
-                  <span class="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent inline-block"></span>
+                  <span class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent inline-block"></span>
                 </div>
               </div>
             </div>
 
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Item Group *</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Group *</label>
               <select
                 ref="itemGroupInput"
                 v-model="form.item_group"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
                 @keydown.enter.prevent="hsnInput?.focus()"
               >
                 <option value="">Select Group...</option>
@@ -70,11 +70,11 @@
             </div>
 
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Default UOM *</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Default UOM *</label>
               <select
                 ref="uomInput"
                 v-model="form.stock_uom"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
                 @keydown.enter.prevent="taxTemplateInput?.focus()"
               >
                 <option v-for="u in metadata.uoms" :key="u.name" :value="u.name">{{ u.name }}</option>
@@ -82,11 +82,11 @@
             </div>
 
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Tax Template</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Tax Template</label>
               <select
                 ref="taxTemplateInput"
                 v-model="form.item_tax_template"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all appearance-none"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
                 @keydown.enter.prevent="rateInput?.focus()"
               >
                 <option value="">No Tax / Exempt</option>
@@ -95,14 +95,14 @@
             </div>
 
             <div class="space-y-[4px] relative">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Supplier</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Supplier</label>
               <div class="relative">
                 <input
                   ref="supplierInput"
                   :value="supplierSearch"
                   type="text"
-                  class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all"
-                  :class="form.supplier ? 'border-emerald-600' : ''"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+                  :class="form.supplier ? 'border-[var(--color-success)]' : ''"
                   placeholder="Search supplier..."
                   autocomplete="off"
                   @input="onSupplierInput"
@@ -113,38 +113,38 @@
                 />
                 <button
                   v-if="form.supplier"
-                  class="absolute right-[8px] top-1/2 -translate-y-1/2 text-slate-500 hover:text-red-400 transition-colors text-4xl"
+                  class="absolute right-[8px] top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl"
                   @click.prevent="clearSupplier"
                   tabindex="-1"
                 >&times;</button>
                 <div
                   v-if="showSupplierDropdown && supplierOptions.length"
-                  class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 px-[20px] py-[12px] shadow-xl"
+                  class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[20px] py-[12px] shadow-xl"
                 >
                   <button
                     v-for="opt in supplierOptions"
                     :key="opt.name"
-                    class="w-full rounded-lg px-[20px] py-[12px] text-left hover:bg-blue-900/30 transition-colors flex flex-col gap-2"
+                    class="w-full rounded-lg px-[20px] py-[12px] text-left hover:bg-[var(--color-info)]/20 transition-colors flex flex-col gap-2"
                     @mousedown.prevent="selectSupplier(opt)"
                   >
-                    <span class="text-2xl font-bold text-slate-200">{{ opt.label }}</span>
-                    <span class="text-base text-slate-500">{{ opt.name }}</span>
+                    <span class="text-2xl font-bold text-[var(--color-text)]">{{ opt.label }}</span>
+                    <span class="text-base text-[var(--color-text-muted)]">{{ opt.name }}</span>
                   </button>
                 </div>
               </div>
-              <p v-if="form.supplier" class="text-lg text-emerald-400 px-[20px]">Mapped: {{ form.supplier }}</p>
+              <p v-if="form.supplier" class="text-lg text-[var(--color-success)] px-[20px]">Mapped: {{ form.supplier }}</p>
             </div>
           </div>
 
           <!-- Right Section: Secondary Details -->
           <div class="flex-1 space-y-[16px]">
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Item Print Name</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Print Name</label>
               <input
                 ref="itemPrintNameInput"
                 v-model="form.item_print_name"
                 type="text"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-4xl font-medium text-slate-200 outline-none focus:border-blue-500 transition-all"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
                 placeholder="Print name..."
                 @keydown.enter.prevent="itemGroupInput?.focus()"
               />
@@ -153,35 +153,35 @@
             <!-- Extra Barcodes -->
             <div class="space-y-[4px]">
               <div class="flex items-center justify-between px-[20px]">
-                <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider">Additional Barcodes</label>
-                <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add Barcode</button>
+                <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Additional Barcodes</label>
+                <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add Barcode</button>
               </div>
-              <div class="rounded-xl border border-slate-700 bg-slate-800/30 px-[20px] py-[4px] min-h-[64px] flex items-center">
+              <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/30 px-[20px] py-[4px] min-h-[64px] flex items-center">
                 <div class="flex flex-nowrap gap-[8px] overflow-x-auto custom-scrollbar w-full pb-[2px]">
-                  <div class="flex items-center gap-[8px] rounded-xl border border-slate-700 bg-slate-800/50 px-[20px] py-[12px] shrink-0">
-                    <span class="font-mono text-2xl text-slate-300">{{ form.barcode || '—' }}</span>
-                    <span class="text-sm font-bold uppercase text-slate-600 bg-slate-700 px-2 py-1 rounded">Primary</span>
+                  <div class="flex items-center gap-[8px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 px-[20px] py-[12px] shrink-0">
+                    <span class="font-mono text-2xl text-[var(--color-text)]">{{ form.barcode || '—' }}</span>
+                    <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] px-2 py-1 rounded">Primary</span>
                   </div>
-                  <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[12px] rounded-xl border border-slate-600 bg-slate-800 px-[16px] py-[8px] relative group shrink-0">
+                  <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[12px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[16px] py-[8px] relative group shrink-0">
                     <div class="flex flex-col gap-1">
-                      <input v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-slate-200 outline-none w-48" placeholder="Barcode..." />
-                      <select v-model="row.uom" class="bg-transparent border-none p-0 text-sm font-bold text-slate-500 uppercase outline-none cursor-pointer hover:text-blue-400 transition-colors">
-                        <option v-for="u in availableUoms" :key="u" :value="u" class="bg-slate-800 text-slate-200">{{ u }}</option>
+                      <input v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-[var(--color-text)] outline-none w-48" placeholder="Barcode..." />
+                      <select v-model="row.uom" class="bg-transparent border-none p-0 text-sm font-bold text-[var(--color-text-muted)] uppercase outline-none cursor-pointer hover:text-[var(--color-info)] transition-colors">
+                        <option v-for="u in availableUoms" :key="u" :value="u" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ u }}</option>
                       </select>
                     </div>
-                    <button type="button" @click="removeBarcodeRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
+                    <button type="button" @click="removeBarcodeRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="space-y-[4px] relative">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">HSN/SAC Code</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">HSN/SAC Code</label>
               <input
                 ref="hsnInput"
                 v-model="form.hsn_sac"
                 type="text"
-                class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
                 placeholder="Search HSN..."
                 @focus="showHSNDropdown = true"
                 @blur="setTimeout(() => showHSNDropdown = false, 200)"
@@ -189,16 +189,16 @@
                 @keydown.down.prevent="hsnHighlightIdx = (hsnHighlightIdx + 1) % filteredHSNCodes.length"
                 @keydown.up.prevent="hsnHighlightIdx = (hsnHighlightIdx - 1 + filteredHSNCodes.length) % filteredHSNCodes.length"
               />
-              <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 px-[20px] py-[12px] shadow-xl">
+              <div v-if="showHSNDropdown && filteredHSNCodes.length > 0" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[20px] py-[12px] shadow-xl">
                 <button
                   v-for="(res, idx) in filteredHSNCodes"
                   :key="res.name"
                   class="w-full rounded-lg px-[20px] py-[12px] text-left transition-colors group flex flex-col gap-2"
-                  :class="hsnHighlightIdx === idx ? 'bg-blue-600' : 'hover:bg-blue-900/30'"
+                  :class="hsnHighlightIdx === idx ? 'bg-[var(--color-info)]' : 'hover:bg-[var(--color-info)]/20'"
                   @click="selectHSN(res.name)"
                 >
-                  <span class="text-2xl font-bold group-hover:text-blue-400" :class="hsnHighlightIdx === idx ? 'text-white' : 'text-slate-200'">{{ res.name }}</span>
-                  <span v-if="res.description" class="text-base truncate line-clamp-1 italic" :class="hsnHighlightIdx === idx ? 'text-blue-100' : 'text-slate-500'">{{ res.description }}</span>
+                  <span class="text-2xl font-bold group-hover:text-[var(--color-info)]" :class="hsnHighlightIdx === idx ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'">{{ res.name }}</span>
+                  <span v-if="res.description" class="text-base truncate line-clamp-1 italic" :class="hsnHighlightIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ res.description }}</span>
                 </button>
               </div>
             </div>
@@ -206,30 +206,30 @@
             <!-- UOM Conversions -->
             <div class="space-y-[4px]">
               <div class="flex items-center justify-between px-[20px]">
-                <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider">UOM Conversions</label>
-                <button type="button" @click="addUomRow" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition-colors">+ Add UOM</button>
+                <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">UOM Conversions</label>
+                <button type="button" @click="addUomRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add UOM</button>
               </div>
-              <div class="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
+              <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 overflow-hidden">
                 <table class="w-full text-2xl">
                   <thead>
-                    <tr class="border-b border-slate-700 bg-slate-800">
-                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-slate-500">UOM</th>
-                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-slate-500">Factor</th>
+                    <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-[var(--color-text-muted)]">UOM</th>
+                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-[var(--color-text-muted)]">Factor</th>
                       <th class="w-16"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(row, idx) in form.uom_conversions" :key="idx" class="border-b border-slate-700/50 last:border-0">
+                    <tr v-for="(row, idx) in form.uom_conversions" :key="idx" class="border-b border-[var(--color-border)]/50 last:border-0">
                       <td class="px-[20px] py-[12px]">
-                        <select v-model="row.uom" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-2xl text-slate-200 outline-none focus:border-blue-500 appearance-none">
+                        <select v-model="row.uom" class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none">
                           <option v-for="u in metadata.uoms" :key="u.name" :value="u.name" :disabled="u.name === form.stock_uom">{{ u.name }}</option>
                         </select>
                       </td>
                       <td class="px-[20px] py-[12px]">
-                        <input v-model.number="row.conversion_factor" type="number" step="0.001" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-[20px] py-[12px] font-mono text-2xl text-slate-200 outline-none focus:border-blue-500" />
+                        <input v-model.number="row.conversion_factor" type="number" step="0.001" class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" />
                       </td>
                       <td class="px-[20px] py-[12px] text-center">
-                        <button type="button" @click="removeUomRow(idx)" class="text-slate-600 hover:text-red-400 transition-colors text-4xl font-bold leading-none">&times;</button>
+                        <button type="button" @click="removeUomRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none">&times;</button>
                       </td>
                     </tr>
                   </tbody>
@@ -239,39 +239,39 @@
 
             <div class="grid grid-cols-2 gap-[8px]">
               <div class="space-y-[4px]">
-                <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Standard Rate</label>
+                <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Standard Rate</label>
                 <div class="relative">
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-3xl">₹</span>
-                  <input ref="rateInput" v-model.number="form.standard_rate" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] pl-[40px] text-right font-mono text-4xl font-bold text-slate-200 outline-none focus:border-emerald-500 transition-all" placeholder="0.00" @keydown.enter.prevent="safetyStockInput?.focus()" />
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-[var(--color-text-muted)] text-3xl">₹</span>
+                  <input ref="rateInput" v-model.number="form.standard_rate" type="number" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] pl-[40px] text-right font-mono text-4xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-success)] transition-all" placeholder="0.00" @keydown.enter.prevent="safetyStockInput?.focus()" />
                 </div>
               </div>
               <div class="space-y-[4px]">
-                <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Safety Stock</label>
-                <input ref="safetyStockInput" v-model.number="form.safety_stock" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] text-right font-mono text-4xl text-slate-200 outline-none focus:border-blue-500 transition-all placeholder:text-slate-700" placeholder="0" @keydown.enter.prevent="supplierInput?.focus()" />
+                <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Safety Stock</label>
+                <input ref="safetyStockInput" v-model.number="form.safety_stock" type="number" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-right font-mono text-4xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all placeholder:text-[var(--color-text-muted)]" placeholder="0" @keydown.enter.prevent="supplierInput?.focus()" />
               </div>
             </div>
 
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-slate-500 uppercase tracking-wider px-[20px]">Supplier Part No</label>
-              <input ref="supplierPartNoInput" v-model="form.supplier_part_no" type="text" :disabled="!form.supplier" class="w-full rounded-xl border border-slate-600 bg-slate-800 px-[20px] py-[12px] font-mono text-3xl text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed" placeholder="SKU..." @keydown.enter.prevent="handleSubmit" />
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Supplier Part No</label>
+              <input ref="supplierPartNoInput" v-model="form.supplier_part_no" type="text" :disabled="!form.supplier" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] font-mono text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all disabled:opacity-40 disabled:cursor-not-allowed" placeholder="SKU..." @keydown.enter.prevent="handleSubmit" />
             </div>
           </div>
         </div>
       </div>
 
       <!-- Footer Actions -->
-      <div class="px-[20px] py-[12px] bg-slate-800 border-t border-slate-700 flex gap-[8px]">
+      <div class="px-[20px] py-[12px] bg-[var(--color-surface)] border-t border-[var(--color-border)] flex gap-[8px]">
         <button
           @click="$emit('close')"
-          class="flex-1 rounded-xl py-[12px] text-2xl font-bold uppercase tracking-widest text-slate-400 bg-slate-700 border border-slate-600 hover:bg-slate-600 transition-all active:scale-95"
+          class="flex-1 rounded-xl py-[12px] text-2xl font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:bg-[var(--color-midlight)] transition-all active:scale-95"
         >
           Cancel
         </button>
         <button
           @click="handleSubmit"
           :disabled="isSubmitting || !canSubmit"
-          class="flex-[2] rounded-xl py-[12px] text-2xl font-bold uppercase tracking-widest text-white transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg flex items-center justify-center gap-[8px]"
-          :class="canSubmit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-700'"
+          class="flex-[2] rounded-xl py-[12px] text-2xl font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg flex items-center justify-center gap-[8px]"
+          :class="canSubmit ? 'bg-[var(--color-info)] hover:bg-[var(--color-info)]/80' : 'bg-[var(--color-surface-raised)]'"
         >
           <span v-if="isSubmitting" class="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
           <span v-else>{{ isEditMode ? 'Update Item' : 'Create Item' }}</span>

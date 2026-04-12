@@ -1,33 +1,33 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'h-screen bg-slate-900'" class="flex">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-[var(--color-bg)]' : 'h-screen bg-[var(--color-bg)]'" class="flex">
     <!-- LEFT SIDEBAR: MODIFY ENTRIES -->
-    <aside class="flex w-[18%] flex-col border-r border-slate-700 bg-slate-900 overflow-hidden shrink-0">
-      <div class="border-b border-slate-700 bg-slate-800 p-3 text-center">
-        <div class="text-[10px] font-black uppercase tracking-widest text-slate-500">Modify Entries</div>
+    <aside class="flex w-[18%] flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden shrink-0">
+      <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-center">
+        <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Modify Entries</div>
       </div>
 
       <!-- Date Filter -->
-      <div class="flex items-center gap-1 border-b border-slate-700 p-2 bg-slate-900">
-        <button @click="changeSidebarDate(-1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors">&larr;</button>
+      <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-2 bg-[var(--color-bg)]">
+        <button @click="changeSidebarDate(-1)" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)] transition-colors">&larr;</button>
         <input 
           type="date" 
           v-model="sidebarDate"
-          class="w-full bg-transparent text-xs font-bold text-slate-300 outline-none"
+          class="w-full bg-transparent text-xs font-bold text-[var(--color-text)] outline-none"
         />
-        <button @click="changeSidebarDate(1)" class="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors">&rarr;</button>
+        <button @click="changeSidebarDate(1)" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)] transition-colors">&rarr;</button>
       </div>
 
       <!-- Search & Status Filters -->
-      <div class="flex flex-col gap-2 border-b border-slate-700 p-3 bg-slate-800/20">
+      <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3 bg-[var(--color-surface)]/20">
         <input 
           type="text" 
           v-model="sidebarSearch"
           placeholder="Search by ID..."
-          class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 transition-all"
+          class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
         />
         <select
           v-model="sidebarPurpose"
-          class="w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 transition-all"
+          class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
         >
           <option value="">All Types</option>
           <option v-for="p in availablePurposes" :key="p" :value="p">{{ p }}</option>
@@ -36,23 +36,23 @@
 
       <!-- Entry List -->
       <div class="flex-1 overflow-y-auto custom-scrollbar">
-        <div v-if="sidebarLoading" class="p-8 text-center text-xs text-slate-500 animate-pulse">Loading...</div>
-        <div v-else-if="!sidebarEntries.length" class="p-8 text-center text-xs text-slate-600 italic">No entries found</div>
+        <div v-if="sidebarLoading" class="p-8 text-center text-xs text-[var(--color-text-muted)] animate-pulse">Loading...</div>
+        <div v-else-if="!sidebarEntries.length" class="p-8 text-center text-xs text-[var(--color-text-muted)] italic">No entries found</div>
         <div 
           v-for="entry in sidebarEntries" 
           :key="entry.name"
           @click="loadEntry(entry.name)"
-          class="group cursor-pointer border-b border-slate-800 bg-slate-900 px-3 py-2 transition-all hover:bg-slate-800/60"
-          :class="{ 'bg-slate-800/80 border-l-2 border-l-blue-500': entryName === entry.name }"
+          class="group cursor-pointer border-b border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 transition-all hover:bg-[var(--color-surface)]/60"
+          :class="{ 'bg-[var(--color-surface)]/80 border-l-2 border-l-blue-500': entryName === entry.name }"
         >
           <div class="flex items-center justify-between gap-1 mb-0.5">
-            <span class="truncate font-mono text-[13px] font-bold text-blue-400">{{ entry.name }}</span>
-            <span class="shrink-0 font-mono text-xs font-bold text-slate-300 tabular-nums">₹{{ (entry.total_value || 0).toFixed(0) }}</span>
+            <span class="truncate font-mono text-[13px] font-bold text-[var(--color-info)]">{{ entry.name }}</span>
+            <span class="shrink-0 font-mono text-xs font-bold text-[var(--color-text)] tabular-nums">₹{{ (entry.total_value || 0).toFixed(0) }}</span>
           </div>
 
           <div class="flex items-center justify-between">
-            <div class="truncate text-[10px] font-medium text-slate-500 uppercase tracking-tight">{{ entry.purpose }}</div>
-            <div class="text-[9px] font-bold text-slate-600 px-1 rounded bg-slate-800 border border-slate-700">{{ entry.posting_date }}</div>
+            <div class="truncate text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-tight">{{ entry.purpose }}</div>
+            <div class="text-[9px] font-bold text-[var(--color-text-muted)] px-1 rounded bg-[var(--color-surface)] border border-[var(--color-border)]">{{ entry.posting_date }}</div>
           </div>
         </div>
       </div>
@@ -61,49 +61,49 @@
     <!-- MAIN CONTENT -->
     <div class="flex flex-1 flex-col overflow-hidden">
       <!-- Top Bar -->
-      <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-2.5 shadow-sm">
+      <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 shadow-sm">
         <div class="flex items-center gap-3">
-          <button class="rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-700 transition" @click="handleBack">&larr; Dashboard</button>
-          <span class="text-sm text-slate-600">|</span>
-          <span class="text-sm font-bold text-slate-100 uppercase tracking-tight">Material Transfer Entry</span>
+          <button class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition" @click="handleBack">&larr; Dashboard</button>
+          <span class="text-sm text-[var(--color-text-muted)]">|</span>
+          <span class="text-sm font-bold text-[var(--color-text)] uppercase tracking-tight">Material Transfer Entry</span>
         </div>
-      <div class="flex items-center gap-3 text-sm text-slate-400">
-        <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden mr-4">
-          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
-          <div class="flex flex-col items-center justify-center border-x border-slate-700 bg-slate-800 px-3 min-w-[50px]">
-            <span class="text-[9px] font-bold uppercase tracking-tight text-slate-500 leading-none">Zoom</span>
-            <span class="text-[11px] font-bold text-slate-300 leading-tight">{{ zoomPercent }}%</span>
+      <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
+        <div class="flex items-center rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden mr-4">
+          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&minus;</button>
+          <div class="flex flex-col items-center justify-center border-x border-[var(--color-border)] bg-[var(--color-surface)] px-3 min-w-[50px]">
+            <span class="text-[9px] font-bold uppercase tracking-tight text-[var(--color-text-muted)] leading-none">Zoom</span>
+            <span class="text-[11px] font-bold text-[var(--color-text)] leading-tight">{{ zoomPercent }}%</span>
           </div>
-          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
+          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&plus;</button>
         </div>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Up/Down</kbd> Navigate</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Tab</kbd> Next</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Ctrl+S</kbd> Save</span>
-        <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-[10px] text-slate-300">Esc</kbd> Back</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Up/Down</kbd> Navigate</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Tab</kbd> Next</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+S</kbd> Save</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Back</span>
       </div>
     </header>
 
-    <div class="border-b border-slate-700 bg-slate-800 px-4 py-3">
+    <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
       <div class="flex items-center gap-8">
         <!-- Purpose -->
         <div class="flex items-center gap-2">
-          <label class="text-[10px] font-bold uppercase text-slate-400 whitespace-nowrap">Type</label>
+          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Type</label>
           <select
             v-model="purpose"
             :disabled="entryDocStatus !== 0"
-            class="rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm font-bold text-blue-400 outline-none focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500 min-w-[150px]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm font-bold text-[var(--color-info)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)] min-w-[150px]"
           >
             <option v-for="p in availablePurposes" :key="p" :value="p">{{ p }}</option>
           </select>
         </div>
 
         <!-- From Warehouse -->
-        <div v-if="purpose !== 'Material Receipt'" class="flex items-center gap-2 border-l border-slate-800 pl-8">
-          <label class="text-[10px] font-bold uppercase text-slate-400 whitespace-nowrap">From</label>
+        <div v-if="purpose !== 'Material Receipt'" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-8">
+          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">From</label>
           <select
             v-model="fromWarehouse"
             :disabled="entryDocStatus !== 0"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-lg font-bold text-red-400 outline-none focus:border-red-500 disabled:bg-slate-900 disabled:text-slate-500 min-w-[200px]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-lg font-bold text-[var(--color-danger)] outline-none focus:border-[var(--color-danger)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)] min-w-[200px]"
           >
             <option value="">-- Select Source --</option>
             <option v-for="w in availableWarehouses" :key="w" :value="w">{{ w }}</option>
@@ -111,15 +111,15 @@
         </div>
 
         <!-- Arrow -->
-        <div v-if="purpose === 'Material Transfer'" class="text-2xl text-slate-600">➜</div>
+        <div v-if="purpose === 'Material Transfer'" class="text-2xl text-[var(--color-text-muted)]">➜</div>
 
         <!-- To Warehouse -->
-        <div v-if="purpose !== 'Material Issue'" class="flex items-center gap-2" :class="{ 'border-l border-slate-800 pl-8': purpose === 'Material Receipt' }">
-          <label class="text-[10px] font-bold uppercase text-slate-400 whitespace-nowrap">To</label>
+        <div v-if="purpose !== 'Material Issue'" class="flex items-center gap-2" :class="{ 'border-l border-[var(--color-border)] pl-8': purpose === 'Material Receipt' }">
+          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">To</label>
           <select
             v-model="toWarehouse"
             :disabled="entryDocStatus !== 0"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-lg font-bold text-green-400 outline-none focus:border-green-500 disabled:bg-slate-900 disabled:text-slate-500 min-w-[200px]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-lg font-bold text-[var(--color-success)] outline-none focus:border-[var(--color-success)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)] min-w-[200px]"
           >
             <option value="">-- Select Target --</option>
             <option v-for="w in availableWarehouses" :key="w" :value="w">{{ w }}</option>
@@ -127,76 +127,76 @@
         </div>
 
         <!-- Date -->
-        <div class="flex items-center gap-3 border-l border-slate-800 pl-8 ml-auto">
-          <label class="text-[10px] font-bold uppercase text-slate-400">Date</label>
+        <div class="flex items-center gap-3 border-l border-[var(--color-border)] pl-8 ml-auto">
+          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Date</label>
           <input
             v-model="entryDate"
             type="date"
             :disabled="entryDocStatus !== 0"
-            class="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-lg font-bold text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500 tabular-nums"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-lg font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)] tabular-nums"
           />
         </div>
       </div>
     </div>
 
-    <div class="flex flex-1 overflow-hidden bg-slate-900">
+    <div class="flex flex-1 overflow-hidden bg-[var(--color-bg)]">
       <!-- MAIN CONTENT -->
       <div class="flex w-full flex-col p-4 overflow-hidden">
-        <div class="flex-1 overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-sm flex flex-col">
+        <div class="flex-1 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm flex flex-col">
           <div class="flex-1 overflow-y-auto">
             <table class="w-full text-sm border-collapse">
               <thead>
-                <tr class="sticky top-0 z-10 bg-slate-800 border-b border-slate-700">
-                  <th class="w-12 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">#</th>
-                  <th class="w-48 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Item Code</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Item Name</th>
-                  <th class="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Qty</th>
-                  <th class="w-20 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">UOM</th>
-                  <th class="w-32 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Rate</th>
-                  <th class="w-36 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Total Value</th>
+                <tr class="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+                  <th class="w-12 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
+                  <th class="w-48 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Code</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
+                  <th class="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
+                  <th class="w-20 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">UOM</th>
+                  <th class="w-32 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Rate</th>
+                  <th class="w-36 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Total Value</th>
                   <th class="w-12 px-4 py-3 text-center"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="group border-b border-slate-700 last:border-0 outline-none transition-colors" :class="{ 'bg-blue-900/30': selectedRow === idx && !item.deleted, 'bg-red-900/20': item.deleted, 'hover:bg-slate-800/40': !item.deleted && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
-                  <td class="px-4 py-2 text-slate-500 font-mono">{{ idx + 1 }}</td>
+                <tr v-for="(item, idx) in items" :key="idx" :ref="el => setRowRef(el, idx)" tabindex="-1" class="group border-b border-[var(--color-border)] last:border-0 outline-none transition-colors" :class="{ 'bg-[var(--color-info)]/30': selectedRow === idx && !item.deleted, 'bg-[var(--color-danger)]/20': item.deleted, 'hover:bg-[var(--color-surface)]/40': !item.deleted && selectedRow !== idx }" :style="{ fontSize: dynamicRowStyle.fontSize }" @click="selectRow(idx)" @keydown="onRowKeydown($event, idx)">
+                  <td class="px-4 py-2 text-[var(--color-text-muted)] font-mono">{{ idx + 1 }}</td>
                   <td class="px-4 py-2">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="entryDocStatus !== 0" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 font-mono text-slate-200 outline-none focus:border-blue-500 disabled:bg-slate-900 disabled:text-slate-500" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else class="font-mono font-semibold" :class="item.deleted ? 'text-slate-600' : 'text-blue-400'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'code', idx)" v-model="item.item_code" :disabled="entryDocStatus !== 0" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)]" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="onCodeEnter(idx)" @keydown.tab.prevent="focusField('qty', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else class="font-mono font-semibold" :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-info)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_code }}</span>
                   </td>
                   <td class="px-4 py-2">
-                    <div :class="item.deleted ? 'text-red-400 line-through' : 'text-slate-200 font-medium'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</div>
+                    <div :class="item.deleted ? 'text-[var(--color-danger)] line-through' : 'text-[var(--color-text)] font-medium'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.item_name || '--' }}</div>
                   </td>
                   <td class="px-4 py-2 text-right font-mono">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="entryDocStatus !== 0" min="0.001" step="any" class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-slate-200 focus:border-blue-400 focus:bg-slate-800 outline-none disabled:text-slate-500" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'qty', idx)" type="number" v-model.number="item.qty" :disabled="entryDocStatus !== 0" min="0.001" step="any" class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] outline-none disabled:text-[var(--color-text-muted)]" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="focusField('rate', idx)" @keydown.tab.prevent="focusField('rate', idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.qty }}</span>
                   </td>
-                  <td class="px-4 py-2 text-slate-500" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
+                  <td class="px-4 py-2 text-[var(--color-text-muted)]" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ item.uom || '--' }}</td>
                   <td class="px-4 py-2 text-right font-mono">
-                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="entryDocStatus !== 0" step="0.01" class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-slate-200 focus:border-blue-400 focus:bg-slate-800 outline-none disabled:text-slate-500" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
-                    <span v-else :class="item.deleted ? 'text-slate-600' : 'text-slate-300'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ (item.rate || 0).toFixed(2) }}</span>
+                    <input v-if="selectedRow === idx && !item.deleted" :ref="el => setRef(el, 'rate', idx)" type="number" v-model.number="item.rate" :disabled="entryDocStatus !== 0" step="0.01" class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] outline-none disabled:text-[var(--color-text-muted)]" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="goToNextRow(idx)" @keydown.tab.prevent="goToNextRow(idx)" @keydown.down.prevent="moveRow(idx, 1)" @keydown.up.prevent="moveRow(idx, -1)" />
+                    <span v-else :class="item.deleted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text)]'" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ (item.rate || 0).toFixed(2) }}</span>
                   </td>
-                  <td class="px-4 py-2 text-right font-mono font-bold text-slate-100" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ (item.qty * item.rate).toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-right font-mono font-bold text-[var(--color-text)]" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ (item.qty * item.rate).toFixed(2) }}</td>
                   <td class="px-4 py-2 text-center">
-                    <button v-if="!item.deleted" class="rounded p-1 text-slate-600 hover:bg-red-900/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" @click.stop="softDelete(idx)">&times;</button>
-                    <button v-else class="text-[10px] font-bold text-blue-400 hover:underline" @click.stop="restoreItem(idx)">RESTORE</button>
+                    <button v-if="!item.deleted" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] opacity-0 group-hover:opacity-100 transition" @click.stop="softDelete(idx)">&times;</button>
+                    <button v-else class="text-[10px] font-bold text-[var(--color-info)] hover:underline" @click.stop="restoreItem(idx)">RESTORE</button>
                   </td>
                 </tr>
                 <!-- NEW ENTRY ROW -->
-                <tr v-if="entryDocStatus === 0" class="border-b border-slate-700 bg-blue-900/10" :class="{ 'bg-blue-900/30 ring-2 ring-inset ring-blue-500': selectedRow === -1 }" :style="{ fontSize: dynamicRowStyle.fontSize }">
-                  <td class="px-4 py-3 text-blue-400 font-bold">+</td>
+                <tr v-if="entryDocStatus === 0" class="border-b border-[var(--color-border)] bg-[var(--color-info)]/10" :class="{ 'bg-[var(--color-info)]/30 ring-2 ring-inset ring-[var(--color-info)]': selectedRow === -1 }" :style="{ fontSize: dynamicRowStyle.fontSize }">
+                  <td class="px-4 py-3 text-[var(--color-info)] font-bold">+</td>
                   <td class="px-4 py-3">
-                    <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code / Scan" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" />
+                    <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" placeholder="Item code / Scan" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" @keydown.up.prevent="moveToLastActiveRow" />
                   </td>
                   <td class="px-4 py-3">
-                    <div class="text-slate-500 italic" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ newPending.item_name || 'Scan or type to find item...' }}</div>
+                    <div class="text-[var(--color-text-muted)] italic" :style="{ fontSize: dynamicRowStyle.fontSize }">{{ newPending.item_name || 'Scan or type to find item...' }}</div>
                   </td>
                   <td class="px-4 py-3 text-right">
-                    <input ref="newQtyInput" v-model.number="newQty" type="number" min="0.001" step="any" class="w-24 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-right font-mono text-slate-200 outline-none focus:border-blue-500 shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" />
+                    <input ref="newQtyInput" v-model.number="newQty" type="number" min="0.001" step="any" class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm" :style="{ fontSize: dynamicRowStyle.fontSize }" @keydown.enter.prevent="addNewItem" />
                   </td>
-                  <td class="px-4 py-3 text-slate-500">{{ newPending.uom || '--' }}</td>
-                  <td class="px-4 py-3 text-right text-slate-500 font-mono">{{ (newPending.rate || 0).toFixed(2) }}</td>
-                  <td class="px-4 py-3 text-right text-slate-500 font-mono font-bold">{{ (newQty * (newPending.rate || 0)).toFixed(2) }}</td>
+                  <td class="px-4 py-3 text-[var(--color-text-muted)]">{{ newPending.uom || '--' }}</td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-muted)] font-mono">{{ (newPending.rate || 0).toFixed(2) }}</td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-muted)] font-mono font-bold">{{ (newQty * (newPending.rate || 0)).toFixed(2) }}</td>
                   <td class="px-4 py-3"></td>
                 </tr>
               </tbody>
@@ -204,14 +204,14 @@
           </div>
 
           <!-- TABLE FOOTER -->
-          <div class="flex items-center justify-between border-t border-slate-700 bg-slate-800 px-6 py-2.5">
-            <div class="flex gap-8 items-center text-xs font-bold text-slate-500 uppercase tracking-widest">
+          <div class="flex items-center justify-between border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2.5">
+            <div class="flex gap-8 items-center text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
               <span>Total Items: {{ activeItems.length }}</span>
-              <span v-if="deletedCount > 0" class="text-red-400">{{ deletedCount }} DELETED</span>
+              <span v-if="deletedCount > 0" class="text-[var(--color-danger)]">{{ deletedCount }} DELETED</span>
             </div>
             <div class="flex items-baseline gap-2">
-              <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Transfer Total:</span>
-              <span class="text-2xl font-mono font-black text-slate-100">₹{{ totalValue.toFixed(2) }}</span>
+              <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Transfer Total:</span>
+              <span class="text-2xl font-mono font-black text-[var(--color-text)]">₹{{ totalValue.toFixed(2) }}</span>
             </div>
           </div>
         </div>
@@ -219,30 +219,30 @@
         <!-- BOTTOM PANEL: INSIGHT & ACTIONS -->
         <div class="mt-4 flex gap-4 h-[200px]">
           <!-- Item Insight -->
-          <div class="flex-[3] rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-sm overflow-y-auto">
-            <div class="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Item Insight <span v-if="selectedItemData" class="ml-2 text-blue-400 font-mono">{{ selectedItemData.item_code }}</span></div>
+          <div class="flex-[3] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm overflow-y-auto">
+            <div class="mb-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Item Insight <span v-if="selectedItemData" class="ml-2 text-[var(--color-info)] font-mono">{{ selectedItemData.item_code }}</span></div>
             <template v-if="selectedItemData">
               <div class="flex gap-12">
                 <div class="flex flex-col gap-3 min-w-[200px]">
-                  <div class="flex items-center justify-between border-b border-slate-700 pb-1">
-                    <span class="text-xs font-bold text-slate-400">From (Source)</span>
-                    <span class="rounded bg-red-900/20 px-2 py-0.5 text-xs font-bold text-red-400 font-mono">{{ stockAtSource }} {{ selectedItemData.uom }}</span>
+                  <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-1">
+                    <span class="text-xs font-bold text-[var(--color-text-muted)]">From (Source)</span>
+                    <span class="rounded bg-[var(--color-danger)]/20 px-2 py-0.5 text-xs font-bold text-[var(--color-danger)] font-mono">{{ stockAtSource }} {{ selectedItemData.uom }}</span>
                   </div>
-                  <div class="flex items-center justify-between border-b border-slate-700 pb-1">
-                    <span class="text-xs font-bold text-slate-400">To (Target)</span>
-                    <span class="rounded bg-green-900/20 px-2 py-0.5 text-xs font-bold text-green-400 font-mono">{{ stockAtTarget }} {{ selectedItemData.uom }}</span>
+                  <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-1">
+                    <span class="text-xs font-bold text-[var(--color-text-muted)]">To (Target)</span>
+                    <span class="rounded bg-[var(--color-success)]/20 px-2 py-0.5 text-xs font-bold text-[var(--color-success)] font-mono">{{ stockAtTarget }} {{ selectedItemData.uom }}</span>
                   </div>
                 </div>
                 <div class="flex-1">
-                  <div class="text-xs font-bold text-slate-400 mb-2">Valuation Details</div>
+                  <div class="text-xs font-bold text-[var(--color-text-muted)] mb-2">Valuation Details</div>
                   <div class="flex items-baseline gap-2">
-                    <span class="text-2xl font-mono font-bold text-slate-200">₹{{ (selectedItemData.valuation_rate || 0).toFixed(2) }}</span>
-                    <span class="text-[10px] font-bold text-slate-500 uppercase">Per {{ selectedItemData.uom }}</span>
+                    <span class="text-2xl font-mono font-bold text-[var(--color-text)]">₹{{ (selectedItemData.valuation_rate || 0).toFixed(2) }}</span>
+                    <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Per {{ selectedItemData.uom }}</span>
                   </div>
                 </div>
               </div>
             </template>
-            <div v-else class="flex h-full items-center justify-center text-sm italic text-slate-600">
+            <div v-else class="flex h-full items-center justify-center text-sm italic text-[var(--color-text-muted)]">
               Select an item to see real-time stock and valuation
             </div>
           </div>
@@ -253,25 +253,25 @@
               ref="saveButton"
               @click="saveEntry"
               :disabled="entryDocStatus !== 0"
-              class="flex-1 rounded-xl bg-blue-600 text-lg font-bold text-white shadow-lg hover:bg-blue-700 active:scale-95 transition-all disabled:bg-slate-700 disabled:text-slate-500"
+              class="flex-1 rounded-xl bg-[var(--color-info)] text-lg font-bold text-[var(--color-text-on-highlight)] shadow-lg hover:bg-[var(--color-info)] active:scale-95 transition-all disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)]"
             >
               {{ entryName ? 'Update Entry' : 'Save Draft (Ctrl+S)' }}
             </button>
             <button
               v-if="entryName && entryDocStatus === 0"
               @click="submitEntry"
-              class="h-12 rounded-xl bg-green-600 text-sm font-bold text-white shadow-lg hover:bg-green-700 active:scale-95 transition-all"
+              class="h-12 rounded-xl bg-[var(--color-success)] text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg hover:bg-[var(--color-success)] active:scale-95 transition-all"
             >
               Submit / Post
             </button>
             <button
               v-if="entryName"
               @click="showIncentiveModal = true"
-              class="h-10 rounded-xl border border-indigo-700 bg-indigo-900/20 text-sm font-semibold text-indigo-400 hover:bg-indigo-900/40 transition-all"
+              class="h-10 rounded-xl border border-[var(--color-info)] bg-[var(--color-info)]/20 text-sm font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/40 transition-all"
             >👥 Incentive</button>
             <div class="flex gap-2 h-14">
-              <button @click="startNewEntry" class="flex-1 rounded-xl border border-slate-700 bg-slate-800 text-sm font-bold text-slate-300 hover:bg-slate-700 transition">Clear</button>
-              <button @click="handleBack" class="flex-1 rounded-xl border border-red-800 bg-red-900/20 text-sm font-bold text-red-400 hover:bg-red-900/40 transition">Exit</button>
+              <button @click="startNewEntry" class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition">Clear</button>
+              <button @click="handleBack" class="flex-1 rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger)]/20 text-sm font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/40 transition">Exit</button>
             </div>
           </div>
         </div>
@@ -295,10 +295,10 @@
       @click.self="showSeriesDropdown = false"
       @keydown.escape.capture="showSeriesDropdown = false"
     >
-      <div class="w-[360px] overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
-        <div class="border-b border-slate-700 bg-slate-800 px-5 py-3">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Series</div>
-          <div class="mt-0.5 text-[10px] text-slate-600">↑ ↓ navigate · Enter select · 1–9 quick pick</div>
+      <div class="w-[360px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Select Series</div>
+          <div class="mt-0.5 text-[10px] text-[var(--color-text-muted)]">↑ ↓ navigate · Enter select · 1–9 quick pick</div>
         </div>
         <div class="p-3 flex flex-col gap-2">
           <button
@@ -306,21 +306,21 @@
             :key="s"
             class="flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus:outline-none"
             :class="idx === seriesHighlightIdx
-              ? 'border-blue-500 bg-blue-600/30 text-white ring-1 ring-blue-500'
+              ? 'border-[var(--color-info)] bg-[var(--color-info)]/30 text-[var(--color-text-on-highlight)] ring-1 ring-[var(--color-info)]'
               : s === entrySeries
-                ? 'border-blue-700 bg-blue-900/20 text-blue-300'
-                : 'border-slate-700 bg-slate-800 text-slate-200'"
+                ? 'border-[var(--color-info)] bg-[var(--color-info)]/20 text-[var(--color-info)]'
+                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'"
             @click="selectSeries(s)"
             @mouseenter="seriesHighlightIdx = idx"
           >
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-700 font-mono text-sm font-black text-slate-300">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] font-mono text-sm font-black text-[var(--color-text)]">
               {{ idx + 1 }}
             </span>
             <span class="font-bold tracking-wide">{{ s }}</span>
-            <span v-if="s === entrySeries" class="ml-auto text-[10px] font-bold text-blue-400">ACTIVE</span>
+            <span v-if="s === entrySeries" class="ml-auto text-[10px] font-bold text-[var(--color-info)]">ACTIVE</span>
           </button>
         </div>
-        <div class="border-t border-slate-700 bg-slate-800/50 px-5 py-2 text-[10px] text-slate-600 text-center">
+        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 px-5 py-2 text-[10px] text-[var(--color-text-muted)] text-center">
           Esc to close
         </div>
       </div>

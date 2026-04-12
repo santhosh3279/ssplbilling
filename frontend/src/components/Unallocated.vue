@@ -17,7 +17,7 @@
           <!-- Unallocated Section -->
           <div v-if="localUnallocated.length > 0" class="space-y-3">
             <div class="flex items-center justify-between px-3 mb-4">
-              <h4 class="text-[16px] font-black uppercase tracking-widest text-amber-500">Available Unallocated Cash</h4>
+              <h4 class="text-[16px] font-black uppercase tracking-widest text-[var(--color-warning)]">Available Unallocated Cash</h4>
               <button @click="$emit('close')" class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-raised)] transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
@@ -76,7 +76,7 @@
             ref="allocateButton"
             @click="submit"
             :disabled="!totalAmountToAllocate || isSubmitting"
-            class="w-full rounded-2xl bg-[var(--color-highlight)] py-4 text-[16px] font-black uppercase tracking-widest text-white shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-[0.98] disabled:opacity-30 transition-all flex items-center justify-center gap-3"
+            class="w-full rounded-2xl bg-[var(--color-highlight)] py-4 text-[16px] font-black uppercase tracking-widest text-[var(--color-text-on-highlight)] shadow-lg shadow-[var(--color-focus)]/40 hover:bg-[var(--color-highlight)] active:scale-[0.98] disabled:opacity-30 transition-all flex items-center justify-center gap-3"
           >
             <span v-if="isSubmitting">Applying...</span>
             <template v-else>

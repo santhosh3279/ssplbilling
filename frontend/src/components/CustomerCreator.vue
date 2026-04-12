@@ -1,10 +1,10 @@
 <template>
-  <div class="w-[600px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
-    <div class="border-b border-slate-700 px-5 py-4 bg-slate-800">
-      <div class="text-xl font-bold text-slate-200">{{ isEdit ? 'Modify Customer Details' : 'New Customer' }}</div>
-      <div class="text-sm text-slate-400 flex items-center gap-2">
+  <div class="w-[600px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
+    <div class="border-b border-[var(--color-border)] px-5 py-4 bg-[var(--color-surface)]">
+      <div class="text-xl font-bold text-[var(--color-text)]">{{ isEdit ? 'Modify Customer Details' : 'New Customer' }}</div>
+      <div class="text-sm text-[var(--color-text-muted)] flex items-center gap-2">
         <template v-if="isEdit && editLoading">
-          <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent"></span>
+          <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></span>
           Loading from ERPNext…
         </template>
         <template v-else>
@@ -15,11 +15,11 @@
 
     <div class="flex flex-col gap-4 px-6 py-5 max-h-[70vh] overflow-y-auto">
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Name *</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Name *</label>
         <input
           ref="nameInputRef"
           v-model="form.customer_name"
-          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base font-semibold text-slate-200 outline-none focus:border-blue-500"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           placeholder="Full name"
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="handleFormEnter"
@@ -27,10 +27,10 @@
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Group *</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Group *</label>
         <select
           v-model="form.customer_group"
-          class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="handleFormEnter"
         >
@@ -40,51 +40,51 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile Number *</label>
-          <input v-model="form.mobile" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number *</label>
+          <input v-model="form.mobile" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">WhatsApp Number</label>
-          <input v-model="form.whatsapp" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
+          <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</label>
-          <input v-model="form.email" type="email" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="email@example.com" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
+          <input v-model="form.email" type="email" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="email@example.com" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">GSTIN</label>
-          <input v-model="form.gstin" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 font-mono text-base uppercase text-slate-200 outline-none focus:border-blue-500" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">GSTIN</label>
+          <input v-model="form.gstin" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pricelist Modifier %</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Modifier %</label>
         <div class="relative w-full">
-          <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500 pr-8" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+          <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)] pr-8" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
         </div>
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Address Line 1</label>
-        <input v-model="form.address_line1" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1</label>
+        <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
       </div>
 
       <div class="grid grid-cols-3 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">City</label>
-          <input v-model="form.city" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="City" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
+          <input v-model="form.city" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="City" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pincode</label>
-          <input v-model="form.pincode" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" placeholder="678XXX" maxlength="6" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
+          <input v-model="form.pincode" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="678XXX" maxlength="6" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">State</label>
-          <select v-model="form.state" class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-base text-slate-200 outline-none focus:border-blue-500" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
+          <select v-model="form.state" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter">
             <option value="">Select State</option>
             <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
           </select>
@@ -92,16 +92,16 @@
       </div>
     </div>
 
-    <div class="flex justify-end gap-3 border-t border-slate-700 px-6 py-4 bg-slate-800">
-      <button class="rounded border border-slate-600 bg-slate-700 px-5 py-2 font-semibold text-slate-300 transition-colors hover:bg-slate-600" @click="$emit('close')">Cancel</button>
+    <div class="flex justify-end gap-3 border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
+      <button class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2 font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-raised)]" @click="$emit('close')">Cancel</button>
       <button
-        class="rounded px-6 py-2 font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95"
-        :class="isEdit ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'"
+        class="rounded px-6 py-2 font-bold text-[var(--color-text-on-highlight)] shadow-md flex items-center gap-2 transition-all active:scale-95"
+        :class="isEdit ? 'bg-[var(--color-supplier)] hover:bg-[var(--color-supplier)]' : 'bg-[var(--color-info)] hover:bg-[var(--color-info)]'"
         @click="submit"
         :disabled="saving || editLoading"
       >
         {{ saving ? (isEdit ? 'Updating...' : 'Saving...') : (isEdit ? 'Update Details' : 'Save & Select') }}
-        <kbd class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm" :class="isEdit ? 'border-orange-500 bg-orange-500' : 'border-blue-500 bg-blue-500'">End</kbd>
+        <kbd class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm" :class="isEdit ? 'border-[var(--color-supplier)] bg-[var(--color-supplier)]' : 'border-[var(--color-info)] bg-[var(--color-info)]'">End</kbd>
       </button>
     </div>
   </div>

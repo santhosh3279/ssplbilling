@@ -1,16 +1,16 @@
 <template>
-  <div class="fixed inset-0 z-50 flex flex-col bg-slate-900">
+  <div class="fixed inset-0 z-50 flex flex-col bg-[var(--color-bg)]">
 
     <!-- Header -->
-    <header class="flex items-center justify-between border-b border-slate-700 bg-slate-800 px-6 py-3">
+    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center gap-3">
-        <span class="text-lg font-bold text-white">Payment Reconciliation</span>
+        <span class="text-lg font-bold text-[var(--color-text-on-highlight)]">Payment Reconciliation</span>
         <span
           v-if="party"
-          class="rounded-full bg-violet-700/30 px-3 py-0.5 text-xs font-semibold text-violet-300"
+          class="rounded-full bg-[var(--color-info)]/30 px-3 py-0.5 text-xs font-semibold text-[var(--color-info)]"
         >{{ partyType }}: {{ party }}</span>
       </div>
-      <button @click="$emit('close')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white">
+      <button @click="$emit('close')" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -18,18 +18,18 @@
     </header>
 
     <!-- Search bar -->
-    <div class="border-b border-slate-700 bg-slate-800/60 px-6 py-3">
+    <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/60 px-6 py-3">
       <div class="flex items-center gap-3">
         <!-- Party type toggle -->
-        <div class="flex rounded-lg border border-slate-600 overflow-hidden text-sm">
+        <div class="flex rounded-lg border border-[var(--color-border)] overflow-hidden text-sm">
           <button
             v-for="pt in partyTypes"
             :key="pt"
             @click="setPartyType(pt)"
             class="px-3 py-1.5 font-medium transition-colors"
             :class="partyType === pt
-              ? 'bg-violet-600 text-white'
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+              ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+              : 'bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]'"
           >{{ pt }}</button>
         </div>
 
@@ -44,21 +44,21 @@
             @keydown.enter.prevent="selectParty(partyOptions[partyListIdx])"
             @keydown.esc="partyOptions = []"
             placeholder="Search party..."
-            class="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-1.5 text-sm text-white placeholder-slate-400 focus:border-violet-500 focus:outline-none"
+            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm text-[var(--color-text-on-highlight)] placeholder-slate-400 focus:border-[var(--color-info)] focus:outline-none"
           />
           <ul
             v-if="partyOptions.length"
-            class="absolute left-0 top-full z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-lg border border-slate-600 bg-slate-800 shadow-xl"
+            class="absolute left-0 top-full z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl"
           >
             <li
               v-for="(opt, i) in partyOptions"
               :key="opt.name"
               @click="selectParty(opt)"
-              class="cursor-pointer px-3 py-2 text-sm hover:bg-slate-700"
-              :class="i === partyListIdx ? 'bg-slate-700 text-white' : 'text-slate-300'"
+              class="cursor-pointer px-3 py-2 text-sm hover:bg-[var(--color-surface-raised)]"
+              :class="i === partyListIdx ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'"
             >
               <div class="font-medium">{{ opt.customer_name || opt.supplier_name || opt.employee_name || opt.name }}</div>
-              <div class="text-[10px] text-slate-500">{{ opt.name }}</div>
+              <div class="text-[10px] text-[var(--color-text-muted)]">{{ opt.name }}</div>
             </li>
           </ul>
         </div>
@@ -66,10 +66,10 @@
         <button
           @click="fetchData"
           :disabled="!party || loading"
-          class="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-40 hover:bg-violet-500 transition-colors"
+          class="rounded-lg bg-[var(--color-info)] px-4 py-1.5 text-sm font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-40 hover:bg-[var(--color-info)] transition-colors"
         >{{ loading ? 'Loading…' : 'Fetch' }}</button>
 
-        <span v-if="error" class="text-xs text-red-400">{{ error }}</span>
+        <span v-if="error" class="text-xs text-[var(--color-danger)]">{{ error }}</span>
       </div>
     </div>
 
@@ -77,36 +77,36 @@
     <div class="flex flex-1 overflow-hidden">
 
       <!-- COLUMN 1: Unlinked Payments -->
-      <div class="flex w-[280px] shrink-0 flex-col border-r border-slate-700">
-        <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <div class="flex w-[280px] shrink-0 flex-col border-r border-[var(--color-border)]">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
           Unlinked Payments
-          <span v-if="unlinkedTotal > 0" class="ml-1.5 text-violet-400">₹{{ fmt(unlinkedTotal) }}</span>
+          <span v-if="unlinkedTotal > 0" class="ml-1.5 text-[var(--color-info)]">₹{{ fmt(unlinkedTotal) }}</span>
         </div>
 
         <div class="flex-1 overflow-y-auto p-3 space-y-1.5">
           <template v-if="!fetched">
-            <p class="py-8 text-center text-xs text-slate-500">Search a party and click Fetch</p>
+            <p class="py-8 text-center text-xs text-[var(--color-text-muted)]">Search a party and click Fetch</p>
           </template>
           <template v-else-if="allUnlinked.length === 0">
-            <p class="py-8 text-center text-xs text-slate-500">No unlinked entries</p>
+            <p class="py-8 text-center text-xs text-[var(--color-text-muted)]">No unlinked entries</p>
           </template>
 
           <div v-if="unlinkedData.payment_entries.length" class="mb-2">
-            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Payment Entries</div>
+            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1">Payment Entries</div>
             <div
               v-for="pe in unlinkedData.payment_entries"
               :key="pe.name"
               @click="selectPayment({ type: 'Payment Entry', ...pe })"
               class="cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all"
               :class="activePayment?.name === pe.name && !activePayment?.reference_row
-                ? 'border-violet-500 bg-violet-900/30 text-white'
-                : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 hover:bg-slate-700'"
+                ? 'border-[var(--color-info)] bg-[var(--color-info)]/30 text-[var(--color-text-on-highlight)]'
+                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]'"
             >
               <div class="flex items-center justify-between">
                 <span class="font-mono font-semibold">{{ pe.name }}</span>
-                <span class="font-mono font-bold text-green-400">₹{{ fmt(leftRemaining(pe.name, null)) }}</span>
+                <span class="font-mono font-bold text-[var(--color-success)]">₹{{ fmt(leftRemaining(pe.name, null)) }}</span>
               </div>
-              <div class="mt-0.5 flex items-center justify-between text-[10px] text-slate-500">
+              <div class="mt-0.5 flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
                 <span>{{ pe.posting_date }}</span>
                 <span>{{ pe.mode_of_payment }}</span>
               </div>
@@ -114,21 +114,21 @@
           </div>
 
           <div v-if="unlinkedData.journal_entries.length">
-            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Journal Entries</div>
+            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1">Journal Entries</div>
             <div
               v-for="je in unlinkedData.journal_entries"
               :key="je.reference_row"
               @click="selectPayment({ type: 'Journal Entry', name: je.name, reference_row: je.reference_row, unallocated_amount: je.unallocated_amount, posting_date: je.posting_date, remarks: je.remarks })"
               class="cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all"
               :class="activePayment?.reference_row === je.reference_row
-                ? 'border-violet-500 bg-violet-900/30 text-white'
-                : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 hover:bg-slate-700'"
+                ? 'border-[var(--color-info)] bg-[var(--color-info)]/30 text-[var(--color-text-on-highlight)]'
+                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]'"
             >
               <div class="flex items-center justify-between">
                 <span class="font-mono font-semibold">{{ je.name }}</span>
-                <span class="font-mono font-bold text-green-400">₹{{ fmt(leftRemaining(je.name, je.reference_row)) }}</span>
+                <span class="font-mono font-bold text-[var(--color-success)]">₹{{ fmt(leftRemaining(je.name, je.reference_row)) }}</span>
               </div>
-              <div class="mt-0.5 flex items-center justify-between text-[10px] text-slate-500">
+              <div class="mt-0.5 flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
                 <span>{{ je.posting_date }}</span>
                 <span>{{ je.remarks || je.reference_no }}</span>
               </div>
@@ -137,27 +137,27 @@
         </div>
 
         <!-- Active payment indicator -->
-        <div v-if="activePayment" class="border-t border-violet-700/40 bg-violet-900/20 px-4 py-2 text-xs">
-          <div class="font-semibold text-violet-300 truncate">Selected: {{ activePayment.name }}</div>
-          <div class="text-[10px] text-violet-400">
+        <div v-if="activePayment" class="border-t border-[var(--color-info)]/40 bg-[var(--color-info)]/20 px-4 py-2 text-xs">
+          <div class="font-semibold text-[var(--color-info)] truncate">Selected: {{ activePayment.name }}</div>
+          <div class="text-[10px] text-[var(--color-info)]">
             Available: ₹{{ fmt(leftRemainingForActive) }}
           </div>
         </div>
       </div>
 
       <!-- COLUMN 2: Unlinked Receipts (Invoices) -->
-      <div class="flex w-[320px] shrink-0 flex-col border-r border-slate-700">
-        <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <div class="flex w-[320px] shrink-0 flex-col border-r border-[var(--color-border)]">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
           Unlinked Receipts
-          <span v-if="outstandingTotal > 0" class="ml-1.5 text-orange-400">₹{{ fmt(outstandingTotal) }}</span>
+          <span v-if="outstandingTotal > 0" class="ml-1.5 text-[var(--color-supplier)]">₹{{ fmt(outstandingTotal) }}</span>
         </div>
 
         <div class="flex-1 overflow-y-auto p-3">
           <template v-if="!fetched">
-            <p class="py-8 text-center text-xs text-slate-500">Search a party and click Fetch</p>
+            <p class="py-8 text-center text-xs text-[var(--color-text-muted)]">Search a party and click Fetch</p>
           </template>
           <template v-else-if="outstandingData.docs.length === 0">
-            <p class="py-8 text-center text-xs text-slate-500">No outstanding invoices</p>
+            <p class="py-8 text-center text-xs text-[var(--color-text-muted)]">No outstanding invoices</p>
           </template>
           <div v-else class="space-y-2">
             <div
@@ -167,23 +167,23 @@
               class="rounded-lg border px-3 py-2 text-xs transition-all"
               :class="[
                 activePayment && invoiceRemaining(doc.name) > 0.005 && leftRemainingForActive > 0.005
-                  ? 'cursor-pointer border-slate-600 bg-slate-800 hover:border-violet-500 hover:bg-slate-700'
-                  : 'border-slate-700 bg-slate-800/50 opacity-80',
+                  ? 'cursor-pointer border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-info)] hover:bg-[var(--color-surface-raised)]'
+                  : 'border-[var(--color-border)] bg-[var(--color-surface)]/50 opacity-80',
                 allocatedToInvoice(doc.name) > 0 ? 'ring-1 ring-violet-500/50' : ''
               ]"
             >
               <div class="flex items-center justify-between">
-                <span class="font-mono font-semibold text-slate-200">{{ doc.name }}</span>
-                <span class="font-mono font-bold text-orange-400">₹{{ fmt(invoiceRemaining(doc.name)) }}</span>
+                <span class="font-mono font-semibold text-[var(--color-text)]">{{ doc.name }}</span>
+                <span class="font-mono font-bold text-[var(--color-supplier)]">₹{{ fmt(invoiceRemaining(doc.name)) }}</span>
               </div>
-              <div class="mt-0.5 flex items-center justify-between text-[10px] text-slate-500">
+              <div class="mt-0.5 flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
                 <span>{{ doc.posting_date }}</span>
-                <span v-if="allocatedToInvoice(doc.name) > 0" class="font-bold text-violet-400">Linked: ₹{{ fmt(allocatedToInvoice(doc.name)) }}</span>
+                <span v-if="allocatedToInvoice(doc.name) > 0" class="font-bold text-[var(--color-info)]">Linked: ₹{{ fmt(allocatedToInvoice(doc.name)) }}</span>
                 <span v-else class="italic">Outstanding</span>
               </div>
               
               <!-- Action hint -->
-              <div v-if="activePayment && invoiceRemaining(doc.name) > 0.005 && leftRemainingForActive > 0.005" class="mt-1.5 text-center text-[9px] font-bold uppercase text-violet-500">
+              <div v-if="activePayment && invoiceRemaining(doc.name) > 0.005 && leftRemainingForActive > 0.005" class="mt-1.5 text-center text-[9px] font-bold uppercase text-[var(--color-info)]">
                 Click to Link
               </div>
             </div>
@@ -192,57 +192,57 @@
       </div>
 
       <!-- COLUMN 3: Cross-Reconciliation -->
-      <div class="flex flex-1 flex-col border-r border-slate-700">
-        <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <div class="flex flex-1 flex-col border-r border-[var(--color-border)]">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
           Unlinked {{ partyType === 'Supplier' ? 'Receipts' : 'Payments' }} (Opposite)
-          <span v-if="oppositeTotal > 0" class="ml-1.5 text-amber-400">₹{{ fmt(oppositeTotal) }}</span>
+          <span v-if="oppositeTotal > 0" class="ml-1.5 text-[var(--color-warning)]">₹{{ fmt(oppositeTotal) }}</span>
         </div>
 
         <div class="flex-1 overflow-y-auto p-3 space-y-1.5">
-          <div class="mb-2 rounded bg-amber-900/20 border border-amber-700/30 px-3 py-2 text-[10px] text-amber-400 leading-tight">
+          <div class="mb-2 rounded bg-[var(--color-warning)]/20 border border-[var(--color-warning)]/30 px-3 py-2 text-[10px] text-[var(--color-warning)] leading-tight">
             Match floating receipts against floating {{ partyType === 'Supplier' ? 'receipts from supplier' : 'refunds' }} to net them off via Journal Entry.
           </div>
           
           <template v-if="!fetched">
-            <p class="py-8 text-center text-xs text-slate-500">Search a party and click Fetch</p>
+            <p class="py-8 text-center text-xs text-[var(--color-text-muted)]">Search a party and click Fetch</p>
           </template>
           <template v-else-if="allOpposite.length === 0">
-            <p class="py-8 text-center text-xs text-slate-500">
+            <p class="py-8 text-center text-xs text-[var(--color-text-muted)]">
               No opposite unlinked entries
             </p>
           </template>
 
           <div v-if="oppositeData.payment_entries.length" class="mb-2">
-            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Payment Entries</div>
+            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1">Payment Entries</div>
             <div
               v-for="pe in oppositeData.payment_entries"
               :key="pe.name"
               @click="activePayment && rightRemaining(pe.name, null) > 0.005 ? addCrossAllocation({ type: 'Payment Entry', name: pe.name, reference_row: null, unallocated_amount: pe.unallocated_amount }) : null"
-              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs transition-all"
-              :class="activePayment && rightRemaining(pe.name, null) > 0.005 && leftRemainingForActive > 0.005 ? 'cursor-pointer hover:border-amber-500 hover:bg-slate-700' : 'opacity-60'"
+              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs transition-all"
+              :class="activePayment && rightRemaining(pe.name, null) > 0.005 && leftRemainingForActive > 0.005 ? 'cursor-pointer hover:border-[var(--color-warning)] hover:bg-[var(--color-surface-raised)]' : 'opacity-60'"
             >
               <div class="flex items-center justify-between">
-                <span class="font-mono font-semibold text-amber-300">{{ pe.name }}</span>
-                <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(pe.name, null)) }}</span>
+                <span class="font-mono font-semibold text-[var(--color-warning)]">{{ pe.name }}</span>
+                <span class="font-mono font-bold text-[var(--color-warning)]">₹{{ fmt(rightRemaining(pe.name, null)) }}</span>
               </div>
-              <div class="mt-0.5 text-[10px] text-slate-500">{{ pe.posting_date }} · {{ pe.mode_of_payment }}</div>
+              <div class="mt-0.5 text-[10px] text-[var(--color-text-muted)]">{{ pe.posting_date }} · {{ pe.mode_of_payment }}</div>
             </div>
           </div>
 
           <div v-if="oppositeData.journal_entries.length">
-            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500 px-1">Journal Entries</div>
+            <div class="mb-1 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1">Journal Entries</div>
             <div
               v-for="je in oppositeData.journal_entries"
               :key="je.reference_row"
               @click="activePayment && rightRemaining(je.name, je.reference_row) > 0.005 ? addCrossAllocation({ type: 'Journal Entry', name: je.name, reference_row: je.reference_row, unallocated_amount: je.unallocated_amount }) : null"
-              class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs transition-all"
-              :class="activePayment && rightRemaining(je.name, je.reference_row) > 0.005 && leftRemainingForActive > 0.005 ? 'cursor-pointer hover:border-amber-500 hover:bg-slate-700' : 'opacity-60'"
+              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs transition-all"
+              :class="activePayment && rightRemaining(je.name, je.reference_row) > 0.005 && leftRemainingForActive > 0.005 ? 'cursor-pointer hover:border-[var(--color-warning)] hover:bg-[var(--color-surface-raised)]' : 'opacity-60'"
             >
               <div class="flex items-center justify-between">
-                <span class="font-mono font-semibold text-amber-300">{{ je.name }}</span>
-                <span class="font-mono font-bold text-amber-400">₹{{ fmt(rightRemaining(je.name, je.reference_row)) }}</span>
+                <span class="font-mono font-semibold text-[var(--color-warning)]">{{ je.name }}</span>
+                <span class="font-mono font-bold text-[var(--color-warning)]">₹{{ fmt(rightRemaining(je.name, je.reference_row)) }}</span>
               </div>
-              <div class="mt-0.5 text-[10px] text-slate-500">{{ je.posting_date }} · {{ je.remarks || je.reference_no }}</div>
+              <div class="mt-0.5 text-[10px] text-[var(--color-text-muted)]">{{ je.posting_date }} · {{ je.remarks || je.reference_no }}</div>
             </div>
           </div>
         </div>
@@ -250,14 +250,14 @@
 
       <!-- RIGHT: Allocation Preview -->
       <div class="flex w-[360px] shrink-0 flex-col">
-        <div class="border-b border-slate-700 bg-slate-800/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
           Allocation Preview
-          <span v-if="allocations.length" class="ml-1.5 text-violet-400">{{ allocations.length }} row{{ allocations.length > 1 ? 's' : '' }}</span>
+          <span v-if="allocations.length" class="ml-1.5 text-[var(--color-info)]">{{ allocations.length }} row{{ allocations.length > 1 ? 's' : '' }}</span>
         </div>
 
         <div class="flex-1 overflow-y-auto p-3">
           <template v-if="allocations.length === 0">
-            <p class="py-8 text-center text-xs text-slate-500">
+            <p class="py-8 text-center text-xs text-[var(--color-text-muted)]">
               Select a payment on the left, then click "+ Add"
             </p>
           </template>
@@ -266,23 +266,23 @@
               v-for="(alloc, i) in allocations"
               :key="i"
               class="rounded-lg border px-3 py-2 text-xs"
-              :class="alloc.mode === 'cross' ? 'border-amber-700/40 bg-amber-900/10' : 'border-slate-700 bg-slate-800'"
+              :class="alloc.mode === 'cross' ? 'border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10' : 'border-[var(--color-border)] bg-[var(--color-surface)]'"
             >
               <!-- Cross-reconcile row -->
               <template v-if="alloc.mode === 'cross'">
                 <div class="mb-1.5 flex items-center justify-between">
-                  <span class="text-[9px] font-bold uppercase text-amber-500">Cross-Reconcile</span>
-                  <button @click="removeAllocation(i)" class="text-slate-500 hover:text-red-400">✕</button>
+                  <span class="text-[9px] font-bold uppercase text-[var(--color-warning)]">Cross-Reconcile</span>
+                  <button @click="removeAllocation(i)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)]">✕</button>
                 </div>
                 <div class="mb-1 flex items-center gap-2 text-[10px]">
-                  <div class="flex-1 rounded bg-violet-900/30 px-2 py-1">
-                    <div class="text-violet-400">{{ alloc.left_type }}</div>
-                    <div class="font-mono font-semibold text-white">{{ alloc.left_name }}</div>
+                  <div class="flex-1 rounded bg-[var(--color-info)]/30 px-2 py-1">
+                    <div class="text-[var(--color-info)]">{{ alloc.left_type }}</div>
+                    <div class="font-mono font-semibold text-[var(--color-text-on-highlight)]">{{ alloc.left_name }}</div>
                   </div>
-                  <span class="text-slate-500">↔</span>
-                  <div class="flex-1 rounded bg-amber-900/30 px-2 py-1">
-                    <div class="text-amber-400">{{ alloc.right_type }}</div>
-                    <div class="font-mono font-semibold text-white">{{ alloc.right_name }}</div>
+                  <span class="text-[var(--color-text-muted)]">↔</span>
+                  <div class="flex-1 rounded bg-[var(--color-warning)]/30 px-2 py-1">
+                    <div class="text-[var(--color-warning)]">{{ alloc.right_type }}</div>
+                    <div class="font-mono font-semibold text-[var(--color-text-on-highlight)]">{{ alloc.right_name }}</div>
                   </div>
                 </div>
               </template>
@@ -290,24 +290,24 @@
               <template v-else>
                 <div class="mb-1.5 flex items-center justify-between">
                   <div>
-                    <span class="text-[9px] text-slate-500">{{ alloc.payment_type }}</span>
-                    <div class="font-mono font-semibold text-violet-300">{{ alloc.payment_name }}</div>
+                    <span class="text-[9px] text-[var(--color-text-muted)]">{{ alloc.payment_type }}</span>
+                    <div class="font-mono font-semibold text-[var(--color-info)]">{{ alloc.payment_name }}</div>
                   </div>
-                  <button @click="removeAllocation(i)" class="text-slate-500 hover:text-red-400">✕</button>
+                  <button @click="removeAllocation(i)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)]">✕</button>
                 </div>
                 <div class="mb-1.5">
-                  <span class="text-[9px] text-slate-500">{{ alloc.invoice_type }}</span>
-                  <div class="font-mono text-slate-200">{{ alloc.invoice_name }}</div>
+                  <span class="text-[9px] text-[var(--color-text-muted)]">{{ alloc.invoice_type }}</span>
+                  <div class="font-mono text-[var(--color-text)]">{{ alloc.invoice_name }}</div>
                 </div>
               </template>
               <div class="flex items-center gap-2">
-                <span class="text-[10px] text-slate-400 shrink-0">Amount ₹</span>
+                <span class="text-[10px] text-[var(--color-text-muted)] shrink-0">Amount ₹</span>
                 <input
                   v-model.number="alloc.amount"
                   type="number"
                   min="0.01"
                   @change="clampAlloc(alloc)"
-                  class="w-full rounded border border-slate-600 bg-slate-700 px-2 py-0.5 text-right font-mono text-sm text-white focus:border-violet-500 focus:outline-none"
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-0.5 text-right font-mono text-sm text-[var(--color-text-on-highlight)] focus:border-[var(--color-info)] focus:outline-none"
                 />
               </div>
             </div>
@@ -315,25 +315,25 @@
         </div>
 
         <!-- Footer -->
-        <div class="border-t border-slate-700 bg-slate-800/60 p-4 space-y-3">
+        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/60 p-4 space-y-3">
           <div class="flex items-center justify-between text-sm">
-            <span class="text-slate-400">Total Reconciling</span>
-            <span class="font-mono font-bold text-violet-300">₹{{ fmt(totalAllocating) }}</span>
+            <span class="text-[var(--color-text-muted)]">Total Reconciling</span>
+            <span class="font-mono font-bold text-[var(--color-info)]">₹{{ fmt(totalAllocating) }}</span>
           </div>
 
-          <div v-if="postError" class="rounded bg-red-900/30 px-3 py-2 text-xs text-red-400">{{ postError }}</div>
-          <div v-if="postSuccess" class="rounded bg-green-900/30 px-3 py-2 text-xs text-green-400">{{ postSuccess }}</div>
+          <div v-if="postError" class="rounded bg-[var(--color-danger)]/30 px-3 py-2 text-xs text-[var(--color-danger)]">{{ postError }}</div>
+          <div v-if="postSuccess" class="rounded bg-[var(--color-success)]/30 px-3 py-2 text-xs text-[var(--color-success)]">{{ postSuccess }}</div>
 
           <button
             @click="postReconcile"
             :disabled="allocations.length === 0 || posting"
-            class="w-full rounded-lg bg-violet-600 py-2.5 text-sm font-bold text-white disabled:opacity-40 hover:bg-violet-500 transition-colors"
+            class="w-full rounded-lg bg-[var(--color-info)] py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] disabled:opacity-40 hover:bg-[var(--color-info)] transition-colors"
           >{{ posting ? 'Posting…' : 'Post Reconciliation' }}</button>
 
           <button
             v-if="allocations.length"
             @click="allocations = []"
-            class="w-full rounded-lg border border-slate-600 py-1.5 text-xs text-slate-400 hover:bg-slate-700"
+            class="w-full rounded-lg border border-[var(--color-border)] py-1.5 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
           >Clear All</button>
         </div>
       </div>

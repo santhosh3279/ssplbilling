@@ -1,112 +1,112 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="$emit('close')">
-    <div class="w-[820px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl">
+    <div class="w-[820px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
 
       <!-- Header -->
-      <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800">
+      <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center justify-between bg-[var(--color-surface)]">
         <div class="flex items-center gap-4">
-          <div class="text-sm font-semibold text-slate-200">⚙️ General Settings</div>
+          <div class="text-sm font-semibold text-[var(--color-text)]">⚙️ General Settings</div>
           <button
             @click="showLocalVariables"
-            class="rounded-md border border-slate-600 bg-slate-700 px-2 py-1 text-[10px] font-bold text-slate-400 hover:bg-slate-600 hover:text-slate-200 transition-colors"
+            class="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-[10px] font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
           >
             DEBUG: View Local Variables
           </button>
         </div>
         <div class="flex items-center gap-3">
-          <button @click="$emit('close')" class="text-slate-500 hover:text-slate-300">✕</button>
+          <button @click="$emit('close')" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
         </div>
       </div>
 
       <div class="flex max-h-[78vh] flex-col gap-4 overflow-y-auto px-5 py-4">
 
         <!-- Loading -->
-        <div v-if="syncing && !rawSettings" class="py-8 text-center text-xs text-slate-500">Loading settings…</div>
+        <div v-if="syncing && !rawSettings" class="py-8 text-center text-xs text-[var(--color-text-muted)]">Loading settings…</div>
 
         <template v-if="rawSettings">
 
           <!-- ── Your Settings ── -->
-          <div class="rounded-lg border border-blue-800 bg-blue-900/20 px-4 py-3">
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-blue-400">Your Settings</div>
+          <div class="rounded-lg border border-[var(--color-info)] bg-[var(--color-info)]/20 px-4 py-3">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)]">Your Settings</div>
             <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Default Zoom</span>
-                <span class="font-mono font-semibold text-slate-200">{{ rawSettings.user_zoom || '--' }}%</span>
+                <span class="text-[var(--color-text-muted)]">Default Zoom</span>
+                <span class="font-mono font-semibold text-[var(--color-text)]">{{ rawSettings.user_zoom || '--' }}%</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Warehouse</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.warehouse || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">Warehouse</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.warehouse || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Cost Center</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">Cost Center</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.cost_center || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Income Account</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.income_account || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">Income Account</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.income_account || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Cash Account</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.cash || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">Cash Account</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.cash || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Card Account</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.card || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">Card Account</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.card || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Bank Account</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.bank || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">Bank Account</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.bank || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">UPI Account</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.upi || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">UPI Account</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.upi || '--' }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Default Printer</span>
-                <span class="font-medium text-slate-200">{{ rawSettings.user_defaults?.default_printer || '--' }}</span>
+                <span class="text-[var(--color-text-muted)]">Default Printer</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.default_printer || '--' }}</span>
               </div>
             </div>
           </div>
 
           <!-- ── System Configuration ── -->
           <div>
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">System Configuration</div>
-            <div class="overflow-auto rounded-lg border border-slate-700">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">System Configuration</div>
+            <div class="overflow-auto rounded-lg border border-[var(--color-border)]">
               <table class="w-full text-xs">
-                <thead class="bg-slate-800">
+                <thead class="bg-[var(--color-surface)]">
                   <tr>
-                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Field</th>
-                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Value</th>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Field</th>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Value</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Discount Account</td>
-                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.discount_account || '--' }}</td>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Discount Account</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.discount_account || '--' }}</td>
                   </tr>
-                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Freight Account</td>
-                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.freight_account || '--' }}</td>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Freight Account</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.freight_account || '--' }}</td>
                   </tr>
-                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Tax Paid on Purchase</td>
-                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.tax_paid_on_purchase || '--' }}</td>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Tax Paid on Purchase</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.tax_paid_on_purchase || '--' }}</td>
                   </tr>
-                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Packing Charge</td>
-                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.packing_charge || '--' }}</td>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Packing Charge</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.packing_charge || '--' }}</td>
                   </tr>
-                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Loading</td>
-                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.loading || '--' }}</td>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Loading</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.loading || '--' }}</td>
                   </tr>
-                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Other Charges</td>
-                    <td class="px-3 py-1.5 font-medium text-slate-200">{{ rawSettings.other_charges || '--' }}</td>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Other Charges</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.other_charges || '--' }}</td>
                   </tr>
-                  <tr class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 text-slate-400">Cipher Map</td>
-                    <td class="px-3 py-1.5 font-mono text-slate-200">{{ rawSettings.cipher_map || '--' }}</td>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Cipher Map</td>
+                    <td class="px-3 py-1.5 font-mono text-[var(--color-text)]">{{ rawSettings.cipher_map || '--' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -115,26 +115,26 @@
 
           <!-- ── Billing Series ── -->
           <div>
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Billing Series</div>
-            <div class="overflow-auto rounded-lg border border-slate-700">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Billing Series</div>
+            <div class="overflow-auto rounded-lg border border-[var(--color-border)]">
               <table class="w-full text-[10px]">
-                <thead class="bg-slate-800">
+                <thead class="bg-[var(--color-surface)]">
                   <tr>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Series</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Print Format</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Price List</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Tax Template</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Series</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Print Format</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Price List</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Tax Template</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="bs in visibleBillingSeries" :key="bs.series" class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-2 py-1.5 font-semibold text-slate-200">{{ bs.series || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.print_format || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.price_list || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ bs.tax_template || '--' }}</td>
+                  <tr v-for="bs in visibleBillingSeries" :key="bs.series" class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-2 py-1.5 font-semibold text-[var(--color-text)]">{{ bs.series || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ bs.print_format || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ bs.price_list || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ bs.tax_template || '--' }}</td>
                   </tr>
                   <tr v-if="!visibleBillingSeries.length">
-                    <td colspan="4" class="px-2 py-3 text-center text-slate-500">No billing series configured</td>
+                    <td colspan="4" class="px-2 py-3 text-center text-[var(--color-text-muted)]">No billing series configured</td>
                   </tr>
                 </tbody>
               </table>
@@ -143,19 +143,19 @@
 
           <!-- ── Visible Accounts ── -->
           <div v-if="rawSettings.visible_accounts?.length">
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Visible Accounts</div>
-            <div class="overflow-auto rounded-lg border border-slate-700">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Visible Accounts</div>
+            <div class="overflow-auto rounded-lg border border-[var(--color-border)]">
               <table class="w-full text-xs">
-                <thead class="bg-slate-800">
+                <thead class="bg-[var(--color-surface)]">
                   <tr>
-                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Account</th>
-                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-slate-400">Display Label</th>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Account</th>
+                    <th class="whitespace-nowrap px-3 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Display Label</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="va in rawSettings.visible_accounts" :key="va.account" class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-3 py-1.5 font-medium text-slate-200">{{ va.account || '--' }}</td>
-                    <td class="px-3 py-1.5 text-slate-400">{{ va.label || '--' }}</td>
+                  <tr v-for="va in rawSettings.visible_accounts" :key="va.account" class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 font-medium text-[var(--color-text)]">{{ va.account || '--' }}</td>
+                    <td class="px-3 py-1.5 text-[var(--color-text-muted)]">{{ va.label || '--' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -164,21 +164,21 @@
 
           <!-- ── Printer Settings ── -->
           <div v-if="visiblePrinterSettings.length">
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Printer Settings</div>
-            <div class="overflow-auto rounded-lg border border-slate-700">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Printer Settings</div>
+            <div class="overflow-auto rounded-lg border border-[var(--color-border)]">
               <table class="w-full text-[10px]">
-                <thead class="bg-slate-800">
+                <thead class="bg-[var(--color-surface)]">
                   <tr>
-                    <th v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">User</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Printer</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Print Template</th>
+                    <th v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">User</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Printer</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Print Template</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="ps in visiblePrinterSettings" :key="ps.user + ps.printer + ps.template" class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ ps.user || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-slate-200">{{ ps.printer || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ ps.template || '--' }}</td>
+                  <tr v-for="ps in visiblePrinterSettings" :key="ps.user + ps.printer + ps.template" class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ ps.user || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-[var(--color-text)]">{{ ps.printer || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ ps.template || '--' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -187,45 +187,45 @@
 
           <!-- ── User Series Permissions ── -->
           <div v-if="visibleUserSeries.length">
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">User Series Permissions</div>
-            <div class="overflow-auto rounded-lg border border-slate-700">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">User Series Permissions</div>
+            <div class="overflow-auto rounded-lg border border-[var(--color-border)]">
               <table class="w-full text-[10px]">
-                <thead class="bg-slate-800">
+                <thead class="bg-[var(--color-surface)]">
                   <tr>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">User</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Allowed Series</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-slate-400">Zoom</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Warehouse</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Cost Center</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Income A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Cash A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Card A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Bank A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">UPI A/C</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Admin</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Cashier</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Biller</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-slate-400">Default Printer</th>
-                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-slate-400">Accounts</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">User</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Allowed Series</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-right font-semibold text-[var(--color-text-muted)]">Zoom</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Warehouse</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Cost Center</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Income A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Cash A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Card A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Bank A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">UPI A/C</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Admin</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Cashier</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Biller</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Default Printer</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Accounts</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="us in visibleUserSeries" :key="us.user" class="border-t border-slate-700 hover:bg-slate-800/40">
-                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-slate-200">{{ us.user || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 font-mono text-slate-400">{{ us.allowed_series || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-slate-400">{{ us.zoom_value || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.warehouse || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.cost_center || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.income_account || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.cash || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.card || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.bank || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.upi || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.admin ? '✓' : '' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.cashier ? '✓' : '' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.biller ? '✓' : '' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-slate-400">{{ us.default_printer || '--' }}</td>
-                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-slate-400">{{ us.accounts ? '✓' : '' }}</td>
+                  <tr v-for="us in visibleUserSeries" :key="us.user" class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-2 py-1.5 font-medium text-[var(--color-text)]">{{ us.user || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 font-mono text-[var(--color-text-muted)]">{{ us.allowed_series || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-right font-mono text-[var(--color-text-muted)]">{{ us.zoom_value || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.warehouse || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.cost_center || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.income_account || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.cash || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.card || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.bank || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.upi || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-[var(--color-text-muted)]">{{ us.admin ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-[var(--color-text-muted)]">{{ us.cashier ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-[var(--color-text-muted)]">{{ us.biller ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.default_printer || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-[var(--color-text-muted)]">{{ us.accounts ? '✓' : '' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -236,9 +236,9 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex justify-end border-t border-slate-700 px-5 py-3 bg-slate-800">
+      <div class="flex justify-end border-t border-[var(--color-border)] px-5 py-3 bg-[var(--color-surface)]">
         <button
-          class="rounded bg-slate-700 px-4 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-600"
+          class="rounded bg-[var(--color-surface-raised)] px-4 py-1.5 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]"
           @click="$emit('close')"
         >Close</button>
       </div>
@@ -247,32 +247,32 @@
 
     <!-- Debug Variables Modal -->
     <div v-if="showDebugModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showDebugModal = false">
-      <div class="w-[600px] rounded-xl bg-slate-900 border border-slate-700 shadow-2xl flex flex-col max-h-[80vh]">
-        <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between bg-slate-800 rounded-t-xl">
-          <div class="text-sm font-semibold text-slate-200">🛠️ Debug Local Variables</div>
-          <button @click="showDebugModal = false" class="text-slate-500 hover:text-slate-300">✕</button>
+      <div class="w-[600px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl flex flex-col max-h-[80vh]">
+        <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center justify-between bg-[var(--color-surface)] rounded-t-xl">
+          <div class="text-sm font-semibold text-[var(--color-text)]">🛠️ Debug Local Variables</div>
+          <button @click="showDebugModal = false" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
         </div>
         <div class="overflow-y-auto p-5">
-          <table class="w-full text-left text-xs text-slate-300 border-collapse">
+          <table class="w-full text-left text-xs text-[var(--color-text)] border-collapse">
             <thead>
-              <tr class="border-b border-slate-700 text-slate-400">
+              <tr class="border-b border-[var(--color-border)] text-[var(--color-text-muted)]">
                 <th class="py-2 px-3 font-semibold">Key</th>
                 <th class="py-2 px-3 font-semibold">Value</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="v in localVariables" :key="v.key" class="border-b border-slate-800/50 hover:bg-slate-800/30">
-                <td class="py-2 px-3 font-mono text-blue-400">{{ v.key }}</td>
+              <tr v-for="v in localVariables" :key="v.key" class="border-b border-[var(--color-border)]/50 hover:bg-[var(--color-surface)]/30">
+                <td class="py-2 px-3 font-mono text-[var(--color-info)]">{{ v.key }}</td>
                 <td class="py-2 px-3 font-mono break-all max-w-[300px]" :title="v.value">{{ v.value }}</td>
               </tr>
               <tr v-if="localVariables.length === 0">
-                <td colspan="2" class="py-4 text-center text-slate-500">No local variables found starting with wb-</td>
+                <td colspan="2" class="py-4 text-center text-[var(--color-text-muted)]">No local variables found starting with wb-</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="border-t border-slate-700 px-5 py-3 bg-slate-800 rounded-b-xl flex justify-end">
-          <button @click="showDebugModal = false" class="rounded bg-slate-700 px-4 py-1.5 text-sm font-semibold text-slate-300 hover:bg-slate-600">Close</button>
+        <div class="border-t border-[var(--color-border)] px-5 py-3 bg-[var(--color-surface)] rounded-b-xl flex justify-end">
+          <button @click="showDebugModal = false" class="rounded bg-[var(--color-surface-raised)] px-4 py-1.5 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]">Close</button>
         </div>
       </div>
     </div>

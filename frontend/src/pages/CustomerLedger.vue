@@ -1,81 +1,81 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-slate-900' : 'flex min-h-screen flex-col bg-slate-900'">
+  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-[var(--color-bg)]' : 'flex min-h-screen flex-col bg-[var(--color-bg)]'">
     <div class="flex h-full flex-col">
     <!-- ═══════ HEADER ═══════ -->
-    <header class="sticky top-0 z-40 border-b border-slate-700 bg-slate-800 px-6 py-3">
+    <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button
             @click="handleBack"
-            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
           >
             ← {{ isSubWindow ? 'Close' : 'Dashboard' }}
           </button>
-          <span class="text-slate-600">|</span>
-          <h1 class="text-sm font-bold text-slate-100">
+          <span class="text-[var(--color-text-muted)]">|</span>
+          <h1 class="text-sm font-bold text-[var(--color-text)]">
             <span v-if="selectedLedger">{{ selectedLedger.type }} Ledger</span>
             <span v-else>Ledger Viewer</span>
           </h1>
-          <span v-if="ledgerData" class="rounded bg-purple-900/20 px-2 py-0.5 text-[10px] font-semibold text-purple-400">
+          <span v-if="ledgerData" class="rounded bg-[var(--color-employee)]/20 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-employee)]">
             {{ ledgerData.entries.length }} entries
           </span>
         </div>
 
         <!-- Shortcut info -->
-        <div class="flex items-center gap-4 text-[10px] text-slate-400">
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Ctrl+L</kbd> Search</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Ctrl+P</kbd> Print</span>
-          <span><kbd class="rounded border border-slate-600 bg-slate-700 px-1 py-0.5 font-mono text-slate-300">Esc</kbd> {{ isSubWindow ? 'Close' : 'Back' }}</span>
+        <div class="flex items-center gap-4 text-[10px] text-[var(--color-text-muted)]">
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">Ctrl+L</kbd> Search</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">Ctrl+P</kbd> Print</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">Esc</kbd> {{ isSubWindow ? 'Close' : 'Back' }}</span>
         </div>
 
         <!-- Print Button -->
         <button
           v-if="ledgerData"
           @click="showPrintModal = true"
-          class="flex items-center gap-1.5 rounded border border-slate-600 bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-600 hover:text-slate-100"
+          class="flex items-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
           title="Print Ledger (Ctrl+P)"
         >
           🖨 Print
         </button>
 
         <!-- Zoom Controls -->
-        <div class="flex items-center rounded border border-slate-700 bg-slate-800 shadow-sm overflow-hidden">
-          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&minus;</button>
-          <div class="flex flex-col items-center justify-center border-x border-slate-700 bg-slate-800 px-3 min-w-[50px]">
-            <span class="text-[9px] font-bold uppercase tracking-tight text-slate-500 leading-none">Zoom</span>
-            <span class="text-[11px] font-bold text-slate-300 leading-tight">{{ zoomPercent }}%</span>
+        <div class="flex items-center rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden">
+          <button @click="zoomPercent = Math.max(10, zoomPercent - 10)" class="flex h-7 w-8 items-center justify-center font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&minus;</button>
+          <div class="flex flex-col items-center justify-center border-x border-[var(--color-border)] bg-[var(--color-surface)] px-3 min-w-[50px]">
+            <span class="text-[9px] font-bold uppercase tracking-tight text-[var(--color-text-muted)] leading-none">Zoom</span>
+            <span class="text-[11px] font-bold text-[var(--color-text)] leading-tight">{{ zoomPercent }}%</span>
           </div>
-          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-slate-400 hover:bg-slate-700">&plus;</button>
+          <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&plus;</button>
         </div>
       </div>
     </header>
 
     <!-- ═══════ FILTER BAR ═══════ -->
-    <div class="border-b border-slate-700 bg-slate-800 px-6 py-3">
+    <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex flex-wrap items-end gap-3">
 
         <!-- Ledger search -->
         <div class="relative w-80">
-          <label class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          <label class="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
             <span>Ledger Account / Party</span>
             <span class="font-normal opacity-70">
-              <kbd class="rounded border border-slate-600 bg-slate-700 px-1 font-mono text-[9px] text-slate-300">Ctrl+L</kbd> Search
+              <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 font-mono text-[9px] text-[var(--color-text)]">Ctrl+L</kbd> Search
             </span>
           </label>
           <div
             class="flex items-center justify-between rounded border px-3 py-2 text-sm cursor-pointer transition-colors"
-            :class="selectedLedger ? 'bg-blue-900/20 font-semibold text-blue-400 border-blue-700' : 'bg-slate-800 text-slate-500 border-slate-600 hover:border-blue-500'"
+            :class="selectedLedger ? 'bg-[var(--color-info)]/20 font-semibold text-[var(--color-info)] border-[var(--color-info)]' : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-info)]'"
             @click="openCustomerSearch"
           >
             <div class="truncate flex items-center gap-2">
-              <span v-if="selectedLedger" class="px-1 py-0.5 rounded bg-blue-900/40 text-[8px] uppercase tracking-tighter text-blue-400">{{ selectedLedger.type }}</span>
+              <span v-if="selectedLedger" class="px-1 py-0.5 rounded bg-[var(--color-info)]/40 text-[8px] uppercase tracking-tighter text-[var(--color-info)]">{{ selectedLedger.type }}</span>
               <span v-if="selectedLedger">{{ selectedLedger.label || selectedLedger.customer_name }}</span>
               <span v-else>Select account or party...</span>
             </div>
             <button
               v-if="selectedLedger"
               @click.stop="clearLedger"
-              class="ml-2 text-slate-500 hover:text-slate-300"
+              class="ml-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             >
               ✕
             </button>
@@ -84,22 +84,22 @@
 
         <!-- From date -->
         <div>
-          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">From</label>
+          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">From</label>
           <input
             ref="dateInput"
             v-model="fromDate"
             type="date"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           />
         </div>
 
         <!-- To date -->
         <div>
-          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">To</label>
+          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">To</label>
           <input
             v-model="toDate"
             type="date"
-            class="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
           />
         </div>
 
@@ -108,8 +108,8 @@
           :disabled="!selectedLedger || loading"
           class="rounded-lg px-5 py-2 text-sm font-semibold transition-colors"
           :class="selectedLedger && !loading
-            ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
-            : 'bg-slate-800 text-slate-600 cursor-not-allowed'"
+            ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] cursor-pointer'
+            : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] cursor-not-allowed'"
         >
           {{ loading ? 'Loading...' : 'Load Ledger' }}
         </button>
@@ -117,18 +117,18 @@
         <!-- Summary chips (visible after load) -->
         <template v-if="ledgerData">
           <div class="ml-2 flex items-center gap-3 text-xl">
-            <span class="rounded bg-green-900/20 px-3 py-1.5 font-semibold text-green-400">
+            <span class="rounded bg-[var(--color-success)]/20 px-3 py-1.5 font-semibold text-[var(--color-success)]">
               Opening ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }} {{ ledgerData.opening_balance < 0 ? '(Cr)' : '(Dr)' }}
             </span>
-            <span class="rounded bg-green-900/20 px-3 py-1.5 font-semibold text-green-400">
+            <span class="rounded bg-[var(--color-success)]/20 px-3 py-1.5 font-semibold text-[var(--color-success)]">
               Dr ₹{{ fmt(ledgerData.total_debit) }}
             </span>
-            <span class="rounded bg-red-900/20 px-3 py-1.5 font-semibold text-red-400">
+            <span class="rounded bg-[var(--color-danger)]/20 px-3 py-1.5 font-semibold text-[var(--color-danger)]">
               Cr ₹{{ fmt(ledgerData.total_credit) }}
             </span>
             <span
               class="rounded px-3 py-1.5 font-bold"
-              :class="ledgerData.closing_balance >= 0 ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'"
+              :class="ledgerData.closing_balance >= 0 ? 'bg-[var(--color-success)]/20 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]'"
             >
               Balance ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
               {{ ledgerData.closing_balance < 0 ? '(Cr)' : '(Dr)' }}
@@ -145,42 +145,42 @@
       <div class="flex flex-1 flex-col overflow-hidden">
 
         <!-- Empty / loading state -->
-        <div v-if="!ledgerData && !loading && !error" class="flex flex-1 flex-col items-center justify-center gap-2 text-slate-500">
+        <div v-if="!ledgerData && !loading && !error" class="flex flex-1 flex-col items-center justify-center gap-2 text-[var(--color-text-muted)]">
           <div class="text-4xl">📋</div>
           <div class="text-sm font-semibold">Search and select a ledger to view history</div>
         </div>
 
-        <div v-else-if="loading" class="flex flex-1 items-center justify-center text-sm text-slate-400">
+        <div v-else-if="loading" class="flex flex-1 items-center justify-center text-sm text-[var(--color-text-muted)]">
           Loading ledger...
         </div>
 
-        <div v-else-if="error" class="m-6 rounded-lg border border-red-700 bg-red-900/20 px-4 py-3 text-sm text-red-400">
+        <div v-else-if="error" class="m-6 rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger)]/20 px-4 py-3 text-sm text-[var(--color-danger)]">
           {{ error }}
         </div>
 
         <template v-else-if="ledgerData">
           <div class="flex-1 overflow-y-auto">
             <table class="w-full border-collapse" :style="{ fontSize: dynamicRowStyle.fontSize }">
-              <thead class="sticky top-0 z-10 bg-slate-800">
-                <tr class="border-b border-slate-700">
-                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Date</th>
-                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Type</th>
-                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">Voucher No</th>
-                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-slate-400">Debit (Dr)</th>
-                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-slate-400">Credit (Cr)</th>
-                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-slate-400">Balance</th>
+              <thead class="sticky top-0 z-10 bg-[var(--color-surface)]">
+                <tr class="border-b border-[var(--color-border)]">
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Date</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Type</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Voucher No</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Debit (Dr)</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Credit (Cr)</th>
+                  <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Balance</th>
                 </tr>
               </thead>
               <tbody ref="tableBodyRef">
                 <!-- Opening Balance row -->
-                <tr class="border-b border-slate-800 bg-slate-800/50">
-                  <td colspan="5" class="px-4 font-semibold text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/50">
+                  <td colspan="5" class="px-4 font-semibold text-[var(--color-text-muted)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     Opening Balance
-                    <span class="ml-1 font-normal text-slate-500" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">(before {{ fmtDate(ledgerData.from_date) }})</span>
+                    <span class="ml-1 font-normal text-[var(--color-text-muted)]" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">(before {{ fmtDate(ledgerData.from_date) }})</span>
                   </td>
                   <td class="px-4 text-right font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="ledgerData.opening_balance >= 0 ? 'text-green-400' : 'text-red-400'">
+                    :class="ledgerData.opening_balance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                     ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }}
                     <span class="ml-0.5 font-normal" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
@@ -188,7 +188,7 @@
 
                 <!-- No entries message -->
                 <tr v-if="!ledgerData.entries.length">
-                  <td colspan="6" class="px-4 py-12 text-center text-slate-500">
+                  <td colspan="6" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
                     No transactions found for the selected period.
                   </td>
                 </tr>
@@ -200,14 +200,14 @@
                   :data-idx="idx"
                   @click="onRowClick(entry, idx)"
                   @mouseenter="onRowMouseEnter(entry, idx)"
-                  class="cursor-pointer border-b border-slate-700 transition-colors"
+                  class="cursor-pointer border-b border-[var(--color-border)] transition-colors"
                   :class="focusedIdx === idx
-                    ? 'bg-blue-900/30 border-l-blue-500'
+                    ? 'bg-[var(--color-info)]/30 border-l-blue-500'
                     : selectedEntry === entry
-                      ? 'bg-blue-900/20'
-                      : 'hover:bg-slate-800/40'"
+                      ? 'bg-[var(--color-info)]/20'
+                      : 'hover:bg-[var(--color-surface)]/40'"
                 >
-                  <td class="px-4 text-slate-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ fmtDate(entry.date) }}</td>
+                  <td class="px-4 text-[var(--color-text-muted)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">{{ fmtDate(entry.date) }}</td>
                   <td class="px-4" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span
                       class="rounded px-1.5 py-0.5 font-bold"
@@ -220,37 +220,37 @@
                   <td class="px-4" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <button
                       @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
-                      class="font-mono text-blue-400 hover:underline"
+                      class="font-mono text-[var(--color-info)] hover:underline"
                     >
                       {{ entry.voucher_no }}
                     </button>
                   </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span v-if="entry.debit" class="font-semibold text-green-400">₹{{ fmt(entry.debit) }}</span>
-                    <span v-else class="text-slate-600">—</span>
+                    <span v-if="entry.debit" class="font-semibold text-[var(--color-success)]">₹{{ fmt(entry.debit) }}</span>
+                    <span v-else class="text-[var(--color-text-muted)]">—</span>
                   </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span v-if="entry.credit" class="font-semibold text-red-400">₹{{ fmt(entry.credit) }}</span>
-                    <span v-else class="text-slate-600">—</span>
+                    <span v-if="entry.credit" class="font-semibold text-[var(--color-danger)]">₹{{ fmt(entry.credit) }}</span>
+                    <span v-else class="text-[var(--color-text-muted)]">—</span>
                   </td>
                   <td class="px-4 text-right font-mono font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="entry.balance < 0 ? 'text-red-400' : 'text-green-400'">
+                    :class="entry.balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                     ₹{{ fmt(Math.abs(entry.balance)) }}
-                    <span class="ml-0.5 font-normal text-slate-500" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
+                    <span class="ml-0.5 font-normal text-[var(--color-text-muted)]" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
                 </tr>
 
                 <!-- Closing Balance row -->
-                <tr v-if="ledgerData.entries.length" class="border-t-2 border-slate-600 bg-slate-800/50">
-                  <td colspan="3" class="px-4 font-bold text-slate-300" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">Closing Balance</td>
-                  <td class="px-4 text-right font-mono font-bold text-green-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_debit) }}</td>
-                  <td class="px-4 text-right font-mono font-bold text-red-400" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_credit) }}</td>
+                <tr v-if="ledgerData.entries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface)]/50">
+                  <td colspan="3" class="px-4 font-bold text-[var(--color-text)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">Closing Balance</td>
+                  <td class="px-4 text-right font-mono font-bold text-[var(--color-success)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_debit) }}</td>
+                  <td class="px-4 text-right font-mono font-bold text-[var(--color-danger)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_credit) }}</td>
                   <td class="px-4 text-right font-mono font-bold"
                     :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }"
-                    :class="ledgerData.closing_balance < 0 ? 'text-red-400' : 'text-green-400'">
+                    :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                     ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
-                    <span class="ml-0.5 font-normal text-slate-400" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
+                    <span class="ml-0.5 font-normal text-[var(--color-text-muted)]" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -263,88 +263,88 @@
       <transition name="slide">
         <div
           v-if="selectedEntry"
-          class="flex w-96 shrink-0 flex-col border-l border-slate-700 bg-slate-800"
+          class="flex w-96 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)]"
         >
           <!-- Panel header -->
-          <div class="flex items-center justify-between border-b border-slate-700 px-4 py-3">
+          <div class="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
             <div class="flex items-center gap-2">
               <span class="rounded px-2 py-0.5 text-[10px] font-bold" :class="voucherBadgeClass(selectedEntry.voucher_type)">
                 {{ voucherLabel(selectedEntry.voucher_type) }}
               </span>
-              <span class="font-mono text-sm font-bold text-slate-200">{{ selectedEntry.voucher_no }}</span>
+              <span class="font-mono text-sm font-bold text-[var(--color-text)]">{{ selectedEntry.voucher_no }}</span>
             </div>
             <div class="flex items-center gap-2">
               <button
                 v-if="selectedEntry.voucher_type === 'Sales Invoice'"
                 @click="openInternalSalesEntry(selectedEntry.voucher_no)"
-                class="rounded px-2 py-1 text-[10px] font-semibold text-blue-400 hover:bg-blue-900/20"
+                class="rounded px-2 py-1 text-[10px] font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/20"
               >
                 View / Edit
               </button>
               <button
                 @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
-                class="rounded px-2 py-1 text-[10px] font-semibold text-slate-400 hover:bg-slate-700"
+                class="rounded px-2 py-1 text-[10px] font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
                 title="Open in ERPNext"
               >
                 ERPNext ↗
               </button>
-              <button @click="closeDetail" class="rounded p-1 text-slate-400 hover:bg-slate-700">✕</button>
+              <button @click="closeDetail" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">✕</button>
             </div>
           </div>
 
           <!-- Loading detail -->
-          <div v-if="loadingDetail" class="flex flex-1 items-center justify-center text-sm text-slate-400">
+          <div v-if="loadingDetail" class="flex flex-1 items-center justify-center text-sm text-[var(--color-text-muted)]">
             Loading...
           </div>
 
           <div v-else-if="voucherDetail" class="flex-1 overflow-y-auto p-4">
 
             <!-- Key fields -->
-            <div class="mb-4 space-y-2 rounded-lg bg-slate-700 p-3 text-xs">
+            <div class="mb-4 space-y-2 rounded-lg bg-[var(--color-surface-raised)] p-3 text-xs">
               <div class="flex justify-between">
-                <span class="text-slate-400">Date</span>
-                <span class="font-semibold text-slate-200">{{ fmtDate(voucherDetail.posting_date) }}</span>
+                <span class="text-[var(--color-text-muted)]">Date</span>
+                <span class="font-semibold text-[var(--color-text)]">{{ fmtDate(voucherDetail.posting_date) }}</span>
               </div>
               <div v-if="voucherDetail.party_name || voucherDetail.party" class="flex justify-between">
-                <span class="text-slate-400">Party</span>
-                <span class="font-semibold text-slate-200 text-right">{{ voucherDetail.party_name || voucherDetail.party }}</span>
+                <span class="text-[var(--color-text-muted)]">Party</span>
+                <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.party_name || voucherDetail.party }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-slate-400">Amount</span>
-                <span class="font-bold text-slate-100">₹{{ fmt(voucherDetail.total_amount) }}</span>
+                <span class="text-[var(--color-text-muted)]">Amount</span>
+                <span class="font-bold text-[var(--color-text)]">₹{{ fmt(voucherDetail.total_amount) }}</span>
               </div>
               <div v-if="voucherDetail.mode_of_payment" class="flex justify-between">
-                <span class="text-slate-400">Mode</span>
-                <span class="font-semibold text-slate-200">{{ voucherDetail.mode_of_payment }}</span>
+                <span class="text-[var(--color-text-muted)]">Mode</span>
+                <span class="font-semibold text-[var(--color-text)]">{{ voucherDetail.mode_of_payment }}</span>
               </div>
               <div v-if="voucherDetail.outstanding_amount !== undefined" class="flex justify-between">
-                <span class="text-slate-400">Outstanding</span>
-                <span class="font-semibold" :class="voucherDetail.outstanding_amount > 0 ? 'text-red-400' : 'text-green-400'">
+                <span class="text-[var(--color-text-muted)]">Outstanding</span>
+                <span class="font-semibold" :class="voucherDetail.outstanding_amount > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                   ₹{{ fmt(voucherDetail.outstanding_amount) }}
                 </span>
               </div>
               <div v-if="voucherDetail.status" class="flex justify-between">
-                <span class="text-slate-400">Status</span>
+                <span class="text-[var(--color-text-muted)]">Status</span>
                 <span class="rounded px-1.5 py-0.5 text-[10px] font-bold"
                   :class="{
-                    'bg-green-900/20 text-green-400': ['Paid', 'Submitted'].includes(voucherDetail.status),
-                    'bg-amber-900/20 text-amber-400': voucherDetail.status === 'Unpaid',
-                    'bg-blue-900/20 text-blue-400': voucherDetail.status === 'Partly Paid',
-                    'bg-slate-700 text-slate-400': !['Paid','Submitted','Unpaid','Partly Paid'].includes(voucherDetail.status),
+                    'bg-[var(--color-success)]/20 text-[var(--color-success)]': ['Paid', 'Submitted'].includes(voucherDetail.status),
+                    'bg-[var(--color-warning)]/20 text-[var(--color-warning)]': voucherDetail.status === 'Unpaid',
+                    'bg-[var(--color-info)]/20 text-[var(--color-info)]': voucherDetail.status === 'Partly Paid',
+                    'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]': !['Paid','Submitted','Unpaid','Partly Paid'].includes(voucherDetail.status),
                   }"
                 >
                   {{ voucherDetail.status }}
                 </span>
               </div>
               <div v-if="voucherDetail.remarks" class="pt-1">
-                <span class="text-slate-400">Remarks</span>
-                <p class="mt-0.5 text-slate-300">{{ voucherDetail.remarks }}</p>
+                <span class="text-[var(--color-text-muted)]">Remarks</span>
+                <p class="mt-0.5 text-[var(--color-text)]">{{ voucherDetail.remarks }}</p>
               </div>
             </div>
 
             <!-- Line items -->
             <div v-if="voucherDetail.items?.length">
-              <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {{ voucherDetail.voucher_type === 'Payment Entry' ? 'References' :
                    voucherDetail.voucher_type === 'Journal Entry' ? 'Accounts' : 'Items' }}
               </div>
@@ -353,7 +353,7 @@
               <template v-if="['Sales Invoice', 'Purchase Invoice', 'Credit Note'].includes(voucherDetail.voucher_type)">
                 <table class="w-full text-xs">
                   <thead>
-                    <tr class="border-b border-slate-700 text-[10px] text-slate-400">
+                    <tr class="border-b border-[var(--color-border)] text-[10px] text-[var(--color-text-muted)]">
                       <th class="pb-1.5 text-left font-normal">Item</th>
                       <th class="pb-1.5 text-right font-normal">Qty</th>
                       <th class="pb-1.5 text-right font-normal">Rate</th>
@@ -361,14 +361,14 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(item, i) in voucherDetail.items" :key="i" class="border-b border-slate-700">
+                    <tr v-for="(item, i) in voucherDetail.items" :key="i" class="border-b border-[var(--color-border)]">
                       <td class="py-1.5">
-                        <div class="font-semibold text-slate-200">{{ item.item_code }}</div>
-                        <div class="text-[10px] text-slate-500">{{ item.item_name }}</div>
+                        <div class="font-semibold text-[var(--color-text)]">{{ item.item_code }}</div>
+                        <div class="text-[10px] text-[var(--color-text-muted)]">{{ item.item_name }}</div>
                       </td>
-                      <td class="py-1.5 text-right text-slate-400">{{ item.qty }} {{ item.uom }}</td>
-                      <td class="py-1.5 text-right font-mono text-slate-400">₹{{ fmt(item.rate) }}</td>
-                      <td class="py-1.5 text-right font-mono font-semibold text-slate-200">₹{{ fmt(item.amount) }}</td>
+                      <td class="py-1.5 text-right text-[var(--color-text-muted)]">{{ item.qty }} {{ item.uom }}</td>
+                      <td class="py-1.5 text-right font-mono text-[var(--color-text-muted)]">₹{{ fmt(item.rate) }}</td>
+                      <td class="py-1.5 text-right font-mono font-semibold text-[var(--color-text)]">₹{{ fmt(item.amount) }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -377,15 +377,15 @@
               <!-- Payment Entry references -->
               <template v-else-if="voucherDetail.voucher_type === 'Payment Entry'">
                 <div v-for="(ref, i) in voucherDetail.items" :key="i"
-                  class="mb-1.5 flex items-center justify-between rounded bg-slate-700 px-3 py-2 text-xs">
+                  class="mb-1.5 flex items-center justify-between rounded bg-[var(--color-surface-raised)] px-3 py-2 text-xs">
                   <div>
-                    <span class="text-[10px] text-slate-400">{{ ref.reference_doctype }}</span>
+                    <span class="text-[10px] text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</span>
                     <button
                       @click="openInErpNext(ref.reference_doctype, ref.reference_name)"
-                      class="ml-1 font-mono text-blue-400 hover:underline"
+                      class="ml-1 font-mono text-[var(--color-info)] hover:underline"
                     >{{ ref.reference_name }}</button>
                   </div>
-                  <span class="font-mono font-semibold text-green-400">₹{{ fmt(ref.allocated_amount) }}</span>
+                  <span class="font-mono font-semibold text-[var(--color-success)]">₹{{ fmt(ref.allocated_amount) }}</span>
                 </div>
               </template>
 
@@ -393,50 +393,50 @@
               <template v-else-if="voucherDetail.voucher_type === 'Journal Entry'">
                 <!-- Linked References section -->
                 <template v-if="voucherDetail.items.some(a => a.reference_name)">
-                  <div class="mb-2 text-[10px] font-semibold uppercase tracking-wide text-violet-400">Linked References</div>
+                  <div class="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-info)]">Linked References</div>
                   <div
                     v-for="(acc, i) in voucherDetail.items.filter(a => a.reference_name)"
                     :key="'ref-' + i"
-                    class="mb-1.5 flex items-center justify-between rounded bg-violet-900/30 px-3 py-2 text-xs border border-violet-700/40"
+                    class="mb-1.5 flex items-center justify-between rounded bg-[var(--color-info)]/30 px-3 py-2 text-xs border border-[var(--color-info)]/40"
                   >
                     <div class="flex flex-col gap-0.5">
-                      <span class="text-[10px] text-violet-400">{{ acc.reference_type }}</span>
+                      <span class="text-[10px] text-[var(--color-info)]">{{ acc.reference_type }}</span>
                       <button
                         @click="openInErpNext(acc.reference_type, acc.reference_name)"
-                        class="font-mono text-violet-300 hover:text-violet-100 hover:underline text-left"
+                        class="font-mono text-[var(--color-info)] hover:text-[var(--color-info)] hover:underline text-left"
                       >{{ acc.reference_name }}</button>
-                      <span v-if="acc.party" class="text-[10px] text-slate-400">{{ acc.party_type }}: {{ acc.party }}</span>
+                      <span v-if="acc.party" class="text-[10px] text-[var(--color-text-muted)]">{{ acc.party_type }}: {{ acc.party }}</span>
                     </div>
                     <div class="flex flex-col items-end gap-0.5">
-                      <span v-if="acc.credit" class="font-mono font-semibold text-green-400">₹{{ fmt(acc.credit) }} Cr</span>
-                      <span v-if="acc.debit" class="font-mono font-semibold text-red-400">₹{{ fmt(acc.debit) }} Dr</span>
+                      <span v-if="acc.credit" class="font-mono font-semibold text-[var(--color-success)]">₹{{ fmt(acc.credit) }} Cr</span>
+                      <span v-if="acc.debit" class="font-mono font-semibold text-[var(--color-danger)]">₹{{ fmt(acc.debit) }} Dr</span>
                     </div>
                   </div>
-                  <div class="my-2 border-t border-slate-700"></div>
+                  <div class="my-2 border-t border-[var(--color-border)]"></div>
                 </template>
                 <!-- All accounts breakdown -->
-                <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Accounts</div>
+                <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Accounts</div>
                 <table class="w-full text-xs">
                   <thead>
-                    <tr class="border-b border-slate-700 text-[10px] text-slate-400">
+                    <tr class="border-b border-[var(--color-border)] text-[10px] text-[var(--color-text-muted)]">
                       <th class="pb-1.5 text-left font-normal">Account</th>
                       <th class="pb-1.5 text-right font-normal">Dr</th>
                       <th class="pb-1.5 text-right font-normal">Cr</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(acc, i) in voucherDetail.items" :key="i" class="border-b border-slate-700">
-                      <td class="py-1.5 text-slate-300">
+                    <tr v-for="(acc, i) in voucherDetail.items" :key="i" class="border-b border-[var(--color-border)]">
+                      <td class="py-1.5 text-[var(--color-text)]">
                         {{ acc.account }}
-                        <span v-if="acc.party" class="ml-1 text-[10px] text-slate-500">({{ acc.party }})</span>
+                        <span v-if="acc.party" class="ml-1 text-[10px] text-[var(--color-text-muted)]">({{ acc.party }})</span>
                       </td>
-                      <td class="py-1.5 text-right font-mono text-red-400">
+                      <td class="py-1.5 text-right font-mono text-[var(--color-danger)]">
                         <span v-if="acc.debit">₹{{ fmt(acc.debit) }}</span>
-                        <span v-else class="text-slate-600">—</span>
+                        <span v-else class="text-[var(--color-text-muted)]">—</span>
                       </td>
-                      <td class="py-1.5 text-right font-mono text-green-400">
+                      <td class="py-1.5 text-right font-mono text-[var(--color-success)]">
                         <span v-if="acc.credit">₹{{ fmt(acc.credit) }}</span>
-                        <span v-else class="text-slate-600">—</span>
+                        <span v-else class="text-[var(--color-text-muted)]">—</span>
                       </td>
                     </tr>
                   </tbody>
@@ -734,19 +734,19 @@ function fmtDate(d) {
 }
 
 const VOUCHER_CONFIG = {
-  'Sales Invoice':    { label: 'SINV', cls: 'bg-blue-900/20 text-blue-400' },
-  'Payment Entry':    { label: 'PAY',  cls: 'bg-green-900/20 text-green-400' },
-  'Journal Entry':    { label: 'JE',   cls: 'bg-slate-700 text-slate-400' },
-  'Purchase Invoice': { label: 'PINV', cls: 'bg-orange-900/20 text-orange-400' },
-  'Credit Note':      { label: 'CN',   cls: 'bg-purple-900/20 text-purple-400' },
-  'Expense Claim':    { label: 'EXP',  cls: 'bg-purple-900/20 text-purple-400' },
+  'Sales Invoice':    { label: 'SINV', cls: 'bg-[var(--color-info)]/20 text-[var(--color-info)]' },
+  'Payment Entry':    { label: 'PAY',  cls: 'bg-[var(--color-success)]/20 text-[var(--color-success)]' },
+  'Journal Entry':    { label: 'JE',   cls: 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' },
+  'Purchase Invoice': { label: 'PINV', cls: 'bg-[var(--color-supplier)]/20 text-[var(--color-supplier)]' },
+  'Credit Note':      { label: 'CN',   cls: 'bg-[var(--color-employee)]/20 text-[var(--color-employee)]' },
+  'Expense Claim':    { label: 'EXP',  cls: 'bg-[var(--color-employee)]/20 text-[var(--color-employee)]' },
 }
 
 function voucherLabel(type) {
   return VOUCHER_CONFIG[type]?.label ?? type?.slice(0, 4).toUpperCase() ?? '?'
 }
 function voucherBadgeClass(type) {
-  return VOUCHER_CONFIG[type]?.cls ?? 'bg-gray-100 text-gray-600'
+  return VOUCHER_CONFIG[type]?.cls ?? 'bg-[var(--color-surface)] text-[var(--color-text-muted)]'
 }
 
 function openInErpNext(voucherType, voucherNo) {
