@@ -247,8 +247,6 @@ onMounted(() => {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-.bg-[var(--color-surface-raised)] { background-color: rgba(30, 41, 59, 0.5); }
-
 /* Ensure no bold text globally in this component */
 * { font-weight: 400 !important; }
 </style>
