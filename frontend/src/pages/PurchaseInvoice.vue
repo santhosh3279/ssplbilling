@@ -91,57 +91,60 @@
           </div>
         </div>
 
-        <!-- Line 2: Secondary Details + Supp Inv info -->
+        <!-- Line 2: Secondary Details + Supp Inv info (Right Aligned) -->
         <div class="flex items-center gap-8 border-t border-[var(--color-border)]/30 pt-2">
           <div v-if="supplierLastInvDate" class="flex items-center gap-2 whitespace-nowrap shrink overflow-hidden">
             <span class="text-xl font-bold uppercase text-[var(--color-text-muted)] shrink-0">Last Inv</span>
             <span class="text-3xl font-mono text-[var(--color-highlight)] truncate">{{ supplierLastInvDate }}</span>
           </div>
 
-          <!-- Supplier Invoice Info (Inline) -->
-          <div class="flex items-center gap-6 border-l border-[var(--color-border)] pl-6">
-            <div class="flex items-center gap-2">
-              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Supp. Inv No</label>
-              <input
-                ref="supplierInvoiceNoRef"
-                v-model="supplierInvoiceNo"
-                :disabled="isReadOnly"
-                placeholder="Bill No"
-                class="bg-slate-800/40 rounded border border-slate-700/50 px-2 py-0.5 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:ring-1 focus:ring-[var(--color-highlight)] placeholder:text-slate-600 w-40"
-              />
-            </div>
-
-            <div class="flex items-center gap-2">
-              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Supp. Date</label>
-              <div class="flex items-center gap-1 bg-slate-800/40 rounded border border-slate-700/50 px-1 py-0.5">
-                <button 
-                  @click="handleSupplierInvoiceDateChange(-1)" 
-                  :disabled="isReadOnly"
-                  class="text-slate-400 hover:text-white disabled:opacity-30 px-1"
-                >&larr;</button>
+          <!-- Supplier Invoice Info & Bill Date (Right Aligned Container) -->
+          <div class="flex items-center gap-8 ml-auto whitespace-nowrap">
+            <!-- Supplier Invoice Info -->
+            <div class="flex items-center gap-6 border-l border-[var(--color-border)] pl-6">
+              <div class="flex items-center gap-2">
+                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Supp. Inv No</label>
                 <input
-                  ref="supplierInvoiceDateInputRef"
-                  type="date"
-                  v-model="supplierInvoiceDate"
+                  ref="supplierInvoiceNoRef"
+                  v-model="supplierInvoiceNo"
                   :disabled="isReadOnly"
-                  class="bg-transparent border-none p-0 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)] w-44"
+                  placeholder="Bill No"
+                  class="bg-transparent border-b border-[var(--color-border)] px-1 py-0 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:border-[var(--color-highlight)] placeholder:text-slate-600 w-32"
                 />
-                <button 
-                  @click="handleSupplierInvoiceDateChange(1)" 
-                  :disabled="isReadOnly"
-                  class="text-slate-400 hover:text-white disabled:opacity-30 px-1"
-                >&rarr;</button>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Supp. Date</label>
+                <div class="flex items-center gap-1 border-b border-[var(--color-border)]">
+                  <button 
+                    @click="handleSupplierInvoiceDateChange(-1)" 
+                    :disabled="isReadOnly"
+                    class="text-slate-400 hover:text-white disabled:opacity-30 px-1 text-2xl"
+                  >&larr;</button>
+                  <input
+                    ref="supplierInvoiceDateInputRef"
+                    type="date"
+                    v-model="supplierInvoiceDate"
+                    :disabled="isReadOnly"
+                    class="bg-transparent border-none p-0 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)] w-40"
+                  />
+                  <button 
+                    @click="handleSupplierInvoiceDateChange(1)" 
+                    :disabled="isReadOnly"
+                    class="text-slate-400 hover:text-white disabled:opacity-30 px-1 text-2xl"
+                  >&rarr;</button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Bill Date (Original) -->
-          <div v-if="invoiceDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
-            <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
-            <div class="flex items-center gap-1">
-              <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
-              <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
-              <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+            <!-- Bill Date (Original) -->
+            <div v-if="invoiceDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6">
+              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
+              <div class="flex items-center gap-1">
+                <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
+                <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+              </div>
             </div>
           </div>
         </div>
