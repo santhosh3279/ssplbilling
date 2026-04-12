@@ -379,7 +379,8 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
 def get_purchase_invoice(invoice_name):
     """Fetch a Purchase Invoice with its items."""
     pi = frappe.get_doc("Purchase Invoice", invoice_name)
-    cost_center = pi.items[0].cost_center if pi.items else ""
+    cost_center = pi.cost_center or (pi.items[0].cost_center if pi.items else "")
+
 
     is_inclusive = 0
 
@@ -481,6 +482,7 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.address_display = None
 
     pi.is_return = data.get("is_return", 0)
+    pi.cost_center = data.get("cost_center")
     pi.bill_no = data.get("bill_no")
     pi.bill_date = data.get("bill_date")
     pi.posting_date = data.get("date", frappe.utils.today())
