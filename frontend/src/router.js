@@ -29,6 +29,7 @@ import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
 import GstDummyLedger from './pages/GstDummyLedger.vue'
 import GstLedger from './pages/GstLedger.vue'
 import DailyReport from './pages/DailyReport.vue'
+import GeneralLedger from './pages/GeneralLedger.vue'
 
 const routes = [
   {
@@ -41,6 +42,11 @@ const routes = [
     path: '/daily-report',
     name: 'DailyReport',
     component: DailyReport,
+  },
+  {
+    path: '/general-ledger',
+    name: 'GeneralLedger',
+    component: GeneralLedger,
   },
   {
     path: '/ssplbillingsettings',

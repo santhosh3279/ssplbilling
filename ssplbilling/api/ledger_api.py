@@ -266,6 +266,84 @@ def get_voucher_detail(voucher_type, voucher_no):
     return base
 
 @frappe.whitelist()
+def get_general_ledger(party_type, party, from_date=None, to_date=None):
+	"""Return GL entries using ERPNext's built-in General Ledger report engine."""
+	from erpnext.accounts.report.general_ledger.general_ledger import execute as _gl_execute
+	from erpnext import get_default_company
+
+	company = frappe.defaults.get_user_default("company") or get_default_company()
+	to_date = to_date or frappe.utils.today()
+	from_date = from_date or frappe.utils.add_days(to_date, -90)
+
+	# Resolve display label
+	label = party
+	if party_type == "Customer":
+		label = frappe.db.get_value("Customer", party, "customer_name") or party
+	elif party_type == "Supplier":
+		label = frappe.db.get_value("Supplier", party, "supplier_name") or party
+	elif party_type == "Employee":
+		label = frappe.db.get_value("Employee", party, "employee_name") or party
+
+	filters = frappe._dict({
+		"company": company,
+		"from_date": from_date,
+		"to_date": to_date,
+		"party_type": party_type,
+		"party": [party],
+		"categorize_by": "Categorize by Voucher (Consolidated)",
+		"show_remarks": 1,
+	})
+
+	_columns, rows = _gl_execute(filters)
+
+	opening_balance = 0.0
+	closing_balance = 0.0
+	total_debit = 0.0
+	total_credit = 0.0
+	entries = []
+
+	for row in (rows or []):
+		# Rows without posting_date are summary rows (Opening / Total / Closing)
+		if not row.get("posting_date"):
+			account_str = str(row.get("account") or "")
+			if "Closing" in account_str:
+				closing_balance = float(row.get("balance") or 0)
+				total_debit = float(row.get("debit") or 0)
+				total_credit = float(row.get("credit") or 0)
+			elif "Opening" in account_str:
+				opening_balance = float(row.get("balance") or 0)
+			continue
+
+		entries.append({
+			"date": str(row.get("posting_date") or ""),
+			"account": str(row.get("account") or ""),
+			"party_type": row.get("party_type") or "",
+			"party": row.get("party") or "",
+			"party_name": row.get("party_name") or "",
+			"voucher_type": row.get("voucher_type") or "",
+			"voucher_no": row.get("voucher_no") or "",
+			"against": row.get("against") or "",
+			"debit": float(row.get("debit") or 0),
+			"credit": float(row.get("credit") or 0),
+			"balance": float(row.get("balance") or 0),
+			"remarks": row.get("remarks") or "",
+		})
+
+	return {
+		"party_type": party_type,
+		"party": party,
+		"label": label,
+		"from_date": str(from_date),
+		"to_date": str(to_date),
+		"opening_balance": round(opening_balance, 2),
+		"closing_balance": round(closing_balance, 2),
+		"total_debit": round(total_debit, 2),
+		"total_credit": round(total_credit, 2),
+		"entries": entries,
+	}
+
+
+@frappe.whitelist()
 def get_outstanding_invoices(customer):
     """Return submitted Sales Invoices with outstanding balance."""
     return frappe.get_all("Sales Invoice", filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]}, fields=["name", "posting_date", "grand_total", "outstanding_amount"], limit=50)
