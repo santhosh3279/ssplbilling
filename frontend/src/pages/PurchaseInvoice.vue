@@ -59,6 +59,44 @@
       @incentive="handleIncentive"
       @party-click="supplierInitialQuery = ''; showSupplierModal = true"
     >
+      <template #header-right>
+        <div class="flex items-center gap-4 bg-slate-800/40 px-3 py-1 rounded-lg border border-slate-700/50">
+          <div class="flex flex-col">
+            <label class="text-[10px] font-bold uppercase text-slate-400 leading-none mb-1">Supp. Inv No</label>
+            <input
+              ref="supplierInvoiceNoRef"
+              v-model="supplierInvoiceNo"
+              :disabled="isReadOnly"
+              placeholder="Bill No"
+              class="bg-transparent border-none p-0 text-xl font-mono text-[var(--color-highlight)] outline-none focus:ring-0 placeholder:text-slate-600 w-32"
+            />
+          </div>
+          <div class="h-8 w-[1px] bg-slate-700/50 mx-1"></div>
+          <div class="flex flex-col">
+            <label class="text-[10px] font-bold uppercase text-slate-400 leading-none mb-1">Supp. Inv Date</label>
+            <div class="flex items-center gap-2">
+              <button 
+                @click="handleSupplierInvoiceDateChange(-1)" 
+                :disabled="isReadOnly"
+                class="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
+              >&larr;</button>
+              <input
+                ref="supplierInvoiceDateInputRef"
+                type="date"
+                v-model="supplierInvoiceDate"
+                :disabled="isReadOnly"
+                class="bg-transparent border-none p-0 text-xl font-mono text-[var(--color-highlight)] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)] w-36"
+              />
+              <button 
+                @click="handleSupplierInvoiceDateChange(1)" 
+                :disabled="isReadOnly"
+                class="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
+              >&rarr;</button>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <template #row="{ item, index }">
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
@@ -248,34 +286,6 @@
               :disabled="isReadOnly"
               class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-1 text-[13px] font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] disabled:opacity-40 disabled:cursor-default transition-colors"
             >Import CSV</button>
-          </div>
-
-          <!-- Supplier Invoice Info -->
-          <div class="grid grid-cols-2 gap-2 border-b border-[var(--color-border)]/30 pb-3">
-            <div class="flex flex-col gap-0.5">
-              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Supp. Inv No</label>
-              <input
-                ref="supplierInvoiceNoRef"
-                v-model="supplierInvoiceNo"
-                :disabled="isReadOnly"
-                placeholder="Bill No"
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
-              />
-            </div>
-            <div class="flex flex-col gap-0.5">
-              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Supp. Inv Date</label>
-              <div class="flex gap-1 items-center">
-                <button @click="handleSupplierInvoiceDateChange(-1)" :disabled="isReadOnly" class="rounded bg-[var(--color-bg)] border border-[var(--color-border)] px-2 py-0.5 text-xl hover:bg-[var(--color-midlight)] disabled:opacity-50">←</button>
-                <input
-                  ref="supplierInvoiceDateInputRef"
-                  type="date"
-                  v-model="supplierInvoiceDate"
-                  :disabled="isReadOnly"
-                  class="flex-1 min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)]"
-                />
-                <button @click="handleSupplierInvoiceDateChange(1)" :disabled="isReadOnly" class="rounded bg-[var(--color-bg)] border border-[var(--color-border)] px-2 py-0.5 text-xl hover:bg-[var(--color-midlight)] disabled:opacity-50">→</button>
-              </div>
-            </div>
           </div>
 
           <!-- Row 1: Price List -->
