@@ -544,19 +544,7 @@ watch(entryType, () => {
   nextTick(() => ledgerRefs[0]?.focus())
 })
 
-const searchInitialType = computed(() => {
-  if (entryType.value === 'Receipt') {
-    if (activeRowIdx.value === 0) return 'Customer'
-    return 'Account'
-  }
-  if (entryType.value === 'Payment') {
-    if (activeRowIdx.value === 0) return 'Supplier'
-    return 'Account'
-  }
-  // For row 1+ in Receipt/Payment, default to Account but allow other tabs
-  if (activeRowIdx.value > 0) return 'Account'
-  return 'Account'
-})
+const searchInitialType = computed(() => 'All')
 
 const searchFilterList = computed(() => {
   if ((entryType.value === 'Receipt' || entryType.value === 'Payment') && activeRowIdx.value > 0) {
