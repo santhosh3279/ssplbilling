@@ -11,7 +11,6 @@ import BarcodePrintPage from './pages/BarcodePrintPage.vue'
 import CashierDesk from './pages/CashierDesk.vue'
 import PurchaseSubmit from './pages/PurchaseSubmit.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
-import PayRec from './pages/PayRec.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import MaterialTransfer from './pages/MaterialTransfer.vue'
 import CashierManagement from './pages/CashierManagement.vue'
@@ -103,11 +102,6 @@ const routes = [
     path: '/journal-contra',
     name: 'JournalContraEntry',
     component: JournalContraEntry,
-  },
-  {
-    path: '/payment',
-    name: 'PayRec',
-    component: PayRec,
   },
   {
     path: '/material-transfer',

@@ -7,15 +7,15 @@
  *   wb-role-admin    = '1' | '0'
  *   wb-role-cashier  = '1' | '0'
  *   wb-role-biller   = '1' | '0'
- *   wb-role-accounts = '1' | '0'  (PayRec, JournalContraEntry, Reports; all accounts visible)
+ *   wb-role-accounts = '1' | '0'  (JournalContraEntry, Reports; all accounts visible)
  *
  * If no flags are set (settings never loaded), defaults to 'admin' so
  * the system admin is never locked out.
  *
  * Permission matrix:
  *   admin    → all routes
- *   accounts → PayRec, JournalContraEntry, Reports; sees all GL accounts
- *   cashier  → biller routes + CashierDesk, PurchaseSubmit, CustomerLedger, PayRec, JournalContraEntry
+ *   accounts → JournalContraEntry, Reports; sees all GL accounts
+ *   cashier  → biller routes + CashierDesk, PurchaseSubmit, CustomerLedger, JournalContraEntry
  *   biller   → SalesInvoice, PurchaseInvoice, Quotation, SalesOrderEntry, ParcelAddress, BarcodePrintPage, LoadingReceipt
  */
 
@@ -41,7 +41,6 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'CashierDesk',
   'PurchaseSubmit',
   'CustomerLedger',
-  'PayRec',
   'JournalContraEntry',
   'CashierManagement',
   'DailyReport',
@@ -51,7 +50,6 @@ export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES
 
 // Routes accessible by accounts role
 export const ACCOUNTS_ROUTES = new Set([
-  'PayRec',
   'JournalContraEntry',
   'Reports',
   'DailyReport',
@@ -116,7 +114,6 @@ const TILE_ROUTE_MAP = {
   'journal-contra':    'JournalContraEntry',
   'material-transfer': 'MaterialTransfer',
   'stock-reconciliation': 'StockReconciliation',
-  'payment':           'PayRec',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',
   'incentive-ledger':  'IncentiveLedger',

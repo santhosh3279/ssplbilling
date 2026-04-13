@@ -7,7 +7,6 @@
 export const dashboardShortcuts = (handlers) => ({
   'F1': () => handlers.openModule('sales'),
   'F2': () => handlers.openModule('purchase'),
-  'F3': () => handlers.openModule('payment'),
   'F4': () => handlers.openModule('purchase-submit'),
   'F5': () => handlers.openModule('cashier'),
   'F6': () => handlers.openModule('ledger'),
