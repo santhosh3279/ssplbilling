@@ -198,7 +198,7 @@ const form = reactive({
   party: '',
   party_name: '',
   account: 'Debtors - SSPL',
-  mop_account: 'Cash - SSPL',
+  mop_account: '',
   amount: null
 })
 
@@ -208,7 +208,7 @@ const custSearchModalRef = ref(null)
 const partyQuery = ref('')
 
 const accountQuery = ref('Debtors')
-const mopAccountQuery = ref('Cash')
+const mopAccountQuery = ref('Search Account')
 
 const submitting = ref(false)
 const showSuccess = ref(false)
@@ -339,8 +339,8 @@ function resetForm() {
     accountQuery.value = 'Creditors'
   }
   
-  form.mop_account = 'Cash - SSPL'
-  mopAccountQuery.value = 'Cash'
+  form.mop_account = ''
+  mopAccountQuery.value = 'Search Account'
 }
 
 async function handleSubmit() {
