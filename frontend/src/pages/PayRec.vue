@@ -127,9 +127,19 @@
               <div class="relative">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-[var(--color-text-muted)]">₹</span>
                 <input
-                  v-model.number="isReceipt ? rows[0].credit : rows[0].debit"
+                  v-if="isReceipt"
+                  v-model.number="rows[0].credit"
                   @focus="activeRowIdx = 0"
-                  @keydown.enter.prevent="moveNext(0, isReceipt ? 'credit' : 'debit')"
+                  @keydown.enter.prevent="moveNext(0, 'credit')"
+                  type="number"
+                  class="w-full h-16 pl-10 pr-6 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] text-3xl font-black text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all font-mono"
+                  placeholder="0.00"
+                />
+                <input
+                  v-else
+                  v-model.number="rows[0].debit"
+                  @focus="activeRowIdx = 0"
+                  @keydown.enter.prevent="moveNext(0, 'debit')"
                   type="number"
                   class="w-full h-16 pl-10 pr-6 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] text-3xl font-black text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all font-mono"
                   placeholder="0.00"
