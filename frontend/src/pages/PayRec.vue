@@ -91,94 +91,155 @@
 
     <div class="flex-1 overflow-hidden p-6">
       <div class="h-full flex flex-col bg-[var(--color-surface)] rounded-2xl shadow-sm border border-[var(--color-border)] overflow-hidden">
-        <!-- TABLE -->
+        
+        <!-- HEADER FORM (Only for Receipt/Payment) -->
+        <div v-if="entryType === 'Receipt' || entryType === 'Payment'" class="shrink-0 p-6 bg-[var(--color-surface-raised)]/20 border-b border-[var(--color-border)]">
+          <div class="grid grid-cols-12 gap-6">
+            <!-- Party Column -->
+            <div class="col-span-6 space-y-2">
+              <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                {{ isReceipt ? 'Paid By (Customer)' : 'Paid To (Supplier)' }}
+              </label>
+              <div
+                @click="openLedgerSearch(0)"
+                class="h-16 px-6 rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] flex items-center justify-between cursor-pointer hover:border-[var(--color-info)] transition-all group"
+              >
+                <div class="flex flex-col">
+                  <span v-if="rows[0]?.account" class="text-2xl font-black text-[var(--color-text)] truncate max-w-[400px]">
+                    {{ rows[0].account_name }}
+                  </span>
+                  <span v-else class="text-xl font-bold text-[var(--color-text-muted)] italic">
+                    Select Party...
+                  </span>
+                  <span v-if="rows[0]?.account" class="text-xs font-bold text-[var(--color-text-muted)] font-mono">
+                    Balance: {{ formatBalance(rows[0].current_balance) }}
+                  </span>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-hover:text-[var(--color-info)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+            </div>
+
+            <!-- Amount Column -->
+            <div class="col-span-3 space-y-2">
+              <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                {{ isReceipt ? 'Received Amount' : 'Paid Amount' }}
+              </label>
+              <div class="relative">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-[var(--color-text-muted)]">₹</span>
+                <input
+                  v-model.number="isReceipt ? rows[0].credit : rows[0].debit"
+                  @focus="activeRowIdx = 0"
+                  @keydown.enter.prevent="moveNext(0, isReceipt ? 'credit' : 'debit')"
+                  type="number"
+                  class="w-full h-16 pl-10 pr-6 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] text-3xl font-black text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all font-mono"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <!-- Allocation Status Column -->
+            <div class="col-span-3 space-y-2">
+              <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allocation Status</label>
+              <div class="h-16 px-6 rounded-2xl bg-[var(--color-bg)]/50 border-2 border-[var(--color-border)] flex items-center justify-between">
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-tight">Difference</span>
+                  <span :class="Math.abs(difference) < 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'" class="text-xl font-black font-mono">
+                    {{ fmt(difference) }}
+                  </span>
+                </div>
+                <div v-if="Math.abs(difference) < 0.01" class="h-8 w-8 rounded-full bg-[var(--color-success)]/20 flex items-center justify-center text-[var(--color-success)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLE SECTION -->
         <div class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/5">
+          <div v-if="entryType === 'Receipt' || entryType === 'Payment'" class="p-6 border-b border-[var(--color-border)] bg-[var(--color-bg)]/20">
+            <h4 class="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+              Payment Methods (Bank / Cash)
+            </h4>
+          </div>
+
           <table class="w-full border-collapse border border-[var(--color-border)] table-fixed">
             <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b-2 border-[var(--color-border)]">
               <tr class="text-[11px] font-black uppercase tracking-wider text-[var(--color-text-muted)] text-left">
                 <th class="px-3 py-3 w-14 text-center border-r border-[var(--color-border)]">#</th>
-                <th class="px-4 py-3 min-w-[400px] border-r border-[var(--color-border)]">Ledger / Party</th>
-                <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">Current Balance</th>
+                <th class="px-4 py-3 min-w-[400px] border-r border-[var(--color-border)]">Ledger / Account</th>
+                <th v-if="entryType !== 'Receipt' && entryType !== 'Payment'" class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">Current Balance</th>
                 <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">Debit (₹)</th>
                 <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">Credit (₹)</th>
-                <th class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">New Balance</th>
+                <th v-if="entryType !== 'Receipt' && entryType !== 'Payment'" class="px-4 py-3 w-64 text-right border-r border-[var(--color-border)]">New Balance</th>
                 <th class="px-4 py-3 w-14 border-r border-[var(--color-border)]"></th>
               </tr>
             </thead>
             <tbody class="bg-[var(--color-bg)]">
               <tr
-                v-for="(row, idx) in rows"
+                v-for="(row, idx) in ((entryType === 'Receipt' || entryType === 'Payment') ? rows.slice(1) : rows)"
                 :key="idx"
                 class="group transition-colors border-b border-[var(--color-border)] hover:bg-slate-500/5 even:bg-slate-500/5"
-                :class="{ 'bg-[var(--color-info)]/10': activeRowIdx === idx }"
+                :class="{ 'bg-[var(--color-info)]/10': activeRowIdx === ((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx) }"
               >
                 <td class="px-3 py-0 text-center text-sm font-bold text-[var(--color-text-muted)] border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/20">
-                  {{ idx + 1 }}
+                  {{ (entryType === 'Receipt' || entryType === 'Payment') ? idx + 2 : idx + 1 }}
                 </td>
                 <td class="p-0 border-r border-[var(--color-border)] relative">
                   <div
-                    :ref="el => { if (el) ledgerRefs[idx] = el }"
-                    @click="openLedgerSearch(idx)"
-                    @keydown.enter.prevent.stop="openLedgerSearch(idx)"
+                    :ref="el => { if (el) ledgerRefs[(entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx] = el }"
+                    @click="openLedgerSearch((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx)"
+                    @keydown.enter.prevent.stop="openLedgerSearch((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx)"
                     tabindex="0"
                     class="w-full h-[52px] px-4 flex items-center justify-between cursor-pointer group/input outline-none focus:bg-[var(--color-surface-raised)] focus:ring-inset focus:ring-2 focus:ring-[var(--color-info)] transition-all"
                     :class="row.account ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'"
                   >
                     <div class="flex items-center gap-2 truncate">
-                      <span class="text-xl font-black truncate">{{ row.account_name || 'Select Ledger...' }}</span>
-                      <span
-                        v-if="row.account && getResolvedLabel(row.account)"
-                        class="shrink-0 px-2 py-0.5 rounded bg-[var(--color-info)]/20 text-[var(--color-info)] text-[10px] font-black uppercase tracking-tighter"
-                      >
-                        {{ getResolvedLabel(row.account) }}
-                      </span>
+                      <span class="text-xl font-black truncate">{{ row.account_name || 'Select Account...' }}</span>
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-hover/input:text-[var(--color-info)] opacity-0 group-hover/input:opacity-100 transition-opacity"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
                 </td>
-                <td class="px-4 py-0 text-right border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/10">
+                <td v-if="entryType !== 'Receipt' && entryType !== 'Payment'" class="px-4 py-0 text-right border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/10">
                   <div v-if="row.account" class="text-xl font-bold text-[var(--color-text-muted)] font-mono whitespace-nowrap">
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
                 <td class="p-0 border-r border-[var(--color-border)]">
                   <input
-                    :ref="el => { if (el) debitRefs[idx] = el }"
+                    :ref="el => { if (el) debitRefs[(entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx] = el }"
                     v-model.number="row.debit"
-                    @focus="activeRowIdx = idx"
+                    @focus="activeRowIdx = (entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx"
                     @input="row.credit = 0"
-                    @keydown.enter.prevent="moveNext(idx, 'debit')"
-                    :disabled="isFieldDisabled(idx, 'debit')"
-                    :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
+                    @keydown.enter.prevent="moveNext((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx, 'debit')"
+                    :disabled="isFieldDisabled((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx, 'debit')"
                     type="number"
                     class="w-full h-[52px] bg-transparent px-4 text-right font-mono text-2xl font-black text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] focus:ring-inset focus:ring-2 focus:ring-[var(--color-info)] transition-all disabled:opacity-10"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
                 </td>
                 <td class="p-0 border-r border-[var(--color-border)]">
                   <input
-                    :ref="el => { if (el) creditRefs[idx] = el }"
+                    :ref="el => { if (el) creditRefs[(entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx] = el }"
                     v-model.number="row.credit"
-                    @focus="activeRowIdx = idx"
+                    @focus="activeRowIdx = (entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx"
                     @input="row.debit = 0"
-                    @keydown.enter.prevent="moveNext(idx, 'credit')"
-                    :disabled="isFieldDisabled(idx, 'credit')"
-                    :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
+                    @keydown.enter.prevent="moveNext((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx, 'credit')"
+                    :disabled="isFieldDisabled((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx, 'credit')"
                     type="number"
                     class="w-full h-[52px] bg-transparent px-4 text-right font-mono text-2xl font-black text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] focus:ring-inset focus:ring-2 focus:ring-[var(--color-info)] transition-all disabled:opacity-10"
-                    :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-4 py-0 text-right border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/10">
+                <td v-if="entryType !== 'Receipt' && entryType !== 'Payment'" class="px-4 py-0 text-right border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/10">
                   <div v-if="row.account" class="text-xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
                 <td class="px-0 py-0 text-center border-r border-[var(--color-border)] bg-[var(--color-surface-raised)]/5">
                   <button
-                    @click="removeRow(idx)"
+                    @click="removeRow((entryType === 'Receipt' || entryType === 'Payment') ? idx + 1 : idx)"
                     class="w-full h-full text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
                     tabindex="-1"
                   >
@@ -186,15 +247,11 @@
                   </button>
                 </td>
               </tr>
-              <!-- Empty buffer rows to give more excel feel -->
-              <tr v-for="i in 3" :key="'empty-'+i" class="border-b border-[var(--color-border)]/50 h-[52px]">
-                <td class="border-r border-[var(--color-border)]/50 bg-[var(--color-surface-raised)]/5"></td>
-                <td class="border-r border-[var(--color-border)]/50"></td>
-                <td class="border-r border-[var(--color-border)]/50"></td>
-                <td class="border-r border-[var(--color-border)]/50"></td>
-                <td class="border-r border-[var(--color-border)]/50"></td>
-                <td class="border-r border-[var(--color-border)]/50"></td>
-                <td class="border-r border-[var(--color-border)]/50"></td>
+              <!-- Empty state message -->
+              <tr v-if="rows.length === 0 || (entryType === 'Receipt' || entryType === 'Payment' && rows.length === 1)">
+                <td :colspan="(entryType === 'Receipt' || entryType === 'Payment') ? 5 : 7" class="h-32 text-center text-[var(--color-text-muted)] italic text-lg font-bold bg-[var(--color-bg)]/50">
+                  {{ (entryType === 'Receipt' || entryType === 'Payment') ? 'No payment methods added. Press INS to add a bank or cash account.' : 'No rows added. Press INS to add a new row.' }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -982,36 +1039,50 @@ async function saveEntry() {
   if (!canSave.value || isSubmitting.value) return
   isSubmitting.value = true
   try {
-    // If Receipt or Payment, send Journal Entry as voucher_type
-    const vType = (entryType.value === 'Receipt' || entryType.value === 'Payment') 
-      ? 'Journal Entry' 
-      : entryType.value
+    const isPayRec = entryType.value === 'Receipt' || entryType.value === 'Payment'
+    const apiMethod = isPayRec 
+      ? 'ssplbilling.api.payrec_api.create_payrec_payment_entry'
+      : 'ssplbilling.api.journalcontra_api.create_journal_contra_entry'
 
     const payload = {
-      voucher_type: vType,
+      entry_type: entryType.value,
+      voucher_type: entryType.value,
       posting_date: postingDate.value,
       user_remark: userRemarks.value,
       cheque_no: referenceNo.value,
       accounts: rows.value
         .filter(r => r.account)
-        .map((r, idx) => ({
-          account: r.account,
-          account_type: r.account_type,
-          debit_in_account_currency: r.debit,
-          credit_in_account_currency: r.credit,
-          cost_center: localStorage.getItem('wb-cost-center') || '',
-          user_remark: userRemarks.value,
-          // Attach invoice references only to the party row (row 0)
-          ...(idx === 0 && linkedReferences.value.length > 0
-            ? { references: linkedReferences.value.map(ref => ({
-                  ref_type: ref.ref_type,
-                  ref_name: ref.ref_name,
-                  alloc_amount: ref.alloc_amount,
-                })) }
-            : {})
-        }))
+        .map((r, idx) => {
+          const accPayload = {
+            account: r.account,
+            account_type: r.account_type,
+            debit_in_account_currency: r.debit,
+            credit_in_account_currency: r.credit,
+            cost_center: localStorage.getItem('wb-cost-center') || '',
+            user_remark: userRemarks.value,
+          }
+          return accPayload
+        }),
+      // Pass references separately for PayRec API
+      ...(isPayRec && linkedReferences.value.length > 0
+        ? { references: linkedReferences.value.map(ref => ({
+              ref_type: ref.ref_type,
+              name: ref.ref_name,
+              amount: ref.alloc_amount,
+            })) }
+        : {})
     }
-    await frappePost('ssplbilling.api.journalcontra_api.create_journal_contra_entry', { data: payload })
+
+    // For Journal Entry, we still need references attached to the first row in the payload
+    if (!isPayRec && linkedReferences.value.length > 0) {
+      payload.accounts[0].references = linkedReferences.value.map(ref => ({
+        ref_type: ref.ref_type,
+        ref_name: ref.ref_name,
+        alloc_amount: ref.alloc_amount,
+      }))
+    }
+
+    await frappePost(apiMethod, { data: payload })
     alert('Entry saved successfully!')
     userRemarks.value = ''
     referenceNo.value = ''
@@ -1019,6 +1090,8 @@ async function saveEntry() {
     rows.value = [
       { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     ]
+    activeRowIdx.value = 0
+    nextTick(() => ledgerRefs[0]?.focus())
   } catch (e) {
     alert('Failed to save: ' + e.message)
   } finally {
