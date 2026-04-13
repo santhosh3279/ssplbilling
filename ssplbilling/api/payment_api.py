@@ -115,6 +115,12 @@ def create_payment_entry(data=None, **kwargs):
     pe.received_amount = pe.paid_amount
     pe.mode_of_payment = data.get("mode_of_payment") or "Cash"
     
+    # Explicitly set currencies and exchange rates to INR
+    pe.paid_from_account_currency = "INR"
+    pe.paid_to_account_currency = "INR"
+    pe.source_exchange_rate = 1.0
+    pe.target_exchange_rate = 1.0
+    
     # Party Account (Debtors/Creditors) override
     if data.get("account"):
         pe.party_account = data.get("account")
