@@ -93,13 +93,21 @@ def get_customer_ledger(customer, from_date=None, to_date=None):
     return get_ledger(customer, "Customer", from_date, to_date)
 
 @frappe.whitelist()
-def get_outstanding_invoices(customer):
-    """Return submitted Sales Invoices with outstanding balance."""
-    return frappe.get_all("Sales Invoice", 
-        filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]}, 
-        fields=["name", "posting_date", "grand_total", "outstanding_amount"], 
-        limit=50
-    )
+def get_outstanding_invoices(party, party_type="Customer"):
+    """Return submitted Sales/Purchase Invoices with outstanding balance."""
+    if party_type == "Customer":
+        return frappe.get_all("Sales Invoice", 
+            filters={"customer": party, "docstatus": 1, "outstanding_amount": [">", 0]}, 
+            fields=["name", "posting_date", "grand_total", "outstanding_amount"], 
+            limit=50
+        )
+    elif party_type == "Supplier":
+        return frappe.get_all("Purchase Invoice", 
+            filters={"supplier": party, "docstatus": 1, "outstanding_amount": [">", 0]}, 
+            fields=["name", "posting_date", "grand_total", "outstanding_amount"], 
+            limit=50
+        )
+    return []
 
 @frappe.whitelist()
 def create_payment_entry(data=None, **kwargs):

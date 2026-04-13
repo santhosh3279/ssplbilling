@@ -130,10 +130,20 @@
             </div>
 
             <!-- Outstanding Mini-Info -->
-            <div v-if="outstandingBalance !== null" class="w-48 shrink-0 pb-1 px-2 border-l border-[var(--color-border)]">
+            <div v-if="outstandingBalance !== null" class="w-48 shrink-0 pb-1 px-2 border-l border-[var(--color-border)] flex flex-col justify-end">
               <div class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] mb-1">Outstanding</div>
-              <div class="text-sm font-black truncate" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                ₹{{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-black truncate" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                  ₹{{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
+                </div>
+                <button 
+                  v-if="form.party"
+                  @click="fetchInvoices"
+                  class="ml-2 h-6 w-6 rounded-md bg-[var(--color-midlight)] hover:bg-[var(--color-highlight)] hover:text-white transition-all flex items-center justify-center text-[10px]"
+                  title="View Invoices"
+                >
+                  📄
+                </button>
               </div>
             </div>
 
@@ -190,6 +200,51 @@
         </button>
       </div>
     </div>
+
+    <!-- Outstanding Invoices Modal -->
+    <div v-if="showInvoicesModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black uppercase tracking-tight">Outstanding Invoices</h2>
+          <button @click="showInvoicesModal = false" class="h-8 w-8 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center">
+            ✕
+          </button>
+        </div>
+        
+        <div class="max-h-[60vh] overflow-y-auto rounded-xl border border-[var(--color-border)]">
+          <table class="w-full text-left">
+            <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] sticky top-0">
+              <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-6 py-3">Voucher No</th>
+                <th class="px-4 py-3">Date</th>
+                <th class="px-4 py-3 text-right">Grand Total</th>
+                <th class="px-6 py-3 text-right">Outstanding</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--color-border)]">
+              <tr v-if="loadingInvoices">
+                <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading invoices...</td>
+              </tr>
+              <tr v-else-if="!invoices.length">
+                <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
+              </tr>
+              <tr v-for="inv in invoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                <td class="px-6 py-4 font-mono text-sm font-bold">{{ inv.name }}</td>
+                <td class="px-4 py-4 text-sm">{{ inv.posting_date }}</td>
+                <td class="px-4 py-4 text-right font-mono text-sm">₹{{ inv.grand_total.toLocaleString('en-IN') }}</td>
+                <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+          <button @click="showInvoicesModal = false" class="rounded-xl bg-[var(--color-highlight)] px-8 py-2 text-sm font-bold text-white hover:brightness-110 transition-all">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -225,6 +280,9 @@ const submitting = ref(false)
 const showSuccess = ref(false)
 const successDocName = ref('')
 const outstandingBalance = ref(null)
+const invoices = ref([])
+const showInvoicesModal = ref(false)
+const loadingInvoices = ref(false)
 
 // --- Computed ---
 const isFormValid = computed(() => {
@@ -295,6 +353,23 @@ function handleSelect(item) {
   } else if (searchTarget.value === 'mop') {
     form.mop_account = item.name
     mopAccountQuery.value = item.label || item.account_name || item.name
+  }
+}
+
+async function fetchInvoices() {
+  if (!form.party) return
+  loadingInvoices.value = true
+  showInvoicesModal.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.payment_api.get_outstanding_invoices', { 
+      party: form.party,
+      party_type: form.party_type
+    })
+    invoices.value = res || []
+  } catch (e) {
+    console.error('Failed to fetch invoices:', e)
+  } finally {
+    loadingInvoices.value = false
   }
 }
 
