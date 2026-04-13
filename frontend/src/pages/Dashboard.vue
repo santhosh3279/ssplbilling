@@ -432,6 +432,7 @@ const allTiles = [
   { id: 'parcel-address',     bucket: 'sspl',     name: 'Parcel Address',        desc: 'Manage parcel addresses',                  icon: '📦', shortcut: ''    },
   { id: 'gst-dummy-ledger',   bucket: 'sspl',     name: 'GST Dummy Ledger',      desc: 'Manage dummy GST entries',                 icon: '📖', shortcut: ''    },
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Pricing Rule',          desc: 'Sync & manage pricing rules',              icon: '🏷️', shortcut: ''    },
+  { id: 'payment',            bucket: 'sspl',     name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
   { id: 'journal-contra',     bucket: 'sspl',     name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
   { id: 'material-transfer',  bucket: 'sspl',     name: 'Material Transfer',     desc: 'Transfer items between warehouses',        icon: '🔄', shortcut: 'F9'  },
   { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
@@ -459,6 +460,7 @@ const routeAliases = {
   sales: '/sales',
   quotation: '/quotation',
   'purchase-invoice': '/purchase-invoice',
+  payment: '/payment',
   'purchase-order': '/purchase-order',
   'sales-order': '/sales-order',
   'journal-contra': '/journal-contra',
@@ -501,7 +503,7 @@ function openModule(id) {
 
 // ==================== F-KEY SHORTCUTS ====================
 const routeMap = {
-  F1: 'sales', F2: 'purchase-invoice',
+  F1: 'sales', F2: 'purchase-invoice', F3: 'payment',
   F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
   F7: 'purchase-order', F8: 'journal-contra', F9: 'material-transfer',
   F10: 'quotation',

@@ -41,6 +41,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'CashierDesk',
   'PurchaseSubmit',
   'CustomerLedger',
+  'Payment',
   'JournalContraEntry',
   'CashierManagement',
   'DailyReport',
@@ -50,6 +51,7 @@ export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES
 
 // Routes accessible by accounts role
 export const ACCOUNTS_ROUTES = new Set([
+  'Payment',
   'JournalContraEntry',
   'Reports',
   'DailyReport',
@@ -114,6 +116,7 @@ const TILE_ROUTE_MAP = {
   'journal-contra':    'JournalContraEntry',
   'material-transfer': 'MaterialTransfer',
   'stock-reconciliation': 'StockReconciliation',
+  'payment':           'Payment',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',
   'incentive-ledger':  'IncentiveLedger',
