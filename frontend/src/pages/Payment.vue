@@ -64,8 +64,8 @@
               <div class="relative group">
                 <input
                   v-model="partyQuery"
-                  @click="openPartySearch"
-                  @keydown.enter="openPartySearch"
+                  @click="openSearch('party')"
+                  @keydown.enter="openSearch('party')"
                   readonly
                   class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
                   :placeholder="'Click to Search Party...'"
@@ -81,22 +81,12 @@
               <div class="relative group">
                 <input
                   v-model="accountQuery"
-                  @input="searchAccountsList"
-                  @focus="showAccountDropdown = true"
-                  class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  placeholder="Search Party Account..."
+                  @click="openSearch('account')"
+                  @keydown.enter="openSearch('account')"
+                  readonly
+                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                  placeholder="Click to Search Party Account..."
                 />
-                <div v-if="showAccountDropdown && accountResults.length" class="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl backdrop-blur-md">
-                  <div
-                    v-for="a in accountResults"
-                    :key="a.name"
-                    @click="selectAccount(a)"
-                    class="cursor-pointer px-5 py-3 text-lg hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-colors border-b border-[var(--color-border)] last:border-0"
-                  >
-                    <div class="font-bold">{{ a.account_name }}</div>
-                    <div class="text-sm opacity-70">{{ a.name }}</div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -108,22 +98,12 @@
               <div class="relative group">
                 <input
                   v-model="mopAccountQuery"
-                  @input="searchMopAccountsList"
-                  @focus="showMopAccountDropdown = true"
-                  class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  placeholder="Search Bank/Cash Account..."
+                  @click="openSearch('mop')"
+                  @keydown.enter="openSearch('mop')"
+                  readonly
+                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                  placeholder="Click to Search Bank/Cash Account..."
                 />
-                <div v-if="showMopAccountDropdown && mopAccountResults.length" class="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl backdrop-blur-md">
-                  <div
-                    v-for="a in mopAccountResults"
-                    :key="a.name"
-                    @click="selectMopAccount(a)"
-                    class="cursor-pointer px-5 py-3 text-lg hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-colors border-b border-[var(--color-border)] last:border-0"
-                  >
-                    <div class="font-bold">{{ a.account_name }}</div>
-                    <div class="text-sm opacity-70">{{ a.name }}</div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -181,11 +161,12 @@
     <!-- CUSTOMER SEARCH MODAL -->
     <CustomerSearchModal
       ref="custSearchModalRef"
-      :show="showCustomerSearchModal"
-      initialType="All"
+      :show="showSearchModal"
+      :allowedTypes="allowedTypes"
+      :initialType="initialSearchType"
       :skipDateFilter="true"
-      @close="showCustomerSearchModal = false"
-      @select="pickCust"
+      @close="showSearchModal = false"
+      @select="handleSelect"
     />
 
     <!-- Success Modal -->
@@ -213,7 +194,6 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
-import { searchCustomers } from '../customersearch.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 
 const router = useRouter()
@@ -235,12 +215,7 @@ const custSearchModalRef = ref(null)
 const partyQuery = ref('')
 
 const accountQuery = ref('Debtors')
-const accountResults = ref([])
-const showAccountDropdown = ref(false)
-
 const mopAccountQuery = ref('Cash')
-const mopAccountResults = ref([])
-const showMopAccountDropdown = ref(false)
 
 const submitting = ref(false)
 const showSuccess = ref(false)
@@ -266,59 +241,58 @@ function updateTime() {
 }
 
 // --- Methods ---
-function openPartySearch() {
-  showCustomerSearchModal.value = true
+const searchTarget = ref('party')
+const showSearchModal = ref(false)
+
+const allowedTypes = computed(() => {
+  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee']
+  return ['Account']
+})
+
+const initialSearchType = computed(() => {
+  if (searchTarget.value === 'party') return form.party_type
+  return 'Account'
+})
+
+function openSearch(target) {
+  searchTarget.value = target
+  showSearchModal.value = true
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
     custSearchModalRef.value?.focus()
   })
 }
 
-function pickCust(item) {
-  showCustomerSearchModal.value = false
-  form.party = item.name
-  form.party_name = item.label || item.customer_name || item.supplier_name || item.employee_name || item.name
-  partyQuery.value = form.party_name
-  
-  // Automatically select party type based on selection
-  if (item.type) {
-    form.party_type = item.type
+function handleSelect(item) {
+  showSearchModal.value = false
+  if (searchTarget.value === 'party') {
+    form.party = item.name
+    form.party_name = item.label || item.customer_name || item.supplier_name || item.employee_name || item.name
+    partyQuery.value = form.party_name
+    
+    // Automatically select party type based on selection
+    if (item.type) {
+      form.party_type = item.type
+    }
+    
+    // Automatically set default Account based on type
+    if (form.party_type === 'Customer') {
+      form.account = 'Debtors - SSPL'
+      accountQuery.value = 'Debtors'
+    } else {
+      form.account = 'Creditors - SSPL'
+      accountQuery.value = 'Creditors'
+    }
+    
+    fetchOutstanding()
+  } else if (searchTarget.value === 'account') {
+    form.account = item.name
+    accountQuery.value = item.label || item.account_name || item.name
+  } else if (searchTarget.value === 'mop') {
+    form.mop_account = item.name
+    mopAccountQuery.value = item.label || item.account_name || item.name
   }
-  
-  // Automatically set default Account based on type
-  if (form.party_type === 'Customer') {
-    form.account = 'Debtors - SSPL'
-    accountQuery.value = 'Debtors'
-  } else {
-    form.account = 'Creditors - SSPL'
-    accountQuery.value = 'Creditors'
-  }
-  
-  fetchOutstanding()
 }
-
-async function searchAccountsList() {
-  const res = await frappeGet('ssplbilling.api.payment_api.search_accounts', { query: accountQuery.value })
-  accountResults.value = res || []
-}
-
-function selectAccount(a) {
-  form.account = a.name
-  accountQuery.value = a.account_name
-  showAccountDropdown.value = false
-}
-
-async function searchMopAccountsList() {
-  const res = await frappeGet('ssplbilling.api.payment_api.search_accounts', { query: mopAccountQuery.value })
-  mopAccountResults.value = res || []
-}
-
-function selectMopAccount(a) {
-  form.mop_account = a.name
-  mopAccountQuery.value = a.account_name
-  showMopAccountDropdown.value = false
-}
-
 
 async function fetchOutstanding() {
   if (!form.party) return
@@ -415,16 +389,6 @@ function closeSuccess() {
 onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
-  searchAccountsList() // Initial empty search
-  searchMopAccountsList()
-  
-  // Close dropdowns on outside click
-  window.addEventListener('click', (e) => {
-    if (!e.target.closest('.group')) {
-      showAccountDropdown.value = false
-      showMopAccountDropdown.value = false
-    }
-  })
 })
 
 watch(activeTab, () => {
