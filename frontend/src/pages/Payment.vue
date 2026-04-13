@@ -49,8 +49,8 @@
               <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Party Type</label>
               <select
                 v-model="form.party_type"
-                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                @change="handlePartyTypeChange"
+                disabled
+                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-base font-bold focus:outline-none transition-all cursor-not-allowed opacity-70"
               >
                 <option value="Customer">Customer</option>
                 <option value="Supplier">Supplier</option>
@@ -81,11 +81,9 @@
               <div class="relative group">
                 <input
                   v-model="accountQuery"
-                  @click="openSearch('account')"
-                  @keydown.enter="openSearch('account')"
                   readonly
-                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  placeholder="Select Party Account..."
+                  class="w-full cursor-not-allowed rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:outline-none transition-all opacity-70"
+                  placeholder="Party Account..."
                 />
               </div>
             </div>
@@ -114,7 +112,7 @@
                 v-model.number="form.amount"
                 type="number"
                 step="0.01"
-                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-2xl font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none transition-all text-right"
+                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-2xl font-black text-black focus:border-[var(--color-highlight)] focus:outline-none transition-all text-right opacity-100"
                 placeholder="0.00"
               />
             </div>
