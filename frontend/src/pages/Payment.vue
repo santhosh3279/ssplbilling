@@ -215,7 +215,7 @@ const form = reactive({
   party_type: 'Customer',
   party: '',
   party_name: '',
-  account: '',
+  account: 'Debtors - SSPL',
   amount: null,
   mode_of_payment: 'Cash'
 })
@@ -225,7 +225,7 @@ const custSearchModalRef = ref(null)
 
 const partyQuery = ref('')
 
-const accountQuery = ref('')
+const accountQuery = ref('Debtors')
 const accountResults = ref([])
 const showAccountDropdown = ref(false)
 
@@ -272,6 +272,15 @@ function pickCust(item) {
     form.party_type = item.type
   }
   
+  // Automatically set default Account based on type
+  if (form.party_type === 'Customer') {
+    form.account = 'Debtors - SSPL'
+    accountQuery.value = 'Debtors'
+  } else {
+    form.account = 'Creditors - SSPL'
+    accountQuery.value = 'Creditors'
+  }
+  
   fetchOutstanding()
 }
 
@@ -314,16 +323,30 @@ function handlePartyTypeChange() {
   partyQuery.value = ''
   partyResults.value = []
   outstandingBalance.value = null
+  
+  if (form.party_type === 'Customer') {
+    form.account = 'Debtors - SSPL'
+    accountQuery.value = 'Debtors'
+  } else {
+    form.account = 'Creditors - SSPL'
+    accountQuery.value = 'Creditors'
+  }
 }
 
 function resetForm() {
   form.party = ''
   form.party_name = ''
-  form.account = ''
-  form.amount = null
   partyQuery.value = ''
-  accountQuery.value = ''
+  form.amount = null
   outstandingBalance.value = null
+  
+  if (form.party_type === 'Customer') {
+    form.account = 'Debtors - SSPL'
+    accountQuery.value = 'Debtors'
+  } else {
+    form.account = 'Creditors - SSPL'
+    accountQuery.value = 'Creditors'
+  }
 }
 
 async function handleSubmit() {

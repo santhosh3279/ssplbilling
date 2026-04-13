@@ -115,12 +115,9 @@ def create_payment_entry(data=None, **kwargs):
     pe.received_amount = pe.paid_amount
     pe.mode_of_payment = data.get("mode_of_payment") or "Cash"
     
-    # Optional account override
+    # Party Account (Debtors/Creditors) override
     if data.get("account"):
-        if pe.payment_type == "Receive":
-            pe.paid_to = data.get("account")
-        else:
-            pe.paid_from = data.get("account")
+        pe.party_account = data.get("account")
             
     pe.insert()
     pe.submit()
