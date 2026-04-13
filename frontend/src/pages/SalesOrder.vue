@@ -1270,26 +1270,10 @@ function handleItemEntry() {
 }
 
 function onNewCodeInput() {
-  const now = Date.now()
-  const isScanner = (now - lastInputTime.value < 100)
-  lastInputTime.value = now
-
   const code = newItemCode.value.trim()
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code)
     quickSearchAnchor.value = newCodeInput.value
-
-    // Auto-select on exact barcode match
-    const exactMatch = quickSearchResults.value.find(i => 
-      i.barcodes && i.barcodes.split(',').some(b => b.trim() === code)
-    )
-    if (exactMatch) {
-      onQuickSearchSelect(exactMatch)
-      setTimeout(() => {
-        pendingQtyInput.value?.focus()
-        pendingQtyInput.value?.select()
-      }, isScanner ? 100 : 400)
-    }
   } else {
     quickSearchResults.value = []
   }
@@ -1679,30 +1663,12 @@ function onItemSearchSelect(item) {
   })
 }
 
-const lastInputTime = ref(0)
-
 function onEditCodeInput(rowIdx) {
-  const now = Date.now()
-  const isScanner = (now - lastInputTime.value < 100)
-  lastInputTime.value = now
-
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code)
     quickSearchAnchor.value = editCodeInput.value
     editQuickSearchRowIdx.value = rowIdx
-
-    // Auto-select on exact barcode match
-    const exactMatch = quickSearchResults.value.find(i => 
-      i.barcodes && i.barcodes.split(',').some(b => b.trim() === code)
-    )
-    if (exactMatch) {
-      applyItemToRow(rowIdx, exactMatch)
-      quickSearchResults.value = []
-      setTimeout(() => {
-        focusEditField('qty', rowIdx)
-      }, isScanner ? 100 : 400)
-    }
   } else {
     quickSearchResults.value = []
     editQuickSearchRowIdx.value = null
