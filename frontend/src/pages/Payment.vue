@@ -64,22 +64,12 @@
               <div class="relative group">
                 <input
                   v-model="partyQuery"
-                  @input="searchParties"
-                  @focus="showPartyDropdown = true"
-                  class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  :placeholder="'Search ' + form.party_type + '...'"
+                  @click="openPartySearch"
+                  @keydown.enter="openPartySearch"
+                  readonly
+                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                  :placeholder="'Click to Search Party...'"
                 />
-                <div v-if="showPartyDropdown && partyResults.length" class="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl backdrop-blur-md">
-                  <div
-                    v-for="p in partyResults"
-                    :key="p.name"
-                    @click="selectParty(p)"
-                    class="cursor-pointer px-5 py-3 text-lg hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-colors border-b border-[var(--color-border)] last:border-0"
-                  >
-                    <div class="font-bold">{{ p.label || p.customer_name || p.supplier_name || p.employee_name || p.name }}</div>
-                    <div class="text-sm opacity-70">{{ p.name }}</div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -179,6 +169,16 @@
       </div>
     </main>
 
+    <!-- CUSTOMER SEARCH MODAL -->
+    <CustomerSearchModal
+      ref="custSearchModalRef"
+      :show="showCustomerSearchModal"
+      initialType="All"
+      :skipDateFilter="true"
+      @close="showCustomerSearchModal = false"
+      @select="pickCust"
+    />
+
     <!-- Success Modal -->
     <div v-if="showSuccess" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md">
       <div class="w-full max-w-md rounded-3xl bg-[var(--color-surface)] p-10 text-center shadow-2xl border border-[var(--color-border)]">
@@ -201,10 +201,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 
 const router = useRouter()
 
@@ -219,13 +220,14 @@ const form = reactive({
   mode_of_payment: 'Cash'
 })
 
+const showCustomerSearchModal = ref(false)
+const custSearchModalRef = ref(null)
+
 const partyQuery = ref('')
-const partyResults = ref([])
-const showPartyDropdown = ref(false)
 
 const accountQuery = ref('')
 const accountResults = ref([])
-const showAccountDropdown = ref(true) // Start searching immediately on focus
+const showAccountDropdown = ref(false)
 
 const submitting = ref(false)
 const showSuccess = ref(false)
@@ -251,33 +253,25 @@ function updateTime() {
 }
 
 // --- Methods ---
-async function searchParties() {
-  if (partyQuery.value.length < 2) {
-    partyResults.value = []
-    return
-  }
-  
-  if (form.party_type === 'Customer') {
-    const res = await searchCustomers(partyQuery.value)
-    partyResults.value = res.filter(r => r.type === 'Customer')
-  } else if (form.party_type === 'Supplier') {
-    const res = await frappeGet('ssplbilling.api.payment_api.search_suppliers', { query: partyQuery.value })
-    partyResults.value = (res || []).map(s => ({ name: s.name, label: s.supplier_name }))
-  } else if (form.party_type === 'Employee') {
-    const res = await frappeGet('frappe.client.get_list', {
-      doctype: 'Employee',
-      filters: { employee_name: ['like', `%${partyQuery.value}%`] },
-      fields: ['name', 'employee_name']
-    })
-    partyResults.value = (res || []).map(e => ({ name: e.name, label: e.employee_name }))
-  }
+function openPartySearch() {
+  showCustomerSearchModal.value = true
+  nextTick(() => {
+    custSearchModalRef.value?.closeSubForm()
+    custSearchModalRef.value?.focus()
+  })
 }
 
-function selectParty(p) {
-  form.party = p.name
-  form.party_name = p.label || p.customer_name || p.supplier_name || p.employee_name || p.name
+function pickCust(item) {
+  showCustomerSearchModal.value = false
+  form.party = item.name
+  form.party_name = item.label || item.customer_name || item.supplier_name || item.employee_name || item.name
   partyQuery.value = form.party_name
-  showPartyDropdown.value = false
+  
+  // Automatically select party type based on selection
+  if (item.type) {
+    form.party_type = item.type
+  }
+  
   fetchOutstanding()
 }
 
