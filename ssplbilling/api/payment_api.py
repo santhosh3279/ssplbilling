@@ -144,18 +144,10 @@ def _get_party_account(party_type, party):
 
 def _get_mop_account(mode_of_payment):
     """Get the default bank/cash account for a mode of payment."""
+    if not mode_of_payment: return None
     company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
-    account = frappe.db.get_value("Mode of Payment Account", 
+    return frappe.db.get_value("Mode of Payment Account", 
         {"parent": mode_of_payment, "company": company}, "default_account")
-    
-    if not account:
-        # Fallback to general company defaults
-        if "Cash" in mode_of_payment:
-            account = frappe.db.get_value("Company", company, "default_cash_account")
-        else:
-            account = frappe.db.get_value("Company", company, "default_bank_account")
-            
-    return account
 
 @frappe.whitelist()
 def search_suppliers(query=""):
