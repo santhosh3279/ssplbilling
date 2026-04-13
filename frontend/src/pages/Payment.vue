@@ -22,34 +22,34 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-hidden p-6">
-      <div class="mx-auto flex h-full max-w-5xl flex-col gap-6">
+    <main class="flex-1 overflow-hidden p-4">
+      <div class="flex h-full flex-col gap-4">
         
         <!-- Tab Switcher -->
-        <div class="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-sm self-start">
+        <div class="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-sm self-start">
           <button
             v-for="t in ['Payment', 'Receipt']"
             :key="t"
             @click="activeTab = t"
-            class="min-w-[160px] rounded-lg px-6 py-2.5 text-lg font-bold transition-all duration-200"
+            class="min-w-[120px] rounded-lg px-4 py-1.5 text-sm font-bold transition-all duration-200"
             :class="activeTab === t 
-              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-md translate-y-[-1px]' 
+              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-md' 
               : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
           >
             {{ t }}
           </button>
         </div>
 
-        <!-- Form Card -->
-        <div class="flex-1 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-xl">
-          <div class="grid grid-cols-2 gap-x-12 gap-y-8">
+        <!-- Form Row -->
+        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
+          <div class="flex items-end gap-4 w-full">
             
             <!-- Party Type -->
-            <div class="space-y-2">
-              <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">Party Type</label>
+            <div class="w-40 shrink-0 space-y-1.5">
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Party Type</label>
               <select
                 v-model="form.party_type"
-                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
                 @change="handlePartyTypeChange"
               >
                 <option value="Customer">Customer</option>
@@ -59,23 +59,23 @@
             </div>
 
             <!-- Party Name (Searchable) -->
-            <div class="space-y-2 relative">
-              <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">Party Name</label>
+            <div class="flex-1 min-w-[200px] space-y-1.5">
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Party Name</label>
               <div class="relative group">
                 <input
                   v-model="partyQuery"
                   @click="openSearch('party')"
                   @keydown.enter="openSearch('party')"
                   readonly
-                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  :placeholder="'Click to Search Party...'"
+                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                  :placeholder="'Search Party...'"
                 />
               </div>
             </div>
 
-            <!-- Party Account (Paid From / Paid To) -->
-            <div class="space-y-2 relative">
-              <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+            <!-- Party Account -->
+            <div class="flex-1 min-w-[200px] space-y-1.5">
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
                 {{ activeTab === 'Payment' ? 'Account Paid To (Party)' : 'Account Received From (Party)' }}
               </label>
               <div class="relative group">
@@ -84,15 +84,15 @@
                   @click="openSearch('account')"
                   @keydown.enter="openSearch('account')"
                   readonly
-                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  placeholder="Click to Search Party Account..."
+                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                  placeholder="Select Party Account..."
                 />
               </div>
             </div>
 
-            <!-- Bank/Cash Account (Paid From / Paid To) -->
-            <div class="space-y-2 relative">
-              <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+            <!-- Bank/Cash Account -->
+            <div class="flex-1 min-w-[200px] space-y-1.5">
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
                 {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
               </label>
               <div class="relative group">
@@ -101,59 +101,52 @@
                   @click="openSearch('mop')"
                   @keydown.enter="openSearch('mop')"
                   readonly
-                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  placeholder="Click to Search Bank/Cash Account..."
+                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                  placeholder="Select Bank/Cash Account..."
                 />
               </div>
             </div>
 
             <!-- Paid Amount -->
-            <div class="space-y-2">
-              <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">Amount (₹)</label>
+            <div class="w-48 shrink-0 space-y-1.5">
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Amount (₹)</label>
               <input
                 v-model.number="form.amount"
                 type="number"
                 step="0.01"
-                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-3xl font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-2xl font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none transition-all text-right"
                 placeholder="0.00"
               />
             </div>
 
-            <!-- Outstanding Button -->
-            <div class="col-span-2 pt-4 flex items-center justify-between gap-4">
-              <button
-                @click="fetchOutstanding"
-                :disabled="!form.party"
-                class="flex items-center gap-2 rounded-xl bg-[var(--color-info)]/10 px-6 py-3 font-bold text-[var(--color-info)] hover:bg-[var(--color-info)]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span>🔍</span> Get Outstanding Balances Account
-              </button>
-              
-              <div v-if="outstandingBalance !== null" class="text-xl font-bold">
-                Outstanding: <span :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                  ₹{{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
-                </span>
+            <!-- Outstanding Mini-Info -->
+            <div v-if="outstandingBalance !== null" class="w-48 shrink-0 pb-1 px-2 border-l border-[var(--color-border)]">
+              <div class="text-[10px] font-bold uppercase text-[var(--color-text-muted)] mb-1">Outstanding</div>
+              <div class="text-sm font-black truncate" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                ₹{{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
               </div>
             </div>
+
+            <!-- Submit Button (Inline) -->
+            <div class="shrink-0 pb-0.5">
+              <button
+                @click="handleSubmit"
+                :disabled="submitting || !isFormValid"
+                class="rounded-xl bg-[var(--color-success)] px-8 py-2.5 text-lg font-black text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                <span v-if="submitting">...</span>
+                <span v-else>Save</span>
+              </button>
+            </div>
+
           </div>
         </div>
 
-        <!-- Footer Actions -->
-        <div class="flex items-center justify-end gap-4 pb-4">
-          <button
-            @click="resetForm"
-            class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 text-xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-all"
-          >
-            Clear (Esc)
-          </button>
-          <button
-            @click="handleSubmit"
-            :disabled="submitting || !isFormValid"
-            class="min-w-[240px] rounded-xl bg-[var(--color-success)] px-10 py-4 text-2xl font-black text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-          >
-            <span v-if="submitting">Processing...</span>
-            <span v-else>Submit {{ activeTab }}</span>
-          </button>
+        <!-- Extra Space/History could go here -->
+        <div class="flex-1 flex items-center justify-center opacity-10">
+           <svg class="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+           </svg>
         </div>
       </div>
     </main>
