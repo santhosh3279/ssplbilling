@@ -6,7 +6,7 @@
       <div class="flex items-center gap-8">
         <!-- Back Button -->
         <button
-          class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-xs font-bold text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] active:scale-95 shadow-lg"
+          class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-xs font-bold text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95 shadow-lg"
           @click="router.push('/')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -24,7 +24,7 @@
       <!-- Date Navigation -->
       <div class="flex items-center gap-1.5">
         <button @click="shiftDate(-1)"
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] active:scale-95">
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div class="flex flex-col items-center rounded-xl border px-4 py-1.5 min-w-[160px]"
@@ -33,14 +33,14 @@
                :class="isToday ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
             {{ isToday ? 'Today' : 'Past Date' }}
           </div>
-          <div class="font-mono text-xs font-black text-[var(--color-text-on-highlight)] leading-tight">{{ formatDateDisplay(currentDate) }}</div>
+          <div class="font-mono text-xs font-black text-[var(--color-text)] leading-tight">{{ formatDateDisplay(currentDate) }}</div>
         </div>
         <button @click="shiftDate(1)" :disabled="isToday"
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <button v-if="!isToday" @click="currentDate = new Date().toLocaleDateString('en-CA')"
-          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]">
+          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">
           Today
         </button>
       </div>
@@ -55,7 +55,7 @@
         </div>
         <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-4 py-2 shadow-inner">
           <div class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Bills</div>
-          <div class="font-mono text-xl font-black text-[var(--color-text-on-highlight)] leading-none">{{ filteredBills.length }}</div>
+          <div class="font-mono text-xl font-black text-[var(--color-text)] leading-none">{{ filteredBills.length }}</div>
         </div>
       </div>
 
@@ -81,7 +81,7 @@
         <button
           @click="refreshLiveLedger"
           :disabled="liveLedgerLoading"
-          class="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] disabled:opacity-40"
+          class="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] disabled:opacity-40"
           title="Refresh ledger balance"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="liveLedgerLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
@@ -112,7 +112,7 @@
                 <th class="px-2 py-2 text-center">Action</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-700/50">
+            <tbody class="divide-y divide-[var(--color-border)]/50">
 
               <!-- Opening row -->
               <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
@@ -120,7 +120,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Opening</div>
+                      <div class="font-black text-[var(--color-text)] leading-tight">Opening</div>
                       <button @click="openModal('Cashier Opening')"
                         class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
@@ -151,7 +151,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Mid-Day-1</div>
+                      <div class="font-black text-[var(--color-text)] leading-tight">Mid-Day-1</div>
                       <button @click="openModal('Mid-Day-1')"
                         class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
@@ -177,7 +177,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Mid-Day-2</div>
+                      <div class="font-black text-[var(--color-text)] leading-tight">Mid-Day-2</div>
                       <button @click="openModal('Mid-Day-2')"
                         class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
@@ -203,7 +203,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-danger)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text-on-highlight)] leading-tight">Closing</div>
+                      <div class="font-black text-[var(--color-text)] leading-tight">Closing</div>
                       <button @click="openModal('Closing')"
                         class="text-xs text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold">+ Record</button>
                     </div>
@@ -322,7 +322,7 @@
               </div>
             </div>
             <button @click="fetchTodayBills" :disabled="billsLoading"
-              class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
+              class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="billsLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             </button>
           </div>
@@ -339,7 +339,7 @@
                 <th class="px-1 py-2 text-right text-[var(--color-text-muted)]">Unpaid</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-700/40">
+            <tbody class="divide-y divide-[var(--color-border)]/40">
               <tr v-if="billsLoading">
                 <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">Loading…</td>
               </tr>
@@ -348,7 +348,7 @@
               </tr>
               <tr v-for="bill in filteredBills" :key="bill.name" class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-2 py-1.5">
-                  <div class="font-black text-[var(--color-text-on-highlight)] text-[10px] leading-tight">{{ bill.name }}</div>
+                  <div class="font-black text-[var(--color-text)] text-[10px] leading-tight">{{ bill.name }}</div>
                   <div class="text-[9px] text-[var(--color-text-muted)] truncate max-w-[80px]">{{ bill.customer }}</div>
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
@@ -400,7 +400,7 @@
             <div class="text-[9px] text-[var(--color-text-muted)] font-mono truncate max-w-[140px]">{{ localStorage.getItem('wb-cash') || '—' }}</div>
           </div>
           <button @click="fetchCashLedgerEntries" :disabled="cashLedgerEntriesLoading"
-            class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
+            class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="cashLedgerEntriesLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
           </button>
         </div>
@@ -416,7 +416,7 @@
                 <th class="px-1 py-2 text-right">Balance</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-700/40">
+            <tbody class="divide-y divide-[var(--color-border)]/40">
               <!-- Opening balance row -->
               <tr class="bg-[var(--color-bg)]/40">
                 <td class="px-2 py-1.5 text-[9px] text-[var(--color-text-muted)]">—</td>
@@ -438,7 +438,7 @@
                   class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-2 py-1.5 font-mono text-[9px] text-[var(--color-text-muted)] whitespace-nowrap">{{ entry.time }}</td>
                 <td class="px-1 py-1.5">
-                  <div class="font-black text-[var(--color-text-on-highlight)] text-[9px] leading-tight truncate max-w-[70px]">{{ entry.voucher_no }}</div>
+                  <div class="font-black text-[var(--color-text)] text-[9px] leading-tight truncate max-w-[70px]">{{ entry.voucher_no }}</div>
                   <div v-if="entry.party" class="text-[8px] text-[var(--color-text-muted)] truncate max-w-[70px]">{{ entry.party }}</div>
                 </td>
                 <td class="px-1 py-1.5 text-right font-mono text-[10px]"
@@ -506,7 +506,7 @@
         class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-3 rounded-2xl bg-[var(--color-success)] border border-[var(--color-success)] px-6 py-4 shadow-2xl shadow-emerald-900/50"
       >
         <span class="text-xl">✅</span>
-        <span class="text-sm font-bold text-[var(--color-text-on-highlight)]">{{ contraSuccessMsg }}</span>
+        <span class="text-sm font-bold text-[var(--color-text)]">{{ contraSuccessMsg }}</span>
       </div>
     </transition>
   </div>
