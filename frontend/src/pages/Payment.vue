@@ -73,10 +73,10 @@
               </div>
             </div>
 
-            <!-- Account Paid To/From -->
+            <!-- Party Account (Paid From / Paid To) -->
             <div class="space-y-2 relative">
               <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                {{ activeTab === 'Payment' ? 'Account Paid To' : 'Account Received From' }}
+                {{ activeTab === 'Payment' ? 'Account Paid To (Party)' : 'Account Received From (Party)' }}
               </label>
               <div class="relative group">
                 <input
@@ -84,13 +84,40 @@
                   @input="searchAccountsList"
                   @focus="showAccountDropdown = true"
                   class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  placeholder="Search GL Account..."
+                  placeholder="Search Party Account..."
                 />
                 <div v-if="showAccountDropdown && accountResults.length" class="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl backdrop-blur-md">
                   <div
                     v-for="a in accountResults"
                     :key="a.name"
                     @click="selectAccount(a)"
+                    class="cursor-pointer px-5 py-3 text-lg hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-colors border-b border-[var(--color-border)] last:border-0"
+                  >
+                    <div class="font-bold">{{ a.account_name }}</div>
+                    <div class="text-sm opacity-70">{{ a.name }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bank/Cash Account (Paid From / Paid To) -->
+            <div class="space-y-2 relative">
+              <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
+              </label>
+              <div class="relative group">
+                <input
+                  v-model="mopAccountQuery"
+                  @input="searchMopAccountsList"
+                  @focus="showMopAccountDropdown = true"
+                  class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                  placeholder="Search Bank/Cash Account..."
+                />
+                <div v-if="showMopAccountDropdown && mopAccountResults.length" class="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl backdrop-blur-md">
+                  <div
+                    v-for="a in mopAccountResults"
+                    :key="a.name"
+                    @click="selectMopAccount(a)"
                     class="cursor-pointer px-5 py-3 text-lg hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-colors border-b border-[var(--color-border)] last:border-0"
                   >
                     <div class="font-bold">{{ a.account_name }}</div>
@@ -110,24 +137,6 @@
                 class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-3xl font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none transition-all"
                 placeholder="0.00"
               />
-            </div>
-
-            <!-- Mode of Payment -->
-            <div class="space-y-2 col-span-2">
-              <label class="block text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">Mode of Payment</label>
-              <div class="flex gap-4">
-                <button
-                  v-for="m in ['Cash', 'UPI', 'Bank']"
-                  :key="m"
-                  @click="form.mode_of_payment = m"
-                  class="flex-1 rounded-xl border-2 py-4 text-lg font-bold transition-all"
-                  :class="form.mode_of_payment === m 
-                    ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-lg scale-[1.02]' 
-                    : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:border-[var(--color-midlight)]'"
-                >
-                  {{ m }}
-                </button>
-              </div>
             </div>
 
             <!-- Outstanding Button -->
@@ -216,8 +225,8 @@ const form = reactive({
   party: '',
   party_name: '',
   account: 'Debtors - SSPL',
-  amount: null,
-  mode_of_payment: 'Cash'
+  mop_account: 'Cash - SSPL',
+  amount: null
 })
 
 const showCustomerSearchModal = ref(false)
@@ -229,6 +238,10 @@ const accountQuery = ref('Debtors')
 const accountResults = ref([])
 const showAccountDropdown = ref(false)
 
+const mopAccountQuery = ref('Cash')
+const mopAccountResults = ref([])
+const showMopAccountDropdown = ref(false)
+
 const submitting = ref(false)
 const showSuccess = ref(false)
 const successDocName = ref('')
@@ -236,7 +249,7 @@ const outstandingBalance = ref(null)
 
 // --- Computed ---
 const isFormValid = computed(() => {
-  return form.party && form.amount > 0 && form.mode_of_payment
+  return form.party && form.amount > 0 && form.mop_account
 })
 
 const todayDate = computed(() => {
@@ -295,6 +308,18 @@ function selectAccount(a) {
   showAccountDropdown.value = false
 }
 
+async function searchMopAccountsList() {
+  const res = await frappeGet('ssplbilling.api.payment_api.search_accounts', { query: mopAccountQuery.value })
+  mopAccountResults.value = res || []
+}
+
+function selectMopAccount(a) {
+  form.mop_account = a.name
+  mopAccountQuery.value = a.account_name
+  showMopAccountDropdown.value = false
+}
+
+
 async function fetchOutstanding() {
   if (!form.party) return
   
@@ -321,7 +346,6 @@ function handlePartyTypeChange() {
   form.party = ''
   form.party_name = ''
   partyQuery.value = ''
-  partyResults.value = []
   outstandingBalance.value = null
   
   if (form.party_type === 'Customer') {
@@ -347,6 +371,9 @@ function resetForm() {
     form.account = 'Creditors - SSPL'
     accountQuery.value = 'Creditors'
   }
+  
+  form.mop_account = 'Cash - SSPL'
+  mopAccountQuery.value = 'Cash'
 }
 
 async function handleSubmit() {
@@ -359,8 +386,8 @@ async function handleSubmit() {
       party_type: form.party_type,
       party: form.party,
       amount: form.amount,
-      mode_of_payment: form.mode_of_payment,
-      account: form.account // Optional backend support
+      mop_account: form.mop_account,
+      account: form.account // Party Account
     }
     
     const res = await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
@@ -389,12 +416,13 @@ onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
   searchAccountsList() // Initial empty search
+  searchMopAccountsList()
   
   // Close dropdowns on outside click
   window.addEventListener('click', (e) => {
     if (!e.target.closest('.group')) {
-      showPartyDropdown.value = false
       showAccountDropdown.value = false
+      showMopAccountDropdown.value = false
     }
   })
 })

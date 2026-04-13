@@ -122,19 +122,15 @@ def create_payment_entry(data=None, **kwargs):
     pe.target_exchange_rate = 1.0
     
     # RESOLVE ACCOUNTS
-    party_account = _get_party_account(pe.party_type, pe.party)
-    mop_account = _get_mop_account(pe.mode_of_payment)
-    
+    party_account = data.get("account") or _get_party_account(pe.party_type, pe.party)
+    mop_account = data.get("mop_account") or _get_mop_account(data.get("mode_of_payment"))
+
     if pe.payment_type == "Receive":
         pe.paid_from = data.get("paid_from") or party_account
         pe.paid_to = data.get("paid_to") or mop_account
     else: # Pay
         pe.paid_from = data.get("paid_from") or mop_account
         pe.paid_to = data.get("paid_to") or party_account
-
-    # Party Account (Debtors/Creditors) override
-    if data.get("account"):
-        pe.party_account = data.get("account")
             
     pe.insert()
     pe.submit()
