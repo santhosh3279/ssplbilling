@@ -346,7 +346,8 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None):
 @frappe.whitelist()
 def get_outstanding_invoices(customer):
     """Return submitted Sales Invoices with outstanding balance."""
-    return frappe.get_all("Sales Invoice", filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]}, fields=["name", "posting_date", "grand_total", "outstanding_amount"], limit=50)
+    from ssplbilling.api.payment_api import get_outstanding_invoices as _impl
+    return _impl(customer)
 
 @frappe.whitelist()
 def get_outstanding_purchase_invoices(supplier):
@@ -358,18 +359,8 @@ def get_outstanding_purchase_invoices(supplier):
 @frappe.whitelist()
 def create_payment_entry(data=None, **kwargs):
     """Create and submit a Payment Entry."""
-    if not data: data = frappe.form_dict.get("data") or dict(frappe.form_dict)
-    if isinstance(data, str): data = json.loads(data)
-
-    pe = frappe.new_doc("Payment Entry")
-    pe.payment_type = data.get("payment_type") or "Receive"
-    pe.party_type = data.get("party_type") or "Customer"
-    pe.party = data.get("party") or data.get("customer")
-    pe.paid_amount = float(data.get("amount") or 0)
-    pe.received_amount = pe.paid_amount
-    pe.mode_of_payment = data.get("mode_of_payment") or "Cash"
-    pe.insert(); pe.submit()
-    return {"payment_entry": pe.name}
+    from ssplbilling.api.payment_api import create_payment_entry as _impl
+    return _impl(data, **kwargs)
 
 @frappe.whitelist()
 def search_suppliers(query=""):
@@ -380,10 +371,8 @@ def search_suppliers(query=""):
 @frappe.whitelist()
 def search_accounts(query="", account_type=None):
     """Search chart of accounts."""
-    filters = [["disabled", "=", 0], ["is_group", "=", 0]]
-    if account_type: filters.append(["account_type", "=", account_type])
-    if query: filters.append(["account_name", "like", f"%{query}%"])
-    return frappe.get_all("Account", filters=filters, fields=["name", "account_name"], limit=25)
+    from ssplbilling.api.payment_api import search_accounts as _impl
+    return _impl(query, account_type)
 
 @frappe.whitelist()
 def get_warehouses():

@@ -261,7 +261,7 @@ async function searchParties() {
     const res = await searchCustomers(partyQuery.value)
     partyResults.value = res.filter(r => r.type === 'Customer')
   } else if (form.party_type === 'Supplier') {
-    const res = await frappeGet('ssplbilling.api.ledger_api.search_suppliers', { query: partyQuery.value })
+    const res = await frappeGet('ssplbilling.api.payment_api.search_suppliers', { query: partyQuery.value })
     partyResults.value = (res || []).map(s => ({ name: s.name, label: s.supplier_name }))
   } else if (form.party_type === 'Employee') {
     const res = await frappeGet('frappe.client.get_list', {
@@ -282,7 +282,7 @@ function selectParty(p) {
 }
 
 async function searchAccountsList() {
-  const res = await frappeGet('ssplbilling.api.ledger_api.search_accounts', { query: accountQuery.value })
+  const res = await frappeGet('ssplbilling.api.payment_api.search_accounts', { query: accountQuery.value })
   accountResults.value = res || []
 }
 
@@ -297,8 +297,8 @@ async function fetchOutstanding() {
   
   try {
     const method = form.party_type === 'Customer' 
-      ? 'ssplbilling.api.ledger_api.get_customer_ledger'
-      : 'ssplbilling.api.ledger_api.get_ledger'
+      ? 'ssplbilling.api.payment_api.get_customer_ledger'
+      : 'ssplbilling.api.payment_api.get_ledger'
       
     const res = await frappeGet(method, { 
       [form.party_type.toLowerCase()]: form.party,
@@ -346,7 +346,7 @@ async function handleSubmit() {
       account: form.account // Optional backend support
     }
     
-    const res = await frappePost('ssplbilling.api.ledger_api.create_payment_entry', {
+    const res = await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
       data: JSON.stringify(payload)
     })
     
