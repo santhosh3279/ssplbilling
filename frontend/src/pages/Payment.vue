@@ -25,19 +25,31 @@
     <main class="flex-1 overflow-hidden p-4">
       <div class="flex h-full flex-col gap-4">
         
-        <!-- Tab Switcher -->
-        <div class="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-sm self-start">
-          <button
-            v-for="t in ['Payment', 'Receipt']"
-            :key="t"
-            @click="activeTab = t"
-            class="min-w-[120px] rounded-lg px-4 py-1.5 text-sm font-bold transition-all duration-200"
-            :class="activeTab === t 
-              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-md' 
-              : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
-          >
-            {{ t }}
-          </button>
+        <!-- Tab Switcher & Posting Date -->
+        <div class="flex items-center justify-between">
+          <div class="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-sm">
+            <button
+              v-for="t in ['Payment', 'Receipt']"
+              :key="t"
+              @click="activeTab = t"
+              class="min-w-[120px] rounded-lg px-4 py-1.5 text-sm font-bold transition-all duration-200"
+              :class="activeTab === t 
+                ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-md' 
+                : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
+            >
+              {{ t }}
+            </button>
+          </div>
+
+          <!-- Posting Date -->
+          <div class="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-1.5 shadow-sm">
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</label>
+            <input 
+              type="date" 
+              v-model="postingDate"
+              class="bg-transparent border-none text-sm font-bold text-[var(--color-text)] focus:ring-0 p-0 cursor-pointer"
+            />
+          </div>
         </div>
 
         <!-- Form Row -->
@@ -191,6 +203,7 @@ const router = useRouter()
 
 // --- State ---
 const activeTab = ref('Payment')
+const postingDate = ref(new Date().toISOString().split('T')[0])
 const form = reactive({
   party_type: 'Customer',
   party: '',
@@ -352,7 +365,8 @@ async function handleSubmit() {
       party: form.party,
       amount: form.amount,
       mop_account: form.mop_account,
-      account: form.account // Party Account
+      account: form.account, // Party Account
+      posting_date: postingDate.value
     }
     
     const res = await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
