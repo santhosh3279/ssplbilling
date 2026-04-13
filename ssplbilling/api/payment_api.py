@@ -121,6 +121,17 @@ def create_payment_entry(data=None, **kwargs):
     pe.source_exchange_rate = 1.0
     pe.target_exchange_rate = 1.0
     
+    # RESOLVE ACCOUNTS
+    party_account = _get_party_account(pe.party_type, pe.party)
+    mop_account = _get_mop_account(pe.mode_of_payment)
+    
+    if pe.payment_type == "Receive":
+        pe.paid_from = data.get("paid_from") or party_account
+        pe.paid_to = data.get("paid_to") or mop_account
+    else: # Pay
+        pe.paid_from = data.get("paid_from") or mop_account
+        pe.paid_to = data.get("paid_to") or party_account
+
     # Party Account (Debtors/Creditors) override
     if data.get("account"):
         pe.party_account = data.get("account")
@@ -128,6 +139,27 @@ def create_payment_entry(data=None, **kwargs):
     pe.insert()
     pe.submit()
     return {"payment_entry": pe.name}
+
+def _get_party_account(party_type, party):
+    """Get the default receivable/payable account for a party."""
+    from erpnext.accounts.party import get_party_account
+    company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+    return get_party_account(party_type, party, company)
+
+def _get_mop_account(mode_of_payment):
+    """Get the default bank/cash account for a mode of payment."""
+    company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+    account = frappe.db.get_value("Mode of Payment Account", 
+        {"parent": mode_of_payment, "company": company}, "default_account")
+    
+    if not account:
+        # Fallback to general company defaults
+        if "Cash" in mode_of_payment:
+            account = frappe.db.get_value("Company", company, "default_cash_account")
+        else:
+            account = frappe.db.get_value("Company", company, "default_bank_account")
+            
+    return account
 
 @frappe.whitelist()
 def search_suppliers(query=""):
