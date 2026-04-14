@@ -94,90 +94,58 @@ def get_customer_ledger(customer, from_date=None, to_date=None):
 
 @frappe.whitelist()
 def get_outstanding_invoices(party, party_type="Customer"):
-	"""Return outstanding vouchers (invoices + journal entries) for a party.
+	"""Return all unlinked outstanding GL transactions for a party.
 
-	Uses ERPNext's Payment Ledger Entry (PLE) as the primary source — same logic as
-	the 'Get Outstanding Invoices' button in the Payment Entry doctype.  Adds a
-	direct GL-Entry fallback for Journal Entries that pre-date the PLE migration
-	(ERPNext < v14) or were posted without PLE records.
+	Groups every GL Entry by its settlement target (against_voucher when set,
+	otherwise voucher_no) so that payments correctly reduce the balance of the
+	document they are applied against.
+
+	Receipt  (Customer) → vouchers where net debit  > 0  (customer owes us)
+	Payment  (Supplier) → vouchers where net credit > 0  (we owe supplier)
+
+	Covers all voucher types: Sales Invoice, Purchase Invoice, Journal Entry, etc.
 	"""
-	from erpnext.accounts.doctype.payment_entry.payment_entry import get_outstanding_reference_documents
-	from erpnext.accounts.party import get_party_account
-
-	company = frappe.defaults.get_global_default("company")
-	payment_type = "Receive" if party_type == "Customer" else "Pay"
-	party_account = get_party_account(party_type, party, company)
-
-	args = {
-		"posting_date": frappe.utils.today(),
-		"company": company,
-		"party_type": party_type,
-		"payment_type": payment_type,
-		"party": party,
-		"party_account": party_account,
-		"get_outstanding_invoices": True,
-	}
-	erpnext_rows = get_outstanding_reference_documents(args) or []
-
-	# Track voucher_nos already returned so we don't duplicate
-	seen = {(r.get("voucher_type"), r.get("voucher_no")) for r in erpnext_rows}
-
-	# GL-based fallback: find Journal Entries whose net party-side balance is positive
-	# (outstanding amount) after subtracting any payments made against them.
-	# `debit - credit` for Customer (Receivable); `credit - debit` for Supplier (Payable).
 	if party_type == "Customer":
-		net_expr = "SUM(gle.debit - gle.credit)"
-		settled_expr = "SUM(g2.credit - g2.debit)"
+		net_expr  = "SUM(gle.debit  - gle.credit)"
+		orig_expr = "SUM(GREATEST(gle.debit,  0))"
 	else:
-		net_expr = "SUM(gle.credit - gle.debit)"
-		settled_expr = "SUM(g2.debit - g2.credit)"
+		net_expr  = "SUM(gle.credit - gle.debit)"
+		orig_expr = "SUM(GREATEST(gle.credit, 0))"
 
-	gl_jvs = frappe.db.sql(
+	rows = frappe.db.sql(
 		f"""
 		SELECT
-			gle.voucher_no,
-			MAX(gle.posting_date)         AS posting_date,
-			{net_expr}                    AS original_amount,
-			COALESCE((
-				SELECT {settled_expr}
-				FROM `tabGL Entry` g2
-				WHERE g2.party_type = %(party_type)s
-					AND g2.party       = %(party)s
-					AND g2.against_voucher_type = 'Journal Entry'
-					AND g2.against_voucher      = gle.voucher_no
-					AND g2.is_cancelled = 0
-			), 0) AS settled_amount
+			COALESCE(NULLIF(gle.against_voucher_type, ''), gle.voucher_type)  AS voucher_type,
+			COALESCE(NULLIF(gle.against_voucher, ''),      gle.voucher_no)    AS voucher_no,
+			MAX(gle.posting_date)  AS posting_date,
+			{orig_expr}            AS invoice_amount,
+			{net_expr}             AS outstanding_amount
 		FROM `tabGL Entry` gle
-		WHERE gle.party_type    = %(party_type)s
-			AND gle.party       = %(party)s
-			AND gle.voucher_type = 'Journal Entry'
+		WHERE gle.party_type    = %s
+			AND gle.party       = %s
 			AND gle.is_cancelled = 0
-		GROUP BY gle.voucher_no
-		HAVING (original_amount - settled_amount) > 0.01
+		GROUP BY
+			COALESCE(NULLIF(gle.against_voucher_type, ''), gle.voucher_type),
+			COALESCE(NULLIF(gle.against_voucher, ''),      gle.voucher_no)
+		HAVING outstanding_amount > 0.01
 		ORDER BY posting_date DESC
 		LIMIT 200
 		""",
-		{"party_type": party_type, "party": party},
+		(party_type, party),
 		as_dict=True,
 	)
 
-	for row in gl_jvs:
-		key = ("Journal Entry", row.voucher_no)
-		if key in seen:
-			continue
-		outstanding = float(row.original_amount or 0) - float(row.settled_amount or 0)
-		if outstanding <= 0.01:
-			continue
-		erpnext_rows.append(frappe._dict({
-			"voucher_type": "Journal Entry",
-			"voucher_no": row.voucher_no,
-			"posting_date": row.posting_date,
-			"due_date": row.posting_date,
-			"invoice_amount": outstanding,
-			"outstanding_amount": outstanding,
-		}))
-
-	return erpnext_rows
+	return [
+		frappe._dict({
+			"voucher_type":       row.voucher_type,
+			"voucher_no":         row.voucher_no,
+			"posting_date":       row.posting_date,
+			"due_date":           row.posting_date,
+			"invoice_amount":     float(row.invoice_amount     or 0),
+			"outstanding_amount": float(row.outstanding_amount or 0),
+		})
+		for row in rows
+	]
 
 @frappe.whitelist()
 def create_payment_entry(data=None, **kwargs):
