@@ -49,7 +49,7 @@
             <tr class="text-2xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
               <th class="px-4 py-4 border-b border-[var(--color-border)]">Voucher No</th>
               <th class="px-4 py-4 border-b border-[var(--color-border)]">Type</th>
-              <th class="px-4 py-4 border-b border-[var(--color-border)]">Date</th>
+              <th class="px-4 py-4 border-b border-[var(--color-border)]">Due Days</th>
               <th class="px-4 py-4 border-b border-[var(--color-border)] text-center">Dir/Mode</th>
               <th class="px-4 py-4 border-b border-[var(--color-border)] text-right">Outstanding</th>
               <th class="px-4 py-4 border-b border-[var(--color-border)] text-right w-56">Allocate</th>
@@ -80,7 +80,9 @@
               <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                 <td class="px-4 py-3 font-mono text-3xl font-normal">{{ inv.name }}</td>
                 <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
-                <td class="px-4 py-3 text-2xl">{{ inv.posting_date }}</td>
+                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(inv.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+                  {{ calculateDueDays(inv.posting_date) }} Days
+                </td>
                 <td class="px-4 py-3 text-center">
                   <span
                     class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
@@ -119,7 +121,9 @@
               <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                 <td class="px-4 py-3 font-mono text-3xl font-normal">{{ pe.name }}</td>
                 <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Payment Entry</td>
-                <td class="px-4 py-3 text-2xl">{{ pe.posting_date }}</td>
+                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(pe.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+                  {{ calculateDueDays(pe.posting_date) }} Days
+                </td>
                 <td class="px-4 py-3 text-center text-2xl">{{ pe.mode_of_payment }}</td>
                 <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">{{ fmt(pe.unallocated_amount) }}</td>
                 <td class="px-4 py-3 text-right">
@@ -154,7 +158,9 @@
                   <div class="text-xl font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ je.remarks }}</div>
                 </td>
                 <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Journal Entry</td>
-                <td class="px-4 py-3 text-2xl">{{ je.posting_date }}</td>
+                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(je.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+                  {{ calculateDueDays(je.posting_date) }} Days
+                </td>
                 <td class="px-4 py-3 text-center">
                   <span
                     class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
@@ -314,6 +320,17 @@ function onAllocationChange(item, type) {
 
 function fmt(val) {
   return Math.abs(Number(val || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function calculateDueDays(dateStr) {
+  if (!dateStr) return 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const postingDate = new Date(dateStr)
+  postingDate.setHours(0, 0, 0, 0)
+  const diffTime = today - postingDate
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
 }
 
 function focusNextAllocate(event) {
