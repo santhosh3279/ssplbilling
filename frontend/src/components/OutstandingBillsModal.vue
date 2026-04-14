@@ -195,6 +195,7 @@
       
       <div class="mt-8 flex justify-end gap-6">
         <button
+          ref="confirmBtn"
           @click="confirmAdjustments"
           class="rounded-2xl bg-[var(--color-highlight)] px-12 py-4 text-2xl font-black uppercase tracking-widest text-white hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--color-highlight)]/20"
         >
@@ -243,6 +244,7 @@ const emit = defineEmits(['close', 'update-allocations'])
 const filterDirection = ref('All')
 const localModalAmounts = ref({})
 const lastModifiedKey = ref(null)
+const confirmBtn = ref(null)
 
 // Sync localModalAmounts with prop
 watch(() => props.modalAmounts, (newVal) => {
@@ -305,8 +307,6 @@ const filteredInvoices = computed(() => {
 function onAllocationChange(item, type) {
   const key = type === 'journal' ? item.reference_row : item.name
   lastModifiedKey.value = key
-  
-  emitAllocations()
 }
 
 function emitAllocations() {
@@ -395,11 +395,13 @@ function calculateDueDays(dateStr) {
 
 function focusNextAllocate(event) {
   const currentInput = event.target
-  const inputs = Array.from(document.querySelectorAll('.allocate-input'))
+  const inputs = Array.from(document.querySelectorAll('.allocate-input:not(:disabled)'))
   const index = inputs.indexOf(currentInput)
   if (index >= 0 && index < inputs.length - 1) {
     inputs[index + 1].focus()
     inputs[index + 1].select()
+  } else {
+    confirmBtn.value?.focus()
   }
 }
 </script>
