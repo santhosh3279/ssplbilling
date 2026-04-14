@@ -265,7 +265,7 @@
         doc-date="06-Apr-2026"
         sidebar-date="06-04-2026"
         sidebar-search=""
-        sidebar-series="ALL"
+        :sidebar-series="['ALL']"
         :available-series="['ALL', 'RETL', 'WHSL']"
         :draft-only="true"
         :sidebar-items="[

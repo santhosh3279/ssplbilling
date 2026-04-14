@@ -61,15 +61,15 @@
 
           <div class="relative series-dropdown-container">
             <button
-              @click="showSeriesDropdown = !showSeriesDropdown"
+              @click="showSidebarSeriesDropdown = !showSidebarSeriesDropdown"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
             >
               <span class="truncate">{{ sidebarSeries.length === availableSeries.length ? 'All Series' : (sidebarSeries.length > 0 ? sidebarSeries[0] + (sidebarSeries.length > 1 ? '..' : '') : 'None') }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSidebarSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
             </button>
             
             <!-- Dropdown Menu -->
-            <div v-if="showSeriesDropdown" class="absolute top-full left-0 mt-1 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
+            <div v-if="showSidebarSeriesDropdown" class="absolute top-full left-0 mt-1 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
               <div class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 hover:bg-[var(--color-surface-raised)] cursor-pointer select-none" @click="toggleAllSeries">
                 <input 
                   type="checkbox" 
@@ -1135,7 +1135,7 @@ function closeCustomerSearchModal() { showCustomerSearchModal.value = false }
 const sidebarDate = ref(getTodayIST())
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
-const showSeriesDropdown = ref(false)
+const showSidebarSeriesDropdown = ref(false)
 const showSubmitted = ref(false)
 const sidebarBills = ref([])
 const sidebarLoading = ref(false)
