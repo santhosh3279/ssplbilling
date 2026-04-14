@@ -66,11 +66,7 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-4 py-2 w-40">Party Type</th>
                 <th class="px-4 py-2">Party Name</th>
-                <th class="px-4 py-2">
-                  {{ activeTab === 'Payment' ? 'Account Paid To (Party)' : 'Account Received From (Party)' }}
-                </th>
                 <th class="px-4 py-2">
                   {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
                 </th>
@@ -79,19 +75,6 @@
             </thead>
             <tbody>
               <tr class="divide-x divide-[var(--color-border)]">
-                <!-- Party Type -->
-                <td class="px-2 py-1.5 bg-[var(--color-surface-raised)]/30">
-                  <select
-                    v-model="form.party_type"
-                    disabled
-                    class="w-full bg-transparent text-3xl font-normal focus:outline-none transition-all cursor-not-allowed opacity-70"
-                  >
-                    <option value="Customer">Customer</option>
-                    <option value="Supplier">Supplier</option>
-                    <option value="Employee">Employee</option>
-                  </select>
-                </td>
-
                 <!-- Party Name -->
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors">
                   <div class="relative">
@@ -105,16 +88,6 @@
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
                   </div>
-                </td>
-
-                <!-- Party Account -->
-                <td class="px-2 py-1.5 bg-[var(--color-surface-raised)]/10">
-                  <input
-                    v-model="accountQuery"
-                    readonly
-                    class="w-full cursor-not-allowed bg-transparent text-3xl font-normal opacity-60 focus:outline-none"
-                    placeholder="Party Account..."
-                  />
                 </td>
 
                 <!-- Bank/Cash Account -->
