@@ -422,6 +422,7 @@
       :show="showCustomerModal"
       skip-date-filter
       initial-type="Customer"
+      :allowed-types="['Customer', 'Supplier', 'Employee']"
       :initial-query="customerInitialQuery"
       @close="showCustomerModal = false; customerInitialQuery = ''"
       @select="handleCustomerSelected"
