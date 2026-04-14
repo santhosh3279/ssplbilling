@@ -251,7 +251,24 @@
     <div v-if="showInvoicesModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div class="w-full max-w-4xl rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-black uppercase tracking-tight">Outstanding & Unlinked Items</h2>
+          <div class="flex items-center gap-6">
+            <h2 class="text-2xl font-black uppercase tracking-tight">Outstanding & Unlinked Items</h2>
+            
+            <!-- Direction Filter -->
+            <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5 shadow-sm">
+              <button
+                v-for="d in ['All', 'Dr', 'Cr']"
+                :key="d"
+                @click="filterDirection = d"
+                class="min-w-[50px] rounded-md px-3 py-1 text-[10px] font-black uppercase transition-all duration-200"
+                :class="filterDirection === d 
+                  ? 'bg-[var(--color-highlight)] text-white shadow-sm' 
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              >
+                {{ d }}
+              </button>
+            </div>
+          </div>
           <button @click="showInvoicesModal = false" class="h-8 w-8 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center">
             ✕
           </button>
@@ -488,9 +505,27 @@ const isFormValid = computed(() => {
   return form.party && form.amount > 0 && form.mop_account
 })
 
-const filteredJournals = computed(() => unlinkedJournals.value)
-const filteredPayments = computed(() => unlinkedPayments.value)
-const filteredInvoices = computed(() => invoices.value)
+const filterDirection = ref('All')
+
+const filteredJournals = computed(() => {
+  if (filterDirection.value === 'All') return unlinkedJournals.value
+  return unlinkedJournals.value.filter(j => j.direction === filterDirection.value)
+})
+
+const filteredPayments = computed(() => {
+  if (filterDirection.value === 'All') return unlinkedPayments.value
+  return unlinkedPayments.value.filter(p => {
+    // Payment entries have payment_type instead of direction.
+    // 'Receive' is usually Cr, 'Pay' is usually Dr.
+    const direction = p.payment_type === 'Receive' ? 'Cr' : 'Dr'
+    return direction === filterDirection.value
+  })
+})
+
+const filteredInvoices = computed(() => {
+  if (filterDirection.value === 'All') return invoices.value
+  return invoices.value.filter(i => i.direction === filterDirection.value)
+})
 
 const invoiceDocType = computed(() =>
 
@@ -590,6 +625,12 @@ async function fetchInvoices() {
   if (!form.party) return
   loadingInvoices.value = true
   showInvoicesModal.value = true
+  
+  // Set default filter based on tab: 
+  // - Receipt: show Dr (unpaid invoices)
+  // - Payment: show Cr (unpaid bills)
+  filterDirection.value = activeTab.value === 'Receipt' ? 'Dr' : 'Cr'
+
   try {
     const [outstandingRes, unlinkedRes] = await Promise.all([
       frappeGet('ssplbilling.api.reconcile_api.get_outstanding_docs', {
