@@ -588,7 +588,7 @@ const selectedSeries = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
-const sidebarSeries = ref('')
+const sidebarSeries = ref([])
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
 
@@ -614,6 +614,7 @@ async function fetchRecentQuotations() {
       query: sidebarSearch.value,
       limit: 100,
       transaction_date: sidebarDate.value,
+      naming_series: sidebarSeries.value.join(','),
       show_submitted: !draftOnly.value,
     })
   } catch (e) {
@@ -628,7 +629,7 @@ function handleSidebarDateChange(days) {
   sidebarDate.value = d.toISOString().split('T')[0]
 }
 
-watch([sidebarDate, draftOnly], () => {
+watch([sidebarDate, sidebarSeries, draftOnly], () => {
   fetchRecentQuotations()
 })
 

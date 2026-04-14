@@ -27,18 +27,39 @@
             />
             <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
-          <select
-            :value="sidebarSeries"
-            @change="$emit('update:sidebarSeries', $event.target.value)"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all"
-          >
-            <option value="">All Series</option>
-            <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
-          </select>
+          <div class="relative series-dropdown-container">
+            <button
+              @click="showSeriesDropdown = !showSeriesDropdown"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
+            >
+              <span class="truncate">{{ sidebarSeries.length === availableSeries.length ? 'All Series' : (sidebarSeries.length > 0 ? sidebarSeries[0] + (sidebarSeries.length > 1 ? '..' : '') : 'None') }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            
+            <!-- Dropdown Menu -->
+            <div v-if="showSeriesDropdown" class="absolute top-full left-0 mt-1 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
+              <div class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 hover:bg-[var(--color-surface-raised)] cursor-pointer select-none" @click="toggleAllSeries">
+                <input 
+                  type="checkbox" 
+                  :checked="sidebarSeries.length === availableSeries.length" 
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+                />
+                <span class="text-[13px] font-bold uppercase tracking-wider">All Series</span>
+              </div>
+              <div v-for="s in availableSeries" :key="s" class="px-3 py-1.5 flex items-center gap-2 hover:bg-[var(--color-surface-raised)] cursor-pointer select-none" @click="toggleSeries(s)">
+                <input 
+                  type="checkbox" 
+                  :checked="isSeriesSelected(s)" 
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+                />
+                <span class="text-[13px] font-bold uppercase tracking-wider">{{ s }}</span>
+              </div>
+            </div>
+          </div>
           <button
             @click="$emit('toggle-draft-only')"
-            class="w-full rounded border py-[1px] text-xl font-bold uppercase transition-colors"
-            :class="draftOnly ? 'bg-[var(--color-warning)]/20 border-[var(--color-warning)] text-[var(--color-warning)]' : 'bg-[var(--color-surface-raised)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
+            class="w-full rounded-xl border py-1.5 text-[10px] font-bold uppercase transition-all"
+            :class="draftOnly ? 'bg-[var(--color-warning)]/40 border-[var(--color-warning)] text-[var(--color-warning)] shadow-sm' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
           >
             {{ draftOnly ? 'Drafts Only' : 'All Bills' }}
           </button>
@@ -477,7 +498,7 @@ const props = defineProps({
   // Sidebar Props (sidebarDate supports v-model via update:sidebarDate emit)
   sidebarDate: { type: String, default: '' },
   sidebarSearch: { type: String, default: '' },
-  sidebarSeries: { type: String, default: '' },
+  sidebarSeries: { type: Array, default: () => [] },
   availableSeries: { type: Array, default: () => [] },
   draftOnly: { type: Boolean, default: false },
   sidebarLoading: { type: Boolean, default: false },
@@ -532,6 +553,7 @@ const emit = defineEmits([
 
 const sidebarSearchRef = ref(null)
 const sidebarListRef = ref(null)
+const showSeriesDropdown = ref(false)
 const discountPctRef = ref(null)
 const discountAmtRef = ref(null)
 const freightRef = ref(null)
@@ -544,6 +566,29 @@ const sidebarItemRefs = new Map()
 function setSidebarItemRef(el, idx) {
   if (el) sidebarItemRefs.set(idx, el)
   else sidebarItemRefs.delete(idx)
+}
+
+function toggleAllSeries() {
+  if (props.sidebarSeries.length === props.availableSeries.length) {
+    emit('update:sidebarSeries', [])
+  } else {
+    emit('update:sidebarSeries', [...props.availableSeries])
+  }
+}
+
+function toggleSeries(s) {
+  const current = [...props.sidebarSeries]
+  const idx = current.indexOf(s)
+  if (idx > -1) {
+    current.splice(idx, 1)
+  } else {
+    current.push(s)
+  }
+  emit('update:sidebarSeries', current)
+}
+
+function isSeriesSelected(s) {
+  return props.sidebarSeries.includes(s)
 }
 
 function navigateSidebar(idx, dir) {

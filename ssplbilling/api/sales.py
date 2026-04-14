@@ -15,7 +15,13 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
         filters.append(["docstatus", "=", 0])
 
     if naming_series:
-        filters.append(["naming_series", "=", naming_series])
+        if isinstance(naming_series, str) and "," in naming_series:
+            naming_series = [s.strip() for s in naming_series.split(",") if s.strip()]
+        
+        if isinstance(naming_series, (list, tuple)):
+            filters.append(["naming_series", "in", naming_series])
+        else:
+            filters.append(["naming_series", "=", naming_series])
 
     or_filters = []
     if query:
