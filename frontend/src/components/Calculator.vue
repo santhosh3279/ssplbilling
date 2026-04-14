@@ -5,7 +5,9 @@
     @click.self="close"
   >
     <div
-      class="w-80 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+      ref="calculatorRef"
+      tabindex="-1"
+      class="w-80 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl outline-none"
       @keydown.esc="close"
     >
       <!-- Display -->
@@ -45,13 +47,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 const props = defineProps({
   show: Boolean
 })
 const emit = defineEmits(['close'])
 
+const calculatorRef = ref(null)
 const display = ref('')
 const prevInput = ref('')
 const operator = ref('')
@@ -134,12 +137,24 @@ function close() {
   emit('close')
 }
 
+watch(() => props.show, (val) => {
+  if (val) {
+    nextTick(() => {
+      calculatorRef.value?.focus()
+    })
+  }
+})
+
 function handleKeydown(e) {
   if (!props.show) return
   
-  // Always prevent default/stop propagation for these keys when calculator is open
-  const interceptedKeys = ['Escape', 'Backspace', 'Enter', 'Delete', 'c', 'C', 'F12', '+', '-', '*', '/', '%']
-  if (interceptedKeys.includes(e.key) || /[0-9.]/.test(e.key)) {
+  // Intercept and prevent EVERYTHING to block background shortcuts
+  // We only allow Browser DevTools (F12) and some essential browser combos to leak if needed.
+  // Using capture phase listener + e.stopPropagation() ensures other listeners don't see the event.
+  const isFunctionKey = e.key.startsWith('F') && e.key !== 'F12'
+  const isBrowserShortcut = (e.ctrlKey || e.metaKey) && ['r', 'R', 'l', 'L'].includes(e.key)
+  
+  if (!isFunctionKey && !isBrowserShortcut) {
     e.preventDefault()
     e.stopPropagation()
   }
@@ -148,8 +163,14 @@ function handleKeydown(e) {
     close()
     return
   }
+
+  // Focus trap for TAB: Keep focus on the container
+  if (e.key === 'Tab') {
+    calculatorRef.value?.focus()
+    return
+  }
   
-  if (e.key === 'F12') return // Just consume it so it doesn't leak
+  if (e.key === 'F12') return 
 
   if (/[0-9.]/.test(e.key)) handleInput({ label: e.key, type: 'number' })
   if (['+', '-', '*', '/', '%'].includes(e.key)) handleInput({ label: e.key, type: 'operator' })
@@ -158,9 +179,12 @@ function handleKeydown(e) {
     if (display.value === '') handleInput({ label: 'C', type: 'action' })
     else handleInput({ label: 'DEL', type: 'action' })
   }
-  if (e.key === 'Delete' || e.key === 'c' || e.key === 'C') handleInput({ label: 'C', type: 'action' })
+  if (e.key === 'Delete' || e.key.toLowerCase() === 'c') handleInput({ label: 'C', type: 'action' })
 }
 
-onMounted(() => window.addEventListener('keydown', handleKeydown))
-onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown, true) // Capture phase
+  if (props.show) nextTick(() => calculatorRef.value?.focus())
+})
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown, true))
 </script>
