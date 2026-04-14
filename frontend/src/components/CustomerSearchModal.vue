@@ -243,7 +243,11 @@ const props = defineProps({
   initialQuery: { type: String, default: '' }
 })
 
-const availableTabs = computed(() => [...new Set(['All', ...props.allowedTypes])])
+const availableTabs = computed(() => {
+  const types = props.allowedTypes
+  if (types.length === 1) return types
+  return [...new Set(['All', ...types])]
+})
 
 const emit = defineEmits(['close', 'select'])
 

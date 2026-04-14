@@ -57,6 +57,39 @@
       </div>
     </header>
 
+    <!-- Initial Selection Overlay -->
+    <div v-if="showInitialSelection" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md">
+      <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-12 text-center shadow-2xl border border-[var(--color-border)] relative">
+        <!-- Close/Back -->
+        <button
+          @click="router.push('/')"
+          class="absolute top-6 left-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-midlight)]/20 hover:bg-[var(--color-midlight)] transition-colors"
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
+
+        <h2 class="mb-10 text-5xl font-black uppercase tracking-tight">Select Entry Type</h2>
+        <div class="grid grid-cols-2 gap-8">
+          <button
+            @click="selectEntryType('Payment')"
+            class="flex flex-col items-center gap-6 rounded-2xl bg-red-500/10 p-12 border-2 border-red-500/30 hover:bg-red-500/20 hover:border-red-500 transition-all group"
+          >
+            <span class="text-8xl">💸</span>
+            <span class="text-4xl font-black text-red-500 uppercase">Payment</span>
+          </button>
+          <button
+            @click="selectEntryType('Receipt')"
+            class="flex flex-col items-center gap-6 rounded-2xl bg-green-500/10 p-12 border-2 border-green-500/30 hover:bg-green-500/20 hover:border-green-500 transition-all group"
+          >
+            <span class="text-8xl">💰</span>
+            <span class="text-4xl font-black text-green-500 uppercase">Receipt</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1 overflow-hidden p-4">
       <div class="flex h-full flex-col gap-4">
@@ -108,6 +141,7 @@
                 <!-- Amount -->
                 <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
                   <input
+                    ref="amountInputRef"
                     v-model.number="form.amount"
                     type="number"
                     step="0.01"
@@ -507,9 +541,20 @@ const router = useRouter()
 
 // --- State ---
 const activeTab = ref('Payment')
+const showInitialSelection = ref(true)
+const amountInputRef = ref(null)
 
 function cycleTab() {
   activeTab.value = activeTab.value === 'Payment' ? 'Receipt' : 'Payment'
+}
+
+function selectEntryType(type) {
+  activeTab.value = type
+  showInitialSelection.value = false
+  // Briefly wait for overlay to vanish before opening modal
+  setTimeout(() => {
+    openSearch('party')
+  }, 100)
 }
 
 useShortcuts(paymentShortcuts({
@@ -622,7 +667,7 @@ const allowedTypes = computed(() => {
 })
 
 const initialSearchType = computed(() => {
-  if (searchTarget.value === 'party') return form.party_type
+  if (searchTarget.value === 'party') return 'All'
   return 'Account'
 })
 
@@ -657,12 +702,28 @@ function handleSelect(item) {
     }
     
     fetchOutstanding()
+    
+    // Automatically chain to MOP account selection
+    setTimeout(() => {
+      openSearch('mop')
+    }, 150)
   } else if (searchTarget.value === 'account') {
+    // This part of the code doesn't seem to be used with current searchTarget logic
+    // But let's keep it just in case and focus amount if it ever triggers
     form.account = item.name
     accountQuery.value = item.label || item.account_name || item.name
+    nextTick(() => amountInputRef.value?.focus())
   } else if (searchTarget.value === 'mop') {
     form.mop_account = item.name
     mopAccountQuery.value = item.label || item.account_name || item.name
+    
+    // Chain to Amount focus
+    nextTick(() => {
+      setTimeout(() => {
+        amountInputRef.value?.focus()
+        amountInputRef.value?.select()
+      }, 50)
+    })
   }
 }
 
@@ -837,6 +898,7 @@ async function handleSubmit() {
 function closeSuccess() {
   showSuccess.value = false
   resetForm()
+  showInitialSelection.value = true
 }
 
 // --- Lifecycle ---
