@@ -262,7 +262,7 @@
           <div v-if="filteredInvoices.length || (!filteredPayments.length && !filteredJournals.length && !loadingInvoices)">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
-              Outstanding {{ activeTab === 'Receipt' ? 'Invoices (Debits)' : 'Credits / Returns' }}
+              Outstanding Invoices / Returns
             </h3>
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
@@ -270,6 +270,7 @@
                   <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-4 py-3">Voucher No</th>
                     <th class="px-4 py-3">Date</th>
+                    <th class="px-4 py-3 text-center">Type</th>
                     <th class="px-4 py-3 text-right">Outstanding</th>
                     <th class="px-4 py-3 text-right">Allocate (₹)</th>
                     <th class="px-4 py-3"></th>
@@ -277,15 +278,26 @@
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-if="loadingInvoices">
-                    <td colspan="5" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
+                    <td colspan="6" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
                   </tr>
                   <tr v-else-if="!filteredInvoices.length">
-                    <td colspan="5" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding items found for this tab.</td>
+                    <td colspan="6" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding items found.</td>
                   </tr>
                   <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-sm font-bold">{{ inv.name }}</td>
+                    <td class="px-4 py-3 font-mono text-sm font-bold">
+                      {{ inv.name }}
+                      <div class="text-[9px] font-normal text-[var(--color-text-muted)]">{{ inv.doctype }}</div>
+                    </td>
                     <td class="px-4 py-3 text-sm">{{ inv.posting_date }}</td>
-                    <td class="px-4 py-3 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-3 text-center">
+                      <span
+                        class="inline-block rounded px-2 py-0.5 text-[10px] font-black uppercase"
+                        :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
+                      >{{ inv.direction }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono text-sm font-black" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                      ₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}
+                    </td>
                     <td class="px-4 py-3 text-right">
                       <input
                         v-model.number="modalAmounts[inv.name]"
@@ -297,7 +309,7 @@
                     </td>
                     <td class="px-4 py-3 text-right">
                       <button
-                        @click="addEntryToAllocation({ reference_doctype: invoiceDocType, reference_name: inv.name, total_amount: inv.grand_total, outstanding_amount: inv.outstanding_amount }, inv.name)"
+                        @click="addEntryToAllocation({ reference_doctype: inv.doctype, reference_name: inv.name, total_amount: inv.grand_total, outstanding_amount: inv.outstanding_amount }, inv.name)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
                         class="rounded-lg px-3 py-1 text-[10px] font-black uppercase transition-all whitespace-nowrap"
                         :class="allocationRefs.find(r => r.reference_name === inv.name)
@@ -315,7 +327,7 @@
           <div v-if="filteredPayments.length">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
-              Unlinked Payments ({{ activeTab === 'Receipt' ? 'Debits' : 'Credits' }})
+              Unlinked Payments (Advances)
             </h3>
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
@@ -364,7 +376,7 @@
           <div v-if="filteredJournals.length">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
-              Unlinked Journal Entries ({{ activeTab === 'Receipt' ? 'Debits' : 'Credits' }})
+              Unlinked Journal Entries
             </h3>
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
@@ -476,25 +488,12 @@ const isFormValid = computed(() => {
   return form.party && form.amount > 0 && form.mop_account
 })
 
-const filteredJournals = computed(() =>
-  activeTab.value === 'Receipt'
-    ? unlinkedJournals.value.filter(j => j.direction === 'Dr')
-    : unlinkedJournals.value.filter(j => j.direction === 'Cr')
-)
-
-const filteredPayments = computed(() =>
-  activeTab.value === 'Receipt'
-    ? unlinkedPayments.value.filter(p => p.payment_type === 'Pay')
-    : unlinkedPayments.value.filter(p => p.payment_type === 'Receive')
-)
-
-const filteredInvoices = computed(() =>
-  activeTab.value === 'Receipt'
-    ? invoices.value.filter(i => i.direction === 'Dr')
-    : invoices.value.filter(i => i.direction === 'Cr')
-)
+const filteredJournals = computed(() => unlinkedJournals.value)
+const filteredPayments = computed(() => unlinkedPayments.value)
+const filteredInvoices = computed(() => invoices.value)
 
 const invoiceDocType = computed(() =>
+
   form.party_type === 'Customer' ? 'Sales Invoice' : 'Purchase Invoice'
 )
 
