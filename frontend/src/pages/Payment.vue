@@ -103,7 +103,7 @@
                 <th class="px-4 py-2">
                   {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
                 </th>
-                <th class="px-6 py-2 text-right w-64">Amount (₹)</th>
+                <th class="px-6 py-2 text-right w-64">Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -167,7 +167,7 @@
                   <th class="px-4 py-3">Voucher No</th>
                   <th class="px-4 py-3">Inv Type</th>
                   <th class="px-4 py-3 text-right">Outstanding</th>
-                  <th class="px-4 py-3 text-right">Allocated (₹)</th>
+                  <th class="px-4 py-3 text-right">Allocated</th>
                   <th class="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -175,7 +175,7 @@
                 <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="hover:bg-[var(--color-midlight)]/30 transition-colors">
                   <td class="px-4 py-3 font-mono text-3xl font-black">{{ ref.reference_name }}</td>
                   <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</td>
-                  <td class="px-4 py-3 text-right text-3xl text-[var(--color-text-muted)]">₹{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
+                  <td class="px-4 py-3 text-right text-3xl text-[var(--color-text-muted)]">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
                   <td class="px-4 py-3 text-right">
                     <input
                       v-model.number="ref.allocated_amount"
@@ -214,7 +214,7 @@
             <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Current Outstanding</div>
             <div class="flex items-center gap-3">
               <div class="text-2xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                ₹{{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
+                {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
               </div>
               <button 
                 v-if="form.party"
@@ -258,7 +258,7 @@
           <div v-if="allocationRefs.length" class="flex flex-col text-right">
             <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allocated Amount</div>
             <div class="text-2xl font-black text-[var(--color-success)]">
-              ₹{{ totalAllocated.toLocaleString('en-IN') }}
+              {{ totalAllocated.toLocaleString('en-IN') }}
             </div>
           </div>
 
@@ -360,7 +360,7 @@
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3 text-center">Dir</th>
                     <th class="px-4 py-3 text-right">Outstanding</th>
-                    <th class="px-4 py-3 text-right">Allocate (₹)</th>
+                    <th class="px-4 py-3 text-right">Allocate</th>
                     <th class="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -384,7 +384,7 @@
                       >{{ inv.direction }}</span>
                     </td>
                     <td class="px-4 py-3 text-right font-mono text-3xl font-normal" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                      ₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}
+                      {{ inv.outstanding_amount.toLocaleString('en-IN') }}
                     </td>
                     <td class="px-4 py-3 text-right">
                       <input
@@ -426,7 +426,7 @@
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3">Mode</th>
                     <th class="px-4 py-3 text-right">Unallocated</th>
-                    <th class="px-4 py-3 text-right">Allocate (₹)</th>
+                    <th class="px-4 py-3 text-right">Allocate</th>
                     <th class="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -436,7 +436,7 @@
                     <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Payment Entry</td>
                     <td class="px-4 py-3 text-3xl">{{ pe.posting_date }}</td>
                     <td class="px-4 py-3 text-3xl">{{ pe.mode_of_payment }}</td>
-                    <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">₹{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
                     <td class="px-4 py-3 text-right">
                       <input
                         v-model.number="modalAmounts[pe.name]"
@@ -477,7 +477,7 @@
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3 text-center">Dir</th>
                     <th class="px-4 py-3 text-right">Amount</th>
-                    <th class="px-4 py-3 text-right">Allocate (₹)</th>
+                    <th class="px-4 py-3 text-right">Allocate</th>
                     <th class="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -497,7 +497,7 @@
                     </td>
                     <td class="px-4 py-3 text-right font-mono text-3xl font-normal"
                         :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                      ₹{{ je.unallocated_amount.toLocaleString('en-IN') }}
+                      {{ je.unallocated_amount.toLocaleString('en-IN') }}
                     </td>
                     <td class="px-4 py-3 text-right">
                       <input
