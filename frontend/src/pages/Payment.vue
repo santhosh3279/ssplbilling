@@ -57,25 +57,25 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-6 py-4 w-40">Party Type</th>
-                <th class="px-6 py-4">Party Name</th>
-                <th class="px-6 py-4">
+                <th class="px-4 py-2 w-40">Party Type</th>
+                <th class="px-4 py-2">Party Name</th>
+                <th class="px-4 py-2">
                   {{ activeTab === 'Payment' ? 'Account Paid To (Party)' : 'Account Received From (Party)' }}
                 </th>
-                <th class="px-6 py-4">
+                <th class="px-4 py-2">
                   {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
                 </th>
-                <th class="px-6 py-4 text-right w-64">Amount (₹)</th>
+                <th class="px-6 py-2 text-right w-64">Amount (₹)</th>
               </tr>
             </thead>
             <tbody>
               <tr class="divide-x divide-[var(--color-border)]">
                 <!-- Party Type -->
-                <td class="px-4 py-3 bg-[var(--color-surface-raised)]/30">
+                <td class="px-2 py-1.5 bg-[var(--color-surface-raised)]/30">
                   <select
                     v-model="form.party_type"
                     disabled
-                    class="w-full bg-transparent text-sm font-bold focus:outline-none transition-all cursor-not-allowed opacity-70"
+                    class="w-full bg-transparent text-lg font-bold focus:outline-none transition-all cursor-not-allowed opacity-70"
                   >
                     <option value="Customer">Customer</option>
                     <option value="Supplier">Supplier</option>
@@ -84,14 +84,14 @@
                 </td>
 
                 <!-- Party Name -->
-                <td class="px-4 py-3 group hover:bg-[var(--color-midlight)]/20 transition-colors">
+                <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors">
                   <div class="relative">
                     <input
                       v-model="partyQuery"
                       @click="openSearch('party')"
                       @keydown.enter="openSearch('party')"
                       readonly
-                      class="w-full cursor-pointer bg-transparent text-sm font-black focus:outline-none"
+                      class="w-full cursor-pointer bg-transparent text-xl font-black focus:outline-none"
                       :placeholder="'Search Party...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
@@ -99,24 +99,24 @@
                 </td>
 
                 <!-- Party Account -->
-                <td class="px-4 py-3 bg-[var(--color-surface-raised)]/10">
+                <td class="px-2 py-1.5 bg-[var(--color-surface-raised)]/10">
                   <input
                     v-model="accountQuery"
                     readonly
-                    class="w-full cursor-not-allowed bg-transparent text-sm font-bold opacity-60 focus:outline-none"
+                    class="w-full cursor-not-allowed bg-transparent text-lg font-bold opacity-60 focus:outline-none"
                     placeholder="Party Account..."
                   />
                 </td>
 
                 <!-- Bank/Cash Account -->
-                <td class="px-4 py-3 group hover:bg-[var(--color-midlight)]/20 transition-colors">
+                <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors">
                   <div class="relative">
                     <input
                       v-model="mopAccountQuery"
                       @click="openSearch('mop')"
                       @keydown.enter="openSearch('mop')"
                       readonly
-                      class="w-full cursor-pointer bg-transparent text-sm font-black focus:outline-none"
+                      class="w-full cursor-pointer bg-transparent text-xl font-black focus:outline-none"
                       placeholder="Select Account..."
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
@@ -124,12 +124,12 @@
                 </td>
 
                 <!-- Amount -->
-                <td class="px-6 py-3 bg-[var(--color-highlight)]/5">
+                <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
                   <input
                     v-model.number="form.amount"
                     type="number"
                     step="0.01"
-                    class="w-full bg-transparent text-3xl font-black text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="w-full bg-transparent text-4xl font-black text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0.00"
                   />
                 </td>
