@@ -344,185 +344,163 @@
           </button>
         </div>
         
-        <div class="max-h-[60vh] overflow-y-auto pr-2 space-y-8 custom-scrollbar">
-          <!-- Outstanding Invoices -->
-          <div v-if="filteredInvoices.length || (!filteredPayments.length && !filteredJournals.length && !loadingInvoices)">
-            <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
-              <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
-              Outstanding Invoices / Returns
-            </h3>
-            <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
-              <table class="w-full text-left">
-                <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                  <tr class="text-3xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
-                    <th class="px-4 py-3">Voucher No</th>
-                    <th class="px-4 py-3">Inv Type</th>
-                    <th class="px-4 py-3">Date</th>
-                    <th class="px-4 py-3 text-center">Dir</th>
-                    <th class="px-4 py-3 text-right">Outstanding</th>
-                    <th class="px-4 py-3 text-right">Allocate</th>
-                    <th class="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-[var(--color-border)]">
-                  <tr v-if="loadingInvoices">
-                    <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
-                  </tr>
-                  <tr v-else-if="!filteredInvoices.length">
-                    <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding items found.</td>
-                  </tr>
-                  <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-3xl font-normal">
-                      {{ inv.name }}
-                    </td>
-                    <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
-                    <td class="px-4 py-3 text-3xl">{{ inv.posting_date }}</td>
-                    <td class="px-4 py-3 text-center">
-                      <span
-                        class="inline-block rounded px-2 py-0.5 text-2xl font-normal uppercase"
-                        :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
-                      >{{ inv.direction }}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right font-mono text-3xl font-normal" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                      {{ inv.outstanding_amount.toLocaleString('en-IN') }}
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <input
-                        v-model.number="modalAmounts[inv.name]"
-                        type="number" step="0.01" min="0"
-                        :max="Math.abs(inv.outstanding_amount)"
-                        :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
-                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
-                      />
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <button
-                        @click="addEntryToAllocation({ reference_doctype: inv.doctype, reference_name: inv.name, total_amount: inv.grand_total, outstanding_amount: inv.outstanding_amount }, inv.name)"
-                        :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
-                        class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
-                        :class="allocationRefs.find(r => r.reference_name === inv.name)
-                          ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
-                          : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
-                      >{{ allocationRefs.find(r => r.reference_name === inv.name) ? '✓ Added' : '+ Add' }}</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar border border-[var(--color-border)] rounded-2xl bg-[var(--color-surface-raised)]/30">
+          <table class="w-full text-left">
+            <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] sticky top-0 z-10">
+              <tr class="text-3xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-4 py-3">Voucher No</th>
+                <th class="px-4 py-3">Type</th>
+                <th class="px-4 py-3">Date</th>
+                <th class="px-4 py-3 text-center">Dir/Mode</th>
+                <th class="px-4 py-3 text-right">Outstanding/Unallocated</th>
+                <th class="px-4 py-3 text-right">Allocate</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--color-border)]">
+              <!-- Loading State -->
+              <tr v-if="loadingInvoices">
+                <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
+              </tr>
 
-          <!-- Unlinked Payments -->
-          <div v-if="filteredPayments.length">
-            <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
-              <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
-              Unlinked Payments (Advances)
-            </h3>
-            <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
-              <table class="w-full text-left">
-                <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                  <tr class="text-3xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
-                    <th class="px-4 py-3">Payment No</th>
-                    <th class="px-4 py-3">Type</th>
-                    <th class="px-4 py-3">Date</th>
-                    <th class="px-4 py-3">Mode</th>
-                    <th class="px-4 py-3 text-right">Unallocated</th>
-                    <th class="px-4 py-3 text-right">Allocate</th>
-                    <th class="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-[var(--color-border)]">
-                  <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-3xl font-normal">{{ pe.name }}</td>
-                    <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Payment Entry</td>
-                    <td class="px-4 py-3 text-3xl">{{ pe.posting_date }}</td>
-                    <td class="px-4 py-3 text-3xl">{{ pe.mode_of_payment }}</td>
-                    <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
-                    <td class="px-4 py-3 text-right">
-                      <input
-                        v-model.number="modalAmounts[pe.name]"
-                        type="number" step="0.01" min="0"
-                        :max="Math.abs(pe.unallocated_amount)"
-                        :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
-                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
-                      />
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <button
-                        @click="addEntryToAllocation({ reference_doctype: 'Payment Entry', reference_name: pe.name, total_amount: pe.unallocated_amount, outstanding_amount: pe.unallocated_amount }, pe.name)"
-                        :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
-                        class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
-                        :class="allocationRefs.find(r => r.reference_name === pe.name)
-                          ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
-                          : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
-                      >{{ allocationRefs.find(r => r.reference_name === pe.name) ? '✓ Added' : '+ Add' }}</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+              <!-- No Items State -->
+              <tr v-else-if="!filteredInvoices.length && !filteredPayments.length && !filteredJournals.length">
+                <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding or unlinked items found.</td>
+              </tr>
 
-          <!-- Unlinked Journal Entries -->
-          <div v-if="filteredJournals.length">
-            <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
-              <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
-              Unlinked Journal Entries
-            </h3>
-            <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
-              <table class="w-full text-left">
-                <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                  <tr class="text-3xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
-                    <th class="px-4 py-3">Voucher No</th>
-                    <th class="px-4 py-3">Type</th>
-                    <th class="px-4 py-3">Date</th>
-                    <th class="px-4 py-3 text-center">Dir</th>
-                    <th class="px-4 py-3 text-right">Amount</th>
-                    <th class="px-4 py-3 text-right">Allocate</th>
-                    <th class="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-[var(--color-border)]">
-                  <tr v-for="je in filteredJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-3xl font-normal">
-                      {{ je.name }}
-                      <div class="text-2xl font-normal text-[var(--color-text-muted)] truncate max-w-[160px]">{{ je.remarks }}</div>
-                    </td>
-                    <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Journal Entry</td>
-                    <td class="px-4 py-3 text-3xl">{{ je.posting_date }}</td>
-                    <td class="px-4 py-3 text-center">
-                      <span
-                        class="inline-block rounded px-2 py-0.5 text-2xl font-normal uppercase"
-                        :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
-                      >{{ je.direction }}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right font-mono text-3xl font-normal"
-                        :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                      {{ je.unallocated_amount.toLocaleString('en-IN') }}
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <input
-                        v-model.number="modalAmounts[je.reference_row]"
-                        type="number" step="0.01" min="0"
-                        :max="Math.abs(je.unallocated_amount)"
-                        :disabled="!!allocationRefs.find(r => r.reference_name === je.name && r._row === je.reference_row)"
-                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
-                      />
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <button
-                        @click="addEntryToAllocation({ reference_doctype: 'Journal Entry', reference_name: je.name, total_amount: je.unallocated_amount, outstanding_amount: je.unallocated_amount, _row: je.reference_row }, je.reference_row)"
-                        :disabled="!!allocationRefs.find(r => r._row === je.reference_row)"
-                        class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
-                        :class="allocationRefs.find(r => r._row === je.reference_row)
-                          ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
-                          : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
-                      >{{ allocationRefs.find(r => r._row === je.reference_row) ? '✓ Added' : '+ Add' }}</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+              <!-- Outstanding Invoices Section -->
+              <template v-if="filteredInvoices.length">
+                <tr class="bg-[var(--color-danger)]/5">
+                  <td colspan="7" class="px-4 py-2">
+                    <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-danger)] flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
+                      Outstanding Invoices / Returns
+                    </h3>
+                  </td>
+                </tr>
+                <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                  <td class="px-4 py-3 font-mono text-3xl font-normal">{{ inv.name }}</td>
+                  <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
+                  <td class="px-4 py-3 text-3xl">{{ inv.posting_date }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <span
+                      class="inline-block rounded px-2 py-0.5 text-2xl font-normal uppercase"
+                      :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
+                    >{{ inv.direction }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-mono text-3xl font-normal" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                    {{ inv.outstanding_amount.toLocaleString('en-IN') }}
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <input
+                      v-model.number="modalAmounts[inv.name]"
+                      type="number" step="0.01" min="0"
+                      :max="Math.abs(inv.outstanding_amount)"
+                      :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
+                      class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                    />
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      @click="addEntryToAllocation({ reference_doctype: inv.doctype, reference_name: inv.name, total_amount: inv.grand_total, outstanding_amount: inv.outstanding_amount }, inv.name)"
+                      :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
+                      class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
+                      :class="allocationRefs.find(r => r.reference_name === inv.name)
+                        ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
+                        : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
+                    >{{ allocationRefs.find(r => r.reference_name === inv.name) ? '✓ Added' : '+ Add' }}</button>
+                  </td>
+                </tr>
+              </template>
+
+              <!-- Unlinked Payments Section -->
+              <template v-if="filteredPayments.length">
+                <tr class="bg-[var(--color-success)]/5">
+                  <td colspan="7" class="px-4 py-2">
+                    <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-success)] flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
+                      Unlinked Payments (Advances)
+                    </h3>
+                  </td>
+                </tr>
+                <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                  <td class="px-4 py-3 font-mono text-3xl font-normal">{{ pe.name }}</td>
+                  <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Payment Entry</td>
+                  <td class="px-4 py-3 text-3xl">{{ pe.posting_date }}</td>
+                  <td class="px-4 py-3 text-center text-3xl">{{ pe.mode_of_payment }}</td>
+                  <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
+                  <td class="px-4 py-3 text-right">
+                    <input
+                      v-model.number="modalAmounts[pe.name]"
+                      type="number" step="0.01" min="0"
+                      :max="Math.abs(pe.unallocated_amount)"
+                      :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
+                      class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                    />
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      @click="addEntryToAllocation({ reference_doctype: 'Payment Entry', reference_name: pe.name, total_amount: pe.unallocated_amount, outstanding_amount: pe.unallocated_amount }, pe.name)"
+                      :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
+                      class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
+                      :class="allocationRefs.find(r => r.reference_name === pe.name)
+                        ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
+                        : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
+                    >{{ allocationRefs.find(r => r.reference_name === pe.name) ? '✓ Added' : '+ Add' }}</button>
+                  </td>
+                </tr>
+              </template>
+
+              <!-- Unlinked Journal Entries Section -->
+              <template v-if="filteredJournals.length">
+                <tr class="bg-[var(--color-info)]/5">
+                  <td colspan="7" class="px-4 py-2">
+                    <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-info)] flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
+                      Unlinked Journal Entries
+                    </h3>
+                  </td>
+                </tr>
+                <tr v-for="je in filteredJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                  <td class="px-4 py-3 font-mono text-3xl font-normal">
+                    {{ je.name }}
+                    <div class="text-2xl font-normal text-[var(--color-text-muted)] truncate max-w-[160px]">{{ je.remarks }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Journal Entry</td>
+                  <td class="px-4 py-3 text-3xl">{{ je.posting_date }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <span
+                      class="inline-block rounded px-2 py-0.5 text-2xl font-normal uppercase"
+                      :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
+                    >{{ je.direction }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-mono text-3xl font-normal"
+                      :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                    {{ je.unallocated_amount.toLocaleString('en-IN') }}
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <input
+                      v-model.number="modalAmounts[je.reference_row]"
+                      type="number" step="0.01" min="0"
+                      :max="Math.abs(je.unallocated_amount)"
+                      :disabled="!!allocationRefs.find(r => r.reference_name === je.name && r._row === je.reference_row)"
+                      class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                    />
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      @click="addEntryToAllocation({ reference_doctype: 'Journal Entry', reference_name: je.name, total_amount: je.unallocated_amount, outstanding_amount: je.unallocated_amount, _row: je.reference_row }, je.reference_row)"
+                      :disabled="!!allocationRefs.find(r => r._row === je.reference_row)"
+                      class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
+                      :class="allocationRefs.find(r => r._row === je.reference_row)
+                        ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
+                        : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
+                    >{{ allocationRefs.find(r => r._row === je.reference_row) ? '✓ Added' : '+ Add' }}</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
         </div>
         
         <div class="mt-8 flex justify-end">
