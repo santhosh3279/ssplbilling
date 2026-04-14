@@ -38,18 +38,20 @@ def get_unlinked_entries(party_type, party):
 	je_entries = frappe.db.sql(
 		"""
 		SELECT
-			jea.parent                                          AS name,
-			jea.name                                            AS reference_row,
+			jea.parent                                                        AS name,
+			jea.name                                                          AS reference_row,
 			je.posting_date,
-			IFNULL(je.cheque_no, '')                            AS reference_no,
-			IFNULL(je.user_remark, '')                          AS remarks,
-			(jea.credit_in_account_currency - jea.debit_in_account_currency) AS unallocated_amount
+			IFNULL(je.cheque_no, '')                                          AS reference_no,
+			IFNULL(je.user_remark, '')                                        AS remarks,
+			ABS(jea.credit_in_account_currency - jea.debit_in_account_currency) AS unallocated_amount,
+			CASE WHEN jea.credit_in_account_currency > jea.debit_in_account_currency
+			     THEN 'Cr' ELSE 'Dr' END                                      AS direction
 		FROM `tabJournal Entry Account` jea
 		JOIN `tabJournal Entry`  je  ON je.name  = jea.parent
 		JOIN `tabAccount`        acc ON acc.name = jea.account
 		WHERE je.docstatus = 1
 			AND jea.party_type = %s AND jea.party = %s
-			AND jea.credit_in_account_currency > jea.debit_in_account_currency
+			AND ABS(jea.credit_in_account_currency - jea.debit_in_account_currency) > 0.005
 			AND (jea.reference_name IS NULL OR jea.reference_name = '')
 			AND acc.account_type = %s
 			AND je.company = %s

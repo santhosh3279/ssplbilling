@@ -284,7 +284,8 @@
                   <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-6 py-3">Voucher No</th>
                     <th class="px-4 py-3">Date</th>
-                    <th class="px-6 py-3 text-right">Unallocated</th>
+                    <th class="px-4 py-3 text-center">Type</th>
+                    <th class="px-6 py-3 text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
@@ -294,7 +295,16 @@
                       <div class="text-[9px] font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ je.remarks }}</div>
                     </td>
                     <td class="px-4 py-4 text-sm">{{ je.posting_date }}</td>
-                    <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-info)]">₹{{ je.unallocated_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-4 text-center">
+                      <span
+                        class="inline-block rounded px-2 py-0.5 text-[10px] font-black uppercase"
+                        :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
+                      >{{ je.direction }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right font-mono text-sm font-black"
+                        :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                      ₹{{ je.unallocated_amount.toLocaleString('en-IN') }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
