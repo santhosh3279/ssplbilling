@@ -173,14 +173,14 @@
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
                 <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="hover:bg-[var(--color-midlight)]/30 transition-colors">
-                  <td class="px-4 py-3 font-mono text-2xl font-black">{{ ref.reference_name }}</td>
-                  <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</td>
-                  <td class="px-4 py-3 text-right text-2xl text-[var(--color-text-muted)]">₹{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
+                  <td class="px-4 py-3 font-mono text-3xl font-black">{{ ref.reference_name }}</td>
+                  <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</td>
+                  <td class="px-4 py-3 text-right text-3xl text-[var(--color-text-muted)]">₹{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
                   <td class="px-4 py-3 text-right">
                     <input
                       v-model.number="ref.allocated_amount"
                       type="number" step="0.01" min="0"
-                      class="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-2xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                      class="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-3xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all"
                     />
                   </td>
                   <td class="px-4 py-3 text-right">
@@ -372,18 +372,18 @@
                     <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding items found.</td>
                   </tr>
                   <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-2xl font-bold">
+                    <td class="px-4 py-3 font-mono text-3xl font-bold">
                       {{ inv.name }}
                     </td>
-                    <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
-                    <td class="px-4 py-3 text-2xl">{{ inv.posting_date }}</td>
+                    <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
+                    <td class="px-4 py-3 text-3xl">{{ inv.posting_date }}</td>
                     <td class="px-4 py-3 text-center">
                       <span
-                        class="inline-block rounded px-2 py-0.5 text-lg font-black uppercase"
+                        class="inline-block rounded px-2 py-0.5 text-2xl font-black uppercase"
                         :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
                       >{{ inv.direction }}</span>
                     </td>
-                    <td class="px-4 py-3 text-right font-mono text-2xl font-black" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                    <td class="px-4 py-3 text-right font-mono text-3xl font-black" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                       ₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}
                     </td>
                     <td class="px-4 py-3 text-right">
@@ -392,14 +392,14 @@
                         type="number" step="0.01" min="0"
                         :max="Math.abs(inv.outstanding_amount)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
-                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-2xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
                       />
                     </td>
                     <td class="px-4 py-3 text-right">
                       <button
                         @click="addEntryToAllocation({ reference_doctype: inv.doctype, reference_name: inv.name, total_amount: inv.grand_total, outstanding_amount: inv.outstanding_amount }, inv.name)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
-                        class="rounded-lg px-3 py-1 text-lg font-black uppercase transition-all whitespace-nowrap"
+                        class="rounded-lg px-3 py-1 text-2xl font-black uppercase transition-all whitespace-nowrap"
                         :class="allocationRefs.find(r => r.reference_name === inv.name)
                           ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
                           : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
@@ -432,25 +432,25 @@
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-2xl font-bold">{{ pe.name }}</td>
-                    <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Payment Entry</td>
-                    <td class="px-4 py-3 text-2xl">{{ pe.posting_date }}</td>
-                    <td class="px-4 py-3 text-2xl">{{ pe.mode_of_payment }}</td>
-                    <td class="px-4 py-3 text-right font-mono text-2xl font-black text-[var(--color-success)]">₹{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-3 font-mono text-3xl font-bold">{{ pe.name }}</td>
+                    <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Payment Entry</td>
+                    <td class="px-4 py-3 text-3xl">{{ pe.posting_date }}</td>
+                    <td class="px-4 py-3 text-3xl">{{ pe.mode_of_payment }}</td>
+                    <td class="px-4 py-3 text-right font-mono text-3xl font-black text-[var(--color-success)]">₹{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
                     <td class="px-4 py-3 text-right">
                       <input
                         v-model.number="modalAmounts[pe.name]"
                         type="number" step="0.01" min="0"
                         :max="Math.abs(pe.unallocated_amount)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
-                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-2xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
                       />
                     </td>
                     <td class="px-4 py-3 text-right">
                       <button
                         @click="addEntryToAllocation({ reference_doctype: 'Payment Entry', reference_name: pe.name, total_amount: pe.unallocated_amount, outstanding_amount: pe.unallocated_amount }, pe.name)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
-                        class="rounded-lg px-3 py-1 text-lg font-black uppercase transition-all whitespace-nowrap"
+                        class="rounded-lg px-3 py-1 text-2xl font-black uppercase transition-all whitespace-nowrap"
                         :class="allocationRefs.find(r => r.reference_name === pe.name)
                           ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
                           : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
@@ -483,19 +483,19 @@
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-for="je in filteredJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-2xl font-bold">
+                    <td class="px-4 py-3 font-mono text-3xl font-bold">
                       {{ je.name }}
-                      <div class="text-lg font-normal text-[var(--color-text-muted)] truncate max-w-[160px]">{{ je.remarks }}</div>
+                      <div class="text-2xl font-normal text-[var(--color-text-muted)] truncate max-w-[160px]">{{ je.remarks }}</div>
                     </td>
-                    <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Journal Entry</td>
-                    <td class="px-4 py-3 text-2xl">{{ je.posting_date }}</td>
+                    <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Journal Entry</td>
+                    <td class="px-4 py-3 text-3xl">{{ je.posting_date }}</td>
                     <td class="px-4 py-3 text-center">
                       <span
-                        class="inline-block rounded px-2 py-0.5 text-lg font-black uppercase"
+                        class="inline-block rounded px-2 py-0.5 text-2xl font-black uppercase"
                         :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
                       >{{ je.direction }}</span>
                     </td>
-                    <td class="px-4 py-3 text-right font-mono text-2xl font-black"
+                    <td class="px-4 py-3 text-right font-mono text-3xl font-black"
                         :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                       ₹{{ je.unallocated_amount.toLocaleString('en-IN') }}
                     </td>
@@ -505,14 +505,14 @@
                         type="number" step="0.01" min="0"
                         :max="Math.abs(je.unallocated_amount)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === je.name && r._row === je.reference_row)"
-                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-2xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                        class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
                       />
                     </td>
                     <td class="px-4 py-3 text-right">
                       <button
                         @click="addEntryToAllocation({ reference_doctype: 'Journal Entry', reference_name: je.name, total_amount: je.unallocated_amount, outstanding_amount: je.unallocated_amount, _row: je.reference_row }, je.reference_row)"
                         :disabled="!!allocationRefs.find(r => r._row === je.reference_row)"
-                        class="rounded-lg px-3 py-1 text-lg font-black uppercase transition-all whitespace-nowrap"
+                        class="rounded-lg px-3 py-1 text-2xl font-black uppercase transition-all whitespace-nowrap"
                         :class="allocationRefs.find(r => r._row === je.reference_row)
                           ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
                           : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
