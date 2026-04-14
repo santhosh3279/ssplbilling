@@ -78,34 +78,34 @@ def get_outstanding_docs(party_type, party):
 	company = _get_company()
 	all_docs = []
 
-	# Fetch Sales Invoices
+	# Fetch Sales Invoices where this party is the Customer
 	si_docs = frappe.db.sql(
 		"""
 		SELECT name, posting_date, grand_total, outstanding_amount,
 		       customer_name AS party_name, is_return, 'Sales Invoice' as doctype
 		FROM `tabSales Invoice`
-		WHERE docstatus = 1 AND (customer = %s OR supplier = %s)
+		WHERE docstatus = 1 AND customer = %s
 		      AND outstanding_amount > 0.005 AND company = %s
 		ORDER BY posting_date ASC
 		""",
-		(party, party, company),
+		(party, company),
 		as_dict=True,
 	)
 	for d in si_docs:
 		d["direction"] = "Cr" if d.get("is_return") else "Dr"
 		all_docs.append(dict(d))
 
-	# Fetch Purchase Invoices
+	# Fetch Purchase Invoices where this party is the Supplier
 	pi_docs = frappe.db.sql(
 		"""
 		SELECT name, posting_date, grand_total, outstanding_amount,
 		       supplier_name AS party_name, is_return, 'Purchase Invoice' as doctype
 		FROM `tabPurchase Invoice`
-		WHERE docstatus = 1 AND (supplier = %s OR customer = %s)
+		WHERE docstatus = 1 AND supplier = %s
 		      AND outstanding_amount > 0.005 AND company = %s
 		ORDER BY posting_date ASC
 		""",
-		(party, party, company),
+		(party, company),
 		as_dict=True,
 	)
 	for d in pi_docs:
