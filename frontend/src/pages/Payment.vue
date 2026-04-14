@@ -397,7 +397,8 @@
                       type="number" step="0.01" min="0"
                       :max="Math.abs(inv.outstanding_amount)"
                       :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
-                      class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      class="allocate-input w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      @keydown.enter="focusNextAllocate($event)"
                     />
                   </td>
                   <td class="px-4 py-3 text-right">
@@ -435,7 +436,8 @@
                       type="number" step="0.01" min="0"
                       :max="Math.abs(pe.unallocated_amount)"
                       :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
-                      class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      class="allocate-input w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      @keydown.enter="focusNextAllocate($event)"
                     />
                   </td>
                   <td class="px-4 py-3 text-right">
@@ -484,7 +486,8 @@
                       type="number" step="0.01" min="0"
                       :max="Math.abs(je.unallocated_amount)"
                       :disabled="!!allocationRefs.find(r => r.reference_name === je.name && r._row === je.reference_row)"
-                      class="w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      class="allocate-input w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      @keydown.enter="focusNextAllocate($event)"
                     />
                   </td>
                   <td class="px-4 py-3 text-right">
@@ -735,6 +738,30 @@ function handleAmountEnter() {
   }
 }
 
+function focusNextAllocate(event) {
+  const currentInput = event.target;
+  const inputs = Array.from(document.querySelectorAll('.allocate-input:not(:disabled)'));
+  const index = inputs.indexOf(currentInput);
+  if (index >= 0 && index < inputs.length - 1) {
+    inputs[index + 1].focus();
+    inputs[index + 1].select();
+  }
+}
+
+watch(showInvoicesModal, (val) => {
+  if (val) {
+    nextTick(() => {
+      setTimeout(() => {
+        const firstInput = document.querySelector('.allocate-input:not(:disabled)');
+        if (firstInput) {
+          firstInput.focus();
+          firstInput.select();
+        }
+      }, 150);
+    });
+  }
+});
+
 async function fetchInvoices(autoShowOnlyIfItems = false) {
   if (!form.party) return
   loadingInvoices.value = true
@@ -764,10 +791,20 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
     unlinkedPayments.value = unlinkedRes.payment_entries || []
     unlinkedJournals.value = unlinkedRes.journal_entries || []
 
-    // Pre-fill modal amount inputs with full outstanding/unallocated amounts (use absolute for returns)
-    invoices.value.forEach(inv => { modalAmounts[inv.name] = Math.abs(inv.outstanding_amount) })
-    unlinkedPayments.value.forEach(pe => { modalAmounts[pe.name] = Math.abs(pe.unallocated_amount) })
-    unlinkedJournals.value.forEach(je => { modalAmounts[je.reference_row] = Math.abs(je.unallocated_amount) })
+    const baseAmount = form.amount || 0;
+    // Pre-fill logic: if form.amount is set, use it (capped by actual outstanding), otherwise use full outstanding
+    invoices.value.forEach(inv => { 
+      const out = Math.abs(inv.outstanding_amount);
+      modalAmounts[inv.name] = baseAmount > 0 ? Math.min(baseAmount, out) : out;
+    })
+    unlinkedPayments.value.forEach(pe => { 
+      const out = Math.abs(pe.unallocated_amount);
+      modalAmounts[pe.name] = baseAmount > 0 ? Math.min(baseAmount, out) : out;
+    })
+    unlinkedJournals.value.forEach(je => { 
+      const out = Math.abs(je.unallocated_amount);
+      modalAmounts[je.reference_row] = baseAmount > 0 ? Math.min(baseAmount, out) : out;
+    })
 
     if (autoShowOnlyIfItems) {
       const hasItems = invoices.value.length > 0 || unlinkedPayments.value.length > 0 || unlinkedJournals.value.length > 0
