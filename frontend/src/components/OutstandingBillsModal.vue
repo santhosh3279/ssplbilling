@@ -1,10 +1,28 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div class="w-full max-w-[90vw] rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
+    <div class="w-full max-w-[95vw] rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)] flex flex-col max-h-[95vh]">
       <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-10">
           <h2 class="text-2xl font-normal uppercase tracking-tight">Outstanding & Unlinked Items</h2>
           
+          <!-- Summary Display -->
+          <div class="flex items-center gap-8 bg-[var(--color-surface-raised)] px-6 py-2.5 rounded-2xl border border-[var(--color-border)] shadow-inner">
+            <div class="flex flex-col">
+              <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Entered Amount</span>
+              <span class="text-3xl font-black text-[var(--color-text)] font-mono">₹{{ fmt(enteredAmount) }}</span>
+            </div>
+            <div class="h-8 w-px bg-[var(--color-border)]"></div>
+            <div class="flex flex-col">
+              <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Total Allocated</span>
+              <span class="text-3xl font-black text-[var(--color-success)] font-mono">₹{{ fmt(totalAllocated) }}</span>
+            </div>
+            <div class="h-8 w-px bg-[var(--color-border)]"></div>
+            <div class="flex flex-col">
+              <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Remaining Balance</span>
+              <span class="text-3xl font-black font-mono" :class="remainingBalance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-info)]'">₹{{ fmt(remainingBalance) }}</span>
+            </div>
+          </div>
+
           <!-- Direction Filter -->
           <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5 shadow-sm">
             <button
@@ -20,22 +38,22 @@
             </button>
           </div>
         </div>
-        <button @click="$emit('close')" class="h-8 w-8 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center">
+        <button @click="$emit('close')" class="h-10 w-10 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center text-2xl">
           ✕
         </button>
       </div>
       
-      <div class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar border border-[var(--color-border)] rounded-2xl bg-[var(--color-surface-raised)]/30">
-        <table class="w-full text-left">
+      <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar border border-[var(--color-border)] rounded-2xl bg-[var(--color-surface-raised)]/30">
+        <table class="w-full text-left border-separate border-spacing-0">
           <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] sticky top-0 z-10">
-            <tr class="text-3xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
-              <th class="px-4 py-3">Voucher No</th>
-              <th class="px-4 py-3">Type</th>
-              <th class="px-4 py-3">Date</th>
-              <th class="px-4 py-3 text-center">Dir/Mode</th>
-              <th class="px-4 py-3 text-right">Outstanding/Unallocated</th>
-              <th class="px-4 py-3 text-right">Allocate</th>
-              <th class="px-4 py-3"></th>
+            <tr class="text-2xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
+              <th class="px-4 py-4 border-b border-[var(--color-border)]">Voucher No</th>
+              <th class="px-4 py-4 border-b border-[var(--color-border)]">Type</th>
+              <th class="px-4 py-4 border-b border-[var(--color-border)]">Date</th>
+              <th class="px-4 py-4 border-b border-[var(--color-border)] text-center">Dir/Mode</th>
+              <th class="px-4 py-4 border-b border-[var(--color-border)] text-right">Outstanding</th>
+              <th class="px-4 py-4 border-b border-[var(--color-border)] text-right w-56">Allocate</th>
+              <th class="px-4 py-4 border-b border-[var(--color-border)] text-right w-48">Balance</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--color-border)]">
@@ -51,9 +69,9 @@
 
             <!-- Outstanding Invoices Section -->
             <template v-if="filteredInvoices.length">
-              <tr class="bg-[var(--color-danger)]/5">
-                <td colspan="7" class="px-4 py-2">
-                  <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-danger)] flex items-center gap-2">
+              <tr class="bg-[var(--color-danger)]/5 sticky top-[56px] z-[5]">
+                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-danger)]/10">
+                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-danger)] flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
                     Outstanding Invoices / Returns
                   </h3>
@@ -61,45 +79,38 @@
               </tr>
               <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                 <td class="px-4 py-3 font-mono text-3xl font-normal">{{ inv.name }}</td>
-                <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
-                <td class="px-4 py-3 text-3xl">{{ inv.posting_date }}</td>
+                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
+                <td class="px-4 py-3 text-2xl">{{ inv.posting_date }}</td>
                 <td class="px-4 py-3 text-center">
                   <span
-                    class="inline-block rounded px-2 py-0.5 text-2xl font-normal uppercase"
+                    class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
                     :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
                   >{{ inv.direction }}</span>
                 </td>
                 <td class="px-4 py-3 text-right font-mono text-3xl font-normal" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                  {{ inv.outstanding_amount.toLocaleString('en-IN') }}
+                  {{ fmt(inv.outstanding_amount) }}
                 </td>
                 <td class="px-4 py-3 text-right">
                   <input
                     v-model.number="localModalAmounts[inv.name]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(inv.outstanding_amount)"
-                    :disabled="isAlreadyAllocated(inv.name)"
-                    class="allocate-input w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all"
                     @keydown.enter="focusNextAllocate($event)"
+                    @input="onAllocationChange(inv, 'invoice')"
                   />
                 </td>
-                <td class="px-4 py-3 text-right">
-                  <button
-                    @click="addAllocation(inv, 'invoice')"
-                    :disabled="isAlreadyAllocated(inv.name)"
-                    class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
-                    :class="isAlreadyAllocated(inv.name)
-                      ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
-                      : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
-                  >{{ isAlreadyAllocated(inv.name) ? '✓ Added' : '+ Add' }}</button>
+                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
+                  {{ fmt(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) }}
                 </td>
               </tr>
             </template>
 
             <!-- Unlinked Payments Section -->
             <template v-if="filteredPayments.length">
-              <tr class="bg-[var(--color-success)]/5">
-                <td colspan="7" class="px-4 py-2">
-                  <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-success)] flex items-center gap-2">
+              <tr class="bg-[var(--color-success)]/5 sticky top-[56px] z-[5]">
+                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-success)]/10">
+                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-success)] flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
                     Unlinked Payments (Advances)
                   </h3>
@@ -107,38 +118,31 @@
               </tr>
               <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                 <td class="px-4 py-3 font-mono text-3xl font-normal">{{ pe.name }}</td>
-                <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Payment Entry</td>
-                <td class="px-4 py-3 text-3xl">{{ pe.posting_date }}</td>
-                <td class="px-4 py-3 text-center text-3xl">{{ pe.mode_of_payment }}</td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
+                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Payment Entry</td>
+                <td class="px-4 py-3 text-2xl">{{ pe.posting_date }}</td>
+                <td class="px-4 py-3 text-center text-2xl">{{ pe.mode_of_payment }}</td>
+                <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">{{ fmt(pe.unallocated_amount) }}</td>
                 <td class="px-4 py-3 text-right">
                   <input
                     v-model.number="localModalAmounts[pe.name]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(pe.unallocated_amount)"
-                    :disabled="isAlreadyAllocated(pe.name)"
-                    class="allocate-input w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all"
                     @keydown.enter="focusNextAllocate($event)"
+                    @input="onAllocationChange(pe, 'payment')"
                   />
                 </td>
-                <td class="px-4 py-3 text-right">
-                  <button
-                    @click="addAllocation(pe, 'payment')"
-                    :disabled="isAlreadyAllocated(pe.name)"
-                    class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
-                    :class="isAlreadyAllocated(pe.name)
-                      ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
-                      : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
-                  >{{ isAlreadyAllocated(pe.name) ? '✓ Added' : '+ Add' }}</button>
+                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
+                  {{ fmt(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) }}
                 </td>
               </tr>
             </template>
 
             <!-- Unlinked Journal Entries Section -->
             <template v-if="filteredJournals.length">
-              <tr class="bg-[var(--color-info)]/5">
-                <td colspan="7" class="px-4 py-2">
-                  <h3 class="text-[10px] font-normal uppercase tracking-widest text-[var(--color-info)] flex items-center gap-2">
+              <tr class="bg-[var(--color-info)]/5 sticky top-[56px] z-[5]">
+                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-info)]/10">
+                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-info)] flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
                     Unlinked Journal Entries
                   </h3>
@@ -147,39 +151,32 @@
               <tr v-for="je in filteredJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                 <td class="px-4 py-3 font-mono text-3xl font-normal">
                   {{ je.name }}
-                  <div class="text-2xl font-normal text-[var(--color-text-muted)] truncate max-w-[160px]">{{ je.remarks }}</div>
+                  <div class="text-xl font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ je.remarks }}</div>
                 </td>
-                <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">Journal Entry</td>
-                <td class="px-4 py-3 text-3xl">{{ je.posting_date }}</td>
+                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Journal Entry</td>
+                <td class="px-4 py-3 text-2xl">{{ je.posting_date }}</td>
                 <td class="px-4 py-3 text-center">
                   <span
-                    class="inline-block rounded px-2 py-0.5 text-2xl font-normal uppercase"
+                    class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
                     :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
                   >{{ je.direction }}</span>
                 </td>
                 <td class="px-4 py-3 text-right font-mono text-3xl font-normal"
                     :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                  {{ je.unallocated_amount.toLocaleString('en-IN') }}
+                  {{ fmt(je.unallocated_amount) }}
                 </td>
                 <td class="px-4 py-3 text-right">
                   <input
                     v-model.number="localModalAmounts[je.reference_row]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(je.unallocated_amount)"
-                    :disabled="isAlreadyAllocated(je.name, je.reference_row)"
-                    class="allocate-input w-44 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-3xl font-normal text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all"
                     @keydown.enter="focusNextAllocate($event)"
+                    @input="onAllocationChange(je, 'journal')"
                   />
                 </td>
-                <td class="px-4 py-3 text-right">
-                  <button
-                    @click="addAllocation(je, 'journal')"
-                    :disabled="isAlreadyAllocated(je.name, je.reference_row)"
-                    class="rounded-lg px-3 py-1 text-2xl font-normal uppercase transition-all whitespace-nowrap"
-                    :class="isAlreadyAllocated(je.name, je.reference_row)
-                      ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
-                      : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
-                  >{{ isAlreadyAllocated(je.name, je.reference_row) ? '✓ Added' : '+ Add' }}</button>
+                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
+                  {{ fmt(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) }}
                 </td>
               </tr>
             </template>
@@ -187,9 +184,12 @@
         </table>
       </div>
       
-      <div class="mt-8 flex justify-end">
-        <button @click="$emit('close')" class="rounded-xl bg-[var(--color-highlight)] px-8 py-2.5 text-base font-normal text-white hover:brightness-110 transition-all shadow-lg">
-          Close
+      <div class="mt-8 flex justify-end gap-6">
+        <button
+          @click="$emit('close')"
+          class="rounded-2xl bg-[var(--color-highlight)] px-12 py-4 text-2xl font-black uppercase tracking-widest text-white hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--color-highlight)]/20"
+        >
+          Confirm Adjustments
         </button>
       </div>
     </div>
@@ -202,6 +202,10 @@ import { ref, computed, watch, nextTick } from 'vue'
 const props = defineProps({
   show: Boolean,
   loading: Boolean,
+  enteredAmount: {
+    type: Number,
+    default: 0
+  },
   invoices: {
     type: Array,
     default: () => []
@@ -225,7 +229,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'add-allocation'])
+const emit = defineEmits(['close', 'update-allocations'])
 
 const filterDirection = ref('All')
 const localModalAmounts = ref({})
@@ -235,17 +239,12 @@ watch(() => props.modalAmounts, (newVal) => {
   localModalAmounts.value = { ...newVal }
 }, { immediate: true, deep: true })
 
-// Sync back to parent if needed (though we mostly use it for adding)
-watch(localModalAmounts, (newVal) => {
-  // We don't necessarily need to emit this back unless the parent needs real-time sync
-}, { deep: true })
-
 watch(() => props.show, (val) => {
   if (val) {
     filterDirection.value = props.activeTab === 'Receipt' ? 'Dr' : 'Cr'
     nextTick(() => {
       setTimeout(() => {
-        const firstInput = document.querySelector('.allocate-input:not(:disabled)')
+        const firstInput = document.querySelector('.allocate-input')
         if (firstInput) {
           firstInput.focus()
           firstInput.select()
@@ -253,6 +252,14 @@ watch(() => props.show, (val) => {
       }, 150)
     })
   }
+})
+
+const totalAllocated = computed(() => {
+  return Object.values(localModalAmounts.value).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)
+})
+
+const remainingBalance = computed(() => {
+  return props.enteredAmount - totalAllocated.value
 })
 
 const filteredJournals = computed(() => {
@@ -273,52 +280,45 @@ const filteredInvoices = computed(() => {
   return props.invoices.filter(i => i.direction === filterDirection.value)
 })
 
-function isAlreadyAllocated(name, row) {
-  if (row) {
-    return !!props.allocationRefs.find(r => r.reference_name === name && r._row === row)
-  }
-  return !!props.allocationRefs.find(r => r.reference_name === name)
+function onAllocationChange(item, type) {
+  // Emit all allocations that have a value > 0
+  const allInvoices = props.invoices.map(i => ({
+    reference_doctype: i.doctype,
+    reference_name: i.name,
+    total_amount: i.grand_total,
+    outstanding_amount: Math.abs(i.outstanding_amount),
+    allocated_amount: parseFloat(localModalAmounts.value[i.name]) || 0
+  }))
+
+  const allPayments = props.unlinkedPayments.map(p => ({
+    reference_doctype: 'Payment Entry',
+    reference_name: p.name,
+    total_amount: p.unallocated_amount,
+    outstanding_amount: Math.abs(p.unallocated_amount),
+    allocated_amount: parseFloat(localModalAmounts.value[p.name]) || 0
+  }))
+
+  const allJournals = props.unlinkedJournals.map(j => ({
+    reference_doctype: 'Journal Entry',
+    reference_name: j.name,
+    total_amount: j.unallocated_amount,
+    outstanding_amount: Math.abs(j.unallocated_amount),
+    allocated_amount: parseFloat(localModalAmounts.value[j.reference_row]) || 0,
+    _row: j.reference_row
+  }))
+
+  const allocations = [...allInvoices, ...allPayments, ...allJournals].filter(a => a.allocated_amount > 0)
+  
+  emit('update-allocations', allocations)
 }
 
-function addAllocation(item, type) {
-  let allocation = {}
-  let amountKey = ''
-
-  if (type === 'invoice') {
-    allocation = {
-      reference_doctype: item.doctype,
-      reference_name: item.name,
-      total_amount: item.grand_total,
-      outstanding_amount: item.outstanding_amount
-    }
-    amountKey = item.name
-  } else if (type === 'payment') {
-    allocation = {
-      reference_doctype: 'Payment Entry',
-      reference_name: item.name,
-      total_amount: item.unallocated_amount,
-      outstanding_amount: item.unallocated_amount
-    }
-    amountKey = item.name
-  } else if (type === 'journal') {
-    allocation = {
-      reference_doctype: 'Journal Entry',
-      reference_name: item.name,
-      total_amount: item.unallocated_amount,
-      outstanding_amount: item.unallocated_amount,
-      _row: item.reference_row
-    }
-    amountKey = item.reference_row
-  }
-
-  const allocated_amount = parseFloat(localModalAmounts.value[amountKey]) || Math.abs(allocation.outstanding_amount)
-  
-  emit('add-allocation', { ...allocation, allocated_amount }, amountKey)
+function fmt(val) {
+  return Math.abs(Number(val || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function focusNextAllocate(event) {
   const currentInput = event.target
-  const inputs = Array.from(document.querySelectorAll('.allocate-input:not(:disabled)'))
+  const inputs = Array.from(document.querySelectorAll('.allocate-input'))
   const index = inputs.indexOf(currentInput)
   if (index >= 0 && index < inputs.length - 1) {
     inputs[index + 1].focus()

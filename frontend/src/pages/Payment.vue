@@ -321,6 +321,7 @@
     <OutstandingBillsModal
       :show="showInvoicesModal"
       :loading="loadingInvoices"
+      :enteredAmount="form.amount"
       :invoices="invoices"
       :unlinkedPayments="unlinkedPayments"
       :unlinkedJournals="unlinkedJournals"
@@ -328,7 +329,7 @@
       :allocationRefs="allocationRefs"
       :modalAmounts="modalAmounts"
       @close="showInvoicesModal = false"
-      @add-allocation="addEntryToAllocation"
+      @update-allocations="updateAllocations"
     />
   </div>
 </template>
@@ -509,13 +510,8 @@ function handleSelect(item) {
   }
 }
 
-function addEntryToAllocation(allocationData, amountKey) {
-  const { _row, reference_name } = allocationData
-  const dupKey = _row ? '_row' : 'reference_name'
-  const dupVal = _row ?? reference_name
-  if (allocationRefs.value.find(r => r[dupKey] === dupVal)) return
-  
-  allocationRefs.value.push(allocationData)
+function updateAllocations(allocations) {
+  allocationRefs.value = allocations
 }
 
 function removeAllocation(idx) {
