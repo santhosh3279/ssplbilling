@@ -448,9 +448,29 @@ function selectLedger(ledger) {
   row.account_type = ledger.type
   row.current_balance = ledger.balance || 0
   showSearchModal.value = false
+
+  // Auto-fill amount for 2nd row if there's a difference
+  if (activeRowIdx.value === 1 && entryType.value !== 'Opening Entry') {
+    const diff = difference.value
+    if (Math.abs(diff) > 0.005) {
+      if (diff > 0) {
+        row.credit = diff
+        row.debit = 0
+      } else {
+        row.debit = Math.abs(diff)
+        row.credit = 0
+      }
+    }
+  }
   
   // Move focus to next available column after selection
   nextTick(() => {
+    // If now balanced, move to remarks
+    if (Math.abs(difference.value) < 0.01 && totalDebit.value > 0) {
+      remarksInput.value?.focus()
+      return
+    }
+
     let el = null
     if (isFieldDisabled(activeRowIdx.value, 'debit')) {
       el = creditRefs[activeRowIdx.value]
