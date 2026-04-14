@@ -52,83 +52,90 @@
           </div>
         </div>
 
-        <!-- Form Row -->
-        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
-          <div class="flex items-end gap-4 w-full">
-            
-            <!-- Party Type -->
-            <div class="w-40 shrink-0 space-y-1.5">
-              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Party Type</label>
-              <select
-                v-model="form.party_type"
-                disabled
-                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-base font-bold focus:outline-none transition-all cursor-not-allowed opacity-70"
-              >
-                <option value="Customer">Customer</option>
-                <option value="Supplier">Supplier</option>
-                <option value="Employee">Employee</option>
-              </select>
-            </div>
+        <!-- Form Row (Table Style) -->
+        <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+              <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-6 py-4 w-40">Party Type</th>
+                <th class="px-6 py-4">Party Name</th>
+                <th class="px-6 py-4">
+                  {{ activeTab === 'Payment' ? 'Account Paid To (Party)' : 'Account Received From (Party)' }}
+                </th>
+                <th class="px-6 py-4">
+                  {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
+                </th>
+                <th class="px-6 py-4 text-right w-64">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="divide-x divide-[var(--color-border)]">
+                <!-- Party Type -->
+                <td class="px-4 py-3 bg-[var(--color-surface-raised)]/30">
+                  <select
+                    v-model="form.party_type"
+                    disabled
+                    class="w-full bg-transparent text-sm font-bold focus:outline-none transition-all cursor-not-allowed opacity-70"
+                  >
+                    <option value="Customer">Customer</option>
+                    <option value="Supplier">Supplier</option>
+                    <option value="Employee">Employee</option>
+                  </select>
+                </td>
 
-            <!-- Party Name (Searchable) -->
-            <div class="flex-1 min-w-[200px] space-y-1.5">
-              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Party Name</label>
-              <div class="relative group">
-                <input
-                  v-model="partyQuery"
-                  @click="openSearch('party')"
-                  @keydown.enter="openSearch('party')"
-                  readonly
-                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  :placeholder="'Search Party...'"
-                />
-              </div>
-            </div>
+                <!-- Party Name -->
+                <td class="px-4 py-3 group hover:bg-[var(--color-midlight)]/20 transition-colors">
+                  <div class="relative">
+                    <input
+                      v-model="partyQuery"
+                      @click="openSearch('party')"
+                      @keydown.enter="openSearch('party')"
+                      readonly
+                      class="w-full cursor-pointer bg-transparent text-sm font-black focus:outline-none"
+                      :placeholder="'Search Party...'"
+                    />
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
+                  </div>
+                </td>
 
-            <!-- Party Account -->
-            <div class="flex-1 min-w-[200px] space-y-1.5">
-              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
-                {{ activeTab === 'Payment' ? 'Account Paid To (Party)' : 'Account Received From (Party)' }}
-              </label>
-              <div class="relative group">
-                <input
-                  v-model="accountQuery"
-                  readonly
-                  class="w-full cursor-not-allowed rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:outline-none transition-all opacity-70"
-                  placeholder="Party Account..."
-                />
-              </div>
-            </div>
+                <!-- Party Account -->
+                <td class="px-4 py-3 bg-[var(--color-surface-raised)]/10">
+                  <input
+                    v-model="accountQuery"
+                    readonly
+                    class="w-full cursor-not-allowed bg-transparent text-sm font-bold opacity-60 focus:outline-none"
+                    placeholder="Party Account..."
+                  />
+                </td>
 
-            <!-- Bank/Cash Account -->
-            <div class="flex-1 min-w-[200px] space-y-1.5">
-              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
-                {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
-              </label>
-              <div class="relative group">
-                <input
-                  v-model="mopAccountQuery"
-                  @click="openSearch('mop')"
-                  @keydown.enter="openSearch('mop')"
-                  readonly
-                  class="w-full cursor-pointer rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-base font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-                  placeholder="Select Bank/Cash Account..."
-                />
-              </div>
-            </div>
+                <!-- Bank/Cash Account -->
+                <td class="px-4 py-3 group hover:bg-[var(--color-midlight)]/20 transition-colors">
+                  <div class="relative">
+                    <input
+                      v-model="mopAccountQuery"
+                      @click="openSearch('mop')"
+                      @keydown.enter="openSearch('mop')"
+                      readonly
+                      class="w-full cursor-pointer bg-transparent text-sm font-black focus:outline-none"
+                      placeholder="Select Account..."
+                    />
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
+                  </div>
+                </td>
 
-            <!-- Paid Amount -->
-            <div class="w-48 shrink-0 space-y-1.5">
-              <label class="block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Amount (₹)</label>
-              <input
-                v-model.number="form.amount"
-                type="number"
-                step="0.01"
-                class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-2xl font-black text-black focus:border-[var(--color-highlight)] focus:outline-none transition-all text-right opacity-100"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
+                <!-- Amount -->
+                <td class="px-6 py-3 bg-[var(--color-highlight)]/5">
+                  <input
+                    v-model.number="form.amount"
+                    type="number"
+                    step="0.01"
+                    class="w-full bg-transparent text-3xl font-black text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0.00"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <!-- Payment References / Allocation Table -->
