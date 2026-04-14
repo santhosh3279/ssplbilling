@@ -58,6 +58,7 @@ def get_unlinked_entries(party_type, party):
 			AND (jea.reference_name IS NULL OR jea.reference_name = '')
 			AND acc.account_type IN %s
 			AND je.company = %s
+			AND je.is_opening != 'Yes'
 		ORDER BY je.posting_date DESC
 		""",
 		(party_type, party, tuple(account_types), company),
@@ -164,6 +165,7 @@ def get_unlinked_opposite_entries(party_type, party):
 		      AND (jea.reference_name IS NULL OR jea.reference_name = '')
 		      AND acc.account_type = %s
 		      AND je.company = %s
+		      AND je.is_opening != 'Yes'
 		ORDER BY je.posting_date DESC
 		""",
 		(party_type, party, account_type, company),
