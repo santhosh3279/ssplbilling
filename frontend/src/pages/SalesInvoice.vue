@@ -632,6 +632,10 @@ const saveButtonText = computed(() => {
 })
 
 function handleDocDateChange(days) {
+  if (session.user.value !== 'Administrator') {
+    alert('Date change is only allowed for Administrator')
+    return
+  }
   const d = new Date(invoiceDate.value)
   d.setDate(d.getDate() + days)
   invoiceDate.value = d.toISOString().split('T')[0]
