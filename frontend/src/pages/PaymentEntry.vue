@@ -604,6 +604,7 @@ function getTodayIST() {
 
 const router = useRouter()
 const today = getTodayIST()
+const costCenter = localStorage.getItem('wb-cost-center') || ''
 
 // ─── Print Modal State ────────────────────────────────────────────────────────
 const showPrintModal = ref(false)
@@ -1020,6 +1021,7 @@ async function save() {
         mode_of_payment: form.value.mop, date: form.value.date,
         reference_no: form.value.referenceNo, reference_date: form.value.referenceDate,
         remarks: form.value.remarks, invoice_name: form.value.invoiceName,
+        cost_center: costCenter,
       })
       showFlash(`Receipt saved: ${result.payment_entry}`)
       openPrintModal(result.payment_entry, 'Payment Entry')
@@ -1031,6 +1033,7 @@ async function save() {
         reference_no: form.value.referenceNo, reference_date: form.value.referenceDate,
         remarks: form.value.remarks, invoice_name: form.value.invoiceName,
         invoice_doctype: 'Purchase Invoice',
+        cost_center: costCenter,
       })
       showFlash(`Payment saved: ${result.payment_entry}`)
       openPrintModal(result.payment_entry, 'Payment Entry')
@@ -1052,6 +1055,7 @@ async function save() {
         remarks: form.value.remarks,
         paid_from_account: form.value.fromAccount,
         paid_to_account: form.value.toAccount,
+        cost_center: costCenter,
       })
       showFlash(`Contra saved: ${result.payment_entry}`)
       openPrintModal(result.payment_entry, 'Payment Entry')

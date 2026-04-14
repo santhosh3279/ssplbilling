@@ -197,6 +197,9 @@ def create_payment_entry(data=None, **kwargs):
             "allocated_amount": float(ref.get("allocated_amount") or 0),
         })
 
+    if data.get("cost_center"):
+        pe.cost_center = data["cost_center"]
+
     pe.insert()
     pe.submit()
     return {"payment_entry": pe.name}
