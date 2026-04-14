@@ -97,7 +97,8 @@
                     v-model.number="localModalAmounts[inv.name]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(inv.outstanding_amount)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                    :disabled="remainingBalance <= 0.005 && !(localModalAmounts[inv.name] > 0)"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
                     @keydown.enter="focusNextAllocate($event)"
                     @input="onAllocationChange(inv, 'invoice')"
                   />
@@ -131,7 +132,8 @@
                     v-model.number="localModalAmounts[pe.name]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(pe.unallocated_amount)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                    :disabled="remainingBalance <= 0.005 && !(localModalAmounts[pe.name] > 0)"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
                     @keydown.enter="focusNextAllocate($event)"
                     @input="onAllocationChange(pe, 'payment')"
                   />
@@ -176,7 +178,8 @@
                     v-model.number="localModalAmounts[je.reference_row]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(je.unallocated_amount)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                    :disabled="remainingBalance <= 0.005 && !(localModalAmounts[je.reference_row] > 0)"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
                     @keydown.enter="focusNextAllocate($event)"
                     @input="onAllocationChange(je, 'journal')"
                   />

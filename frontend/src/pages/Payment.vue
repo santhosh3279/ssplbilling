@@ -548,15 +548,37 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
     unlinkedPayments.value = unlinkedRes.payment_entries || []
     unlinkedJournals.value = unlinkedRes.journal_entries || []
 
-    // Pre-fill logic: Always start with 0 as per user request
-    invoices.value.forEach(inv => { 
-      modalAmounts[inv.name] = 0
+    // Pre-fill logic: Top to bottom allocation based on entered amount
+    const targetDir = activeTab.value === 'Receipt' ? 'Dr' : 'Cr'
+    let remainingToAllocate = form.amount || 0;
+
+    // Reset all first
+    invoices.value.forEach(inv => { modalAmounts[inv.name] = 0 })
+    unlinkedPayments.value.forEach(pe => { modalAmounts[pe.name] = 0 })
+    unlinkedJournals.value.forEach(je => { modalAmounts[je.reference_row] = 0 })
+
+    // Allocate to Invoices first
+    invoices.value.filter(i => i.direction === targetDir).forEach(inv => {
+      const out = Math.abs(inv.outstanding_amount)
+      const alloc = Math.min(remainingToAllocate, out)
+      modalAmounts[inv.name] = alloc
+      remainingToAllocate -= alloc
     })
-    unlinkedPayments.value.forEach(pe => { 
-      modalAmounts[pe.name] = 0
+
+    // Then Payments
+    unlinkedPayments.value.filter(p => (p.payment_type === 'Receive' ? 'Cr' : 'Dr') === targetDir).forEach(pe => {
+      const out = Math.abs(pe.unallocated_amount)
+      const alloc = Math.min(remainingToAllocate, out)
+      modalAmounts[pe.name] = alloc
+      remainingToAllocate -= alloc
     })
-    unlinkedJournals.value.forEach(je => { 
-      modalAmounts[je.reference_row] = 0
+
+    // Then Journals
+    unlinkedJournals.value.filter(j => j.direction === targetDir).forEach(je => {
+      const out = Math.abs(je.unallocated_amount)
+      const alloc = Math.min(remainingToAllocate, out)
+      modalAmounts[je.reference_row] = alloc
+      remainingToAllocate -= alloc
     })
 
     if (autoShowOnlyIfItems) {
