@@ -212,8 +212,8 @@
         </div>
         
         <div class="max-h-[60vh] overflow-y-auto pr-2 space-y-8 custom-scrollbar">
-          <!-- Outstanding Invoices -->
-          <div v-if="invoices.length || (!unlinkedPayments.length && !unlinkedJournals.length && !loadingInvoices)">
+          <!-- Outstanding Invoices (Receipt tab only) -->
+          <div v-if="activeTab === 'Receipt' && (invoices.length || (!filteredPayments.length && !filteredJournals.length && !loadingInvoices))">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
               Outstanding Invoices
