@@ -32,7 +32,7 @@
 
       <!-- Right: Posting Date with arrow nav -->
       <div class="flex items-center gap-2">
-        <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
+        <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
           <button
             @click="adjustDate(-1)"
@@ -41,7 +41,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <div class="relative min-w-[110px] px-3 py-1.5 text-center">
-            <span class="text-sm font-black">{{ displayDate }}</span>
+            <span class="text-2xl">{{ displayDate }}</span>
             <input type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
           <button
