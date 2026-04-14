@@ -205,41 +205,105 @@
     <div v-if="showInvoicesModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-black uppercase tracking-tight">Outstanding Invoices</h2>
+          <h2 class="text-2xl font-black uppercase tracking-tight">Outstanding & Unlinked Items</h2>
           <button @click="showInvoicesModal = false" class="h-8 w-8 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center">
             ✕
           </button>
         </div>
         
-        <div class="max-h-[60vh] overflow-y-auto rounded-xl border border-[var(--color-border)]">
-          <table class="w-full text-left">
-            <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] sticky top-0">
-              <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-6 py-3">Voucher No</th>
-                <th class="px-4 py-3">Date</th>
-                <th class="px-4 py-3 text-right">Grand Total</th>
-                <th class="px-6 py-3 text-right">Outstanding</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--color-border)]">
-              <tr v-if="loadingInvoices">
-                <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading invoices...</td>
-              </tr>
-              <tr v-else-if="!invoices.length">
-                <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
-              </tr>
-              <tr v-for="inv in invoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                <td class="px-6 py-4 font-mono text-sm font-bold">{{ inv.name }}</td>
-                <td class="px-4 py-4 text-sm">{{ inv.posting_date }}</td>
-                <td class="px-4 py-4 text-right font-mono text-sm">₹{{ inv.grand_total.toLocaleString('en-IN') }}</td>
-                <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="max-h-[60vh] overflow-y-auto pr-2 space-y-8 custom-scrollbar">
+          <!-- Outstanding Invoices -->
+          <div v-if="invoices.length || (!unlinkedPayments.length && !unlinkedJournals.length && !loadingInvoices)">
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
+              <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
+              Outstanding Invoices
+            </h3>
+            <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
+              <table class="w-full text-left">
+                <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+                  <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                    <th class="px-6 py-3">Voucher No</th>
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-6 py-3 text-right">Outstanding</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]">
+                  <tr v-if="loadingInvoices">
+                    <td colspan="3" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
+                  </tr>
+                  <tr v-else-if="!invoices.length">
+                    <td colspan="3" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
+                  </tr>
+                  <tr v-for="inv in invoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                    <td class="px-6 py-4 font-mono text-sm font-bold">{{ inv.name }}</td>
+                    <td class="px-4 py-4 text-sm">{{ inv.posting_date }}</td>
+                    <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Unlinked Payments -->
+          <div v-if="unlinkedPayments.length">
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
+              <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
+              Unlinked Payments (Advance)
+            </h3>
+            <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
+              <table class="w-full text-left">
+                <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+                  <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                    <th class="px-6 py-3">Payment No</th>
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-4 py-3">Mode</th>
+                    <th class="px-6 py-3 text-right">Unallocated</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]">
+                  <tr v-for="pe in unlinkedPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                    <td class="px-6 py-4 font-mono text-sm font-bold">{{ pe.name }}</td>
+                    <td class="px-4 py-4 text-sm">{{ pe.posting_date }}</td>
+                    <td class="px-4 py-4 text-sm">{{ pe.mode_of_payment }}</td>
+                    <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-success)]">₹{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Unlinked Journal Entries -->
+          <div v-if="unlinkedJournals.length">
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
+              <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
+              Unlinked Journal Entries
+            </h3>
+            <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
+              <table class="w-full text-left">
+                <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+                  <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                    <th class="px-6 py-3">Voucher No</th>
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-6 py-3 text-right">Unallocated</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]">
+                  <tr v-for="je in unlinkedJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                    <td class="px-6 py-4 font-mono text-sm font-bold">
+                      {{ je.name }}
+                      <div class="text-[9px] font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ je.remarks }}</div>
+                    </td>
+                    <td class="px-4 py-4 text-sm">{{ je.posting_date }}</td>
+                    <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-info)]">₹{{ je.unallocated_amount.toLocaleString('en-IN') }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
         
-        <div class="mt-6 flex justify-end">
-          <button @click="showInvoicesModal = false" class="rounded-xl bg-[var(--color-highlight)] px-8 py-2 text-sm font-bold text-white hover:brightness-110 transition-all">
+        <div class="mt-8 flex justify-end">
+          <button @click="showInvoicesModal = false" class="rounded-xl bg-[var(--color-highlight)] px-8 py-2.5 text-base font-bold text-white hover:brightness-110 transition-all shadow-lg">
             Close
           </button>
         </div>
@@ -281,6 +345,8 @@ const showSuccess = ref(false)
 const successDocName = ref('')
 const outstandingBalance = ref(null)
 const invoices = ref([])
+const unlinkedPayments = ref([])
+const unlinkedJournals = ref([])
 const showInvoicesModal = ref(false)
 const loadingInvoices = ref(false)
 
@@ -361,11 +427,20 @@ async function fetchInvoices() {
   loadingInvoices.value = true
   showInvoicesModal.value = true
   try {
-    const res = await frappeGet('ssplbilling.api.payment_api.get_outstanding_invoices', { 
-      party: form.party,
-      party_type: form.party_type
-    })
-    invoices.value = res || []
+    const [outstandingRes, unlinkedRes] = await Promise.all([
+      frappeGet('ssplbilling.api.reconcile_api.get_outstanding_docs', {
+        party_type: form.party_type,
+        party: form.party
+      }),
+      frappeGet('ssplbilling.api.reconcile_api.get_unlinked_entries', {
+        party_type: form.party_type,
+        party: form.party
+      })
+    ])
+    
+    invoices.value = outstandingRes.docs || []
+    unlinkedPayments.value = unlinkedRes.payment_entries || []
+    unlinkedJournals.value = unlinkedRes.journal_entries || []
   } catch (e) {
     console.error('Failed to fetch invoices:', e)
   } finally {
@@ -400,6 +475,9 @@ function handlePartyTypeChange() {
   form.party_name = ''
   partyQuery.value = ''
   outstandingBalance.value = null
+  invoices.value = []
+  unlinkedPayments.value = []
+  unlinkedJournals.value = []
   
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
@@ -416,6 +494,9 @@ function resetForm() {
   partyQuery.value = ''
   form.amount = null
   outstandingBalance.value = null
+  invoices.value = []
+  unlinkedPayments.value = []
+  unlinkedJournals.value = []
   
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
