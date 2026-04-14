@@ -548,19 +548,15 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
     unlinkedPayments.value = unlinkedRes.payment_entries || []
     unlinkedJournals.value = unlinkedRes.journal_entries || []
 
-    const baseAmount = form.amount || 0;
-    // Pre-fill logic: if form.amount is set, use it (capped by actual outstanding), otherwise use full outstanding
+    // Pre-fill logic: Always start with 0 as per user request
     invoices.value.forEach(inv => { 
-      const out = Math.abs(inv.outstanding_amount);
-      modalAmounts[inv.name] = baseAmount > 0 ? Math.min(baseAmount, out) : out;
+      modalAmounts[inv.name] = 0
     })
     unlinkedPayments.value.forEach(pe => { 
-      const out = Math.abs(pe.unallocated_amount);
-      modalAmounts[pe.name] = baseAmount > 0 ? Math.min(baseAmount, out) : out;
+      modalAmounts[pe.name] = 0
     })
     unlinkedJournals.value.forEach(je => { 
-      const out = Math.abs(je.unallocated_amount);
-      modalAmounts[je.reference_row] = baseAmount > 0 ? Math.min(baseAmount, out) : out;
+      modalAmounts[je.reference_row] = 0
     })
 
     if (autoShowOnlyIfItems) {
