@@ -63,7 +63,7 @@
             </tr>
 
             <!-- No Items State -->
-            <tr v-else-if="!filteredInvoices.length && !filteredPayments.length && !filteredJournals.length">
+            <tr v-else-if="!filteredInvoices.length && !filteredJournals.length">
               <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding or unlinked items found.</td>
             </tr>
 
@@ -105,41 +105,6 @@
                 </td>
                 <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
                   {{ fmt(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) }}
-                </td>
-              </tr>
-            </template>
-
-            <!-- Unlinked Payments Section -->
-            <template v-if="filteredPayments.length">
-              <tr class="bg-[var(--color-success)]/5 sticky top-[56px] z-[5]">
-                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-success)]/10">
-                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-success)] flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
-                    Unlinked Payments (Advances)
-                  </h3>
-                </td>
-              </tr>
-              <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                <td class="px-4 py-3 font-mono text-3xl font-normal">{{ pe.name }}</td>
-                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Payment Entry</td>
-                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(pe.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
-                  {{ calculateDueDays(pe.posting_date) }} Days
-                </td>
-                <td class="px-4 py-3 text-center text-2xl">{{ pe.mode_of_payment }}</td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-normal text-[var(--color-success)]">{{ fmt(pe.unallocated_amount) }}</td>
-                <td class="px-4 py-3 text-right">
-                  <input
-                    v-model.number="localModalAmounts[pe.name]"
-                    type="number" step="0.01" min="0"
-                    :max="Math.abs(pe.unallocated_amount)"
-                    :disabled="remainingBalance <= 0.005 && !(localModalAmounts[pe.name] > 0)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
-                    @keydown.enter="focusNextAllocate($event)"
-                    @input="onAllocationChange(pe, 'payment')"
-                  />
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
-                  {{ fmt(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) }}
                 </td>
               </tr>
             </template>
@@ -291,14 +256,6 @@ const filteredJournals = computed(() => {
   return props.unlinkedJournals.filter(j => j.direction === filterDirection.value)
 })
 
-const filteredPayments = computed(() => {
-  if (filterDirection.value === 'All') return props.unlinkedPayments
-  return props.unlinkedPayments.filter(p => {
-    const direction = p.payment_type === 'Receive' ? 'Cr' : 'Dr'
-    return direction === filterDirection.value
-  })
-})
-
 const filteredInvoices = computed(() => {
   if (filterDirection.value === 'All') return props.invoices
   return props.invoices.filter(i => i.direction === filterDirection.value)
@@ -318,14 +275,6 @@ function emitAllocations() {
     allocated_amount: parseFloat(localModalAmounts.value[i.name]) || 0
   }))
 
-  const allPayments = props.unlinkedPayments.map(p => ({
-    reference_doctype: 'Payment Entry',
-    reference_name: p.name,
-    total_amount: p.unallocated_amount,
-    outstanding_amount: Math.abs(p.unallocated_amount),
-    allocated_amount: parseFloat(localModalAmounts.value[p.name]) || 0
-  }))
-
   const allJournals = props.unlinkedJournals.map(j => ({
     reference_doctype: 'Journal Entry',
     reference_name: j.name,
@@ -335,7 +284,7 @@ function emitAllocations() {
     _row: j.reference_row
   }))
 
-  const allocations = [...allInvoices, ...allPayments, ...allJournals].filter(a => a.allocated_amount > 0)
+  const allocations = [...allInvoices, ...allJournals].filter(a => a.allocated_amount > 0)
   
   emit('update-allocations', allocations)
 }
@@ -347,7 +296,6 @@ function confirmAdjustments() {
     // If last modified key is not in visible rows, clear it
     const allVisibleKeys = [
       ...filteredInvoices.value.map(i => i.name),
-      ...filteredPayments.value.map(p => p.name),
       ...filteredJournals.value.map(j => j.reference_row)
     ]
     

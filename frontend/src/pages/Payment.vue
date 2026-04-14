@@ -621,14 +621,6 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
       remainingToAllocate -= alloc
     })
 
-    // Then Payments
-    unlinkedPayments.value.filter(p => (p.payment_type === 'Receive' ? 'Cr' : 'Dr') === targetDir).forEach(pe => {
-      const out = Math.abs(pe.unallocated_amount)
-      const alloc = Math.min(remainingToAllocate, out)
-      modalAmounts[pe.name] = alloc
-      remainingToAllocate -= alloc
-    })
-
     // Then Journals
     unlinkedJournals.value.filter(j => j.direction === targetDir).forEach(je => {
       const out = Math.abs(je.unallocated_amount)
@@ -637,10 +629,9 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
       remainingToAllocate -= alloc
     })
 
-    // Check if there are any items in the target direction
+    // Check if there are any items in the target direction (Excluding payments)
     const hasTargetItems = 
       invoices.value.some(i => i.direction === targetDir) ||
-      unlinkedPayments.value.some(p => (p.payment_type === 'Receive' ? 'Cr' : 'Dr') === targetDir) ||
       unlinkedJournals.value.some(j => j.direction === targetDir)
 
     if (hasTargetItems) {
