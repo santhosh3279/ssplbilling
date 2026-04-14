@@ -11,31 +11,31 @@
         </button>
         <h1 class="text-lg font-bold tracking-tight text-[var(--color-text)] uppercase">{{ entryType === 'Contra' ? 'CONTRA ENTRY' : (entryType === 'Opening Entry' ? 'OPENING ENTRY' : 'JOURNAL ENTRY') }}</h1>
         <div class="h-4 w-px bg-[var(--color-surface-raised)] mx-2"></div>
-        <div class="flex rounded-lg bg-[var(--color-surface-raised)] p-1">
+        <div class="flex rounded-xl bg-[var(--color-surface-raised)] p-1.5 shadow-inner">
           <button
             @click="entryType = 'Journal Entry'"
-            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="entryType === 'Journal Entry' ? 'bg-[var(--color-surface)] text-[var(--color-info)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            class="rounded-lg px-12 py-3 text-base font-black transition-all flex items-center gap-2"
+            :class="entryType === 'Journal Entry' ? 'bg-[var(--color-surface)] text-[var(--color-info)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
           >
             <span>Journal</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="entryType === 'Journal Entry' ? 'border-[var(--color-info)] bg-[var(--color-info)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]'">F2</kbd>
           </button>
           <button
             @click="entryType = 'Contra'"
-            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="entryType === 'Contra' ? 'bg-[var(--color-surface)] text-[var(--color-success)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            class="rounded-lg px-12 py-3 text-base font-black transition-all flex items-center gap-2"
+            :class="entryType === 'Contra' ? 'bg-[var(--color-surface)] text-[var(--color-success)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
           >
             <span>Contra</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="entryType === 'Contra' ? 'border-[var(--color-success)] bg-[var(--color-success)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]'">F3</kbd>
           </button>
           <button
             @click="entryType = 'Opening Entry'"
-            class="rounded-md px-4 py-1 text-xs font-bold transition-all flex items-center gap-1.5"
-            :class="entryType === 'Opening Entry' ? 'bg-[var(--color-surface)] text-[var(--color-warning)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            class="rounded-lg px-12 py-3 text-base font-black transition-all flex items-center gap-2"
+            :class="entryType === 'Opening Entry' ? 'bg-[var(--color-surface)] text-[var(--color-warning)] shadow-md' : 'text-[var(--color-text-muted)] hover:text(--color-text)'"
           >
             <span>Opening</span>
-            <kbd class="rounded border px-1 text-[9px] opacity-50" :class="entryType === 'Opening Entry' ? 'border-[var(--color-warning)] bg-[var(--color-warning)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]'">F4</kbd>
           </button>
+          <div class="flex items-center ml-4 px-3 border-l border-[var(--color-border)]">
+            <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-bold text-[var(--color-text-muted)] shadow-sm">F7 to Cycle</kbd>
+          </div>
         </div>
       </div>
 
@@ -570,13 +570,18 @@ function handleRemarksEnter() {
   saveButton.value?.focus()
 }
 
+const ENTRY_TYPES = ['Journal Entry', 'Contra', 'Opening Entry']
+function cycleEntryType() {
+  const currentIdx = ENTRY_TYPES.indexOf(entryType.value)
+  const nextIdx = (currentIdx + 1) % ENTRY_TYPES.length
+  entryType.value = ENTRY_TYPES[nextIdx]
+}
+
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   // Mount shortcuts on pageload
   useShortcuts(journalContraShortcuts({
-    switchToJournal: () => { entryType.value = 'Journal Entry' },
-    switchToContra: () => { entryType.value = 'Contra' },
-    switchToOpening: () => { entryType.value = 'Opening Entry' },
+    cycleEntryType,
     addRow: addRow,
     saveEntry: saveEntry,
     navigateUp: () => {
