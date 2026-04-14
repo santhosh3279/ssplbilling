@@ -94,20 +94,25 @@ def get_customer_ledger(customer, from_date=None, to_date=None):
 
 @frappe.whitelist()
 def get_outstanding_invoices(party, party_type="Customer"):
-    """Return submitted Sales/Purchase Invoices with outstanding balance."""
-    if party_type == "Customer":
-        return frappe.get_all("Sales Invoice", 
-            filters={"customer": party, "docstatus": 1, "outstanding_amount": [">", 0]}, 
-            fields=["name", "posting_date", "grand_total", "outstanding_amount"], 
-            limit=50
-        )
-    elif party_type == "Supplier":
-        return frappe.get_all("Purchase Invoice", 
-            filters={"supplier": party, "docstatus": 1, "outstanding_amount": [">", 0]}, 
-            fields=["name", "posting_date", "grand_total", "outstanding_amount"], 
-            limit=50
-        )
-    return []
+	"""Return outstanding invoices using ERPNext's Payment Ledger Entry (same as the
+	'Get Outstanding Invoices' button in the Payment Entry doctype)."""
+	from erpnext.accounts.doctype.payment_entry.payment_entry import get_outstanding_reference_documents
+	from erpnext.accounts.party import get_party_account
+
+	company = frappe.defaults.get_global_default("company")
+	payment_type = "Receive" if party_type == "Customer" else "Pay"
+	party_account = get_party_account(party_type, party, company)
+
+	args = {
+		"posting_date": frappe.utils.today(),
+		"company": company,
+		"party_type": party_type,
+		"payment_type": payment_type,
+		"party": party,
+		"party_account": party_account,
+		"get_outstanding_invoices": True,
+	}
+	return get_outstanding_reference_documents(args) or []
 
 @frappe.whitelist()
 def create_payment_entry(data=None, **kwargs):

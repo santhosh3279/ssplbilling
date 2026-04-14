@@ -193,10 +193,21 @@ def search_suppliers(query=""):
 
 @frappe.whitelist()
 def get_outstanding_purchase_invoices(supplier):
-	"""Return submitted Purchase Invoices with outstanding balance for a supplier."""
-	return frappe.get_all(
-		"Purchase Invoice",
-		filters={"supplier": supplier, "docstatus": 1, "outstanding_amount": [">", 0]},
-		fields=["name", "posting_date", "grand_total", "outstanding_amount"],
-		limit=50,
-	)
+	"""Return outstanding purchase invoices using ERPNext's Payment Ledger Entry
+	(same logic as the 'Get Outstanding Invoices' button in Payment Entry doctype)."""
+	from erpnext.accounts.doctype.payment_entry.payment_entry import get_outstanding_reference_documents
+	from erpnext.accounts.party import get_party_account
+
+	company = frappe.defaults.get_global_default("company")
+	party_account = get_party_account("Supplier", supplier, company)
+
+	args = {
+		"posting_date": frappe.utils.today(),
+		"company": company,
+		"party_type": "Supplier",
+		"payment_type": "Pay",
+		"party": supplier,
+		"party_account": party_account,
+		"get_outstanding_invoices": True,
+	}
+	return get_outstanding_reference_documents(args) or []

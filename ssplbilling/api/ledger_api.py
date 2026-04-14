@@ -344,10 +344,10 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None):
 
 
 @frappe.whitelist()
-def get_outstanding_invoices(customer):
-    """Return submitted Sales Invoices with outstanding balance."""
+def get_outstanding_invoices(party, party_type="Customer"):
+    """Return outstanding invoices using ERPNext's Payment Ledger Entry."""
     from ssplbilling.api.payment_api import get_outstanding_invoices as _impl
-    return _impl(customer)
+    return _impl(party, party_type)
 
 @frappe.whitelist()
 def get_outstanding_purchase_invoices(supplier):

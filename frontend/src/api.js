@@ -505,10 +505,12 @@ export async function fetchStockLedger(itemCode, fromDate, toDate, warehouse = n
 // ─── Payment Entry (direct) ───────────────────────────────────────────────────
 
 /**
- * Fetch submitted Sales Invoices with outstanding balance for a customer.
+ * Fetch outstanding invoices for a customer using ERPNext's Payment Ledger Entry
+ * (same logic as the "Get Outstanding Invoices" button in Payment Entry doctype).
+ * Returns objects with: voucher_type, voucher_no, invoice_amount, outstanding_amount, due_date
  */
 export async function fetchOutstandingInvoices(customer) {
-  return frappeGet("ssplbilling.api.ledger_api.get_outstanding_invoices", { customer })
+  return frappeGet("ssplbilling.api.ledger_api.get_outstanding_invoices", { party: customer, party_type: "Customer" })
 }
 
 /**

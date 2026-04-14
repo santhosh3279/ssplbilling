@@ -85,22 +85,22 @@
           <div v-else class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <div
               v-for="inv in outstandingList"
-              :key="inv.name"
+              :key="inv.voucher_no"
               @click="selectInvoice(inv)"
               class="cursor-pointer rounded-xl border p-4 transition-all"
-              :class="form.invoiceName === inv.name
+              :class="form.invoiceName === inv.voucher_no
                 ? 'border-[var(--color-info)] bg-[var(--color-info)]/30 shadow-sm'
                 : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-info)] hover:bg-[var(--color-surface)]/40'"
             >
-              <div class="mb-1 font-mono text-sm font-bold text-[var(--color-text)]">{{ inv.name }}</div>
-              <div class="text-[11px] text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</div>
+              <div class="mb-1 font-mono text-sm font-bold text-[var(--color-text)]">{{ inv.voucher_no }}</div>
+              <div class="text-[11px] text-[var(--color-text-muted)]">{{ fmtDate(inv.due_date) }}</div>
               <div class="mt-2 flex items-end justify-between">
                 <div>
                   <div class="text-[10px] text-[var(--color-text-muted)]">Outstanding</div>
                   <div class="text-lg font-bold text-[var(--color-danger)]">₹{{ fmt(inv.outstanding_amount) }}</div>
                 </div>
                 <div class="text-right text-[10px] text-[var(--color-text-muted)]">
-                  of ₹{{ fmt(inv.grand_total) }}
+                  of ₹{{ fmt(inv.invoice_amount) }}
                 </div>
               </div>
             </div>
@@ -340,8 +340,8 @@
             </label>
             <select v-model="form.invoiceName" class="field-inp">
               <option value="">None (unlinked)</option>
-              <option v-for="inv in outstandingList" :key="inv.name" :value="inv.name">
-                {{ inv.name }} — ₹{{ fmt(inv.outstanding_amount) }}
+              <option v-for="inv in outstandingList" :key="inv.voucher_no" :value="inv.voucher_no">
+                {{ inv.voucher_no }} — ₹{{ fmt(inv.outstanding_amount) }}
               </option>
             </select>
           </div>
@@ -858,7 +858,7 @@ async function loadOutstanding(party) {
 }
 
 function selectInvoice(inv) {
-  form.value.invoiceName = inv.name
+  form.value.invoiceName = inv.voucher_no
   if (!form.value.amount) form.value.amount = inv.outstanding_amount
 }
 
