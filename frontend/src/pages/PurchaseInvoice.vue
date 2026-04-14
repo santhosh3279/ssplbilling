@@ -740,8 +740,14 @@ function handleSidebarDateChange(days) {
   sidebarDate.value = d.toISOString().split('T')[0]
 }
 
-watch([sidebarDate, sidebarSearch, sidebarSeries, draftOnly], () => {
+watch([sidebarDate, sidebarSeries, draftOnly], () => {
   fetchRecentInvoices()
+})
+
+let searchTimeout = null
+watch(sidebarSearch, () => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(fetchRecentInvoices, 300)
 })
 
 async function handleSelectSidebarItem(item) {

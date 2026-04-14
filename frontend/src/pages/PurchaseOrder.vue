@@ -593,8 +593,14 @@ function handleSidebarDateChange(days) {
   sidebarDate.value = d.toISOString().split('T')[0]
 }
 
-watch([sidebarDate, sidebarSearch, sidebarSeries, draftOnly], () => {
+watch([sidebarDate, sidebarSeries, draftOnly], () => {
   fetchRecentOrders()
+})
+
+let searchTimeout = null
+watch(sidebarSearch, () => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(fetchRecentOrders, 300)
 })
 
 async function handleSelectSidebarItem(item) {

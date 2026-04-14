@@ -16,18 +16,21 @@
 
         <!-- Search & Series Filters -->
         <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3 bg-[var(--color-surface-raised)]/20">
-          <input
-            ref="sidebarSearchRef"
-            type="text"
-            :value="sidebarSearch"
-            @input="$emit('update:sidebarSearch', $event.target.value)"
-            placeholder="Search invoice/cust..."
-            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-[1px] text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-          />
+          <div class="relative group">
+            <input
+              ref="sidebarSearchRef"
+              type="text"
+              :value="sidebarSearch"
+              @input="$emit('update:sidebarSearch', $event.target.value)"
+              placeholder="Search bills..."
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-10 pr-3 text-[15px] font-bold text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all"
+            />
+            <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
           <select
             :value="sidebarSeries"
             @change="$emit('update:sidebarSeries', $event.target.value)"
-            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-[1px] text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all"
           >
             <option value="">All Series</option>
             <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>

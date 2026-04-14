@@ -19,12 +19,14 @@
 
       <!-- Search & Status Filters -->
       <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3 bg-[var(--color-surface)]/20">
-        <input 
-          type="text" 
-          v-model="sidebarSearch"
-          placeholder="Search by ID..."
-          class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-        />
+        <div class="relative group">
+          <input
+            v-model="sidebarSearch"
+            placeholder="Search bills..."
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-10 pr-3 text-[15px] font-bold text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all"
+          />
+          <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
         <select
           v-model="sidebarPurpose"
           class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
@@ -663,7 +665,13 @@ async function fetchSidebarEntries() {
   sidebarLoading.value = false
 }
 
-watch([sidebarDate, sidebarSearch, sidebarPurpose], () => fetchSidebarEntries())
+watch([sidebarDate, sidebarPurpose], () => fetchSidebarEntries())
+
+let searchTimeout = null
+watch(sidebarSearch, () => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(fetchSidebarEntries, 300)
+})
 
 async function loadEntry(name) {
   try {

@@ -49,17 +49,19 @@
         </div>
 
         <!-- Search & Filters -->
-        <div class="flex flex-col gap-1.5 border-b border-[var(--color-border)] p-2 bg-[var(--color-surface)]/20">
-          <input
-            type="text"
-            v-model="sidebarSearch"
-            placeholder="Search order/customer..."
-            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-[11px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          />
+        <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3 bg-[var(--color-surface)]/20">
+          <div class="relative group">
+            <input
+              v-model="sidebarSearch"
+              placeholder="Search bills..."
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-10 pr-3 text-[15px] font-bold text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10 transition-all"
+            />
+            <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
           <button
             @click="showSubmitted = !showSubmitted"
-            class="w-full rounded border py-1 text-[10px] font-bold uppercase transition-colors"
-            :class="showSubmitted ? 'bg-[var(--color-info)]/40 border-[var(--color-info)] text-[var(--color-info)]' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+            class="w-full rounded-xl border py-1.5 text-[10px] font-bold uppercase transition-all"
+            :class="showSubmitted ? 'bg-[var(--color-info)]/40 border-[var(--color-info)] text-[var(--color-info)] shadow-sm' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
           >
             {{ showSubmitted ? 'Showing All' : 'Drafts Only' }}
           </button>
