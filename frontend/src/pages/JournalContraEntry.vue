@@ -211,18 +211,18 @@
             </div>
             <div class="flex gap-12 ml-12">
               <div v-if="entryType !== 'Opening Entry'" class="text-right">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Total Debit</div>
-                <div class="text-2xl font-black text-[var(--color-text)] font-mono">₹ {{ fmt(totalDebit) }}</div>
+                <div class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Total Debit</div>
+                <div class="text-5xl font-black text-[var(--color-text)] font-mono">₹ {{ fmt(totalDebit) }}</div>
               </div>
               <div v-if="entryType !== 'Opening Entry'" class="text-right">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Total Credit</div>
-                <div class="text-2xl font-black text-[var(--color-text)] font-mono">₹ {{ fmt(totalCredit) }}</div>
+                <div class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Total Credit</div>
+                <div class="text-5xl font-black text-[var(--color-text)] font-mono">₹ {{ fmt(totalCredit) }}</div>
               </div>
               <div class="text-right border-l border-[var(--color-border)] pl-12" :class="{ 'border-none': entryType === 'Opening Entry' }">
                 <div v-if="entryType !== 'Opening Entry'">
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Difference</div>
+                  <div class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Difference</div>
                   <div
-                    class="text-2xl font-black font-mono"
+                    class="text-5xl font-black font-mono"
                     :class="Math.abs(difference) < 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
                   >
                     ₹ {{ fmt(difference) }}
