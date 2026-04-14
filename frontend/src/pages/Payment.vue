@@ -1,7 +1,10 @@
 <template>
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- Header -->
-    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2.5 shadow-sm">
+    <header 
+      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
+      :class="activeTab === 'Payment' ? 'bg-red-500/30' : 'bg-green-500/30'"
+    >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
         <button
@@ -524,11 +527,21 @@ import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { useShortcuts } from '../services/shortcutManager'
+import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
 
 const router = useRouter()
 
 // --- State ---
 const activeTab = ref('Payment')
+
+function cycleTab() {
+  activeTab.value = activeTab.value === 'Payment' ? 'Receipt' : 'Payment'
+}
+
+useShortcuts(paymentShortcuts({
+  cycleTab,
+}))
 const postingDate = ref(new Date().toISOString().split('T')[0])
 const displayDate = computed(() => {
   if (!postingDate.value) return ''
