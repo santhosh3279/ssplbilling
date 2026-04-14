@@ -259,10 +259,10 @@
         
         <div class="max-h-[60vh] overflow-y-auto pr-2 space-y-8 custom-scrollbar">
           <!-- Outstanding Invoices -->
-          <div v-if="invoices.length || (!filteredPayments.length && !filteredJournals.length && !loadingInvoices)">
+          <div v-if="filteredInvoices.length || (!filteredPayments.length && !filteredJournals.length && !loadingInvoices)">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
-              Outstanding Invoices
+              Outstanding {{ activeTab === 'Receipt' ? 'Invoices (Debits)' : 'Credits / Returns' }}
             </h3>
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
@@ -279,10 +279,10 @@
                   <tr v-if="loadingInvoices">
                     <td colspan="5" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
                   </tr>
-                  <tr v-else-if="!invoices.length">
-                    <td colspan="5" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
+                  <tr v-else-if="!filteredInvoices.length">
+                    <td colspan="5" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding items found for this tab.</td>
                   </tr>
-                  <tr v-for="inv in invoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                  <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                     <td class="px-4 py-3 font-mono text-sm font-bold">{{ inv.name }}</td>
                     <td class="px-4 py-3 text-sm">{{ inv.posting_date }}</td>
                     <td class="px-4 py-3 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
@@ -315,7 +315,7 @@
           <div v-if="filteredPayments.length">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
-              Unlinked Payments (Advance)
+              Unlinked Payments ({{ activeTab === 'Receipt' ? 'Debits' : 'Credits' }})
             </h3>
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
@@ -364,7 +364,7 @@
           <div v-if="filteredJournals.length">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
-              Unlinked Journal Entries
+              Unlinked Journal Entries ({{ activeTab === 'Receipt' ? 'Debits' : 'Credits' }})
             </h3>
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
@@ -484,8 +484,14 @@ const filteredJournals = computed(() =>
 
 const filteredPayments = computed(() =>
   activeTab.value === 'Receipt'
-    ? unlinkedPayments.value.filter(p => p.payment_type === 'Receive')
-    : unlinkedPayments.value.filter(p => p.payment_type === 'Pay')
+    ? unlinkedPayments.value.filter(p => p.payment_type === 'Pay')
+    : unlinkedPayments.value.filter(p => p.payment_type === 'Receive')
+)
+
+const filteredInvoices = computed(() =>
+  activeTab.value === 'Receipt'
+    ? invoices.value.filter(i => i.direction === 'Dr')
+    : invoices.value.filter(i => i.direction === 'Cr')
 )
 
 const invoiceDocType = computed(() =>

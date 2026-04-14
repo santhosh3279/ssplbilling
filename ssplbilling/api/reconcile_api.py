@@ -76,7 +76,7 @@ def get_outstanding_docs(party_type, party):
 		docs = frappe.db.sql(
 			"""
 			SELECT name, posting_date, grand_total, outstanding_amount,
-			       customer_name AS party_name
+			       customer_name AS party_name, is_return
 			FROM `tabSales Invoice`
 			WHERE docstatus = 1 AND customer = %s
 			      AND outstanding_amount > 0.005 AND company = %s
@@ -85,12 +85,14 @@ def get_outstanding_docs(party_type, party):
 			(party, company),
 			as_dict=True,
 		)
+		for d in docs:
+			d["direction"] = "Cr" if d.get("is_return") else "Dr"
 		doc_type = "Sales Invoice"
 	elif party_type == "Supplier":
 		docs = frappe.db.sql(
 			"""
 			SELECT name, posting_date, grand_total, outstanding_amount,
-			       supplier_name AS party_name
+			       supplier_name AS party_name, is_return
 			FROM `tabPurchase Invoice`
 			WHERE docstatus = 1 AND supplier = %s
 			      AND outstanding_amount > 0.005 AND company = %s
@@ -99,6 +101,8 @@ def get_outstanding_docs(party_type, party):
 			(party, company),
 			as_dict=True,
 		)
+		for d in docs:
+			d["direction"] = "Dr" if d.get("is_return") else "Cr"
 		doc_type = "Purchase Invoice"
 	else:
 		# Employee — outstanding via JE payables
