@@ -2,24 +2,24 @@
   <div class="flex min-h-screen bg-[var(--color-bg)]">
 
     <!-- ===================== SIDEBAR ===================== -->
-    <aside class="flex w-56 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
+    <aside class="flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
       <!-- Logo -->
       <div class="border-b border-[var(--color-border)] px-4 py-4">
-        <div class="text-base font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
-        <div class="mt-0.5 text-[10px] text-[var(--color-text-muted)]">Fast Billing System</div>
+        <div class="text-lg font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
+        <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">Fast Billing System</div>
       </div>
 
       <!-- User -->
       <div class="border-b border-[var(--color-border)] px-4 py-3">
         <div class="flex items-center gap-2">
-          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-highlight)] text-xs font-bold text-[var(--color-text-on-highlight)]">
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-highlight)] text-sm font-bold text-[var(--color-text-on-highlight)]">
             {{ userInitials }}
           </div>
           <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-semibold text-[var(--color-text)]">{{ session.fullName.value || 'User' }}</div>
+            <div class="truncate text-base font-semibold text-[var(--color-text)]">{{ session.fullName.value || 'User' }}</div>
             <div class="flex items-center gap-1.5">
-              <span class="truncate text-[10px] text-[var(--color-text-muted)]">{{ session.user.value }}</span>
-              <span class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+              <span class="truncate text-xs text-[var(--color-text-muted)]">{{ session.user.value }}</span>
+              <span class="shrink-0 rounded px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                 :class="{
                   'bg-[var(--color-warning)]/20 text-[var(--color-warning)]': userRole === 'admin',
                   'bg-[var(--color-info)]/20 text-[var(--color-info)]': userRole === 'cashier',
@@ -45,14 +45,14 @@
       <nav class="flex-1 px-3 py-3 overflow-y-auto">
         <!-- Admin: Inherit User Settings -->
         <div v-if="isActualAdmin" class="mb-6 px-2">
-          <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+          <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             Inherit Settings
           </label>
           <div class="relative group">
             <select
               v-model="selectedUser"
               @change="handleUserChange"
-              class="w-full appearance-none rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-2 text-xs text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
+              class="w-full appearance-none rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
             >
               <option :value="session.user.value">Me ({{ session.fullName.value }})</option>
               <option v-for="u in allUsers" :key="u.value" :value="u.value">
@@ -70,13 +70,13 @@
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-warning)] opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-warning)]"></span>
             </span>
-            <span class="text-[10px] font-medium text-[var(--color-warning)]/90 italic">Previewing User Mode</span>
+            <span class="text-xs font-medium text-[var(--color-warning)]/90 italic">Previewing User Mode</span>
           </div>
         </div>
 
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Menu</div>
+        <div class="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Menu</div>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-[var(--color-highlight)] px-3 py-2 text-left text-sm font-semibold text-[var(--color-text-on-highlight)]"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-[var(--color-highlight)] px-3 py-2 text-left text-base font-semibold text-[var(--color-text-on-highlight)]"
         >
           🏠 Dashboard
         </button>
@@ -84,10 +84,10 @@
 
       <!-- Settings section -->
       <div class="border-t border-[var(--color-border)] px-3 py-3">
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Settings</div>
+        <div class="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Settings</div>
 
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="handleToggleTheme"
         >
           <span v-if="theme === 'light'">☀️</span>
@@ -96,26 +96,26 @@
         </button>
 
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="showSystemPerformance = true"
         >
           📊 System Performance
         </button>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="showGeneralSettings = true"
         >
           ⚙️ General
         </button>
         <button
           v-if="userRole === 'admin'"
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/ssplbillingsettings')"
         >
           ⚙️ SSPL Settings
         </button>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-danger)] hover:bg-[var(--color-midlight)]"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-danger)] hover:bg-[var(--color-midlight)]"
           @click="handleLogout"
         >
           🚪 Logout
