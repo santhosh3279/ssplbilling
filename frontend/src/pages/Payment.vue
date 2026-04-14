@@ -65,7 +65,7 @@
         <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-              <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+              <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-2 w-40">Party Type</th>
                 <th class="px-4 py-2">Party Name</th>
                 <th class="px-4 py-2">
@@ -155,7 +155,7 @@
           <div class="rounded-xl border border-[var(--color-border)] overflow-hidden">
             <table class="w-full text-left">
               <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                   <th class="px-4 py-3">Type</th>
                   <th class="px-4 py-3">Voucher No</th>
                   <th class="px-4 py-3 text-right">Outstanding</th>
@@ -346,7 +346,7 @@
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                  <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                  <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-4 py-3">Voucher No</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3 text-center">Type</th>
@@ -411,7 +411,7 @@
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                  <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                  <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-4 py-3">Payment No</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3">Mode</th>
@@ -460,7 +460,7 @@
             <div class="rounded-2xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-raised)]/30">
               <table class="w-full text-left">
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                  <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                  <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-4 py-3">Voucher No</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3 text-center">Type</th>
