@@ -21,7 +21,7 @@
           v-for="t in ['Payment', 'Receipt']"
           :key="t"
           @click="activeTab = t"
-          class="min-w-[110px] rounded-md px-5 py-1.5 text-sm font-black uppercase tracking-wide transition-all duration-200"
+          class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
           :class="activeTab === t
             ? 'bg-[var(--color-highlight)] text-white shadow-sm'
             : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
