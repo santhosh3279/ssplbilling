@@ -75,7 +75,7 @@
                   <select
                     v-model="form.party_type"
                     disabled
-                    class="w-full bg-transparent text-lg font-bold focus:outline-none transition-all cursor-not-allowed opacity-70"
+                    class="w-full bg-transparent text-3xl font-normal focus:outline-none transition-all cursor-not-allowed opacity-70"
                   >
                     <option value="Customer">Customer</option>
                     <option value="Supplier">Supplier</option>
@@ -91,7 +91,7 @@
                       @click="openSearch('party')"
                       @keydown.enter="openSearch('party')"
                       readonly
-                      class="w-full cursor-pointer bg-transparent text-xl font-black focus:outline-none"
+                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none"
                       :placeholder="'Search Party...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
@@ -103,7 +103,7 @@
                   <input
                     v-model="accountQuery"
                     readonly
-                    class="w-full cursor-not-allowed bg-transparent text-lg font-bold opacity-60 focus:outline-none"
+                    class="w-full cursor-not-allowed bg-transparent text-3xl font-normal opacity-60 focus:outline-none"
                     placeholder="Party Account..."
                   />
                 </td>
@@ -116,7 +116,7 @@
                       @click="openSearch('mop')"
                       @keydown.enter="openSearch('mop')"
                       readonly
-                      class="w-full cursor-pointer bg-transparent text-xl font-black focus:outline-none"
+                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none"
                       placeholder="Select Account..."
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
@@ -129,7 +129,7 @@
                     v-model.number="form.amount"
                     type="number"
                     step="0.01"
-                    class="w-full bg-transparent text-4xl font-black text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="w-full bg-transparent text-7xl font-light text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0.00"
                   />
                 </td>
