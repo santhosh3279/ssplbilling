@@ -250,12 +250,6 @@
       :initial-to-date="stockLedgerToDate"
       @close="closeStockLedgerAndReturnToSearch"
     />
-    <!-- RECONCILE WINDOW -->
-    <ReconcileWindow
-      v-if="showReconcileWindow"
-      @close="showReconcileWindow = false"
-    />
-
     <!-- INVOICE TEMPLATE FULL SCREEN MODAL -->
     <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
       <Item_Invoice_Template
@@ -325,7 +319,6 @@ import ItemSearch from '../components/ItemSearch.vue'
 import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
-import ReconcileWindow from './ReconcileWindow.vue'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
@@ -436,7 +429,6 @@ const allTiles = [
   { id: 'journal-contra',     bucket: 'sspl',     name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
   { id: 'material-transfer',  bucket: 'sspl',     name: 'Material Transfer',     desc: 'Transfer items between warehouses',        icon: '🔄', shortcut: 'F9'  },
   { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
-  { id: 'reconcile',          bucket: 'sspl',     name: 'Pay Reconcile',         desc: 'Reconcile payments',                       icon: '🔗', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',     name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
   { id: 'invoice-template',   bucket: 'sspl',     name: 'Invoice Template',      desc: 'Reusable invoice UI template',             icon: '🎨', shortcut: ''    },
   // ── Report ──
@@ -480,10 +472,6 @@ const routeAliases = {
 }
 
 function openModule(id) {
-  if (id === 'reconcile') {
-    showReconcileWindow.value = true
-    return
-  }
   if (id === 'invoice-template') {
     showInvoiceTemplate.value = true
     return
@@ -517,7 +505,6 @@ useShortcuts(dashboardShortcuts({
   },
   openItemSearch: () => openItemSearch(),
   handleEscape: () => {
-    if (showReconcileWindow.value) { showReconcileWindow.value = false; return }
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
     if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
     if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
@@ -533,8 +520,6 @@ const systemSettings = ref(null)
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
-// ==================== RECONCILE ====================
-const showReconcileWindow = ref(false)
 const showInvoiceTemplate = ref(false)
 
 // ==================== SYSTEM PERFORMANCE ====================
