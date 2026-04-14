@@ -164,8 +164,8 @@
             <table class="w-full text-left">
               <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
                 <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                  <th class="px-4 py-3">Type</th>
                   <th class="px-4 py-3">Voucher No</th>
+                  <th class="px-4 py-3">Inv Type</th>
                   <th class="px-4 py-3 text-right">Outstanding</th>
                   <th class="px-4 py-3 text-right">Allocated (₹)</th>
                   <th class="px-4 py-3"></th>
@@ -173,8 +173,8 @@
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
                 <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="hover:bg-[var(--color-midlight)]/30 transition-colors">
-                  <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</td>
                   <td class="px-4 py-3 font-mono text-2xl font-black">{{ ref.reference_name }}</td>
+                  <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</td>
                   <td class="px-4 py-3 text-right text-2xl text-[var(--color-text-muted)]">₹{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
                   <td class="px-4 py-3 text-right">
                     <input
@@ -356,8 +356,9 @@
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
                   <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-4 py-3">Voucher No</th>
+                    <th class="px-4 py-3">Inv Type</th>
                     <th class="px-4 py-3">Date</th>
-                    <th class="px-4 py-3 text-center">Type</th>
+                    <th class="px-4 py-3 text-center">Dir</th>
                     <th class="px-4 py-3 text-right">Outstanding</th>
                     <th class="px-4 py-3 text-right">Allocate (₹)</th>
                     <th class="px-4 py-3"></th>
@@ -365,16 +366,16 @@
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-if="loadingInvoices">
-                    <td colspan="6" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
+                    <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
                   </tr>
                   <tr v-else-if="!filteredInvoices.length">
-                    <td colspan="6" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding items found.</td>
+                    <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding items found.</td>
                   </tr>
                   <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                     <td class="px-4 py-3 font-mono text-2xl font-bold">
                       {{ inv.name }}
-                      <div class="text-lg font-normal text-[var(--color-text-muted)]">{{ inv.doctype }}</div>
                     </td>
+                    <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
                     <td class="px-4 py-3 text-2xl">{{ inv.posting_date }}</td>
                     <td class="px-4 py-3 text-center">
                       <span
@@ -421,6 +422,7 @@
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
                   <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-4 py-3">Payment No</th>
+                    <th class="px-4 py-3">Type</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3">Mode</th>
                     <th class="px-4 py-3 text-right">Unallocated</th>
@@ -431,6 +433,7 @@
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                     <td class="px-4 py-3 font-mono text-2xl font-bold">{{ pe.name }}</td>
+                    <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Payment Entry</td>
                     <td class="px-4 py-3 text-2xl">{{ pe.posting_date }}</td>
                     <td class="px-4 py-3 text-2xl">{{ pe.mode_of_payment }}</td>
                     <td class="px-4 py-3 text-right font-mono text-2xl font-black text-[var(--color-success)]">₹{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
@@ -470,8 +473,9 @@
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
                   <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="px-4 py-3">Voucher No</th>
+                    <th class="px-4 py-3">Type</th>
                     <th class="px-4 py-3">Date</th>
-                    <th class="px-4 py-3 text-center">Type</th>
+                    <th class="px-4 py-3 text-center">Dir</th>
                     <th class="px-4 py-3 text-right">Amount</th>
                     <th class="px-4 py-3 text-right">Allocate (₹)</th>
                     <th class="px-4 py-3"></th>
@@ -483,6 +487,7 @@
                       {{ je.name }}
                       <div class="text-lg font-normal text-[var(--color-text-muted)] truncate max-w-[160px]">{{ je.remarks }}</div>
                     </td>
+                    <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Journal Entry</td>
                     <td class="px-4 py-3 text-2xl">{{ je.posting_date }}</td>
                     <td class="px-4 py-3 text-center">
                       <span
