@@ -730,7 +730,7 @@ async function handleSubmit() {
       posting_date: postingDate.value,
       reference_no: form.reference_no,
       reference_date: form.reference_date,
-      cost_center: localStorage.getItem('wb-costcenter') || null,
+      cost_center: localStorage.getItem('wb-cost-center') || null,
       references: allocationRefs.value.map(r => ({
         reference_doctype: r.reference_doctype,
         reference_name: r.reference_name,
