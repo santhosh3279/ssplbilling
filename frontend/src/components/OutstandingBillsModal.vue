@@ -195,7 +195,7 @@
       
       <div class="mt-8 flex justify-end gap-6">
         <button
-          @click="$emit('close')"
+          @click="confirmAdjustments"
           class="rounded-2xl bg-[var(--color-highlight)] px-12 py-4 text-2xl font-black uppercase tracking-widest text-white hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--color-highlight)]/20"
         >
           Confirm Adjustments
@@ -242,10 +242,21 @@ const emit = defineEmits(['close', 'update-allocations'])
 
 const filterDirection = ref('All')
 const localModalAmounts = ref({})
+const lastModifiedKey = ref(null)
 
 // Sync localModalAmounts with prop
 watch(() => props.modalAmounts, (newVal) => {
   localModalAmounts.value = { ...newVal }
+  // Try to find the last key with a non-zero value as a starting point
+  if (!lastModifiedKey.value) {
+    const keys = Object.keys(localModalAmounts.value)
+    for (let i = keys.length - 1; i >= 0; i--) {
+      if (localModalAmounts.value[keys[i]] > 0) {
+        lastModifiedKey.value = keys[i]
+        break
+      }
+    }
+  }
 }, { immediate: true, deep: true })
 
 watch(() => props.show, (val) => {
@@ -260,6 +271,8 @@ watch(() => props.show, (val) => {
         }
       }, 150)
     })
+  } else {
+    lastModifiedKey.value = null
   }
 })
 
@@ -290,7 +303,13 @@ const filteredInvoices = computed(() => {
 })
 
 function onAllocationChange(item, type) {
-  // Emit all allocations that have a value > 0
+  const key = type === 'journal' ? item.reference_row : item.name
+  lastModifiedKey.value = key
+  
+  emitAllocations()
+}
+
+function emitAllocations() {
   const allInvoices = props.invoices.map(i => ({
     reference_doctype: i.doctype,
     reference_name: i.name,
@@ -319,6 +338,40 @@ function onAllocationChange(item, type) {
   const allocations = [...allInvoices, ...allPayments, ...allJournals].filter(a => a.allocated_amount > 0)
   
   emit('update-allocations', allocations)
+}
+
+function confirmAdjustments() {
+  if (Math.abs(remainingBalance.value) > 0.005) {
+    let targetKey = lastModifiedKey.value
+
+    // If no manual edit, find the last row that has any allocation
+    if (!targetKey) {
+      const allPossibleKeys = [
+        ...props.invoices.map(i => i.name),
+        ...props.unlinkedPayments.map(p => p.name),
+        ...props.unlinkedJournals.map(j => j.reference_row)
+      ]
+      for (let i = allPossibleKeys.length - 1; i >= 0; i--) {
+        if (localModalAmounts.value[allPossibleKeys[i]] > 0) {
+          targetKey = allPossibleKeys[i]
+          break
+        }
+      }
+    }
+
+    // If still no target, just pick the last item in the list if it exists
+    if (!targetKey) {
+      if (props.unlinkedJournals.length) targetKey = props.unlinkedJournals[props.unlinkedJournals.length - 1].reference_row
+      else if (props.unlinkedPayments.length) targetKey = props.unlinkedPayments[props.unlinkedPayments.length - 1].name
+      else if (props.invoices.length) targetKey = props.invoices[props.invoices.length - 1].name
+    }
+
+    if (targetKey) {
+      localModalAmounts.value[targetKey] = (parseFloat(localModalAmounts.value[targetKey]) || 0) + remainingBalance.value
+      emitAllocations()
+    }
+  }
+  emit('close')
 }
 
 function fmt(val) {
