@@ -85,14 +85,14 @@ def get_outstanding_docs(party_type, party):
 		       customer_name AS party_name, is_return, 'Sales Invoice' as doctype
 		FROM `tabSales Invoice`
 		WHERE docstatus = 1 AND customer = %s
-		      AND outstanding_amount > 0.005 AND company = %s
+		      AND ABS(outstanding_amount) > 0.005 AND company = %s
 		ORDER BY posting_date ASC
 		""",
 		(party, company),
 		as_dict=True,
 	)
 	for d in si_docs:
-		d["direction"] = "Cr" if d.get("is_return") else "Dr"
+		d["direction"] = "Cr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Dr"
 		all_docs.append(dict(d))
 
 	# Fetch Purchase Invoices where this party is the Supplier
@@ -102,14 +102,14 @@ def get_outstanding_docs(party_type, party):
 		       supplier_name AS party_name, is_return, 'Purchase Invoice' as doctype
 		FROM `tabPurchase Invoice`
 		WHERE docstatus = 1 AND supplier = %s
-		      AND outstanding_amount > 0.005 AND company = %s
+		      AND ABS(outstanding_amount) > 0.005 AND company = %s
 		ORDER BY posting_date ASC
 		""",
 		(party, company),
 		as_dict=True,
 	)
 	for d in pi_docs:
-		d["direction"] = "Dr" if d.get("is_return") else "Cr"
+		d["direction"] = "Dr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Cr"
 		all_docs.append(dict(d))
 
 	return {"doc_type": "Invoice", "docs": all_docs}

@@ -302,7 +302,7 @@
                       <input
                         v-model.number="modalAmounts[inv.name]"
                         type="number" step="0.01" min="0"
-                        :max="inv.outstanding_amount"
+                        :max="Math.abs(inv.outstanding_amount)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
                         class="w-28 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-sm font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
                       />
@@ -351,7 +351,7 @@
                       <input
                         v-model.number="modalAmounts[pe.name]"
                         type="number" step="0.01" min="0"
-                        :max="pe.unallocated_amount"
+                        :max="Math.abs(pe.unallocated_amount)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
                         class="w-28 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-sm font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
                       />
@@ -411,7 +411,7 @@
                       <input
                         v-model.number="modalAmounts[je.reference_row]"
                         type="number" step="0.01" min="0"
-                        :max="je.unallocated_amount"
+                        :max="Math.abs(je.unallocated_amount)"
                         :disabled="!!allocationRefs.find(r => r.reference_name === je.name && r._row === je.reference_row)"
                         class="w-28 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-sm font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
                       />
@@ -575,9 +575,9 @@ function addEntryToAllocation({ reference_doctype, reference_name, total_amount,
   allocationRefs.value.push({
     reference_doctype,
     reference_name,
-    total_amount: total_amount ?? outstanding_amount,
-    outstanding_amount,
-    allocated_amount: parseFloat(modalAmounts[amountKey]) || outstanding_amount,
+    total_amount: total_amount ?? Math.abs(outstanding_amount),
+    outstanding_amount: Math.abs(outstanding_amount),
+    allocated_amount: parseFloat(modalAmounts[amountKey]) || Math.abs(outstanding_amount),
     ...(_row ? { _row } : {}),
   })
 }
@@ -606,10 +606,10 @@ async function fetchInvoices() {
     unlinkedPayments.value = unlinkedRes.payment_entries || []
     unlinkedJournals.value = unlinkedRes.journal_entries || []
 
-    // Pre-fill modal amount inputs with full outstanding/unallocated amounts
-    invoices.value.forEach(inv => { modalAmounts[inv.name] = inv.outstanding_amount })
-    unlinkedPayments.value.forEach(pe => { modalAmounts[pe.name] = pe.unallocated_amount })
-    unlinkedJournals.value.forEach(je => { modalAmounts[je.reference_row] = je.unallocated_amount })
+    // Pre-fill modal amount inputs with full outstanding/unallocated amounts (use absolute for returns)
+    invoices.value.forEach(inv => { modalAmounts[inv.name] = Math.abs(inv.outstanding_amount) })
+    unlinkedPayments.value.forEach(pe => { modalAmounts[pe.name] = Math.abs(pe.unallocated_amount) })
+    unlinkedJournals.value.forEach(je => { modalAmounts[je.reference_row] = Math.abs(je.unallocated_amount) })
   } catch (e) {
     console.error('Failed to fetch invoices:', e)
   } finally {
