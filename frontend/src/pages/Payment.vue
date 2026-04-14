@@ -145,6 +145,7 @@
                     v-model.number="form.amount"
                     type="number"
                     step="0.01"
+                    @keydown.enter="handleAmountEnter"
                     class="w-full bg-transparent text-7xl font-light text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0.00"
                   />
@@ -745,10 +746,19 @@ function removeAllocation(idx) {
   allocationRefs.value.splice(idx, 1)
 }
 
-async function fetchInvoices() {
+function handleAmountEnter() {
+  if (form.amount > 0 && form.party) {
+    fetchInvoices(true) // Pass true to auto-show only if items present
+  }
+}
+
+async function fetchInvoices(autoShowOnlyIfItems = false) {
   if (!form.party) return
   loadingInvoices.value = true
-  showInvoicesModal.value = true
+  
+  if (!autoShowOnlyIfItems) {
+    showInvoicesModal.value = true
+  }
   
   // Set default filter based on tab: 
   // - Receipt: show Dr (unpaid invoices)
@@ -775,6 +785,13 @@ async function fetchInvoices() {
     invoices.value.forEach(inv => { modalAmounts[inv.name] = Math.abs(inv.outstanding_amount) })
     unlinkedPayments.value.forEach(pe => { modalAmounts[pe.name] = Math.abs(pe.unallocated_amount) })
     unlinkedJournals.value.forEach(je => { modalAmounts[je.reference_row] = Math.abs(je.unallocated_amount) })
+
+    if (autoShowOnlyIfItems) {
+      const hasItems = invoices.value.length > 0 || unlinkedPayments.value.length > 0 || unlinkedJournals.value.length > 0
+      if (hasItems) {
+        showInvoicesModal.value = true
+      }
+    }
   } catch (e) {
     console.error('Failed to fetch invoices:', e)
   } finally {
