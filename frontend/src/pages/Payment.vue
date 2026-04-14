@@ -245,7 +245,7 @@
           </div>
 
           <!-- Unlinked Payments -->
-          <div v-if="unlinkedPayments.length">
+          <div v-if="filteredPayments.length">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
               Unlinked Payments (Advance)
@@ -261,7 +261,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
-                  <tr v-for="pe in unlinkedPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                  <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                     <td class="px-6 py-4 font-mono text-sm font-bold">{{ pe.name }}</td>
                     <td class="px-4 py-4 text-sm">{{ pe.posting_date }}</td>
                     <td class="px-4 py-4 text-sm">{{ pe.mode_of_payment }}</td>
@@ -273,7 +273,7 @@
           </div>
 
           <!-- Unlinked Journal Entries -->
-          <div v-if="unlinkedJournals.length">
+          <div v-if="filteredJournals.length">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
               Unlinked Journal Entries
@@ -289,7 +289,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
-                  <tr v-for="je in unlinkedJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                  <tr v-for="je in filteredJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                     <td class="px-6 py-4 font-mono text-sm font-bold">
                       {{ je.name }}
                       <div class="text-[9px] font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ je.remarks }}</div>
@@ -364,6 +364,18 @@ const loadingInvoices = ref(false)
 const isFormValid = computed(() => {
   return form.party && form.amount > 0 && form.mop_account
 })
+
+const filteredJournals = computed(() =>
+  activeTab.value === 'Receipt'
+    ? unlinkedJournals.value.filter(j => j.direction === 'Dr')
+    : unlinkedJournals.value.filter(j => j.direction === 'Cr')
+)
+
+const filteredPayments = computed(() =>
+  activeTab.value === 'Receipt'
+    ? unlinkedPayments.value.filter(p => p.payment_type === 'Receive')
+    : unlinkedPayments.value.filter(p => p.payment_type === 'Pay')
+)
 
 const todayDate = computed(() => {
   return new Date().toLocaleDateString('en-IN', {
