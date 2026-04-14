@@ -207,6 +207,27 @@
           </div>
         </div>
 
+        <!-- Middle: Reference Info -->
+        <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref No (Cheque/UPI)</label>
+            <input
+              v-model="form.reference_no"
+              type="text"
+              class="w-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+              placeholder="Ref / Chq No..."
+            />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref Date</label>
+            <input
+              v-model="form.reference_date"
+              type="date"
+              class="w-36 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+            />
+          </div>
+        </div>
+
         <!-- Right: Summary & Save -->
         <div class="flex items-center gap-8">
           <!-- Allocation Summary -->
@@ -502,7 +523,9 @@ const form = reactive({
   party_name: '',
   account: 'Debtors - SSPL',
   mop_account: '',
-  amount: null
+  amount: null,
+  reference_no: '',
+  reference_date: new Date().toISOString().split('T')[0]
 })
 
 const showCustomerSearchModal = ref(false)
@@ -751,6 +774,8 @@ function resetForm() {
   
   form.mop_account = ''
   mopAccountQuery.value = 'Search Account'
+  form.reference_no = ''
+  form.reference_date = new Date().toISOString().split('T')[0]
 }
 
 async function handleSubmit() {
@@ -766,6 +791,8 @@ async function handleSubmit() {
       mop_account: form.mop_account,
       account: form.account,
       posting_date: postingDate.value,
+      reference_no: form.reference_no,
+      reference_date: form.reference_date,
       references: allocationRefs.value.map(r => ({
         reference_doctype: r.reference_doctype,
         reference_name: r.reference_name,

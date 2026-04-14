@@ -159,7 +159,10 @@ def create_payment_entry(data=None, **kwargs):
     pe.party = data.get("party") or data.get("customer") or data.get("customer_id")
     pe.paid_amount = float(data.get("amount") or 0)
     pe.received_amount = pe.paid_amount
-    pe.mode_of_payment = data.get("mode_of_payment") or "Cash"
+    pe.mode_of_payment = data.get("mop_account") or data.get("mode_of_payment") or "Cash"
+    pe.reference_no = data.get("reference_no")
+    pe.reference_date = data.get("reference_date")
+    pe.posting_date = data.get("posting_date") or frappe.utils.today()
     
     # Explicitly set currencies and exchange rates to INR
     pe.paid_from_account_currency = "INR"
@@ -169,14 +172,21 @@ def create_payment_entry(data=None, **kwargs):
     
     # RESOLVE ACCOUNTS
     party_account = data.get("account") or _get_party_account(pe.party_type, pe.party)
-    mop_account = data.get("mop_account") or _get_mop_account(data.get("mode_of_payment"))
+    mop_account = data.get("mop_account")
 
     if pe.payment_type == "Receive":
-        pe.paid_from = data.get("paid_from") or party_account
-        pe.paid_to = data.get("paid_to") or mop_account
+        pe.paid_from = party_account
+        pe.paid_to = mop_account
     else: # Pay
-        pe.paid_from = data.get("paid_from") or mop_account
-        pe.paid_to = data.get("paid_to") or party_account
+        pe.paid_from = mop_account
+        pe.paid_to = party_account
+            
+    # If mode_of_payment was passed as an account, try to find its parent MOP name
+    # or keep it as is if it's already a valid MOP
+    if pe.mode_of_payment:
+        mop_name = frappe.db.get_value("Mode of Payment Account", {"default_account": pe.mode_of_payment}, "parent")
+        if mop_name:
+            pe.mode_of_payment = mop_name
             
     for ref in (data.get("references") or []):
         pe.append("references", {
