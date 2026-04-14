@@ -249,7 +249,7 @@
 
     <!-- Outstanding Invoices Modal -->
     <div v-if="showInvoicesModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
+      <div class="w-full max-w-4xl rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-2xl font-black uppercase tracking-tight">Outstanding & Unlinked Items</h2>
           <button @click="showInvoicesModal = false" class="h-8 w-8 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center">
@@ -268,32 +268,42 @@
               <table class="w-full text-left">
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
                   <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                    <th class="px-6 py-3">Voucher No</th>
+                    <th class="px-4 py-3">Voucher No</th>
                     <th class="px-4 py-3">Date</th>
-                    <th class="px-6 py-3 text-right">Outstanding</th>
+                    <th class="px-4 py-3 text-right">Outstanding</th>
+                    <th class="px-4 py-3 text-right">Allocate (₹)</th>
                     <th class="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-if="loadingInvoices">
-                    <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
+                    <td colspan="5" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
                   </tr>
                   <tr v-else-if="!invoices.length">
-                    <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
+                    <td colspan="5" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
                   </tr>
                   <tr v-for="inv in invoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-6 py-4 font-mono text-sm font-bold">{{ inv.name }}</td>
-                    <td class="px-4 py-4 text-sm">{{ inv.posting_date }}</td>
-                    <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
-                    <td class="px-4 py-4 text-right">
-                      <button
-                        @click="addToAllocation(inv)"
+                    <td class="px-4 py-3 font-mono text-sm font-bold">{{ inv.name }}</td>
+                    <td class="px-4 py-3 text-sm">{{ inv.posting_date }}</td>
+                    <td class="px-4 py-3 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-3 text-right">
+                      <input
+                        v-model.number="modalAmounts[inv.name]"
+                        type="number" step="0.01" min="0"
+                        :max="inv.outstanding_amount"
                         :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
-                        class="rounded-lg px-3 py-1 text-[10px] font-black uppercase transition-all"
+                        class="w-28 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-sm font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      />
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <button
+                        @click="addEntryToAllocation({ reference_doctype: invoiceDocType, reference_name: inv.name, total_amount: inv.grand_total, outstanding_amount: inv.outstanding_amount }, inv.name)"
+                        :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
+                        class="rounded-lg px-3 py-1 text-[10px] font-black uppercase transition-all whitespace-nowrap"
                         :class="allocationRefs.find(r => r.reference_name === inv.name)
                           ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
                           : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
-                      >{{ allocationRefs.find(r => r.reference_name === inv.name) ? 'Added' : '+ Add' }}</button>
+                      >{{ allocationRefs.find(r => r.reference_name === inv.name) ? '✓ Added' : '+ Add' }}</button>
                     </td>
                   </tr>
                 </tbody>
@@ -311,18 +321,39 @@
               <table class="w-full text-left">
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
                   <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                    <th class="px-6 py-3">Payment No</th>
+                    <th class="px-4 py-3">Payment No</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3">Mode</th>
-                    <th class="px-6 py-3 text-right">Unallocated</th>
+                    <th class="px-4 py-3 text-right">Unallocated</th>
+                    <th class="px-4 py-3 text-right">Allocate (₹)</th>
+                    <th class="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-6 py-4 font-mono text-sm font-bold">{{ pe.name }}</td>
-                    <td class="px-4 py-4 text-sm">{{ pe.posting_date }}</td>
-                    <td class="px-4 py-4 text-sm">{{ pe.mode_of_payment }}</td>
-                    <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-success)]">₹{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-3 font-mono text-sm font-bold">{{ pe.name }}</td>
+                    <td class="px-4 py-3 text-sm">{{ pe.posting_date }}</td>
+                    <td class="px-4 py-3 text-sm">{{ pe.mode_of_payment }}</td>
+                    <td class="px-4 py-3 text-right font-mono text-sm font-black text-[var(--color-success)]">₹{{ pe.unallocated_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-3 text-right">
+                      <input
+                        v-model.number="modalAmounts[pe.name]"
+                        type="number" step="0.01" min="0"
+                        :max="pe.unallocated_amount"
+                        :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
+                        class="w-28 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-sm font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      />
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <button
+                        @click="addEntryToAllocation({ reference_doctype: 'Payment Entry', reference_name: pe.name, total_amount: pe.unallocated_amount, outstanding_amount: pe.unallocated_amount }, pe.name)"
+                        :disabled="!!allocationRefs.find(r => r.reference_name === pe.name)"
+                        class="rounded-lg px-3 py-1 text-[10px] font-black uppercase transition-all whitespace-nowrap"
+                        :class="allocationRefs.find(r => r.reference_name === pe.name)
+                          ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
+                          : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
+                      >{{ allocationRefs.find(r => r.reference_name === pe.name) ? '✓ Added' : '+ Add' }}</button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -339,28 +370,49 @@
               <table class="w-full text-left">
                 <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
                   <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                    <th class="px-6 py-3">Voucher No</th>
+                    <th class="px-4 py-3">Voucher No</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3 text-center">Type</th>
-                    <th class="px-6 py-3 text-right">Amount</th>
+                    <th class="px-4 py-3 text-right">Amount</th>
+                    <th class="px-4 py-3 text-right">Allocate (₹)</th>
+                    <th class="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-for="je in filteredJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                    <td class="px-6 py-4 font-mono text-sm font-bold">
+                    <td class="px-4 py-3 font-mono text-sm font-bold">
                       {{ je.name }}
-                      <div class="text-[9px] font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ je.remarks }}</div>
+                      <div class="text-[9px] font-normal text-[var(--color-text-muted)] truncate max-w-[160px]">{{ je.remarks }}</div>
                     </td>
-                    <td class="px-4 py-4 text-sm">{{ je.posting_date }}</td>
-                    <td class="px-4 py-4 text-center">
+                    <td class="px-4 py-3 text-sm">{{ je.posting_date }}</td>
+                    <td class="px-4 py-3 text-center">
                       <span
                         class="inline-block rounded px-2 py-0.5 text-[10px] font-black uppercase"
                         :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
                       >{{ je.direction }}</span>
                     </td>
-                    <td class="px-6 py-4 text-right font-mono text-sm font-black"
+                    <td class="px-4 py-3 text-right font-mono text-sm font-black"
                         :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                       ₹{{ je.unallocated_amount.toLocaleString('en-IN') }}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <input
+                        v-model.number="modalAmounts[je.reference_row]"
+                        type="number" step="0.01" min="0"
+                        :max="je.unallocated_amount"
+                        :disabled="!!allocationRefs.find(r => r.reference_name === je.name && r._row === je.reference_row)"
+                        class="w-28 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-sm font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-40"
+                      />
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <button
+                        @click="addEntryToAllocation({ reference_doctype: 'Journal Entry', reference_name: je.name, total_amount: je.unallocated_amount, outstanding_amount: je.unallocated_amount, _row: je.reference_row }, je.reference_row)"
+                        :disabled="!!allocationRefs.find(r => r._row === je.reference_row)"
+                        class="rounded-lg px-3 py-1 text-[10px] font-black uppercase transition-all whitespace-nowrap"
+                        :class="allocationRefs.find(r => r._row === je.reference_row)
+                          ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
+                          : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
+                      >{{ allocationRefs.find(r => r._row === je.reference_row) ? '✓ Added' : '+ Add' }}</button>
                     </td>
                   </tr>
                 </tbody>
@@ -417,6 +469,7 @@ const unlinkedJournals = ref([])
 const showInvoicesModal = ref(false)
 const loadingInvoices = ref(false)
 const allocationRefs = ref([])
+const modalAmounts = reactive({})
 
 // --- Computed ---
 const isFormValid = computed(() => {
@@ -510,14 +563,17 @@ function handleSelect(item) {
   }
 }
 
-function addToAllocation(inv) {
-  if (allocationRefs.value.find(r => r.reference_name === inv.name)) return
+function addEntryToAllocation({ reference_doctype, reference_name, total_amount, outstanding_amount, _row }, amountKey) {
+  const dupKey = _row ? '_row' : 'reference_name'
+  const dupVal = _row ?? reference_name
+  if (allocationRefs.value.find(r => r[dupKey] === dupVal)) return
   allocationRefs.value.push({
-    reference_doctype: invoiceDocType.value,
-    reference_name: inv.name,
-    total_amount: inv.grand_total,
-    outstanding_amount: inv.outstanding_amount,
-    allocated_amount: inv.outstanding_amount,
+    reference_doctype,
+    reference_name,
+    total_amount: total_amount ?? outstanding_amount,
+    outstanding_amount,
+    allocated_amount: parseFloat(modalAmounts[amountKey]) || outstanding_amount,
+    ...(_row ? { _row } : {}),
   })
 }
 
@@ -544,6 +600,11 @@ async function fetchInvoices() {
     invoices.value = outstandingRes.docs || []
     unlinkedPayments.value = unlinkedRes.payment_entries || []
     unlinkedJournals.value = unlinkedRes.journal_entries || []
+
+    // Pre-fill modal amount inputs with full outstanding/unallocated amounts
+    invoices.value.forEach(inv => { modalAmounts[inv.name] = inv.outstanding_amount })
+    unlinkedPayments.value.forEach(pe => { modalAmounts[pe.name] = pe.unallocated_amount })
+    unlinkedJournals.value.forEach(je => { modalAmounts[je.reference_row] = je.unallocated_amount })
   } catch (e) {
     console.error('Failed to fetch invoices:', e)
   } finally {
@@ -573,6 +634,10 @@ async function fetchOutstanding() {
   }
 }
 
+function clearModalAmounts() {
+  Object.keys(modalAmounts).forEach(k => delete modalAmounts[k])
+}
+
 function handlePartyTypeChange() {
   form.party = ''
   form.party_name = ''
@@ -582,6 +647,7 @@ function handlePartyTypeChange() {
   unlinkedPayments.value = []
   unlinkedJournals.value = []
   allocationRefs.value = []
+  clearModalAmounts()
   
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
@@ -602,7 +668,8 @@ function resetForm() {
   unlinkedPayments.value = []
   unlinkedJournals.value = []
   allocationRefs.value = []
-  
+  clearModalAmounts()
+
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
     accountQuery.value = 'Debtors'
