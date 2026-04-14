@@ -92,8 +92,14 @@
                 ? 'border-[var(--color-info)] bg-[var(--color-info)]/30 shadow-sm'
                 : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-info)] hover:bg-[var(--color-surface)]/40'"
             >
-              <div class="mb-1 font-mono text-sm font-bold text-[var(--color-text)]">{{ inv.voucher_no }}</div>
-              <div class="text-[11px] text-[var(--color-text-muted)]">{{ fmtDate(inv.due_date) }}</div>
+              <div class="mb-1 flex items-center gap-1.5">
+                <span class="font-mono text-sm font-bold text-[var(--color-text)]">{{ inv.voucher_no }}</span>
+                <span
+                  v-if="inv.voucher_type === 'Journal Entry'"
+                  class="rounded bg-[var(--color-warning)]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--color-warning)]"
+                >JV</span>
+              </div>
+              <div class="text-[11px] text-[var(--color-text-muted)]">{{ fmtDate(inv.due_date || inv.posting_date) }}</div>
               <div class="mt-2 flex items-end justify-between">
                 <div>
                   <div class="text-[10px] text-[var(--color-text-muted)]">Outstanding</div>
