@@ -319,7 +319,16 @@ function confirmAdjustments() {
     }
 
     if (targetKey) {
-      localModalAmounts.value[targetKey] = (parseFloat(localModalAmounts.value[targetKey]) || 0) + remainingBalance.value
+      // Cap at the item's outstanding amount so allocated_amount never exceeds outstanding_amount
+      const invItem = props.invoices.find(i => i.name === targetKey)
+      const jeItem = props.unlinkedJournals.find(j => j.reference_row === targetKey)
+      const maxOutstanding = invItem
+        ? Math.abs(invItem.outstanding_amount)
+        : jeItem
+          ? Math.abs(jeItem.unallocated_amount)
+          : Infinity
+      const current = parseFloat(localModalAmounts.value[targetKey]) || 0
+      localModalAmounts.value[targetKey] = Math.min(current + remainingBalance.value, maxOutstanding)
     }
   }
   
