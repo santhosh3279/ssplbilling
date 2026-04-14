@@ -344,26 +344,30 @@ function confirmAdjustments() {
   if (Math.abs(remainingBalance.value) > 0.005) {
     let targetKey = lastModifiedKey.value
 
-    // If no manual edit, find the last row that has any allocation
+    // If last modified key is not in visible rows, clear it
+    const allVisibleKeys = [
+      ...filteredInvoices.value.map(i => i.name),
+      ...filteredPayments.value.map(p => p.name),
+      ...filteredJournals.value.map(j => j.reference_row)
+    ]
+    
+    if (targetKey && !allVisibleKeys.includes(targetKey)) {
+      targetKey = null
+    }
+
+    // If no valid manual edit, find the last row that has any allocation among VISIBLE items
     if (!targetKey) {
-      const allPossibleKeys = [
-        ...props.invoices.map(i => i.name),
-        ...props.unlinkedPayments.map(p => p.name),
-        ...props.unlinkedJournals.map(j => j.reference_row)
-      ]
-      for (let i = allPossibleKeys.length - 1; i >= 0; i--) {
-        if (localModalAmounts.value[allPossibleKeys[i]] > 0) {
-          targetKey = allPossibleKeys[i]
+      for (let i = allVisibleKeys.length - 1; i >= 0; i--) {
+        if (localModalAmounts.value[allVisibleKeys[i]] > 0) {
+          targetKey = allVisibleKeys[i]
           break
         }
       }
     }
 
-    // If still no target, just pick the last item in the list if it exists
-    if (!targetKey) {
-      if (props.unlinkedJournals.length) targetKey = props.unlinkedJournals[props.unlinkedJournals.length - 1].reference_row
-      else if (props.unlinkedPayments.length) targetKey = props.unlinkedPayments[props.unlinkedPayments.length - 1].name
-      else if (props.invoices.length) targetKey = props.invoices[props.invoices.length - 1].name
+    // If still no target, just pick the last item in the CURRENT VISIBLE list if it exists
+    if (!targetKey && allVisibleKeys.length > 0) {
+      targetKey = allVisibleKeys[allVisibleKeys.length - 1]
     }
 
     if (targetKey) {

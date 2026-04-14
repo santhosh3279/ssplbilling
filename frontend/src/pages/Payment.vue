@@ -470,6 +470,10 @@ function handleSelect(item) {
     form.party_name = item.label || item.customer_name || item.supplier_name || item.employee_name || item.name
     partyQuery.value = form.party_name
     
+    // Clear previous allocations
+    allocationRefs.value = []
+    clearModalAmounts()
+    
     // Automatically select party type based on selection
     if (item.type) {
       form.party_type = item.type
