@@ -1,22 +1,55 @@
 <template>
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- Header -->
-    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-sm">
-      <div class="flex items-center gap-4">
-        <button 
+    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2.5 shadow-sm">
+      <!-- Left: back + title -->
+      <div class="flex items-center gap-3">
+        <button
           @click="router.push('/')"
-          class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-[var(--color-midlight)] transition-colors"
+          class="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-[var(--color-midlight)] transition-colors"
         >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h1 class="text-2xl font-bold tracking-tight">Payment & Receipt Entry</h1>
+        <h1 class="text-lg font-black uppercase tracking-tight">Payment & Receipt Entry</h1>
       </div>
-      <div class="flex items-center gap-3">
-        <div class="text-right">
-          <div class="text-sm font-medium text-[var(--color-text-muted)] uppercase tracking-wider">{{ todayDate }}</div>
-          <div class="text-xs font-bold text-[var(--color-highlight)]">{{ currentTime }}</div>
+
+      <!-- Center: Payment / Receipt tabs -->
+      <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
+        <button
+          v-for="t in ['Payment', 'Receipt']"
+          :key="t"
+          @click="activeTab = t"
+          class="min-w-[110px] rounded-md px-5 py-1.5 text-sm font-black uppercase tracking-wide transition-all duration-200"
+          :class="activeTab === t
+            ? 'bg-[var(--color-highlight)] text-white shadow-sm'
+            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
+        >
+          {{ t }}
+        </button>
+      </div>
+
+      <!-- Right: Posting Date with arrow nav -->
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
+        <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+          <button
+            @click="adjustDate(-1)"
+            class="rounded-l-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div class="relative min-w-[110px] px-3 py-1.5 text-center">
+            <span class="text-sm font-black">{{ displayDate }}</span>
+            <input type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer" />
+          </div>
+          <button
+            @click="adjustDate(1)"
+            class="rounded-r-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
         </div>
       </div>
     </header>
@@ -25,55 +58,6 @@
     <main class="flex-1 overflow-hidden p-4">
       <div class="flex h-full flex-col gap-4">
         
-        <!-- Tab Switcher & Posting Date -->
-        <div class="flex items-center justify-between">
-          <div class="flex rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-xl">
-            <button
-              v-for="t in ['Payment', 'Receipt']"
-              :key="t"
-              @click="activeTab = t"
-              class="min-w-[180px] rounded-xl px-8 py-3 text-xl font-black transition-all duration-300"
-              :class="activeTab === t 
-                ? 'bg-[var(--color-highlight)] text-white shadow-lg scale-[1.05]' 
-                : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
-            >
-              {{ t }}
-            </button>
-          </div>
-
-          <!-- Posting Date with Arrows -->
-          <div class="flex items-center gap-6 bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl px-6 py-3 shadow-xl">
-            <label class="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Posting Date</label>
-            
-            <div class="flex items-center gap-4">
-              <button 
-                @click="adjustDate(-1)"
-                class="h-10 w-10 flex items-center justify-center rounded-full bg-[var(--color-midlight)] hover:bg-[var(--color-highlight)] hover:text-white transition-all text-xl font-black shadow-md active:scale-90"
-              >
-                ‹
-              </button>
-              
-              <div class="relative group min-w-[180px] text-center">
-                <div class="text-2xl font-black tracking-tight text-[var(--color-text)] group-hover:text-[var(--color-highlight)] transition-colors cursor-pointer">
-                  {{ displayDate }}
-                </div>
-                <input 
-                  type="date" 
-                  v-model="postingDate"
-                  class="absolute inset-0 opacity-0 cursor-pointer"
-                />
-              </div>
-
-              <button 
-                @click="adjustDate(1)"
-                class="h-10 w-10 flex items-center justify-center rounded-full bg-[var(--color-midlight)] hover:bg-[var(--color-highlight)] hover:text-white transition-all text-xl font-black shadow-md active:scale-90"
-              >
-                ›
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- Form Row (Table Style) -->
         <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
           <table class="w-full text-left border-collapse">
@@ -271,18 +255,18 @@
           <button
             @click="handleSubmit"
             :disabled="submitting || !isFormValid"
-            class="group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-[var(--color-success)] px-12 py-4 text-xl font-black text-white shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale"
+            class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-white shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale"
           >
-            <span v-if="submitting" class="flex items-center gap-2">
-              <svg class="h-6 w-6 animate-spin" viewBox="0 0 24 24">
+            <span v-if="submitting" class="flex items-center gap-3">
+              <svg class="h-10 w-10 animate-spin" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               Saving...
             </span>
-            <span v-else class="flex items-center gap-3">
+            <span v-else class="flex items-center gap-4">
               Save {{ activeTab }}
-              <svg class="h-6 w-6 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="h-10 w-10 transition-transform group-hover:translate-x-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </span>
