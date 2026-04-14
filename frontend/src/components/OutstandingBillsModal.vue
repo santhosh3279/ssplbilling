@@ -372,9 +372,11 @@ function confirmAdjustments() {
 
     if (targetKey) {
       localModalAmounts.value[targetKey] = (parseFloat(localModalAmounts.value[targetKey]) || 0) + remainingBalance.value
-      emitAllocations()
     }
   }
+  
+  // Always emit allocations before closing, even if balance was already 0
+  emitAllocations()
   emit('close')
 }
 
