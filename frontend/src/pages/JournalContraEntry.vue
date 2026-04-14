@@ -465,14 +465,11 @@ function selectLedger(ledger) {
   
   // Move focus to next available column after selection
   nextTick(() => {
-    // If now balanced, move to remarks
-    if (Math.abs(difference.value) < 0.01 && totalDebit.value > 0) {
-      remarksInput.value?.focus()
-      return
-    }
-
     let el = null
-    if (isFieldDisabled(activeRowIdx.value, 'debit')) {
+    // Prioritize the field that has a value (useful for Journal entries where both are enabled)
+    if (row.credit > 0.005 && row.debit === 0) {
+      el = creditRefs[activeRowIdx.value]
+    } else if (isFieldDisabled(activeRowIdx.value, 'debit')) {
       el = creditRefs[activeRowIdx.value]
     } else {
       el = debitRefs[activeRowIdx.value]
