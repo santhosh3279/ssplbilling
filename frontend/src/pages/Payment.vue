@@ -319,7 +319,7 @@
 
     <!-- Outstanding Invoices Modal -->
     <div v-if="showInvoicesModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div class="w-full max-w-4xl rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
+      <div class="w-full max-w-[90vw] rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border border-[var(--color-border)]">
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-6">
             <h2 class="text-2xl font-black uppercase tracking-tight">Outstanding & Unlinked Items</h2>
