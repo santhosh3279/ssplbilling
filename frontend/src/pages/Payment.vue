@@ -236,10 +236,12 @@
           <div class="flex flex-col gap-1.5">
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref No (Cheque/UPI)</label>
             <input
+              ref="refNoInput"
               v-model="form.reference_no"
               type="text"
               class="w-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
               placeholder="Ref / Chq No..."
+              @keydown.enter="saveBtn?.focus()"
             />
           </div>
           <div class="flex flex-col gap-1.5">
@@ -264,6 +266,7 @@
 
           <!-- Save Button -->
           <button
+            ref="saveBtn"
             @click="handleSubmit"
             :disabled="submitting || !isFormValid"
             class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-white shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale"
@@ -349,6 +352,8 @@ const router = useRouter()
 const activeTab = ref('Payment')
 const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
+const refNoInput = ref(null)
+const saveBtn = ref(null)
 
 function cycleTab() {
   activeTab.value = activeTab.value === 'Payment' ? 'Receipt' : 'Payment'
@@ -516,6 +521,10 @@ function handleSelect(item) {
 
 function updateAllocations(allocations) {
   allocationRefs.value = allocations
+  nextTick(() => {
+    refNoInput.value?.focus()
+    refNoInput.value?.select()
+  })
 }
 
 function removeAllocation(idx) {
