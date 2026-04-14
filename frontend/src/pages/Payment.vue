@@ -27,28 +27,50 @@
         
         <!-- Tab Switcher & Posting Date -->
         <div class="flex items-center justify-between">
-          <div class="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-sm">
+          <div class="flex rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-xl">
             <button
               v-for="t in ['Payment', 'Receipt']"
               :key="t"
               @click="activeTab = t"
-              class="min-w-[120px] rounded-lg px-4 py-1.5 text-sm font-bold transition-all duration-200"
+              class="min-w-[180px] rounded-xl px-8 py-3 text-xl font-black transition-all duration-300"
               :class="activeTab === t 
-                ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-md' 
+                ? 'bg-[var(--color-highlight)] text-white shadow-lg scale-[1.05]' 
                 : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
             >
               {{ t }}
             </button>
           </div>
 
-          <!-- Posting Date -->
-          <div class="flex items-center gap-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-1.5 shadow-sm">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</label>
-            <input 
-              type="date" 
-              v-model="postingDate"
-              class="bg-transparent border-none text-sm font-bold text-[var(--color-text)] focus:ring-0 p-0 cursor-pointer"
-            />
+          <!-- Posting Date with Arrows -->
+          <div class="flex items-center gap-6 bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl px-6 py-3 shadow-xl">
+            <label class="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Posting Date</label>
+            
+            <div class="flex items-center gap-4">
+              <button 
+                @click="adjustDate(-1)"
+                class="h-10 w-10 flex items-center justify-center rounded-full bg-[var(--color-midlight)] hover:bg-[var(--color-highlight)] hover:text-white transition-all text-xl font-black shadow-md active:scale-90"
+              >
+                ‹
+              </button>
+              
+              <div class="relative group min-w-[180px] text-center">
+                <div class="text-2xl font-black tracking-tight text-[var(--color-text)] group-hover:text-[var(--color-highlight)] transition-colors cursor-pointer">
+                  {{ displayDate }}
+                </div>
+                <input 
+                  type="date" 
+                  v-model="postingDate"
+                  class="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+
+              <button 
+                @click="adjustDate(1)"
+                class="h-10 w-10 flex items-center justify-center rounded-full bg-[var(--color-midlight)] hover:bg-[var(--color-highlight)] hover:text-white transition-all text-xl font-black shadow-md active:scale-90"
+              >
+                ›
+              </button>
+            </div>
           </div>
         </div>
 
@@ -524,6 +546,22 @@ const router = useRouter()
 // --- State ---
 const activeTab = ref('Payment')
 const postingDate = ref(new Date().toISOString().split('T')[0])
+const displayDate = computed(() => {
+  if (!postingDate.value) return ''
+  const d = new Date(postingDate.value)
+  const day = String(d.getDate()).padStart(2, '0')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[d.getMonth()]
+  const year = d.getFullYear()
+  return `${day}-${month}-${year}`
+})
+
+function adjustDate(days) {
+  const d = new Date(postingDate.value)
+  d.setDate(d.getDate() + days)
+  postingDate.value = d.toISOString().split('T')[0]
+}
+
 const form = reactive({
   party_type: 'Customer',
   party: '',
@@ -760,6 +798,7 @@ function handlePartyTypeChange() {
 }
 
 function resetForm() {
+  postingDate.value = new Date().toISOString().split('T')[0]
   form.party = ''
   form.party_name = ''
   partyQuery.value = ''
