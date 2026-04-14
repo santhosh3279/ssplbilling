@@ -588,10 +588,6 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
   if (!form.party) return
   loadingInvoices.value = true
   
-  if (!autoShowOnlyIfItems) {
-    showInvoicesModal.value = true
-  }
-
   try {
     const [outstandingRes, unlinkedRes] = await Promise.all([
       frappeGet('ssplbilling.api.reconcile_api.get_outstanding_docs', {
@@ -641,11 +637,19 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
       remainingToAllocate -= alloc
     })
 
-    if (autoShowOnlyIfItems) {
-      const hasItems = invoices.value.length > 0 || unlinkedPayments.value.length > 0 || unlinkedJournals.value.length > 0
-      if (hasItems) {
-        showInvoicesModal.value = true
-      }
+    // Check if there are any items in the target direction
+    const hasTargetItems = 
+      invoices.value.some(i => i.direction === targetDir) ||
+      unlinkedPayments.value.some(p => (p.payment_type === 'Receive' ? 'Cr' : 'Dr') === targetDir) ||
+      unlinkedJournals.value.some(j => j.direction === targetDir)
+
+    if (hasTargetItems) {
+      showInvoicesModal.value = true
+    } else {
+      showInvoicesModal.value = false
+      nextTick(() => {
+        refNoInput.value?.focus()
+      })
     }
   } catch (e) {
     console.error('Failed to fetch invoices:', e)
