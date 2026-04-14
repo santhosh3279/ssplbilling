@@ -58,7 +58,13 @@
     </header>
 
     <!-- Initial Selection Overlay -->
-    <div v-if="showInitialSelection" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md">
+    <div
+      v-if="showInitialSelection"
+      ref="selectionOverlayRef"
+      tabindex="0"
+      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md outline-none"
+      @keydown="onSelectionKeydown"
+    >
       <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-12 text-center shadow-2xl border border-[var(--color-border)] relative">
         <!-- Close/Back -->
         <button
@@ -74,19 +80,28 @@
         <div class="grid grid-cols-2 gap-8">
           <button
             @click="selectEntryType('Payment')"
-            class="flex flex-col items-center gap-6 rounded-2xl bg-red-500/10 p-12 border-2 border-red-500/30 hover:bg-red-500/20 hover:border-red-500 transition-all group"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
+            :class="selectionIdx === 0
+              ? 'bg-red-500/25 border-red-500 scale-105 shadow-xl'
+              : 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20 hover:border-red-500'"
           >
             <span class="text-8xl">💸</span>
             <span class="text-4xl font-black text-red-500 uppercase">Payment</span>
           </button>
           <button
             @click="selectEntryType('Receipt')"
-            class="flex flex-col items-center gap-6 rounded-2xl bg-green-500/10 p-12 border-2 border-green-500/30 hover:bg-green-500/20 hover:border-green-500 transition-all group"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
+            :class="selectionIdx === 1
+              ? 'bg-green-500/25 border-green-500 scale-105 shadow-xl'
+              : 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20 hover:border-green-500'"
           >
             <span class="text-8xl">💰</span>
             <span class="text-4xl font-black text-green-500 uppercase">Receipt</span>
           </button>
         </div>
+        <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+          ← → or Tab to navigate &nbsp;·&nbsp; Enter to select &nbsp;·&nbsp; Esc to go back
+        </p>
       </div>
     </div>
 
@@ -234,12 +249,17 @@
         <!-- Middle: Reference Info -->
         <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
           <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref No (Cheque/UPI)</label>
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
+              Ref No (Cheque/UPI) <span class="text-[var(--color-danger)]">* min 5</span>
+            </label>
             <input
               ref="refNoInput"
               v-model="form.reference_no"
               type="text"
-              class="w-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+              class="w-40 rounded-xl border px-3 py-1.5 text-sm font-bold focus:outline-none transition-all"
+              :class="refValid
+                ? 'border-[var(--color-success)] bg-[var(--color-success)]/10 focus:border-[var(--color-success)]'
+                : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)] focus:border-[var(--color-danger)]'"
               placeholder="Ref / Chq No..."
               @keydown.enter="saveBtn?.focus()"
             />
@@ -354,19 +374,44 @@ const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
+const selectionOverlayRef = ref(null)
+const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt
+const ENTRY_TYPES = ['Payment', 'Receipt']
 
 function cycleTab() {
   activeTab.value = activeTab.value === 'Payment' ? 'Receipt' : 'Payment'
 }
 
+function onSelectionKeydown(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') {
+    e.preventDefault()
+    selectionIdx.value = (selectionIdx.value + 1) % 2
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    selectionIdx.value = (selectionIdx.value + 1) % 2
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    selectEntryType(ENTRY_TYPES[selectionIdx.value])
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    router.push('/')
+  }
+}
+
 function selectEntryType(type) {
   activeTab.value = type
   showInitialSelection.value = false
-  // Briefly wait for overlay to vanish before opening modal
   setTimeout(() => {
     openSearch('party')
   }, 100)
 }
+
+watch(showInitialSelection, (val) => {
+  if (val) {
+    selectionIdx.value = 0
+    nextTick(() => selectionOverlayRef.value?.focus())
+  }
+})
 
 useShortcuts(paymentShortcuts({
   cycleTab,
@@ -420,8 +465,10 @@ const allocationRefs = ref([])
 const modalAmounts = reactive({})
 
 // --- Computed ---
+const refValid = computed(() => form.reference_no.replace(/\s/g, '').length >= 5)
+
 const isFormValid = computed(() => {
-  return form.party && form.amount > 0 && form.mop_account
+  return form.party && form.amount > 0 && form.mop_account && refValid.value
 })
 
 const invoiceDocType = computed(() =>
@@ -609,18 +656,11 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
 
 async function fetchOutstanding() {
   if (!form.party) return
-  
   try {
-    const method = form.party_type === 'Customer' 
-      ? 'ssplbilling.api.payment_api.get_customer_ledger'
-      : 'ssplbilling.api.payment_api.get_ledger'
-      
-    const res = await frappeGet(method, { 
-      [form.party_type.toLowerCase()]: form.party,
-      party_type: form.party_type,
-      party: form.party
+    const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
+      ledger_name: form.party,
+      ledger_type: form.party_type,
     })
-    
     if (res && res.closing_balance !== undefined) {
       outstandingBalance.value = res.closing_balance
     }
@@ -730,6 +770,7 @@ function closeSuccess() {
 onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
+  nextTick(() => selectionOverlayRef.value?.focus())
 })
 
 watch(activeTab, () => {
