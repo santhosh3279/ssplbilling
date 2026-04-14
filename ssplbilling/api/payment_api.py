@@ -178,6 +178,15 @@ def create_payment_entry(data=None, **kwargs):
         pe.paid_from = data.get("paid_from") or mop_account
         pe.paid_to = data.get("paid_to") or party_account
             
+    for ref in (data.get("references") or []):
+        pe.append("references", {
+            "reference_doctype": ref.get("reference_doctype"),
+            "reference_name": ref.get("reference_name"),
+            "total_amount": float(ref.get("total_amount") or 0),
+            "outstanding_amount": float(ref.get("outstanding_amount") or 0),
+            "allocated_amount": float(ref.get("allocated_amount") or 0),
+        })
+
     pe.insert()
     pe.submit()
     return {"payment_entry": pe.name}

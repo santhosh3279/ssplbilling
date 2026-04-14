@@ -162,7 +162,53 @@
           </div>
         </div>
 
-        <!-- Extra Space/History could go here -->
+        <!-- Payment References / Allocation Table -->
+        <div v-if="allocationRefs.length" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Payment References</h3>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-black uppercase text-[var(--color-text-muted)]">Total Allocated</span>
+              <span class="text-base font-black" :class="totalAllocated > (form.amount || 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                ₹{{ totalAllocated.toLocaleString('en-IN') }}
+              </span>
+            </div>
+          </div>
+          <div class="rounded-xl border border-[var(--color-border)] overflow-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+                <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                  <th class="px-4 py-3">Type</th>
+                  <th class="px-4 py-3">Voucher No</th>
+                  <th class="px-4 py-3 text-right">Outstanding</th>
+                  <th class="px-4 py-3 text-right">Allocated (₹)</th>
+                  <th class="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[var(--color-border)]">
+                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="hover:bg-[var(--color-midlight)]/30 transition-colors">
+                  <td class="px-4 py-3 text-xs text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</td>
+                  <td class="px-4 py-3 font-mono text-sm font-black">{{ ref.reference_name }}</td>
+                  <td class="px-4 py-3 text-right text-sm text-[var(--color-text-muted)]">₹{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
+                  <td class="px-4 py-3 text-right">
+                    <input
+                      v-model.number="ref.allocated_amount"
+                      type="number" step="0.01" min="0"
+                      class="w-32 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                    />
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      @click="removeAllocation(idx)"
+                      class="h-6 w-6 rounded-md bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/25 text-[var(--color-danger)] text-xs flex items-center justify-center ml-auto transition-all"
+                    >✕</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Empty state placeholder -->
         <div class="flex-1 flex items-center justify-center opacity-10">
            <svg class="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -212,8 +258,8 @@
         </div>
         
         <div class="max-h-[60vh] overflow-y-auto pr-2 space-y-8 custom-scrollbar">
-          <!-- Outstanding Invoices (Receipt tab only) -->
-          <div v-if="activeTab === 'Receipt' && (invoices.length || (!filteredPayments.length && !filteredJournals.length && !loadingInvoices))">
+          <!-- Outstanding Invoices -->
+          <div v-if="invoices.length || (!filteredPayments.length && !filteredJournals.length && !loadingInvoices)">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-2 px-1">
               <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
               Outstanding Invoices
@@ -225,19 +271,30 @@
                     <th class="px-6 py-3">Voucher No</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-6 py-3 text-right">Outstanding</th>
+                    <th class="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr v-if="loadingInvoices">
-                    <td colspan="3" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
+                    <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
                   </tr>
                   <tr v-else-if="!invoices.length">
-                    <td colspan="3" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
+                    <td colspan="4" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding invoices found.</td>
                   </tr>
                   <tr v-for="inv in invoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
                     <td class="px-6 py-4 font-mono text-sm font-bold">{{ inv.name }}</td>
                     <td class="px-4 py-4 text-sm">{{ inv.posting_date }}</td>
                     <td class="px-6 py-4 text-right font-mono text-sm font-black text-[var(--color-danger)]">₹{{ inv.outstanding_amount.toLocaleString('en-IN') }}</td>
+                    <td class="px-4 py-4 text-right">
+                      <button
+                        @click="addToAllocation(inv)"
+                        :disabled="!!allocationRefs.find(r => r.reference_name === inv.name)"
+                        class="rounded-lg px-3 py-1 text-[10px] font-black uppercase transition-all"
+                        :class="allocationRefs.find(r => r.reference_name === inv.name)
+                          ? 'bg-[var(--color-success)]/15 text-[var(--color-success)] cursor-not-allowed'
+                          : 'bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white'"
+                      >{{ allocationRefs.find(r => r.reference_name === inv.name) ? 'Added' : '+ Add' }}</button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -359,6 +416,7 @@ const unlinkedPayments = ref([])
 const unlinkedJournals = ref([])
 const showInvoicesModal = ref(false)
 const loadingInvoices = ref(false)
+const allocationRefs = ref([])
 
 // --- Computed ---
 const isFormValid = computed(() => {
@@ -375,6 +433,14 @@ const filteredPayments = computed(() =>
   activeTab.value === 'Receipt'
     ? unlinkedPayments.value.filter(p => p.payment_type === 'Receive')
     : unlinkedPayments.value.filter(p => p.payment_type === 'Pay')
+)
+
+const invoiceDocType = computed(() =>
+  form.party_type === 'Customer' ? 'Sales Invoice' : 'Purchase Invoice'
+)
+
+const totalAllocated = computed(() =>
+  allocationRefs.value.reduce((sum, r) => sum + (parseFloat(r.allocated_amount) || 0), 0)
 )
 
 const todayDate = computed(() => {
@@ -444,6 +510,21 @@ function handleSelect(item) {
   }
 }
 
+function addToAllocation(inv) {
+  if (allocationRefs.value.find(r => r.reference_name === inv.name)) return
+  allocationRefs.value.push({
+    reference_doctype: invoiceDocType.value,
+    reference_name: inv.name,
+    total_amount: inv.grand_total,
+    outstanding_amount: inv.outstanding_amount,
+    allocated_amount: inv.outstanding_amount,
+  })
+}
+
+function removeAllocation(idx) {
+  allocationRefs.value.splice(idx, 1)
+}
+
 async function fetchInvoices() {
   if (!form.party) return
   loadingInvoices.value = true
@@ -500,6 +581,7 @@ function handlePartyTypeChange() {
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
+  allocationRefs.value = []
   
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
@@ -519,6 +601,7 @@ function resetForm() {
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
+  allocationRefs.value = []
   
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
@@ -543,8 +626,15 @@ async function handleSubmit() {
       party: form.party,
       amount: form.amount,
       mop_account: form.mop_account,
-      account: form.account, // Party Account
-      posting_date: postingDate.value
+      account: form.account,
+      posting_date: postingDate.value,
+      references: allocationRefs.value.map(r => ({
+        reference_doctype: r.reference_doctype,
+        reference_name: r.reference_name,
+        total_amount: r.total_amount,
+        outstanding_amount: r.outstanding_amount,
+        allocated_amount: parseFloat(r.allocated_amount) || 0,
+      })),
     }
     
     const res = await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
