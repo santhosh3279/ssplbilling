@@ -324,6 +324,7 @@ import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.j
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
+import { useLedgerCache } from '../services/ledgerCache.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
@@ -332,6 +333,7 @@ import { useTheme } from '../composables/useTheme'
 const router = useRouter()
 
 const { refreshItemCache } = useItemCache()
+const { refreshLedgerCache } = useLedgerCache()
 const { user: currentUser } = session
 
 // ==================== PERMISSIONS & ROLES ====================
@@ -795,6 +797,7 @@ onMounted(async () => {
 
   fetchSettings(selectedUser.value)
   refreshItemCache('Sales') // Preload items for fast entry
+  refreshLedgerCache()      // Preload ledgers for fast search
 })
 onUnmounted(() => {
   window.removeEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))

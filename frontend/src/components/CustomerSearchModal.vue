@@ -45,7 +45,7 @@
             Edit Details <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-text-muted)]">F3</kbd>
           </button>
           <button
-            @click="preloadLedger"
+            @click="preloadLedger(true)"
             class="flex items-center gap-2 rounded-lg border border-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-2 text-lg font-semibold text-[var(--color-highlight)] transition-colors"
           >
             🔄 Refresh <kbd class="ml-1 rounded border border-[var(--color-highlight)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-highlight)]">F5</kbd>
@@ -228,6 +228,7 @@ import { ref, nextTick, watch, computed, onMounted } from 'vue'
 import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { getUserRole } from '../composables/usePermission.js'
+import { useLedgerCache } from '../services/ledgerCache.js'
 import DateFilter from './DateFilter.vue'
 import CustomerCreator from './CustomerCreator.vue'
 import SupplierCreator from './SupplierCreator.vue'
@@ -254,11 +255,11 @@ const emit = defineEmits(['close', 'select'])
 useSubwindowWatcher(computed(() => props.show))
 
 // ─── State ────────────────────────────────────────────────────────────────────
+const { ledgers: allLedgers, refreshLedgerCache, syncLoading } = useLedgerCache()
 const query        = ref('')
-const allLedgers   = ref([])
 const activeType   = ref(props.initialType)
 const selectedIdx  = ref(0)
-const loading      = ref(false)
+const loading      = computed(() => syncLoading.value)
 
 const searchInput        = ref(null)
 const scrollContainer    = ref(null)
@@ -272,15 +273,12 @@ const formPartyType  = ref('Customer') // 'Customer' | 'Supplier' | 'Employee'
 const newCustomerName = ref('')
 
 // ─── Data Preloading ──────────────────────────────────────────────────────────
-async function preloadLedger() {
-  loading.value = true
+async function preloadLedger(force = false) {
+  if (!force && allLedgers.value.length > 0) return
   try {
-    const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers')
-    allLedgers.value = data || []
+    await refreshLedgerCache()
   } catch (e) {
     console.error('[CustomerSearchModal] Preload failed:', e)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -390,7 +388,7 @@ function handleGlobalKeydown(e) {
     if (item && (item.type === 'Customer' || item.type === 'Supplier' || item.type === 'Employee')) openEditForm(item)
   } else if (e.key === 'F5') {
     e.preventDefault()
-    preloadLedger()
+    preloadLedger(true)
   } else if (e.key === 'F7') {
     e.preventDefault()
     const types = availableTabs.value
@@ -484,7 +482,7 @@ function closeSubForm() {
 
 // ─── Supplier saved callback ──────────────────────────────────────────────────
 async function onSupplierSaved(result) {
-  await preloadLedger()
+  await preloadLedger(true)
   const savedName = result.name || result.supplier_name
   const foundIdx = results.value.findIndex(c => c.name === savedName)
   if (foundIdx !== -1) selectedIdx.value = foundIdx
@@ -496,7 +494,7 @@ async function onSupplierSaved(result) {
 }
 
 async function onEmployeeSaved(result) {
-  await preloadLedger()
+  await preloadLedger(true)
   const savedName = result.name || result.employee_name
   const foundIdx = results.value.findIndex(c => c.name === savedName)
   if (foundIdx !== -1) selectedIdx.value = foundIdx
@@ -509,7 +507,7 @@ async function onEmployeeSaved(result) {
 
 // ─── Customer saved callback ──────────────────────────────────────────────────
 async function onCustomerSaved(result) {
-  await preloadLedger()
+  await preloadLedger(true)
   const savedName = result.name || result.customer_name
   const foundIdx = results.value.findIndex(c => c.name === savedName)
   if (foundIdx !== -1) selectedIdx.value = foundIdx
