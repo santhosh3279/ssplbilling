@@ -139,7 +139,7 @@
       ref="quickSearchRef"
       :results="quickSearchResults"
       :query="barcodeQuery"
-      :anchor-el="barcodeInput"
+      :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
     />
@@ -188,6 +188,7 @@ const itemSearchInitialQuery = ref('')
 
 const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
+const quickSearchAnchor = ref(null)
 
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const recentTransfers = ref([])
@@ -239,6 +240,7 @@ function onBarcodeInput() {
   const code = barcodeQuery.value.trim()
   if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code)
+    quickSearchAnchor.value = barcodeInput.value
   } else {
     quickSearchResults.value = []
   }
