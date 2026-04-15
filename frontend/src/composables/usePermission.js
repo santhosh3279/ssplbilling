@@ -91,7 +91,7 @@ export function getUserRole() {
  * Dashboard and Login are always accessible.
  */
 export function canAccessRoute(routeName) {
-  if (!routeName || routeName === 'Dashboard' || routeName === 'Login') return true
+  if (!routeName || routeName === 'Dashboard' || routeName === 'Login' || routeName === 'DailyReport') return true
   const role = getUserRole()
   if (role === 'admin') return true
   if (role === 'accounts') return ACCOUNTS_ROUTES.has(routeName)
