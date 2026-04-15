@@ -77,7 +77,32 @@
       </template>
 
       <template #table-extra-rows>
-        <tr v-if="!isReadOnly" class="bg-[var(--color-highlight)]/5">
+        <!-- Pending item row -->
+        <template v-if="pendingItem && !isReadOnly">
+          <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/10 font-bold">
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-3xl font-mono text-center">+</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ pendingItem.item_code }}</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ pendingItem.item_name }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <input
+                ref="pendingQtyInput"
+                v-model.number="pendingItem.qty"
+                type="number"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                @keydown="handlePendingQtyKeydown"
+              />
+            </td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ pendingItem.rate }}</td>
+            <td colspan="3" class="border-r border-[var(--color-border)]"></td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ (pendingItem.qty * pendingItem.rate).toFixed(2) }}</td>
+            <td class="px-2 py-1 text-center">
+              <button class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-danger)]" @click="pendingItem = null; focusBarcodeInput()">&times;</button>
+            </td>
+          </tr>
+        </template>
+
+        <tr v-if="!isReadOnly && !pendingItem" class="bg-[var(--color-highlight)]/5">
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">*</td>
           <td class="p-0 border-r border-[var(--color-border)]">
             <input
@@ -190,6 +215,9 @@ const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
 
+const pendingItem = ref(null)
+const pendingQtyInput = ref(null)
+
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const recentTransfers = ref([])
 const sidebarSearch = ref('')
@@ -266,18 +294,17 @@ async function handleBarcodeEnter() {
   const match = lookupItemInCache(code)
   
   if (match) {
-    addItem(match)
+    setPendingItem(match)
     barcodeQuery.value = ''
     quickSearchResults.value = []
   } else {
-    // Fallback to server check if not in cache
     const res = await frappePost('ssplbilling.api.SaleEntry_api.get_item_details', { 
       item_code: barcodeQuery.value,
       warehouse: fromWarehouse.value
     })
     
     if (res.found) {
-      addItem(res)
+      setPendingItem(res)
       barcodeQuery.value = ''
       quickSearchResults.value = []
     } else {
@@ -287,10 +314,9 @@ async function handleBarcodeEnter() {
 }
 
 function onQuickSearchSelect(item) {
-  addItem(item)
+  setPendingItem(item)
   barcodeQuery.value = ''
   quickSearchResults.value = []
-  focusBarcodeInput()
 }
 
 function openItemSearch(query) {
@@ -299,25 +325,55 @@ function openItemSearch(query) {
 }
 
 function handleItemSelect(item) {
-  addItem(item)
+  setPendingItem(item)
   barcodeQuery.value = ''
   quickSearchResults.value = []
   showItemSearch.value = false
+}
+
+function setPendingItem(details) {
+  pendingItem.value = {
+    item_code: details.item_code,
+    item_name: details.item_name,
+    qty: 0,
+    uom: details.uom,
+    rate: details.rate || 0
+  }
+  nextTick(() => {
+    pendingQtyInput.value?.focus()
+    pendingQtyInput.value?.select()
+  })
+}
+
+function confirmPendingItem() {
+  if (!pendingItem.value || pendingItem.value.qty <= 0) return
+  const p = pendingItem.value
+  
+  const existing = items.value.find(i => i.item_code === p.item_code)
+  if (existing) {
+    existing.qty += p.qty
+  } else {
+    items.value.push({
+      item_code: p.item_code,
+      item_name: p.item_name,
+      qty: p.qty,
+      uom: p.uom,
+      rate: p.rate || 0
+    })
+  }
+  
+  pendingItem.value = null
   focusBarcodeInput()
 }
 
-function addItem(details) {
-  const existing = items.value.find(i => i.item_code === details.item_code)
-  if (existing) {
-    existing.qty += 1
-  } else {
-    items.value.push({
-      item_code: details.item_code,
-      item_name: details.item_name,
-      qty: 1,
-      uom: details.uom,
-      rate: details.rate || 0
-    })
+function handlePendingQtyKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    confirmPendingItem()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    pendingItem.value = null
+    focusBarcodeInput()
   }
 }
 
