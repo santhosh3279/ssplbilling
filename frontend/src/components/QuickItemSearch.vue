@@ -9,11 +9,11 @@
       <span class="text-xs text-[var(--color-text-muted)]">{{ results.length }} matches</span>
     </div>
     
-    <div class="max-h-[600px] overflow-y-auto scrollbar-none">
+    <div ref="scrollContainer" class="max-h-[600px] overflow-y-auto scrollbar-none relative">
       <div 
         v-for="(item, idx) in results" 
         :key="item.item_code"
-        class="px-4 py-3 cursor-pointer border-b border-[var(--color-border)]/50 last:border-0 transition-all"
+        class="quick-search-item px-4 py-3 cursor-pointer border-b border-[var(--color-border)]/50 last:border-0 transition-all"
         :class="selectedIndex === idx ? 'bg-[var(--color-focus)] border-l-4 border-l-[var(--color-focus)] font-bold' : 'hover:bg-[var(--color-surface-raised)]/40'"
         @click="$emit('select', item)"
       >
@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 
 const props = defineProps({
   results: { type: Array, default: () => [] },
@@ -55,11 +55,23 @@ const props = defineProps({
 const emit = defineEmits(['select', 'close'])
 
 const selectedIndex = ref(0)
+const scrollContainer = ref(null)
 
 // Reset selection when results change
 watch(() => props.results, () => {
   selectedIndex.value = 0
 }, { deep: true })
+
+// Keep selected item in view
+watch(selectedIndex, async (newIdx) => {
+  await nextTick()
+  const container = scrollContainer.value
+  const items = container?.querySelectorAll('.quick-search-item')
+  const el = items?.[newIdx]
+  if (el) {
+    el.scrollIntoView({ block: 'nearest' })
+  }
+})
 
 const positionStyle = computed(() => {
   if (props.anchorEl) {
