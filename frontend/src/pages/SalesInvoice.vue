@@ -420,6 +420,7 @@
     <QuickItemSearch
       ref="quickSearchRef"
       :results="quickSearchResults"
+      :query="quickSearchQuery"
       :price-list="priceList"
       :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
@@ -829,6 +830,13 @@ const customerPricing = ref({}) // { item_code: multiplication_factor }
 const newItemCode = ref('')
 const newCodeInput = ref(null)
 const quickSearchResults = ref([])
+const quickSearchQuery = computed(() => {
+  if (editQuickSearchRowIdx.value !== null) {
+    return (items.value[editQuickSearchRowIdx.value]?.item_code || '').trim()
+  }
+  return newItemCode.value
+})
+
 const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
 const showItemSearch = ref(false)
