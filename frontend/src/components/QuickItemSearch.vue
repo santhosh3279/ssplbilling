@@ -1,17 +1,17 @@
 <template>
   <div 
-    v-if="results.length > 0" 
+    v-if="sortedResults.length > 0" 
     class="fixed z-[150] w-[700px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden"
     :style="positionStyle"
   >
     <div class="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-border)] flex justify-between items-center">
       <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Quick Search</span>
-      <span class="text-xs text-[var(--color-text-muted)]">{{ results.length }} matches</span>
+      <span class="text-xs text-[var(--color-text-muted)]">{{ sortedResults.length }} matches</span>
     </div>
     
     <div ref="scrollContainer" class="max-h-[600px] overflow-y-auto scrollbar-none relative">
       <div 
-        v-for="(item, idx) in results" 
+        v-for="(item, idx) in sortedResults" 
         :key="item.item_code"
         class="quick-search-item px-4 py-3 cursor-pointer border-b border-[var(--color-border)]/50 last:border-0 transition-all"
         :class="selectedIndex === idx ? 'bg-[var(--color-focus)] border-l-4 border-l-[var(--color-focus)] font-bold' : 'hover:bg-[var(--color-surface-raised)]/40'"
@@ -59,6 +59,15 @@ const emit = defineEmits(['select', 'close'])
 
 const selectedIndex = ref(0)
 const scrollContainer = ref(null)
+
+// Prioritize items with history
+const sortedResults = computed(() => {
+  return [...props.results].sort((a, b) => {
+    if (a.has_history && !b.has_history) return -1
+    if (!a.has_history && b.has_history) return 1
+    return 0
+  })
+})
 
 // Reset selection when results change
 watch(() => props.results, () => {
@@ -115,22 +124,22 @@ function formatPrice(p) {
 }
 
 function handleQuickSearchKeydown(e) {
-  if (props.results.length === 0) return
+  if (sortedResults.value.length === 0) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
-    selectedIndex.value = (selectedIndex.value + 1) % props.results.length
+    selectedIndex.value = (selectedIndex.value + 1) % sortedResults.value.length
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
-    selectedIndex.value = (selectedIndex.value - 1 + props.results.length) % props.results.length
+    selectedIndex.value = (selectedIndex.value - 1 + sortedResults.value.length) % sortedResults.value.length
   } else if (e.key === 'Enter') {
     // We only handle Enter here if the user intended to pick from the list
     // In SalesEntry, the barcode field also handles Enter. 
     // We might need to coordinate this.
-    if (props.results[selectedIndex.value]) {
+    if (sortedResults.value[selectedIndex.value]) {
       e.preventDefault()
       e.stopPropagation()
-      emit('select', props.results[selectedIndex.value])
+      emit('select', sortedResults.value[selectedIndex.value])
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
@@ -142,6 +151,6 @@ function handleQuickSearchKeydown(e) {
 defineExpose({
   handleQuickSearchKeydown,
   getSelectedIndex: () => selectedIndex.value,
-  getSelectedValue: () => props.results[selectedIndex.value]
+  getSelectedValue: () => sortedResults.value[selectedIndex.value]
 })
 </script>
