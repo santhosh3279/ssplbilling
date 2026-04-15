@@ -64,7 +64,16 @@
     >
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
-        <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">{{ session.fullName.value || session.user.value }}</span>
+        <div class="flex items-center gap-4">
+          <button
+            v-if="customerId"
+            @click="showHistoryModal = true"
+            class="flex items-center gap-2 rounded bg-[var(--color-highlight)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 shadow-lg"
+          >
+            <span>📜</span> History
+          </button>
+          <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">{{ session.fullName.value || session.user.value }}</span>
+        </div>
       </template>
 
       <template #row="{ item, index }">
@@ -511,6 +520,51 @@
       ]"
       @close="showShortcutPage = false"
     />
+
+    <!-- History Modal -->
+    <div v-if="showHistoryModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showHistoryModal = false">
+      <div class="flex h-[80vh] w-[80vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
+        <div class="border-b border-[var(--color-border)] px-6 py-4 flex justify-between items-center bg-[var(--color-surface-raised)]">
+          <div>
+            <div class="text-2xl font-bold">Purchase History: {{ customerName }}</div>
+            <div class="text-sm text-[var(--color-text-muted)]">{{ customerSalesHistory.length }} items previously purchased</div>
+          </div>
+          <button @click="showHistoryModal = false" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <table class="w-full border-collapse">
+            <thead class="sticky top-0 bg-[var(--color-surface-raised)] shadow-sm">
+              <tr class="text-left text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
+                <th class="px-4 py-2">Date</th>
+                <th class="px-4 py-2">Item Code</th>
+                <th class="px-4 py-2">Item Name</th>
+                <th class="px-4 py-2">Barcodes</th>
+                <th class="px-4 py-2 text-right">Qty</th>
+                <th class="px-4 py-2 text-right">Rate</th>
+                <th class="px-4 py-2">Invoice</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--color-border)]">
+              <tr v-for="(h, idx) in customerSalesHistory" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
+                <td class="px-4 py-3 font-mono text-sm">{{ h.date }}</td>
+                <td class="px-4 py-3 font-mono font-bold text-[var(--color-highlight)]">{{ h.item_code }}</td>
+                <td class="px-4 py-3 text-lg font-medium">{{ h.item_name }}</td>
+                <td class="px-4 py-3 font-mono text-xs text-[var(--color-text-muted)]">{{ h.barcodes }}</td>
+                <td class="px-4 py-3 text-right font-bold text-xl">{{ h.qty }}</td>
+                <td class="px-4 py-3 text-right font-mono text-lg text-[var(--color-warning)]">{{ h.rate.toFixed(2) }}</td>
+                <td class="px-4 py-3 text-sm text-[var(--color-info)]">{{ h.name }}</td>
+              </tr>
+              <tr v-if="!customerSalesHistory.length">
+                <td colspan="7" class="px-4 py-12 text-center text-[var(--color-text-muted)] italic">No history available for this customer</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="border-t border-[var(--color-border)] px-6 py-3 bg-[var(--color-surface-raised)] text-right">
+          <button @click="showHistoryModal = false" class="rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] px-6 py-2 font-bold uppercase tracking-wider hover:bg-[var(--color-surface-raised)] transition-all">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -547,6 +601,7 @@ const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = u
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const { 
   fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 
+  customerSalesHistory,
   fetchItemStock, itemStock, stockLoading,
   fetchItemPrices, itemPrices, pricesLoading
 } = useCustomerHistory()
@@ -598,6 +653,7 @@ const showShortcutPage = ref(false)
 const showIncentiveModal = ref(false)
 const incentiveRows = ref([])
 const showCustomAddressModal = ref(false)
+const showHistoryModal = ref(false)
 const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
 const showClearWarning = ref(false)
 const customerInitialQuery = ref('')
