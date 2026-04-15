@@ -119,6 +119,7 @@
                   {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
                 </th>
                 <th class="px-6 py-2 text-right w-64">Amount</th>
+                <th class="px-6 py-2 text-right w-80">Current Outstanding</th>
               </tr>
             </thead>
             <tbody>
@@ -164,6 +165,28 @@
                     class="w-full bg-transparent text-7xl font-light text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0.00"
                   />
+                </td>
+
+                <!-- Current Outstanding -->
+                <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
+                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
+                    <div class="flex items-center gap-3">
+                      <div class="text-5xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                        {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
+                      </div>
+                      <button 
+                        v-if="form.party"
+                        @click="fetchInvoices"
+                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-highlight)]/10 text-xl font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-white"
+                        title="View Outstanding & Unlinked Items"
+                      >
+                        📄
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">
+                    —
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -233,29 +256,6 @@
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all resize-none"
               placeholder="Add internal notes..."
             ></textarea>
-          </div>
-
-          <!-- Middle-Left: Outstanding Info -->
-          <div class="flex items-center gap-6 border-l border-[var(--color-border)] pl-8">
-            <div v-if="outstandingBalance !== null" class="flex flex-col">
-              <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Current Outstanding</div>
-              <div class="flex items-center gap-3">
-                <div class="text-2xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                  {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
-                </div>
-                <button 
-                  v-if="form.party"
-                  @click="fetchInvoices"
-                  class="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-highlight)]/10 px-4 text-xs font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-white"
-                >
-                  <span>View Outstanding & Unlinked Items</span>
-                  <span class="text-lg">📄</span>
-                </button>
-              </div>
-            </div>
-            <div v-else class="text-[var(--color-text-muted)] text-sm italic font-medium">
-              Select a party to view outstanding balance
-            </div>
           </div>
 
           <!-- Middle: Reference Info -->
