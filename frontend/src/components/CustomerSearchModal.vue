@@ -8,14 +8,16 @@
   >
     <div class="flex h-[90vh] w-[95vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden relative">
       <!-- Header -->
-      <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center justify-between bg-[var(--color-surface-raised)]">
-        <div>
+      <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center bg-[var(--color-surface-raised)]">
+        <!-- Left: Title -->
+        <div class="w-1/3">
           <div class="text-2xl font-semibold text-[var(--color-text)]">Detailed Ledger Search</div>
           <div class="text-lg text-[var(--color-text-muted)]">Search Customers, Suppliers, and Accounting Ledgers</div>
         </div>
-        <div class="flex items-center gap-3">
-          <!-- Quick Filter Tabs -->
-          <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-sm mr-4 relative group">
+
+        <!-- Center: Quick Filter Tabs -->
+        <div class="w-1/3 flex justify-center">
+          <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-sm relative group">
             <button
               v-for="t in availableTabs"
               :key="t"
@@ -29,7 +31,10 @@
               <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)] whitespace-nowrap shadow-sm">Cycle: F7</kbd>
             </div>
           </div>
+        </div>
 
+        <!-- Right: Actions -->
+        <div class="w-1/3 flex items-center justify-end gap-3">
           <button
             @click="openNewForm"
             v-if="activeType === 'Customer' || activeType === 'Supplier' || activeType === 'Employee'"
@@ -50,7 +55,7 @@
           >
             🔄 Refresh <kbd class="ml-1 rounded border border-[var(--color-highlight)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-highlight)]">F5</kbd>
           </button>
-          <button @click="$emit('close')" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
+          <button @click="$emit('close')" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] ml-2">✕</button>
         </div>
       </div>
 
