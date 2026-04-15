@@ -221,81 +221,82 @@
 
     <!-- Bottom Action Bar -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-      <div class="mx-auto flex max-w-7xl items-center justify-between gap-8">
+      <div class="flex items-center justify-between gap-8">
         
-        <!-- Left: Remarks Input -->
-        <div class="flex-1 max-w-xl flex flex-col gap-1.5">
-          <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Internal Remarks</label>
-          <textarea
-            v-model="form.remarks"
-            rows="2"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all resize-none"
-            placeholder="Add internal notes..."
-          ></textarea>
-        </div>
+        <div class="flex items-center gap-8 flex-1">
+          <!-- Left: Remarks Input -->
+          <div class="flex-1 max-w-xl flex flex-col gap-1.5">
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Internal Remarks</label>
+            <textarea
+              v-model="form.remarks"
+              rows="2"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all resize-none"
+              placeholder="Add internal notes..."
+            ></textarea>
+          </div>
 
-        <!-- Middle-Left: Outstanding Info -->
-        <div class="flex items-center gap-6 border-l border-[var(--color-border)] pl-8">
-          <div v-if="outstandingBalance !== null" class="flex flex-col">
-            <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Current Outstanding</div>
-            <div class="flex items-center gap-3">
-              <div class="text-2xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
+          <!-- Middle-Left: Outstanding Info -->
+          <div class="flex items-center gap-6 border-l border-[var(--color-border)] pl-8">
+            <div v-if="outstandingBalance !== null" class="flex flex-col">
+              <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Current Outstanding</div>
+              <div class="flex items-center gap-3">
+                <div class="text-2xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                  {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
+                </div>
+                <button 
+                  v-if="form.party"
+                  @click="fetchInvoices"
+                  class="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-highlight)]/10 px-4 text-xs font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-white"
+                >
+                  <span>View Outstanding & Unlinked Items</span>
+                  <span class="text-lg">📄</span>
+                </button>
               </div>
-              <button 
-                v-if="form.party"
-                @click="fetchInvoices"
-                class="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-highlight)]/10 px-4 text-xs font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-white"
-              >
-                <span>View Outstanding & Unlinked Items</span>
-                <span class="text-lg">📄</span>
-              </button>
+            </div>
+            <div v-else class="text-[var(--color-text-muted)] text-sm italic font-medium">
+              Select a party to view outstanding balance
             </div>
           </div>
-          <div v-else class="text-[var(--color-text-muted)] text-sm italic font-medium">
-            Select a party to view outstanding balance
-          </div>
-        </div>
 
-        <!-- Middle: Reference Info -->
-        <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
-              Ref No (Cheque/UPI) <span class="text-[var(--color-danger)]">* min 5</span>
-            </label>
-            <input
-              ref="refNoInput"
-              v-model="form.reference_no"
-              type="text"
-              class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all"
-              :class="refValid
-                ? 'border-[var(--color-success)] bg-[var(--color-success)]/10 focus:border-[var(--color-success)]'
-                : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)] focus:border-[var(--color-danger)]'"
-              placeholder="Ref / Chq No..."
-              @keydown.enter="saveBtn?.focus()"
-            />
+          <!-- Middle: Reference Info -->
+          <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
+                Ref No (Cheque/UPI) <span class="text-[var(--color-danger)]">* min 5</span>
+              </label>
+              <input
+                ref="refNoInput"
+                v-model="form.reference_no"
+                type="text"
+                class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all"
+                :class="refValid
+                  ? 'border-[var(--color-success)] bg-[var(--color-success)]/10 focus:border-[var(--color-success)]'
+                  : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)] focus:border-[var(--color-danger)]'"
+                placeholder="Ref / Chq No..."
+                @keydown.enter="saveBtn?.focus()"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref Date</label>
+              <input
+                v-model="form.reference_date"
+                type="date"
+                class="w-36 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+              />
+            </div>
           </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref Date</label>
-            <input
-              v-model="form.reference_date"
-              type="date"
-              class="w-36 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
-            />
-          </div>
-        </div>
 
-        <!-- Right: Summary & Save -->
-        <div class="flex items-center gap-8">
-          <!-- Allocation Summary -->
+          <!-- Right: Summary -->
           <div v-if="allocationRefs.length" class="flex flex-col text-right">
             <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allocated Amount</div>
             <div class="text-2xl font-black text-[var(--color-success)]">
               {{ totalAllocated.toLocaleString('en-IN') }}
             </div>
           </div>
+        </div>
 
-          <!-- Save Button -->
+        <!-- Right End: Save Button -->
+        <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
           <button
             ref="saveBtn"
             @click="handleSubmit"
