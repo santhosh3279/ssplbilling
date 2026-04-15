@@ -440,10 +440,6 @@ function onRowKeydown(e, idx) {
 // ==================== DATA FETCHING ====================
 async function fetchConfig() {
   try {
-    const series = await frappeGet(`${API}.get_naming_series`)
-    availableSeries.value = series || []
-    if (series.length && !entrySeries.value) entrySeries.value = series[0]
-
     const whs = await frappeGet('frappe.client.get_list', {
       doctype: 'Warehouse',
       filters: { is_group: 0, disabled: 0 },
@@ -736,9 +732,10 @@ useShortcuts(materialTransferShortcuts({
   }
 }), props.isSubWindow ? 'subwindow' : 'local')
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('keydown', handleSeriesNumberKey)
-  fetchAllowedSeries('Stock Entry')
+  const series = await fetchAllowedSeries('Stock Entry')
+  if (series.length && !entrySeries.value) entrySeries.value = series[0]
   fetchConfig()
   fetchSidebarEntries()
   if (props.name) loadEntry(props.name)
