@@ -677,6 +677,7 @@ import { getUserRole } from '../composables/usePermission'
 import ItemSearch from '../components/ItemSearch.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import { useItemCache } from '../services/itemCache.js'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { session } from '../session.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { salesOrderShortcuts } from '../shortcuts/salesOrderShortcuts'
@@ -686,6 +687,7 @@ const router = useRouter()
 const API_BASE = 'ssplbilling.api.sales_order_api'
 
 const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync } = useItemCache()
+const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
@@ -862,7 +864,6 @@ const activeItems = computed(() => items.value.filter(i => !i.deleted))
 const deletedCount = computed(() => items.value.filter(i => i.deleted).length)
 
 // ==================== SERIES ====================
-const availableSeries = ref([])
 const nextOrderNo = ref('...')
 const billSeries = ref('')
 const billDate = ref(getTodayIST())
@@ -887,9 +888,8 @@ async function fetchSeriesList() {
     if (!localStorage.getItem('wb-warehouse') && settings.default_warehouse) {
       defaultWarehouse.value = settings.default_warehouse
     }
-    const list = await frappeGet(`${API_BASE}.get_naming_series`)
+    const list = await fetchAllowedSeries('Sales Order')
     if (Array.isArray(list) && list.length) {
-      availableSeries.value = list
       if (!list.includes(billSeries.value)) billSeries.value = list[0]
       else fetchNextOrderNo()
     }
@@ -1393,6 +1393,7 @@ function handleSeriesNumberKey(e) {
 onMounted(() => {
   window.addEventListener('storage', handleStorageChange)
   window.addEventListener('keydown', handleSeriesNumberKey);
+  fetchAllowedSeries('Sales Order')
   fetchSeriesList()
   fetchSidebarBills()
   fetchDropdownOptions()

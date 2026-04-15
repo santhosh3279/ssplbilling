@@ -29,6 +29,7 @@
       :sidebar-items="recentQuotations"
       :sidebar-search="sidebarSearch"
       :sidebar-series="sidebarSeries"
+      :available-series="availableSeries"
       :draft-only="draftOnly"
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
@@ -508,6 +509,7 @@ import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { quotationShortcuts } from '../shortcuts/quotationShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
@@ -516,6 +518,7 @@ const router = useRouter()
 
 // --- Data Fetching & State Management ---
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
+const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const {
   fetchCustomerSalesHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading,
   fetchItemStock, itemStock, stockLoading,
@@ -1758,6 +1761,7 @@ useShortcuts(quotationShortcuts({
 
 onMounted(() => {
   fetchRecentQuotations()
+  fetchAllowedSeries('Quotation')
   showSeriesModal.value = true
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)

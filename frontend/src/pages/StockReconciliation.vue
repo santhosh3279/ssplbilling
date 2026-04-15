@@ -314,10 +314,12 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import { stockReconciliationShortcuts } from '../shortcuts/stockReconciliationShortcuts'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import ItemSearch from '../components/ItemSearch.vue'
 
 const router = useRouter()
 const API = 'ssplbilling.api.stock_reconciliation_api'
+const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 
 const props = defineProps({
   isSubWindow: Boolean,
@@ -646,6 +648,7 @@ useShortcuts(stockReconciliationShortcuts({
 }), props.isSubWindow ? 'subwindow' : 'local')
 
 onMounted(() => {
+  fetchAllowedSeries('Stock Reconciliation')
   fetchConfig()
   fetchSidebarEntries()
   if (props.name) loadEntry(props.name)

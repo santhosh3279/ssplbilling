@@ -346,12 +346,14 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import ItemSearch from '../components/ItemSearch.vue'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import { materialTransferShortcuts } from '../shortcuts/materialTransferShortcuts'
 
 const router = useRouter()
 const API = 'ssplbilling.api.stock_api'
+const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 
 // ==================== PROPS & EMITS ====================
 const props = defineProps({
@@ -737,6 +739,7 @@ useShortcuts(materialTransferShortcuts({
 
 onMounted(() => {
   window.addEventListener('keydown', handleSeriesNumberKey)
+  fetchAllowedSeries('Stock Entry')
   fetchConfig()
   fetchSidebarEntries()
   if (props.name) loadEntry(props.name)

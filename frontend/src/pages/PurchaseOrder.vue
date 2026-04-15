@@ -28,6 +28,7 @@
       :sidebar-items="recentOrders"
       :sidebar-search="sidebarSearch"
       :sidebar-series="sidebarSeries"
+      :available-series="availableSeries"
       :draft-only="draftOnly"
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
@@ -482,6 +483,7 @@ import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
 import { useShortcuts } from '../services/shortcutManager'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { purchaseOrderShortcuts } from '../shortcuts/purchaseOrderShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
@@ -490,6 +492,7 @@ const router = useRouter()
 
 // --- Data Fetching & State Management ---
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
+const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const {
   fetchCustomerSalesHistory, clearHistory, getItemHistoryFromCache, historyLoading,
   fetchItemStock, itemStock, stockLoading,
@@ -1298,6 +1301,7 @@ useShortcuts(purchaseOrderShortcuts({
 
 onMounted(() => {
   fetchRecentOrders()
+  fetchAllowedSeries('Purchase Order')
   showSeriesModal.value = true
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) refreshItemCache('Purchase', priceList.value, warehouse.value)
 })
