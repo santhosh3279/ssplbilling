@@ -17,7 +17,7 @@
           <!-- Unallocated Section -->
           <div v-if="localUnallocated.length > 0" class="space-y-3">
             <div class="flex items-center justify-between px-3 mb-4">
-              <h4 class="text-[16px] font-black uppercase tracking-widest text-[var(--color-warning)]">Available Unallocated Cash</h4>
+              <h4 class="text-[16px] font-black uppercase tracking-widest text-[var(--color-warning)]">Unlinked Payments & Credits</h4>
               <button @click="$emit('close')" class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-raised)] transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
@@ -34,8 +34,12 @@
 
             <!-- Table Rows -->
             <div v-for="(pe, index) in localUnallocated" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-md flex items-center gap-6 group hover:border-[var(--color-focus)]/50 transition-colors">
-              <!-- Name -->
-              <div class="w-[250px] shrink-0 text-[18.75px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+              <!-- Name & Remarks -->
+              <div class="w-[250px] shrink-0 flex flex-col min-w-0">
+                <div class="text-[18.75px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+                <div v-if="pe.reference_no && pe.reference_no !== pe.name" class="text-[12px] font-bold text-[var(--color-text-muted)] truncate">Ref: {{ pe.reference_no }}</div>
+                <div v-if="pe.remarks" class="text-[11px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</div>
+              </div>
 
               <!-- Date -->
               <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">{{ formatDate(pe.posting_date) }}</div>

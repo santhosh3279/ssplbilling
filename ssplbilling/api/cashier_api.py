@@ -361,7 +361,7 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 			"docstatus": 1,
 			"unallocated_amount": [">", 0],
 		},
-		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no", "paid_amount"],
+		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no", "paid_amount", "remarks", "payment_type"],
 	)
 
 	results = []
@@ -373,7 +373,9 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 			"posting_date": str(pe.posting_date),
 			"mode_of_payment": pe.mode_of_payment or "Cash",
 			"reference_no": pe.reference_no,
-			"reference_type": "Payment Entry"
+			"reference_type": "Payment Entry",
+			"remarks": pe.remarks,
+			"payment_type": pe.payment_type
 		})
 
 	# 2. Journal Entries (unlinked credits to Receivable accounts for this customer)
@@ -386,7 +388,8 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 			(jea.credit_in_account_currency - jea.debit_in_account_currency) as unallocated_amount,
 			je.total_amount,
 			je.posting_date,
-			je.cheque_no as reference_no
+			je.cheque_no as reference_no,
+			je.user_remark as remarks
 		FROM `tabJournal Entry Account` jea
 		JOIN `tabJournal Entry` je ON je.name = jea.parent
 		JOIN `tabAccount` acc ON acc.name = jea.account
@@ -425,8 +428,31 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 				"posting_date": str(je.posting_date),
 				"mode_of_payment": "Journal Entry",
 				"reference_no": je.reference_no,
-				"reference_type": "Journal Entry"
+				"reference_type": "Journal Entry",
+				"remarks": je.remarks
 			})
+
+	# 3. Sales Invoice (Returns / Credit Notes)
+	si_list = frappe.db.sql("""
+		SELECT 
+			name, posting_date, grand_total, outstanding_amount,
+			remarks
+		FROM `tabSales Invoice`
+		WHERE docstatus = 1 AND customer = %s
+		  AND outstanding_amount < -0.005
+	""", (customer,), as_dict=True)
+
+	for si in si_list:
+		results.append({
+			"name": si.name,
+			"unallocated_amount": abs(float(si.outstanding_amount)),
+			"total_amount": abs(float(si.grand_total)),
+			"posting_date": str(si.posting_date),
+			"mode_of_payment": "Credit Note",
+			"reference_no": si.name,
+			"reference_type": "Sales Invoice",
+			"remarks": si.remarks
+		})
 
 	# Sort by date
 	results.sort(key=lambda x: x["posting_date"])
@@ -468,7 +494,7 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 			pe_name = alloc.get("reference_name")
 			ref_type = alloc.get("reference_type") or "Payment Entry"
 			
-			# Verify PE/JE exists
+			# Verify PE/JE/SI exists
 			if ref_type == "Payment Entry":
 				pe_data = frappe.db.get_value("Payment Entry", pe_name, ["unallocated_amount", "reference_no"], as_dict=True)
 				if not pe_data: continue
@@ -480,6 +506,22 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 					"advance_amount": pe_data.unallocated_amount,
 					"allocated_amount": amt,
 					"ref_no": pe_data.reference_no,
+				})
+			elif ref_type == "Sales Invoice":
+				# Return Invoice / Credit Note
+				si_data = frappe.db.get_value("Sales Invoice", pe_name, ["outstanding_amount"], as_dict=True)
+				if not si_data: continue
+
+				# advance_amount must be the full net credit (negative outstanding)
+				full_credit = abs(float(si_data.outstanding_amount))
+
+				si.append("advances", {
+					"reference_type": "Sales Invoice",
+					"reference_name": pe_name,
+					"remarks": f"Allocated from Return {pe_name} via Cashier Desk",
+					"advance_amount": full_credit,
+					"allocated_amount": amt,
+					"ref_no": pe_name,
 				})
 			else:
 				# Journal Entry
