@@ -79,7 +79,7 @@
       <template #table-extra-rows>
         <tr v-if="!isReadOnly" class="bg-[var(--color-highlight)]/5">
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">*</td>
-          <td colspan="2" class="p-0 border-r border-[var(--color-border)]">
+          <td class="p-0 border-r border-[var(--color-border)]">
             <input
               ref="barcodeInput"
               v-model="barcodeQuery"
@@ -89,7 +89,7 @@
               @keydown="handleBarcodeKeydown"
             />
           </td>
-          <td colspan="8" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to transfer</td>
+          <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to transfer</td>
         </tr>
       </template>
 
