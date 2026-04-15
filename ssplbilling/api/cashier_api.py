@@ -454,6 +454,29 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 			"remarks": si.remarks
 		})
 
+	# 4. Purchase Invoice (Returns / Debit Notes) - if customer is also a supplier
+	pi_list = frappe.db.sql("""
+		SELECT 
+			name, posting_date, grand_total, outstanding_amount,
+			remarks, supplier
+		FROM `tabPurchase Invoice`
+		WHERE docstatus = 1 
+		  AND (supplier = %s OR supplier = (SELECT supplier_name FROM `tabCustomer` WHERE name = %s))
+		  AND outstanding_amount < -0.005
+	""", (customer, customer), as_dict=True)
+
+	for pi in pi_list:
+		results.append({
+			"name": pi.name,
+			"unallocated_amount": abs(float(pi.outstanding_amount)),
+			"total_amount": abs(float(pi.grand_total)),
+			"posting_date": str(pi.posting_date),
+			"mode_of_payment": "Debit Note",
+			"reference_no": pi.name,
+			"reference_type": "Purchase Invoice",
+			"remarks": pi.remarks
+		})
+
 	# Sort by date
 	results.sort(key=lambda x: x["posting_date"])
 	return results
@@ -519,6 +542,21 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 					"reference_type": "Sales Invoice",
 					"reference_name": pe_name,
 					"remarks": f"Allocated from Return {pe_name} via Cashier Desk",
+					"advance_amount": full_credit,
+					"allocated_amount": amt,
+					"ref_no": pe_name,
+				})
+			elif ref_type == "Purchase Invoice":
+				# Purchase Return / Debit Note
+				pi_data = frappe.db.get_value("Purchase Invoice", pe_name, ["outstanding_amount"], as_dict=True)
+				if not pi_data: continue
+
+				full_credit = abs(float(pi_data.outstanding_amount))
+
+				si.append("advances", {
+					"reference_type": "Purchase Invoice",
+					"reference_name": pe_name,
+					"remarks": f"Allocated from Debit Note {pe_name} via Cashier Desk",
 					"advance_amount": full_credit,
 					"allocated_amount": amt,
 					"ref_no": pe_name,
