@@ -377,7 +377,6 @@ const purpose = ref('Material Transfer')
 const fromWarehouse = ref('')
 const toWarehouse = ref('')
 
-const availableSeries = ref([])
 const availableWarehouses = ref([])
 const availablePurposes = ref(['Material Issue', 'Material Receipt', 'Material Transfer'])
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 150)
