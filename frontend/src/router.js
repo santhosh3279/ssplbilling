@@ -13,7 +13,6 @@ import PurchaseSubmit from './pages/PurchaseSubmit.vue'
 import CustomerLedger from './pages/CustomerLedger.vue'
 import Payment from './pages/Payment.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
-import MaterialTransfer from './pages/MaterialTransfer.vue'
 import CashierManagement from './pages/CashierManagement.vue'
 import PricingRuleSync from './pages/PricingRuleSync.vue'
 import PurchaseOrder from './pages/PurchaseOrder.vue'
@@ -108,11 +107,6 @@ const routes = [
     path: '/payment',
     name: 'Payment',
     component: Payment,
-  },
-  {
-    path: '/material-transfer',
-    name: 'MaterialTransfer',
-    component: MaterialTransfer,
   },
   {
     path: '/stock-reconciliation',

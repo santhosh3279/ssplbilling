@@ -429,7 +429,6 @@ const allTiles = [
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Pricing Rule',          desc: 'Sync & manage pricing rules',              icon: '🏷️', shortcut: ''    },
   { id: 'payment',            bucket: 'sspl',     name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
   { id: 'journal-contra',     bucket: 'sspl',     name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
-  { id: 'material-transfer',  bucket: 'sspl',     name: 'Material Transfer',     desc: 'Transfer items between warehouses',        icon: '🔄', shortcut: 'F9'  },
   { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',     name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
   { id: 'invoice-template',   bucket: 'sspl',     name: 'Invoice Template',      desc: 'Reusable invoice UI template',             icon: '🎨', shortcut: ''    },
@@ -447,7 +446,7 @@ function tilesInBucket(bucketId) {
   return tiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'material-transfer', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger']
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -458,7 +457,6 @@ const routeAliases = {
   'purchase-order': '/purchase-order',
   'sales-order': '/sales-order',
   'journal-contra': '/journal-contra',
-  'material-transfer': '/material-transfer',
   'stock-reconciliation': '/stock-reconciliation',
   'gst-dummy-ledger': '/gst-dummy-ledger',
   'gst-ledger': '/gst-ledger',
