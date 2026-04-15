@@ -119,7 +119,7 @@
                   {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
                 </th>
                 <th class="px-6 py-2 text-right w-64">Amount</th>
-                <th class="px-6 py-2 text-right w-80">Current Outstanding</th>
+                <th class="px-6 py-2 text-right w-80">Outstanding</th>
               </tr>
             </thead>
             <tbody>
@@ -167,7 +167,7 @@
                   />
                 </td>
 
-                <!-- Current Outstanding -->
+                <!-- Outstanding -->
                 <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
                   <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
                     <div class="flex items-center gap-3">
