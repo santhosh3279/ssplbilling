@@ -221,10 +221,21 @@
 
     <!-- Bottom Action Bar -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-      <div class="mx-auto flex max-w-7xl items-center justify-between">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-8">
         
-        <!-- Left: Outstanding Info -->
-        <div class="flex items-center gap-6">
+        <!-- Left: Remarks Input -->
+        <div class="flex-1 max-w-md flex flex-col gap-1.5">
+          <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Internal Remarks</label>
+          <input
+            v-model="form.remarks"
+            type="text"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+            placeholder="Add internal notes..."
+          />
+        </div>
+
+        <!-- Middle-Left: Outstanding Info -->
+        <div class="flex items-center gap-6 border-l border-[var(--color-border)] pl-8">
           <div v-if="outstandingBalance !== null" class="flex flex-col">
             <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Current Outstanding</div>
             <div class="flex items-center gap-3">
@@ -441,7 +452,8 @@ const form = reactive({
   mop_account: '',
   amount: null,
   reference_no: '',
-  reference_date: new Date().toISOString().split('T')[0]
+  reference_date: new Date().toISOString().split('T')[0],
+  remarks: ''
 })
 
 const showCustomerSearchModal = ref(false)
@@ -694,6 +706,7 @@ function resetForm() {
   form.party_name = ''
   partyQuery.value = ''
   form.amount = null
+  form.remarks = ''
   outstandingBalance.value = null
   invoices.value = []
   unlinkedPayments.value = []
@@ -731,6 +744,8 @@ async function handleSubmit() {
       reference_no: form.reference_no,
       reference_date: form.reference_date,
       cost_center: localStorage.getItem('wb-cost-center') || null,
+      remarks: form.remarks,
+      "Custom Remarks": 1,
       references: allocationRefs.value.map(r => ({
         reference_doctype: r.reference_doctype,
         reference_name: r.reference_name,

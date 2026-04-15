@@ -210,6 +210,14 @@ def create_payment_entry(data=None, **kwargs):
     if data.get("cost_center"):
         pe.cost_center = data["cost_center"]
 
+    if data.get("remarks"):
+        pe.remarks = data["remarks"]
+    
+    if data.get("Custom Remarks"):
+        # Assuming there is a custom field or we just want to set it on the object
+        # for hooks or other logic. If it's a standard field, pe.set will work.
+        pe.set("custom_remarks", data["Custom Remarks"])
+
     pe.insert()
     pe.submit()
     return {"payment_entry": pe.name}
