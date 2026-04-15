@@ -264,10 +264,12 @@
           <div class="flex-1 max-w-xl flex flex-col gap-1.5">
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Internal Remarks</label>
             <textarea
+              ref="remarksInput"
               v-model="form.remarks"
               rows="2"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all resize-none"
               placeholder="Add internal notes..."
+              @keydown.enter.prevent="refNoInput?.focus()"
             ></textarea>
           </div>
 
@@ -396,6 +398,7 @@ const router = useRouter()
 const activeTab = ref('Payment')
 const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
+const remarksInput = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
 const selectionOverlayRef = ref(null)
@@ -604,8 +607,7 @@ function handleSelect(item) {
 function updateAllocations(allocations) {
   allocationRefs.value = allocations
   nextTick(() => {
-    refNoInput.value?.focus()
-    refNoInput.value?.select()
+    remarksInput.value?.focus()
   })
 }
 
@@ -674,7 +676,7 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
     } else {
       showInvoicesModal.value = false
       nextTick(() => {
-        refNoInput.value?.focus()
+        remarksInput.value?.focus()
       })
     }
   } catch (e) {
