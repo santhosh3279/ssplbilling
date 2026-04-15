@@ -285,7 +285,7 @@ useSubwindowWatcher(computed(() => props.show), {
 })
 
 const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, lastParams } = useItemCache()
-const { hasHistory } = useCustomerHistory()
+const { hasHistory, getItemHistoryFromCache } = useCustomerHistory()
 
 const query = ref('')
 const selectedIdx = ref(0)

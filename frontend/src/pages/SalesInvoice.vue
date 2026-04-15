@@ -546,7 +546,7 @@ const router = useRouter()
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const { 
-  fetchCustomerSalesHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 
+  fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 
   fetchItemStock, itemStock, stockLoading,
   fetchItemPrices, itemPrices, pricesLoading
 } = useCustomerHistory()
