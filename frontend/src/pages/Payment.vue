@@ -120,6 +120,7 @@
                 </th>
                 <th class="px-6 py-2 text-right w-64">Amount</th>
                 <th class="px-6 py-2 text-right w-80">Outstanding</th>
+                <th class="px-6 py-2 text-right w-80">New Balance</th>
               </tr>
             </thead>
             <tbody>
@@ -182,6 +183,18 @@
                       >
                         📄
                       </button>
+                    </div>
+                  </div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">
+                    —
+                  </div>
+                </td>
+
+                <!-- New Balance -->
+                <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
+                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
+                    <div class="text-5xl font-black" :class="newBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(newBalance).toLocaleString('en-IN') }} {{ newBalance > 0 ? 'Dr' : 'Cr' }}
                     </div>
                   </div>
                   <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">
@@ -481,6 +494,16 @@ const refValid = computed(() => form.reference_no.replace(/\s/g, '').length > 0)
 
 const isFormValid = computed(() => {
   return form.party && form.amount > 0 && form.mop_account
+})
+
+const newBalance = computed(() => {
+  if (outstandingBalance.value === null) return 0
+  const amt = parseFloat(form.amount) || 0
+  // If Payment (we pay), it's a Debit to the party (increases balance if Dr)
+  // If Receipt (we receive), it's a Credit to the party (decreases balance if Dr)
+  return activeTab.value === 'Payment' 
+    ? outstandingBalance.value + amt 
+    : outstandingBalance.value - amt
 })
 
 const invoiceDocType = computed(() =>
