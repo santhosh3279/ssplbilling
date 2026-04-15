@@ -746,6 +746,7 @@ const pendingUomSelect = ref(null)
 const selectedRowIdx = ref(-1)
 const rowRefs = ref([])
 const editingRowIdx = ref(-1)
+const originalRowCode = ref('')
 const editingField = ref(null) // 'code' | 'qty' | 'uom' | 'rate' | 'disc'
 const editCodeInput = ref(null)
 const editQtyInput = ref(null)
@@ -1342,6 +1343,9 @@ function handleRowKeydown(e, idx) {
 
 function focusEditField(field, idx) {
   if (items.value[idx]?.deleted || items.value[idx]?._is_free) return
+  if (editingRowIdx.value !== idx) {
+    originalRowCode.value = items.value[idx].item_code
+  }
   editingRowIdx.value = idx; editingField.value = field; selectedRowIdx.value = idx
   const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput }
   nextTick(() => {
@@ -1569,7 +1573,7 @@ function onQuickSearchSelect(item) {
 function applyItemToRow(rowIdx, item) {
   const row = items.value[rowIdx]
   if (!row) return
-  const isSameItem = row.item_code === item.item_code
+  const isSameItem = originalRowCode.value === item.item_code
   row.item_code = item.item_code
   row.item_name = item.item_name
   // Update UOM if it's a different item, OR if this specific match came from a barcode scan
@@ -1577,11 +1581,15 @@ function applyItemToRow(rowIdx, item) {
     row.uom = item.uom || 'Nos'
   }
   row.tax_rate = item.tax_rate || 0
-  const base = getItemRateForPriceList(item, row.uom)
-  row._base_rate = base
-  const cpFactor = customerPricing.value[item.item_code]
-  row._cp_applied = cpFactor != null
-  row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+
+  if (!isSameItem) {
+    const base = getItemRateForPriceList(item, row.uom)
+    row._base_rate = base
+    const cpFactor = customerPricing.value[item.item_code]
+    row._cp_applied = cpFactor != null
+    row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+    row.discount = 0
+  }
   recalcAmount(rowIdx)
 }
 
