@@ -400,6 +400,7 @@
     <QuickItemSearch
       ref="quickSearchRef"
       :results="quickSearchResults"
+      :query="quickSearchQuery"
       :price-list="priceList"
       :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
@@ -520,7 +521,7 @@ const router = useRouter()
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const {
-  fetchCustomerSalesHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading,
+  fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading,
   fetchItemStock, itemStock, stockLoading,
   fetchItemPrices, itemPrices, pricesLoading
 } = useCustomerHistory()
@@ -733,6 +734,13 @@ const customerPricing = ref({})
 const newItemCode = ref('')
 const newCodeInput = ref(null)
 const quickSearchResults = ref([])
+const quickSearchQuery = computed(() => {
+  if (editQuickSearchRowIdx.value !== null) {
+    return (items.value[editQuickSearchRowIdx.value]?.item_code || '').trim()
+  }
+  return newItemCode.value
+})
+
 const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
 const showItemSearch = ref(false)
@@ -1254,7 +1262,11 @@ function handleItemEntry() {
 function onNewCodeInput() {
   const code = newItemCode.value.trim()
   if (code.length >= 2) {
-    quickSearchResults.value = searchItemsInCache(code)
+    const rawResults = searchItemsInCache(code)
+    quickSearchResults.value = rawResults.map(item => ({
+      ...item,
+      has_history: hasHistory(item.item_code)
+    }))
     quickSearchAnchor.value = newCodeInput.value
   } else {
     quickSearchResults.value = []
@@ -1634,7 +1646,11 @@ function onItemSearchSelect(item) {
 function onEditCodeInput(rowIdx) {
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
-    quickSearchResults.value = searchItemsInCache(code)
+    const rawResults = searchItemsInCache(code)
+    quickSearchResults.value = rawResults.map(item => ({
+      ...item,
+      has_history: hasHistory(item.item_code)
+    }))
     quickSearchAnchor.value = editCodeInput.value
     editQuickSearchRowIdx.value = rowIdx
   } else {
