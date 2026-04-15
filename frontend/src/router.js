@@ -29,6 +29,7 @@ import GstDummyLedger from './pages/GstDummyLedger.vue'
 import GstLedger from './pages/GstLedger.vue'
 import DailyReport from './pages/DailyReport.vue'
 import GeneralLedger from './pages/GeneralLedger.vue'
+import StoreTransfer from './pages/StoreTransfer.vue'
 
 const routes = [
   {
@@ -36,6 +37,11 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true },
+  },
+  {
+    path: '/store-transfer',
+    name: 'StoreTransfer',
+    component: StoreTransfer,
   },
   {
     path: '/daily-report',

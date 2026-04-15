@@ -33,6 +33,7 @@ export const BILLER_ROUTES = new Set([
   'GstLedger',
   'DailyReport',
   'StockLedger',
+  'StoreTransfer',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -128,6 +129,7 @@ const TILE_ROUTE_MAP = {
   'gst-ledger':        'GstLedger',
   'daily-report':      'DailyReport',
   'stock-ledger':      'StockLedger',
+  'store-transfer':    'StoreTransfer',
   'invoice-template':  'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',
 }
