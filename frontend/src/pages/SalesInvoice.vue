@@ -1651,13 +1651,15 @@ function applyItemToRow(rowIdx, item) {
   }
   row.tax_rate = item.tax_rate || 0
 
+  if (!row._rowKey) row._rowKey = makeRowKey()
+
   if (!isSameItem) {
     const base = getItemRateForPriceList(item, row.uom)
     row._base_rate = base
     const cpFactor = customerPricing.value[item.item_code]
     row._cp_applied = cpFactor != null
     row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
-    row.discount = 0
+    // row.discount is handled by useDiscountRules watcher
   }
   recalcAmount(rowIdx)
 }
