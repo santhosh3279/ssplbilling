@@ -131,6 +131,7 @@ const TILE_ROUTE_MAP = {
   'stock-ledger':      'StockLedger',
   'store-transfer':    'StoreTransfer',
   'invoice-template':  'Dashboard',
+  'stock-template':    'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',
 }
 

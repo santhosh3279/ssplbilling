@@ -303,6 +303,40 @@
       </Item_Invoice_Template>
     </div>
 
+    <!-- STOCK TEMPLATE FULL SCREEN MODAL -->
+    <div v-if="showStockTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
+      <Stock_Template
+        title="Stock Template Preview"
+        doc-number="ST-TEMP-001"
+        party-name="Main Warehouse -> Store"
+        doc-date="06-Apr-2026"
+        sidebar-date="06-04-2026"
+        sidebar-search=""
+        :sidebar-series="['ST']"
+        :available-series="['ST', 'MAT']"
+        :draft-only="true"
+        :sidebar-items="[
+          { name: 'ST-TEMP-001', total_qty: '150', posting_date: '2026-04-06', docstatus: 0 },
+          { name: 'ST-TEMP-002', total_qty: '45', posting_date: '2026-04-05', docstatus: 1 }
+        ]"
+        selected-sidebar-item-name="ST-TEMP-001"
+        :items="[
+          { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 100, uom: 'Nos', rate: 10 },
+          { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 50, uom: 'Kg', rate: 25 }
+        ]"
+        total-amount="2250.00"
+        total-label="Total Value"
+        item-count="2"
+        warehouse="Main Warehouse"
+        save-button-text="Save"
+        :is-read-only="false"
+        :is-draft="true"
+        @back="showStockTemplate = false"
+        @save="showStockTemplate = false"
+        @cancel="showStockTemplate = false"
+      />
+    </div>
+
     <!-- SUCCESS POPUP -->
   </div>
 </template>
@@ -320,6 +354,7 @@ import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
+import Stock_Template from '../components/Stock_Template.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
@@ -433,6 +468,7 @@ const allTiles = [
   { id: 'store-transfer',     bucket: 'sspl',   name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'F9'  },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
   { id: 'invoice-template',   bucket: 'sspl',     name: 'Invoice Template',      desc: 'Reusable invoice UI template',             icon: '🎨', shortcut: ''    },
+  { id: 'stock-template',     bucket: 'sspl',     name: 'Stock Template',        desc: 'Reusable stock UI template',               icon: '📦', shortcut: ''    },
   // ── Report ──
   { id: 'daily-report',       bucket: 'report',   name: 'Daily Report',          desc: 'Daily operations summary',                 icon: '📊', shortcut: ''    },
   { id: 'reports',            bucket: 'report',   name: 'Reports',               desc: 'Business reports and analytics',           icon: '📈', shortcut: ''    },
@@ -478,6 +514,10 @@ function openModule(id) {
     showInvoiceTemplate.value = true
     return
   }
+  if (id === 'stock-template') {
+    showStockTemplate.value = true
+    return
+  }
   if (id === 'stock-ledger') {
     openItemSearch()
     return
@@ -495,7 +535,7 @@ function openModule(id) {
 const routeMap = {
   F1: 'sales', F2: 'purchase-invoice', F3: 'payment',
   F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
-  F7: 'purchase-order', F8: 'journal-contra', F9: 'material-transfer',
+  F7: 'purchase-order', F8: 'journal-contra', F9: 'store-transfer',
   F10: 'quotation',
 }
 
@@ -512,6 +552,8 @@ useShortcuts(dashboardShortcuts({
     if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
     if (showLedgerWindow.value) { showLedgerWindow.value = false; return }
     if (showStockLedgerWindow.value) { showStockLedgerWindow.value = false; return }
+    if (showInvoiceTemplate.value) { showInvoiceTemplate.value = false; return }
+    if (showStockTemplate.value) { showStockTemplate.value = false; return }
   }
 }))
 
@@ -523,6 +565,7 @@ const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
 const showInvoiceTemplate = ref(false)
+const showStockTemplate = ref(false)
 
 // ==================== SYSTEM PERFORMANCE ====================
 const showSystemPerformance = ref(false)
