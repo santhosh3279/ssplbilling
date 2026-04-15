@@ -274,11 +274,18 @@ const newCustomerName = ref('')
 
 // ─── Data Preloading ──────────────────────────────────────────────────────────
 async function preloadLedger(force = false) {
-  if (!force && allLedgers.value.length > 0) return
-  try {
-    await refreshLedgerCache()
-  } catch (e) {
-    console.error('[CustomerSearchModal] Preload failed:', e)
+  if (force || allLedgers.value.length === 0) {
+    // Block if forced or if we have no data at all
+    try {
+      await refreshLedgerCache()
+    } catch (e) {
+      console.error('[CustomerSearchModal] Preload failed:', e)
+    }
+  } else {
+    // Non-blocking background refresh to ensure latest data/balances
+    refreshLedgerCache().catch(e => {
+      console.warn('[CustomerSearchModal] Background refresh failed:', e)
+    })
   }
 }
 
