@@ -1511,6 +1511,7 @@ function getItemRateForPriceList(cachedItem, uom = null) {
 }
 
 function updateTableRates() {
+  if (isReturn.value) return
   items.value.forEach((item, idx) => {
     if (item.deleted) return
     const cached = lookupItemInCache(item.item_code)
@@ -1525,13 +1526,41 @@ function updateTableRates() {
 
 // Negate / restore all row qtys when Sale Return is toggled
 watch(isReturn, (val) => {
+  ignoreDiscountRule.value = val
   items.value.forEach((item, idx) => {
     if (item.deleted || item._is_free) return
     item.qty = val ? -Math.abs(item.qty || 0) : Math.abs(item.qty || 0)
+    
+    if (val) {
+      const history = getHistoryRateAndDiscount(item.item_code)
+      if (history) {
+        item.rate = history.rate
+        item._base_rate = history.rate
+        item.discount = history.discount
+      }
+    } else {
+      // Restore normal pricing if toggled OFF? 
+      // User probably wants to keep current prices if they manually edited, 
+      // but usually toggling Return OFF means going back to standard billing.
+      const cached = lookupItemInCache(item.item_code)
+      if (cached) {
+        const base = getItemRateForPriceList(cached, item.uom)
+        item._base_rate = base
+        item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
+        // discount will be reapplied by useDiscountRules because ignoreDiscountRule is now false
+      }
+    }
     recalcAmount(idx)
   })
   if (pendingItem.value) {
     pendingItem.value.qty = val ? -Math.abs(pendingItem.value.qty || 0) : Math.abs(pendingItem.value.qty || 0)
+    if (val) {
+      const history = getHistoryRateAndDiscount(pendingItem.value.item_code)
+      if (history) {
+        pendingItem.value.rate = history.rate
+        pendingItem.value.discount = history.discount
+      }
+    }
   }
 })
 
@@ -1553,6 +1582,7 @@ watch(priceList, (newList) => {
 })
 
 function reapplyCustomerPricing() {
+  if (isReturn.value) return
   items.value.forEach((item, idx) => {
     if (item.deleted || item._is_free) return
     const base = item.price_list_rate || item._base_rate || item.rate
@@ -1564,6 +1594,7 @@ function reapplyCustomerPricing() {
 }
 
 watch(ignoreModifier, () => {
+  if (isReturn.value) return
   items.value.forEach(item => {
     const base = item._base_rate ?? item.rate
     item._base_rate = base
@@ -1639,6 +1670,15 @@ function onQuickSearchSelect(item) {
   })
 }
 
+function getHistoryRateAndDiscount(itemCode) {
+  const history = getItemHistoryFromCache(itemCode)
+  if (history && history.length > 0) {
+    const last = history[0] // history is usually sorted newest first
+    return { rate: last.rate, discount: last.discount }
+  }
+  return null
+}
+
 function applyItemToRow(rowIdx, item) {
   const row = items.value[rowIdx]
   if (!row) return
@@ -1654,12 +1694,20 @@ function applyItemToRow(rowIdx, item) {
   if (!row._rowKey) row._rowKey = makeRowKey()
 
   if (!isSameItem) {
-    const base = getItemRateForPriceList(item, row.uom)
-    row._base_rate = base
-    const cpFactor = customerPricing.value[item.item_code]
-    row._cp_applied = cpFactor != null
-    row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
-    // row.discount is handled by useDiscountRules watcher
+    const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code) : null
+    if (history) {
+      row.rate = history.rate
+      row._base_rate = history.rate
+      row.discount = history.discount
+      row._rule_discount = null // prevent rule from overwriting if possible
+    } else {
+      const base = getItemRateForPriceList(item, row.uom)
+      row._base_rate = base
+      const cpFactor = customerPricing.value[item.item_code]
+      row._cp_applied = cpFactor != null
+      row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+      // row.discount is handled by useDiscountRules watcher
+    }
   }
   recalcAmount(rowIdx)
 }
@@ -1761,11 +1809,19 @@ function onPendingUomChange() {
 }
 
 function setPendingItem(item) {
-  const base = item.rate || 0
-  item._base_rate = base
-  const cpFactor = customerPricing.value[item.item_code]
-  item._cp_applied = cpFactor != null
-  item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+  const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code) : null
+  if (history) {
+    item.rate = history.rate
+    item._base_rate = history.rate
+    item.discount = history.discount
+  } else {
+    const base = item.rate || 0
+    item._base_rate = base
+    const cpFactor = customerPricing.value[item.item_code]
+    item._cp_applied = cpFactor != null
+    item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+    item.discount = 0
+  }
   pendingItem.value = item
   nextTick(() => {
     pendingQtyInput.value?.focus()
@@ -1783,6 +1839,9 @@ function confirmPendingItem() {
     discount: p.discount || 0, tax_rate: p.tax_rate || 0,
     amount: parseFloat((qty * (p.rate || 0)).toFixed(2)),
     deleted: false, _rowKey: makeRowKey()
+  }
+  if (isReturn.value && p.discount != null) {
+    newItem._rule_discount = p.discount // Fake it so rule engine might think it's its own, or at least we have it set
   }
   items.value.push(newItem)
   pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
