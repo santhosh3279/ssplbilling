@@ -158,6 +158,53 @@
         </tr>
       </template>
 
+      <!-- Hide bottom-left insights and bottom-middle settings -->
+      <template #bottom-left></template>
+      <template #bottom-middle></template>
+
+      <!-- Custom calculation-rows to hide default rows and only show actions -->
+      <template #calculation-rows>
+        <tr>
+          <td class="border border-[var(--color-border)] px-4 bg-[var(--color-bg)] align-top" colspan="4">
+            <div class="flex flex-col gap-4 h-full py-4 max-w-2xl mx-auto">
+              <!-- Total Amount -->
+              <div class="rounded-2xl border-2 border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/5 p-6 shadow-xl flex justify-between items-baseline">
+                <div class="text-2xl font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Transfer Value</div>
+                <div class="flex items-baseline gap-3 font-bold text-[var(--color-success)]">
+                  <span class="text-4xl font-black">₹</span>
+                  <span class="font-mono text-7xl font-black leading-none tabular-nums">{{ totalAmount }}</span>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="grid grid-cols-2 gap-4">
+                <button 
+                  ref="saveBtnRef" 
+                  @click="handleSave" 
+                  class="rounded-xl py-5 text-center text-4xl font-bold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-all uppercase shadow-lg active:scale-[0.98]"
+                >
+                  {{ saveButtonText }}
+                </button>
+                <button 
+                  v-if="isDraft && isReadOnly" 
+                  @click="handleSubmit" 
+                  class="rounded-xl border-2 border-[var(--color-success)] bg-[var(--color-success)]/10 py-5 text-center text-4xl font-bold text-[var(--color-success)] hover:bg-[var(--color-success)]/20 transition-all uppercase shadow-lg active:scale-[0.98]"
+                >
+                  Submit
+                </button>
+                <button 
+                  v-else
+                  @click="handleCancel" 
+                  class="rounded-xl border-2 border-[#C2A96E] bg-[#D4B896] py-5 text-center text-4xl font-bold text-[#4A3520] hover:brightness-105 transition-all shadow-lg active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </template>
+
     </Item_Invoice_Template>
 
     <QuickItemSearch
