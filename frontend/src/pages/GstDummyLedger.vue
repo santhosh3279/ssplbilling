@@ -5,7 +5,7 @@
       <div class="flex items-center gap-3">
         <button class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition" @click="router.push('/')">&larr; Dashboard</button>
         <span class="text-sm text-[var(--color-text-muted)]">|</span>
-        <span class="text-sm font-bold text-[var(--color-text)] uppercase tracking-tight">GST Dummy Ledger</span>
+        <span class="text-sm font-bold text-[var(--color-text)] uppercase tracking-tight">WGB PAYMENTS</span>
       </div>
       <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Tab</kbd> Next field</span>
