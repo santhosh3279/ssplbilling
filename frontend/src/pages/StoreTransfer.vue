@@ -77,23 +77,28 @@
       </template>
 
       <template #table-extra-rows>
-        <tr v-if="!isReadOnly" class="bg-[var(--color-surface-raised)]/30">
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center text-[var(--color-text-muted)]">*</td>
+        <tr v-if="!isReadOnly" class="bg-[var(--color-highlight)]/5">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">*</td>
           <td colspan="2" class="p-0 border-r border-[var(--color-border)]">
             <input
               ref="barcodeInput"
               v-model="barcodeQuery"
               placeholder="Scan Barcode or Type Item Name..."
-              class="w-full bg-transparent px-4 py-3 text-4xl font-mono text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]/50"
-              @keydown.enter="handleBarcodeEnter"
+              class="w-full bg-transparent px-4 py-3 text-4xl font-mono text-[var(--color-highlight)] outline-none placeholder:text-[var(--color-text-muted)]/30"
+              @input="onBarcodeInput"
+              @keydown="handleBarcodeKeydown"
             />
           </td>
-          <td colspan="8"></td>
+          <td colspan="8" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to transfer</td>
         </tr>
       </template>
 
       <template #row="{ item, index }">
-        <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50">
+        <tr 
+          class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50 outline-none"
+          :tabindex="isReadOnly ? -1 : 0"
+          @keydown="handleRowKeydown($event, index)"
+        >
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ index + 1 }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
@@ -103,6 +108,7 @@
               v-model.number="item.qty"
               type="number"
               class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @keydown.enter="focusBarcodeInput"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ item.qty }}</span>
           </td>
@@ -129,11 +135,20 @@
 
     </Item_Invoice_Template>
 
+    <QuickItemSearch
+      ref="quickSearchRef"
+      :results="quickSearchResults"
+      :query="barcodeQuery"
+      :anchor-el="barcodeInput"
+      @select="onQuickSearchSelect"
+      @close="quickSearchResults = []"
+    />
+
     <!-- Item Search Modal -->
     <ItemSearch 
       v-if="showItemSearch"
       :show="showItemSearch"
-      :initial-query="barcodeQuery"
+      :initial-query="itemSearchInitialQuery"
       :skip-date-filter="true"
       @close="showItemSearch = false"
       @select="handleItemSelect"
@@ -142,13 +157,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { frappeGet, frappePost } from '../api'
+import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
+const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
+
 const transferNo = ref('')
 const transferDate = ref(new Date().toISOString().split('T')[0])
 const fromWarehouse = ref('')
@@ -165,6 +184,10 @@ const transferName = ref('')
 const barcodeQuery = ref('')
 const barcodeInput = ref(null)
 const showItemSearch = ref(false)
+const itemSearchInitialQuery = ref('')
+
+const quickSearchResults = ref([])
+const quickSearchRef = ref(null)
 
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const recentTransfers = ref([])
@@ -186,6 +209,7 @@ const saveButtonText = computed(() => {
 onMounted(async () => {
   await fetchMetadata()
   await fetchRecentTransfers()
+  refreshItemCache('Sales')
   focusBarcodeInput()
 })
 
@@ -208,28 +232,74 @@ async function fetchRecentTransfers() {
 }
 
 function focusBarcodeInput() {
-  setTimeout(() => barcodeInput.value?.focus(), 100)
+  nextTick(() => barcodeInput.value?.focus())
+}
+
+function onBarcodeInput() {
+  const code = barcodeQuery.value.trim()
+  if (code.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(code)
+  } else {
+    quickSearchResults.value = []
+  }
+}
+
+function handleBarcodeKeydown(e) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === 'Escape') {
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    }
+  }
+
+  if (e.key === 'Enter') {
+    handleBarcodeEnter()
+  }
 }
 
 async function handleBarcodeEnter() {
   if (!barcodeQuery.value) return
   
-  const res = await frappePost('ssplbilling.api.SaleEntry_api.get_item_details', { 
-    item_code: barcodeQuery.value,
-    warehouse: fromWarehouse.value
-  })
+  const code = barcodeQuery.value.trim()
+  const match = lookupItemInCache(code)
   
-  if (res.found) {
-    addItem(res)
+  if (match) {
+    addItem(match)
     barcodeQuery.value = ''
+    quickSearchResults.value = []
   } else {
-    showItemSearch.value = true
+    // Fallback to server check if not in cache
+    const res = await frappePost('ssplbilling.api.SaleEntry_api.get_item_details', { 
+      item_code: barcodeQuery.value,
+      warehouse: fromWarehouse.value
+    })
+    
+    if (res.found) {
+      addItem(res)
+      barcodeQuery.value = ''
+      quickSearchResults.value = []
+    } else {
+      openItemSearch(barcodeQuery.value)
+    }
   }
+}
+
+function onQuickSearchSelect(item) {
+  addItem(item)
+  barcodeQuery.value = ''
+  quickSearchResults.value = []
+  focusBarcodeInput()
+}
+
+function openItemSearch(query) {
+  itemSearchInitialQuery.value = query || ''
+  showItemSearch.value = true
 }
 
 function handleItemSelect(item) {
   addItem(item)
   barcodeQuery.value = ''
+  quickSearchResults.value = []
   showItemSearch.value = false
   focusBarcodeInput()
 }
@@ -251,6 +321,17 @@ function addItem(details) {
 
 function removeItem(index) {
   items.value.splice(index, 1)
+}
+
+function handleRowKeydown(e, idx) {
+  if (e.target.tagName === 'INPUT') return
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    focusBarcodeInput()
+  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    e.preventDefault()
+    removeItem(idx)
+  }
 }
 
 async function handleSave() {
@@ -308,7 +389,7 @@ function resetForm() {
 }
 
 function goBack() {
-  router.push('/dashboard')
+  router.push('/')
 }
 
 function handleSidebarDateChange(dir) {
