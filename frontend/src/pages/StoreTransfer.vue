@@ -1,6 +1,6 @@
 <template>
   <div class="h-screen bg-[var(--color-bg)] overflow-hidden">
-    <Item_Invoice_Template
+    <Stock_Template
       ref="invoiceTemplateRef"
       title="STORE TRANSFER"
       title-bar-color="#90cdf4"
@@ -8,6 +8,8 @@
       :doc-date="transferDate"
       :items="items"
       :total-amount="totalAmount"
+      :total-label="'Total Transfer Value'"
+      :item-count="items.length"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentTransfers"
       :sidebar-search="sidebarSearch"
@@ -17,6 +19,8 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
+      :show-bottom-left="false"
+      :show-bottom-middle="false"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -28,7 +32,6 @@
       @submit="handleSubmit"
       @print="handlePrint"
       @cancel="handleCancel"
-      :show-submit-button="true"
       :is-draft="isDraft"
     >
       <template #header-bar>
@@ -105,7 +108,6 @@
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ pendingItem.rate }}</td>
-            <td colspan="3" class="border-r border-[var(--color-border)]"></td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ (pendingItem.qty * pendingItem.rate).toFixed(2) }}</td>
             <td class="px-2 py-1 text-center">
               <button class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-danger)]" @click="pendingItem = null; focusBarcodeInput()">&times;</button>
@@ -125,7 +127,7 @@
               @keydown="handleBarcodeKeydown"
             />
           </td>
-          <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to transfer</td>
+          <td colspan="6" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to transfer</td>
         </tr>
       </template>
 
@@ -150,7 +152,6 @@
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.rate }}</td>
-          <td colspan="3" class="border-r border-[var(--color-border)]"></td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ (item.qty * item.rate).toFixed(2) }}</td>
           <td class="px-2 py-1 text-center">
             <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="removeItem(index)">&times;</button>
@@ -158,54 +159,7 @@
         </tr>
       </template>
 
-      <!-- Hide bottom-left insights and bottom-middle settings -->
-      <template #bottom-left></template>
-      <template #bottom-middle></template>
-
-      <!-- Custom calculation-rows to hide default rows and only show actions -->
-      <template #calculation-rows>
-        <tr>
-          <td class="border border-[var(--color-border)] px-4 bg-[var(--color-bg)] align-top" colspan="4">
-            <div class="flex flex-col gap-4 h-full py-4 max-w-2xl mx-auto">
-              <!-- Total Amount -->
-              <div class="rounded-2xl border-2 border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/5 p-6 shadow-xl flex justify-between items-baseline">
-                <div class="text-2xl font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Transfer Value</div>
-                <div class="flex items-baseline gap-3 font-bold text-[var(--color-success)]">
-                  <span class="text-4xl font-black">₹</span>
-                  <span class="font-mono text-7xl font-black leading-none tabular-nums">{{ totalAmount }}</span>
-                </div>
-              </div>
-
-              <!-- Actions -->
-              <div class="grid grid-cols-2 gap-4">
-                <button 
-                  ref="saveBtnRef" 
-                  @click="handleSave" 
-                  class="rounded-xl py-5 text-center text-4xl font-bold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-all uppercase shadow-lg active:scale-[0.98]"
-                >
-                  {{ saveButtonText }}
-                </button>
-                <button 
-                  v-if="isDraft && isReadOnly" 
-                  @click="handleSubmit" 
-                  class="rounded-xl border-2 border-[var(--color-success)] bg-[var(--color-success)]/10 py-5 text-center text-4xl font-bold text-[var(--color-success)] hover:bg-[var(--color-success)]/20 transition-all uppercase shadow-lg active:scale-[0.98]"
-                >
-                  Submit
-                </button>
-                <button 
-                  v-else
-                  @click="handleCancel" 
-                  class="rounded-xl border-2 border-[#C2A96E] bg-[#D4B896] py-5 text-center text-4xl font-bold text-[#4A3520] hover:brightness-105 transition-all shadow-lg active:scale-[0.98]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      </template>
-
-    </Item_Invoice_Template>
+    </Stock_Template>
 
     <QuickItemSearch
       ref="quickSearchRef"
@@ -231,10 +185,10 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
+import Stock_Template from '../components/Stock_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
-import { frappeGet, frappePost } from '../api'
+import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()

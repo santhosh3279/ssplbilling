@@ -248,12 +248,12 @@
       <!-- Bottom Panel (Summary / Actions) -->
       <div class="flex flex-[4] border-t border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden">
         <!-- Insights / Left Column -->
-        <div v-if="showBottomLeft" class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:360px;max-width:420px;">
+        <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:360px;max-width:420px;">
           <slot name="bottom-left"></slot>
         </div>
 
         <!-- Settings / Middle Column -->
-        <div v-if="showBottomMiddle" class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;">
+        <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;">
           <slot name="bottom-middle">
             <div class="flex flex-col gap-2 p-2">
               <!-- Export/Import buttons -->
@@ -513,9 +513,6 @@ const props = defineProps({
   isReturn: { type: Boolean, default: false },
   warehouse: { type: String, default: '' },
   costCenter: { type: String, default: '' },
-
-  showBottomLeft: { type: Boolean, default: true },
-  showBottomMiddle: { type: Boolean, default: true },
 
   // Table Props
   defaultTaxRate: { type: [Number, String], default: 0 },
