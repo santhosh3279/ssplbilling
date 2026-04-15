@@ -159,7 +159,7 @@ def create_payment_entry(data=None, **kwargs):
     pe.party = data.get("party") or data.get("customer") or data.get("customer_id")
     pe.paid_amount = float(data.get("amount") or 0)
     pe.received_amount = pe.paid_amount
-    pe.mode_of_payment = data.get("mop_account") or data.get("mode_of_payment") or "Cash"
+    pe.mode_of_payment = data.get("mode_of_payment") or data.get("mop_account") or "Cash"
     pe.reference_no = data.get("reference_no")
     pe.reference_date = data.get("reference_date")
     pe.posting_date = data.get("posting_date") or frappe.utils.today()
@@ -171,8 +171,18 @@ def create_payment_entry(data=None, **kwargs):
     pe.target_exchange_rate = 1.0
     
     # RESOLVE ACCOUNTS
-    party_account = data.get("account") or _get_party_account(pe.party_type, pe.party)
-    mop_account = data.get("mop_account")
+    # 1. Resolve MOP account (Bank/Cash)
+    mop_account = data.get("mop_account") or data.get("account")
+    if not mop_account and pe.mode_of_payment:
+        mop_account = _get_mop_account(pe.mode_of_payment)
+
+    # 2. Resolve Party account (Debtors/Creditors)
+    # If account was provided but we used it as mop_account, we should resolve party_account automatically
+    party_account = data.get("party_account")
+    if not party_account:
+        # If 'account' was provided, check if it looks like a party account or MOP account
+        # But to be safe and follow the new convention, we resolve it from party if not explicitly given as party_account
+        party_account = _get_party_account(pe.party_type, pe.party)
 
     if pe.payment_type == "Receive":
         pe.paid_from = party_account
