@@ -224,14 +224,14 @@
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-8">
         
         <!-- Left: Remarks Input -->
-        <div class="flex-1 max-w-md flex flex-col gap-1.5">
+        <div class="flex-1 max-w-xl flex flex-col gap-1.5">
           <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Internal Remarks</label>
-          <input
+          <textarea
             v-model="form.remarks"
-            type="text"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+            rows="2"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all resize-none"
             placeholder="Add internal notes..."
-          />
+          ></textarea>
         </div>
 
         <!-- Middle-Left: Outstanding Info -->
