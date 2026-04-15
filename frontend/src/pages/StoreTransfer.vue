@@ -62,6 +62,17 @@
                   <option v-for="w in warehouses" :key="w.name" :value="w.name">{{ w.name }}</option>
                 </select>
               </div>
+
+              <div class="flex flex-col gap-1 border-l border-[var(--color-border)] pl-8">
+                <label class="text-sm font-bold uppercase text-[var(--color-text-muted)]">Series</label>
+                <select 
+                  v-model="selectedSeries" 
+                  :disabled="isReadOnly"
+                  class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)]"
+                >
+                  <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
             </div>
 
             <div class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
@@ -145,17 +156,6 @@
             <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="removeItem(index)">&times;</button>
           </td>
         </tr>
-      </template>
-
-      <template #bottom-middle>
-         <div class="flex flex-col gap-2 p-2">
-            <div class="flex flex-col gap-0.5">
-              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Series</label>
-              <select v-model="selectedSeries" :disabled="isReadOnly" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-xl text-[var(--color-text)]">
-                <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
-              </select>
-            </div>
-         </div>
       </template>
 
     </Item_Invoice_Template>
