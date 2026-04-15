@@ -229,16 +229,18 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 
 @frappe.whitelist()
 def get_customer_sales_history(customer):
-	"""Fetch all previous sales history for a customer in bulk."""
+	"""Fetch all previous sales history for a customer in bulk with item details."""
 	if not customer:
 		return []
 
 	# Fetch last 15000 items sold to this customer
+	# Join with tabItem to get item_name and then add barcodes separately for performance
 	history = frappe.db.sql(
 		"""
-		SELECT sii.item_code, si.name, si.posting_date as date, sii.rate, sii.qty, sii.discount_percentage as discount
+		SELECT sii.item_code, i.item_name, si.name, si.posting_date as date, sii.rate, sii.qty, sii.discount_percentage as discount
 		FROM `tabSales Invoice Item` sii
 		JOIN `tabSales Invoice` si ON si.name = sii.parent
+		JOIN `tabItem` i ON i.name = sii.item_code
 		WHERE si.customer = %s AND si.docstatus = 1
 		ORDER BY si.posting_date DESC, si.creation DESC
 		LIMIT 15000
@@ -247,12 +249,24 @@ def get_customer_sales_history(customer):
 		as_dict=True,
 	)
 
-	# Group by item_code for easier lookup on frontend
-	# or just return as a list if the frontend wants to filter
+	item_codes = list(set(row.item_code for row in history))
+	
+	# Fetch barcodes for all items in history
+	all_barcodes = frappe.get_all(
+		"Item Barcode",
+		filters={"parent": ["in", item_codes]},
+		fields=["parent as item_code", "barcode"],
+	)
+	item_barcodes_map = {}
+	for row in all_barcodes:
+		item_barcodes_map.setdefault(row.item_code, []).append(row.barcode)
+
+	# Group by item_code for easier lookup on frontend and format values
 	for row in history:
 		row["date"] = str(row["date"])
 		row["rate"] = float(row.rate or 0)
 		row["qty"] = float(row.qty or 0)
 		row["discount"] = float(row.discount or 0)
+		row["barcodes"] = ",".join(item_barcodes_map.get(row.item_code, []))
 
 	return history

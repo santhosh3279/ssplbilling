@@ -92,7 +92,10 @@
               @click="$emit('select', item)"
             >
               <td class="p-[5px] font-mono text-5xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
-                <span v-if="item.has_history" class="h-3 w-3 shrink-0 rounded-full animate-pulse" :class="selectedIdx === idx ? 'bg-[var(--color-text-on-highlight)]/40' : 'bg-[var(--color-highlight)]'" title="Previously sold to this customer"></span>
+                <div v-if="item.has_history" class="flex flex-col items-center">
+                  <span class="h-3 w-3 shrink-0 rounded-full animate-pulse bg-[var(--color-highlight)]" :class="selectedIdx === idx ? 'bg-[var(--color-text-on-highlight)]/40' : 'bg-[var(--color-highlight)]'" title="Previously sold to this customer"></span>
+                  <span class="text-[10px] mt-1 uppercase font-bold text-[var(--color-text-muted)]" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]' : ''">{{ item.history_qty }}</span>
+                </div>
                 <span>{{ item.item_code }}</span>
               </td>
               <td class="p-[5px]">
@@ -434,7 +437,8 @@ const results = computed(() => {
     return {
       ...i,
       price: displayPrice,
-      has_history: hasHistory(i.item_code)
+      has_history: hasHistory(i.item_code),
+      history_qty: getItemHistoryFromCache(i.item_code).reduce((s, h) => s + h.qty, 0)
     }
   })
 })

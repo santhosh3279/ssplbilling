@@ -750,6 +750,7 @@ async function handleSelectSidebarItem(item) {
     isReadOnly.value = true
     isSaved.value = true
     isSubmitted.value = data.docstatus === 1
+    fetchCustomerSalesHistory(data.customer)
   } catch (e) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
@@ -1300,7 +1301,11 @@ function handleItemEntry() {
 function onNewCodeInput() {
   const code = newItemCode.value.trim()
   if (code.length >= 2) {
-    quickSearchResults.value = searchItemsInCache(code)
+    const rawResults = searchItemsInCache(code)
+    quickSearchResults.value = rawResults.map(item => ({
+      ...item,
+      has_history: hasHistory(item.item_code)
+    }))
     quickSearchAnchor.value = newCodeInput.value
   } else {
     quickSearchResults.value = []
