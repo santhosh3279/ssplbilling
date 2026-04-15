@@ -262,20 +262,19 @@
           <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
-                Ref No (Cheque/UPI) <span class="text-[var(--color-danger)]">* min 5</span>
+                Ref No (Cheque/UPI)
               </label>
               <input
                 ref="refNoInput"
                 v-model="form.reference_no"
                 type="text"
                 class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all"
-                :class="refValid
-                  ? 'border-[var(--color-success)] bg-[var(--color-success)]/10 focus:border-[var(--color-success)]'
-                  : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)] focus:border-[var(--color-danger)]'"
+                :class="form.reference_no.length > 0 
+                  ? (refValid ? 'border-[var(--color-success)] bg-[var(--color-success)]/10 focus:border-[var(--color-success)]' : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)] focus:border-[var(--color-danger)]')
+                  : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] focus:border-[var(--color-highlight)]'"
                 placeholder="Ref / Chq No..."
                 @keydown.enter="saveBtn?.focus()"
-              />
-            </div>
+              />            </div>
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref Date</label>
               <input
@@ -478,10 +477,10 @@ const allocationRefs = ref([])
 const modalAmounts = reactive({})
 
 // --- Computed ---
-const refValid = computed(() => form.reference_no.replace(/\s/g, '').length >= 5)
+const refValid = computed(() => form.reference_no.replace(/\s/g, '').length > 0)
 
 const isFormValid = computed(() => {
-  return form.party && form.amount > 0 && form.mop_account && refValid.value
+  return form.party && form.amount > 0 && form.mop_account
 })
 
 const invoiceDocType = computed(() =>
