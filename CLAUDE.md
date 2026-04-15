@@ -45,8 +45,9 @@ ssplbilling/                     ← Frappe app root
     │   │   ├── SalesEntry.vue       ← Keyboard-driven draft invoice entry
     │   │   ├── Cashierpage.vue      ← Lists drafts; submits with multi-mode payment split
     │   │   ├── CustomerLedger.vue   ← GL ledger with running balance per customer
-    │   │   ├── PaymentEntry.vue     ← Direct payment / journal entry creation
+    │   │   ├── Payment.vue          ← Direct payment / receipt entry creation
     │   │   └── WholesaleFastBilling.vue ← Barcode-scan POS (not in router, retained as backup)
+
     │   └── services/
     │       ├── api.js           ← Older frappe-ui call()-based helpers (avoid for new code)
     │       ├── dashboard.js     ← dashboardApi object (getBillingSettings, fetchAllItemsForSync, etc.)
