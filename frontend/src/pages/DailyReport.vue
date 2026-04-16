@@ -109,6 +109,7 @@
                 <td v-for="col in columns" :key="col.key" class="px-2 py-1.5 font-normal text-[var(--color-text)] text-[21px]">
                   <template v-if="col.type === 'currency'">
                     ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                    <span v-if="row.direction" class="ml-1 text-sm font-bold" :class="row.direction === 'CR' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ row.direction }}</span>
                   </template>
                   <template v-else-if="col.type === 'date'">
                     {{ formatDate(row[col.key]) }}
@@ -221,7 +222,7 @@ const columns = computed(() => {
       { label: 'Invoice No', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
       { label: 'Time', key: 'posting_time', type: 'time' },
-      { label: 'Amount', key: 'grand_total', type: 'currency' },
+      { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
     ]
   } else if (activeTab.value === 'Payment') {
@@ -230,7 +231,7 @@ const columns = computed(() => {
       { label: 'Payment ID', key: 'name' },
       { label: 'Party', key: 'party_name' },
       { label: 'MOP', key: 'mode_of_payment' },
-      { label: 'Amount', key: 'received_amount', type: 'currency' },
+      { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
     ]
   } else if (activeTab.value === 'Journal') {
@@ -239,7 +240,7 @@ const columns = computed(() => {
       { label: 'Journal ID', key: 'name' },
       { label: 'Type', key: 'voucher_type' },
       { label: 'Remark', key: 'user_remark' },
-      { label: 'Amount', key: 'total_debit', type: 'currency' },
+      { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
     ]
   } else if (activeTab.value === 'Quotation') {
@@ -248,7 +249,7 @@ const columns = computed(() => {
       { label: 'Quotation ID', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
       { label: 'Status', key: 'status' },
-      { label: 'Amount', key: 'grand_total', type: 'currency' },
+      { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'DocStatus', key: 'docstatus' },
     ]
   }
@@ -272,10 +273,29 @@ async function fetchReport() {
       to_date: toDate.value,
       naming_series: seriesFilter.value
     })
-    reportData.value = (data || []).map(row => ({
-      ...row,
-      date: row.posting_date || row.transaction_date || ''
-    }))
+    reportData.value = (data || []).map(row => {
+      let display_amount = 0
+      let direction = ''
+      
+      if (activeTab.value === 'Invoice' || activeTab.value === 'Quotation') {
+        display_amount = row.grand_total || 0
+        direction = 'DR'
+      } else if (activeTab.value === 'Payment') {
+        display_amount = row.received_amount > 0 ? row.received_amount : row.paid_amount
+        // Receive payment = CR to party, Pay = DR to party
+        direction = row.payment_type === 'Receive' ? 'CR' : 'DR'
+      } else if (activeTab.value === 'Journal') {
+        display_amount = row.total_debit || row.total_credit || 0
+        direction = 'DR' // Simplified for Journal total
+      }
+
+      return {
+        ...row,
+        date: row.posting_date || row.transaction_date || '',
+        display_amount,
+        direction
+      }
+    })
   } catch (e) {
     console.error('Failed to fetch daily report:', e)
     reportData.value = []

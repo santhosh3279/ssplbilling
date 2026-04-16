@@ -29,7 +29,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
 		return frappe.get_all(
 			"Payment Entry",
 			filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
-			fields=["name", "party_name", "paid_amount", "received_amount", "mode_of_payment", "docstatus", "posting_date"],
+			fields=["name", "party_name", "paid_amount", "received_amount", "mode_of_payment", "docstatus", "posting_date", "payment_type"],
 			order_by="posting_date desc, creation desc"
 		)
 
@@ -37,7 +37,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
 		return frappe.get_all(
 			"Journal Entry",
 			filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
-			fields=["name", "voucher_type", "total_debit", "docstatus", "user_remark", "posting_date"],
+			fields=["name", "voucher_type", "total_debit", "total_credit", "docstatus", "user_remark", "posting_date"],
 			order_by="posting_date desc, creation desc"
 		)
 
