@@ -1063,18 +1063,28 @@ function deleteItem(idx) {
 
 function onQuickSearchSelect(item) {
   if (!item) return
+  
+  // Capture the query used to find this item
+  const currentQuery = editQuickSearchRowIdx.value !== null 
+    ? (items.value[editQuickSearchRowIdx.value]?.item_code || '').trim()
+    : newItemCode.value.trim()
+    
+  // If the query was a barcode, lookupItemInCache will return the item with that barcode's specific UOM
+  const barcodeMatch = lookupItemInCache(currentQuery)
+  const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
+
   quickSearchResults.value = []
   if (editQuickSearchRowIdx.value !== null) {
     const rowIdx = editQuickSearchRowIdx.value; editQuickSearchRowIdx.value = null
-    applyItemToRow(rowIdx, item)
-    if (getItemUoms(item.item_code).length > 1) focusEditField('uom', rowIdx)
+    applyItemToRow(rowIdx, finalItem)
+    if (getItemUoms(finalItem.item_code).length > 1) focusEditField('uom', rowIdx)
     else focusEditField('qty', rowIdx)
     return
   }
   newItemCode.value = ''
   setPendingItem({
-    item_code: item.item_code, item_name: item.item_name, qty: 0, rate: getItemRateForPriceList(item, item.uom),
-    uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
+    item_code: finalItem.item_code, item_name: finalItem.item_name, qty: 0, rate: getItemRateForPriceList(finalItem, finalItem.uom),
+    uom: finalItem.uom || 'Nos', discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
   })
 }
 
@@ -1106,10 +1116,15 @@ function closeItemSearch() {
 
 function onItemSearchSelect(item) {
   showItemSearch.value = false; const rowIdx = itemSearchTargetRowIdx.value; itemSearchTargetRowIdx.value = null
-  if (rowIdx !== null) { applyItemToRow(rowIdx, item); focusEditField('qty', rowIdx); return }
+  
+  // Re-check for barcode match to get correct UOM from the initial query
+  const barcodeMatch = lookupItemInCache(itemSearchInitialQuery.value.trim())
+  const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
+
+  if (rowIdx !== null) { applyItemToRow(rowIdx, finalItem); focusEditField('qty', rowIdx); return }
   newItemCode.value = ''; setPendingItem({
-    item_code: item.item_code, item_name: item.item_name, qty: 0, rate: getItemRateForPriceList(item, item.uom),
-    uom: item.uom || 'Nos', discount: 0, tax_rate: item.tax_rate || 0, deleted: false
+    item_code: finalItem.item_code, item_name: finalItem.item_name, qty: 0, rate: getItemRateForPriceList(finalItem, finalItem.uom),
+    uom: finalItem.uom || 'Nos', discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
   })
 }
 
