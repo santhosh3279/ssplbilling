@@ -94,29 +94,35 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700">
-            <tr 
-              v-for="row in sortedReportData" 
-              :key="row.name" 
-              class="hover:bg-[var(--color-surface-raised)] transition-colors cursor-pointer"
-              @click="handleRowClick(row)"
-            >
-              <td v-for="col in columns" :key="col.key" class="px-4 py-3 font-normal text-[var(--color-text)]">
-                <template v-if="col.type === 'currency'">
-                  ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-                </template>
-                <template v-else-if="col.key === 'docstatus'">
-                  <span 
-                    class="px-2 py-0.5 rounded text-[12px]"
-                    :class="row[col.key] === 1 ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/30 text-[var(--color-warning)]'"
-                  >
-                    {{ row[col.key] === 1 ? 'Submitted' : 'Draft' }}
-                  </span>
-                </template>
-                <template v-else>
-                  {{ row[col.key] }}
-                </template>
-              </td>
-            </tr>
+            <template v-for="(row, index) in sortedReportData" :key="row.name">
+              <!-- Date Grouping Row -->
+              <tr v-if="index === 0 || row.date !== sortedReportData[index - 1].date" class="bg-[var(--color-surface-raised)]/30">
+                <td :colspan="columns.length" class="px-4 py-2 text-[12px] font-medium uppercase tracking-wider text-[var(--color-info)]">
+                  {{ formatDate(row.date) }}
+                </td>
+              </tr>
+              <tr 
+                class="hover:bg-[var(--color-surface-raised)] transition-colors cursor-pointer"
+                @click="handleRowClick(row)"
+              >
+                <td v-for="col in columns" :key="col.key" class="px-4 py-3 font-normal text-[var(--color-text)]">
+                  <template v-if="col.type === 'currency'">
+                    ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                  </template>
+                  <template v-else-if="col.key === 'docstatus'">
+                    <span 
+                      class="px-2 py-0.5 rounded text-[12px]"
+                      :class="row[col.key] === 1 ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/30 text-[var(--color-warning)]'"
+                    >
+                      {{ row[col.key] === 1 ? 'Submitted' : 'Draft' }}
+                    </span>
+                  </template>
+                  <template v-else>
+                    {{ row[col.key] }}
+                  </template>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -138,6 +144,12 @@ function getTodayIST() {
   return formatter.format(date)
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-')
+  return `${d}-${m}-${y}`
+}
+
 const fromDate = ref(getTodayIST())
 const toDate = ref(getTodayIST())
 const seriesFilter = ref('')
@@ -147,7 +159,13 @@ const reportData = ref([])
 const loading = ref(false)
 
 const sortedReportData = computed(() => {
-  return [...reportData.value].sort((a, b) => b.name.localeCompare(a.name))
+  return [...reportData.value].sort((a, b) => {
+    // Primary: Date descending
+    const dateCompare = (b.date || '').localeCompare(a.date || '')
+    if (dateCompare !== 0) return dateCompare
+    // Secondary: Name descending
+    return (b.name || '').localeCompare(a.name || '')
+  })
 })
 
 const tabs = [
@@ -160,6 +178,7 @@ const tabs = [
 const columns = computed(() => {
   if (activeTab.value === 'Invoice') {
     return [
+      { label: 'Date', key: 'date' },
       { label: 'Invoice No', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
       { label: 'Time', key: 'posting_time' },
@@ -168,6 +187,7 @@ const columns = computed(() => {
     ]
   } else if (activeTab.value === 'Payment') {
     return [
+      { label: 'Date', key: 'date' },
       { label: 'Payment ID', key: 'name' },
       { label: 'Party', key: 'party_name' },
       { label: 'MOP', key: 'mode_of_payment' },
@@ -176,6 +196,7 @@ const columns = computed(() => {
     ]
   } else if (activeTab.value === 'Journal') {
     return [
+      { label: 'Date', key: 'date' },
       { label: 'Journal ID', key: 'name' },
       { label: 'Type', key: 'voucher_type' },
       { label: 'Remark', key: 'user_remark' },
@@ -184,6 +205,7 @@ const columns = computed(() => {
     ]
   } else if (activeTab.value === 'Quotation') {
     return [
+      { label: 'Date', key: 'date' },
       { label: 'Quotation ID', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
       { label: 'Status', key: 'status' },
@@ -211,7 +233,10 @@ async function fetchReport() {
       to_date: toDate.value,
       naming_series: seriesFilter.value
     })
-    reportData.value = data || []
+    reportData.value = (data || []).map(row => ({
+      ...row,
+      date: row.posting_date || row.transaction_date || ''
+    }))
   } catch (e) {
     console.error('Failed to fetch daily report:', e)
     reportData.value = []

@@ -21,7 +21,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
 		return frappe.get_all(
 			"Sales Invoice",
 			filters=filters,
-			fields=["name", "customer_name", "grand_total", "docstatus", "posting_time", "naming_series"],
+			fields=["name", "customer_name", "grand_total", "docstatus", "posting_date", "posting_time", "naming_series"],
 			order_by="posting_date desc, posting_time desc"
 		)
 	
@@ -29,7 +29,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
 		return frappe.get_all(
 			"Payment Entry",
 			filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
-			fields=["name", "party_name", "paid_amount", "received_amount", "mode_of_payment", "docstatus"],
+			fields=["name", "party_name", "paid_amount", "received_amount", "mode_of_payment", "docstatus", "posting_date"],
 			order_by="posting_date desc, creation desc"
 		)
 
@@ -37,7 +37,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
 		return frappe.get_all(
 			"Journal Entry",
 			filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
-			fields=["name", "voucher_type", "total_debit", "docstatus", "user_remark"],
+			fields=["name", "voucher_type", "total_debit", "docstatus", "user_remark", "posting_date"],
 			order_by="posting_date desc, creation desc"
 		)
 
@@ -45,7 +45,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
 		return frappe.get_all(
 			"Quotation",
 			filters={"transaction_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
-			fields=["name", "customer_name", "grand_total", "docstatus", "status"],
+			fields=["name", "customer_name", "grand_total", "docstatus", "status", "transaction_date"],
 			order_by="transaction_date desc, creation desc"
 		)
 
