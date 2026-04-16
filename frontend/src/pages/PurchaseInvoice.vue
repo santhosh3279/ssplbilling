@@ -111,7 +111,7 @@
                   :disabled="isReadOnly"
                   placeholder="Bill No"
                   class="bg-transparent border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] placeholder:text-[var(--color-text-muted)] w-48"
-                  @keydown.enter.prevent="supplierInvoiceDateInputRef?.focus()"
+                  @keydown.enter.prevent="supplierInvoiceNo.trim() ? supplierInvoiceDateInputRef?.focus() : alert('Supplier Invoice No is mandatory.')"
                 />
               </div>
 
@@ -129,7 +129,7 @@
                     v-model="supplierInvoiceDate"
                     :disabled="isReadOnly"
                     class="bg-transparent border-none p-0 text-4xl font-bold text-[var(--color-text)] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)] w-56"
-                    @keydown.enter.prevent="focusBarcodeInput()"
+                    @keydown.enter.prevent="supplierInvoiceNo.trim() ? focusBarcodeInput() : (alert('Supplier Invoice No is mandatory.'), supplierInvoiceNoRef?.focus())"
                   />
                   <button 
                     @click="handleSupplierInvoiceDateChange(1)" 
@@ -1101,6 +1101,7 @@ async function handleSave() {
   const active = items.value.filter(i => !i.deleted)
   if (!active.length) { alert('No items to save'); return }
   if (!supplierId.value) { alert('Please select a supplier first.'); return }
+  if (!supplierInvoiceNo.value.trim()) { alert('Supplier Invoice No is mandatory.'); return }
   if (!selectedSeries.value) { alert('Please select a series first.'); return }
 
   const additionalCharges = []
@@ -1414,6 +1415,12 @@ function deleteItem(idx) {
 
 function onQuickSearchSelect(item) {
   if (!item) return
+  if (!supplierInvoiceNo.value.trim()) {
+    alert('Supplier Invoice No is mandatory.')
+    quickSearchResults.value = []
+    supplierInvoiceNoRef.value?.focus()
+    return
+  }
   
   // Capture the query used to find this item
   const currentQuery = editQuickSearchRowIdx.value !== null 
@@ -1485,6 +1492,11 @@ function closeItemSearch() {
 }
 
 function onItemSearchSelect(item) {
+  if (!supplierInvoiceNo.value.trim()) {
+    alert('Supplier Invoice No is mandatory.')
+    supplierInvoiceNoRef.value?.focus()
+    return
+  }
   showItemSearch.value = false
   const rowIdx = itemSearchTargetRowIdx.value
   itemSearchTargetRowIdx.value = null
@@ -1686,6 +1698,11 @@ async function handleSeriesSelected(series) {
 }
 
 function handleItemEntry() {
+  if (!supplierInvoiceNo.value.trim()) {
+    alert('Supplier Invoice No is mandatory.')
+    supplierInvoiceNoRef.value?.focus()
+    return
+  }
   if (!newItemCode.value) return
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) return
 
