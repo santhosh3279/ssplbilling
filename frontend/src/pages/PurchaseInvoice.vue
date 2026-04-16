@@ -195,9 +195,9 @@
             <input v-if="editingRowIdx === index && editingField === 'qty'"
               ref="editQtyInput"
               v-model.number="item.qty"
-              type="number" min="0"
+              type="number"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter.prevent="item.qty > 0 && openRowPriceListUpdate(index)"
+              @keydown.enter.prevent="item.qty && openRowPriceListUpdate(index)"
               @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
@@ -449,7 +449,6 @@
                 ref="pendingQtyInput"
                 v-model.number="pendingItem.qty"
                 type="number"
-                min="0"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 @keydown="handlePendingQtyKeydown"
               />
@@ -1564,7 +1563,7 @@ function setPendingItem(item) {
 }
 
 function openPriceListUpdate() {
-  if (!pendingItem.value || pendingItem.value.qty <= 0) return
+  if (!pendingItem.value || !pendingItem.value.qty) return
   editRowPriceUpdateIdx.value = null
   showPriceListUpdate.value = true
 }
@@ -1617,7 +1616,7 @@ function onPriceListUpdateClose() {
 }
 
 function confirmPendingItem() {
-  if (!pendingItem.value || pendingItem.value.qty <= 0) return
+  if (!pendingItem.value || !pendingItem.value.qty) return
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
   const newItem = {
@@ -1754,7 +1753,7 @@ function handlePendingQtyKeydown(e) {
       return
     }
 
-    if (pendingItem.value.qty > 0) {
+    if (pendingItem.value.qty) {
       e.preventDefault()
       if (getItemUoms(pendingItem.value.item_code).length > 1) {
         pendingUomSelect.value?.focus()
