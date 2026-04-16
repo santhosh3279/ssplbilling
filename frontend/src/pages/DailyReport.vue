@@ -90,14 +90,14 @@
         <table class="w-full border-collapse custom-table">
           <thead>
             <tr class="bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] text-left border-b border-[var(--color-border)]">
-              <th v-for="col in columns" :key="col.key" class="px-5 py-4 font-normal text-[21px]">{{ col.label }}</th>
+              <th v-for="col in columns" :key="col.key" class="px-2 py-1.5 font-normal text-[21px]">{{ col.label }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700">
             <template v-for="(row, index) in sortedReportData" :key="row.name">
               <!-- Date Grouping Row -->
               <tr v-if="index === 0 || row.date !== sortedReportData[index - 1].date" class="bg-[var(--color-surface-raised)]/30">
-                <td :colspan="columns.length" class="px-5 py-3 text-[18px] font-medium uppercase tracking-wider text-[var(--color-info)]">
+                <td :colspan="columns.length" class="px-2 py-1 text-[18px] font-medium uppercase tracking-wider text-[var(--color-info)]">
                   {{ formatDate(row.date) }}
                 </td>
               </tr>
@@ -105,7 +105,7 @@
                 class="hover:bg-[var(--color-surface-raised)] transition-colors cursor-pointer"
                 @click="handleRowClick(row)"
               >
-                <td v-for="col in columns" :key="col.key" class="px-5 py-4 font-normal text-[var(--color-text)] text-[21px]">
+                <td v-for="col in columns" :key="col.key" class="px-2 py-1.5 font-normal text-[var(--color-text)] text-[21px]">
                   <template v-if="col.type === 'currency'">
                     ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   </template>
@@ -117,7 +117,7 @@
                   </template>
                   <template v-else-if="col.key === 'docstatus'">
                     <span 
-                      class="px-3 py-1 rounded text-[18px]"
+                      class="px-2 py-0.5 rounded text-[18px]"
                       :class="row[col.key] === 1 ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/30 text-[var(--color-warning)]'"
                     >
                       {{ row[col.key] === 1 ? 'Submitted' : 'Draft' }}
