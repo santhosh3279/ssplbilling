@@ -112,6 +112,9 @@
                   <template v-else-if="col.type === 'date'">
                     {{ formatDate(row[col.key]) }}
                   </template>
+                  <template v-else-if="col.type === 'time'">
+                    {{ formatTime(row[col.key]) }}
+                  </template>
                   <template v-else-if="col.key === 'docstatus'">
                     <span 
                       class="px-2 py-0.5 rounded text-[12px]"
@@ -153,6 +156,15 @@ function formatDate(dateStr) {
   return `${d}-${m}-${y}`
 }
 
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const parts = timeStr.split(':')
+  if (parts.length >= 2) {
+    return `${parts[0]}:${parts[1]}`
+  }
+  return timeStr
+}
+
 const fromDate = ref(getTodayIST())
 const toDate = ref(getTodayIST())
 const seriesFilter = ref('')
@@ -184,7 +196,7 @@ const columns = computed(() => {
       { label: 'Date', key: 'date', type: 'date' },
       { label: 'Invoice No', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
-      { label: 'Time', key: 'posting_time' },
+      { label: 'Time', key: 'posting_time', type: 'time' },
       { label: 'Amount', key: 'grand_total', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
     ]
