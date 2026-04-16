@@ -95,7 +95,7 @@
           </thead>
           <tbody class="divide-y divide-slate-700">
             <tr 
-              v-for="row in reportData" 
+              v-for="row in sortedReportData" 
               :key="row.name" 
               class="hover:bg-[var(--color-surface-raised)] transition-colors cursor-pointer"
               @click="handleRowClick(row)"
@@ -145,6 +145,10 @@ const availableSeries = ref([])
 const activeTab = ref('Invoice')
 const reportData = ref([])
 const loading = ref(false)
+
+const sortedReportData = computed(() => {
+  return [...reportData.value].sort((a, b) => b.name.localeCompare(a.name))
+})
 
 const tabs = [
   { label: 'Invoices', value: 'Invoice' },
