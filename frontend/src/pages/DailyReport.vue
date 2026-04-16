@@ -4,15 +4,15 @@
     <header class="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-sm">
       <div class="flex items-center gap-4">
         <button
-          @click="$router.push('/')"
+          @click="showDetail ? backToReport() : $router.push('/')"
           class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-[14px] font-normal tracking-tight text-[var(--color-text)]">Daily Reports</h1>
+        <h1 class="text-[14px] font-normal tracking-tight text-[var(--color-text)] uppercase tracking-widest">{{ pageTitle }}</h1>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div v-if="!showDetail" class="flex items-center gap-4">
         <!-- Series Filter (only for Invoice tab) -->
         <div v-if="activeTab === 'Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Series</label>
@@ -63,7 +63,7 @@
     </header>
 
     <!-- TABS -->
-    <div class="flex border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6">
+    <div v-if="!showDetail" class="flex border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6">
       <button
         v-for="tab in tabs"
         :key="tab.value"
@@ -82,11 +82,12 @@
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-info)] border-t-transparent"></div>
       </div>
       
-      <div v-else-if="!reportData.length" class="flex h-full items-center justify-center text-[var(--color-text-muted)] italic">
+      <div v-else-if="!showDetail && !reportData.length" class="flex h-full items-center justify-center text-[var(--color-text-muted)] italic">
         No data found for the selected date range.
       </div>
 
-      <div v-else class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
+      <!-- Report Table -->
+      <div v-else-if="!showDetail" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
         <table class="w-full border-collapse custom-table">
           <thead>
             <tr class="bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] text-left border-b border-[var(--color-border)]">
@@ -132,19 +133,11 @@
           </tbody>
         </table>
       </div>
-    </div>
 
-    <!-- SUBWINDOW MODAL -->
-    <div v-if="showModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showModal = false">
-      <div class="relative w-[95vw] h-[95vh] bg-[var(--color-bg)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)] flex flex-col">
-        <header class="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6">
-          <h2 class="text-lg font-bold uppercase tracking-widest text-[var(--color-text)]">{{ modalTitle }}</h2>
-          <button @click="showModal = false" class="text-3xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">&times;</button>
-        </header>
-        <div class="flex-1 overflow-hidden">
-          <SalesInvoice v-if="modalType === 'Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" />
-          <Quotation v-else-if="modalType === 'Quotation'" :is-subwindow="true" :quotation-name="selectedDoc" />
-        </div>
+      <!-- Inline Detail View -->
+      <div v-else class="h-full">
+        <SalesInvoice v-if="modalType === 'Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" />
+        <Quotation v-else-if="modalType === 'Quotation'" :is-subwindow="true" :quotation-name="selectedDoc" />
       </div>
     </div>
   </div>
@@ -158,14 +151,21 @@ import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 
 const router = useRouter()
-const showModal = ref(false)
+const showDetail = ref(false)
 const selectedDoc = ref('')
 const modalType = ref('')
-const modalTitle = computed(() => {
+const pageTitle = computed(() => {
+  if (!showDetail.value) return 'Daily Reports'
   if (modalType.value === 'Invoice') return `Sales Invoice: ${selectedDoc.value}`
   if (modalType.value === 'Quotation') return `Quotation: ${selectedDoc.value}`
-  return ''
+  return 'Daily Reports'
 })
+
+function backToReport() {
+  showDetail.value = false
+  selectedDoc.value = ''
+  modalType.value = ''
+}
 
 function getTodayIST() {
   const date = new Date()
@@ -296,7 +296,7 @@ async function fetchAvailableSeries() {
 function handleRowClick(row) {
   selectedDoc.value = row.name
   modalType.value = activeTab.value
-  showModal.value = true
+  showDetail.value = true
 }
 
 watch(activeTab, fetchReport)
