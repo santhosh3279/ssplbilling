@@ -109,6 +109,9 @@
                   <template v-if="col.type === 'currency'">
                     ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   </template>
+                  <template v-else-if="col.type === 'date'">
+                    {{ formatDate(row[col.key]) }}
+                  </template>
                   <template v-else-if="col.key === 'docstatus'">
                     <span 
                       class="px-2 py-0.5 rounded text-[12px]"
@@ -178,7 +181,7 @@ const tabs = [
 const columns = computed(() => {
   if (activeTab.value === 'Invoice') {
     return [
-      { label: 'Date', key: 'date' },
+      { label: 'Date', key: 'date', type: 'date' },
       { label: 'Invoice No', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
       { label: 'Time', key: 'posting_time' },
@@ -187,7 +190,7 @@ const columns = computed(() => {
     ]
   } else if (activeTab.value === 'Payment') {
     return [
-      { label: 'Date', key: 'date' },
+      { label: 'Date', key: 'date', type: 'date' },
       { label: 'Payment ID', key: 'name' },
       { label: 'Party', key: 'party_name' },
       { label: 'MOP', key: 'mode_of_payment' },
@@ -196,7 +199,7 @@ const columns = computed(() => {
     ]
   } else if (activeTab.value === 'Journal') {
     return [
-      { label: 'Date', key: 'date' },
+      { label: 'Date', key: 'date', type: 'date' },
       { label: 'Journal ID', key: 'name' },
       { label: 'Type', key: 'voucher_type' },
       { label: 'Remark', key: 'user_remark' },
@@ -205,7 +208,7 @@ const columns = computed(() => {
     ]
   } else if (activeTab.value === 'Quotation') {
     return [
-      { label: 'Date', key: 'date' },
+      { label: 'Date', key: 'date', type: 'date' },
       { label: 'Quotation ID', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
       { label: 'Status', key: 'status' },
