@@ -4,6 +4,8 @@
       ref="invoiceTemplateRef"
       title="SALES INVOICE"
       title-bar-color="#b2dfb0"
+      :show-sidebar="!isSubwindow"
+      :show-back-button="!isSubwindow"
       :doc-number="invoiceNo"
       :party-name="customerName"
       :party-details="customerDetails"
@@ -593,6 +595,11 @@ import { useShortcuts } from '../services/shortcutManager'
 import { session } from '../session'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
+
+const props = defineProps({
+  isSubwindow: Boolean,
+  invoiceName: String
+})
 
 const router = useRouter()
 
@@ -1996,9 +2003,14 @@ useShortcuts(salesInvoiceShortcuts({
 }))
 
 onMounted(() => {
-  fetchRecentInvoices()
-  fetchAllowedSeries('Sales Invoice')
-  showSeriesModal.value = true
+  if (props.isSubwindow && props.invoiceName) {
+    handleSelectSidebarItem({ name: props.invoiceName })
+  } else {
+    fetchRecentInvoices()
+    fetchAllowedSeries('Sales Invoice')
+    showSeriesModal.value = true
+  }
+  
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }

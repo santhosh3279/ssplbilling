@@ -133,6 +133,20 @@
         </table>
       </div>
     </div>
+
+    <!-- SUBWINDOW MODAL -->
+    <div v-if="showModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showModal = false">
+      <div class="relative w-[95vw] h-[95vh] bg-[var(--color-bg)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)] flex flex-col">
+        <header class="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6">
+          <h2 class="text-lg font-bold uppercase tracking-widest text-[var(--color-text)]">{{ modalTitle }}</h2>
+          <button @click="showModal = false" class="text-3xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">&times;</button>
+        </header>
+        <div class="flex-1 overflow-hidden">
+          <SalesInvoice v-if="modalType === 'Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" />
+          <Quotation v-else-if="modalType === 'Quotation'" :is-subwindow="true" :quotation-name="selectedDoc" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -140,8 +154,18 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+import SalesInvoice from './SalesInvoice.vue'
+import Quotation from './Quotation.vue'
 
 const router = useRouter()
+const showModal = ref(false)
+const selectedDoc = ref('')
+const modalType = ref('')
+const modalTitle = computed(() => {
+  if (modalType.value === 'Invoice') return `Sales Invoice: ${selectedDoc.value}`
+  if (modalType.value === 'Quotation') return `Quotation: ${selectedDoc.value}`
+  return ''
+})
 
 function getTodayIST() {
   const date = new Date()
@@ -270,11 +294,9 @@ async function fetchAvailableSeries() {
 }
 
 function handleRowClick(row) {
-  if (activeTab.value === 'Invoice') {
-    router.push({ name: 'SalesInvoice', query: { invoice: row.name } })
-  } else if (activeTab.value === 'Quotation') {
-    router.push({ name: 'Quotation', query: { quotation: row.name } })
-  }
+  selectedDoc.value = row.name
+  modalType.value = activeTab.value
+  showModal.value = true
 }
 
 watch(activeTab, fetchReport)

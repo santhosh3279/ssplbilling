@@ -3,6 +3,8 @@
     <Item_Invoice_Template
       ref="invoiceTemplateRef"
       title="Quotation"
+      :show-sidebar="!isSubwindow"
+      :show-back-button="!isSubwindow"
       :doc-number="invoiceNo"
       :party-name="customerName"
       :party-details="customerDetails"
@@ -514,6 +516,11 @@ import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { quotationShortcuts } from '../shortcuts/quotationShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
+
+const props = defineProps({
+  isSubwindow: Boolean,
+  quotationName: String
+})
 
 const router = useRouter()
 
@@ -1801,9 +1808,14 @@ useShortcuts(quotationShortcuts({
 }))
 
 onMounted(() => {
-  fetchRecentQuotations()
-  fetchAllowedSeries('Quotation')
-  showSeriesModal.value = true
+  if (props.isSubwindow && props.quotationName) {
+    handleSelectSidebarItem({ name: props.quotationName })
+  } else {
+    fetchRecentQuotations()
+    fetchAllowedSeries('Quotation')
+    showSeriesModal.value = true
+  }
+  
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }
