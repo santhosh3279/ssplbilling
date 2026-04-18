@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import flt
+from frappe.utils import flt, getdate
 
 @frappe.whitelist()
 def get_daily_reports(report_type, from_date, to_date, naming_series=None):
@@ -61,3 +61,25 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
                 """, (from_date, to_date), as_dict=True)
 
         return []
+
+@frappe.whitelist()
+def get_current_fiscal_year_dates():
+        """
+        Returns the year_start_date and year_end_date of the current Fiscal Year.
+        """
+        today = frappe.utils.today()
+        fy = frappe.db.get_value("Fiscal Year", 
+                {"year_start_date": ["<=", today], "year_end_date": [">=", today]}, 
+                ["year_start_date", "year_end_date"], as_dict=True)
+        
+        if not fy:
+                # Fallback to the latest fiscal year if today isn't covered
+                fy = frappe.db.get_value("Fiscal Year", {}, ["year_start_date", "year_end_date"], 
+                        order_by="year_start_date desc", as_dict=True)
+        
+        if fy:
+                return {
+                        "from": str(fy.year_start_date),
+                        "to": str(fy.year_end_date)
+                }
+        return None

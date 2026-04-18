@@ -264,7 +264,7 @@ const presets = [
   { label: 'FY', value: 'fy' },
 ]
 
-function setPreset(type) {
+async function setPreset(type) {
   const now = new Date()
   let from = new Date()
   let to = new Date()
@@ -279,8 +279,23 @@ function setPreset(type) {
     from = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     to = new Date(now.getFullYear(), now.getMonth(), 0)
   } else if (type === 'fy') {
+    loading.value = true
+    try {
+      const fy = await frappeGet('ssplbilling.api.daily_report_api.get_current_fiscal_year_dates')
+      if (fy) {
+        fromDate.value = fy.from
+        toDate.value = fy.to
+        fetchReport()
+        return
+      }
+    } catch (e) {
+      console.error('Failed to fetch fiscal year dates:', e)
+    } finally {
+      loading.value = false
+    }
+    // Static fallback if API fails
     let startYear = now.getFullYear()
-    if (now.getMonth() < 3) startYear -= 1 // Before April, start year is previous
+    if (now.getMonth() < 3) startYear -= 1
     from = new Date(startYear, 3, 1)
     to = new Date(startYear + 1, 2, 31)
   }
