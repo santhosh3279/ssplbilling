@@ -36,17 +36,6 @@
           />
         </div>
 
-        <!-- Time -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Time</label>
-          <input
-            v-model="form.time"
-            type="time"
-            step="1"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] tabular-nums"
-          />
-        </div>
-
         <!-- Bill No -->
         <div class="flex flex-col gap-1.5">
           <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Bill No</label>
@@ -280,7 +269,7 @@
                 <!-- NEW ROW -->
                 <tr class="bg-[var(--color-info)]/5">
                   <td class="border border-[var(--color-border)] px-0.5 py-0 text-center text-[var(--color-info)] font-bold leading-none">+</td>
-                  <td class="border border-[var(--color-border)] px-0 py-0 relative">
+                  <td class="border border-[var(--color-border)] px-0.5 py-0 relative">
                     <input
                       ref="newItemInput"
                       v-model="newItem.item"
@@ -426,7 +415,6 @@ const API = 'ssplbilling.api.loading_receipt_api'
 
 // ── HELPERS ─────────────────────────────────────────────────────────
 const today = new Date().toISOString().split('T')[0]
-const nowTime = () => new Date().toTimeString().slice(0, 8)
 
 function addDays(dateStr, n) {
   const d = new Date(dateStr)
@@ -458,7 +446,7 @@ async function fetchTodayTotal() {
 }
 
 // ── FORM STATE ───────────────────────────────────────────────────────
-const form = ref({ date: today, time: nowTime(), bill_no: '', customer: '' })
+const form = ref({ date: today, bill_no: '', customer: '' })
 const rows = ref([])
 const docName = ref(null)
 const saving = ref(false)
@@ -703,7 +691,7 @@ async function saveReceipt() {
 
 function clearForm() {
   if (rows.value.length && !confirm('Clear all data and start a new receipt?')) return
-  form.value = { date: today, time: nowTime(), bill_no: '', customer: '' }
+  form.value = { date: today, bill_no: '', customer: '' }
   customerQuery.value = ''
   rows.value = []
   docName.value = null
@@ -717,7 +705,6 @@ async function loadReceipt(name) {
     docName.value = d.name
     form.value = {
       date: d.date,
-      time: d.time || nowTime(),
       bill_no: d.bill_no || '',
       customer: d.customer,
     }
