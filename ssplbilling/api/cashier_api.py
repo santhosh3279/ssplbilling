@@ -461,9 +461,9 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 			remarks, supplier
 		FROM `tabPurchase Invoice`
 		WHERE docstatus = 1 
-		  AND (supplier = %s OR supplier = (SELECT supplier_name FROM `tabCustomer` WHERE name = %s))
+		  AND supplier = %s
 		  AND outstanding_amount < -0.005
-	""", (customer, customer), as_dict=True)
+	""", (customer,), as_dict=True)
 
 	for pi in pi_list:
 		results.append({
