@@ -755,6 +755,14 @@ const previewSubtotal = computed(() => {
   return previewItems.value.reduce((acc, item) => acc + (item.qty * item.rate), 0)
 })
 
+const hasPaymentValues = computed(() =>
+  (Number(payments.value.cash)     || 0) > 0 ||
+  (Number(payments.value.credit)   || 0) > 0 ||
+  (Number(payments.value.discount) || 0) > 0 ||
+  (Number(payments.value.upi)      || 0) > 0 ||
+  (Number(payments.value.card)     || 0) > 0
+)
+
 const previewDiscount = computed(() => {
   if (!selectedInvoice.value?.discount_percentage) return 0
   return previewSubtotal.value * (selectedInvoice.value.discount_percentage / 100)
@@ -1265,7 +1273,7 @@ useShortcuts(cashierpageShortcuts({
   navigateBillsUp: () => navigateBills(-1),
   navigateBillsDown: () => navigateBills(1),
   handleEnter: handleEnter,
-  toggleCredit: toggleCredit,
+  toggleCredit: () => { if (!hasPaymentValues.value) toggleCredit() },
   submitPayment: processPayment,
   goBack: () => window.history.back()
 }))
