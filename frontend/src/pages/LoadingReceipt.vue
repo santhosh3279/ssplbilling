@@ -446,7 +446,7 @@ async function fetchTodayTotal() {
 }
 
 // ── FORM STATE ───────────────────────────────────────────────────────
-const form = ref({ date: today, bill_no: '', customer: '' })
+const form = ref({ date: today, bill_no: '', customer: '', time: '' })
 const rows = ref([])
 const docName = ref(null)
 const saving = ref(false)
@@ -691,7 +691,7 @@ async function saveReceipt() {
 
 function clearForm() {
   if (rows.value.length && !confirm('Clear all data and start a new receipt?')) return
-  form.value = { date: today, bill_no: '', customer: '' }
+  form.value = { date: today, bill_no: '', customer: '', time: '' }
   customerQuery.value = ''
   rows.value = []
   docName.value = null
@@ -705,6 +705,7 @@ async function loadReceipt(name) {
     docName.value = d.name
     form.value = {
       date: d.date,
+      time: d.time || '',
       bill_no: d.bill_no || '',
       customer: d.customer,
     }

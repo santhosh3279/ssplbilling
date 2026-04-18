@@ -37,7 +37,8 @@ def create_loading_receipt(data):
 	doc = frappe.new_doc("Loading Receipt")
 	doc.bill_no = d.get("bill_no", "")
 	doc.date = d.get("date")
-	doc.time = d.get("time")
+	if d.get("time"):
+		doc.time = d.get("time")
 	doc.customer = d.get("customer")
 	doc.amount = d.get("amount") or 0
 	for row in d.get("loading_items", []):
@@ -63,7 +64,8 @@ def update_loading_receipt(data):
 	doc = frappe.get_doc("Loading Receipt", d["name"])
 	doc.bill_no = d.get("bill_no", "")
 	doc.date = d.get("date")
-	doc.time = d.get("time")
+	if d.get("time"):
+		doc.time = d.get("time")
 	doc.customer = d.get("customer")
 	doc.amount = d.get("amount") or 0
 	doc.loading_items = []
