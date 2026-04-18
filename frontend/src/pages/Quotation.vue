@@ -452,6 +452,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
+      doctype="Quotation"
       @close="closePrintModal"
     />
 

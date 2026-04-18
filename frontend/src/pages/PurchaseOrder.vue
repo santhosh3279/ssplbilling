@@ -425,6 +425,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="orderNo"
+      doctype="Purchase Order"
       @close="closePrintModal"
     />
 
