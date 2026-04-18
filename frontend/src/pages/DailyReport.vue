@@ -76,6 +76,26 @@
       </button>
     </div>
 
+    <!-- SUMMARY ROW -->
+    <div v-if="!showDetail && reportData.length" class="mx-6 mt-4 flex items-center gap-8 bg-[var(--color-surface-raised)]/50 px-6 py-3 rounded-xl border border-[var(--color-border)] shadow-sm">
+      <div class="flex flex-col">
+        <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">No. of Entries</span>
+        <span class="text-[28px] font-normal text-[var(--color-text)] leading-none font-mono">{{ summary.count }}</span>
+      </div>
+      <div class="h-10 w-px bg-[var(--color-border)]"></div>
+      <div class="flex flex-col">
+        <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">Sum of Total</span>
+        <span class="text-[28px] font-normal text-[var(--color-info)] leading-none font-mono">₹ {{ summary.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+      </div>
+      <template v-if="summary.hasQty">
+        <div class="h-10 w-px bg-[var(--color-border)]"></div>
+        <div class="flex flex-col">
+          <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">Total Quantity</span>
+          <span class="text-[28px] font-normal text-[var(--color-success)] leading-none font-mono">{{ summary.qty.toLocaleString('en-IN') }}</span>
+        </div>
+      </template>
+    </div>
+
     <!-- CONTENT -->
     <div class="flex-1 overflow-auto p-6 custom-scrollbar">
       <div v-if="loading" class="flex h-full items-center justify-center">
@@ -206,6 +226,23 @@ const sortedReportData = computed(() => {
     // Secondary: Name descending
     return (b.name || '').localeCompare(a.name || '')
   })
+})
+
+const summary = computed(() => {
+  const count = reportData.value.length
+  let amount = 0
+  let qty = 0
+  let hasQty = false
+
+  reportData.value.forEach(row => {
+    amount += (row.display_amount || 0)
+    if (row.qty !== undefined) {
+      qty += (row.qty || 0)
+      hasQty = true
+    }
+  })
+
+  return { count, amount, qty, hasQty }
 })
 
 const tabs = [
