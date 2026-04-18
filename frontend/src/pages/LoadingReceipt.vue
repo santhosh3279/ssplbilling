@@ -68,32 +68,14 @@
             ref="customerInput"
             v-model="customerQuery"
             type="text"
-            placeholder="Search customer..."
-            class="w-56 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Click to search customer..."
+            class="w-56 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] cursor-pointer"
             autocomplete="off"
-            @input="onCustomerInput"
-            @keydown.down.prevent="customerHighlight = Math.min(customerHighlight + 1, customerResults.length - 1)"
-            @keydown.up.prevent="customerHighlight = Math.max(customerHighlight - 1, 0)"
-            @keydown.enter.prevent="onCustomerEnter"
-            @keydown.escape="customerResults = []"
-            @blur="onCustomerBlur"
+            readonly
+            @click="showCustomerModal = true"
+            @keydown.enter.prevent="showCustomerModal = true"
+            @keydown.space.prevent="showCustomerModal = true"
           />
-          <div
-            v-if="customerResults.length"
-            class="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
-          >
-            <div
-              v-for="(c, i) in customerResults"
-              :key="c.name"
-              class="cursor-pointer px-4 py-2.5 text-sm"
-              :class="i === customerHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
-              @mousedown.prevent="pickCustomer(c)"
-              @mouseover="customerHighlight = i"
-            >
-              <div class="font-semibold">{{ c.customer_name }}</div>
-              <div class="text-[10px] font-mono" :class="i === customerHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ c.name }}</div>
-            </div>
-          </div>
         </div>
 
       </div>
@@ -330,7 +312,7 @@
                   <td class="border border-[var(--color-border)] px-0.5 py-0">
                     <div class="text-[var(--color-text-muted)] italic text-base truncate leading-none">{{ newItem.item_name || 'Item name...' }}</div>
                   </td>
-                  <td class="border border-[var(--color-border)] px-0 py-0 text-right">
+                  <td class="border border-[var(--color-border)] px-0.py-0 text-right">
                     <input
                       ref="newQtyInput"
                       v-model.number="newItem.qty"
@@ -342,7 +324,7 @@
                       @keydown.tab.prevent="focusNewRate"
                     />
                   </td>
-                  <td class="border border-[var(--color-border)] px-0 py-0 text-right">
+                  <td class="border border-[var(--color-border)] px-0.5 py-0 text-right">
                     <input
                       ref="newRateInput"
                       v-model.number="newItem.rate"
@@ -401,6 +383,16 @@
     @close="showPrint = false"
   />
 
+  <CustomerSearchModal
+    v-if="showCustomerModal"
+    :show="showCustomerModal"
+    :skip-date-filter="true"
+    initial-type="Customer"
+    :allowed-types="['Customer']"
+    @close="showCustomerModal = false"
+    @select="onCustomerSelected"
+  />
+
   </div>
 </template>
 
@@ -409,6 +401,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 
 const router = useRouter()
 const API = 'ssplbilling.api.loading_receipt_api'
@@ -453,12 +446,10 @@ const docName = ref(null)
 const saving = ref(false)
 const selectedRow = ref(-1)
 const showPrint = ref(false)
+const showCustomerModal = ref(false)
 
 // customer search
 const customerQuery = ref('')
-const customerResults = ref([])
-const customerHighlight = ref(0)
-let customerTimer = null
 
 // item search (new row)
 const newItem = ref({ item: '', item_name: '', qty: 1, rate: 0 })
@@ -514,7 +505,7 @@ function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[
 function focusField(f, idx)    { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) }
 function focusRow(idx)         { nextTick(() => rowRefs[idx]?.focus()) }
 function focusBillNo()         { nextTick(() => { billNoInput.value?.focus(); billNoInput.value?.select() }) }
-function focusCustomer()       { nextTick(() => { customerInput.value?.focus(); customerInput.value?.select() }) }
+function focusCustomer()       { nextTick(() => { customerInput.value?.focus() }) }
 function focusNewItem()        { nextTick(() => newItemInput.value?.focus()) }
 function focusNewQty()         { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
 function focusNewRate()        { nextTick(() => { newRateInput.value?.focus(); newRateInput.value?.select() }) }
@@ -553,43 +544,12 @@ function removeRow(idx) {
 }
 
 // ── CUSTOMER SEARCH ──────────────────────────────────────────────────
-function onCustomerInput() {
-  clearTimeout(customerTimer)
-  customerHighlight.value = 0
-  if (!customerQuery.value.trim()) { customerResults.value = []; form.value.customer = ''; return }
-  customerTimer = setTimeout(searchCustomers, 250)
-}
-
-async function searchCustomers() {
-  try {
-    const res = await frappeGet('frappe.client.get_list', {
-      doctype: 'Customer',
-      filters: [['customer_name', 'like', `%${customerQuery.value}%`]],
-      fields: ['name', 'customer_name'],
-      limit: 20,
-    })
-    customerResults.value = res
-  } catch { customerResults.value = [] }
-}
-
-function onCustomerEnter() {
-  if (customerResults.value.length) {
-    pickCustomer(customerResults.value[customerHighlight.value])
-  } else {
-    focusNewItem()
-  }
-}
-
-function pickCustomer(c) {
+function onCustomerSelected(c) {
   if (!c) return
   form.value.customer = c.name
-  customerQuery.value = c.customer_name
-  customerResults.value = []
+  customerQuery.value = c.label || c.customer_name
+  showCustomerModal.value = false
   focusNewItem()
-}
-
-function onCustomerBlur() {
-  setTimeout(() => { customerResults.value = [] }, 150)
 }
 
 // ── ITEM SEARCH (new row) ────────────────────────────────────────────
