@@ -89,15 +89,18 @@
                 type="text"
                 class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-xl font-bold outline-none focus:border-[var(--color-info)]"
                 placeholder="LR-ITEM-001"
+                @keydown.enter.prevent="nameRef?.focus()"
               />
             </div>
             <div class="space-y-1">
               <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Item Name *</label>
               <input
                 v-model="form.item_name"
+                ref="nameRef"
                 type="text"
                 class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-xl outline-none focus:border-[var(--color-info)]"
                 placeholder="Enter item name..."
+                @keydown.enter.prevent="rateRef?.focus()"
               />
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -114,9 +117,11 @@
                 <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Default Rate</label>
                 <input
                   v-model.number="form.rate"
+                  ref="rateRef"
                   type="number"
                   class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-xl font-mono outline-none focus:border-[var(--color-info)]"
                   placeholder="0.00"
+                  @keydown.enter.prevent="saveItem"
                 />
               </div>
             </div>
@@ -143,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { frappePost, frappeGet } from '../api.js'
 
 const props = defineProps({
@@ -166,6 +171,8 @@ const form = ref({
 })
 
 const codeRef = ref(null)
+const nameRef = ref(null)
+const rateRef = ref(null)
 
 async function fetchItems() {
   loading.value = true
@@ -204,6 +211,12 @@ async function saveItem() {
     saving.value = false
   }
 }
+
+watch(showCreateForm, (val) => {
+  if (val) {
+    nextTick(() => codeRef.value?.focus())
+  }
+})
 
 onMounted(() => {
   fetchItems()
