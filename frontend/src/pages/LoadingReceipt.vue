@@ -387,8 +387,8 @@
     v-if="showCustomerModal"
     :show="showCustomerModal"
     :skip-date-filter="true"
-    initial-type="Customer"
-    :allowed-types="['Customer']"
+    initial-type="All"
+    :allowed-types="['Customer', 'Supplier']"
     @close="showCustomerModal = false"
     @select="onCustomerSelected"
   />
