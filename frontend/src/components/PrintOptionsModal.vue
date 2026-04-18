@@ -156,12 +156,13 @@ const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 // Returns printer_settings rows for the current user from the billing settings cache
 function getUserPrinterSettings() {
   try {
-    const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
-    const allRows = cached?.data?.printer_settings || []
-    const currentUser = cached?.data?._current_user || ''
+    const cachedTemplates = JSON.parse(localStorage.getItem('wb-printer-templates') || '[]')
+    const cachedSettings = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
+    const currentUser = cachedSettings?.data?._current_user || ''
+    
     // Filter by current user; fall back to all rows if no user field is set
-    const userRows = allRows.filter(ps => ps.user === currentUser)
-    return userRows.length ? userRows : allRows.filter(ps => !ps.user)
+    const userRows = cachedTemplates.filter(ps => ps.user === currentUser)
+    return userRows.length ? userRows : cachedTemplates.filter(ps => !ps.user)
   } catch (e) {
     return []
   }
@@ -178,7 +179,7 @@ function syncPrinter() {
   if (targetPrinter && printers.value.some(pr => pr.name === targetPrinter)) {
     selectedPrinter.value = targetPrinter
   } else {
-    const userDefault = localStorage.getItem('wb-default-printer')
+    const userDefault = localStorage.getItem('wb-default-printer') || localStorage.getItem('wb-printer')
     if (userDefault && printers.value.some(pr => pr.name === userDefault)) {
       selectedPrinter.value = userDefault
     } else {
