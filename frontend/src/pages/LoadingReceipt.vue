@@ -188,8 +188,8 @@
                         @input="onRowItemInput(idx)"
                         @keydown.enter.prevent="onRowItemEnter(idx)"
                         @keydown.tab.prevent="focusField('qty', idx)"
-                        @keydown.down.prevent="moveRow(idx, 1)"
-                        @keydown.up.prevent="moveRow(idx, -1)"
+                        @keydown.down.prevent="onRowItemDown(idx)"
+                        @keydown.up.prevent="onRowItemUp(idx)"
                         @keydown.escape="itemDropdownIdx = null"
                       />
                       <div
@@ -289,7 +289,8 @@
                       @input="onNewItemInput"
                       @keydown.enter.prevent="onNewItemEnter"
                       @keydown.tab.prevent="focusNewQty"
-                      @keydown.up.prevent="moveToLastRow"
+                      @keydown.down.prevent="onNewItemDown"
+                      @keydown.up.prevent="onNewItemUp"
                       @keydown.escape="newItemResults = []"
                     />
                     <div
@@ -571,6 +572,20 @@ function onNewItemEnter() {
   else focusNewQty()
 }
 
+function onNewItemDown() {
+  if (newItemResults.value.length) {
+    newItemHighlight.value = (newItemHighlight.value + 1) % newItemResults.value.length
+  }
+}
+
+function onNewItemUp() {
+  if (newItemResults.value.length) {
+    newItemHighlight.value = (newItemHighlight.value - 1 + newItemResults.value.length) % newItemResults.value.length
+  } else {
+    moveToLastRow()
+  }
+}
+
 function pickNewItem(it) {
   newItem.value.item = it.item_code
   newItem.value.item_name = it.item_name
@@ -612,6 +627,22 @@ function onRowItemInput(idx) {
 function onRowItemEnter(idx) {
   if (rowItemResults.value.length) pickRowItem(idx, rowItemResults.value[rowItemHighlight.value])
   else focusField('qty', idx)
+}
+
+function onRowItemDown(idx) {
+  if (rowItemResults.value.length) {
+    rowItemHighlight.value = (rowItemHighlight.value + 1) % rowItemResults.value.length
+  } else {
+    moveRow(idx, 1)
+  }
+}
+
+function onRowItemUp(idx) {
+  if (rowItemResults.value.length) {
+    rowItemHighlight.value = (rowItemHighlight.value - 1 + rowItemResults.value.length) % rowItemResults.value.length
+  } else {
+    moveRow(idx, -1)
+  }
 }
 
 function pickRowItem(idx, it) {
