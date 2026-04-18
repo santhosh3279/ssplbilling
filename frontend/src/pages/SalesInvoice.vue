@@ -473,6 +473,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
+      doctype="Sales Invoice"
       @close="closePrintModal"
     />
 
