@@ -233,32 +233,45 @@ async function loadSettings() {
   error.value = ''
   try {
     const userRows = getUserPrinterSettings()
+    
+    // 1. Fetch all valid print formats for this doctype to ensure we only show relevant ones
+    const validFormats = await frappeGet('frappe.client.get_list', {
+      doctype: 'Print Format',
+      filters: { doc_type: props.doctype },
+      fields: ['name'],
+      limit: 100
+    })
+    const validFormatNames = validFormats.map(f => f.name)
 
     if (userRows.length) {
-      // Populate templates and printers from the user's printer_settings rows
-      const uniqueTemplates = [...new Map(userRows.map(r => [r.template, { name: r.template }])).values()]
-        .filter(t => t.name)
+      // 2. Filter cached user templates to only those that exist for this doctype
+      const filteredTemplates = userRows
+        .filter(r => r.template && validFormatNames.includes(r.template))
+        .map(r => ({ name: r.template }))
+      
+      // Deduplicate
+      const uniqueTemplates = [...new Map(filteredTemplates.map(t => [t.name, t])).values()]
+      
       const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
 
-      // Still fetch all printers for status info, then filter to user's printers
+      // Fetch all printers for status info, then filter to user's printers
       const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
       const filteredPrinters = (allPrinters || []).filter(p => uniquePrinterNames.includes(p.name))
-      // Fall back to all printers if none matched (misconfiguration guard)
+      
       printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
       templates.value = uniqueTemplates
+      
+      // If no cached templates matched the doctype, fall back to all valid formats
+      if (!templates.value.length) {
+        templates.value = validFormats
+      }
     } else {
-      // No user-specific rows — fall back to fetching all printers + templates
-      const [p, t] = await Promise.all([
+      // No user-specific rows — fall back to fetching all printers + templates for this doctype
+      const [p] = await Promise.all([
         frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
-        frappeGet('frappe.client.get_list', {
-          doctype: 'Print Template',
-          filters: JSON.stringify(props.doctype ? { document_type: props.doctype } : { document_type: ['is', 'not set'] }),
-          fields: JSON.stringify(['name']),
-          limit: 50,
-        }),
       ])
       printers.value  = p || []
-      templates.value = t || []
+      templates.value = validFormats
     }
 
     if (props.initialPrintFormat && templates.value.some(tmp => tmp.name === props.initialPrintFormat)) {
