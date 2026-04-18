@@ -536,6 +536,7 @@
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
       doctype="Purchase Invoice"
+      :initial-template="defaultTemplate"
       @close="closePrintModal"
     />
 
@@ -700,6 +701,7 @@ const lastEnterTime = ref(0)
 
 const invoiceNo = ref('NEW')
 const selectedSeries = ref('')
+const defaultTemplate = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
@@ -1032,12 +1034,12 @@ async function clearBill() {
   isReturn.value = false
   isReadOnly.value = false
   isSaved.value = false
-  isSubmitted.value = false
 
   if (selectedSeries.value) {
     try {
-      const series = await frappeGet('ssplbilling.api.purchase_api.get_next_bill_no', { naming_series: selectedSeries.value })
-      invoiceNo.value = series || 'NEW'
+      const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Purchase Invoice' })
+      invoiceNo.value = res.invoice_no || 'NEW'
+      defaultTemplate.value = res.print_format || ''
     } catch {
       invoiceNo.value = 'NEW'
     }
@@ -1687,8 +1689,13 @@ function handleSupplierSelected(party) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const next = await frappeGet('ssplbilling.api.purchase_api.get_next_bill_no', { naming_series: series })
-    invoiceNo.value = next || 'NEW'
+    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Purchase Invoice' })
+    invoiceNo.value = res.invoice_no
+    priceList.value = res.price_list
+    taxTemplate.value = res.tax_template
+    defaultTemplate.value = res.print_format || ''
+    if (res.warehouse) warehouse.value = res.warehouse
+    if (res.cost_center) costCenter.value = res.cost_center
     showSeriesModal.value = false
     supplierInitialQuery.value = ''
     showSupplierModal.value = true

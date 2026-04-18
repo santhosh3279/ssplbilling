@@ -426,6 +426,7 @@
       v-if="showPrintModal"
       :invoice-name="orderNo"
       doctype="Purchase Order"
+      :initial-template="defaultTemplate"
       @close="closePrintModal"
     />
 
@@ -554,6 +555,7 @@ const priceListUpdateItemCode = computed(() => {
 const lastEnterTime = ref(0)
 const orderNo = ref('NEW')
 const selectedSeries = ref('')
+const defaultTemplate = ref('')
 const orderDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
@@ -850,9 +852,12 @@ async function clearBill() {
 
   if (selectedSeries.value) {
     try {
-      const next = await frappeGet('ssplbilling.api.purchase_order_api.get_next_bill_no', { naming_series: selectedSeries.value })
-      orderNo.value = next || 'NEW'
-    } catch { orderNo.value = 'NEW' }
+      const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Purchase Order' })
+      orderNo.value = res.order_no || 'NEW'
+      defaultTemplate.value = res.print_format || ''
+    } catch {
+      orderNo.value = 'NEW'
+    }
   }
   nextTick(() => { newCodeInput.value?.focus() })
 }
@@ -1226,9 +1231,20 @@ function handleSupplierSelected(party) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const next = await frappeGet('ssplbilling.api.purchase_order_api.get_next_bill_no', { naming_series: series })
-    orderNo.value = next || 'NEW'; showSeriesModal.value = false; supplierInitialQuery.value = ''; showSupplierModal.value = true
-  } catch (e) { showSeriesModal.value = false }
+    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Purchase Order' })
+    orderNo.value = res.order_no || 'NEW'
+    priceList.value = res.price_list
+    taxTemplate.value = res.tax_template
+    defaultTemplate.value = res.print_format || ''
+    if (res.warehouse) warehouse.value = res.warehouse
+    if (res.cost_center) costCenter.value = res.cost_center
+    showSeriesModal.value = false
+    supplierInitialQuery.value = ''
+    showSupplierModal.value = true
+  } catch (e) {
+    showSeriesModal.value = false
+    console.error('[PurchaseOrder] Failed to fetch series defaults:', e)
+  }
 }
 
 function handleItemEntry() {

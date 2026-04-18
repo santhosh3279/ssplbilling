@@ -474,6 +474,7 @@
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
       doctype="Sales Invoice"
+      :initial-template="defaultTemplate"
       @close="closePrintModal"
     />
 
@@ -683,6 +684,7 @@ const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: numbe
 
 const invoiceNo = ref('NEW')
 const selectedSeries = ref('')
+const defaultTemplate = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
@@ -1029,8 +1031,9 @@ async function clearBill() {
 
   if (selectedSeries.value) {
     try {
-      const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
+      const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Invoice' })
       invoiceNo.value = next.invoice_no || 'NEW'
+      defaultTemplate.value = next.print_format || ''
     } catch {
       invoiceNo.value = 'NEW'
     }
@@ -1232,7 +1235,7 @@ async function closePrintModal() {
 
   isSaved.value = false
   try {
-    const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value })
+    const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Invoice' })
     invoiceNo.value = next.invoice_no || 'NEW'
   } catch {
     invoiceNo.value = 'NEW'
@@ -1976,12 +1979,19 @@ function handleCustomerSelected(cust) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series })
-    invoiceNo.value = res.invoice_no; priceList.value = res.price_list; taxTemplate.value = res.tax_template
+    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Sales Invoice' })
+    invoiceNo.value = res.invoice_no
+    priceList.value = res.price_list
+    taxTemplate.value = res.tax_template
+    defaultTemplate.value = res.print_format || ''
     if (res.warehouse) warehouse.value = res.warehouse
     if (res.cost_center) costCenter.value = res.cost_center
-    showSeriesModal.value = false; customerInitialQuery.value = ''; showCustomerModal.value = true
-  } catch (e) { console.error('[SalesInvoice] Failed to fetch series defaults:', e) }
+    showSeriesModal.value = false
+    customerInitialQuery = ''
+    showCustomerModal.value = true
+  } catch (e) {
+    console.error('[SalesInvoice] Failed to fetch series defaults:', e)
+  }
 }
 
 useShortcuts(salesInvoiceShortcuts({

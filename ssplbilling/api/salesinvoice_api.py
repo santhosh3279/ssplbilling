@@ -15,7 +15,7 @@ def get_next_invoice_no(naming_series):
     return parse_naming_series(naming_series)
 
 @frappe.whitelist()
-def get_series_defaults(naming_series):
+def get_series_defaults(naming_series, doctype="Sales Invoice"):
     """Return naming series defaults and the next available number."""
     from frappe.model.naming import parse_naming_series
     
@@ -29,10 +29,21 @@ def get_series_defaults(naming_series):
     # 3. Get user-specific defaults (if any)
     user_row = next((r for r in settings.user_series if r.user == frappe.session.user), None)
     
-    return {
+    res = {
         "invoice_no": next_no,
-        "price_list": row.price_list if row and row.price_list else "Standard Selling",
+        "price_list": row.price_list if row and row.price_list else ("Standard Selling" if "Sales" in doctype or doctype == "Quotation" else "Standard Buying"),
         "tax_template": row.tax_template if row and row.tax_template else "",
+        "print_format": row.print_format if row and row.print_format else "",
         "warehouse": (user_row.warehouse if user_row and user_row.warehouse else ""),
         "cost_center": (user_row.cost_center if user_row and user_row.cost_center else ""),
     }
+    
+    # Handle different field names for order/invoice number
+    if doctype == "Sales Order":
+        res["order_no"] = next_no
+    elif doctype == "Purchase Order":
+        res["order_no"] = next_no
+    elif doctype == "Quotation":
+        res["quotation_no"] = next_no
+        
+    return res

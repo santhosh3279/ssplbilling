@@ -466,6 +466,7 @@
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
       doctype="Sales Order"
+      :initial-template="defaultTemplate"
       @close="closePrintModal"
     />
 
@@ -622,6 +623,7 @@ const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: numbe
 
 const invoiceNo = ref('NEW')
 const selectedSeries = ref('')
+const defaultTemplate = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
@@ -949,8 +951,9 @@ async function clearBill() {
 
   if (selectedSeries.value) {
     try {
-      const nextNo = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: selectedSeries.value })
-      invoiceNo.value = nextNo || 'NEW'
+      const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Order' })
+      invoiceNo.value = res.order_no || 'NEW'
+      defaultTemplate.value = res.print_format || ''
     } catch {
       invoiceNo.value = 'NEW'
     }
@@ -1840,10 +1843,19 @@ function handleCustomerSelected(cust) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const nextNo = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: series })
-    invoiceNo.value = nextNo || 'NEW'
-    showSeriesModal.value = false; customerInitialQuery.value = ''; showCustomerModal.value = true
-  } catch (e) { console.error('[SalesOrder] Failed to fetch next order no:', e) }
+    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Sales Order' })
+    invoiceNo.value = res.order_no || 'NEW'
+    priceList.value = res.price_list
+    taxTemplate.value = res.tax_template
+    defaultTemplate.value = res.print_format || ''
+    if (res.warehouse) warehouse.value = res.warehouse
+    if (res.cost_center) costCenter.value = res.cost_center
+    showSeriesModal.value = false
+    customerInitialQuery.value = ''
+    showCustomerModal.value = true
+  } catch (e) {
+    console.error('[SalesOrder] Failed to fetch series defaults:', e)
+  }
 }
 
 useShortcuts(salesInvoiceShortcuts({
