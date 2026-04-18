@@ -10,6 +10,7 @@
   "date",
   "time",
   "column_break_1",
+  "party_type",
   "customer",
   "customer_name",
   "loading_items_section",
@@ -53,18 +54,25 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "customer",
+   "default": "Customer",
+   "fieldname": "party_type",
    "fieldtype": "Link",
-   "label": "Customer",
-   "options": "Customer",
+   "label": "Party Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "party_type",
    "reqd": 1,
    "in_list_view": 1
   },
   {
-   "fetch_from": "customer.customer_name",
    "fieldname": "customer_name",
    "fieldtype": "Data",
-   "label": "Customer Name",
+   "label": "Party Name",
    "read_only": 1,
    "in_list_view": 1
   },

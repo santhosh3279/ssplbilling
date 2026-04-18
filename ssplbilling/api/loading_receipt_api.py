@@ -39,7 +39,9 @@ def create_loading_receipt(data):
 	doc.date = d.get("date")
 	if d.get("time"):
 		doc.time = d.get("time")
+	doc.party_type = d.get("party_type", "Customer")
 	doc.customer = d.get("customer")
+	doc.customer_name = d.get("customer_name")
 	doc.amount = d.get("amount") or 0
 	for row in d.get("loading_items", []):
 		doc.append(
@@ -66,7 +68,9 @@ def update_loading_receipt(data):
 	doc.date = d.get("date")
 	if d.get("time"):
 		doc.time = d.get("time")
+	doc.party_type = d.get("party_type", "Customer")
 	doc.customer = d.get("customer")
+	doc.customer_name = d.get("customer_name")
 	doc.amount = d.get("amount") or 0
 	doc.loading_items = []
 	for row in d.get("loading_items", []):
@@ -98,7 +102,7 @@ def get_loading_receipts(query="", date=None):
 	where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 	rows = frappe.db.sql(
 		f"""
-		SELECT lr.name, lr.date, lr.bill_no, lr.customer, lr.customer_name, lr.total
+		SELECT lr.name, lr.date, lr.bill_no, lr.customer, lr.customer_name, lr.total, lr.party_type
 		FROM `tabLoading Receipt` lr
 		{where}
 		ORDER BY lr.creation DESC
@@ -118,6 +122,7 @@ def get_loading_receipt(name):
 		"date": str(doc.date),
 		"time": str(doc.time) if doc.time else "",
 		"bill_no": doc.bill_no,
+		"party_type": doc.party_type,
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
 		"amount": doc.amount,

@@ -446,7 +446,7 @@ async function fetchTodayTotal() {
 }
 
 // ── FORM STATE ───────────────────────────────────────────────────────
-const form = ref({ date: today, bill_no: '', customer: '', time: '' })
+const form = ref({ date: today, bill_no: '', customer: '', customer_name: '', party_type: 'Customer', time: '' })
 const rows = ref([])
 const docName = ref(null)
 const saving = ref(false)
@@ -554,6 +554,8 @@ function removeRow(idx) {
 function onCustomerSelected(c) {
   if (!c) return
   form.value.customer = c.name
+  form.value.customer_name = c.label || c.customer_name
+  form.value.party_type = c.type || 'Customer'
   customerQuery.value = c.label || c.customer_name
   showCustomerModal.value = false
   focusNewItem()
@@ -691,7 +693,7 @@ async function saveReceipt() {
 
 function clearForm() {
   if (rows.value.length && !confirm('Clear all data and start a new receipt?')) return
-  form.value = { date: today, bill_no: '', customer: '', time: '' }
+  form.value = { date: today, bill_no: '', customer: '', customer_name: '', party_type: 'Customer', time: '' }
   customerQuery.value = ''
   rows.value = []
   docName.value = null
@@ -707,7 +709,9 @@ async function loadReceipt(name) {
       date: d.date,
       time: d.time || '',
       bill_no: d.bill_no || '',
+      party_type: d.party_type || 'Customer',
       customer: d.customer,
+      customer_name: d.customer_name,
     }
     customerQuery.value = d.customer_name || d.customer
     rows.value = d.loading_items.map(r => ({ ...r }))
