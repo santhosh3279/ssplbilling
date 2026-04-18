@@ -148,14 +148,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { frappePost, frappeGet } from '../api.js'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean
 })
 
 const emit = defineEmits(['close'])
+
+// Link Esc to close (either the form or the whole modal)
+useSubwindowWatcher(computed(() => props.show), {
+  ESCAPE: () => {
+    if (showCreateForm.value) {
+      showCreateForm.value = false
+    } else {
+      emit('close')
+    }
+  }
+})
 
 const items = ref([])
 const loading = ref(false)
