@@ -133,7 +133,7 @@ useSubwindow()
 const props = defineProps({
   invoiceName: { type: String, required: true },
   doctype:     { type: String, default: 'Sales Invoice' },
-  initialPrintFormat: { type: String, default: '' },
+  initialTemplate: { type: String, default: '' },
 })
 const emit = defineEmits(['close'])
 
@@ -234,19 +234,19 @@ async function loadSettings() {
   try {
     const userRows = getUserPrinterSettings()
     
-    // 1. Fetch all valid print formats for this doctype to ensure we only show relevant ones
-    const validFormats = await frappeGet('frappe.client.get_list', {
-      doctype: 'Print Format',
-      filters: { doc_type: props.doctype },
+    // 1. Fetch all valid print templates for this doctype to ensure we only show relevant ones
+    const validTemplates = await frappeGet('frappe.client.get_list', {
+      doctype: 'Print Template',
+      filters: { document_type: props.doctype },
       fields: ['name'],
       limit: 100
     })
-    const validFormatNames = validFormats.map(f => f.name)
+    const validTemplateNames = validTemplates.map(f => f.name)
 
     if (userRows.length) {
       // 2. Filter cached user templates to only those that exist for this doctype
       const filteredTemplates = userRows
-        .filter(r => r.template && validFormatNames.includes(r.template))
+        .filter(r => r.template && validTemplateNames.includes(r.template))
         .map(r => ({ name: r.template }))
       
       // Deduplicate
@@ -261,9 +261,9 @@ async function loadSettings() {
       printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
       templates.value = uniqueTemplates
       
-      // If no cached templates matched the doctype, fall back to all valid formats
+      // If no cached templates matched the doctype, fall back to all valid templates
       if (!templates.value.length) {
-        templates.value = validFormats
+        templates.value = validTemplates
       }
     } else {
       // No user-specific rows — fall back to fetching all printers + templates for this doctype
@@ -271,11 +271,11 @@ async function loadSettings() {
         frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
       ])
       printers.value  = p || []
-      templates.value = validFormats
+      templates.value = validTemplates
     }
 
-    if (props.initialPrintFormat && templates.value.some(tmp => tmp.name === props.initialPrintFormat)) {
-      selectedTemplate.value = props.initialPrintFormat
+    if (props.initialTemplate && templates.value.some(tmp => tmp.name === props.initialTemplate)) {
+      selectedTemplate.value = props.initialTemplate
     } else if (templates.value.length) {
       selectedTemplate.value = templates.value[0].name
     }
