@@ -13,6 +13,18 @@
       </div>
 
       <div v-if="!showDetail" class="flex items-center gap-4">
+        <!-- Presets -->
+        <div class="flex items-center gap-1.5 bg-[var(--color-surface-raised)] px-2 py-1 rounded-xl border border-[var(--color-border)] shadow-sm">
+          <button 
+            v-for="p in presets" 
+            :key="p.label" 
+            @click="setPreset(p.value)"
+            class="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all hover:bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-info)] active:scale-95"
+          >
+            {{ p.label }}
+          </button>
+        </div>
+
         <!-- Series Filter (only for Invoice tab) -->
         <div v-if="activeTab === 'Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Series</label>
@@ -244,6 +256,39 @@ const summary = computed(() => {
 
   return { count, amount, qty, hasQty }
 })
+
+const presets = [
+  { label: 'Yesterday', value: 'yesterday' },
+  { label: 'Curr Month', value: 'curr_month' },
+  { label: 'Last Month', value: 'last_month' },
+  { label: 'FY', value: 'fy' },
+]
+
+function setPreset(type) {
+  const now = new Date()
+  let from = new Date()
+  let to = new Date()
+
+  if (type === 'yesterday') {
+    from.setDate(now.getDate() - 1)
+    to.setDate(now.getDate() - 1)
+  } else if (type === 'curr_month') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1)
+    to = now
+  } else if (type === 'last_month') {
+    from = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    to = new Date(now.getFullYear(), now.getMonth(), 0)
+  } else if (type === 'fy') {
+    let startYear = now.getFullYear()
+    if (now.getMonth() < 3) startYear -= 1 // Before April, start year is previous
+    from = new Date(startYear, 3, 1)
+    to = new Date(startYear + 1, 2, 31)
+  }
+
+  fromDate.value = from.toISOString().slice(0, 10)
+  toDate.value = to.toISOString().slice(0, 10)
+  fetchReport()
+}
 
 const tabs = [
   { label: 'Invoices', value: 'Invoice' },
