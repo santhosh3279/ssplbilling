@@ -23,53 +23,53 @@
     </header>
 
     <!-- ── HEADER FIELDS BAR ─────────────────────────────────────── -->
-    <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shrink-0">
-      <div class="flex flex-wrap items-end gap-6">
+    <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 shrink-0">
+      <div class="flex flex-wrap items-end gap-10">
 
         <!-- Date -->
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Date</label>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Date</label>
           <input
             v-model="form.date"
             type="date"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] tabular-nums"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] tabular-nums"
           />
         </div>
 
         <!-- Time -->
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Time</label>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Time</label>
           <input
             v-model="form.time"
             type="time"
             step="1"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] tabular-nums"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] tabular-nums"
           />
         </div>
 
         <!-- Bill No -->
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Bill No</label>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Bill No</label>
           <input
             ref="billNoInput"
             v-model="form.bill_no"
             type="text"
             placeholder="Bill / Ref No"
-            class="w-36 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="w-64 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             @keydown.enter.prevent="focusCustomer"
             @keydown.tab.prevent="focusCustomer"
           />
         </div>
 
         <!-- Customer -->
-        <div class="flex flex-col gap-1 relative" ref="customerWrap">
-          <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Customer</label>
+        <div class="flex flex-col gap-1.5 relative" ref="customerWrap">
+          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Customer</label>
           <input
             ref="customerInput"
             v-model="customerQuery"
             type="text"
-            placeholder="Click to search customer..."
-            class="w-56 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] cursor-pointer"
+            placeholder="Click to search..."
+            class="w-96 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] cursor-pointer"
             autocomplete="off"
             readonly
             @click="showCustomerModal = true"
@@ -88,18 +88,18 @@
       <aside class="flex w-[20%] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
 
         <!-- Date navigator -->
-        <div class="flex items-center justify-between border-b border-[var(--color-border)] px-1.5 py-2 shrink-0">
+        <div class="flex items-center justify-between border-b border-[var(--color-border)] px-1.5 py-3 shrink-0">
           <button
-            class="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition text-base font-bold"
+            class="flex h-10 w-10 items-center justify-center rounded text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition text-xl font-bold"
             title="Previous day"
             @click="shiftDate(-1)"
           >&#8592;</button>
           <div class="flex flex-col items-center leading-none">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</span>
-            <span class="text-[11px] font-bold text-[var(--color-text)] tabular-nums">{{ sidebarDateLabel }}</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</span>
+            <span class="text-lg font-bold text-[var(--color-text)] tabular-nums">{{ sidebarDateLabel }}</span>
           </div>
           <button
-            class="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition text-base font-bold"
+            class="flex h-10 w-10 items-center justify-center rounded text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition text-xl font-bold"
             title="Next day"
             @click="shiftDate(1)"
           >&#8594;</button>
@@ -107,35 +107,35 @@
 
         <!-- Receipt list -->
         <div class="flex-1 overflow-y-auto">
-          <div v-if="sidebarLoading" class="flex items-center justify-center py-8">
-            <span class="text-[10px] text-[var(--color-text-muted)]">Loading...</span>
+          <div v-if="sidebarLoading" class="flex items-center justify-center py-12">
+            <span class="text-sm text-[var(--color-text-muted)]">Loading...</span>
           </div>
-          <div v-else-if="!sidebarReceipts.length" class="flex items-center justify-center py-8 px-2 text-center">
-            <span class="text-[10px] italic text-[var(--color-text-muted)]">No receipts</span>
+          <div v-else-if="!sidebarReceipts.length" class="flex items-center justify-center py-12 px-2 text-center">
+            <span class="text-sm italic text-[var(--color-text-muted)]">No receipts</span>
           </div>
           <div v-else class="flex flex-col divide-y divide-slate-700">
             <button
               v-for="r in sidebarReceipts"
               :key="r.name"
-              class="w-full px-2 py-2 text-left transition"
+              class="w-full px-3 py-3 text-left transition"
               :class="docName === r.name
-                ? 'bg-[var(--color-info)]/30 border-l-2 border-[var(--color-info)]'
-                : 'hover:bg-[var(--color-surface-raised)] border-l-2 border-transparent'"
+                ? 'bg-[var(--color-info)]/30 border-l-4 border-[var(--color-info)]'
+                : 'hover:bg-[var(--color-surface-raised)] border-l-4 border-transparent'"
               @click="loadReceipt(r.name)"
             >
               <div class="flex items-center justify-between gap-1">
-                <div class="truncate font-mono text-[10px] font-bold" :class="docName === r.name ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">{{ r.name }}</div>
-                <div class="shrink-0 font-mono text-[10px] font-bold" :class="docName === r.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">&#8377;{{ (r.total || 0).toFixed(2) }}</div>
+                <div class="truncate font-mono text-sm font-bold" :class="docName === r.name ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">{{ r.name }}</div>
+                <div class="shrink-0 font-mono text-base font-bold" :class="docName === r.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">&#8377;{{ (r.total || 0).toFixed(2) }}</div>
               </div>
-              <div class="truncate text-[10px] text-[var(--color-text)] mt-0.5">{{ r.customer_name || r.customer }}</div>
-              <div v-if="r.bill_no" class="truncate text-[9px] text-[var(--color-text-muted)]">{{ r.bill_no }}</div>
+              <div class="truncate text-lg font-medium text-[var(--color-text)] mt-1">{{ r.customer_name || r.customer }}</div>
+              <div v-if="r.bill_no" class="truncate text-sm text-[var(--color-text-muted)]">{{ r.bill_no }}</div>
             </button>
           </div>
         </div>
 
         <!-- Sidebar footer: count -->
-        <div class="shrink-0 border-t border-[var(--color-border)] px-2 py-1.5 text-center">
-          <span class="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ sidebarReceipts.length }} receipt{{ sidebarReceipts.length !== 1 ? 's' : '' }}</span>
+        <div class="shrink-0 border-t border-[var(--color-border)] px-2 py-3 text-center">
+          <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ sidebarReceipts.length }} receipt{{ sidebarReceipts.length !== 1 ? 's' : '' }}</span>
         </div>
       </aside>
 
