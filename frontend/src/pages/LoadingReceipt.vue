@@ -159,18 +159,27 @@
 
       <!-- ── MAIN CONTENT (90%) ──────────────────────────────────── -->
       <div class="flex flex-1 flex-col overflow-hidden p-4">
-        <div class="flex-1 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm flex flex-col">
+        <div class="flex-1 overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm flex flex-col">
           <div class="flex-1 overflow-y-auto">
-            <table class="w-full text-sm border-collapse">
+            <table class="w-full text-xs border-collapse border border-[var(--color-border)]">
+              <colgroup>
+                <col style="width: 40px" />
+                <col style="width: 160px" />
+                <col />
+                <col style="width: 100px" />
+                <col style="width: 120px" />
+                <col style="width: 140px" />
+                <col style="width: 40px" />
+              </colgroup>
               <thead>
-                <tr class="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-                  <th class="w-10 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
-                  <th class="w-48 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
-                  <th class="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
-                  <th class="w-32 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Rate</th>
-                  <th class="w-36 px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</th>
-                  <th class="w-10 px-4 py-3"></th>
+                <tr class="sticky top-0 z-10 bg-[var(--color-surface-raised)]">
+                  <th class="border border-[var(--color-border)] px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
+                  <th class="border border-[var(--color-border)] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item</th>
+                  <th class="border border-[var(--color-border)] px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
+                  <th class="border border-[var(--color-border)] px-2 py-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
+                  <th class="border border-[var(--color-border)] px-2 py-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Rate</th>
+                  <th class="border border-[var(--color-border)] px-2 py-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</th>
+                  <th class="border border-[var(--color-border)] px-2 py-1.5"></th>
                 </tr>
               </thead>
               <tbody>
@@ -180,20 +189,20 @@
                   :key="idx"
                   :ref="el => setRowRef(el, idx)"
                   tabindex="-1"
-                  class="group border-b border-[var(--color-border)] last:border-0 outline-none transition-colors"
-                  :class="selectedRow === idx ? 'bg-[var(--color-info)]/30' : 'hover:bg-[var(--color-surface)]/40'"
+                  class="group outline-none transition-colors"
+                  :class="selectedRow === idx ? 'bg-[var(--color-info)]/10' : 'hover:bg-[var(--color-surface)]/40'"
                   @click="selectRow(idx)"
                   @keydown="onRowKeydown($event, idx)"
                 >
-                  <td class="px-4 py-2 text-[var(--color-text-muted)] font-mono">{{ idx + 1 }}</td>
+                  <td class="border border-[var(--color-border)] px-2 py-1 text-center text-[var(--color-text-muted)] font-mono bg-[var(--color-surface-raised)]/50">{{ idx + 1 }}</td>
 
                   <!-- Item code -->
-                  <td class="px-4 py-2 relative">
+                  <td class="border border-[var(--color-border)] px-1 py-1 relative" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
                     <div v-if="selectedRow === idx" class="relative">
                       <input
                         :ref="el => setRef(el, 'item', idx)"
                         v-model="row.item"
-                        class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                        class="w-full bg-transparent px-1 font-mono text-[var(--color-text)] outline-none"
                         @input="onRowItemInput(idx)"
                         @keydown.enter.prevent="onRowItemEnter(idx)"
                         @keydown.tab.prevent="focusField('qty', idx)"
@@ -203,12 +212,12 @@
                       />
                       <div
                         v-if="itemDropdownIdx === idx && rowItemResults.length"
-                        class="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                        class="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
                       >
                         <div
                           v-for="(it, i) in rowItemResults"
                           :key="it.item_code"
-                          class="cursor-pointer px-4 py-2 text-sm"
+                          class="cursor-pointer px-3 py-1.5 text-xs"
                           :class="i === rowItemHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
                           @mousedown.prevent="pickRowItem(idx, it)"
                           @mouseover="rowItemHighlight = i"
@@ -218,26 +227,26 @@
                         </div>
                       </div>
                     </div>
-                    <span v-else class="font-mono font-semibold text-[var(--color-info)]">{{ row.item || '--' }}</span>
+                    <span v-else class="px-1 font-mono font-semibold text-[var(--color-info)]">{{ row.item || '--' }}</span>
                   </td>
 
                   <!-- Item name -->
-                  <td class="px-4 py-2">
+                  <td class="border border-[var(--color-border)] px-1 py-1" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
                     <input
                       v-if="selectedRow === idx"
                       :ref="el => setRef(el, 'item_name', idx)"
                       v-model="row.item_name"
-                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                      class="w-full bg-transparent px-1 text-[var(--color-text)] outline-none"
                       @keydown.enter.prevent="focusField('qty', idx)"
                       @keydown.tab.prevent="focusField('qty', idx)"
                       @keydown.down.prevent="moveRow(idx, 1)"
                       @keydown.up.prevent="moveRow(idx, -1)"
                     />
-                    <span v-else class="text-[var(--color-text)]">{{ row.item_name || '--' }}</span>
+                    <span v-else class="px-1 text-[var(--color-text)]">{{ row.item_name || '--' }}</span>
                   </td>
 
                   <!-- Qty -->
-                  <td class="px-4 py-2 text-right font-mono">
+                  <td class="border border-[var(--color-border)] px-1 py-1 text-right font-mono" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
                     <input
                       v-if="selectedRow === idx"
                       :ref="el => setRef(el, 'qty', idx)"
@@ -245,18 +254,18 @@
                       type="number"
                       min="0"
                       step="any"
-                      class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] outline-none"
+                      class="w-full bg-transparent px-1 text-right text-[var(--color-text)] outline-none"
                       @input="calcRowAmount(idx)"
                       @keydown.enter.prevent="focusField('rate', idx)"
                       @keydown.tab.prevent="focusField('rate', idx)"
                       @keydown.down.prevent="moveRow(idx, 1)"
                       @keydown.up.prevent="moveRow(idx, -1)"
                     />
-                    <span v-else class="text-[var(--color-text)]">{{ row.qty }}</span>
+                    <span v-else class="px-1 text-[var(--color-text)]">{{ row.qty }}</span>
                   </td>
 
                   <!-- Rate -->
-                  <td class="px-4 py-2 text-right font-mono">
+                  <td class="border border-[var(--color-border)] px-1 py-1 text-right font-mono" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
                     <input
                       v-if="selectedRow === idx"
                       :ref="el => setRef(el, 'rate', idx)"
@@ -264,37 +273,37 @@
                       type="number"
                       min="0"
                       step="0.01"
-                      class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] outline-none"
+                      class="w-full bg-transparent px-1 text-right text-[var(--color-text)] outline-none"
                       @input="calcRowAmount(idx)"
                       @keydown.enter.prevent="goToNextRow(idx)"
                       @keydown.tab.prevent="goToNextRow(idx)"
                       @keydown.down.prevent="moveRow(idx, 1)"
                       @keydown.up.prevent="moveRow(idx, -1)"
                     />
-                    <span v-else class="text-[var(--color-text)]">{{ (row.rate || 0).toFixed(2) }}</span>
+                    <span v-else class="px-1 text-[var(--color-text)]">{{ (row.rate || 0).toFixed(2) }}</span>
                   </td>
 
                   <!-- Amount -->
-                  <td class="px-4 py-2 text-right font-mono font-bold text-[var(--color-text)]">{{ (row.amount || 0).toFixed(2) }}</td>
+                  <td class="border border-[var(--color-border)] px-2 py-1 text-right font-mono font-bold text-[var(--color-text)] bg-[var(--color-surface-raised)]/30">{{ (row.amount || 0).toFixed(2) }}</td>
 
                   <!-- Delete -->
-                  <td class="px-4 py-2 text-center">
+                  <td class="border border-[var(--color-border)] px-2 py-1 text-center">
                     <button
-                      class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] opacity-0 group-hover:opacity-100 transition"
+                      class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition"
                       @click.stop="removeRow(idx)"
                     >&times;</button>
                   </td>
                 </tr>
 
                 <!-- NEW ROW -->
-                <tr class="border-b border-[var(--color-border)] bg-[var(--color-info)]/10" :class="{ 'bg-[var(--color-info)]/30 ring-2 ring-inset ring-[var(--color-info)]': selectedRow === -1 }">
-                  <td class="px-4 py-3 text-[var(--color-info)] font-bold">+</td>
-                  <td class="px-4 py-3 relative">
+                <tr class="bg-[var(--color-info)]/5">
+                  <td class="border border-[var(--color-border)] px-2 py-1.5 text-center text-[var(--color-info)] font-bold">+</td>
+                  <td class="border border-[var(--color-border)] px-1 py-1 relative">
                     <input
                       ref="newItemInput"
                       v-model="newItem.item"
-                      placeholder="Item code..."
-                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm"
+                      placeholder="Item..."
+                      class="w-full bg-transparent px-1 font-mono text-[var(--color-text)] outline-none"
                       @input="onNewItemInput"
                       @keydown.enter.prevent="onNewItemEnter"
                       @keydown.tab.prevent="focusNewQty"
@@ -303,12 +312,12 @@
                     />
                     <div
                       v-if="newItemResults.length"
-                      class="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                      class="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
                     >
                       <div
                         v-for="(it, i) in newItemResults"
                         :key="it.item_code"
-                        class="cursor-pointer px-4 py-2 text-sm"
+                        class="cursor-pointer px-3 py-1.5 text-xs"
                         :class="i === newItemHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
                         @mousedown.prevent="pickNewItem(it)"
                         @mouseover="newItemHighlight = i"
@@ -318,34 +327,34 @@
                       </div>
                     </div>
                   </td>
-                  <td class="px-4 py-3">
-                    <div class="text-[var(--color-text-muted)] italic text-sm">{{ newItem.item_name || 'Item name...' }}</div>
+                  <td class="border border-[var(--color-border)] px-2 py-1.5">
+                    <div class="text-[var(--color-text-muted)] italic text-xs truncate">{{ newItem.item_name || 'Item name...' }}</div>
                   </td>
-                  <td class="px-4 py-3 text-right">
+                  <td class="border border-[var(--color-border)] px-1 py-1 text-right">
                     <input
                       ref="newQtyInput"
                       v-model.number="newItem.qty"
                       type="number"
                       min="0"
                       step="any"
-                      class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm"
+                      class="w-full bg-transparent px-1 text-right font-mono text-[var(--color-text)] outline-none"
                       @keydown.enter.prevent="addNewRow"
                       @keydown.tab.prevent="focusNewRate"
                     />
                   </td>
-                  <td class="px-4 py-3 text-right">
+                  <td class="border border-[var(--color-border)] px-1 py-1 text-right">
                     <input
                       ref="newRateInput"
                       v-model.number="newItem.rate"
                       type="number"
                       min="0"
                       step="0.01"
-                      class="w-28 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm"
+                      class="w-full bg-transparent px-1 text-right font-mono text-[var(--color-text)] outline-none"
                       @keydown.enter.prevent="addNewRow"
                     />
                   </td>
-                  <td class="px-4 py-3 text-right font-mono text-[var(--color-text-muted)] font-bold">{{ ((newItem.qty || 0) * (newItem.rate || 0)).toFixed(2) }}</td>
-                  <td class="px-4 py-3"></td>
+                  <td class="border border-[var(--color-border)] px-2 py-1.5 text-right font-mono text-[var(--color-text-muted)] font-bold bg-[var(--color-surface-raised)]/30">{{ ((newItem.qty || 0) * (newItem.rate || 0)).toFixed(2) }}</td>
+                  <td class="border border-[var(--color-border)] px-2 py-1.5"></td>
                 </tr>
               </tbody>
             </table>
