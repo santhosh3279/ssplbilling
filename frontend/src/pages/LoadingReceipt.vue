@@ -354,24 +354,34 @@
         </div>
 
         <!-- BOTTOM ACTIONS -->
-        <div class="mt-4 flex gap-3 justify-end shrink-0">
-          <button
-            @click="clearForm"
-            class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2.5 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition"
-          >Clear</button>
-          <button
-            v-if="docName"
-            @click="showPrint = true"
-            class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2.5 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition flex items-center gap-2"
-          >🖨 Print</button>
-          <button
-            ref="saveBtn"
-            @click="saveReceipt"
-            :disabled="saving"
-            class="rounded-xl bg-[var(--color-info)] px-8 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg hover:bg-[var(--color-info)] active:scale-95 transition-all disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)]"
-          >
-            {{ saving ? 'Saving...' : docName ? 'Update Receipt' : 'Save Receipt' }}
-          </button>
+        <div class="mt-4 flex gap-3 justify-between items-center shrink-0">
+          <div>
+            <button
+              @click="showItemManager = true"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-info)]/10 px-6 py-2.5 text-sm font-bold text-[var(--color-info)] hover:bg-[var(--color-info)]/20 transition flex items-center gap-2"
+            >
+              📦 Master Items
+            </button>
+          </div>
+          <div class="flex gap-3">
+            <button
+              @click="clearForm"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-2.5 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition"
+            >Clear</button>
+            <button
+              v-if="docName"
+              @click="showPrint = true"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2.5 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition flex items-center gap-2"
+            >🖨 Print</button>
+            <button
+              ref="saveBtn"
+              @click="saveReceipt"
+              :disabled="saving"
+              class="rounded-xl bg-[var(--color-info)] px-8 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg hover:bg-[var(--color-info)] active:scale-95 transition-all disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)]"
+            >
+              {{ saving ? 'Saving...' : docName ? 'Update Receipt' : 'Save Receipt' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -394,6 +404,12 @@
     @select="onCustomerSelected"
   />
 
+  <LoadingItemManager
+    v-if="showItemManager"
+    :show="showItemManager"
+    @close="showItemManager = false"
+  />
+
   </div>
 </template>
 
@@ -403,6 +419,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import LoadingItemManager from '../components/LoadingItemManager.vue'
 
 const router = useRouter()
 const API = 'ssplbilling.api.loading_receipt_api'
@@ -448,6 +465,7 @@ const saving = ref(false)
 const selectedRow = ref(-1)
 const showPrint = ref(false)
 const showCustomerModal = ref(false)
+const showItemManager = ref(false)
 
 // customer search
 const customerQuery = ref('')
