@@ -724,6 +724,7 @@ async function loadReceipt(name) {
 
 // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────────
 function onKeydown(e) {
+  if (showPrint.value || showCustomerModal.value || showItemManager.value) return
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveReceipt() }
   if (e.key === 'End') { e.preventDefault(); saveReceipt() }
   if (e.key === 'Escape') { router.push('/') }
