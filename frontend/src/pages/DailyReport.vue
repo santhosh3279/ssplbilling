@@ -63,12 +63,12 @@
     </header>
 
     <!-- TABS -->
-    <div v-if="!showDetail" class="flex border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6">
+    <div v-if="!showDetail" class="flex border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 overflow-x-auto">
       <button
         v-for="tab in tabs"
         :key="tab.value"
         @click="activeTab = tab.value"
-        class="px-6 py-3 text-[14px] font-normal transition-all relative"
+        class="px-6 py-3 text-[14px] font-normal transition-all relative shrink-0"
         :class="activeTab === tab.value ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
       >
         {{ tab.label }}
@@ -95,7 +95,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700">
-            <template v-for="(row, index) in sortedReportData" :key="row.name">
+            <template v-for="(row, index) in sortedReportData" :key="row.name + (row.item || '')">
               <!-- Date Grouping Row -->
               <tr v-if="index === 0 || row.date !== sortedReportData[index - 1].date" class="bg-[var(--color-surface-raised)]/30">
                 <td :colspan="columns.length" class="px-2 py-1 text-[18px] font-medium uppercase tracking-wider text-[var(--color-info)]">
@@ -213,6 +213,7 @@ const tabs = [
   { label: 'Payments', value: 'Payment' },
   { label: 'Journals', value: 'Journal' },
   { label: 'Quotations', value: 'Quotation' },
+  { label: 'Loading', value: 'Loading' },
 ]
 
 const columns = computed(() => {
@@ -252,6 +253,16 @@ const columns = computed(() => {
       { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'DocStatus', key: 'docstatus' },
     ]
+  } else if (activeTab.value === 'Loading') {
+    return [
+      { label: 'Date', key: 'date', type: 'date' },
+      { label: 'Receipt', key: 'name' },
+      { label: 'Customer', key: 'customer_name' },
+      { label: 'Item', key: 'item_name' },
+      { label: 'Qty', key: 'qty' },
+      { label: 'Rate', key: 'rate', type: 'currency' },
+      { label: 'Amount', key: 'display_amount', type: 'currency' },
+    ]
   }
   return []
 })
@@ -287,11 +298,14 @@ async function fetchReport() {
       } else if (activeTab.value === 'Journal') {
         display_amount = row.total_debit || row.total_credit || 0
         direction = 'DR' // Simplified for Journal total
+      } else if (activeTab.value === 'Loading') {
+        display_amount = row.amount || 0
+        direction = ''
       }
 
       return {
         ...row,
-        date: row.posting_date || row.transaction_date || '',
+        date: row.posting_date || row.transaction_date || row.date || '',
         display_amount,
         direction
       }
@@ -314,6 +328,11 @@ async function fetchAvailableSeries() {
 }
 
 function handleRowClick(row) {
+  if (activeTab.value === 'Loading') {
+    // Navigate to loading receipt or show something?
+    // For now just stay here or we could implement a detail view if needed.
+    return
+  }
   selectedDoc.value = row.name
   modalType.value = activeTab.value
   showDetail.value = true
