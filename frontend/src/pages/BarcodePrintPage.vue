@@ -168,11 +168,11 @@
                         :ref="el => setRef(el, 'qty', idx)"
                         type="number" v-model.number="item.qty" min="1"
                         class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-                        @keydown.enter.prevent="moveRow(idx, 1)"
-                        @keydown.tab.prevent="moveRow(idx, 1)"
-                        @keydown.shift.tab.prevent="focusField('code', idx)"
-                        @keydown.down.prevent="moveRow(idx, 1)"
-                        @keydown.up.prevent="moveRow(idx, -1)"
+                        @keydown.enter.prevent="moveToNextQty(idx)"
+                        @keydown.tab.prevent="moveToNextQty(idx)"
+                        @keydown.shift.tab.prevent="moveToPrevQty(idx)"
+                        @keydown.down.prevent="moveToNextQty(idx)"
+                        @keydown.up.prevent="moveToPrevQty(idx)"
                       />
                       <button @click.stop="item.qty++"
                         class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] font-bold text-xl">&plus;</button>
@@ -379,6 +379,19 @@ function focusNewCode() { nextTick(() => newCodeInput.value?.focus()) }
 function focusNewQty() {
   nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() })
 }
+function focusQty(idx) {
+  selectedRow.value = idx
+  focusField('qty', idx)
+}
+function moveToNextQty(idx) {
+  const next = idx + 1
+  if (next < itemsToPrint.value.length) { selectedRow.value = next; focusField('qty', next) }
+  else { selectedRow.value = -1; focusNewCode() }
+}
+function moveToPrevQty(idx) {
+  const prev = idx - 1
+  if (prev >= 0) { selectedRow.value = prev; focusField('qty', prev) }
+}
 
 // ── Item lookup from cache ────────────────────────────────────────────────────
 function lookupItem(code) {
@@ -564,7 +577,10 @@ onMounted(async () => {
     }
   }
 
-  nextTick(() => focusNewCode())
+  nextTick(() => {
+    if (itemsToPrint.value.length > 0) focusQty(0)
+    else focusNewCode()
+  })
 })
 </script>
 
