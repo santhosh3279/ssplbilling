@@ -20,7 +20,7 @@
             {{ isSubWindow ? 'Close' : 'Dashboard' }}
           </button>
           <div class="h-6 w-px bg-[var(--color-surface)]"></div>
-          <h1 class="text-lg font-black tracking-tight text-[var(--color-text-on-highlight)] uppercase">
+          <h1 class="text-lg font-black tracking-tight text-[var(--color-text)] uppercase">
             🏷️ Barcode <span class="text-[var(--color-text-muted)] font-light">Printing</span>
           </h1>
           <span v-if="localBillNo" class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-xs font-bold text-[var(--color-info)]">
