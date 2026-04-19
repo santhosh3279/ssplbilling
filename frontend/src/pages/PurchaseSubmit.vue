@@ -267,6 +267,15 @@
       doctype="Purchase Invoice"
       @close="showPrintModal = false"
     />
+
+    <!-- Barcode Print Subwindow -->
+    <BarcodePrintPage
+      v-if="showBarcodeModal"
+      isSubWindow
+      :billNo="selectedInvoice?.name"
+      :items="previewItems"
+      @close="showBarcodeModal = false"
+    />
   </div>
 </template>
 
@@ -276,6 +285,7 @@ import { useRouter } from 'vue-router'
 import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice } from '../api.js'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import BarcodePrintPage from './BarcodePrintPage.vue'
 
 const router = useRouter()
 function getTodayIST() {
@@ -294,6 +304,7 @@ const loadingList = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 const showPrintModal = ref(false)
+const showBarcodeModal = ref(false)
 
 const searchQuery = ref('')
 const filterDate = ref(getTodayIST())
@@ -398,19 +409,7 @@ async function selectInvoice(inv) {
 
 function handleBarcodePrint() {
   if (!selectedInvoice.value) return
-  const items = previewItems.value.map(i => ({
-    item_code: i.item_code,
-    item_name: i.item_name,
-    qty: i.qty,
-    rate: i.rate
-  }))
-  router.push({
-    path: '/barcode-print',
-    query: {
-      bill: selectedInvoice.value.name,
-      items: encodeURIComponent(JSON.stringify(items))
-    }
-  })
+  showBarcodeModal.value = true
 }
 
 function handleBillPrint() {
