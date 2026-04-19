@@ -1987,7 +1987,7 @@ async function handleSeriesSelected(series) {
     if (res.warehouse) warehouse.value = res.warehouse
     if (res.cost_center) costCenter.value = res.cost_center
     showSeriesModal.value = false
-    customerInitialQuery = ''
+    customerInitialQuery.value = ''
     showCustomerModal.value = true
   } catch (e) {
     console.error('[SalesInvoice] Failed to fetch series defaults:', e)
