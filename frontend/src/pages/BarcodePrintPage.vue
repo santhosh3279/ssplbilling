@@ -113,13 +113,13 @@
           </div>
 
           <div class="flex-1 overflow-y-auto custom-scrollbar">
-            <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]">
+            <table class="w-full text-2xl border-collapse border-l border-t border-[var(--color-border)]">
               <thead>
                 <tr class="sticky top-0 z-10 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-                  <th class="w-8 border-r border-[var(--color-border)] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
-                  <th class="w-36 border-r border-[var(--color-border)] px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Code</th>
-                  <th class="border-r border-[var(--color-border)] px-2 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
-                  <th class="w-32 border-r border-[var(--color-border)] px-2 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
+                  <th class="w-8 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
+                  <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Code</th>
+                  <th class="border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
+                  <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
                   <th class="w-8 border-[var(--color-border)]"></th>
                 </tr>
               </thead>
@@ -138,16 +138,16 @@
                   @keydown="onRowKeydown($event, idx)"
                 >
                   <!-- # -->
-                  <td class="px-3 py-2.5 border-r border-[var(--color-border)]">
-                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-surface)] text-[10px] font-bold text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-surface)] text-xs font-bold text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
                   </td>
                   <!-- Item Code -->
-                  <td class="px-2 py-2.5 border-r border-[var(--color-border)]">
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
                     <input
                       v-if="selectedRow === idx"
                       :ref="el => setRef(el, 'code', idx)"
                       v-model="item.item_code"
-                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                       @keydown.enter.prevent="onCodeEnter(idx)"
                       @keydown.tab.prevent="focusField('qty', idx)"
                       @keydown.down.prevent="moveRow(idx, 1)"
@@ -157,16 +157,16 @@
                     <span v-else class="font-mono text-[var(--color-text-muted)]">{{ item.item_code }}</span>
                   </td>
                   <!-- Item Name -->
-                  <td class="px-2 py-2.5 border-r border-[var(--color-border)] text-[var(--color-text)]">{{ item.item_name || '—' }}</td>
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text)] font-medium">{{ item.item_name || '—' }}</td>
                   <!-- Qty -->
-                  <td class="px-2 py-2.5 border-r border-[var(--color-border)] text-right">
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
                     <div v-if="selectedRow === idx" class="flex items-center justify-end gap-1.5">
                       <button @click.stop="item.qty = Math.max(1, item.qty - 1)"
-                        class="h-6 w-6 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] font-bold text-xs">&minus;</button>
+                        class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] font-bold text-xl">&minus;</button>
                       <input
                         :ref="el => setRef(el, 'qty', idx)"
                         type="number" v-model.number="item.qty" min="1"
-                        class="w-16 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-center font-mono text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                        class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                         @keydown.enter.prevent="moveRow(idx, 1)"
                         @keydown.tab.prevent="moveRow(idx, 1)"
                         @keydown.shift.tab.prevent="focusField('code', idx)"
@@ -174,14 +174,14 @@
                         @keydown.up.prevent="moveRow(idx, -1)"
                       />
                       <button @click.stop="item.qty++"
-                        class="h-6 w-6 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] font-bold text-xs">&plus;</button>
+                        class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] font-bold text-xl">&plus;</button>
                     </div>
-                    <span v-else class="font-mono text-[var(--color-text)]">{{ item.qty }}</span>
+                    <span v-else class="font-mono text-[var(--color-text)] font-black text-3xl">{{ item.qty }}</span>
                   </td>
                   <!-- Remove -->
-                  <td class="px-2 py-2.5 text-center">
+                  <td class="px-2 py-1.5 text-center">
                     <button @click.stop="itemsToPrint.splice(idx, 1); selectedRow = -1; focusNewCode()"
-                      class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)] transition">&times;</button>
+                      class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)] transition text-2xl">&times;</button>
                   </td>
                 </tr>
 
@@ -189,16 +189,16 @@
                 <tr class="border-b border-[var(--color-border)]"
                   :class="selectedRow === -1 ? 'bg-[var(--color-info)]/15' : 'bg-[var(--color-surface)]/20'">
                   <!-- # -->
-                  <td class="px-3 py-2.5 border-r border-[var(--color-border)]">
-                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-info)]/50 text-[10px] font-bold text-[var(--color-info)]">+</span>
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-info)]/50 text-xs font-bold text-[var(--color-info)]">+</span>
                   </td>
                   <!-- Item Code input -->
-                  <td class="px-2 py-2.5 border-r border-[var(--color-border)]">
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
                     <input
                       ref="newCodeInput"
                       v-model="newItemCode"
                       :disabled="printing"
-                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/50 disabled:opacity-50"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/50 disabled:opacity-50"
                       placeholder="Item code…"
                       @keydown.enter.prevent="onNewCodeEnter"
                       @keydown.tab.prevent="focusNewQty"
@@ -206,15 +206,15 @@
                     />
                   </td>
                   <!-- Pending item name -->
-                  <td class="px-2 py-2.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-sm">{{ newPending.item_name || '—' }}</td>
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl italic">{{ newPending.item_name || '—' }}</td>
                   <!-- Qty input -->
-                  <td class="px-2 py-2.5 border-r border-[var(--color-border)] text-right">
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
                     <input
                       ref="newQtyInput"
                       v-model.number="newQty"
                       type="number" min="1"
                       :disabled="printing"
-                      class="w-16 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-center font-mono text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-50"
+                      class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-50"
                       @keydown.enter.prevent="addNewItem"
                       @keydown.shift.tab.prevent="focusNewCode"
                     />
