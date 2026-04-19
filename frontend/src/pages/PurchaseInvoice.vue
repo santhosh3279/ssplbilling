@@ -124,14 +124,17 @@
                     :disabled="isReadOnly"
                     class="text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)] disabled:opacity-30 px-1 text-3xl"
                   >&larr;</button>
-                  <input
-                    ref="supplierInvoiceDateInputRef"
-                    type="date"
-                    v-model="supplierInvoiceDate"
-                    :disabled="isReadOnly"
-                    class="bg-transparent border-none p-0 text-4xl font-bold text-[var(--color-text)] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:filter-[invert(1)] w-56"
-                    @keydown.enter.prevent="supplierInvoiceNo.trim() ? focusBarcodeInput() : (alert('Supplier Invoice No is mandatory.'), supplierInvoiceNoRef?.focus())"
-                  />
+                  <div class="relative min-w-[140px] flex items-center justify-center">
+                    <span class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(supplierInvoiceDate) }}</span>
+                    <input
+                      ref="supplierInvoiceDateInputRef"
+                      type="date"
+                      v-model="supplierInvoiceDate"
+                      :disabled="isReadOnly"
+                      class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      @keydown.enter.prevent="supplierInvoiceNo.trim() ? focusBarcodeInput() : (alert('Supplier Invoice No is mandatory.'), supplierInvoiceNoRef?.focus())"
+                    />
+                  </div>
                   <button 
                     @click="handleSupplierInvoiceDateChange(1)" 
                     :disabled="isReadOnly"
