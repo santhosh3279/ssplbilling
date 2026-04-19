@@ -135,7 +135,7 @@
               <!-- BARCODE PRINT BUTTON -->
               <button
                 class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
-                @click="barcodePrintPlaceholder"
+                @click="handleBarcodePrint"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></svg>
                 <span>Print Barcodes</span>
@@ -143,7 +143,7 @@
               <!-- BILL PRINT BUTTON -->
               <button
                 class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
-                @click="billPrintPlaceholder"
+                @click="handleBillPrint"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
                 <span>Print Bill</span>
@@ -259,14 +259,25 @@
         </div>
       </aside>
     </div>
+
+    <!-- Print Options Modal -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="selectedInvoice?.name"
+      doctype="Purchase Invoice"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice } from '../api.js'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
+const router = useRouter()
 function getTodayIST() {
   const date = new Date()
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
@@ -282,6 +293,7 @@ const isSubmitting = ref(false)
 const loadingList = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
+const showPrintModal = ref(false)
 
 const searchQuery = ref('')
 const filterDate = ref(getTodayIST())
@@ -297,7 +309,9 @@ useShortcuts({
   'ENTER':     () => { if (selectedInvoice.value && !isSubmitting.value) confirmSubmission() },
   'ESCAPE':    () => window.history.back(),
   'F5':        () => loadInvoices(),
-  'F9':        () => { if (selectedInvoice.value && !isSubmitting.value) confirmSubmission() }
+  'F9':        () => { if (selectedInvoice.value && !isSubmitting.value) confirmSubmission() },
+  'F10':       () => { if (selectedInvoice.value) handleBarcodePrint() },
+  'F11':       () => { if (selectedInvoice.value) handleBillPrint() }
 }, props.isSubWindow ? 'subwindow' : 'local')
 
 function navigateBills(dir) {
@@ -382,12 +396,25 @@ async function selectInvoice(inv) {
   }
 }
 
-function barcodePrintPlaceholder() {
-  alert("Barcode print feature is ready. Waiting for barcode format selection.")
+function handleBarcodePrint() {
+  if (!selectedInvoice.value) return
+  const items = previewItems.value.map(i => ({
+    item_code: i.item_code,
+    item_name: i.item_name,
+    qty: i.qty,
+    rate: i.rate
+  }))
+  router.push({
+    path: '/barcode-print',
+    query: {
+      bill: selectedInvoice.value.name,
+      items: encodeURIComponent(JSON.stringify(items))
+    }
+  })
 }
 
-function billPrintPlaceholder() {
-  alert("Bill print feature is ready. Waiting for print format selection.")
+function handleBillPrint() {
+  showPrintModal.value = true
 }
 
 async function confirmSubmission() {
