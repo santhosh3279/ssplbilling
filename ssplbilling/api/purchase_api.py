@@ -233,6 +233,7 @@ def create_purchase_invoice(data=None, **kwargs):
         row = {
             "item_code": item["item_code"],
             "qty": qty,
+            "uom": item.get("uom") or "",
             "price_list_rate": price_list_rate,
             "discount_percentage": disc,
             "rate": rate,
@@ -520,6 +521,7 @@ def update_purchase_invoice(data=None, **kwargs):
         row = {
             "item_code": item["item_code"],
             "qty": qty,
+            "uom": item.get("uom") or "",
             "price_list_rate": price_list_rate,
             "discount_percentage": disc,
             "rate": rate,
