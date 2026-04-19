@@ -56,7 +56,7 @@ def create_barcode_print_entry(items, bill_no=None, price_list=None):
 		doc.append("items", {
 			"item_code": item_code,
 			"item_name": item.get("item_name") or "",
-			"uom": item.get("uom") or "Nos",
+			"item_uom": item.get("uom") or "Nos",
 			"qty": int(item.get("qty") or 1),
 			"rate": rate,
 		})
