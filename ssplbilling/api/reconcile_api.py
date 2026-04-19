@@ -47,7 +47,11 @@ def get_unlinked_entries(party_type, party):
 			je.posting_date,
 			IFNULL(je.cheque_no, '')                                          AS reference_no,
 			IFNULL(je.user_remark, '')                                        AS remarks,
-			ABS(jea.credit_in_account_currency - jea.debit_in_account_currency) AS unallocated_amount,
+			(SELECT ABS(SUM(gle.debit_in_account_currency - gle.credit_in_account_currency))
+			 FROM `tabGL Entry` gle
+			 WHERE gle.voucher_no = jea.parent AND (gle.voucher_detail_no = jea.name OR (gle.against_voucher = jea.parent AND gle.voucher_no != jea.parent))
+			   AND gle.is_cancelled = 0
+			) AS unallocated_amount,
 			CASE WHEN jea.credit_in_account_currency > jea.debit_in_account_currency
 			     THEN 'Cr' ELSE 'Dr' END                                      AS direction
 		FROM `tabJournal Entry Account` jea
@@ -55,11 +59,11 @@ def get_unlinked_entries(party_type, party):
 		JOIN `tabAccount`        acc ON acc.name = jea.account
 		WHERE je.docstatus = 1
 			AND jea.party_type = %s AND jea.party = %s
-			AND ABS(jea.credit_in_account_currency - jea.debit_in_account_currency) > 0.005
 			AND (jea.reference_name IS NULL OR jea.reference_name = '')
 			AND acc.account_type IN %s
 			AND je.company = %s
 			AND je.is_opening != 'Yes'
+		HAVING unallocated_amount > 0.005
 		ORDER BY je.posting_date DESC
 		""",
 		(party_type, party, tuple(account_types), company),
