@@ -32,14 +32,6 @@
           <span v-if="itemsToPrint.length" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)]">
             {{ itemsToPrint.length }} item{{ itemsToPrint.length !== 1 ? 's' : '' }}
           </span>
-          <button
-            @click="triggerPrint"
-            :disabled="!canPrint || printing"
-            class="flex items-center gap-2 rounded-xl bg-[var(--color-supplier)] px-5 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg transition hover:bg-[var(--color-supplier)] active:scale-95 disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed"
-          >
-            <span v-if="printing" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            {{ printing ? 'Sending…' : '🖨️ Print Barcodes' }}
-          </button>
         </div>
       </nav>
 
@@ -81,6 +73,15 @@
             </div>
             <p v-if="!templates.length && !loadingResources" class="mt-1.5 text-[10px] text-[var(--color-danger)]">No Barcode templates</p>
           </div>
+
+          <button
+            @click="triggerPrint"
+            :disabled="!canPrint || printing"
+            class="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--color-supplier)] py-4 text-lg font-black text-[var(--color-text-on-highlight)] shadow-xl transition hover:brightness-110 active:scale-95 disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:grayscale disabled:cursor-not-allowed uppercase tracking-widest"
+          >
+            <span v-if="printing" class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+            {{ printing ? 'Sending…' : '🖨️ Print Barcodes' }}
+          </button>
 
           <div v-if="loadingResources" class="text-center text-xs text-[var(--color-text-muted)] italic py-2">Loading…</div>
 
