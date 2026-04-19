@@ -120,6 +120,7 @@
                   <th class="w-8 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Code</th>
                   <th class="border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
+                  <th class="w-24 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">UOM</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
                   <th class="w-8 border-[var(--color-border)]"></th>
                 </tr>
@@ -159,6 +160,8 @@
                   </td>
                   <!-- Item Name -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text)] font-medium">{{ item.item_name || '—' }}</td>
+                  <!-- UOM -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-xl">{{ item.uom || 'Nos' }}</td>
                   <!-- Qty -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
                     <div v-if="selectedRow === idx" class="flex items-center justify-end gap-1.5">
@@ -208,6 +211,8 @@
                   </td>
                   <!-- Pending item name -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl italic">{{ newPending.item_name || '—' }}</td>
+                  <!-- Pending UOM -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-xl">{{ newPending.uom || '—' }}</td>
                   <!-- Qty input -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
                     <input
@@ -451,6 +456,7 @@ async function onCodeEnter(idx) {
   if (r) {
     itemsToPrint.value[idx].item_code = r.item_code || code
     itemsToPrint.value[idx].item_name = r.item_name
+    itemsToPrint.value[idx].uom = r.uom || 'Nos'
     fetchItemPrice(r.item_code || code, priceList.value).then(rate => {
       itemsToPrint.value[idx].rate = rate
     })
@@ -490,6 +496,7 @@ async function addNewItem() {
     itemsToPrint.value.push({
       item_code: code,
       item_name: newPending.item_name || code,
+      uom: newPending.uom || 'Nos',
       qty: newQty.value,
       rate: newPending.rate || 0,
     })
@@ -560,6 +567,7 @@ onMounted(async () => {
     itemsToPrint.value = props.items.map(i => ({
       item_code: i.item_code,
       item_name: i.item_name,
+      uom: i.uom || 'Nos',
       qty: i.qty || 1,
       rate: i.rate || 0,
     }))
@@ -571,6 +579,7 @@ onMounted(async () => {
         itemsToPrint.value = parsed.map(i => ({
           item_code: i.item_code,
           item_name: i.item_name,
+          uom: i.uom || 'Nos',
           qty: i.qty || 1,
           rate: i.rate || 0,
         }))
