@@ -47,6 +47,7 @@ def get_unlinked_entries(party_type, party):
 			je.posting_date,
 			IFNULL(je.cheque_no, '')                                          AS reference_no,
 			IFNULL(je.user_remark, '')                                        AS remarks,
+			ABS(jea.credit_in_account_currency - jea.debit_in_account_currency) AS total_amount,
 			(SELECT ABS(SUM(gle.debit_in_account_currency - gle.credit_in_account_currency))
 			 FROM `tabGL Entry` gle
 			 WHERE gle.voucher_no = jea.parent AND (gle.voucher_detail_no = jea.name OR (gle.against_voucher = jea.parent AND gle.voucher_no != jea.parent))

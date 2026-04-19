@@ -166,8 +166,13 @@
               <div class="w-[100px] shrink-0 text-center">
                 <span class="px-2 py-0.5 rounded text-[11px] font-black uppercase" :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">{{ je.direction }}</span>
               </div>
-              <div class="w-[180px] shrink-0 text-right text-[22px] font-black font-mono text-[var(--color-info)]">
-                ₹{{ fmt(je.unallocated_amount) }}
+              <div class="w-[180px] shrink-0 text-right">
+                <div class="text-[22px] font-black font-mono text-[var(--color-info)]">
+                  ₹{{ fmt(je.unallocated_amount) }}
+                </div>
+                <div v-if="Math.abs(je.total_amount - je.unallocated_amount) > 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
+                  {{ fmt(je.total_amount) }} - {{ fmt(je.total_amount - je.unallocated_amount) }} (Lnk)
+                </div>
               </div>
               <div class="flex-1 flex justify-end">
                 <div class="w-48 relative">
