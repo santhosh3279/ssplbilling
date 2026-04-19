@@ -106,6 +106,7 @@
               <tr>
                 <th class="px-4 py-3 text-left">Item Code</th>
                 <th class="px-4 py-3 text-left">Item Name</th>
+                <th class="px-4 py-3 text-left w-24">UOM</th>
                 <th class="px-4 py-3 text-right w-32">Quantity</th>
                 <th class="px-4 py-3 text-center w-16">Action</th>
               </tr>
@@ -114,6 +115,7 @@
               <tr v-for="(item, idx) in itemsToPrint" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
                 <td class="px-4 py-3 font-mono text-sm text-[var(--color-info)]">{{ item.item_code }}</td>
                 <td class="px-4 py-3 text-sm text-[var(--color-text)]">{{ item.item_name }}</td>
+                <td class="px-4 py-3 text-sm text-[var(--color-text-muted)] font-mono">{{ item.uom || 'Nos' }}</td>
                 <td class="px-4 py-3 text-right">
                   <div class="flex items-center justify-end gap-2">
                     <button :disabled="printing" @click="item.qty = Math.max(1, item.qty - 1)" class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] disabled:opacity-40">&minus;</button>
@@ -132,7 +134,7 @@
                 </td>
               </tr>
               <tr v-if="!itemsToPrint.length">
-                <td colspan="4" class="px-4 py-12 text-center text-[var(--color-text-muted)] italic">
+                <td colspan="5" class="px-4 py-12 text-center text-[var(--color-text-muted)] italic">
                   No items added yet. Search and select items to print.
                 </td>
               </tr>
@@ -353,7 +355,7 @@ function selectItem(item) {
   if (existing) {
     existing.qty++
   } else {
-    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, qty: 1, rate: item.rate || 0 })
+    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, uom: item.uom || 'Nos', qty: 1, rate: item.rate || 0 })
   }
   query.value = ''
   showResults.value = false
@@ -368,6 +370,7 @@ function syncInitialItems() {
   itemsToPrint.value = (props.initialItems || []).map(i => ({
     item_code: i.item_code,
     item_name: i.item_name,
+    uom: i.uom || 'Nos',
     qty: i.qty || 1,
     rate: i.rate || 0,
   }))
