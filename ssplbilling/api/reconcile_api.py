@@ -26,7 +26,8 @@ def get_unlinked_entries(party_type, party):
 			name, posting_date, payment_type,
 			paid_amount, unallocated_amount,
 			mode_of_payment,
-			IFNULL(remarks, '') AS remarks
+			IFNULL(remarks, '') AS remarks,
+			CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction
 		FROM `tabPayment Entry`
 		WHERE docstatus = 1
 			AND party_type = %s AND party = %s

@@ -8,6 +8,13 @@
           <!-- Summary Display -->
           <div class="flex items-center gap-8 bg-[var(--color-surface-raised)] px-6 py-2.5 rounded-2xl border border-[var(--color-border)] shadow-inner">
             <div class="flex flex-col">
+              <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Total Outstanding</span>
+              <span class="text-3xl font-black font-mono" :class="totalOutstanding > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                ₹{{ fmt(totalOutstanding) }} {{ totalOutstanding > 0 ? 'Dr' : (totalOutstanding < -0.005 ? 'Cr' : '') }}
+              </span>
+            </div>
+            <div class="h-8 w-px bg-[var(--color-border)]"></div>
+            <div class="flex flex-col">
               <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Entered Amount</span>
               <span class="text-3xl font-black text-[var(--color-text)] font-mono">₹{{ fmt(enteredAmount) }}</span>
             </div>
@@ -19,7 +26,7 @@
             <div class="h-8 w-px bg-[var(--color-border)]"></div>
             <div class="flex flex-col">
               <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Remaining Balance</span>
-              <span class="text-3xl font-black font-mono" :class="remainingBalance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-info)]'">₹{{ fmt(remainingBalance) }}</span>
+              <span class="text-3xl font-black font-mono" :class="remainingBalance < -0.005 ? 'text-[var(--color-danger)]' : 'text-[var(--color-info)]'">₹{{ (remainingBalance < -0.005 ? '-' : '') + fmt(remainingBalance) }}</span>
             </div>
           </div>
 
@@ -105,6 +112,52 @@
                 </td>
                 <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
                   {{ fmt(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) }}
+                </td>
+              </tr>
+            </template>
+
+            <!-- Unlinked Payment Entries Section -->
+            <template v-if="filteredPayments.length">
+              <tr class="bg-[var(--color-success)]/5 sticky top-[56px] z-[5]">
+                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-success)]/10">
+                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-success)] flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
+                    Unlinked Payment Entries
+                  </h3>
+                </td>
+              </tr>
+              <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
+                <td class="px-4 py-3 font-mono text-3xl font-normal">
+                  {{ pe.name }}
+                  <div class="text-xl font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ pe.remarks }}</div>
+                </td>
+                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Payment Entry</td>
+                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(pe.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+                  {{ calculateDueDays(pe.posting_date) }} Days
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <span
+                    class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
+                    :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
+                  >{{ pe.direction }}</span>
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-3xl font-normal"
+                    :class="pe.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                  {{ fmt(pe.unallocated_amount) }}
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <input
+                    v-model.number="localModalAmounts[pe.name]"
+                    type="number" step="0.01" min="0"
+                    :max="Math.abs(pe.unallocated_amount)"
+                    :disabled="remainingBalance <= 0.005 && !(localModalAmounts[pe.name] > 0)"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
+                    @keydown.enter="focusNextAllocate($event)"
+                    @input="onAllocationChange(pe, 'payment')"
+                  />
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
+                  {{ fmt(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) }}
                 </td>
               </tr>
             </template>
@@ -251,6 +304,18 @@ const remainingBalance = computed(() => {
   return props.enteredAmount - totalAllocated.value
 })
 
+const totalOutstanding = computed(() => {
+  const invBal = props.invoices.reduce((sum, i) => sum + (i.direction === 'Dr' ? 1 : -1) * Math.abs(i.outstanding_amount), 0)
+  const jeBal = props.unlinkedJournals.reduce((sum, j) => sum + (j.direction === 'Dr' ? 1 : -1) * Math.abs(j.unallocated_amount), 0)
+  const peBal = props.unlinkedPayments.reduce((sum, p) => sum + (p.direction === 'Dr' ? 1 : -1) * Math.abs(p.unallocated_amount), 0)
+  return invBal + jeBal + peBal
+})
+
+const filteredPayments = computed(() => {
+  if (filterDirection.value === 'All') return props.unlinkedPayments
+  return props.unlinkedPayments.filter(p => p.direction === filterDirection.value)
+})
+
 const filteredJournals = computed(() => {
   if (filterDirection.value === 'All') return props.unlinkedJournals
   return props.unlinkedJournals.filter(j => j.direction === filterDirection.value)
@@ -284,7 +349,15 @@ function emitAllocations() {
     _row: j.reference_row
   }))
 
-  const allocations = [...allInvoices, ...allJournals].filter(a => a.allocated_amount > 0)
+  const allPayments = props.unlinkedPayments.map(p => ({
+    reference_doctype: 'Payment Entry',
+    reference_name: p.name,
+    total_amount: p.paid_amount,
+    outstanding_amount: Math.abs(p.unallocated_amount),
+    allocated_amount: parseFloat(localModalAmounts.value[p.name]) || 0
+  }))
+
+  const allocations = [...allInvoices, ...allJournals, ...allPayments].filter(a => a.allocated_amount > 0)
   
   emit('update-allocations', allocations)
 }
@@ -296,6 +369,7 @@ function confirmAdjustments() {
     // If last modified key is not in visible rows, clear it
     const allVisibleKeys = [
       ...filteredInvoices.value.map(i => i.name),
+      ...filteredPayments.value.map(p => p.name),
       ...filteredJournals.value.map(j => j.reference_row)
     ]
     
@@ -321,12 +395,15 @@ function confirmAdjustments() {
     if (targetKey) {
       // Cap at the item's outstanding amount so allocated_amount never exceeds outstanding_amount
       const invItem = props.invoices.find(i => i.name === targetKey)
+      const peItem = props.unlinkedPayments.find(p => p.name === targetKey)
       const jeItem = props.unlinkedJournals.find(j => j.reference_row === targetKey)
       const maxOutstanding = invItem
         ? Math.abs(invItem.outstanding_amount)
-        : jeItem
-          ? Math.abs(jeItem.unallocated_amount)
-          : Infinity
+        : peItem
+          ? Math.abs(peItem.unallocated_amount)
+          : jeItem
+            ? Math.abs(jeItem.unallocated_amount)
+            : Infinity
       const current = parseFloat(localModalAmounts.value[targetKey]) || 0
       localModalAmounts.value[targetKey] = Math.min(current + remainingBalance.value, maxOutstanding)
     }

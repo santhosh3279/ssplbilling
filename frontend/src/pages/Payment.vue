@@ -666,10 +666,19 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
       remainingToAllocate -= alloc
     })
 
+    // Then Payments
+    unlinkedPayments.value.filter(p => p.direction === targetDir).forEach(pe => {
+      const out = Math.abs(pe.unallocated_amount)
+      const alloc = Math.min(remainingToAllocate, out)
+      modalAmounts[pe.name] = alloc
+      remainingToAllocate -= alloc
+    })
+
     // Check if there are any items in the target direction (Excluding payments)
     const hasTargetItems = 
       invoices.value.some(i => i.direction === targetDir) ||
-      unlinkedJournals.value.some(j => j.direction === targetDir)
+      unlinkedJournals.value.some(j => j.direction === targetDir) ||
+      unlinkedPayments.value.some(p => p.direction === targetDir)
 
     if (hasTargetItems) {
       showInvoicesModal.value = true
