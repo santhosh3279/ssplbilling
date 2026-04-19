@@ -151,7 +151,7 @@
                       v-model="item.item_code"
                       class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                       @keydown.enter.prevent="onCodeEnter(idx)"
-                      @keydown.tab.prevent="focusField('qty', idx)"
+                      @keydown.tab.prevent="focusAfterCode(idx)"
                       @keydown.down.prevent="moveRow(idx, 1)"
                       @keydown.up.prevent="moveRow(idx, -1)"
                       @keydown.delete.stop
@@ -161,7 +161,20 @@
                   <!-- Item Name -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text)] font-medium">{{ item.item_name || '—' }}</td>
                   <!-- UOM -->
-                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-xl">{{ item.uom || 'Nos' }}</td>
+                  <td class="p-0 border-r border-[var(--color-border)]">
+                    <select
+                      v-if="selectedRow === idx && getItemUoms(item.item_code).length > 1"
+                      :ref="el => setRef(el, 'uom', idx)"
+                      v-model="item.uom"
+                      class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
+                      @keydown.enter.prevent="focusField('qty', idx)"
+                      @keydown.tab.prevent="focusField('qty', idx)"
+                      @keydown.shift.tab.prevent="focusField('code', idx)"
+                    >
+                      <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
+                    </select>
+                    <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ item.uom || 'Nos' }}</span>
+                  </td>
                   <!-- Qty -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
                     <div v-if="selectedRow === idx" class="flex items-center justify-end gap-1.5">
@@ -205,14 +218,27 @@
                       class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/50 disabled:opacity-50"
                       placeholder="Item code…"
                       @keydown.enter.prevent="onNewCodeEnter"
-                      @keydown.tab.prevent="focusNewQty"
+                      @keydown.tab.prevent="focusNewAfterCode"
                       @keydown.up.prevent="moveToLastRow"
                     />
                   </td>
                   <!-- Pending item name -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl italic">{{ newPending.item_name || '—' }}</td>
                   <!-- Pending UOM -->
-                  <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-xl">{{ newPending.uom || '—' }}</td>
+                  <td class="p-0 border-r border-[var(--color-border)]">
+                    <select
+                      v-if="newPending.item_code && getItemUoms(newPending.item_code).length > 1"
+                      ref="newUomSelect"
+                      v-model="newPending.uom"
+                      class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
+                      @keydown.enter.prevent="focusNewQty"
+                      @keydown.tab.prevent="focusNewQty"
+                      @keydown.shift.tab.prevent="focusNewCode"
+                    >
+                      <option v-for="u in getItemUoms(newPending.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
+                    </select>
+                    <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ newPending.uom || '—' }}</span>
+                  </td>
                   <!-- Qty input -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
                     <input
@@ -376,13 +402,28 @@ function focusField(field, idx) {
 // New entry row refs
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
+const newUomSelect = ref(null)
 const newItemCode = ref('')
 const newQty = ref(1)
 const newPending = reactive({ item_code: '', item_name: '', uom: '', rate: 0 })
 
+function getItemUoms(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  if (!cached?.uoms) return []
+  return cached.uoms.map(u => u.uom)
+}
 function focusNewCode() { nextTick(() => newCodeInput.value?.focus()) }
 function focusNewQty() {
   nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() })
+}
+function focusNewUom() { nextTick(() => newUomSelect.value?.focus()) }
+function focusAfterCode(idx) {
+  if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) focusField('uom', idx)
+  else focusField('qty', idx)
+}
+function focusNewAfterCode() {
+  if (newPending.item_code && getItemUoms(newPending.item_code).length > 1) focusNewUom()
+  else focusNewQty()
 }
 function selectQtyField(idx) {
   nextTick(() => { const el = fieldRefs[idx]?.qty; if (el) { el.focus(); el.select() } })
@@ -460,7 +501,7 @@ async function onCodeEnter(idx) {
     fetchItemPrice(r.item_code || code, priceList.value).then(rate => {
       itemsToPrint.value[idx].rate = rate
     })
-    focusField('qty', idx)
+    focusAfterCode(idx)
   }
 }
 
@@ -472,15 +513,16 @@ async function onNewCodeEnter() {
   if (r) {
     newPending.item_code = r.item_code || code
     newPending.item_name = r.item_name
-    newPending.uom = r.uom || ''
+    newPending.uom = r.uom || 'Nos'
     newPending.rate = 0
-    focusNewQty()
     fetchItemPrice(newPending.item_code, priceList.value).then(rate => {
       newPending.rate = rate
     })
+    nextTick(() => focusNewAfterCode())
   } else {
     newPending.item_code = code
     newPending.item_name = ''
+    newPending.uom = 'Nos'
     newPending.rate = 0
     focusNewQty()
   }
