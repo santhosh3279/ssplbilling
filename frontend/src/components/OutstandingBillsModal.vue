@@ -50,165 +50,144 @@
         </button>
       </div>
       
-      <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar border border-[var(--color-border)] rounded-2xl bg-[var(--color-surface-raised)]/30">
-        <table class="w-full text-left border-separate border-spacing-0">
-          <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] sticky top-0 z-10">
-            <tr class="text-2xl font-normal uppercase tracking-widest text-[var(--color-text-muted)]">
-              <th class="px-4 py-4 border-b border-[var(--color-border)]">Voucher No</th>
-              <th class="px-4 py-4 border-b border-[var(--color-border)]">Type</th>
-              <th class="px-4 py-4 border-b border-[var(--color-border)]">Due Days</th>
-              <th class="px-4 py-4 border-b border-[var(--color-border)] text-center">Dir/Mode</th>
-              <th class="px-4 py-4 border-b border-[var(--color-border)] text-right">Outstanding</th>
-              <th class="px-4 py-4 border-b border-[var(--color-border)] text-right w-56">Allocate</th>
-              <th class="px-4 py-4 border-b border-[var(--color-border)] text-right w-48">Balance</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[var(--color-border)]">
-            <!-- Loading State -->
-            <tr v-if="loading">
-              <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</td>
-            </tr>
+      <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar border border-[var(--color-border)] rounded-2xl bg-[var(--color-surface-raised)]/30 p-6 space-y-6">
+        <!-- Table Header (Adopted from Unallocated.vue) -->
+        <div class="px-6 py-2 flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-60">
+          <div class="w-[250px] shrink-0">Reference No</div>
+          <div class="w-[120px] shrink-0">Type</div>
+          <div class="w-[120px] shrink-0">Due Days</div>
+          <div class="w-[100px] shrink-0 text-center">Direction</div>
+          <div class="w-[180px] shrink-0 text-right">Outstanding</div>
+          <div class="flex-1 text-right">Adjustment Amount</div>
+          <div class="w-[180px] shrink-0 text-right">Balance</div>
+        </div>
 
-            <!-- No Items State -->
-            <tr v-else-if="!filteredInvoices.length && !filteredJournals.length">
-              <td colspan="7" class="px-6 py-12 text-center text-[var(--color-text-muted)]">No outstanding or unlinked items found.</td>
-            </tr>
+        <!-- Loading State -->
+        <div v-if="loading" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</div>
 
-            <!-- Outstanding Invoices Section -->
-            <template v-if="filteredInvoices.length">
-              <tr class="bg-[var(--color-danger)]/5 sticky top-[56px] z-[5]">
-                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-danger)]/10">
-                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-danger)] flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[var(--color-danger)]"></span>
-                    Outstanding Invoices / Returns
-                  </h3>
-                </td>
-              </tr>
-              <tr v-for="inv in filteredInvoices" :key="inv.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                <td class="px-4 py-3 font-mono text-3xl font-normal">{{ inv.name }}</td>
-                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">{{ inv.doctype }}</td>
-                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(inv.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
-                  {{ calculateDueDays(inv.posting_date) }} Days
-                </td>
-                <td class="px-4 py-3 text-center">
-                  <span
-                    class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
-                    :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
-                  >{{ inv.direction }}</span>
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-normal" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                  {{ fmt(inv.outstanding_amount) }}
-                </td>
-                <td class="px-4 py-3 text-right">
+        <!-- No Items State -->
+        <div v-else-if="!filteredInvoices.length && !filteredPayments.length && !filteredJournals.length" class="px-6 py-12 text-center text-[var(--color-text-muted)]">
+          No outstanding or unlinked items found.
+        </div>
+
+        <!-- Outstanding Invoices Section -->
+        <template v-if="filteredInvoices.length">
+          <div class="space-y-3">
+            <h3 class="px-3 text-[14px] font-black uppercase tracking-widest text-[var(--color-danger)] flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-danger)]"></span>
+              Outstanding Invoices / Returns
+            </h3>
+            <div v-for="inv in filteredInvoices" :key="inv.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 shadow-md flex items-center gap-6 group hover:border-[var(--color-highlight)]/30 transition-all">
+              <div class="w-[250px] shrink-0 font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
+              <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">{{ inv.doctype }}</div>
+              <div class="w-[120px] shrink-0 text-[14px] font-bold" :class="calculateDueDays(inv.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+                {{ calculateDueDays(inv.posting_date) }} Days
+              </div>
+              <div class="w-[100px] shrink-0 text-center">
+                <span class="px-2 py-0.5 rounded text-[11px] font-black uppercase" :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">{{ inv.direction }}</span>
+              </div>
+              <div class="w-[180px] shrink-0 text-right text-[22px] font-black font-mono" :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                ₹{{ fmt(inv.outstanding_amount) }}
+              </div>
+              <div class="flex-1 flex justify-end">
+                <div class="w-48 relative">
                   <input
                     v-model.number="localModalAmounts[inv.name]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(inv.outstanding_amount)"
                     :disabled="remainingBalance <= 0.005 && !(localModalAmounts[inv.name] > 0)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-right font-mono text-[22px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 transition-all outline-none disabled:opacity-20 disabled:grayscale"
                     @keydown.enter="focusNextAllocate($event)"
                     @input="onAllocationChange(inv, 'invoice')"
                   />
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
-                  {{ fmt(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) }}
-                </td>
-              </tr>
-            </template>
+                </div>
+              </div>
+              <div class="w-[180px] shrink-0 text-right text-[20px] font-black font-mono opacity-40">
+                ₹{{ fmt(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) }}
+              </div>
+            </div>
+          </div>
+        </template>
 
-            <!-- Unlinked Payment Entries Section -->
-            <template v-if="filteredPayments.length">
-              <tr class="bg-[var(--color-success)]/5 sticky top-[56px] z-[5]">
-                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-success)]/10">
-                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-success)] flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
-                    Unlinked Payment Entries
-                  </h3>
-                </td>
-              </tr>
-              <tr v-for="pe in filteredPayments" :key="pe.name" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                <td class="px-4 py-3 font-mono text-3xl font-normal">
-                  {{ pe.name }}
-                  <div class="text-xl font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ pe.remarks }}</div>
-                </td>
-                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Payment Entry</td>
-                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(pe.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
-                  {{ calculateDueDays(pe.posting_date) }} Days
-                </td>
-                <td class="px-4 py-3 text-center">
-                  <span
-                    class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
-                    :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
-                  >{{ pe.direction }}</span>
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-normal"
-                    :class="pe.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                  {{ fmt(pe.unallocated_amount) }}
-                </td>
-                <td class="px-4 py-3 text-right">
+        <!-- Unlinked Payment Entries Section -->
+        <template v-if="filteredPayments.length">
+          <div class="space-y-3">
+            <h3 class="px-3 text-[14px] font-black uppercase tracking-widest text-[var(--color-success)] flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-success)]"></span>
+              Unlinked Payment Entries
+            </h3>
+            <div v-for="pe in filteredPayments" :key="pe.name" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 shadow-md flex items-center gap-6 group hover:border-[var(--color-highlight)]/30 transition-all">
+              <div class="w-[250px] shrink-0 flex flex-col min-w-0">
+                <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+                <div v-if="pe.remarks" class="text-[11px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</div>
+              </div>
+              <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">Payment Entry</div>
+              <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">{{ calculateDueDays(pe.posting_date) }} Days</div>
+              <div class="w-[100px] shrink-0 text-center">
+                <span class="px-2 py-0.5 rounded text-[11px] font-black uppercase" :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">{{ pe.direction }}</span>
+              </div>
+              <div class="w-[180px] shrink-0 text-right text-[22px] font-black font-mono text-[var(--color-success)]">
+                ₹{{ fmt(pe.unallocated_amount) }}
+              </div>
+              <div class="flex-1 flex justify-end">
+                <div class="w-48 relative">
                   <input
                     v-model.number="localModalAmounts[pe.name]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(pe.unallocated_amount)"
                     :disabled="remainingBalance <= 0.005 && !(localModalAmounts[pe.name] > 0)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-right font-mono text-[22px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 transition-all outline-none disabled:opacity-20 disabled:grayscale"
                     @keydown.enter="focusNextAllocate($event)"
                     @input="onAllocationChange(pe, 'payment')"
                   />
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
-                  {{ fmt(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) }}
-                </td>
-              </tr>
-            </template>
+                </div>
+              </div>
+              <div class="w-[180px] shrink-0 text-right text-[20px] font-black font-mono opacity-40">
+                ₹{{ fmt(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) }}
+              </div>
+            </div>
+          </div>
+        </template>
 
-            <!-- Unlinked Journal Entries Section -->
-            <template v-if="filteredJournals.length">
-              <tr class="bg-[var(--color-info)]/5 sticky top-[56px] z-[5]">
-                <td colspan="7" class="px-4 py-2 border-y border-[var(--color-info)]/10">
-                  <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-info)] flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[var(--color-info)]"></span>
-                    Unlinked Journal Entries
-                  </h3>
-                </td>
-              </tr>
-              <tr v-for="je in filteredJournals" :key="je.reference_row" class="hover:bg-[var(--color-midlight)]/50 transition-colors">
-                <td class="px-4 py-3 font-mono text-3xl font-normal">
-                  {{ je.name }}
-                  <div class="text-xl font-normal text-[var(--color-text-muted)] truncate max-w-[200px]">{{ je.remarks }}</div>
-                </td>
-                <td class="px-4 py-3 text-2xl text-[var(--color-text-muted)]">Journal Entry</td>
-                <td class="px-4 py-3 text-2xl font-bold" :class="calculateDueDays(je.posting_date) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
-                  {{ calculateDueDays(je.posting_date) }} Days
-                </td>
-                <td class="px-4 py-3 text-center">
-                  <span
-                    class="inline-block rounded px-2 py-0.5 text-xl font-normal uppercase"
-                    :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'"
-                  >{{ je.direction }}</span>
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-normal"
-                    :class="je.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                  {{ fmt(je.unallocated_amount) }}
-                </td>
-                <td class="px-4 py-3 text-right">
+        <!-- Unlinked Journal Entries Section -->
+        <template v-if="filteredJournals.length">
+          <div class="space-y-3">
+            <h3 class="px-3 text-[14px] font-black uppercase tracking-widest text-[var(--color-info)] flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-info)]"></span>
+              Unlinked Journal Entries
+            </h3>
+            <div v-for="je in filteredJournals" :key="je.reference_row" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 shadow-md flex items-center gap-6 group hover:border-[var(--color-highlight)]/30 transition-all">
+              <div class="w-[250px] shrink-0 flex flex-col min-w-0">
+                <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ je.name }}</div>
+                <div v-if="je.remarks" class="text-[11px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</div>
+              </div>
+              <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">Journal Entry</div>
+              <div class="w-[120px] shrink-0 text-[14px] font-bold text-[var(--color-text-muted)] uppercase">{{ calculateDueDays(je.posting_date) }} Days</div>
+              <div class="w-[100px] shrink-0 text-center">
+                <span class="px-2 py-0.5 rounded text-[11px] font-black uppercase" :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">{{ je.direction }}</span>
+              </div>
+              <div class="w-[180px] shrink-0 text-right text-[22px] font-black font-mono text-[var(--color-info)]">
+                ₹{{ fmt(je.unallocated_amount) }}
+              </div>
+              <div class="flex-1 flex justify-end">
+                <div class="w-48 relative">
                   <input
                     v-model.number="localModalAmounts[je.reference_row]"
                     type="number" step="0.01" min="0"
                     :max="Math.abs(je.unallocated_amount)"
                     :disabled="remainingBalance <= 0.005 && !(localModalAmounts[je.reference_row] > 0)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl font-black text-right text-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 focus:border-[var(--color-highlight)] focus:outline-none transition-all disabled:opacity-25 disabled:grayscale disabled:cursor-not-allowed"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-right font-mono text-[22px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 transition-all outline-none disabled:opacity-20 disabled:grayscale"
                     @keydown.enter="focusNextAllocate($event)"
                     @input="onAllocationChange(je, 'journal')"
                   />
-                </td>
-                <td class="px-4 py-3 text-right font-mono text-3xl font-bold opacity-60">
-                  {{ fmt(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) }}
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+                </div>
+              </div>
+              <div class="w-[180px] shrink-0 text-right text-[20px] font-black font-mono opacity-40">
+                ₹{{ fmt(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) }}
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
       
       <div class="mt-8 flex justify-end gap-6">
