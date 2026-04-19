@@ -188,13 +188,37 @@ function onInput(e, field) {
 }
 
 function focusToDate() {
+  autoCompleteDate('from')
   nextTick(() => {
     toDateInput.value?.focus()
     toDateInput.value?.select()
   })
 }
 
+function autoCompleteDate(field) {
+  const displayField = field === 'from' ? 'fromDisplay' : 'toDisplay'
+  const isoField = field === 'from' ? 'fromISO' : 'toISO'
+  let val = dateData.value[displayField].replace(/\D/g, '')
+
+  if (val.length >= 1 && val.length <= 2) {
+    const day = parseInt(val)
+    if (!isNaN(day) && day >= 1 && day <= 31) {
+      const now = new Date()
+      const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const formatter = new Intl.DateTimeFormat('en-CA', options)
+      const [y, m] = formatter.format(now).split('-').map(Number)
+
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = m.toString().padStart(2, '0')
+      
+      dateData.value[isoField] = `${y}-${monthStr}-${dayStr}`
+      dateData.value[displayField] = `${dayStr}/${monthStr}/${y}`
+    }
+  }
+}
+
 function confirmDate() {
+  autoCompleteDate('to')
   const from = dateData.value.fromISO
   const to = dateData.value.toISO
   if (from && to) {
