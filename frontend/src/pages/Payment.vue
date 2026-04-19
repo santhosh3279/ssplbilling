@@ -674,13 +674,13 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
       remainingToAllocate -= alloc
     })
 
-    // Check if there are any items in the target direction (Excluding payments)
-    const hasTargetItems = 
-      invoices.value.some(i => i.direction === targetDir) ||
-      unlinkedJournals.value.some(j => j.direction === targetDir) ||
-      unlinkedPayments.value.some(p => p.direction === targetDir)
+    // Check if there are any items at all
+    const hasAnyItems = 
+      invoices.value.length > 0 ||
+      unlinkedJournals.value.length > 0 ||
+      unlinkedPayments.value.length > 0
 
-    if (hasTargetItems) {
+    if (!autoShowOnlyIfItems || hasAnyItems) {
       showInvoicesModal.value = true
     } else {
       showInvoicesModal.value = false

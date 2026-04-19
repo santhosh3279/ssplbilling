@@ -43,17 +43,19 @@ def get_unlinked_entries(party_type, party):
 		"""
 		SELECT
 			jea.parent                                                        AS name,
-			jea.name                                                          AS reference_row,
-			je.posting_date,
-			IFNULL(je.cheque_no, '')                                          AS reference_no,
-			IFNULL(je.user_remark, '')                                        AS remarks,
-			ABS(jea.credit_in_account_currency - jea.debit_in_account_currency) AS total_amount,
-			(SELECT ABS(SUM(gle.debit_in_account_currency - gle.credit_in_account_currency))
+			MAX(jea.name)                                                     AS reference_row,
+			MAX(je.posting_date)                                              AS posting_date,
+			IFNULL(MAX(je.cheque_no), '')                                     AS reference_no,
+			IFNULL(MAX(je.user_remark), '')                                   AS remarks,
+			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS total_amount,
+			COALESCE((SELECT ABS(SUM(gle.debit_in_account_currency - gle.credit_in_account_currency))
 			 FROM `tabGL Entry` gle
-			 WHERE gle.voucher_no = jea.parent AND (gle.voucher_detail_no = jea.name OR (gle.against_voucher = jea.parent AND gle.voucher_no != jea.parent))
+			 WHERE (gle.voucher_no = jea.parent OR gle.against_voucher = jea.parent)
+			   AND gle.account = jea.account
+			   AND (gle.party = jea.party OR (jea.party IS NULL OR jea.party = ''))
 			   AND gle.is_cancelled = 0
-			) AS unallocated_amount,
-			CASE WHEN jea.credit_in_account_currency > jea.debit_in_account_currency
+			), 0) AS unallocated_amount,
+			CASE WHEN SUM(jea.credit_in_account_currency) > SUM(jea.debit_in_account_currency)
 			     THEN 'Cr' ELSE 'Dr' END                                      AS direction
 		FROM `tabJournal Entry Account` jea
 		JOIN `tabJournal Entry`  je  ON je.name  = jea.parent
@@ -64,8 +66,9 @@ def get_unlinked_entries(party_type, party):
 			AND acc.account_type IN %s
 			AND je.company = %s
 			AND je.is_opening != 'Yes'
+		GROUP BY jea.parent, jea.account, jea.party
 		HAVING unallocated_amount > 0.005
-		ORDER BY je.posting_date DESC
+		ORDER BY posting_date DESC
 		""",
 		(party_type, party, tuple(account_types), company),
 		as_dict=True,

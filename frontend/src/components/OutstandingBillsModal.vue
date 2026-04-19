@@ -170,8 +170,8 @@
                 <div class="text-[22px] font-black font-mono text-[var(--color-info)]">
                   ₹{{ fmt(je.unallocated_amount) }}
                 </div>
-                <div v-if="Math.abs(je.total_amount - je.unallocated_amount) > 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
-                  {{ fmt(je.total_amount) }} - {{ fmt(je.total_amount - je.unallocated_amount) }} (Lnk)
+                <div v-if="je.total_amount && Math.abs(je.total_amount - (je.unallocated_amount || 0)) > 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
+                  {{ fmt(je.total_amount) }} - {{ fmt(je.total_amount - (je.unallocated_amount || 0)) }} (Lnk)
                 </div>
               </div>
               <div class="flex-1 flex justify-end">
@@ -289,25 +289,31 @@ const remainingBalance = computed(() => {
 })
 
 const totalOutstanding = computed(() => {
-  const invBal = props.invoices.reduce((sum, i) => sum + (i.direction === 'Dr' ? 1 : -1) * Math.abs(i.outstanding_amount), 0)
-  const jeBal = props.unlinkedJournals.reduce((sum, j) => sum + (j.direction === 'Dr' ? 1 : -1) * Math.abs(j.unallocated_amount), 0)
-  const peBal = props.unlinkedPayments.reduce((sum, p) => sum + (p.direction === 'Dr' ? 1 : -1) * Math.abs(p.unallocated_amount), 0)
+  const invs = props.invoices || []
+  const jurns = props.unlinkedJournals || []
+  const payms = props.unlinkedPayments || []
+  const invBal = invs.reduce((sum, i) => sum + (i.direction === 'Dr' ? 1 : -1) * Math.abs(i.outstanding_amount), 0)
+  const jeBal = jurns.reduce((sum, j) => sum + (j.direction === 'Dr' ? 1 : -1) * Math.abs(j.unallocated_amount), 0)
+  const peBal = payms.reduce((sum, p) => sum + (p.direction === 'Dr' ? 1 : -1) * Math.abs(p.unallocated_amount), 0)
   return invBal + jeBal + peBal
 })
 
 const filteredPayments = computed(() => {
-  if (filterDirection.value === 'All') return props.unlinkedPayments
-  return props.unlinkedPayments.filter(p => p.direction === filterDirection.value)
+  const payms = props.unlinkedPayments || []
+  if (filterDirection.value === 'All') return payms
+  return payms.filter(p => p.direction === filterDirection.value)
 })
 
 const filteredJournals = computed(() => {
-  if (filterDirection.value === 'All') return props.unlinkedJournals
-  return props.unlinkedJournals.filter(j => j.direction === filterDirection.value)
+  const jurns = props.unlinkedJournals || []
+  if (filterDirection.value === 'All') return jurns
+  return jurns.filter(j => j.direction === filterDirection.value)
 })
 
 const filteredInvoices = computed(() => {
-  if (filterDirection.value === 'All') return props.invoices
-  return props.invoices.filter(i => i.direction === filterDirection.value)
+  const invs = props.invoices || []
+  if (filterDirection.value === 'All') return invs
+  return invs.filter(i => i.direction === filterDirection.value)
 })
 
 function onAllocationChange(item, type) {
@@ -327,7 +333,7 @@ function emitAllocations() {
   const allJournals = props.unlinkedJournals.map(j => ({
     reference_doctype: 'Journal Entry',
     reference_name: j.name,
-    total_amount: j.unallocated_amount,
+    total_amount: j.total_amount || j.unallocated_amount,
     outstanding_amount: Math.abs(j.unallocated_amount),
     allocated_amount: parseFloat(localModalAmounts.value[j.reference_row]) || 0,
     _row: j.reference_row
