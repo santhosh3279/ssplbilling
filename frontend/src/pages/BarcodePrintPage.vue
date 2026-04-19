@@ -245,10 +245,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
-if (props.isSubWindow) useSubwindow()
 
 const router = useRouter()
 const route = useRoute()
+
+useShortcuts({
+  'ESCAPE': handleBack
+}, props.isSubWindow ? 'subwindow' : 'local')
 
 const { items: allItems, lookupItemInCache } = useItemCache()
 
