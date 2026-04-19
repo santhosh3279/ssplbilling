@@ -438,7 +438,7 @@
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
             <button @click="handleIncentive" :disabled="isSubmitted" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isSubmitted ? 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/20 text-[var(--color-text-muted)] cursor-not-allowed' : 'border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]'">Incentive</button>
           </div>
-          <button @click="invoiceTemplateRef?.focusSidebarList()" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Saved Bills</button>
+          <button @click="router.push('/barcode-print')" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Saved Bills</button>
         </div>
       </template>
 
