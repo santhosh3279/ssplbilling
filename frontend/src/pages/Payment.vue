@@ -347,21 +347,24 @@
       @select="handleSelect"
     />
 
-    <!-- Success Modal -->
-    <div v-if="showSuccess" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md">
-      <div class="w-full max-w-md rounded-3xl bg-[var(--color-surface)] p-10 text-center shadow-2xl border border-[var(--color-border)]">
-        <div class="mb-6 flex justify-center">
-          <div class="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--color-success)]/20 text-5xl">
-            ✅
-          </div>
+    <!-- Success Popup -->
+    <div 
+      v-if="showSuccess" 
+      class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-300"
+    >
+      <div class="rounded-3xl bg-[var(--color-surface)] p-6 shadow-2xl border-2 border-[var(--color-success)] flex items-center gap-6">
+        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)]/20 text-4xl">
+          ✅
         </div>
-        <h2 class="mb-2 text-3xl font-black">{{ activeTab }} Created!</h2>
-        <p class="mb-8 text-xl text-[var(--color-text-muted)]">{{ successDocName }}</p>
+        <div class="flex-1 min-w-0">
+          <h2 class="text-2xl font-black truncate">Entry Created!</h2>
+          <p class="text-lg text-[var(--color-text-muted)] font-mono truncate">{{ successDocName }}</p>
+        </div>
         <button
-          @click="closeSuccess"
-          class="w-full rounded-2xl bg-[var(--color-highlight)] py-4 text-xl font-bold text-[var(--color-text-on-highlight)] shadow-lg hover:brightness-110 transition-all"
+          @click="showSuccess = false"
+          class="h-10 w-10 shrink-0 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center text-xl"
         >
-          Great, next one
+          ✕
         </button>
       </div>
     </div>
@@ -796,6 +799,15 @@ async function handleSubmit() {
     if (res && res.payment_entry) {
       successDocName.value = res.payment_entry
       showSuccess.value = true
+      
+      // Reset immediately so user can continue with next entry
+      resetForm()
+      showInitialSelection.value = true
+
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        showSuccess.value = false
+      }, 5000)
     }
   } catch (e) {
     console.error('Submission failed:', e)
@@ -803,12 +815,6 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
-}
-
-function closeSuccess() {
-  showSuccess.value = false
-  resetForm()
-  showInitialSelection.value = true
 }
 
 // --- Lifecycle ---
