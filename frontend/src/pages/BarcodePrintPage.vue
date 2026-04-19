@@ -379,18 +379,21 @@ function focusNewCode() { nextTick(() => newCodeInput.value?.focus()) }
 function focusNewQty() {
   nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() })
 }
+function selectQtyField(idx) {
+  nextTick(() => { const el = fieldRefs[idx]?.qty; if (el) { el.focus(); el.select() } })
+}
 function focusQty(idx) {
   selectedRow.value = idx
-  focusField('qty', idx)
+  selectQtyField(idx)
 }
 function moveToNextQty(idx) {
   const next = idx + 1
-  if (next < itemsToPrint.value.length) { selectedRow.value = next; focusField('qty', next) }
+  if (next < itemsToPrint.value.length) { selectedRow.value = next; selectQtyField(next) }
   else { selectedRow.value = -1; focusNewCode() }
 }
 function moveToPrevQty(idx) {
   const prev = idx - 1
-  if (prev >= 0) { selectedRow.value = prev; focusField('qty', prev) }
+  if (prev >= 0) { selectedRow.value = prev; selectQtyField(prev) }
 }
 
 // ── Item lookup from cache ────────────────────────────────────────────────────
