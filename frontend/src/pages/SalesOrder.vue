@@ -60,6 +60,7 @@
       @submit="handleSalesOrderSubmit"
       @print="handlePrint"
       @discount-pct-keydown="handleDiscountPctKeydown"
+      @discount-amt-keydown="handleDiscountAmtKeydown"
       @other-entry-enter="saveBtnRef?.focus()"
       @cancel="handleCancel"
       @incentive="handleIncentive"
@@ -345,7 +346,7 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]/70'">{{ saveButtonText }}</button>
+            <button ref="saveBtnRef" @click="handleSave" @keydown.end.prevent="handleSave" :disabled="isSubmitted" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]/70'">{{ saveButtonText }}</button>
             <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
@@ -1094,6 +1095,10 @@ async function handleSave() {
 function handleDiscountPctKeydown(e) {
   if (e.key === 'Enter') { e.preventDefault(); invoiceTemplateRef.value?.focusDiscountAmt() }
   else if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
+}
+
+function handleDiscountAmtKeydown(e) {
+  if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
 }
 
 function handleModify() {

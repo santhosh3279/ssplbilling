@@ -374,6 +374,7 @@
                         :value="discountDirectAmt"
                         @input="$emit('update:discountDirectAmt', $event.target.value)"
                         @keydown.enter.prevent="freightRef?.focus(); freightRef?.select()"
+                        @keydown="$emit('discount-amt-keydown', $event)"
                         :disabled="isReadOnly"
                         class="w-full h-full bg-transparent text-[var(--color-text)] font-mono text-3xl text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
                         placeholder="Amt"
@@ -544,11 +545,10 @@ const props = defineProps({
 const emit = defineEmits([
   'back', 'save', 'print', 'cancel', 'incentive', 'submit', 'export', 'import', 'party-click',
   'doc-date-change', 'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
-  'toggle-draft-only', 'select-sidebar-item', 'delete-item',
+  'toggle-draft-only', 'select-sidebar-item', 'delete-item', 'discount-pct-keydown', 'discount-amt-keydown',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
-  'update:ignoreModifier',
-  'discount-pct-keydown', 'other-entry-enter'
+  'update:ignoreModifier', 'other-entry-enter'
 ])
 
 const sidebarSearchRef = ref(null)
