@@ -58,7 +58,7 @@
                 class="w-full appearance-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-50">
                 <option value="">— Select Printer —</option>
                 <option v-for="p in printers" :key="p.name" :value="p.name">
-                  {{ p.printer_name }}{{ p.is_default ? ' ★' : '' }}
+                  {{ p.printer_name }} — {{ p.status }}{{ p.is_default ? ' ★' : '' }}
                 </option>
               </select>
               <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">▾</span>
@@ -74,7 +74,7 @@
                 class="w-full appearance-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-50">
                 <option value="">— Select Template —</option>
                 <option v-for="t in templates" :key="t.name" :value="t.name">
-                  {{ t.template_name }}
+                  {{ t.template_name || t.name }}
                 </option>
               </select>
               <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">▾</span>
@@ -258,28 +258,86 @@ const selectedPrinter = ref('')
 const selectedTemplate = ref('')
 const loadingResources = ref(false)
 
-async function loadResources() {
-  loadingResources.value = true
+const SETTINGS_CACHE_KEY = 'wb-settings-v2'
+
+function getUserPrinterSettings() {
   try {
-    const [p, t] = await Promise.all([
-      frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
-      frappeGet('frappe.client.get_list', {
-        doctype: 'Print Template',
-        filters: JSON.stringify({ document_type: 'Barcode_Prinitng', format_type: 'Barcode' }),
-        fields: JSON.stringify(['name', 'template_name', 'format_type']),
-        limit: 50,
-      }),
-    ])
-    printers.value = p || []
-    templates.value = t || []
-    const userDefault = localStorage.getItem('wb-default-printer')
+    const cachedTemplates = JSON.parse(localStorage.getItem('wb-printer-templates') || '[]')
+    const cachedSettings = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
+    const currentUser = cachedSettings?.data?._current_user || ''
+    
+    const userRows = cachedTemplates.filter(ps => ps.user === currentUser)
+    return userRows.length ? userRows : cachedTemplates.filter(ps => !ps.user)
+  } catch (e) {
+    return []
+  }
+}
+
+function syncPrinter() {
+  const template = selectedTemplate.value
+  if (!template || !printers.value.length) return
+
+  const userRows = getUserPrinterSettings()
+  const mapping = userRows.find(ps => ps.template === template)
+  const targetPrinter = mapping?.printer || ''
+
+  if (targetPrinter && printers.value.some(pr => pr.name === targetPrinter)) {
+    selectedPrinter.value = targetPrinter
+  } else {
+    const userDefault = localStorage.getItem('wb-default-printer') || localStorage.getItem('wb-printer')
     if (userDefault && printers.value.some(pr => pr.name === userDefault)) {
       selectedPrinter.value = userDefault
     } else {
       const def = printers.value.find(pr => pr.is_default) || printers.value[0]
       if (def) selectedPrinter.value = def.name
     }
-    if (templates.value.length === 1) selectedTemplate.value = templates.value[0].name
+  }
+}
+
+watch(selectedTemplate, () => syncPrinter())
+
+async function loadResources() {
+  loadingResources.value = true
+  try {
+    const userRows = getUserPrinterSettings()
+    
+    // 1. Fetch all valid barcode templates
+    const validTemplates = await frappeGet('frappe.client.get_list', {
+      doctype: 'Print Template',
+      filters: { document_type: 'Barcode_Prinitng', format_type: 'Barcode' },
+      fields: ['name', 'template_name'],
+      limit: 100
+    })
+    const validTemplateNames = validTemplates.map(f => f.name)
+
+    if (userRows.length) {
+      // 2. Filter cached user templates to only those that exist for this doctype
+      const filteredTemplates = userRows
+        .filter(r => r.template && validTemplateNames.includes(r.template))
+        .map(r => ({ name: r.template, template_name: r.template }))
+      
+      // Deduplicate
+      const uniqueTemplates = [...new Map(filteredTemplates.map(t => [t.name, t])).values()]
+      const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
+
+      const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
+      const filteredPrinters = (allPrinters || []).filter(p => uniquePrinterNames.includes(p.name))
+      
+      printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
+      templates.value = uniqueTemplates.length ? uniqueTemplates : validTemplates
+    } else {
+      const [p] = await Promise.all([
+        frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
+      ])
+      printers.value  = p || []
+      templates.value = validTemplates
+    }
+
+    if (templates.value.length) {
+      selectedTemplate.value = templates.value[0].name
+    }
+
+    syncPrinter()
   } catch (e) {
     console.error('[BarcodePrintPage] loadResources failed', e)
   } finally {
