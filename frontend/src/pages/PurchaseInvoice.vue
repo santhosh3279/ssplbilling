@@ -575,6 +575,7 @@
         { key: 'F3', desc: 'Focus sidebar bill list' },
         { key: 'F4', desc: 'Select series' },
         { key: 'F5', desc: 'Print invoice' },
+        { key: 'ALT + P', desc: 'Print barcodes' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
         { key: 'Insert', desc: 'Open incentive entry' },
         { key: 'Page Up', desc: 'Series (empty) / Change supplier (with items)' },
@@ -593,6 +594,15 @@
       :selected-price-list="priceList"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
+    />
+
+    <!-- Barcode Print Subwindow -->
+    <BarcodePrintPage
+      v-if="showBarcodeModal"
+      isSubWindow
+      :billNo="invoiceNo"
+      :items="activeItems"
+      @close="showBarcodeModal = false"
     />
   </div>
 </template>
@@ -618,6 +628,7 @@ import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
+import BarcodePrintPage from './BarcodePrintPage.vue'
 
 const router = useRouter()
 
@@ -693,6 +704,7 @@ const supplierInvoiceNoRef = ref(null)
 const supplierInvoiceDateInputRef = ref(null)
 const saveBtnRef = ref(null)
 const showPrintModal = ref(false)
+const showBarcodeModal = ref(false)
 const pendingClearAfterPrint = ref(false)
 const showJumpModal = ref(false)
 const showPriceListUpdate = ref(false)
@@ -1219,6 +1231,14 @@ function handlePrint() {
     return
   }
   showPrintModal.value = true
+}
+
+function handleBarcodePrint() {
+  if (!isSaved.value) {
+    alert('Please save the invoice before printing barcodes.')
+    return
+  }
+  showBarcodeModal.value = true
 }
 
 async function closePrintModal() {
@@ -1917,6 +1937,7 @@ useShortcuts(salesInvoiceShortcuts({
   openSeries:       () => { showSeriesModal.value = true },
   modify:           () => handleModify(),
   print:            () => handlePrint(),
+  'ALT+P':          () => handleBarcodePrint(),
   openParcelAddress:() => {},
   save:             () => handleSave(),
   cancel:           () => handleCancel(),
