@@ -236,7 +236,7 @@ import { ref, computed, watch, onMounted, nextTick, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useItemCache } from '../services/itemCache.js'
 import { frappeGet, frappePost, fetchItemPrice } from '../api.js'
-import { useSubwindow } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 
 const props = defineProps({
   isSubWindow: Boolean,
