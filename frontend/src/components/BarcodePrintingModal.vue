@@ -204,7 +204,7 @@ const emit = defineEmits(['close', 'printed'])
 
 useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
-const { items: allItems } = useItemCache()
+const { items: allItems, lookupItemInCache } = useItemCache()
 
 // ── item search ─────────────────────────────────────────────────────────────
 const query = ref('')
@@ -351,11 +351,13 @@ async function triggerPrint() {
 }
 
 function selectItem(item) {
+  const uom = item.uom || lookupItemInCache(item.item_code)?.uom || 'Nos'
   const existing = itemsToPrint.value.find(i => i.item_code === item.item_code)
   if (existing) {
     existing.qty++
+    existing.uom = uom
   } else {
-    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, uom: item.uom || 'Nos', qty: 1, rate: item.rate || 0 })
+    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, uom, qty: 1, rate: item.rate || 0 })
   }
   query.value = ''
   showResults.value = false
@@ -370,7 +372,7 @@ function syncInitialItems() {
   itemsToPrint.value = (props.initialItems || []).map(i => ({
     item_code: i.item_code,
     item_name: i.item_name,
-    uom: i.uom || 'Nos',
+    uom: i.uom || lookupItemInCache(i.item_code)?.uom || 'Nos',
     qty: i.qty || 1,
     rate: i.rate || 0,
   }))
