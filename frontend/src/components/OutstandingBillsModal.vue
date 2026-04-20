@@ -103,7 +103,9 @@
                 </div>
               </div>
               <div class="w-[180px] shrink-0 text-right text-[20px] font-black font-mono opacity-40">
-                ₹{{ fmt(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) }}
+                <template v-if="Math.abs(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) > 0.005">
+                  ₹{{ fmt(Math.abs(inv.outstanding_amount) - (localModalAmounts[inv.name] || 0)) }}
+                </template>
               </div>
             </div>
           </div>
@@ -148,7 +150,9 @@
                 </div>
               </div>
               <div class="w-[180px] shrink-0 text-right text-[20px] font-black font-mono opacity-40">
-                ₹{{ fmt(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) }}
+                <template v-if="Math.abs(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) > 0.005">
+                  ₹{{ fmt(Math.abs(pe.unallocated_amount) - (localModalAmounts[pe.name] || 0)) }}
+                </template>
               </div>
             </div>
           </div>
@@ -193,7 +197,9 @@
                 </div>
               </div>
               <div class="w-[180px] shrink-0 text-right text-[20px] font-black font-mono opacity-40">
-                ₹{{ fmt(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) }}
+                <template v-if="Math.abs(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) > 0.005">
+                  ₹{{ fmt(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) }}
+                </template>
               </div>
             </div>
           </div>
