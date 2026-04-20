@@ -232,7 +232,7 @@
                       paddingBottom: dynamicRowStyle.paddingBottom,
                       fontSize: `${(14 * zoomPercent * 0.75) / 100}px` 
                     }">
-                    <div class="line-clamp-2 break-words max-w-[150px] leading-[1.1]" :title="entry.reference_no">
+                    <div class="line-clamp-2 break-all w-[16ch] leading-[1.1]" :title="entry.reference_no">
                       {{ entry.reference_no || '—' }}
                     </div>
                   </td>
