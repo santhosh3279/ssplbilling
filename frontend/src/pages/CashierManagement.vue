@@ -27,13 +27,13 @@
           class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div class="flex flex-col items-center rounded-xl border px-4 py-1.5 min-w-[160px]"
+        <div class="flex flex-col items-center rounded-xl border px-6 py-2 min-w-[280px]"
              :class="isToday ? 'border-[var(--color-success)]/50 bg-[var(--color-success)]/20' : 'border-[var(--color-warning)]/50 bg-[var(--color-warning)]/20'">
-          <div class="text-[9px] font-black uppercase tracking-[0.2em]"
+          <div class="text-lg font-black uppercase tracking-[0.2em]"
                :class="isToday ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
             {{ isToday ? 'Today' : 'Past Date' }}
           </div>
-          <div class="font-mono text-xs font-black text-[var(--color-text)] leading-tight">{{ formatDateDisplay(currentDate) }}</div>
+          <div class="font-mono text-2xl font-black text-[var(--color-text)] leading-tight">{{ formatDateDisplay(currentDate) }}</div>
         </div>
         <button @click="shiftDate(1)" :disabled="isToday"
           class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
