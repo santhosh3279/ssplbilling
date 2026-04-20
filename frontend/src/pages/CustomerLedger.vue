@@ -226,8 +226,15 @@
                       {{ entry.voucher_no }}
                     </button>
                   </td>
-                  <td class="px-4 text-[var(--color-text-muted)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
-                    <span class="truncate block max-w-[150px]" :title="entry.reference_no">{{ entry.reference_no || '—' }}</span>
+                  <td class="px-4 text-[var(--color-text-muted)]" 
+                    :style="{ 
+                      paddingTop: dynamicRowStyle.paddingTop, 
+                      paddingBottom: dynamicRowStyle.paddingBottom,
+                      fontSize: `${(14 * zoomPercent * 0.75) / 100}px` 
+                    }">
+                    <div class="line-clamp-2 break-words max-w-[150px] leading-[1.1]" :title="entry.reference_no">
+                      {{ entry.reference_no || '—' }}
+                    </div>
                   </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="entry.debit" class="font-semibold text-[var(--color-success)]">₹{{ fmt(entry.debit) }}</span>
