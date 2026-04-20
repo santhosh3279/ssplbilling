@@ -62,7 +62,8 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
             voucher_no,
             debit,
             credit,
-            remarks
+            remarks,
+            against_voucher AS reference_no
         FROM `tabGL Entry`
         WHERE {filter_sql}
           AND is_cancelled = 0
@@ -99,6 +100,7 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
                 "debit": 0.0,
                 "credit": 0.0,
                 "remarks": row.remarks or "",
+                "reference_no": row.reference_no or "",
             }
             voucher_map[(row.voucher_type, row.voucher_no)] = True
         voucher_groups[key]["debit"] += debit
@@ -109,6 +111,13 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
     entries = []
     for group in voucher_groups.values():
         balance += group["debit"] - group["credit"]
+        
+        # If reference_no is empty in GL Entry, try to fetch it from the voucher later or here if simple
+        ref_no = group["reference_no"]
+        if not ref_no and group["voucher_type"] in ["Payment Entry", "Journal Entry"]:
+             ref_no = frappe.db.get_value(group["voucher_type"], group["voucher_no"], 
+                                         "reference_no" if group["voucher_type"] == "Payment Entry" else "cheque_no")
+
         entries.append({
             "date": group["date"],
             "voucher_type": group["voucher_type"],
@@ -117,6 +126,7 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
             "credit": round(group["credit"], 2),
             "balance": round(balance, 2),
             "remarks": group["remarks"],
+            "reference_no": ref_no or "",
         })
 
     # ─── BATCH FETCH VOUCHER DETAILS ───

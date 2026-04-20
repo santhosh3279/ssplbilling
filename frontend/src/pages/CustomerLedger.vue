@@ -166,6 +166,7 @@
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Date</th>
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Type</th>
                   <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Voucher No</th>
+                  <th class="px-4 py-3 text-left font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Reference</th>
                   <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Debit (Dr)</th>
                   <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Credit (Cr)</th>
                   <th class="px-4 py-3 text-right font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Balance</th>
@@ -174,7 +175,7 @@
               <tbody ref="tableBodyRef">
                 <!-- Opening Balance row -->
                 <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/50">
-                  <td colspan="5" class="px-4 font-semibold text-[var(--color-text-muted)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                  <td colspan="6" class="px-4 font-semibold text-[var(--color-text-muted)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     Opening Balance
                     <span class="ml-1 font-normal text-[var(--color-text-muted)]" :style="{ fontSize: `${(10 * zoomPercent) / 100}px` }">(before {{ fmtDate(ledgerData.from_date) }})</span>
                   </td>
@@ -188,7 +189,7 @@
 
                 <!-- No entries message -->
                 <tr v-if="!ledgerData.entries.length">
-                  <td colspan="6" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
+                  <td colspan="7" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
                     No transactions found for the selected period.
                   </td>
                 </tr>
@@ -225,6 +226,9 @@
                       {{ entry.voucher_no }}
                     </button>
                   </td>
+                  <td class="px-4 text-[var(--color-text-muted)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
+                    <span class="truncate block max-w-[150px]" :title="entry.reference_no">{{ entry.reference_no || '—' }}</span>
+                  </td>
                   <td class="px-4 text-right font-mono" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">
                     <span v-if="entry.debit" class="font-semibold text-[var(--color-success)]">₹{{ fmt(entry.debit) }}</span>
                     <span v-else class="text-[var(--color-text-muted)]">—</span>
@@ -243,7 +247,7 @@
 
                 <!-- Closing Balance row -->
                 <tr v-if="ledgerData.entries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface)]/50">
-                  <td colspan="3" class="px-4 font-bold text-[var(--color-text)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">Closing Balance</td>
+                  <td colspan="4" class="px-4 font-bold text-[var(--color-text)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">Closing Balance</td>
                   <td class="px-4 text-right font-mono font-bold text-[var(--color-success)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_debit) }}</td>
                   <td class="px-4 text-right font-mono font-bold text-[var(--color-danger)]" :style="{ paddingTop: dynamicRowStyle.paddingTop, paddingBottom: dynamicRowStyle.paddingBottom }">₹{{ fmt(ledgerData.total_credit) }}</td>
                   <td class="px-4 text-right font-mono font-bold"
