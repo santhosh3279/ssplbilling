@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs'
  * Generates a multi-sheet XLSX report for the cashier's daily activities using exceljs for styling.
  */
 export async function generateCashierReport(data) {
-  const { date, docs, bills, ledgerEntries, ledgerOpening, metadata, getMopAmount } = data
+  const { date, docs, bills, ledgerEntries, ledgerOpening, upiLedgerEntries, upiLedgerOpening, metadata, getMopAmount } = data
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'Gemini CLI'
   workbook.created = new Date()
@@ -123,6 +123,7 @@ export async function generateCashierReport(data) {
     { label: 'Biller Name:', value: metadata.billerName },
     { label: 'Warehouse:', value: metadata.warehouse },
     { label: 'Cash Account:', value: metadata.cashAccount },
+    { label: 'UPI Account:', value: metadata.upiAccount },
     { label: 'Cost Center:', value: metadata.costCenter }
   ]
 
@@ -270,6 +271,65 @@ export async function generateCashierReport(data) {
   // Final Balance Styling
   if (ledgerSheet.rowCount > 1) {
     const lastRow = ledgerSheet.getRow(ledgerSheet.rowCount)
+    lastRow.font = { bold: true }
+    lastRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
+    lastRow.eachCell((cell) => { cell.border = thinBorder })
+  }
+
+  // ── SHEET 4: UPI LEDGER ───────────────────────────────────────────
+  const upiSheet = workbook.addWorksheet('UPI Ledger')
+  
+  const maxUpiPartyLen = Math.max(15, ...(upiLedgerEntries || []).map(e => e.party?.length || 0))
+
+  upiSheet.columns = [
+    { header: 'Time', key: 'time', width: 15 },
+    { header: 'Voucher No', key: 'voucher_no', width: 25 },
+    { header: 'Party', key: 'party', width: maxUpiPartyLen + 5 },
+    { header: 'Debit (DR)', key: 'debit', width: 15 },
+    { header: 'Credit (CR)', key: 'credit', width: 15 },
+    { header: 'Balance', key: 'balance', width: 18 }
+  ]
+
+  upiSheet.getRow(1).height = 20
+  upiSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  upiSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+  upiSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }
+  upiSheet.getRow(1).eachCell((cell) => { cell.border = thinBorder })
+
+  const upiOpeningRow = upiSheet.addRow({
+    time: '',
+    voucher_no: 'OPENING BALANCE',
+    party: '',
+    debit: '',
+    credit: '',
+    balance: upiLedgerOpening || 0
+  })
+  upiOpeningRow.font = { italic: true, bold: true }
+  upiOpeningRow.eachCell((cell, colNum) => { 
+    cell.border = thinBorder 
+    if (colNum >= 4) cell.alignment = { horizontal: 'right' }
+  })
+
+  if (upiLedgerEntries && upiLedgerEntries.length > 0) {
+    upiLedgerEntries.forEach(entry => {
+      const row = upiSheet.addRow({
+        time: entry.time,
+        voucher_no: entry.voucher_no,
+        party: entry.party || '',
+        debit: entry.debit || 0,
+        credit: entry.credit || 0,
+        balance: entry.balance || 0
+      })
+      row.eachCell((cell, colNum) => { 
+        cell.border = thinBorder 
+        if (colNum >= 4) cell.alignment = { horizontal: 'right' }
+      })
+    })
+  }
+
+  // Final Balance Styling for UPI
+  if (upiSheet.rowCount > 1) {
+    const lastRow = upiSheet.getRow(upiSheet.rowCount)
     lastRow.font = { bold: true }
     lastRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
     lastRow.eachCell((cell) => { cell.border = thinBorder })

@@ -666,6 +666,35 @@ async function fetchCashLedgerEntries() {
   }
 }
 
+const upiLedgerEntries = ref([])
+const upiLedgerOpening = ref(0)
+const upiLedgerLoading = ref(false)
+
+async function fetchUpiLedgerEntries() {
+  let account = localStorage.getItem('wb-upi') || ''
+  if (!account) return
+  if (!account.includes(' - ')) {
+    try {
+      const res = await frappeGet('frappe.client.get_list', {
+        doctype: 'Account',
+        filters: JSON.stringify({ account_name: account, is_group: 0 }),
+        fields: ['name'], limit_page_length: 1,
+      })
+      if (res?.[0]?.name) { account = res[0].name; localStorage.setItem('wb-upi', account) }
+    } catch {}
+  }
+  upiLedgerLoading.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_entries', { account, date: currentDate.value })
+    upiLedgerOpening.value = res.opening ?? 0
+    upiLedgerEntries.value = res.entries ?? []
+  } catch (e) {
+    console.warn('[Cahier] fetchUpiLedgerEntries failed:', e)
+  } finally {
+    upiLedgerLoading.value = false
+  }
+}
+
 // Today's Bills
 const todayBills = ref([])
 const billsLoading = ref(false)
@@ -757,16 +786,22 @@ async function exportToExcel() {
     } catch (e) { console.warn(`[Cahier] Export ${t} fetch failed:`, e) }
   }))
 
+  // Ensure latest ledger entries are fetched
+  await Promise.all([fetchCashLedgerEntries(), fetchUpiLedgerEntries()])
+
   generateCashierReport({
     date: currentDate.value,
     docs,
     bills: filteredBills.value,
     ledgerEntries: cashLedgerEntries.value,
     ledgerOpening: cashLedgerOpening.value,
+    upiLedgerEntries: upiLedgerEntries.value,
+    upiLedgerOpening: upiLedgerOpening.value,
     metadata: {
       billerName: session.fullName.value || session.user.value || '',
       warehouse: localStorage.getItem('wb-warehouse') || '',
       cashAccount: localStorage.getItem('wb-cash') || '',
+      upiAccount: localStorage.getItem('wb-upi') || '',
       costCenter: localStorage.getItem('wb-cost-center') || ''
     },
     getMopAmount
