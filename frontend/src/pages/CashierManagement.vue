@@ -105,7 +105,7 @@
           <table class="w-full" style="font-size: 1.1rem;">
             <thead>
               <tr class="border-b border-[var(--color-border)] text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-3 py-2 text-left">Session</th>
+                <th class="w-px whitespace-nowrap px-3 py-2 text-left">Session</th>
                 <th class="px-2 py-2 text-right">BOX</th>
                 <th class="px-2 py-2 text-right">Ledger</th>
                 <th class="px-2 py-2 text-right">Diff</th>
@@ -116,7 +116,7 @@
 
               <!-- Opening row -->
               <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
-                <td class="px-3 py-3">
+                <td class="w-px whitespace-nowrap px-3 py-3">
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
@@ -147,7 +147,7 @@
 
               <!-- Mid-Day-1 row -->
               <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
-                <td class="px-3 py-3">
+                <td class="w-px whitespace-nowrap px-3 py-3">
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
@@ -173,7 +173,7 @@
 
               <!-- Mid-Day-2 row -->
               <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
-                <td class="px-3 py-3">
+                <td class="w-px whitespace-nowrap px-3 py-3">
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
@@ -199,7 +199,7 @@
 
               <!-- Closing row -->
               <tr class="hover:bg-[var(--color-surface-raised)]/20 transition">
-                <td class="px-3 py-3">
+                <td class="w-px whitespace-nowrap px-3 py-3">
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-danger)] flex-shrink-0"></span>
                     <div>
@@ -236,7 +236,7 @@
 
               <!-- UPI row — separator + teal accent -->
               <tr class="border-t-2 border-[var(--color-success)]/40 bg-[var(--color-success)]/10 hover:bg-[var(--color-success)]/20 transition">
-                <td class="px-3 py-3">
+                <td class="w-px whitespace-nowrap px-3 py-3">
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-success)] flex-shrink-0"></span>
                     <div>
