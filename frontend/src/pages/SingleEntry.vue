@@ -17,13 +17,15 @@
       <!-- Account Selection (MOP Account) -->
       <div class="flex items-center gap-4">
         <div class="flex flex-col items-end">
-          <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Target Account (Paid To/From)</span>
-          <div 
+          <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">Target Account (Paid To/From)</span>
+          <button 
+            ref="mopBtnRef"
             @click="openSearch('mop')"
-            class="mt-1 cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] transition-all min-w-[300px] text-right"
+            @keydown.enter.prevent="mopAccount ? openSearch('party', 0) : openSearch('mop')"
+            class="mt-1 cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-right"
           >
             {{ mopAccountLabel || 'Select Account...' }}
-          </div>
+          </button>
         </div>
 
         <div class="h-10 w-px bg-[var(--color-border)] mx-2"></div>
@@ -80,11 +82,12 @@
                 <!-- Amount: Debit (Dr) -->
                 <td class="px-2 py-1.5">
                   <input
+                    ref="drInputs"
                     v-model.number="row.dr"
                     type="number"
                     step="0.01"
                     @input="row.cr = null"
-                    @keydown.enter="handleAmountEnter(idx)"
+                    @keydown.enter.prevent="handleDrEnter(idx)"
                     class="w-full bg-transparent text-2xl font-black text-right focus:outline-none focus:bg-[var(--color-danger)]/5 rounded-lg px-2 py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0.00"
                   />
@@ -93,11 +96,12 @@
                 <!-- Amount: Credit (Cr) -->
                 <td class="px-2 py-1.5">
                   <input
+                    ref="crInputs"
                     v-model.number="row.cr"
                     type="number"
                     step="0.01"
                     @input="row.dr = null"
-                    @keydown.enter="handleAmountEnter(idx)"
+                    @keydown.enter.prevent="handleCrEnter(idx)"
                     class="w-full bg-transparent text-2xl font-black text-right focus:outline-none focus:bg-[var(--color-success)]/5 rounded-lg px-2 py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0.00"
                   />
@@ -250,6 +254,11 @@ import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 
 const router = useRouter()
 
+// --- Refs for Focus Management ---
+const mopBtnRef = ref(null)
+const drInputs = ref([])
+const crInputs = ref([])
+
 // --- Core State ---
 const mopAccount = ref('')
 const mopAccountLabel = ref('')
@@ -289,6 +298,7 @@ function createEmptyRow() {
 
 function addRow() {
   rows.value.push(createEmptyRow())
+  return rows.value.length - 1
 }
 
 function removeRow(idx) {
@@ -328,12 +338,14 @@ function openSearch(target, idx = null) {
 
 async function handleSearchSelect(item) {
   showSearchModal.value = false
+  const idx = currentIdx.value
   
   if (searchTarget.value === 'mop') {
     mopAccount.value = item.name
     mopAccountLabel.value = item.label || item.account_name || item.name
+    // Move to first party search automatically
+    setTimeout(() => openSearch('party', 0), 100)
   } else if (searchTarget.value === 'party') {
-    const idx = currentIdx.value
     rows.value[idx].party = item.name
     rows.value[idx].party_name = item.label || item.customer_name || item.supplier_name || item.name
     rows.value[idx].party_type = item.type || 'Customer'
@@ -348,16 +360,52 @@ async function handleSearchSelect(item) {
     } catch (e) {
       console.warn('Outstanding fetch failed:', e)
     }
+
+    // Move focus to Debit column of THIS row
+    nextTick(() => {
+      setTimeout(() => {
+        drInputs.value[idx]?.focus()
+        drInputs.value[idx]?.select()
+      }, 100)
+    })
   }
+}
+
+// --- Navigation Methods ---
+function handleDrEnter(idx) {
+  const val = parseFloat(rows.value[idx].dr) || 0
+  if (val > 0) {
+    // If we have a value, trigger modal and move on
+    triggerModal(idx).then(() => {
+      // Logic after modal closes or just proceed to next row
+    })
+    nextRowAndSearch(idx)
+  } else {
+    // If zero, move focus to Credit
+    nextTick(() => {
+      crInputs.value[idx]?.focus()
+      crInputs.value[idx]?.select()
+    })
+  }
+}
+
+function handleCrEnter(idx) {
+  const val = parseFloat(rows.value[idx].cr) || 0
+  if (val > 0) {
+    triggerModal(idx)
+  }
+  nextRowAndSearch(idx)
+}
+
+function nextRowAndSearch(currentIdx) {
+  const nextIdx = currentIdx + 1
+  if (nextIdx >= rows.value.length) {
+    addRow()
+  }
+  setTimeout(() => openSearch('party', nextIdx), 150)
 }
 
 // --- Invoice Linking Methods ---
-async function handleAmountEnter(idx) {
-  if (rows.value[idx].party && rowAmount(rows.value[idx]) > 0) {
-    triggerModal(idx)
-  }
-}
-
 async function triggerModal(idx) {
   modalRowIdx.value = idx
   loadingInvoices.value = true
@@ -472,6 +520,8 @@ async function saveAllEntries() {
 
 // --- Lifecycle ---
 onMounted(() => {
+  nextTick(() => mopBtnRef.value?.focus())
+
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 's') {
       e.preventDefault()
