@@ -106,29 +106,6 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
         voucher_groups[key]["debit"] += debit
         voucher_groups[key]["credit"] += credit
 
-    # Build entry list with running balance in first-occurrence order
-    balance = opening_balance
-    entries = []
-    for group in voucher_groups.values():
-        balance += group["debit"] - group["credit"]
-        
-        # If reference_no is empty in GL Entry, try to fetch it from the voucher later or here if simple
-        ref_no = group["reference_no"]
-        if not ref_no and group["voucher_type"] in ["Payment Entry", "Journal Entry"]:
-             ref_no = frappe.db.get_value(group["voucher_type"], group["voucher_no"], 
-                                         "reference_no" if group["voucher_type"] == "Payment Entry" else "cheque_no")
-
-        entries.append({
-            "date": group["date"],
-            "voucher_type": group["voucher_type"],
-            "voucher_no": group["voucher_no"],
-            "debit": round(group["debit"], 2),
-            "credit": round(group["credit"], 2),
-            "balance": round(balance, 2),
-            "remarks": group["remarks"],
-            "reference_no": ref_no or "",
-        })
-
     # ─── BATCH FETCH VOUCHER DETAILS ───
     details_cache = {}
 
@@ -172,7 +149,7 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
         )
         pe_docs = frappe.get_all("Payment Entry",
             filters={"name": ["in", pe_names]},
-            fields=["name", "posting_date", "paid_amount", "mode_of_payment", "payment_type", "party_name", "remarks"]
+            fields=["name", "posting_date", "paid_amount", "mode_of_payment", "payment_type", "party_name", "remarks", "reference_no"]
         )
         pe_meta = {d.name: d for d in pe_docs}
 
@@ -189,6 +166,7 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
                     "party_name": m.get("party_name", ""),
                     "total_amount": float(m.get("paid_amount", 0)),
                     "mode_of_payment": m.get("mode_of_payment", ""),
+                    "reference_no": m.get("reference_no", ""),
                     "items": []
                 }
             details_cache[parent]["items"].append(ref)
@@ -235,6 +213,40 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
                 "reference_type": item.reference_type or "",
                 "reference_name": item.reference_name or "",
             })
+
+    # Build entry list with running balance in first-occurrence order
+    balance = opening_balance
+    entries = []
+    for group in voucher_groups.values():
+        balance += group["debit"] - group["credit"]
+        
+        # Populate reference_no (linked invoice numbers)
+        ref_no = group["reference_no"] # From against_voucher
+        v_no = group["voucher_no"]
+        v_type = group["voucher_type"]
+
+        if v_type == "Payment Entry" and v_no in details_cache:
+            refs = [i["reference_name"] for i in details_cache[v_no]["items"] if i.get("reference_name")]
+            if refs:
+                ref_no = ", ".join(refs)
+        elif v_type == "Journal Entry" and v_no in details_cache:
+            refs = [i["reference_name"] for i in details_cache[v_no]["items"] if i.get("reference_name")]
+            if refs:
+                ref_no = ", ".join(list(set(refs))) # unique
+        
+        if not ref_no and v_type in ["Payment Entry", "Journal Entry"]:
+             ref_no = frappe.db.get_value(v_type, v_no, "reference_no" if v_type == "Payment Entry" else "cheque_no")
+
+        entries.append({
+            "date": group["date"],
+            "voucher_type": v_type,
+            "voucher_no": v_no,
+            "debit": round(group["debit"], 2),
+            "credit": round(group["credit"], 2),
+            "balance": round(balance, 2),
+            "remarks": group["remarks"],
+            "reference_no": ref_no or "",
+        })
 
     return {
         "ledger_name": ledger_name,
