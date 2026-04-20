@@ -49,7 +49,8 @@
               <tr class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-3 w-16 text-center">#</th>
                 <th class="px-4 py-3 w-80">Party Name</th>
-                <th class="px-4 py-3 w-40 text-right">Amount</th>
+                <th class="px-4 py-3 w-40 text-right text-[var(--color-danger)]">Debit (Dr)</th>
+                <th class="px-4 py-3 w-40 text-right text-[var(--color-success)]">Credit (Cr)</th>
                 <th class="px-4 py-3 w-48 text-right">Outstanding</th>
                 <th class="px-4 py-3 w-48 text-right">New Balance</th>
                 <th class="px-4 py-3 min-w-[400px]">Linked Invoices / References</th>
@@ -76,14 +77,28 @@
                   </div>
                 </td>
 
-                <!-- Amount -->
+                <!-- Amount: Debit (Dr) -->
                 <td class="px-2 py-1.5">
                   <input
-                    v-model.number="row.amount"
+                    v-model.number="row.dr"
                     type="number"
                     step="0.01"
+                    @input="row.cr = null"
                     @keydown.enter="handleAmountEnter(idx)"
-                    class="w-full bg-transparent text-2xl font-black text-right focus:outline-none focus:bg-[var(--color-highlight)]/5 rounded-lg px-2 py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="w-full bg-transparent text-2xl font-black text-right focus:outline-none focus:bg-[var(--color-danger)]/5 rounded-lg px-2 py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0.00"
+                  />
+                </td>
+
+                <!-- Amount: Credit (Cr) -->
+                <td class="px-2 py-1.5">
+                  <input
+                    v-model.number="row.cr"
+                    type="number"
+                    step="0.01"
+                    @input="row.dr = null"
+                    @keydown.enter="handleAmountEnter(idx)"
+                    class="w-full bg-transparent text-2xl font-black text-right focus:outline-none focus:bg-[var(--color-success)]/5 rounded-lg px-2 py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="0.00"
                   />
                 </td>
@@ -264,7 +279,8 @@ function createEmptyRow() {
     party: '',
     party_name: '',
     party_type: 'Customer',
-    amount: null,
+    dr: null,
+    cr: null,
     outstanding: null,
     allocations: [],
     modalAmounts: {}
@@ -284,22 +300,23 @@ function removeRow(idx) {
 }
 
 const totalBulkAmount = computed(() => 
-  rows.value.reduce((sum, r) => sum + (parseFloat(rowAmount(r)) || 0), 0)
+  rows.value.reduce((sum, r) => sum + rowAmount(r), 0)
 )
 
 const canSave = computed(() => 
-  mopAccount.value && rows.value.some(r => r.party && r.amount > 0)
+  mopAccount.value && rows.value.some(r => r.party && rowAmount(r) > 0)
 )
 
 function rowAmount(r) {
-  return parseFloat(r.amount) || 0
+  return (parseFloat(r.dr) || 0) + (parseFloat(r.cr) || 0)
 }
 
 function calculateNewBalance(row) {
   if (row.outstanding === null) return 0
-  const amt = rowAmount(row)
-  // Default to Receipt logic (Receive decreases Dr balance)
-  return row.outstanding - amt
+  const dr = parseFloat(row.dr) || 0
+  const cr = parseFloat(row.cr) || 0
+  // Debit increases balance (if Dr), Credit decreases balance (if Dr)
+  return row.outstanding + dr - cr
 }
 
 // --- Search Methods ---
@@ -336,7 +353,7 @@ async function handleSearchSelect(item) {
 
 // --- Invoice Linking Methods ---
 async function handleAmountEnter(idx) {
-  if (rows.value[idx].party && rows.value[idx].amount > 0) {
+  if (rows.value[idx].party && rowAmount(rows.value[idx]) > 0) {
     triggerModal(idx)
   }
 }
@@ -347,7 +364,9 @@ async function triggerModal(idx) {
   showModal.value = true
   
   const row = rows.value[idx]
-  rowActiveTab.value = row.amount > 0 ? 'Receipt' : 'Payment'
+  // If we are DEBITING the party, it's a PAY (payment to supplier / debit note to customer)
+  // If we are CREDITING the party, it's a RECEIVE (receipt from customer / credit note to supplier)
+  rowActiveTab.value = row.cr > 0 ? 'Receipt' : 'Payment'
   
   try {
     const [outstandingRes, unlinkedRes] = await Promise.all([
@@ -367,8 +386,8 @@ async function triggerModal(idx) {
 
     // Pre-fill allocations if not already done
     if (Object.keys(row.modalAmounts).length === 0) {
-      const targetDir = 'Dr' // Simplified bulk assumption
-      let remaining = row.amount || 0
+      const targetDir = row.cr > 0 ? 'Dr' : 'Cr' // If Receipt (Cr party), look for Dr invoices
+      let remaining = rowAmount(row)
       
       rowInvoices.value.filter(i => i.direction === targetDir).forEach(inv => {
         const out = Math.abs(inv.outstanding_amount)
@@ -406,7 +425,7 @@ function closeModal() {
 async function saveAllEntries() {
   if (!canSave.value || submitting.value) return
   
-  const validRows = rows.value.filter(r => r.party && r.amount > 0)
+  const validRows = rows.value.filter(r => r.party && rowAmount(r) > 0)
   if (!validRows.length) return
   
   submitting.value = true
@@ -415,10 +434,10 @@ async function saveAllEntries() {
   try {
     for (const row of validRows) {
       const payload = {
-        payment_type: row.amount > 0 ? 'Receive' : 'Pay',
+        payment_type: row.cr > 0 ? 'Receive' : 'Pay',
         party_type: row.party_type,
         party: row.party,
-        amount: Math.abs(row.amount),
+        amount: rowAmount(row),
         mode_of_payment: 'Cash', // Default
         account: mopAccount.value,
         posting_date: postingDate.value,
