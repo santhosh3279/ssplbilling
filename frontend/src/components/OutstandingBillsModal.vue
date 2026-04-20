@@ -266,17 +266,26 @@ watch(() => props.modalAmounts, (newVal) => {
 watch(() => props.show, (val) => {
   if (val) {
     filterDirection.value = props.activeTab === 'Receipt' ? 'Dr' : 'Cr'
-    nextTick(() => {
-      setTimeout(() => {
-        const firstInput = document.querySelector('.allocate-input')
-        if (firstInput) {
-          firstInput.focus()
-          firstInput.select()
-        }
-      }, 150)
-    })
   } else {
     lastModifiedKey.value = null
+  }
+}, { immediate: true })
+
+watch(() => props.loading, (val) => {
+  if (!val && props.show) {
+    // If nothing matches the direction filter but unlinked entries exist, show all
+    const hasFiltered = filteredInvoices.value.length > 0 || filteredPayments.value.length > 0 || filteredJournals.value.length > 0
+    const hasUnlinked = (props.unlinkedPayments?.length || 0) + (props.unlinkedJournals?.length || 0) > 0
+    if (!hasFiltered && hasUnlinked) {
+      filterDirection.value = 'All'
+    }
+    nextTick(() => {
+      const firstInput = document.querySelector('.allocate-input:not(:disabled)')
+      if (firstInput) {
+        firstInput.focus()
+        firstInput.select()
+      }
+    })
   }
 })
 

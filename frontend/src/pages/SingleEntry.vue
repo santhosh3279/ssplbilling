@@ -248,7 +248,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { frappeGet, frappePost } from '../api.js'
+import { fetchPartyBalance, fetchPartyDocs, createBulkPaymentEntry } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 
@@ -349,13 +349,12 @@ async function handleSearchSelect(item) {
     rows.value[idx].party = item.name
     rows.value[idx].party_name = item.label || item.customer_name || item.supplier_name || item.name
     rows.value[idx].party_type = item.type || 'Customer'
+    rows.value[idx].allocations = []
+    rows.value[idx].modalAmounts = {}
     
     // Fetch outstanding balance for this party
     try {
-      const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
-        ledger_name: item.name,
-        ledger_type: rows.value[idx].party_type,
-      })
+      const res = await fetchPartyBalance(item.name, rows.value[idx].party_type)
       rows.value[idx].outstanding = res.closing_balance || 0
     } catch (e) {
       console.warn('Outstanding fetch failed:', e)
@@ -419,20 +418,11 @@ async function triggerModal(idx) {
   showModal.value = true
   
   try {
-    const [outstandingRes, unlinkedRes] = await Promise.all([
-      frappeGet('ssplbilling.api.reconcile_api.get_outstanding_docs', {
-        party_type: row.party_type,
-        party: row.party
-      }),
-      frappeGet('ssplbilling.api.reconcile_api.get_unlinked_entries', {
-        party_type: row.party_type,
-        party: row.party
-      })
-    ])
-    
-    rowInvoices.value = outstandingRes.docs || []
-    rowUnlinkedPayments.value = unlinkedRes.payment_entries || []
-    rowUnlinkedJournals.value = unlinkedRes.journal_entries || []
+    const res = await fetchPartyDocs(row.party_type, row.party)
+
+    rowInvoices.value = res.docs || []
+    rowUnlinkedPayments.value = res.payment_entries || []
+    rowUnlinkedJournals.value = res.journal_entries || []
 
     // Pre-fill allocations if not already done
     if (Object.keys(row.modalAmounts).length === 0) {
@@ -505,16 +495,24 @@ async function saveAllEntries() {
         }))
       }
       
-      await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
-        data: JSON.stringify(payload)
-      })
+      await createBulkPaymentEntry(payload)
       successCount++
     }
     
     saveStats.value = { count: successCount }
+    
+    // Clear the page
+    rows.value = [createEmptyRow()]
+    mopAccount.value = ''
+    mopAccountLabel.value = ''
+
+    // Return focus to target account
+    nextTick(() => {
+      mopBtnRef.value?.focus()
+    })
+    
     setTimeout(() => {
       saveStats.value = null
-      router.push('/payment') // Redirect back to payment list or reset
     }, 3000)
     
   } catch (e) {

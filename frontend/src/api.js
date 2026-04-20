@@ -715,6 +715,41 @@ export async function createSalesInvoice(payload) {
 }
 
 
+// ─── Single Entry (Bulk Payment) ─────────────────────────────────────────────
+
+/**
+ * Closing balance for one party row in the bulk payment screen.
+ * @param {string} party
+ * @param {string} partyType  'Customer' | 'Supplier'
+ */
+export async function fetchPartyBalance(party, partyType = "Customer") {
+  return frappeGet("ssplbilling.api.single_entry_api.get_party_balance", {
+    party,
+    party_type: partyType,
+  });
+}
+
+/**
+ * Outstanding invoices + unlinked entries for a party — single round-trip.
+ * Returns { docs, payment_entries, journal_entries }
+ */
+export async function fetchPartyDocs(partyType, party) {
+  return frappeGet("ssplbilling.api.single_entry_api.get_party_docs", {
+    party_type: partyType,
+    party,
+  });
+}
+
+/**
+ * Create and submit one Payment Entry row from the bulk entry screen.
+ * @param {Object} payload  Same shape as createPaymentEntry
+ */
+export async function createBulkPaymentEntry(payload) {
+  return frappePost("ssplbilling.api.single_entry_api.create_bulk_payment", {
+    data: JSON.stringify(payload),
+  });
+}
+
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
 /**

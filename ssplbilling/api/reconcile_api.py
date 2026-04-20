@@ -83,44 +83,48 @@ def get_unlinked_entries(party_type, party):
 @frappe.whitelist()
 def get_outstanding_docs(party_type, party):
 	"""Return submitted invoices with outstanding balance for a party.
-	Includes both Sales Invoices and Purchase Invoices if they exist for this party.
+
+	Filters strictly by party_type so Customer and Supplier ledgers for the
+	same name never bleed into each other's reference lists.
 	"""
 	company = _get_company()
 	all_docs = []
 
-	# Fetch Sales Invoices where this party is the Customer
-	si_docs = frappe.db.sql(
-		"""
-		SELECT name, posting_date, grand_total, outstanding_amount,
-		       customer_name AS party_name, is_return, 'Sales Invoice' as doctype
-		FROM `tabSales Invoice`
-		WHERE docstatus = 1 AND customer = %s
-		      AND ABS(outstanding_amount) > 0.005 AND company = %s
-		ORDER BY posting_date ASC
-		""",
-		(party, company),
-		as_dict=True,
-	)
-	for d in si_docs:
-		d["direction"] = "Cr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Dr"
-		all_docs.append(dict(d))
+	if party_type != "Supplier":
+		# Sales Invoices — Customer side
+		si_docs = frappe.db.sql(
+			"""
+			SELECT name, posting_date, grand_total, outstanding_amount,
+			       customer_name AS party_name, is_return, 'Sales Invoice' as doctype
+			FROM `tabSales Invoice`
+			WHERE docstatus = 1 AND customer = %s
+			      AND ABS(outstanding_amount) > 0.005 AND company = %s
+			ORDER BY posting_date ASC
+			""",
+			(party, company),
+			as_dict=True,
+		)
+		for d in si_docs:
+			d["direction"] = "Cr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Dr"
+			all_docs.append(dict(d))
 
-	# Fetch Purchase Invoices where this party is the Supplier
-	pi_docs = frappe.db.sql(
-		"""
-		SELECT name, posting_date, grand_total, outstanding_amount,
-		       supplier_name AS party_name, is_return, 'Purchase Invoice' as doctype
-		FROM `tabPurchase Invoice`
-		WHERE docstatus = 1 AND supplier = %s
-		      AND ABS(outstanding_amount) > 0.005 AND company = %s
-		ORDER BY posting_date ASC
-		""",
-		(party, company),
-		as_dict=True,
-	)
-	for d in pi_docs:
-		d["direction"] = "Dr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Cr"
-		all_docs.append(dict(d))
+	if party_type != "Customer":
+		# Purchase Invoices — Supplier side
+		pi_docs = frappe.db.sql(
+			"""
+			SELECT name, posting_date, grand_total, outstanding_amount,
+			       supplier_name AS party_name, is_return, 'Purchase Invoice' as doctype
+			FROM `tabPurchase Invoice`
+			WHERE docstatus = 1 AND supplier = %s
+			      AND ABS(outstanding_amount) > 0.005 AND company = %s
+			ORDER BY posting_date ASC
+			""",
+			(party, company),
+			as_dict=True,
+		)
+		for d in pi_docs:
+			d["direction"] = "Dr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Cr"
+			all_docs.append(dict(d))
 
 	return {"doc_type": "Invoice", "docs": all_docs}
 
