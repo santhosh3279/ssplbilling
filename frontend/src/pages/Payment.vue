@@ -3,7 +3,7 @@
     <!-- Header -->
     <header 
       class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
-      :class="activeTab === 'Payment' ? 'bg-red-500/30' : 'bg-green-500/30'"
+      :class="activeTab === 'Payment' ? 'bg-red-500/30' : activeTab === 'Receipt' ? 'bg-green-500/30' : 'bg-blue-500/30'"
     >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
@@ -18,10 +18,10 @@
         <h1 class="text-2xl font-normal uppercase tracking-tight">Payment & Receipt Entry</h1>
       </div>
 
-      <!-- Center: Payment / Receipt tabs -->
+      <!-- Center: Payment / Receipt / Transfer tabs -->
       <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
         <button
-          v-for="t in ['Payment', 'Receipt']"
+          v-for="t in ['Payment', 'Receipt', 'Internal Transfer']"
           :key="t"
           @click="activeTab = t"
           class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
@@ -77,7 +77,7 @@
         </button>
 
         <h2 class="mb-10 text-5xl font-black uppercase tracking-tight">Select Entry Type</h2>
-        <div class="grid grid-cols-2 gap-8">
+        <div class="grid grid-cols-3 gap-8">
           <button
             @click="selectEntryType('Payment')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
@@ -98,6 +98,16 @@
             <span class="text-8xl">💰</span>
             <span class="text-4xl font-black text-green-500 uppercase">Receipt</span>
           </button>
+          <button
+            @click="selectEntryType('Internal Transfer')"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
+            :class="selectionIdx === 2
+              ? 'bg-blue-500/25 border-blue-500 scale-105 shadow-xl'
+              : 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-500'"
+          >
+            <span class="text-8xl">🔄</span>
+            <span class="text-4xl font-black text-blue-500 uppercase">Transfer</span>
+          </button>
         </div>
         <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
           ← → or Tab to navigate &nbsp;·&nbsp; Enter to select &nbsp;·&nbsp; Esc to go back
@@ -114,9 +124,11 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-4 py-2">Party Name</th>
                 <th class="px-4 py-2">
-                  {{ activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)' }}
+                  {{ activeTab === 'Internal Transfer' ? 'Paid From (Bank/Cash)' : 'Party Name' }}
+                </th>
+                <th class="px-4 py-2">
+                  {{ activeTab === 'Internal Transfer' ? 'Paid To (Bank/Cash)' : (activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)') }}
                 </th>
                 <th class="px-6 py-2 text-right w-64">Amount</th>
                 <th class="px-6 py-2 text-right w-80">Outstanding</th>
@@ -125,16 +137,16 @@
             </thead>
             <tbody>
               <tr class="divide-x divide-[var(--color-border)]">
-                <!-- Party Name -->
+                <!-- Party Name / Paid From -->
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors">
                   <div class="relative">
                     <input
                       v-model="partyQuery"
-                      @click="openSearch('party')"
-                      @keydown.enter="openSearch('party')"
+                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'party')"
+                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'party')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none"
-                      :placeholder="'Search Party...'"
+                      :placeholder="activeTab === 'Internal Transfer' ? 'Select From Account...' : 'Search Party...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
                   </div>
@@ -405,20 +417,22 @@ const remarksInput = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
 const selectionOverlayRef = ref(null)
-const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt
-const ENTRY_TYPES = ['Payment', 'Receipt']
+const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt, 2 = Internal Transfer
+const ENTRY_TYPES = ['Payment', 'Receipt', 'Internal Transfer']
 
 function cycleTab() {
-  activeTab.value = activeTab.value === 'Payment' ? 'Receipt' : 'Payment'
+  if (activeTab.value === 'Payment') activeTab.value = 'Receipt'
+  else if (activeTab.value === 'Receipt') activeTab.value = 'Internal Transfer'
+  else activeTab.value = 'Payment'
 }
 
 function onSelectionKeydown(e) {
   if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') {
     e.preventDefault()
-    selectionIdx.value = (selectionIdx.value + 1) % 2
+    selectionIdx.value = (selectionIdx.value + 1) % 3
   } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
     e.preventDefault()
-    selectionIdx.value = (selectionIdx.value + 1) % 2
+    selectionIdx.value = (selectionIdx.value + 2) % 3
   } else if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault()
     selectEntryType(ENTRY_TYPES[selectionIdx.value])
@@ -507,9 +521,9 @@ const newBalance = computed(() => {
   const amt = parseFloat(form.amount) || 0
   // If Payment (we pay), it's a Debit to the party (increases balance if Dr)
   // If Receipt (we receive), it's a Credit to the party (decreases balance if Dr)
-  return activeTab.value === 'Payment' 
-    ? outstandingBalance.value + amt 
-    : outstandingBalance.value - amt
+  // If Internal Transfer, the 'From' account (party) is credited (decreases balance if Dr)
+  if (activeTab.value === 'Payment') return outstandingBalance.value + amt
+  return outstandingBalance.value - amt
 })
 
 const invoiceDocType = computed(() =>
@@ -587,13 +601,17 @@ function handleSelect(item) {
     setTimeout(() => {
       openSearch('mop')
     }, 150)
-  } else if (searchTarget.value === 'account') {
-    // This part of the code doesn't seem to be used with current searchTarget logic
-    // But let's keep it just in case and focus amount if it ever triggers
-    form.account = item.name
-    accountQuery.value = item.label || item.account_name || item.name
-    nextTick(() => amountInputRef.value?.focus())
-  } else if (searchTarget.value === 'mop') {
+  } else if (searchTarget.value === 'paid_from') {
+    form.party = item.name
+    form.party_name = item.label || item.account_name || item.name
+    partyQuery.value = form.party_name
+    form.party_type = '' // Not a standard party
+    
+    // Chain to MOP (Paid To)
+    setTimeout(() => {
+      openSearch('mop')
+    }, 150)
+  } else if (searchTarget.value === 'account' || searchTarget.value === 'mop') {
     form.mop_account = item.name
     mopAccountQuery.value = item.label || item.account_name || item.name
     
@@ -703,7 +721,7 @@ async function fetchOutstanding() {
   try {
     const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
       ledger_name: form.party,
-      ledger_type: form.party_type,
+      ledger_type: activeTab.value === 'Internal Transfer' ? 'Account' : form.party_type,
     })
     if (res && res.closing_balance !== undefined) {
       outstandingBalance.value = res.closing_balance
@@ -770,8 +788,12 @@ async function handleSubmit() {
   submitting.value = true
   
   try {
+    let paymentType = 'Pay'
+    if (activeTab.value === 'Receipt') paymentType = 'Receive'
+    else if (activeTab.value === 'Internal Transfer') paymentType = 'Internal Transfer'
+
     const payload = {
-      payment_type: activeTab.value === 'Payment' ? 'Pay' : 'Receive',
+      payment_type: paymentType,
       party_type: form.party_type,
       party: form.party,
       amount: form.amount,

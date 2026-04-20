@@ -179,7 +179,7 @@ def create_payment_entry(data=None, **kwargs):
     # 2. Resolve Party account (Debtors/Creditors)
     # If account was provided but we used it as mop_account, we should resolve party_account automatically
     party_account = data.get("party_account")
-    if not party_account:
+    if not party_account and pe.payment_type != "Internal Transfer":
         # If 'account' was provided, check if it looks like a party account or MOP account
         # But to be safe and follow the new convention, we resolve it from party if not explicitly given as party_account
         party_account = _get_party_account(pe.party_type, pe.party)
@@ -187,9 +187,12 @@ def create_payment_entry(data=None, **kwargs):
     if pe.payment_type == "Receive":
         pe.paid_from = party_account
         pe.paid_to = mop_account
-    else: # Pay
+    elif pe.payment_type == "Pay":
         pe.paid_from = mop_account
         pe.paid_to = party_account
+    elif pe.payment_type == "Internal Transfer":
+        pe.paid_from = data.get("party") # The 'from' account was passed as 'party' from frontend
+        pe.paid_to = mop_account
             
     # If mode_of_payment was passed as an account, try to find its parent MOP name
     # or keep it as is if it's already a valid MOP
