@@ -218,13 +218,10 @@
     <OutstandingBillsModal
       v-if="modalRowIdx !== null"
       :show="showModal"
-      :loading="loadingInvoices"
+      :partyType="rows[modalRowIdx].party_type"
+      :party="rows[modalRowIdx].party"
       :enteredAmount="rowAmount(rows[modalRowIdx])"
-      :invoices="rowInvoices"
-      :unlinkedPayments="rowUnlinkedPayments"
-      :unlinkedJournals="rowUnlinkedJournals"
       :activeTab="rowActiveTab"
-      :allocationRefs="rows[modalRowIdx].allocations"
       :modalAmounts="rows[modalRowIdx].modalAmounts"
       @close="closeModal"
       @update-allocations="updateRowAllocations"
@@ -275,10 +272,6 @@ const currentIdx = ref(null)
 
 const showModal = ref(false)
 const modalRowIdx = ref(null)
-const loadingInvoices = ref(false)
-const rowInvoices = ref([])
-const rowUnlinkedPayments = ref([])
-const rowUnlinkedJournals = ref([])
 const rowActiveTab = ref('Receipt') // Inferred based on amount direction/party type
 
 // --- Helpers ---
@@ -404,44 +397,13 @@ function nextRowAndSearch(currentIdx) {
 // --- Invoice Linking Methods ---
 async function triggerModal(idx) {
   const row = rows.value[idx]
-  
-  // Dr in grid = Payment tab (opens preset with Cr invoices)
-  // Cr in grid = Receipt tab (opens preset with Dr invoices)
   if (parseFloat(row.dr) > 0) {
     rowActiveTab.value = 'Payment'
   } else if (parseFloat(row.cr) > 0) {
     rowActiveTab.value = 'Receipt'
   }
-  
   modalRowIdx.value = idx
-  loadingInvoices.value = true
   showModal.value = true
-  
-  try {
-    const res = await fetchPartyDocs(row.party_type, row.party)
-
-    rowInvoices.value = res.docs || []
-    rowUnlinkedPayments.value = res.payment_entries || []
-    rowUnlinkedJournals.value = res.journal_entries || []
-
-    // Pre-fill allocations if not already done
-    if (Object.keys(row.modalAmounts).length === 0) {
-      const targetDir = row.cr > 0 ? 'Dr' : 'Cr' // If Receipt (Cr party), look for Dr invoices
-      let remaining = rowAmount(row)
-      
-      rowInvoices.value.filter(i => i.direction === targetDir).forEach(inv => {
-        const out = Math.abs(inv.outstanding_amount)
-        const alloc = Math.min(remaining, out)
-        row.modalAmounts[inv.name] = alloc
-        remaining -= alloc
-      })
-    }
-
-  } catch (e) {
-    console.error('Invoice fetch failed:', e)
-  } finally {
-    loadingInvoices.value = false
-  }
 }
 
 function updateRowAllocations(allocations) {

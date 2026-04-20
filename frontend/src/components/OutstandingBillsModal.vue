@@ -63,7 +63,7 @@
         </div>
 
         <!-- Loading State -->
-        <div v-if="loading" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</div>
+        <div v-if="isLoading" class="px-6 py-12 text-center text-[var(--color-text-muted)]">Loading...</div>
 
         <!-- No Items State -->
         <div v-else-if="!filteredInvoices.length && !filteredPayments.length && !filteredJournals.length" class="px-6 py-12 text-center text-[var(--color-text-muted)]">
@@ -221,14 +221,27 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { frappeGet } from '../api.js'
 
 const props = defineProps({
   show: Boolean,
-  loading: Boolean,
+  loading: {
+    type: Boolean,
+    default: false
+  },
+  partyType: {
+    type: String,
+    default: ''
+  },
+  party: {
+    type: String,
+    default: ''
+  },
   enteredAmount: {
     type: Number,
     default: 0
   },
+  // Backward compatibility props
   invoices: {
     type: Array,
     default: () => []
@@ -242,10 +255,6 @@ const props = defineProps({
     default: () => []
   },
   activeTab: String,
-  allocationRefs: {
-    type: Array,
-    default: () => []
-  },
   modalAmounts: {
     type: Object,
     default: () => ({})
@@ -254,15 +263,77 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'update-allocations'])
 
+const localLoading = ref(false)
+const localInvoices = ref([])
+const localPayments = ref([])
+const localJournals = ref([])
 const filterDirection = ref('All')
 const localModalAmounts = ref({})
 const lastModifiedKey = ref(null)
 const confirmBtn = ref(null)
 
+const isLoading = computed(() => props.loading || localLoading.value)
+
+// Data fetching logic
+async function fetchData() {
+  if (!props.party || !props.partyType) return
+  
+  localLoading.value = true
+  try {
+    const [outstandingRes, unlinkedRes] = await Promise.all([
+      frappeGet('ssplbilling.api.reconcile_api.get_outstanding_docs', {
+        party_type: props.partyType,
+        party: props.party
+      }),
+      frappeGet('ssplbilling.api.reconcile_api.get_unlinked_entries', {
+        party_type: props.partyType,
+        party: props.party
+      })
+    ])
+    
+    localInvoices.value = outstandingRes.docs || []
+    localPayments.value = unlinkedRes.payment_entries || []
+    localJournals.value = unlinkedRes.journal_entries || []
+
+    // Pre-fill logic if no amounts provided
+    if (Object.keys(localModalAmounts.value).length === 0 && props.enteredAmount > 0) {
+      const targetDir = props.activeTab === 'Receipt' ? 'Dr' : 'Cr'
+      let remaining = props.enteredAmount
+
+      // 1. Invoices
+      localInvoices.value.filter(i => i.direction === targetDir).forEach(inv => {
+        const out = Math.abs(inv.outstanding_amount)
+        const alloc = Math.min(remaining, out)
+        localModalAmounts.value[inv.name] = alloc
+        remaining -= alloc
+      })
+
+      // 2. Journals
+      localJournals.value.filter(j => j.direction === targetDir).forEach(je => {
+        const out = Math.abs(je.unallocated_amount)
+        const alloc = Math.min(remaining, out)
+        localModalAmounts.value[je.reference_row] = alloc
+        remaining -= alloc
+      })
+
+      // 3. Payments
+      localPayments.value.filter(p => p.direction === targetDir).forEach(pe => {
+        const out = Math.abs(pe.unallocated_amount)
+        const alloc = Math.min(remaining, out)
+        localModalAmounts.value[pe.name] = alloc
+        remaining -= alloc
+      })
+    }
+  } catch (e) {
+    console.error('[OutstandingBillsModal] Fetch failed:', e)
+  } finally {
+    localLoading.value = false
+  }
+}
+
 // Sync localModalAmounts with prop
 watch(() => props.modalAmounts, (newVal) => {
   localModalAmounts.value = { ...newVal }
-  // Try to find the last key with a non-zero value as a starting point
   if (!lastModifiedKey.value) {
     const keys = Object.keys(localModalAmounts.value)
     for (let i = keys.length - 1; i >= 0; i--) {
@@ -277,28 +348,20 @@ watch(() => props.modalAmounts, (newVal) => {
 watch(() => props.show, (val) => {
   if (val) {
     filterDirection.value = props.activeTab === 'Receipt' ? 'Dr' : 'Cr'
+    if (props.party) {
+      fetchData()
+    }
   } else {
     lastModifiedKey.value = null
+    localInvoices.value = []
+    localPayments.value = []
+    localJournals.value = []
   }
 }, { immediate: true })
 
-watch(() => props.loading, (val) => {
-  if (!val && props.show) {
-    // If nothing matches the direction filter but unlinked entries exist, show all
-    const hasFiltered = filteredInvoices.value.length > 0 || filteredPayments.value.length > 0 || filteredJournals.value.length > 0
-    const hasUnlinked = (props.unlinkedPayments?.length || 0) + (props.unlinkedJournals?.length || 0) > 0
-    if (!hasFiltered && hasUnlinked) {
-      filterDirection.value = 'All'
-    }
-    nextTick(() => {
-      const firstInput = document.querySelector('.allocate-input:not(:disabled)')
-      if (firstInput) {
-        firstInput.focus()
-        firstInput.select()
-      }
-    })
-  }
-})
+const currentInvoices = computed(() => localInvoices.value.length ? localInvoices.value : props.invoices)
+const currentPayments = computed(() => localPayments.value.length ? localPayments.value : props.unlinkedPayments)
+const currentJournals = computed(() => localJournals.value.length ? localJournals.value : props.unlinkedJournals)
 
 const totalAllocated = computed(() => {
   return Object.values(localModalAmounts.value).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)
@@ -309,9 +372,9 @@ const remainingBalance = computed(() => {
 })
 
 const totalOutstanding = computed(() => {
-  const invs = props.invoices || []
-  const jurns = props.unlinkedJournals || []
-  const payms = props.unlinkedPayments || []
+  const invs = currentInvoices.value || []
+  const jurns = currentJournals.value || []
+  const payms = currentPayments.value || []
   const invBal = invs.reduce((sum, i) => sum + (i.direction === 'Dr' ? 1 : -1) * Math.abs(i.outstanding_amount), 0)
   const jeBal = jurns.reduce((sum, j) => sum + (j.direction === 'Dr' ? 1 : -1) * Math.abs(j.unallocated_amount), 0)
   const peBal = payms.reduce((sum, p) => sum + (p.direction === 'Dr' ? 1 : -1) * Math.abs(p.unallocated_amount), 0)
@@ -319,19 +382,19 @@ const totalOutstanding = computed(() => {
 })
 
 const filteredPayments = computed(() => {
-  const payms = props.unlinkedPayments || []
+  const payms = currentPayments.value || []
   if (filterDirection.value === 'All') return payms
   return payms.filter(p => p.direction === filterDirection.value)
 })
 
 const filteredJournals = computed(() => {
-  const jurns = props.unlinkedJournals || []
+  const jurns = currentJournals.value || []
   if (filterDirection.value === 'All') return jurns
   return jurns.filter(j => j.direction === filterDirection.value)
 })
 
 const filteredInvoices = computed(() => {
-  const invs = props.invoices || []
+  const invs = currentInvoices.value || []
   if (filterDirection.value === 'All') return invs
   return invs.filter(i => i.direction === filterDirection.value)
 })
@@ -342,7 +405,7 @@ function onAllocationChange(item, type) {
 }
 
 function emitAllocations() {
-  const allInvoices = props.invoices.map(i => ({
+  const allInvoices = currentInvoices.value.map(i => ({
     reference_doctype: i.doctype,
     reference_name: i.name,
     total_amount: i.grand_total,
@@ -350,7 +413,7 @@ function emitAllocations() {
     allocated_amount: parseFloat(localModalAmounts.value[i.name]) || 0
   }))
 
-  const allJournals = props.unlinkedJournals.map(j => ({
+  const allJournals = currentJournals.value.map(j => ({
     reference_doctype: 'Journal Entry',
     reference_name: j.name,
     total_amount: j.total_amount || j.unallocated_amount,
@@ -359,7 +422,7 @@ function emitAllocations() {
     _row: j.reference_row
   }))
 
-  const allPayments = props.unlinkedPayments.map(p => ({
+  const allPayments = currentPayments.value.map(p => ({
     reference_doctype: 'Payment Entry',
     reference_name: p.name,
     total_amount: p.paid_amount,
@@ -376,7 +439,6 @@ function confirmAdjustments() {
   if (Math.abs(remainingBalance.value) > 0.005) {
     let targetKey = lastModifiedKey.value
 
-    // If last modified key is not in visible rows, clear it
     const allVisibleKeys = [
       ...filteredInvoices.value.map(i => i.name),
       ...filteredPayments.value.map(p => p.name),
@@ -387,7 +449,6 @@ function confirmAdjustments() {
       targetKey = null
     }
 
-    // If no valid manual edit, find the last row that has any allocation among VISIBLE items
     if (!targetKey) {
       for (let i = allVisibleKeys.length - 1; i >= 0; i--) {
         if (localModalAmounts.value[allVisibleKeys[i]] > 0) {
@@ -397,16 +458,14 @@ function confirmAdjustments() {
       }
     }
 
-    // If still no target, just pick the last item in the CURRENT VISIBLE list if it exists
     if (!targetKey && allVisibleKeys.length > 0) {
       targetKey = allVisibleKeys[allVisibleKeys.length - 1]
     }
 
     if (targetKey) {
-      // Cap at the item's outstanding amount so allocated_amount never exceeds outstanding_amount
-      const invItem = props.invoices.find(i => i.name === targetKey)
-      const peItem = props.unlinkedPayments.find(p => p.name === targetKey)
-      const jeItem = props.unlinkedJournals.find(j => j.reference_row === targetKey)
+      const invItem = currentInvoices.value.find(i => i.name === targetKey)
+      const peItem = currentPayments.value.find(p => p.name === targetKey)
+      const jeItem = currentJournals.value.find(j => j.reference_row === targetKey)
       const maxOutstanding = invItem
         ? Math.abs(invItem.outstanding_amount)
         : peItem
@@ -419,7 +478,6 @@ function confirmAdjustments() {
     }
   }
   
-  // Always emit allocations before closing, even if balance was already 0
   emitAllocations()
   emit('close')
 }
@@ -442,7 +500,6 @@ function calculateDueDays(dateStr) {
 function focusNextAllocate(event) {
   const currentInput = event.target
   
-  // If balance reached zero, jump straight to confirm
   if (Math.abs(remainingBalance.value) < 0.005) {
     confirmBtn.value?.focus()
     return

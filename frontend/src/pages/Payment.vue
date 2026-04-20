@@ -384,13 +384,10 @@
     <!-- Outstanding Invoices Modal -->
     <OutstandingBillsModal
       :show="showInvoicesModal"
-      :loading="loadingInvoices"
+      :partyType="form.party_type"
+      :party="form.party"
       :enteredAmount="form.amount"
-      :invoices="invoices"
-      :unlinkedPayments="unlinkedPayments"
-      :unlinkedJournals="unlinkedJournals"
       :activeTab="activeTab"
-      :allocationRefs="allocationRefs"
       :modalAmounts="modalAmounts"
       @close="showInvoicesModal = false"
       @update-allocations="updateAllocations"
@@ -644,76 +641,7 @@ function handleAmountEnter() {
 
 async function fetchInvoices(autoShowOnlyIfItems = false) {
   if (!form.party) return
-  loadingInvoices.value = true
-  
-  try {
-    const [outstandingRes, unlinkedRes] = await Promise.all([
-      frappeGet('ssplbilling.api.reconcile_api.get_outstanding_docs', {
-        party_type: form.party_type,
-        party: form.party
-      }),
-      frappeGet('ssplbilling.api.reconcile_api.get_unlinked_entries', {
-        party_type: form.party_type,
-        party: form.party
-      })
-    ])
-    
-    invoices.value = outstandingRes.docs || []
-    unlinkedPayments.value = unlinkedRes.payment_entries || []
-    unlinkedJournals.value = unlinkedRes.journal_entries || []
-
-    // Pre-fill logic: Top to bottom allocation based on entered amount
-    const targetDir = activeTab.value === 'Receipt' ? 'Dr' : 'Cr'
-    let remainingToAllocate = form.amount || 0;
-
-    // Reset all first
-    invoices.value.forEach(inv => { modalAmounts[inv.name] = 0 })
-    unlinkedPayments.value.forEach(pe => { modalAmounts[pe.name] = 0 })
-    unlinkedJournals.value.forEach(je => { modalAmounts[je.reference_row] = 0 })
-
-    // Allocate to Invoices first
-    invoices.value.filter(i => i.direction === targetDir).forEach(inv => {
-      const out = Math.abs(inv.outstanding_amount)
-      const alloc = Math.min(remainingToAllocate, out)
-      modalAmounts[inv.name] = alloc
-      remainingToAllocate -= alloc
-    })
-
-    // Then Journals
-    unlinkedJournals.value.filter(j => j.direction === targetDir).forEach(je => {
-      const out = Math.abs(je.unallocated_amount)
-      const alloc = Math.min(remainingToAllocate, out)
-      modalAmounts[je.reference_row] = alloc
-      remainingToAllocate -= alloc
-    })
-
-    // Then Payments
-    unlinkedPayments.value.filter(p => p.direction === targetDir).forEach(pe => {
-      const out = Math.abs(pe.unallocated_amount)
-      const alloc = Math.min(remainingToAllocate, out)
-      modalAmounts[pe.name] = alloc
-      remainingToAllocate -= alloc
-    })
-
-    // Check if there are any items at all
-    const hasAnyItems = 
-      invoices.value.length > 0 ||
-      unlinkedJournals.value.length > 0 ||
-      unlinkedPayments.value.length > 0
-
-    if (!autoShowOnlyIfItems || hasAnyItems) {
-      showInvoicesModal.value = true
-    } else {
-      showInvoicesModal.value = false
-      nextTick(() => {
-        remarksInput.value?.focus()
-      })
-    }
-  } catch (e) {
-    console.error('Failed to fetch invoices:', e)
-  } finally {
-    loadingInvoices.value = false
-  }
+  showInvoicesModal.value = true
 }
 
 async function fetchOutstanding() {
