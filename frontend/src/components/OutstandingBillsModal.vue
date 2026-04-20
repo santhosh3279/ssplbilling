@@ -126,8 +126,13 @@
               <div class="w-[100px] shrink-0 text-center">
                 <span class="px-2 py-0.5 rounded text-[11px] font-black uppercase" :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">{{ pe.direction }}</span>
               </div>
-              <div class="w-[180px] shrink-0 text-right text-[22px] font-black font-mono text-[var(--color-success)]">
-                ₹{{ fmt(pe.unallocated_amount) }}
+              <div class="w-[180px] shrink-0 text-right">
+                <div class="text-[22px] font-black font-mono text-[var(--color-success)]">
+                  ₹{{ fmt(pe.unallocated_amount) }}
+                </div>
+                <div v-if="pe.paid_amount && Math.abs(pe.paid_amount - (pe.unallocated_amount || 0)) > 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
+                  {{ fmt(pe.paid_amount) }} - {{ fmt(pe.paid_amount - (pe.unallocated_amount || 0)) }} (Lnk)
+                </div>
               </div>
               <div class="flex-1 flex justify-end">
                 <div class="w-48 relative">
