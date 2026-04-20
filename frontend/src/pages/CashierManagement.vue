@@ -288,10 +288,10 @@
       <!-- SECOND 30%: Today's Bills table -->
       <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
         <!-- Header -->
-        <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-3 py-2 border-b border-[var(--color-border)] flex-shrink-0">
+        <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-4 py-3 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
-            <div class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Today's Bills</div>
-            <div class="text-[9px] text-[var(--color-text-muted)] font-mono">
+            <div class="text-lg font-black uppercase tracking-widest text-[var(--color-text-muted)]">Today's Bills</div>
+            <div class="text-base text-[var(--color-text-muted)] font-mono">
               {{ filteredBills.length }}{{ filteredBills.length !== todayBills.length ? '/' + todayBills.length : '' }} invoices
             </div>
           </div>
@@ -299,9 +299,9 @@
             <!-- Series filter button -->
             <div class="relative">
               <button @click="showSeriesFilter = !showSeriesFilter"
-                :class="['flex items-center gap-1 rounded-lg border px-2 py-1 text-[9px] font-black uppercase tracking-widest transition',
+                :class="['flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-black uppercase tracking-widest transition',
                   selectedSeries.length ? 'border-[var(--color-info)]/60 bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]']">
-                <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 Series{{ selectedSeries.length ? ` (${selectedSeries.length})` : '' }}
               </button>
               <!-- Dropdown -->
@@ -322,48 +322,48 @@
               </div>
             </div>
             <button @click="fetchTodayBills" :disabled="billsLoading"
-              class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="billsLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+              class="flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="billsLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             </button>
           </div>
         </div>
         <!-- Table -->
         <div class="overflow-y-auto custom-scrollbar flex-1">
-          <table class="w-full text-xs">
+          <table class="w-full text-xl">
             <thead class="sticky top-0 bg-[var(--color-bg)]/95 z-10">
-              <tr class="border-b border-[var(--color-border)] text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-2 py-2 text-left">Bill</th>
-                <th class="px-1 py-2 text-right text-[var(--color-success)]">Cash</th>
-                <th class="px-1 py-2 text-right text-[var(--color-success)]">UPI</th>
-                <th class="px-1 py-2 text-right text-[var(--color-info)]">Card</th>
-                <th class="px-1 py-2 text-right text-[var(--color-text-muted)]">Unpaid</th>
+              <tr class="border-b border-[var(--color-border)] text-base font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-3 py-3 text-left">Bill</th>
+                <th class="px-2 py-3 text-right text-[var(--color-success)]">Cash</th>
+                <th class="px-2 py-3 text-right text-[var(--color-success)]">UPI</th>
+                <th class="px-2 py-3 text-right text-[var(--color-info)]">Card</th>
+                <th class="px-2 py-3 text-right text-[var(--color-text-muted)]">Unpaid</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[var(--color-border)]/40">
               <tr v-if="billsLoading">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">Loading…</td>
+                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">Loading…</td>
               </tr>
               <tr v-else-if="filteredBills.length === 0">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">No bills today</td>
+                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">No bills today</td>
               </tr>
               <tr v-for="bill in filteredBills" :key="bill.name" class="hover:bg-[var(--color-surface-raised)]/20 transition">
-                <td class="px-2 py-1.5">
-                  <div class="font-black text-[var(--color-text)] text-[10px] leading-tight">{{ bill.name }}</div>
-                  <div class="text-[9px] text-[var(--color-text-muted)] truncate max-w-[80px]">{{ bill.customer }}</div>
+                <td class="px-3 py-2.5">
+                  <div class="font-black text-[var(--color-text)] text-xl leading-tight">{{ bill.name }}</div>
+                  <div class="text-base text-[var(--color-text-muted)] truncate max-w-[120px]">{{ bill.customer }}</div>
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px]"
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="getMopAmount(bill, 'cash') > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'cash') > 0 ? getMopAmount(bill, 'cash').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px]"
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="getMopAmount(bill, 'upi') > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'upi') > 0 ? getMopAmount(bill, 'upi').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px]"
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="getMopAmount(bill, 'card') > 0 ? 'text-[var(--color-info)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'card') > 0 ? getMopAmount(bill, 'card').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px]"
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="getMopAmount(bill, 'credit') > 0 ? 'text-[var(--color-text)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'credit') > 0 ? getMopAmount(bill, 'credit').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
@@ -371,18 +371,18 @@
             </tbody>
             <!-- Totals row -->
             <tfoot v-if="filteredBills.length > 0" class="sticky bottom-0 bg-[var(--color-bg)]/95 border-t border-[var(--color-border)]">
-              <tr class="text-[9px] font-black uppercase">
-                <td class="px-2 py-1.5 text-[var(--color-text-muted)]">Total</td>
-                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-success)]">
+              <tr class="text-base font-black uppercase">
+                <td class="px-3 py-2.5 text-[var(--color-text-muted)]">Total</td>
+                <td class="px-2 py-2.5 text-right font-mono text-[var(--color-success)] text-xl">
                   {{ billTotals.cash > 0 ? billTotals.cash.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-success)]">
+                <td class="px-2 py-2.5 text-right font-mono text-[var(--color-success)] text-xl">
                   {{ billTotals.upi > 0 ? billTotals.upi.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-info)]">
+                <td class="px-2 py-2.5 text-right font-mono text-[var(--color-info)] text-xl">
                   {{ billTotals.card > 0 ? billTotals.card.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[var(--color-text)]">
+                <td class="px-2 py-2.5 text-right font-mono text-[var(--color-text)] text-xl">
                   {{ billTotals.credit > 0 ? billTotals.credit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
               </tr>
