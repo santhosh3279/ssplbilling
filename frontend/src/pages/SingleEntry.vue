@@ -375,11 +375,7 @@ async function handleSearchSelect(item) {
 function handleDrEnter(idx) {
   const val = parseFloat(rows.value[idx].dr) || 0
   if (val > 0) {
-    // If we have a value, trigger modal and move on
-    triggerModal(idx).then(() => {
-      // Logic after modal closes or just proceed to next row
-    })
-    nextRowAndSearch(idx)
+    triggerModal(idx)
   } else {
     // If zero, move focus to Credit
     nextTick(() => {
@@ -393,8 +389,9 @@ function handleCrEnter(idx) {
   const val = parseFloat(rows.value[idx].cr) || 0
   if (val > 0) {
     triggerModal(idx)
+  } else {
+    nextRowAndSearch(idx)
   }
-  nextRowAndSearch(idx)
 }
 
 function nextRowAndSearch(currentIdx) {
@@ -407,14 +404,16 @@ function nextRowAndSearch(currentIdx) {
 
 // --- Invoice Linking Methods ---
 async function triggerModal(idx) {
+  const row = rows.value[idx]
+  
+  // Set tab first so child watch sees correct direction
+  // Dr in grid = Payment tab (Cr invoices)
+  // Cr in grid = Receipt tab (Dr invoices)
+  rowActiveTab.value = row.cr > 0 ? 'Receipt' : 'Payment'
+  
   modalRowIdx.value = idx
   loadingInvoices.value = true
   showModal.value = true
-  
-  const row = rows.value[idx]
-  // If we are DEBITING the party, it's a PAY (payment to supplier / debit note to customer)
-  // If we are CREDITING the party, it's a RECEIVE (receipt from customer / credit note to supplier)
-  rowActiveTab.value = row.cr > 0 ? 'Receipt' : 'Payment'
   
   try {
     const [outstandingRes, unlinkedRes] = await Promise.all([
@@ -454,13 +453,17 @@ async function triggerModal(idx) {
 
 function updateRowAllocations(allocations) {
   if (modalRowIdx.value !== null) {
-    rows.value[modalRowIdx.value].allocations = allocations
+    const idx = modalRowIdx.value
+    rows.value[idx].allocations = allocations
     // Re-sync modalAmounts to ensure state persistence
     const newModalAmounts = {}
     allocations.forEach(a => {
       newModalAmounts[a._row || a.reference_name] = a.allocated_amount
     })
-    rows.value[modalRowIdx.value].modalAmounts = newModalAmounts
+    rows.value[idx].modalAmounts = newModalAmounts
+
+    // After updating allocations and modal closes, move to next row
+    nextRowAndSearch(idx)
   }
 }
 
