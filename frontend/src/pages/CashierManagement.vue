@@ -394,82 +394,82 @@
       <!-- THIRD 30%: Cash Ledger for today -->
       <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
         <!-- Header -->
-        <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-3 py-2 border-b border-[var(--color-border)] flex-shrink-0">
+        <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-4 py-3 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
-            <div class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cash Ledger</div>
-            <div class="text-[9px] text-[var(--color-text-muted)] font-mono truncate max-w-[140px]">{{ localStorage.getItem('wb-cash') || '—' }}</div>
+            <div class="text-lg font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cash Ledger</div>
+            <div class="text-base text-[var(--color-text-muted)] font-mono truncate max-w-[200px]">{{ localStorage.getItem('wb-cash') || '—' }}</div>
           </div>
           <button @click="fetchCashLedgerEntries" :disabled="cashLedgerEntriesLoading"
-            class="flex items-center justify-center h-6 w-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="cashLedgerEntriesLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            class="flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="cashLedgerEntriesLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
           </button>
         </div>
         <!-- Table -->
         <div class="overflow-y-auto custom-scrollbar flex-1">
-          <table class="w-full text-xs">
+          <table class="w-full text-xl">
             <thead class="sticky top-0 bg-[var(--color-bg)]/95 z-10">
-              <tr class="border-b border-[var(--color-border)] text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-2 py-2 text-left">Time</th>
-                <th class="px-1 py-2 text-left">Voucher</th>
-                <th class="px-1 py-2 text-right text-[var(--color-success)]">DR</th>
-                <th class="px-1 py-2 text-right text-[var(--color-danger)]">CR</th>
-                <th class="px-1 py-2 text-right">Balance</th>
+              <tr class="border-b border-[var(--color-border)] text-base font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-3 py-3 text-left">Time</th>
+                <th class="px-2 py-3 text-left">Voucher</th>
+                <th class="px-2 py-3 text-right text-[var(--color-success)]">DR</th>
+                <th class="px-2 py-3 text-right text-[var(--color-danger)]">CR</th>
+                <th class="px-2 py-3 text-right">Balance</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[var(--color-border)]/40">
               <!-- Opening balance row -->
               <tr class="bg-[var(--color-bg)]/40">
-                <td class="px-2 py-1.5 text-[9px] text-[var(--color-text-muted)]">—</td>
-                <td colspan="2" class="px-1 py-1.5 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Opening</td>
-                <td class="px-1 py-1.5"></td>
-                <td class="px-1 py-1.5 text-right font-mono font-black text-[10px]"
+                <td class="px-3 py-2.5 text-sm text-[var(--color-text-muted)]">—</td>
+                <td colspan="2" class="px-2 py-2.5 text-base font-black text-[var(--color-text-muted)] uppercase tracking-widest">Opening</td>
+                <td class="px-2 py-2.5"></td>
+                <td class="px-2 py-2.5 text-right font-mono font-black text-xl"
                     :class="cashLedgerOpening >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(cashLedgerOpening).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-                  <span class="text-[8px]">{{ cashLedgerOpening >= 0 ? 'DR' : 'CR' }}</span>
+                  <span class="text-sm ml-1">{{ cashLedgerOpening >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
               </tr>
               <tr v-if="cashLedgerEntriesLoading">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">Loading…</td>
+                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">Loading…</td>
               </tr>
               <tr v-else-if="cashLedgerEntries.length === 0 && !cashLedgerEntriesLoading">
-                <td colspan="5" class="px-3 py-4 text-center text-[10px] text-[var(--color-text-muted)]">No entries today</td>
+                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">No entries today</td>
               </tr>
               <tr v-for="entry in cashLedgerEntries" :key="entry.voucher_no + entry.debit + entry.credit"
                   class="hover:bg-[var(--color-surface-raised)]/20 transition">
-                <td class="px-2 py-1.5 font-mono text-[9px] text-[var(--color-text-muted)] whitespace-nowrap">{{ entry.time }}</td>
-                <td class="px-1 py-1.5">
-                  <div class="font-black text-[var(--color-text)] text-[9px] leading-tight truncate max-w-[70px]">{{ entry.voucher_no }}</div>
-                  <div v-if="entry.party" class="text-[8px] text-[var(--color-text-muted)] truncate max-w-[70px]">{{ entry.party }}</div>
+                <td class="px-3 py-2.5 font-mono text-base text-[var(--color-text-muted)] whitespace-nowrap">{{ entry.time }}</td>
+                <td class="px-2 py-2.5">
+                  <div class="font-black text-[var(--color-text)] text-base leading-tight truncate max-w-[120px]">{{ entry.voucher_no }}</div>
+                  <div v-if="entry.party" class="text-sm text-[var(--color-text-muted)] truncate max-w-[120px]">{{ entry.party }}</div>
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px]"
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="entry.debit > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ entry.debit > 0 ? entry.debit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px]"
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="entry.credit > 0 ? 'text-[var(--color-danger)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ entry.credit > 0 ? entry.credit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono font-black text-[10px]"
+                <td class="px-2 py-2.5 text-right font-mono font-black text-xl"
                     :class="entry.balance >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(entry.balance).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
-                  <span class="text-[8px]">{{ entry.balance >= 0 ? 'DR' : 'CR' }}</span>
+                  <span class="text-sm ml-1">{{ entry.balance >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
               </tr>
             </tbody>
             <!-- Closing balance row -->
             <tfoot v-if="cashLedgerEntries.length > 0" class="sticky bottom-0 bg-[var(--color-bg)]/95 border-t border-[var(--color-border)]">
               <tr>
-                <td colspan="2" class="px-2 py-1.5 text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Closing</td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px] text-[var(--color-success)] font-black">
+                <td colspan="2" class="px-3 py-3 text-base font-black uppercase tracking-widest text-[var(--color-text-muted)]">Closing</td>
+                <td class="px-2 py-3 text-right font-mono text-xl text-[var(--color-success)] font-black">
                   {{ cashLedgerEntries.reduce((s, e) => s + e.debit, 0).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono text-[10px] text-[var(--color-danger)] font-black">
+                <td class="px-2 py-3 text-right font-mono text-xl text-[var(--color-danger)] font-black">
                   {{ cashLedgerEntries.reduce((s, e) => s + e.credit, 0).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
                 </td>
-                <td class="px-1 py-1.5 text-right font-mono font-black text-[10px]"
+                <td class="px-2 py-3 text-right font-mono font-black text-xl"
                     :class="(cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening) >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
                   {{ Math.abs(cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
-                  <span class="text-[8px]">{{ (cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening) >= 0 ? 'DR' : 'CR' }}</span>
+                  <span class="text-sm ml-1">{{ (cashLedgerEntries.at(-1)?.balance ?? cashLedgerOpening) >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
               </tr>
             </tfoot>
