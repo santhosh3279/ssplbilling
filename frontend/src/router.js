@@ -30,6 +30,7 @@ import GstLedger from './pages/GstLedger.vue'
 import DailyReport from './pages/DailyReport.vue'
 import GeneralLedger from './pages/GeneralLedger.vue'
 import StoreTransfer from './pages/StoreTransfer.vue'
+import SingleEntry from './pages/SingleEntry.vue'
 
 const routes = [
   {
@@ -37,6 +38,11 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true },
+  },
+  {
+    path: '/single-entry',
+    name: 'SingleEntry',
+    component: SingleEntry,
   },
   {
     path: '/store-transfer',

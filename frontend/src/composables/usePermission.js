@@ -45,6 +45,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'JournalContraEntry',
   'CashierManagement',
   'DailyReport',
+  'SingleEntry',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
@@ -55,6 +56,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'JournalContraEntry',
   'Reports',
   'DailyReport',
+  'SingleEntry',
 ])
 
 /**
@@ -130,6 +132,7 @@ const TILE_ROUTE_MAP = {
   'daily-report':      'DailyReport',
   'stock-ledger':      'StockLedger',
   'store-transfer':    'StoreTransfer',
+  'single-entry':      'SingleEntry',
   'invoice-template':  'Dashboard',
   'stock-template':    'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',
