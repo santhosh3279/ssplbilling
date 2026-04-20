@@ -406,10 +406,13 @@ function nextRowAndSearch(currentIdx) {
 async function triggerModal(idx) {
   const row = rows.value[idx]
   
-  // Set tab first so child watch sees correct direction
-  // Dr in grid = Payment tab (Cr invoices)
-  // Cr in grid = Receipt tab (Dr invoices)
-  rowActiveTab.value = row.cr > 0 ? 'Receipt' : 'Payment'
+  // Dr in grid = Payment tab (opens preset with Cr invoices)
+  // Cr in grid = Receipt tab (opens preset with Dr invoices)
+  if (parseFloat(row.dr) > 0) {
+    rowActiveTab.value = 'Payment'
+  } else if (parseFloat(row.cr) > 0) {
+    rowActiveTab.value = 'Receipt'
+  }
   
   modalRowIdx.value = idx
   loadingInvoices.value = true
