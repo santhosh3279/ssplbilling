@@ -348,7 +348,11 @@ async function fetchLedgerBalanceManual(account) {
   if (!account) return
   loadingBalance.value = true
   try {
-    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { account })
+    const params = { account }
+    if (form.opening_or_closing === 'Opening') {
+      params.date = form.date
+    }
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', params)
     ledgerBalance.value = res.balance ?? 0
   } catch (e) {
     console.warn('[CahierEntry] get_cash_ledger_balance failed:', e)
@@ -366,11 +370,13 @@ watch(() => form.opening_or_closing, async () => {
 // ── Fetch ledger balance whenever cash account is set ────────────────────────
 watch(() => form.cash, async (account) => {
   if (!account || savedName.value) return
-  // For Opening, use the pre-today opening balance passed from parent — don't fetch live
-  if (form.opening_or_closing === 'Opening' && props.initialLedgerBalance !== null) {
-    ledgerBalance.value = props.initialLedgerBalance
+  
+  // For Opening, if date has changed or prop is stale, fetch correctly
+  if (form.opening_or_closing === 'Opening') {
+    await fetchLedgerBalanceManual(account)
     return
   }
+  
   loadingBalance.value = true
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { account })

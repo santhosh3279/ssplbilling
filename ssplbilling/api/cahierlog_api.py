@@ -2,18 +2,26 @@ import frappe
 
 
 @frappe.whitelist()
-def get_cash_ledger_balance(account):
-	"""Return the current balance of a cash/bank account from GL entries."""
+def get_cash_ledger_balance(account, date=None):
+	"""Return the current balance (or opening balance for a date) of a cash/bank account."""
 	if not account:
 		return {"balance": 0.0}
+
+	condition = ""
+	params = [account]
+	if date:
+		condition = " AND posting_date < %s"
+		params.append(date)
+
 	balance = frappe.db.sql(
-		"""
+		f"""
 		SELECT IFNULL(SUM(debit) - SUM(credit), 0)
 		FROM `tabGL Entry`
 		WHERE account = %s
 		  AND is_cancelled = 0
+		  {condition}
 		""",
-		(account,),
+		tuple(params),
 	)
 	return {"balance": float(balance[0][0]) if balance else 0.0}
 
@@ -25,17 +33,23 @@ def get_opening_total(date):
 
 
 @frappe.whitelist()
-def get_cahier_totals(date, op_type="Opening"):
+def get_cahier_totals(date, op_type="Opening", account=None):
 	"""Return the total and cash_ledger_balance from Cashier_Opening for a specific date, user and type."""
 	user = frappe.session.user
 	doc_name = f"{date}_{op_type}_{user}"
-	
+
 	values = frappe.db.get_value("Cashier_Opening", doc_name, ["total", "cash_ledger_balance"], as_dict=True)
 	if values:
 		return {
 			"total": float(values.total or 0.0),
 			"cash_ledger_balance": float(values.cash_ledger_balance or 0.0)
 		}
+
+	# Fallback for Opening: if no record exists, return the opening balance from GL entries
+	if op_type == "Opening" and account:
+		opening_res = get_cash_ledger_balance(account, date)
+		return {"total": 0.0, "cash_ledger_balance": opening_res.get("balance", 0.0)}
+
 	return {"total": 0.0, "cash_ledger_balance": 0.0}
 
 

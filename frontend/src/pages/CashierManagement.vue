@@ -789,11 +789,12 @@ function openModal(title) {
 
 async function refreshAll() {
   const today = currentDate.value
+  const account = localStorage.getItem('wb-cash') || ''
 
   // Fetch Opening
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Opening'
+      date: today, op_type: 'Opening', account
     })
     openingTotal.value = res.total || 0
     openingLedger.value = res.cash_ledger_balance || 0
@@ -805,7 +806,7 @@ async function refreshAll() {
   // Fetch Mid-Day-1
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Mid-Day-1'
+      date: today, op_type: 'Mid-Day-1', account
     })
     md1Total.value = res.total || 0
     md1Ledger.value = res.cash_ledger_balance || 0
@@ -816,7 +817,7 @@ async function refreshAll() {
   // Fetch Mid-Day-2
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Mid-Day-2'
+      date: today, op_type: 'Mid-Day-2', account
     })
     md2Total.value = res.total || 0
     md2Ledger.value = res.cash_ledger_balance || 0
@@ -827,7 +828,7 @@ async function refreshAll() {
   // Fetch Closing
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Closing'
+      date: today, op_type: 'Closing', account
     })
     closingTotal.value = res.total || 0
     closingLedger.value = res.cash_ledger_balance || 0
