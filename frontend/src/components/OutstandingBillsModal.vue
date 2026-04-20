@@ -421,6 +421,13 @@ function calculateDueDays(dateStr) {
 
 function focusNextAllocate(event) {
   const currentInput = event.target
+  
+  // If balance reached zero, jump straight to confirm
+  if (Math.abs(remainingBalance.value) < 0.005) {
+    confirmBtn.value?.focus()
+    return
+  }
+
   const inputs = Array.from(document.querySelectorAll('.allocate-input:not(:disabled)'))
   const index = inputs.indexOf(currentInput)
   if (index >= 0 && index < inputs.length - 1) {

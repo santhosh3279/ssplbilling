@@ -219,7 +219,7 @@
       v-if="modalRowIdx !== null"
       :show="showModal"
       :loading="loadingInvoices"
-      :enteredAmount="rows[modalRowIdx].amount"
+      :enteredAmount="rowAmount(rows[modalRowIdx])"
       :invoices="rowInvoices"
       :unlinkedPayments="rowUnlinkedPayments"
       :unlinkedJournals="rowUnlinkedJournals"
