@@ -295,16 +295,22 @@ async function preloadLedger(force = false) {
 }
 
 // ─── Filtering ────────────────────────────────────────────────────────────────
+function tokenMatch(l, fields) {
+  // Split query into tokens; all tokens must appear somewhere in the combined field text
+  const q = query.value.trim().toLowerCase()
+  if (!q) return true
+  const tokens = q.split(/\s+/)
+  const haystack = fields.map(f => (l[f] || '').toLowerCase()).join(' ')
+  return tokens.every(t => haystack.includes(t))
+}
+
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
 
   // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
   if (props.overrideLedgers) {
     if (!q) return props.overrideLedgers
-    return props.overrideLedgers.filter(l =>
-      (l.label || '').toLowerCase().includes(q) ||
-      (l.name || '').toLowerCase().includes(q)
-    )
+    return props.overrideLedgers.filter(l => tokenMatch(l, ['label', 'name']))
   }
 
   let list = allLedgers.value.filter(l => props.allowedTypes.includes(l.type))
@@ -342,15 +348,7 @@ const results = computed(() => {
 
   if (activeType.value !== 'All') list = list.filter(l => l.type === activeType.value)
   if (!q) return list
-  return list.filter(l =>
-    (l.label || '').toLowerCase().includes(q) ||
-    (l.name || '').toLowerCase().includes(q) ||
-    (l.mobile_no || '').includes(q) ||
-    (l.whatsapp || '').includes(q) ||
-    (l.gstin || '').toLowerCase().includes(q) ||
-    (l.city || '').toLowerCase().includes(q) ||
-    (l.email || '').toLowerCase().includes(q)
-  )
+  return list.filter(l => tokenMatch(l, ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']))
 })
 
 watch([query, activeType], () => { selectedIdx.value = 0 })
