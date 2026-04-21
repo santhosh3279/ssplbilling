@@ -21,7 +21,7 @@
           <button 
             ref="mopBtnRef"
             @click="openSearch('mop')"
-            @keydown.enter.prevent="mopAccount ? openSearch('party', 0) : openSearch('mop')"
+            @keydown.enter.prevent="mopAccount ? focusParty(0) : openSearch('mop')"
             class="mt-1 cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-right"
           >
             {{ mopAccountLabel || 'Select Account...' }}
@@ -71,8 +71,11 @@
                 <!-- Party Selection -->
                 <td class="px-2 py-1.5">
                   <div 
+                    ref="partyInputs"
+                    tabindex="0"
                     @click="openSearch('party', idx)"
-                    class="cursor-pointer rounded-lg border border-transparent px-2 py-1 text-xl font-bold truncate hover:border-[var(--color-highlight)]/30 transition-all"
+                    @keydown.enter.prevent="openSearch('party', idx)"
+                    class="cursor-pointer rounded-lg border border-transparent px-2 py-1 text-xl font-bold truncate hover:border-[var(--color-highlight)]/30 transition-all focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none"
                     :class="row.party ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'"
                   >
                     {{ row.party_name || 'Select Party...' }}
@@ -254,6 +257,7 @@ const router = useRouter()
 
 // --- Refs for Focus Management ---
 const mopBtnRef = ref(null)
+const partyInputs = ref([])
 const drInputs = ref([])
 const crInputs = ref([])
 
@@ -330,6 +334,14 @@ function openSearch(target, idx = null) {
   showSearchModal.value = true
 }
 
+function focusParty(idx) {
+  nextTick(() => {
+    setTimeout(() => {
+      partyInputs.value[idx]?.focus()
+    }, 100)
+  })
+}
+
 async function handleSearchSelect(item) {
   showSearchModal.value = false
   const idx = currentIdx.value
@@ -337,8 +349,8 @@ async function handleSearchSelect(item) {
   if (searchTarget.value === 'mop') {
     mopAccount.value = item.name
     mopAccountLabel.value = item.label || item.account_name || item.name
-    // Move to first party search automatically
-    setTimeout(() => openSearch('party', 0), 100)
+    // Highlight first party instead of opening automatically
+    focusParty(0)
   } else if (searchTarget.value === 'party') {
     rows.value[idx].party = item.name
     rows.value[idx].party_name = item.label || item.customer_name || item.supplier_name || item.name
@@ -392,7 +404,8 @@ function nextRowAndSearch(currentIdx) {
   if (nextIdx >= rows.value.length) {
     addRow()
   }
-  setTimeout(() => openSearch('party', nextIdx), 150)
+  // Highlight instead of opening automatically
+  focusParty(nextIdx)
 }
 
 // --- Invoice Linking Methods ---
