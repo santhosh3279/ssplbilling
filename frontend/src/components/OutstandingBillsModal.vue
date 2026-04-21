@@ -90,7 +90,7 @@
             <div
               v-for="inv in filteredInvoices"
               :key="inv.name"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
+              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors text-[20px]"
               style="grid-template-columns: 25ch 20ch 20ch 10ch 15ch 15ch 1fr;"
             >
               <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
@@ -146,7 +146,7 @@
             <div
               v-for="pe in filteredPayments"
               :key="pe.name"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
+              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors text-[20px]"
               style="grid-template-columns: 25ch 20ch 20ch 10ch 15ch 15ch 1fr;"
             >
               <div class="flex flex-col min-w-0">
@@ -201,7 +201,7 @@
             <div
               v-for="je in filteredJournals"
               :key="je.reference_row || (je.name + je.account)"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
+              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors text-[20px]"
               style="grid-template-columns: 25ch 20ch 20ch 10ch 15ch 15ch 1fr;"
             >
               <div class="flex flex-col min-w-0">
