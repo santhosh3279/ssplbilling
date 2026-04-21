@@ -1,0 +1,160 @@
+import frappe
+
+
+def _get_company():
+	return frappe.defaults.get_global_default("company")
+
+
+@frappe.whitelist()
+def get_party_outstanding(party_type, party):
+	"""Return outstanding invoices, unlinked payment entries, and unlinked journal entries for a party.
+
+	Settled and fully-linked entries are excluded. Only rows with a positive outstanding or
+	unallocated balance are returned.
+	"""
+	company = _get_company()
+
+	# ── 1. Outstanding Invoices ──────────────────────────────────────────────────────────────────
+	invoices = []
+
+	if party_type != "Supplier":
+		rows = frappe.db.sql(
+			"""
+			SELECT name, posting_date, grand_total, outstanding_amount,
+			       customer_name AS party_name, is_return,
+			       'Sales Invoice' AS doctype
+			FROM `tabSales Invoice`
+			WHERE docstatus = 1 AND customer = %s
+			      AND ABS(outstanding_amount) > 0.005
+			      AND company = %s
+			ORDER BY posting_date ASC
+			""",
+			(party, company),
+			as_dict=True,
+		)
+		for d in rows:
+			d["direction"] = "Cr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Dr"
+			invoices.append(dict(d))
+
+	if party_type != "Customer":
+		rows = frappe.db.sql(
+			"""
+			SELECT name, posting_date, grand_total, outstanding_amount,
+			       supplier_name AS party_name, is_return,
+			       'Purchase Invoice' AS doctype
+			FROM `tabPurchase Invoice`
+			WHERE docstatus = 1 AND supplier = %s
+			      AND ABS(outstanding_amount) > 0.005
+			      AND company = %s
+			ORDER BY posting_date ASC
+			""",
+			(party, company),
+			as_dict=True,
+		)
+		for d in rows:
+			d["direction"] = "Dr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Cr"
+			invoices.append(dict(d))
+
+	# ── 2. Unlinked Payment Entries ──────────────────────────────────────────────────────────────
+	payment_entries = frappe.db.sql(
+		"""
+		SELECT
+			name, posting_date, payment_type,
+			paid_amount, unallocated_amount,
+			mode_of_payment,
+			IFNULL(remarks, '') AS remarks,
+			CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction
+		FROM `tabPayment Entry`
+		WHERE docstatus = 1
+		      AND party_type = %s AND party = %s
+		      AND unallocated_amount > 0.005
+		      AND company = %s
+		ORDER BY posting_date DESC
+		""",
+		(party_type, party, company),
+		as_dict=True,
+	)
+
+	# ── 3. Unlinked Journal Entries ──────────────────────────────────────────────────────────────
+	account_types = ("Receivable", "Payable")
+	je_raw = frappe.db.sql(
+		"""
+		SELECT
+			jea.parent AS name,
+			jea.account AS account,
+			MAX(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
+			         THEN jea.name ELSE NULL END)   AS reference_row,
+			MAX(je.posting_date)                    AS posting_date,
+			IFNULL(MAX(je.cheque_no), '')           AS reference_no,
+			IFNULL(MAX(je.user_remark), '')         AS remarks,
+			MAX(je.total_debit)                     AS journal_total_debit,
+			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency))  AS total_amount,
+			SUM(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
+			         THEN ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)
+			         ELSE 0 END)                    AS unallocated_amount_sql,
+			CASE WHEN SUM(jea.credit_in_account_currency) > SUM(jea.debit_in_account_currency)
+			     THEN 'Cr' ELSE 'Dr' END            AS direction
+		FROM `tabJournal Entry Account` jea
+		JOIN `tabJournal Entry` je  ON je.name  = jea.parent
+		JOIN `tabAccount`       acc ON acc.name = jea.account
+		WHERE je.docstatus = 1
+		      AND jea.party_type = %s AND jea.party = %s
+		      AND acc.account_type IN %s
+		      AND je.company = %s
+		      AND je.is_opening != 'Yes'
+		GROUP BY jea.parent, jea.account, jea.party
+		ORDER BY posting_date DESC
+		""",
+		(party_type, party, account_types, company),
+		as_dict=True,
+	)
+
+	# Accurate unallocated amount via Payment Ledger
+	journal_entries = []
+	if je_raw:
+		je_names = list(set(r["name"] for r in je_raw))
+		pl_links = frappe.db.sql(
+			"""
+			SELECT
+				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END AS name,
+				account,
+				SUM(ABS(amount_in_account_currency)) AS linked_amount
+			FROM `tabPayment Ledger`
+			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
+			  AND against_voucher_no != voucher_no
+			  AND party = %s AND delinked = 0
+			GROUP BY name, account
+			""",
+			(tuple(je_names), tuple(je_names), tuple(je_names), party),
+			as_dict=True,
+		)
+		links_map = {(r["name"], r["account"]): float(r["linked_amount"]) for r in pl_links}
+
+		for je in je_raw:
+			linked = links_map.get((je["name"], je["account"]), 0)
+			sql_unalloc = float(je.get("unallocated_amount_sql") or 0)
+			je["unallocated_amount"] = max(0, sql_unalloc - linked)
+			if je["unallocated_amount"] > 0.005:
+				journal_entries.append(dict(je))
+
+	# ── Summary ──────────────────────────────────────────────────────────────────────────────────
+	inv_dr = sum(abs(float(i["outstanding_amount"])) for i in invoices if i["direction"] == "Dr")
+	inv_cr = sum(abs(float(i["outstanding_amount"])) for i in invoices if i["direction"] == "Cr")
+	pe_dr  = sum(float(p["unallocated_amount"]) for p in payment_entries if p["direction"] == "Dr")
+	pe_cr  = sum(float(p["unallocated_amount"]) for p in payment_entries if p["direction"] == "Cr")
+	je_dr  = sum(float(j["unallocated_amount"]) for j in journal_entries if j["direction"] == "Dr")
+	je_cr  = sum(float(j["unallocated_amount"]) for j in journal_entries if j["direction"] == "Cr")
+
+	total_dr = round(inv_dr + pe_dr + je_dr, 2)
+	total_cr = round(inv_cr + pe_cr + je_cr, 2)
+
+	return {
+		"invoices": invoices,
+		"payment_entries": [dict(r) for r in payment_entries],
+		"journal_entries": journal_entries,
+		"summary": {
+			"total_dr": total_dr,
+			"total_cr": total_cr,
+			"net_outstanding": round(total_dr - total_cr, 2),
+		},
+	}
