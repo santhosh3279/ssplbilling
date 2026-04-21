@@ -68,15 +68,15 @@
 
         <table v-else class="w-full table-fixed border-collapse">
           <colgroup>
-            <col style="width:24%" />
+            <col style="width:26%" />
             <col style="width:8%" />
             <col style="width:8%" />
             <col style="width:6%" />
             <col style="width:5%" />
             <col style="width:13%" />
             <col style="width:7%" />
-            <col style="width:15%" />
-            <col style="width:14%" />
+            <col style="width:10%" />
+            <col style="width:17%" />
           </colgroup>
 
           <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)]">
