@@ -17,6 +17,31 @@
               :class="filterDirection === d ? 'bg-[var(--color-highlight)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >{{ d }}</button>
           </div>
+
+          <!-- Type Filter -->
+          <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5 ml-4">
+            <button
+              @click="showTypeInv = !showTypeInv"
+              class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
+              :class="showTypeInv ? 'bg-[var(--color-danger)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            >
+              <span v-if="showTypeInv">●</span> Invoices
+            </button>
+            <button
+              @click="showTypePay = !showTypePay"
+              class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
+              :class="showTypePay ? 'bg-[var(--color-success)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            >
+              <span v-if="showTypePay">●</span> Payments
+            </button>
+            <button
+              @click="showTypeJrn = !showTypeJrn"
+              class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
+              :class="showTypeJrn ? 'bg-[var(--color-info)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            >
+              <span v-if="showTypeJrn">●</span> Journals
+            </button>
+          </div>
         </div>
         <button @click="$emit('close')" class="h-11 w-11 rounded-full hover:bg-[var(--color-midlight)] flex items-center justify-center text-2xl transition-colors">✕</button>
       </div>
@@ -402,6 +427,9 @@ const localInvoices = ref([])
 const localPayments = ref([])
 const localJournals = ref([])
 const filterDirection = ref('All')
+const showTypeInv = ref(true)
+const showTypePay = ref(true)
+const showTypeJrn = ref(true)
 const localAmounts = ref({})
 const lastModifiedKey = ref(null)
 const confirmBtn = ref(null)
@@ -478,14 +506,17 @@ const currentPayments = computed(() => localPayments.value.length ? localPayment
 const currentJournals = computed(() => localJournals.value.length ? localJournals.value : props.unlinkedJournals)
 
 const filteredInvoices = computed(() => {
+  if (!showTypeInv.value) return []
   const list = currentInvoices.value || []
   return filterDirection.value === 'All' ? list : list.filter(i => i.direction === filterDirection.value)
 })
 const filteredPayments = computed(() => {
+  if (!showTypePay.value) return []
   const list = currentPayments.value || []
   return filterDirection.value === 'All' ? list : list.filter(p => p.direction === filterDirection.value)
 })
 const filteredJournals = computed(() => {
+  if (!showTypeJrn.value) return []
   const list = currentJournals.value || []
   return filterDirection.value === 'All' ? list : list.filter(j => j.direction === filterDirection.value)
 })
