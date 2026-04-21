@@ -389,6 +389,7 @@
       :enteredAmount="form.amount"
       :activeTab="activeTab"
       :modalAmounts="modalAmounts"
+      :disablePayments="true"
       @close="showInvoicesModal = false"
       @update-allocations="updateAllocations"
     />
