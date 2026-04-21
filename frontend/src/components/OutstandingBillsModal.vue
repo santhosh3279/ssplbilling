@@ -50,18 +50,6 @@
       <!-- TABLE -->
       <div class="flex-1 overflow-y-auto custom-scrollbar">
 
-        <!-- Column Headers (sticky) -->
-        <div class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-6 py-3 grid gap-3 text-[20px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]"
-          style="grid-template-columns: 25ch 20ch 20ch 10ch 15ch 15ch 1fr;">
-          <div>Reference</div>
-          <div>Type</div>
-          <div class="text-center">Date / Age</div>
-          <div class="text-center">Dir</div>
-          <div class="text-right">Outstanding</div>
-          <div class="text-right">Allocate</div>
-          <div class="text-right">Balance</div>
-        </div>
-
         <!-- Loading -->
         <div v-if="isLoading" class="flex items-center justify-center py-24 gap-3 text-[var(--color-text-muted)]">
           <svg class="animate-spin w-8 h-8 shrink-0" viewBox="0 0 24 24">
@@ -78,171 +66,185 @@
           <span class="text-3xl font-bold">No outstanding items found</span>
         </div>
 
-        <template v-else>
+        <table v-else class="w-full table-fixed border-collapse">
+          <colgroup>
+            <col style="width:28%" />
+            <col style="width:10%" />
+            <col style="width:11%" />
+            <col style="width:6%" />
+            <col style="width:14%" />
+            <col style="width:17%" />
+            <col style="width:14%" />
+          </colgroup>
 
-          <!-- OUTSTANDING INVOICES -->
-          <template v-if="filteredInvoices.length">
-            <div class="px-6 py-3 flex items-center gap-2 bg-[var(--color-danger)]/5 border-b border-[var(--color-danger)]/15">
-              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-danger)] shrink-0"></span>
-              <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-danger)]">Outstanding Invoices & Returns</span>
-              <span class="ml-auto text-[20px] font-bold text-[var(--color-danger)] opacity-60">{{ filteredInvoices.length }}</span>
-            </div>
-            <div
-              v-for="inv in filteredInvoices"
-              :key="inv.name"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors text-[20px]"
-              style="grid-template-columns: 25ch 20ch 20ch 10ch 15ch 15ch 1fr;"
-            >
-              <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
-              <div class="text-[20px] font-semibold text-[var(--color-text-muted)] truncate">
-                {{ inv.doctype === 'Sales Invoice' ? 'Sales Inv' : 'Purch Inv' }}
-              </div>
-              <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</span>
-                <span class="text-[20px] font-black"
-                  :class="dueDays(inv.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
-                  {{ dueDays(inv.posting_date) }}d
-                </span>
-              </div>
-              <div class="flex justify-center">
-                <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
-                  :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
-                  {{ inv.direction }}
-                </span>
-              </div>
-              <div class="text-right">
-                <span class="text-[20px] font-black font-mono"
-                  :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                  ₹{{ fmt(inv.outstanding_amount) }}
-                </span>
-              </div>
-              <div class="flex justify-end">
-                <input
-                  v-model.number="localAmounts[inv.name]"
-                  type="number" step="0.01" min="0"
-                  :max="Math.abs(inv.outstanding_amount)"
-                  :disabled="remainingBalance <= 0.005 && !(localAmounts[inv.name] > 0)"
-                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
-                  @keydown.enter="focusNextAllocate($event)"
-                  @input="onAllocationChange(inv.name)"
-                />
-              </div>
-              <div class="text-right">
-                <span class="text-[20px] font-black font-mono"
-                  :class="balanceFor(inv.name, inv.outstanding_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                  ₹{{ fmt(balanceFor(inv.name, inv.outstanding_amount)) }}
-                </span>
-              </div>
-            </div>
-          </template>
+          <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)]">
+            <tr class="border-b border-[var(--color-border)] text-[20px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
+              <th class="px-6 py-3 text-left">Reference</th>
+              <th class="px-3 py-3 text-left">Type</th>
+              <th class="px-3 py-3 text-center">Date / Age</th>
+              <th class="px-3 py-3 text-center">Dir</th>
+              <th class="px-3 py-3 text-right">Outstanding</th>
+              <th class="px-3 py-3 text-right">Allocate</th>
+              <th class="px-3 py-3 text-right">Balance</th>
+            </tr>
+          </thead>
 
-          <!-- UNLINKED PAYMENT ENTRIES -->
-          <template v-if="filteredPayments.length">
-            <div class="px-6 py-3 flex items-center gap-2 bg-[var(--color-success)]/5 border-b border-[var(--color-success)]/15">
-              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-success)] shrink-0"></span>
-              <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-success)]">Unlinked Payment Entries</span>
-              <span class="ml-auto text-[20px] font-bold text-[var(--color-success)] opacity-60">{{ filteredPayments.length }}</span>
-            </div>
-            <div
-              v-for="pe in filteredPayments"
-              :key="pe.name"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors text-[20px]"
-              style="grid-template-columns: 25ch 20ch 20ch 10ch 15ch 15ch 1fr;"
-            >
-              <div class="flex flex-col min-w-0">
-                <span class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</span>
-                <span v-if="pe.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</span>
-              </div>
-              <div class="text-[20px] font-semibold text-[var(--color-text-muted)]">Payment</div>
-              <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</span>
-                <span class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</span>
-              </div>
-              <div class="flex justify-center">
-                <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
-                  :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
-                  {{ pe.direction }}
-                </span>
-              </div>
-              <div class="text-right">
-                <span class="text-[20px] font-black font-mono text-[var(--color-success)]">₹{{ fmt(pe.unallocated_amount) }}</span>
-                <div v-if="pe.paid_amount && Math.abs(pe.paid_amount - pe.unallocated_amount) > 0.005"
-                  class="text-[20px] text-[var(--color-text-muted)] opacity-50">
-                  of ₹{{ fmt(pe.paid_amount) }}
-                </div>
-              </div>
-              <div class="flex justify-end">
-                <input
-                  v-model.number="localAmounts[pe.name]"
-                  type="number" step="0.01" min="0"
-                  :max="Math.abs(pe.unallocated_amount)"
-                  :disabled="remainingBalance <= 0.005 && !(localAmounts[pe.name] > 0)"
-                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
-                  @keydown.enter="focusNextAllocate($event)"
-                  @input="onAllocationChange(pe.name)"
-                />
-              </div>
-              <div class="text-right">
-                <span class="text-[20px] font-black font-mono"
-                  :class="balanceFor(pe.name, pe.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                  ₹{{ fmt(balanceFor(pe.name, pe.unallocated_amount)) }}
-                </span>
-              </div>
-            </div>
-          </template>
+          <tbody>
 
-          <!-- UNLINKED JOURNAL ENTRIES -->
-          <template v-if="filteredJournals.length">
-            <div class="px-6 py-3 flex items-center gap-2 bg-[var(--color-info)]/5 border-b border-[var(--color-info)]/15">
-              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-info)] shrink-0"></span>
-              <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Journal Entries</span>
-              <span class="ml-auto text-[20px] font-bold text-[var(--color-info)] opacity-60">{{ filteredJournals.length }}</span>
-            </div>
-            <div
-              v-for="je in filteredJournals"
-              :key="je.reference_row || (je.name + je.account)"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors text-[20px]"
-              style="grid-template-columns: 25ch 20ch 20ch 10ch 15ch 15ch 1fr;"
-            >
-              <div class="flex flex-col min-w-0">
-                <span class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ je.name }}</span>
-                <span v-if="je.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</span>
-              </div>
-              <div class="text-[20px] font-semibold text-[var(--color-text-muted)]">Journal</div>
-              <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</span>
-                <span class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</span>
-              </div>
-              <div class="flex justify-center">
-                <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
-                  :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
-                  {{ je.direction }}
-                </span>
-              </div>
-              <div class="text-right">
-                <span class="text-[20px] font-black font-mono text-[var(--color-info)]">₹{{ fmt(je.unallocated_amount) }}</span>
-              </div>
-              <div class="flex justify-end">
-                <input
-                  v-model.number="localAmounts[je.reference_row]"
-                  type="number" step="0.01" min="0"
-                  :max="Math.abs(je.unallocated_amount)"
-                  :disabled="remainingBalance <= 0.005 && !(localAmounts[je.reference_row] > 0)"
-                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
-                  @keydown.enter="focusNextAllocate($event)"
-                  @input="onAllocationChange(je.reference_row)"
-                />
-              </div>
-              <div class="text-right">
-                <span class="text-[20px] font-black font-mono"
-                  :class="balanceFor(je.reference_row, je.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                  ₹{{ fmt(balanceFor(je.reference_row, je.unallocated_amount)) }}
-                </span>
-              </div>
-            </div>
-          </template>
+            <!-- OUTSTANDING INVOICES -->
+            <template v-if="filteredInvoices.length">
+              <tr class="bg-[var(--color-danger)]/5 border-b border-[var(--color-danger)]/15">
+                <td colspan="7" class="px-6 py-2">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[var(--color-danger)] shrink-0"></span>
+                    <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-danger)]">Outstanding Invoices & Returns</span>
+                    <span class="ml-auto text-[20px] font-bold text-[var(--color-danger)] opacity-60">{{ filteredInvoices.length }}</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-for="inv in filteredInvoices" :key="inv.name"
+                class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
+                <td class="px-6 py-3 max-w-0">
+                  <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
+                </td>
+                <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">
+                  {{ inv.doctype === 'Sales Invoice' ? 'Sales Inv' : 'Purch Inv' }}
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <div class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</div>
+                  <div class="text-[20px] font-black"
+                    :class="dueDays(inv.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
+                    {{ dueDays(inv.posting_date) }}d
+                  </div>
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
+                    :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
+                    {{ inv.direction }}
+                  </span>
+                </td>
+                <td class="px-3 py-3 text-right">
+                  <span class="text-[20px] font-black font-mono"
+                    :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                    ₹{{ fmt(inv.outstanding_amount) }}
+                  </span>
+                </td>
+                <td class="px-3 py-3">
+                  <input v-model.number="localAmounts[inv.name]" type="number" step="0.01" min="0"
+                    :max="Math.abs(inv.outstanding_amount)"
+                    :disabled="remainingBalance <= 0.005 && !(localAmounts[inv.name] > 0)"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
+                    @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(inv.name)" />
+                </td>
+                <td class="px-3 py-3 text-right">
+                  <span class="text-[20px] font-black font-mono"
+                    :class="balanceFor(inv.name, inv.outstanding_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
+                    ₹{{ fmt(balanceFor(inv.name, inv.outstanding_amount)) }}
+                  </span>
+                </td>
+              </tr>
+            </template>
 
-        </template>
+            <!-- UNLINKED PAYMENT ENTRIES -->
+            <template v-if="filteredPayments.length">
+              <tr class="bg-[var(--color-success)]/5 border-b border-[var(--color-success)]/15">
+                <td colspan="7" class="px-6 py-2">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[var(--color-success)] shrink-0"></span>
+                    <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-success)]">Unlinked Payment Entries</span>
+                    <span class="ml-auto text-[20px] font-bold text-[var(--color-success)] opacity-60">{{ filteredPayments.length }}</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-for="pe in filteredPayments" :key="pe.name"
+                class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
+                <td class="px-6 py-3 max-w-0">
+                  <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
+                  <div v-if="pe.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</div>
+                </td>
+                <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">Payment</td>
+                <td class="px-3 py-3 text-center">
+                  <div class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</div>
+                  <div class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</div>
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
+                    :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
+                    {{ pe.direction }}
+                  </span>
+                </td>
+                <td class="px-3 py-3 text-right">
+                  <div class="text-[20px] font-black font-mono text-[var(--color-success)]">₹{{ fmt(pe.unallocated_amount) }}</div>
+                  <div v-if="pe.paid_amount && Math.abs(pe.paid_amount - pe.unallocated_amount) > 0.005"
+                    class="text-[20px] text-[var(--color-text-muted)] opacity-50">
+                    of ₹{{ fmt(pe.paid_amount) }}
+                  </div>
+                </td>
+                <td class="px-3 py-3">
+                  <input v-model.number="localAmounts[pe.name]" type="number" step="0.01" min="0"
+                    :max="Math.abs(pe.unallocated_amount)"
+                    :disabled="remainingBalance <= 0.005 && !(localAmounts[pe.name] > 0)"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
+                    @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(pe.name)" />
+                </td>
+                <td class="px-3 py-3 text-right">
+                  <span class="text-[20px] font-black font-mono"
+                    :class="balanceFor(pe.name, pe.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
+                    ₹{{ fmt(balanceFor(pe.name, pe.unallocated_amount)) }}
+                  </span>
+                </td>
+              </tr>
+            </template>
+
+            <!-- UNLINKED JOURNAL ENTRIES -->
+            <template v-if="filteredJournals.length">
+              <tr class="bg-[var(--color-info)]/5 border-b border-[var(--color-info)]/15">
+                <td colspan="7" class="px-6 py-2">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[var(--color-info)] shrink-0"></span>
+                    <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Journal Entries</span>
+                    <span class="ml-auto text-[20px] font-bold text-[var(--color-info)] opacity-60">{{ filteredJournals.length }}</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-for="je in filteredJournals" :key="je.reference_row || (je.name + je.account)"
+                class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
+                <td class="px-6 py-3 max-w-0">
+                  <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ je.name }}</div>
+                  <div v-if="je.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</div>
+                </td>
+                <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">Journal</td>
+                <td class="px-3 py-3 text-center">
+                  <div class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</div>
+                  <div class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</div>
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
+                    :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
+                    {{ je.direction }}
+                  </span>
+                </td>
+                <td class="px-3 py-3 text-right">
+                  <span class="text-[20px] font-black font-mono text-[var(--color-info)]">₹{{ fmt(je.unallocated_amount) }}</span>
+                </td>
+                <td class="px-3 py-3">
+                  <input v-model.number="localAmounts[je.reference_row]" type="number" step="0.01" min="0"
+                    :max="Math.abs(je.unallocated_amount)"
+                    :disabled="remainingBalance <= 0.005 && !(localAmounts[je.reference_row] > 0)"
+                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
+                    @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(je.reference_row)" />
+                </td>
+                <td class="px-3 py-3 text-right">
+                  <span class="text-[20px] font-black font-mono"
+                    :class="balanceFor(je.reference_row, je.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
+                    ₹{{ fmt(balanceFor(je.reference_row, je.unallocated_amount)) }}
+                  </span>
+                </td>
+              </tr>
+            </template>
+
+          </tbody>
+        </table>
       </div>
 
       <!-- FOOTER -->
