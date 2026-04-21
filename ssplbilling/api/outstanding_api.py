@@ -109,11 +109,14 @@ def get_party_outstanding(party_type, party):
 		as_dict=True,
 	)
 
-	# Accurate unallocated amount via Payment Ledger (table may not exist on older ERPNext installs)
+	# Accurate unallocated amount: start from Payment Ledger (if available), then also subtract
+	# amounts allocated via tabPayment Entry Reference (PE rows referencing this JE directly).
 	journal_entries = []
 	if je_raw:
 		je_names = list(set(r["name"] for r in je_raw))
-		links_map = {}
+
+		# Method 1: Payment Ledger cross-links (ERPNext v14+)
+		pl_links_map = {}
 		try:
 			pl_links = frappe.db.sql(
 				"""
@@ -130,13 +133,33 @@ def get_party_outstanding(party_type, party):
 				(tuple(je_names), tuple(je_names), tuple(je_names), party),
 				as_dict=True,
 			)
-			links_map = {(r["name"], r["account"]): float(r["linked_amount"]) for r in pl_links}
+			pl_links_map = {r["name"]: float(r["linked_amount"]) for r in pl_links}
 		except Exception:
-			pass  # tabPayment Ledger absent; fall back to SQL-only unallocated amount
+			pass  # tabPayment Ledger absent on this install
+
+		# Method 2: Payment Entry References pointing at these JEs (submitted PEs only)
+		per_map = {}
+		per_rows = frappe.db.sql(
+			"""
+			SELECT per.reference_name AS je_name,
+			       SUM(per.allocated_amount) AS allocated
+			FROM `tabPayment Entry Reference` per
+			JOIN `tabPayment Entry` pe ON pe.name = per.parent
+			WHERE per.reference_doctype = 'Journal Entry'
+			      AND per.reference_name IN %s
+			      AND pe.docstatus = 1
+			GROUP BY per.reference_name
+			""",
+			(tuple(je_names),),
+			as_dict=True,
+		)
+		per_map = {r["je_name"]: float(r["allocated"]) for r in per_rows}
 
 		for je in je_raw:
-			linked = links_map.get((je["name"], je["account"]), 0)
+			je_name = je["name"]
 			sql_unalloc = float(je.get("unallocated_amount_sql") or 0)
+			# Use the higher of the two allocation signals
+			linked = max(pl_links_map.get(je_name, 0), per_map.get(je_name, 0))
 			je["unallocated_amount"] = max(0, sql_unalloc - linked)
 			if je["unallocated_amount"] > 0.005:
 				journal_entries.append(dict(je))
