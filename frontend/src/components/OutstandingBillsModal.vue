@@ -3,7 +3,7 @@
     <div class="w-full max-w-[96vw] h-[90vh] rounded-3xl bg-[var(--color-surface)] shadow-2xl border border-[var(--color-border)] flex flex-col overflow-hidden">
 
       <!-- HEADER -->
-      <div class="flex items-center justify-between px-8 py-5 border-b border-[var(--color-border)] shrink-0">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-[var(--color-border)] shrink-0">
         <div class="flex items-center gap-5">
           <h2 class="text-4xl font-black uppercase tracking-tight text-[var(--color-text)]">Outstanding Items</h2>
           <span v-if="party" class="text-2xl font-bold text-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-1.5 rounded-lg font-mono">{{ party }}</span>
@@ -246,7 +246,7 @@
       </div>
 
       <!-- FOOTER -->
-      <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/60 px-8 py-5 flex items-center justify-between">
+      <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/60 px-6 py-5 flex items-center justify-between">
         <div class="text-[20px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-4">
           <span>{{ totalItemCount }} item{{ totalItemCount !== 1 ? 's' : '' }}</span>
           <span class="opacity-30">·</span>
