@@ -19,6 +19,8 @@ def get_unlinked_entries(party_type, party):
 	# Fetch from both Receivable and Payable if it's a Customer/Supplier
 	# as they might have both types of entries.
 	account_types = ["Receivable", "Payable"]
+	
+	frappe.log_error(f"Fetching unlinked for {party_type} {party}", "ssplbilling.api.reconcile_api.get_unlinked_entries")
 
 	payment_entries = frappe.db.sql(
 		"""
@@ -53,7 +55,7 @@ def get_unlinked_entries(party_type, party):
 			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS total_amount,
 			SUM(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
 			         THEN ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)
-			         ELSE 0 END)                                              AS unallocated_amount,
+			         ELSE 0 END)                                              AS unallocated_amount_sql,
 			CASE WHEN SUM(jea.credit_in_account_currency) > SUM(jea.debit_in_account_currency)
 			     THEN 'Cr' ELSE 'Dr' END                                      AS direction
 		FROM `tabJournal Entry Account` jea
@@ -65,7 +67,6 @@ def get_unlinked_entries(party_type, party):
 			AND je.company = %s
 			AND je.is_opening != 'Yes'
 		GROUP BY jea.parent, jea.account, jea.party
-		HAVING unallocated_amount > 0.005
 		ORDER BY posting_date DESC
 		""",
 		(party_type, party, tuple(account_types), company),
@@ -76,8 +77,6 @@ def get_unlinked_entries(party_type, party):
 	if je_entries:
 		je_names = list(set(r["name"] for r in je_entries))
 		# Sum of all reconciled amounts for these JEs, this party, and these specific accounts.
-		# Linkage is defined as voucher_no != against_voucher_no.
-		# We look for ANY entry in Payment Ledger for our JE/Account/Party that is part of a link.
 		pl_links = frappe.db.sql(
 			"""
 			SELECT 
@@ -100,10 +99,15 @@ def get_unlinked_entries(party_type, party):
 		for je in je_entries:
 			linked = links_map.get((je["name"], je["account"]), 0)
 			# Re-calculate unallocated_amount: Total party-specific amount minus PL links
-			je["unallocated_amount"] = max(0, float(je["total_amount"]) - linked)
+			# We also respect the SQL-level unallocated (rows with reference_name are already allocated)
+			sql_unalloc = float(je.get("unallocated_amount_sql") or 0)
+			je["unallocated_amount"] = max(0, sql_unalloc - linked)
+			
 			if je["unallocated_amount"] > 0.005:
 				processed_jes.append(dict(je))
 		je_entries = processed_jes
+
+	frappe.log_error(f"Found {len(payment_entries)} PE and {len(je_entries)} JE", "ssplbilling.api.reconcile_api.get_unlinked_entries_result")
 
 	return {
 		"payment_entries": [dict(r) for r in payment_entries],
