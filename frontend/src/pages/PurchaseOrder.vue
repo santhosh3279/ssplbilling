@@ -238,6 +238,20 @@
 
       <template #bottom-middle>
         <div class="flex flex-col gap-3 p-2 max-h-[300px] overflow-y-auto custom-scrollbar" @keydown="handleModifyPanelKeydown">
+          <!-- Export / Import -->
+          <div class="flex gap-1">
+            <button
+              @click="handleExport"
+              :disabled="!items.length"
+              class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-1 text-[13px] font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] disabled:opacity-40 disabled:cursor-default transition-colors"
+            >Export CSV</button>
+            <button
+              @click="handleImportClick"
+              :disabled="isReadOnly"
+              class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-1 text-[13px] font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] disabled:opacity-40 disabled:cursor-default transition-colors"
+            >Import CSV</button>
+          </div>
+
           <!-- Row 1: Price List -->
           <div class="flex flex-col gap-0.5">
             <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
@@ -459,6 +473,9 @@
       ]"
       @close="showShortcutPage = false"
     />
+
+    <!-- Hidden file input for CSV import -->
+    <input ref="csvImportRef" type="file" accept=".csv" class="hidden" @change="onCsvFileSelected" />
 
     <PriceListUpdate
       v-if="showPriceListUpdate && priceListUpdateItemCode"
@@ -1014,6 +1031,82 @@ function handleCancel() {
   }
 }
 function handleIncentive() { showIncentiveModal.value = true }
+
+// --- Export / Import CSV ---
+const csvImportRef = ref(null)
+
+function handleExport() {
+  if (!items.value.length) return
+  const header = ['item_code', 'item_name', 'qty', 'uom', 'rate', 'discount', 'tax_rate', 'amount']
+  const rowsData = items.value
+    .filter(i => !i.deleted)
+    .map(i => [
+      i.item_code,
+      `"${(i.item_name || '').replace(/"/g, '""')}"`,
+      i.qty,
+      i.uom || 'Nos',
+      i.rate,
+      i.discount || 0,
+      i.tax_rate != null ? i.tax_rate : 0,
+      i.amount,
+    ].join(','))
+  const csv = [header.join(','), ...rowsData].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${orderNo.value || 'purchase-order'}-items.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function handleImportClick() {
+  if (isReadOnly.value) return
+  csvImportRef.value.value = ''
+  csvImportRef.value.click()
+}
+
+function onCsvFileSelected(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length < 2) { alert('CSV has no data rows.'); return }
+    const header = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const idx = (col) => header.indexOf(col)
+    const parsed = []
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].match(/(".*?"|[^,]+)(?=,|$)/g) || []
+      const get = (col) => (cols[idx(col)] || '').replace(/^"|"$/g, '').replace(/""/g, '"').trim()
+      const item_code = get('item_code')
+      if (!item_code) continue
+      const qty = parseFloat(get('qty')) || 1
+      const rate = parseFloat(get('rate')) || 0
+      const discount = parseFloat(get('discount')) || 0
+      const tax_rate = parseFloat(get('tax_rate')) || 0
+      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - discount / 100)).toFixed(2)) : rate
+      parsed.push({
+        item_code,
+        item_name: get('item_name') || item_code,
+        qty,
+        uom: get('uom') || 'Nos',
+        rate,
+        _base_rate: rate,
+        price_list_rate: rate,
+        discount,
+        tax_rate,
+        deleted: false,
+        _is_free: effectiveRate === 0,
+        amount: parseFloat((qty * effectiveRate).toFixed(2)),
+      })
+    }
+    if (!parsed.length) { alert('No valid rows found in CSV.'); return }
+    if (items.value.length && !confirm(`Replace ${items.value.filter(i => !i.deleted).length} existing item(s) with ${parsed.length} imported row(s)?`)) return
+    items.value = parsed
+  }
+  reader.readAsText(file)
+}
 
 function handleJump(targetNo) {
   if (items.value.length === 0) return
