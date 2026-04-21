@@ -15,7 +15,7 @@
         <div class="text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-1 h-4">
           {{ prevInput }} {{ operator }}
         </div>
-        <div class="text-right text-4xl font-black text-[var(--color-text-on-highlight)] font-mono truncate">
+        <div class="text-right text-4xl font-black text-[var(--color-text)] font-mono truncate">
           {{ display || '0' }}
         </div>
       </div>
