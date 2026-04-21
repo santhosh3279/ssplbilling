@@ -1,5 +1,5 @@
 <template>
-  <div class="relative min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans overflow-x-hidden">
+  <div class="relative min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans">
 
     <!-- TOP NAVIGATION BAR -->
     <nav class="fixed top-0 left-0 right-0 z-50 flex h-20 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/80 px-8 backdrop-blur-xl">
@@ -90,7 +90,7 @@
     </nav>
 
     <!-- LAYOUT: left 25% panel = BOX Cash table + UPI stacked -->
-    <div class="flex gap-4 p-4 mt-20" style="height: calc(100vh - 5rem);">
+    <div class="flex gap-4 p-4 mt-20 overflow-x-auto" style="min-height: calc(100vh - 5rem);">
 
       <!-- LEFT 40%: BOX Cash compact table + UPI below -->
       <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar min-w-0" style="width: 40%; flex-shrink: 0;">
@@ -477,6 +477,92 @@
         </div>
       </div>
 
+      <!-- FOURTH 30%: UPI Ledger for today -->
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
+        <!-- Header -->
+        <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-4 py-3 border-b border-[var(--color-border)] flex-shrink-0">
+          <div>
+            <div class="text-lg font-black uppercase tracking-widest text-[var(--color-text-muted)]">UPI Ledger</div>
+            <div class="text-base text-[var(--color-text-muted)] font-mono truncate max-w-[200px]">{{ localStorage.getItem('wb-upi') || '—' }}</div>
+          </div>
+          <button @click="fetchUpiLedgerEntries" :disabled="upiLedgerLoading"
+            class="flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition disabled:opacity-40">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="upiLedgerLoading ? 'animate-spin' : ''"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          </button>
+        </div>
+        <!-- Table -->
+        <div class="overflow-y-auto custom-scrollbar flex-1">
+          <table class="w-full text-xl">
+            <thead class="sticky top-0 bg-[var(--color-bg)]/95 z-10">
+              <tr class="border-b border-[var(--color-border)] text-base font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-3 py-3 text-left">Time</th>
+                <th class="px-2 py-3 text-left">Voucher</th>
+                <th class="px-2 py-3 text-right text-[var(--color-success)]">DR</th>
+                <th class="px-2 py-3 text-right text-[var(--color-danger)]">CR</th>
+                <th class="px-2 py-3 text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--color-border)]/40">
+              <!-- Opening balance row -->
+              <tr class="bg-[var(--color-bg)]/40">
+                <td class="px-3 py-2.5 text-sm text-[var(--color-text-muted)]">—</td>
+                <td colspan="2" class="px-2 py-2.5 text-base font-black text-[var(--color-text-muted)] uppercase tracking-widest">Opening</td>
+                <td class="px-2 py-2.5"></td>
+                <td class="px-2 py-2.5 text-right font-mono font-black text-xl"
+                    :class="upiLedgerOpening >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
+                  {{ Math.abs(upiLedgerOpening).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                  <span class="text-sm ml-1">{{ upiLedgerOpening >= 0 ? 'DR' : 'CR' }}</span>
+                </td>
+              </tr>
+              <tr v-if="upiLedgerLoading">
+                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">Loading…</td>
+              </tr>
+              <tr v-else-if="upiLedgerEntries.length === 0 && !upiLedgerLoading">
+                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">No entries today</td>
+              </tr>
+              <tr v-for="entry in upiLedgerEntries" :key="entry.voucher_no + entry.debit + entry.credit"
+                  class="hover:bg-[var(--color-surface-raised)]/20 transition">
+                <td class="px-3 py-2.5 font-mono text-base text-[var(--color-text-muted)] whitespace-nowrap">{{ entry.time }}</td>
+                <td class="px-2 py-2.5">
+                  <div class="font-black text-[var(--color-text)] text-base leading-tight truncate max-w-[120px]">{{ entry.voucher_no }}</div>
+                  <div v-if="entry.party" class="text-sm text-[var(--color-text-muted)] truncate max-w-[120px]">{{ entry.party }}</div>
+                </td>
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
+                    :class="entry.debit > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
+                  {{ entry.debit > 0 ? entry.debit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
+                </td>
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
+                    :class="entry.credit > 0 ? 'text-[var(--color-danger)] font-black' : 'text-[var(--color-text-muted)]'">
+                  {{ entry.credit > 0 ? entry.credit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
+                </td>
+                <td class="px-2 py-2.5 text-right font-mono font-black text-xl"
+                    :class="entry.balance >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
+                  {{ Math.abs(entry.balance).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
+                  <span class="text-sm ml-1">{{ entry.balance >= 0 ? 'DR' : 'CR' }}</span>
+                </td>
+              </tr>
+            </tbody>
+            <!-- Closing balance row -->
+            <tfoot v-if="upiLedgerEntries.length > 0" class="sticky bottom-0 bg-[var(--color-bg)]/95 border-t border-[var(--color-border)]">
+              <tr>
+                <td colspan="2" class="px-3 py-3 text-base font-black uppercase tracking-widest text-[var(--color-text-muted)]">Closing</td>
+                <td class="px-2 py-3 text-right font-mono text-xl text-[var(--color-success)] font-black">
+                  {{ upiLedgerEntries.reduce((s, e) => s + e.debit, 0).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
+                </td>
+                <td class="px-2 py-3 text-right font-mono text-xl text-[var(--color-danger)] font-black">
+                  {{ upiLedgerEntries.reduce((s, e) => s + e.credit, 0).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
+                </td>
+                <td class="px-2 py-3 text-right font-mono font-black text-xl"
+                    :class="(upiLedgerEntries.at(-1)?.balance ?? upiLedgerOpening) >= 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-danger)]'">
+                  {{ Math.abs(upiLedgerEntries.at(-1)?.balance ?? upiLedgerOpening).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
+                  <span class="text-sm ml-1">{{ (upiLedgerEntries.at(-1)?.balance ?? upiLedgerOpening) >= 0 ? 'DR' : 'CR' }}</span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
     </div>
 
     <!-- BOX Cash Subwindow -->
@@ -809,12 +895,12 @@ async function exportToExcel() {
 }
 
 onMounted(async () => {
-  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries()])
+  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries(), fetchUpiLedgerEntries()])
 })
 
 watch(currentDate, async () => {
   selectedSeries.value = []
-  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries()])
+  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries(), fetchUpiLedgerEntries()])
 })
 
 function openModal(title) {
