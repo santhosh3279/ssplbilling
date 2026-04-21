@@ -68,12 +68,13 @@
 
         <table v-else class="w-full table-fixed border-collapse">
           <colgroup>
-            <col style="width:28%" />
-            <col style="width:10%" />
-            <col style="width:11%" />
+            <col style="width:26%" />
+            <col style="width:9%" />
+            <col style="width:9%" />
+            <col style="width:7%" />
             <col style="width:6%" />
-            <col style="width:14%" />
-            <col style="width:17%" />
+            <col style="width:13%" />
+            <col style="width:16%" />
             <col style="width:14%" />
           </colgroup>
 
@@ -81,7 +82,8 @@
             <tr class="border-b border-[var(--color-border)] text-[20px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
               <th class="px-6 py-3 text-left">Reference</th>
               <th class="px-3 py-3 text-left">Type</th>
-              <th class="px-3 py-3 text-center">Date / Age</th>
+              <th class="px-3 py-3 text-center">Date</th>
+              <th class="px-3 py-3 text-center">Age</th>
               <th class="px-3 py-3 text-center">Dir</th>
               <th class="px-3 py-3 text-right">Outstanding</th>
               <th class="px-3 py-3 text-right">Allocate</th>
@@ -94,7 +96,7 @@
             <!-- OUTSTANDING INVOICES -->
             <template v-if="filteredInvoices.length">
               <tr class="bg-[var(--color-danger)]/5 border-b border-[var(--color-danger)]/15">
-                <td colspan="7" class="px-6 py-2">
+                <td colspan="8" class="px-6 py-2">
                   <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-danger)] shrink-0"></span>
                     <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-danger)]">Outstanding Invoices & Returns</span>
@@ -110,12 +112,10 @@
                 <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">
                   {{ inv.doctype === 'Sales Invoice' ? 'Sales Inv' : 'Purch Inv' }}
                 </td>
-                <td class="px-3 py-3 text-center">
-                  <div class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</div>
-                  <div class="text-[20px] font-black"
-                    :class="dueDays(inv.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
-                    {{ dueDays(inv.posting_date) }}d
-                  </div>
+                <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</td>
+                <td class="px-3 py-3 text-center text-[20px] font-black"
+                  :class="dueDays(inv.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
+                  {{ dueDays(inv.posting_date) }}d
                 </td>
                 <td class="px-3 py-3 text-center">
                   <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
@@ -148,7 +148,7 @@
             <!-- UNLINKED PAYMENT ENTRIES -->
             <template v-if="filteredPayments.length">
               <tr class="bg-[var(--color-success)]/5 border-b border-[var(--color-success)]/15">
-                <td colspan="7" class="px-6 py-2">
+                <td colspan="8" class="px-6 py-2">
                   <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-success)] shrink-0"></span>
                     <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-success)]">Unlinked Payment Entries</span>
@@ -163,10 +163,8 @@
                   <div v-if="pe.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</div>
                 </td>
                 <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">Payment</td>
-                <td class="px-3 py-3 text-center">
-                  <div class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</div>
-                  <div class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</div>
-                </td>
+                <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</td>
+                <td class="px-3 py-3 text-center text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</td>
                 <td class="px-3 py-3 text-center">
                   <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
                     :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
@@ -199,7 +197,7 @@
             <!-- UNLINKED JOURNAL ENTRIES -->
             <template v-if="filteredJournals.length">
               <tr class="bg-[var(--color-info)]/5 border-b border-[var(--color-info)]/15">
-                <td colspan="7" class="px-6 py-2">
+                <td colspan="8" class="px-6 py-2">
                   <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-info)] shrink-0"></span>
                     <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Journal Entries</span>
@@ -214,10 +212,8 @@
                   <div v-if="je.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</div>
                 </td>
                 <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">Journal</td>
-                <td class="px-3 py-3 text-center">
-                  <div class="text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</div>
-                  <div class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</div>
-                </td>
+                <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</td>
+                <td class="px-3 py-3 text-center text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</td>
                 <td class="px-3 py-3 text-center">
                   <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
                     :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
