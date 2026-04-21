@@ -137,7 +137,8 @@
                 </td>
                 <td class="px-3 py-3 text-center">
                   <span v-if="inv.linked_count > 0"
-                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]">
+                    @click="showLinkedDocs(inv.doctype, inv.name)"
+                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] cursor-pointer hover:bg-[var(--color-highlight)]/30 transition-colors">
                     {{ inv.linked_count }}
                   </span>
                   <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
@@ -193,7 +194,8 @@
                 </td>
                 <td class="px-3 py-3 text-center">
                   <span v-if="pe.linked_count > 0"
-                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]">
+                    @click="showLinkedDocs('Payment Entry', pe.name)"
+                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] cursor-pointer hover:bg-[var(--color-highlight)]/30 transition-colors">
                     {{ pe.linked_count }}
                   </span>
                   <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
@@ -249,7 +251,8 @@
                 </td>
                 <td class="px-3 py-3 text-center">
                   <span v-if="je.linked_count > 0"
-                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]">
+                    @click="showLinkedDocs('Journal Entry', je.name)"
+                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] cursor-pointer hover:bg-[var(--color-highlight)]/30 transition-colors">
                     {{ je.linked_count }}
                   </span>
                   <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
@@ -292,6 +295,86 @@
 
     </div>
   </div>
+
+  <!-- LINKED DOCUMENTS POPUP -->
+  <div v-if="linkedPopup.show"
+    class="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    @click.self="linkedPopup.show = false">
+    <div class="w-full max-w-2xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl flex flex-col overflow-hidden">
+
+      <!-- popup header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-text)]">Linked Documents</span>
+          <span class="text-[20px] font-bold font-mono text-[var(--color-highlight)]">{{ linkedPopup.docname }}</span>
+        </div>
+        <button @click="linkedPopup.show = false"
+          class="h-9 w-9 rounded-full hover:bg-[var(--color-midlight)] flex items-center justify-center text-xl transition-colors">✕</button>
+      </div>
+
+      <!-- popup body -->
+      <div class="overflow-y-auto custom-scrollbar" style="max-height:60vh;">
+        <div v-if="linkedPopup.loading" class="flex items-center justify-center py-12 gap-3 text-[var(--color-text-muted)]">
+          <svg class="animate-spin w-5 h-5" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <span class="text-[20px] font-bold">Loading...</span>
+        </div>
+
+        <div v-else-if="!linkedPopup.docs.length"
+          class="flex items-center justify-center py-12 text-[20px] text-[var(--color-text-muted)]">
+          No linked documents found.
+        </div>
+
+        <table v-else class="w-full table-fixed border-collapse">
+          <colgroup>
+            <col style="width:40%" />
+            <col style="width:20%" />
+            <col style="width:15%" />
+            <col style="width:25%" />
+          </colgroup>
+          <thead class="sticky top-0 bg-[var(--color-surface-raised)]">
+            <tr class="border-b border-[var(--color-border)] text-[20px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+              <th class="px-6 py-2.5 text-left">Document</th>
+              <th class="px-3 py-2.5 text-left">Type</th>
+              <th class="px-3 py-2.5 text-center">Date</th>
+              <th class="px-3 py-2.5 text-right">Allocated</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(doc, i) in linkedPopup.docs" :key="i"
+              class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
+              <td class="px-6 py-3 max-w-0">
+                <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ doc.name }}</div>
+              </td>
+              <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">
+                {{ doc.link_doctype === 'Payment Entry' ? 'Payment' : doc.link_doctype === 'Journal Entry' ? 'Journal' : doc.link_doctype }}
+              </td>
+              <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">
+                {{ doc.posting_date ? fmtDate(doc.posting_date) : '—' }}
+              </td>
+              <td class="px-3 py-3 text-right text-[20px] font-black font-mono text-[var(--color-success)]">
+                ₹{{ fmt(doc.allocated_amount) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- popup footer -->
+      <div v-if="!linkedPopup.loading && linkedPopup.docs.length"
+        class="px-6 py-3 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 flex items-center justify-between">
+        <span class="text-[20px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+          {{ linkedPopup.docs.length }} document{{ linkedPopup.docs.length !== 1 ? 's' : '' }}
+        </span>
+        <span class="text-[20px] font-black font-mono text-[var(--color-success)]">
+          Total ₹{{ fmt(linkedPopup.totalAllocated) }}
+        </span>
+      </div>
+
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -322,6 +405,7 @@ const filterDirection = ref('All')
 const localAmounts = ref({})
 const lastModifiedKey = ref(null)
 const confirmBtn = ref(null)
+const linkedPopup = ref({ show: false, docname: '', doctype: '', docs: [], totalAllocated: 0, loading: false })
 
 const isLoading = computed(() => props.loading || localLoading.value)
 
@@ -421,6 +505,19 @@ const netOutstanding = computed(() => {
 
 const totalItemCount = computed(() => filteredInvoices.value.length + filteredPayments.value.length + filteredJournals.value.length)
 const allocatedCount = computed(() => Object.values(localAmounts.value).filter(v => parseFloat(v) > 0).length)
+
+async function showLinkedDocs(doctype, docname) {
+  linkedPopup.value = { show: true, docname, doctype, docs: [], totalAllocated: 0, loading: true }
+  try {
+    const res = await frappeGet('ssplbilling.api.outstanding_api.get_linked_documents', { doctype, docname })
+    linkedPopup.value.docs = res.docs || []
+    linkedPopup.value.totalAllocated = res.total_allocated || 0
+  } catch (e) {
+    console.error('[OutstandingBillsModal] linked docs fetch failed:', e)
+  } finally {
+    linkedPopup.value.loading = false
+  }
+}
 
 function balanceFor(key, outstanding) {
   return Math.max(0, Math.abs(outstanding) - (parseFloat(localAmounts.value[key]) || 0))

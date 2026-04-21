@@ -248,3 +248,69 @@ def get_party_outstanding(party_type, party):
 			"net_outstanding": round(total_dr - total_cr, 2),
 		},
 	}
+
+
+@frappe.whitelist()
+def get_linked_documents(doctype, docname):
+	"""Return all documents linked to a given outstanding document with allocated amounts."""
+	result = []
+
+	if doctype in ("Sales Invoice", "Purchase Invoice"):
+		pe_rows = frappe.db.sql(
+			"""
+			SELECT per.parent AS name, 'Payment Entry' AS link_doctype,
+			       pe.posting_date, per.allocated_amount
+			FROM `tabPayment Entry Reference` per
+			JOIN `tabPayment Entry` pe ON pe.name = per.parent
+			WHERE per.reference_name = %s AND pe.docstatus = 1
+			ORDER BY pe.posting_date DESC
+			""",
+			(docname,), as_dict=True,
+		)
+		je_rows = frappe.db.sql(
+			"""
+			SELECT jea.parent AS name, 'Journal Entry' AS link_doctype,
+			       je.posting_date,
+			       ABS(jea.credit_in_account_currency - jea.debit_in_account_currency) AS allocated_amount
+			FROM `tabJournal Entry Account` jea
+			JOIN `tabJournal Entry` je ON je.name = jea.parent
+			WHERE jea.reference_name = %s AND je.docstatus = 1
+			ORDER BY je.posting_date DESC
+			""",
+			(docname,), as_dict=True,
+		)
+		result = [dict(r) for r in pe_rows] + [dict(r) for r in je_rows]
+
+	elif doctype == "Payment Entry":
+		rows = frappe.db.sql(
+			"""
+			SELECT reference_name AS name, reference_doctype AS link_doctype, allocated_amount
+			FROM `tabPayment Entry Reference`
+			WHERE parent = %s
+			ORDER BY idx
+			""",
+			(docname,), as_dict=True,
+		)
+		for r in rows:
+			d = dict(r)
+			if d["link_doctype"] in ("Sales Invoice", "Purchase Invoice", "Journal Entry"):
+				d["posting_date"] = frappe.db.get_value(d["link_doctype"], d["name"], "posting_date") or ""
+			result.append(d)
+
+	elif doctype == "Journal Entry":
+		rows = frappe.db.sql(
+			"""
+			SELECT per.parent AS name, 'Payment Entry' AS link_doctype,
+			       pe.posting_date, per.allocated_amount
+			FROM `tabPayment Entry Reference` per
+			JOIN `tabPayment Entry` pe ON pe.name = per.parent
+			WHERE per.reference_doctype = 'Journal Entry'
+			      AND per.reference_name = %s AND pe.docstatus = 1
+			ORDER BY pe.posting_date DESC
+			""",
+			(docname,), as_dict=True,
+		)
+		result = [dict(r) for r in rows]
+
+	total_allocated = sum(float(r.get("allocated_amount") or 0) for r in result)
+	return {"docs": result, "total_allocated": round(total_allocated, 2)}
