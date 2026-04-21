@@ -3,44 +3,44 @@
     <div class="w-full max-w-[96vw] h-[90vh] rounded-3xl bg-[var(--color-surface)] shadow-2xl border border-[var(--color-border)] flex flex-col overflow-hidden">
 
       <!-- HEADER -->
-      <div class="flex items-center justify-between px-8 py-4 border-b border-[var(--color-border)] shrink-0">
+      <div class="flex items-center justify-between px-8 py-5 border-b border-[var(--color-border)] shrink-0">
         <div class="flex items-center gap-5">
-          <h2 class="text-lg font-black uppercase tracking-tight text-[var(--color-text)]">Outstanding Items</h2>
-          <span v-if="party" class="text-xs font-bold text-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-3 py-1 rounded-lg font-mono">{{ party }}</span>
+          <h2 class="text-4xl font-black uppercase tracking-tight text-[var(--color-text)]">Outstanding Items</h2>
+          <span v-if="party" class="text-2xl font-bold text-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-1.5 rounded-lg font-mono">{{ party }}</span>
           <!-- Direction Filter -->
           <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
             <button
               v-for="d in ['All', 'Dr', 'Cr']"
               :key="d"
               @click="filterDirection = d"
-              class="min-w-[44px] rounded-md px-3 py-1 text-[10px] font-black uppercase transition-all duration-150"
+              class="min-w-[60px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150"
               :class="filterDirection === d ? 'bg-[var(--color-highlight)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >{{ d }}</button>
           </div>
         </div>
-        <button @click="$emit('close')" class="h-9 w-9 rounded-full hover:bg-[var(--color-midlight)] flex items-center justify-center text-xl transition-colors">✕</button>
+        <button @click="$emit('close')" class="h-11 w-11 rounded-full hover:bg-[var(--color-midlight)] flex items-center justify-center text-2xl transition-colors">✕</button>
       </div>
 
       <!-- SUMMARY STRIP -->
       <div class="grid grid-cols-4 divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] shrink-0 bg-[var(--color-surface-raised)]/40">
-        <div class="flex flex-col items-center justify-center py-3 gap-0.5">
-          <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Net Outstanding</span>
-          <span class="text-2xl font-black font-mono"
+        <div class="flex flex-col items-center justify-center py-4 gap-1">
+          <span class="text-[18px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Net Outstanding</span>
+          <span class="text-5xl font-black font-mono"
             :class="netOutstanding > 0.005 ? 'text-[var(--color-danger)]' : netOutstanding < -0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
-            ₹{{ fmt(netOutstanding) }}<span class="text-sm ml-1 font-bold">{{ netOutstanding > 0.005 ? 'Dr' : netOutstanding < -0.005 ? 'Cr' : '' }}</span>
+            ₹{{ fmt(netOutstanding) }}<span class="text-2xl ml-1 font-bold">{{ netOutstanding > 0.005 ? 'Dr' : netOutstanding < -0.005 ? 'Cr' : '' }}</span>
           </span>
         </div>
-        <div class="flex flex-col items-center justify-center py-3 gap-0.5">
-          <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Entered Amount</span>
-          <span class="text-2xl font-black font-mono text-[var(--color-text)]">₹{{ fmt(enteredAmount) }}</span>
+        <div class="flex flex-col items-center justify-center py-4 gap-1">
+          <span class="text-[18px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Entered Amount</span>
+          <span class="text-5xl font-black font-mono text-[var(--color-text)]">₹{{ fmt(enteredAmount) }}</span>
         </div>
-        <div class="flex flex-col items-center justify-center py-3 gap-0.5">
-          <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Total Allocated</span>
-          <span class="text-2xl font-black font-mono text-[var(--color-success)]">₹{{ fmt(totalAllocated) }}</span>
+        <div class="flex flex-col items-center justify-center py-4 gap-1">
+          <span class="text-[18px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Total Allocated</span>
+          <span class="text-5xl font-black font-mono text-[var(--color-success)]">₹{{ fmt(totalAllocated) }}</span>
         </div>
-        <div class="flex flex-col items-center justify-center py-3 gap-0.5">
-          <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Remaining Balance</span>
-          <span class="text-2xl font-black font-mono"
+        <div class="flex flex-col items-center justify-center py-4 gap-1">
+          <span class="text-[18px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Remaining Balance</span>
+          <span class="text-5xl font-black font-mono"
             :class="Math.abs(remainingBalance) < 0.005 ? 'text-[var(--color-success)]' : remainingBalance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-info)]'">
             ₹{{ fmt(Math.abs(remainingBalance)) }}
           </span>
@@ -51,8 +51,8 @@
       <div class="flex-1 overflow-y-auto custom-scrollbar">
 
         <!-- Column Headers (sticky) -->
-        <div class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-6 py-2.5 grid gap-3 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]"
-          style="grid-template-columns: minmax(160px,2fr) 90px 110px 54px 150px 185px 140px;">
+        <div class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-6 py-3 grid gap-3 text-[20px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]"
+          style="grid-template-columns: minmax(220px,2fr) 130px 150px 80px 210px 250px 200px;">
           <div>Reference</div>
           <div>Type</div>
           <div class="text-center">Date / Age</div>
@@ -64,54 +64,54 @@
 
         <!-- Loading -->
         <div v-if="isLoading" class="flex items-center justify-center py-24 gap-3 text-[var(--color-text-muted)]">
-          <svg class="animate-spin w-5 h-5 shrink-0" viewBox="0 0 24 24">
+          <svg class="animate-spin w-8 h-8 shrink-0" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
           </svg>
-          <span class="text-sm font-bold">Loading...</span>
+          <span class="text-3xl font-bold">Loading...</span>
         </div>
 
         <!-- Empty -->
         <div v-else-if="!filteredInvoices.length && !filteredPayments.length && !filteredJournals.length"
-          class="flex flex-col items-center justify-center py-24 gap-3 text-[var(--color-text-muted)]">
-          <span class="text-5xl opacity-30">✓</span>
-          <span class="text-sm font-bold">No outstanding items found</span>
+          class="flex flex-col items-center justify-center py-24 gap-4 text-[var(--color-text-muted)]">
+          <span class="text-[6rem] opacity-30">✓</span>
+          <span class="text-3xl font-bold">No outstanding items found</span>
         </div>
 
         <template v-else>
 
           <!-- OUTSTANDING INVOICES -->
           <template v-if="filteredInvoices.length">
-            <div class="px-6 py-2 flex items-center gap-2 bg-[var(--color-danger)]/5 border-b border-[var(--color-danger)]/15">
-              <span class="w-1.5 h-1.5 rounded-full bg-[var(--color-danger)] shrink-0"></span>
-              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)]">Outstanding Invoices & Returns</span>
-              <span class="ml-auto text-[10px] font-bold text-[var(--color-danger)] opacity-60">{{ filteredInvoices.length }}</span>
+            <div class="px-6 py-3 flex items-center gap-2 bg-[var(--color-danger)]/5 border-b border-[var(--color-danger)]/15">
+              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-danger)] shrink-0"></span>
+              <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-danger)]">Outstanding Invoices & Returns</span>
+              <span class="ml-auto text-[20px] font-bold text-[var(--color-danger)] opacity-60">{{ filteredInvoices.length }}</span>
             </div>
             <div
               v-for="inv in filteredInvoices"
               :key="inv.name"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(160px,2fr) 90px 110px 54px 150px 185px 140px;"
+              class="px-6 py-5 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
+              style="grid-template-columns: minmax(220px,2fr) 130px 150px 80px 210px 250px 200px;"
             >
-              <div class="font-mono text-sm font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
-              <div class="text-[11px] font-semibold text-[var(--color-text-muted)] truncate">
+              <div class="font-mono text-3xl font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
+              <div class="text-[22px] font-semibold text-[var(--color-text-muted)] truncate">
                 {{ inv.doctype === 'Sales Invoice' ? 'Sales Inv' : 'Purch Inv' }}
               </div>
               <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[11px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</span>
-                <span class="text-[10px] font-black"
+                <span class="text-[22px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</span>
+                <span class="text-[20px] font-black"
                   :class="dueDays(inv.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
                   {{ dueDays(inv.posting_date) }}d
                 </span>
               </div>
               <div class="flex justify-center">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase"
+                <span class="px-2.5 py-1 rounded text-[20px] font-black uppercase"
                   :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
                   {{ inv.direction }}
                 </span>
               </div>
               <div class="text-right">
-                <span class="text-sm font-black font-mono"
+                <span class="text-3xl font-black font-mono"
                   :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                   ₹{{ fmt(inv.outstanding_amount) }}
                 </span>
@@ -122,13 +122,13 @@
                   type="number" step="0.01" min="0"
                   :max="Math.abs(inv.outstanding_amount)"
                   :disabled="remainingBalance <= 0.005 && !(localAmounts[inv.name] > 0)"
-                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-sm font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
+                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 px-4 text-right font-mono text-3xl font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                   @keydown.enter="focusNextAllocate($event)"
                   @input="onAllocationChange(inv.name)"
                 />
               </div>
               <div class="text-right">
-                <span class="text-sm font-black font-mono"
+                <span class="text-3xl font-black font-mono"
                   :class="balanceFor(inv.name, inv.outstanding_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
                   ₹{{ fmt(balanceFor(inv.name, inv.outstanding_amount)) }}
                 </span>
@@ -138,36 +138,36 @@
 
           <!-- UNLINKED PAYMENT ENTRIES -->
           <template v-if="filteredPayments.length">
-            <div class="px-6 py-2 flex items-center gap-2 bg-[var(--color-success)]/5 border-b border-[var(--color-success)]/15">
-              <span class="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] shrink-0"></span>
-              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-success)]">Unlinked Payment Entries</span>
-              <span class="ml-auto text-[10px] font-bold text-[var(--color-success)] opacity-60">{{ filteredPayments.length }}</span>
+            <div class="px-6 py-3 flex items-center gap-2 bg-[var(--color-success)]/5 border-b border-[var(--color-success)]/15">
+              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-success)] shrink-0"></span>
+              <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-success)]">Unlinked Payment Entries</span>
+              <span class="ml-auto text-[20px] font-bold text-[var(--color-success)] opacity-60">{{ filteredPayments.length }}</span>
             </div>
             <div
               v-for="pe in filteredPayments"
               :key="pe.name"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(160px,2fr) 90px 110px 54px 150px 185px 140px;"
+              class="px-6 py-5 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
+              style="grid-template-columns: minmax(220px,2fr) 130px 150px 80px 210px 250px 200px;"
             >
               <div class="flex flex-col min-w-0">
-                <span class="font-mono text-sm font-black text-[var(--color-text)] truncate">{{ pe.name }}</span>
-                <span v-if="pe.remarks" class="text-[10px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</span>
+                <span class="font-mono text-3xl font-black text-[var(--color-text)] truncate">{{ pe.name }}</span>
+                <span v-if="pe.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</span>
               </div>
-              <div class="text-[11px] font-semibold text-[var(--color-text-muted)]">Payment</div>
+              <div class="text-[22px] font-semibold text-[var(--color-text-muted)]">Payment</div>
               <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[11px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</span>
-                <span class="text-[10px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</span>
+                <span class="text-[22px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</span>
+                <span class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</span>
               </div>
               <div class="flex justify-center">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase"
+                <span class="px-2.5 py-1 rounded text-[20px] font-black uppercase"
                   :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
                   {{ pe.direction }}
                 </span>
               </div>
               <div class="text-right">
-                <span class="text-sm font-black font-mono text-[var(--color-success)]">₹{{ fmt(pe.unallocated_amount) }}</span>
+                <span class="text-3xl font-black font-mono text-[var(--color-success)]">₹{{ fmt(pe.unallocated_amount) }}</span>
                 <div v-if="pe.paid_amount && Math.abs(pe.paid_amount - pe.unallocated_amount) > 0.005"
-                  class="text-[10px] text-[var(--color-text-muted)] opacity-50">
+                  class="text-[20px] text-[var(--color-text-muted)] opacity-50">
                   of ₹{{ fmt(pe.paid_amount) }}
                 </div>
               </div>
@@ -177,13 +177,13 @@
                   type="number" step="0.01" min="0"
                   :max="Math.abs(pe.unallocated_amount)"
                   :disabled="remainingBalance <= 0.005 && !(localAmounts[pe.name] > 0)"
-                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-sm font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
+                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 px-4 text-right font-mono text-3xl font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                   @keydown.enter="focusNextAllocate($event)"
                   @input="onAllocationChange(pe.name)"
                 />
               </div>
               <div class="text-right">
-                <span class="text-sm font-black font-mono"
+                <span class="text-3xl font-black font-mono"
                   :class="balanceFor(pe.name, pe.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
                   ₹{{ fmt(balanceFor(pe.name, pe.unallocated_amount)) }}
                 </span>
@@ -193,34 +193,34 @@
 
           <!-- UNLINKED JOURNAL ENTRIES -->
           <template v-if="filteredJournals.length">
-            <div class="px-6 py-2 flex items-center gap-2 bg-[var(--color-info)]/5 border-b border-[var(--color-info)]/15">
-              <span class="w-1.5 h-1.5 rounded-full bg-[var(--color-info)] shrink-0"></span>
-              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Journal Entries</span>
-              <span class="ml-auto text-[10px] font-bold text-[var(--color-info)] opacity-60">{{ filteredJournals.length }}</span>
+            <div class="px-6 py-3 flex items-center gap-2 bg-[var(--color-info)]/5 border-b border-[var(--color-info)]/15">
+              <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-info)] shrink-0"></span>
+              <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Journal Entries</span>
+              <span class="ml-auto text-[20px] font-bold text-[var(--color-info)] opacity-60">{{ filteredJournals.length }}</span>
             </div>
             <div
               v-for="je in filteredJournals"
               :key="je.reference_row || (je.name + je.account)"
-              class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(160px,2fr) 90px 110px 54px 150px 185px 140px;"
+              class="px-6 py-5 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
+              style="grid-template-columns: minmax(220px,2fr) 130px 150px 80px 210px 250px 200px;"
             >
               <div class="flex flex-col min-w-0">
-                <span class="font-mono text-sm font-black text-[var(--color-text)] truncate">{{ je.name }}</span>
-                <span v-if="je.remarks" class="text-[10px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</span>
+                <span class="font-mono text-3xl font-black text-[var(--color-text)] truncate">{{ je.name }}</span>
+                <span v-if="je.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</span>
               </div>
-              <div class="text-[11px] font-semibold text-[var(--color-text-muted)]">Journal</div>
+              <div class="text-[22px] font-semibold text-[var(--color-text-muted)]">Journal</div>
               <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[11px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</span>
-                <span class="text-[10px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</span>
+                <span class="text-[22px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</span>
+                <span class="text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</span>
               </div>
               <div class="flex justify-center">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase"
+                <span class="px-2.5 py-1 rounded text-[20px] font-black uppercase"
                   :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
                   {{ je.direction }}
                 </span>
               </div>
               <div class="text-right">
-                <span class="text-sm font-black font-mono text-[var(--color-info)]">₹{{ fmt(je.unallocated_amount) }}</span>
+                <span class="text-3xl font-black font-mono text-[var(--color-info)]">₹{{ fmt(je.unallocated_amount) }}</span>
               </div>
               <div class="flex justify-end">
                 <input
@@ -228,13 +228,13 @@
                   type="number" step="0.01" min="0"
                   :max="Math.abs(je.unallocated_amount)"
                   :disabled="remainingBalance <= 0.005 && !(localAmounts[je.reference_row] > 0)"
-                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-sm font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
+                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 px-4 text-right font-mono text-3xl font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                   @keydown.enter="focusNextAllocate($event)"
                   @input="onAllocationChange(je.reference_row)"
                 />
               </div>
               <div class="text-right">
-                <span class="text-sm font-black font-mono"
+                <span class="text-3xl font-black font-mono"
                   :class="balanceFor(je.reference_row, je.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
                   ₹{{ fmt(balanceFor(je.reference_row, je.unallocated_amount)) }}
                 </span>
@@ -246,8 +246,8 @@
       </div>
 
       <!-- FOOTER -->
-      <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/60 px-8 py-4 flex items-center justify-between">
-        <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-4">
+      <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/60 px-8 py-5 flex items-center justify-between">
+        <div class="text-[20px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest flex items-center gap-4">
           <span>{{ totalItemCount }} item{{ totalItemCount !== 1 ? 's' : '' }}</span>
           <span class="opacity-30">·</span>
           <span>{{ allocatedCount }} allocated</span>
@@ -255,7 +255,7 @@
         <button
           ref="confirmBtn"
           @click="confirmAdjustments"
-          class="rounded-2xl bg-[var(--color-highlight)] px-10 py-3.5 text-lg font-black uppercase tracking-widest text-white hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--color-highlight)]/20"
+          class="rounded-2xl bg-[var(--color-highlight)] px-12 py-5 text-4xl font-black uppercase tracking-widest text-white hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--color-highlight)]/20"
         >
           Confirm Adjustments
         </button>
