@@ -656,12 +656,30 @@ function closeLedgerAndReturnToSearch() {
   openCustomerSearch(searchType.value)
 }
 
-function pickCust(item, dates) {
+async function pickCust(item, dates) {
   showCustomerSearchModal.value = false
   if (searchPurpose.value === 'outstanding') {
-    outstandingParty.value = item.name
-    outstandingPartyType.value = item.type || 'Customer'
-    showOutstandingBillsModal.value = true
+    try {
+      const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+        party_type: item.type || 'Customer',
+        party: item.name,
+      })
+      
+      const hasInvoices = (res.invoices || []).length > 0
+      const hasPayments = (res.payment_entries || []).length > 0
+      const hasJournals = (res.journal_entries || []).length > 0
+      
+      if (hasInvoices || hasPayments || hasJournals) {
+        outstandingParty.value = item.name
+        outstandingPartyType.value = item.type || 'Customer'
+        showOutstandingBillsModal.value = true
+      } else {
+        console.log('No outstanding items found for party:', item.name)
+        // Optionally show a toast or message
+      }
+    } catch (e) {
+      console.error('Failed to fetch outstanding items:', e)
+    }
     return
   }
   ledgerCustomerName.value = item.name

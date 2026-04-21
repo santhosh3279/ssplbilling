@@ -499,7 +499,10 @@ watch(() => props.modalAmounts, (newVal) => {
 
 watch(() => props.show, (val) => {
   if (val) {
-    filterDirection.value = props.activeTab === 'Receipt' ? 'Dr' : 'Cr'
+    if (props.activeTab === 'Receipt') filterDirection.value = 'Dr'
+    else if (props.activeTab === 'Payment') filterDirection.value = 'Cr'
+    else filterDirection.value = 'All'
+    
     if (props.party) fetchData()
   } else {
     lastModifiedKey.value = null

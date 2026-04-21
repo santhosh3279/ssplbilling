@@ -642,7 +642,39 @@ function handleAmountEnter() {
 
 async function fetchInvoices(autoShowOnlyIfItems = false) {
   if (!form.party) return
-  showInvoicesModal.value = true
+  
+  loadingInvoices.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+      party_type: form.party_type,
+      party: form.party,
+    })
+    
+    const targetDir = activeTab.value === 'Receipt' ? 'Dr' : 'Cr'
+    const hasInvoices = (res.invoices || []).some(i => i.direction === targetDir)
+    const hasPayments = (res.payment_entries || []).some(p => p.direction === targetDir)
+    const hasJournals = (res.journal_entries || []).some(j => j.direction === targetDir)
+    
+    if (hasInvoices || hasPayments || hasJournals) {
+      showInvoicesModal.value = true
+    } else {
+      if (!autoShowOnlyIfItems) {
+        console.log('No outstanding items found for direction:', targetDir)
+      }
+      // Move focus to remarks if no modal is shown
+      nextTick(() => {
+        remarksInput.value?.focus()
+      })
+    }
+  } catch (e) {
+    console.error('Failed to fetch outstanding items:', e)
+    // Fallback focus
+    nextTick(() => {
+      remarksInput.value?.focus()
+    })
+  } finally {
+    loadingInvoices.value = false
+  }
 }
 
 async function fetchOutstanding() {

@@ -246,7 +246,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchPartyBalance, fetchPartyDocs, createBulkPaymentEntry } from '../api.js'
+import { fetchPartyBalance, fetchPartyDocs, createBulkPaymentEntry, frappeGet } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 
@@ -398,13 +398,38 @@ function nextRowAndSearch(currentIdx) {
 // --- Invoice Linking Methods ---
 async function triggerModal(idx) {
   const row = rows.value[idx]
+  if (!row.party) return
+
+  let targetTab = 'Receipt'
   if (parseFloat(row.dr) > 0) {
-    rowActiveTab.value = 'Payment'
+    targetTab = 'Payment'
   } else if (parseFloat(row.cr) > 0) {
-    rowActiveTab.value = 'Receipt'
+    targetTab = 'Receipt'
   }
-  modalRowIdx.value = idx
-  showModal.value = true
+  
+  try {
+    const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+      party_type: row.party_type,
+      party: row.party,
+    })
+
+    const targetDir = targetTab === 'Receipt' ? 'Dr' : 'Cr'
+    const hasInvoices = (res.invoices || []).some(i => i.direction === targetDir)
+    const hasPayments = (res.payment_entries || []).some(p => p.direction === targetDir)
+    const hasJournals = (res.journal_entries || []).some(j => j.direction === targetDir)
+
+    if (hasInvoices || hasPayments || hasJournals) {
+      rowActiveTab.value = targetTab
+      modalRowIdx.value = idx
+      showModal.value = true
+    } else {
+      console.log('No outstanding items found for direction:', targetDir)
+      nextRowAndSearch(idx)
+    }
+  } catch (e) {
+    console.error('Failed to fetch outstanding items:', e)
+    nextRowAndSearch(idx)
+  }
 }
 
 function updateRowAllocations(allocations) {
