@@ -52,7 +52,7 @@
 
         <!-- Column Headers (sticky) -->
         <div class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-6 py-3 grid gap-3 text-[20px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]"
-          style="grid-template-columns: minmax(300px,2fr) 250px 200px 120px 340px 360px 300px;">
+          style="grid-template-columns: minmax(300px,2fr) 190px 155px 90px 340px 360px 300px;">
           <div>Reference</div>
           <div>Type</div>
           <div class="text-center">Date / Age</div>
@@ -91,21 +91,21 @@
               v-for="inv in filteredInvoices"
               :key="inv.name"
               class="px-6 py-8 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(300px,2fr) 250px 200px 120px 340px 360px 300px;"
+              style="grid-template-columns: minmax(300px,2fr) 190px 155px 90px 340px 360px 300px;"
             >
               <div class="font-mono text-6xl font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
-              <div class="text-[44px] font-semibold text-[var(--color-text-muted)] truncate">
+              <div class="text-[33px] font-semibold text-[var(--color-text-muted)] truncate">
                 {{ inv.doctype === 'Sales Invoice' ? 'Sales Inv' : 'Purch Inv' }}
               </div>
               <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[44px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</span>
-                <span class="text-[40px] font-black"
+                <span class="text-[33px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</span>
+                <span class="text-[30px] font-black"
                   :class="dueDays(inv.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
                   {{ dueDays(inv.posting_date) }}d
                 </span>
               </div>
               <div class="flex justify-center">
-                <span class="px-3 py-1.5 rounded text-[40px] font-black uppercase"
+                <span class="px-2.5 py-1 rounded text-[30px] font-black uppercase"
                   :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
                   {{ inv.direction }}
                 </span>
@@ -147,19 +147,19 @@
               v-for="pe in filteredPayments"
               :key="pe.name"
               class="px-6 py-8 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(300px,2fr) 250px 200px 120px 340px 360px 300px;"
+              style="grid-template-columns: minmax(300px,2fr) 190px 155px 90px 340px 360px 300px;"
             >
               <div class="flex flex-col min-w-0">
                 <span class="font-mono text-6xl font-black text-[var(--color-text)] truncate">{{ pe.name }}</span>
                 <span v-if="pe.remarks" class="text-[40px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</span>
               </div>
-              <div class="text-[44px] font-semibold text-[var(--color-text-muted)]">Payment</div>
+              <div class="text-[33px] font-semibold text-[var(--color-text-muted)]">Payment</div>
               <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[44px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</span>
-                <span class="text-[40px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</span>
+                <span class="text-[33px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</span>
+                <span class="text-[30px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</span>
               </div>
               <div class="flex justify-center">
-                <span class="px-3 py-1.5 rounded text-[40px] font-black uppercase"
+                <span class="px-2.5 py-1 rounded text-[30px] font-black uppercase"
                   :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
                   {{ pe.direction }}
                 </span>
@@ -202,19 +202,19 @@
               v-for="je in filteredJournals"
               :key="je.reference_row || (je.name + je.account)"
               class="px-6 py-8 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(300px,2fr) 250px 200px 120px 340px 360px 300px;"
+              style="grid-template-columns: minmax(300px,2fr) 190px 155px 90px 340px 360px 300px;"
             >
               <div class="flex flex-col min-w-0">
                 <span class="font-mono text-6xl font-black text-[var(--color-text)] truncate">{{ je.name }}</span>
                 <span v-if="je.remarks" class="text-[40px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</span>
               </div>
-              <div class="text-[44px] font-semibold text-[var(--color-text-muted)]">Journal</div>
+              <div class="text-[33px] font-semibold text-[var(--color-text-muted)]">Journal</div>
               <div class="flex flex-col items-center gap-0.5">
-                <span class="text-[44px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</span>
-                <span class="text-[40px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</span>
+                <span class="text-[33px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</span>
+                <span class="text-[30px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</span>
               </div>
               <div class="flex justify-center">
-                <span class="px-3 py-1.5 rounded text-[40px] font-black uppercase"
+                <span class="px-2.5 py-1 rounded text-[30px] font-black uppercase"
                   :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
                   {{ je.direction }}
                 </span>
