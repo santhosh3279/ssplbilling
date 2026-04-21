@@ -364,7 +364,12 @@ const currentPayments = computed(() => localPayments.value.length ? localPayment
 const currentJournals = computed(() => localJournals.value.length ? localJournals.value : props.unlinkedJournals)
 
 const totalAllocated = computed(() => {
-  return Object.values(localModalAmounts.value).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)
+  const result = Object.values(localModalAmounts.value).reduce((sum, val) => {
+    const num = parseFloat(val)
+    return sum + (isNaN(num) ? 0 : num)
+  }, 0)
+  console.log('[OutstandingBillsModal] totalAllocated:', result, 'from:', JSON.stringify(localModalAmounts.value))
+  return result
 })
 
 const remainingBalance = computed(() => {
