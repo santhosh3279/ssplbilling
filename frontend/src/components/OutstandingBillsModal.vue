@@ -177,10 +177,10 @@
               </div>
               <div class="w-[180px] shrink-0 text-right">
                 <div class="text-[22px] font-black font-mono text-[var(--color-info)]">
-                  ₹{{ fmt(je.unallocated_amount) }}
+                  ₹{{ fmt(je.journal_total_debit || je.total_amount) }}
                 </div>
-                <div v-if="je.total_amount && Math.abs(je.total_amount - (je.unallocated_amount || 0)) > 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
-                  {{ fmt(je.total_amount) }} - {{ fmt(je.total_amount - (je.unallocated_amount || 0)) }} (Lnk)
+                <div v-if="(je.journal_total_debit || je.total_amount) && Math.abs((je.journal_total_debit || je.total_amount) - (je.unallocated_amount || 0)) > 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
+                  Lnk: ₹{{ fmt((je.journal_total_debit || je.total_amount) - (je.unallocated_amount || 0)) }}
                 </div>
               </div>
               <div class="flex-1 flex justify-end">
@@ -197,9 +197,7 @@
                 </div>
               </div>
               <div class="w-[180px] shrink-0 text-right text-[20px] font-black font-mono opacity-40">
-                <template v-if="Math.abs(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) > 0.005">
-                  ₹{{ fmt(Math.abs(je.unallocated_amount) - (localModalAmounts[je.reference_row] || 0)) }}
-                </template>
+                ₹{{ fmt((je.unallocated_amount || 0) - (localModalAmounts[je.reference_row] || 0)) }}
               </div>
             </div>
           </div>

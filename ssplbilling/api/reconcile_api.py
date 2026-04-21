@@ -48,6 +48,7 @@ def get_unlinked_entries(party_type, party):
 			MAX(je.posting_date)                                              AS posting_date,
 			IFNULL(MAX(je.cheque_no), '')                                     AS reference_no,
 			IFNULL(MAX(je.user_remark), '')                                   AS remarks,
+			MAX(je.total_debit)                                               AS journal_total_debit,
 			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS total_amount,
 			SUM(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
 			         THEN ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)
@@ -69,6 +70,41 @@ def get_unlinked_entries(party_type, party):
 		(party_type, party, tuple(account_types), company),
 		as_dict=True,
 	)
+
+	# Accurate unallocated_amount calculation via Payment Ledger
+	if je_entries:
+		je_names = list(set(r["name"] for r in je_entries))
+		# Sum of all reconciled amounts for these JEs and this party
+		pl_links = frappe.db.sql(
+			"""
+			SELECT name, SUM(linked_amount) as linked_amount FROM (
+				SELECT voucher_no as name, SUM(ABS(amount_in_account_currency)) as linked_amount
+				FROM `tabPayment Ledger`
+				WHERE voucher_no IN %s AND against_voucher_no != voucher_no
+				  AND party = %s AND delinked = 0
+				GROUP BY voucher_no
+				UNION ALL
+				SELECT against_voucher_no as name, SUM(ABS(amount_in_account_currency)) as linked_amount
+				FROM `tabPayment Ledger`
+				WHERE against_voucher_no IN %s AND voucher_no != against_voucher_no
+				  AND party = %s AND delinked = 0
+				GROUP BY against_voucher_no
+			) t GROUP BY name
+			""",
+			(tuple(je_names), party, tuple(je_names), party),
+			as_dict=True,
+		)
+
+		links_map = {r["name"]: float(r["linked_amount"]) for r in pl_links}
+		
+		processed_jes = []
+		for je in je_entries:
+			linked = links_map.get(je["name"], 0)
+			# Re-calculate unallocated_amount: Total party-specific amount minus PL links
+			je["unallocated_amount"] = max(0, float(je["total_amount"]) - linked)
+			if je["unallocated_amount"] > 0.005:
+				processed_jes.append(dict(je))
+		je_entries = processed_jes
 
 	return {
 		"payment_entries": [dict(r) for r in payment_entries],
