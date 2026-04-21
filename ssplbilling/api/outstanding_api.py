@@ -109,26 +109,30 @@ def get_party_outstanding(party_type, party):
 		as_dict=True,
 	)
 
-	# Accurate unallocated amount via Payment Ledger
+	# Accurate unallocated amount via Payment Ledger (table may not exist on older ERPNext installs)
 	journal_entries = []
 	if je_raw:
 		je_names = list(set(r["name"] for r in je_raw))
-		pl_links = frappe.db.sql(
-			"""
-			SELECT
-				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END AS name,
-				account,
-				SUM(ABS(amount_in_account_currency)) AS linked_amount
-			FROM `tabPayment Ledger`
-			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
-			  AND against_voucher_no != voucher_no
-			  AND party = %s AND delinked = 0
-			GROUP BY name, account
-			""",
-			(tuple(je_names), tuple(je_names), tuple(je_names), party),
-			as_dict=True,
-		)
-		links_map = {(r["name"], r["account"]): float(r["linked_amount"]) for r in pl_links}
+		links_map = {}
+		try:
+			pl_links = frappe.db.sql(
+				"""
+				SELECT
+					CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END AS name,
+					account,
+					SUM(ABS(amount_in_account_currency)) AS linked_amount
+				FROM `tabPayment Ledger`
+				WHERE (voucher_no IN %s OR against_voucher_no IN %s)
+				  AND against_voucher_no != voucher_no
+				  AND party = %s AND delinked = 0
+				GROUP BY name, account
+				""",
+				(tuple(je_names), tuple(je_names), tuple(je_names), party),
+				as_dict=True,
+			)
+			links_map = {(r["name"], r["account"]): float(r["linked_amount"]) for r in pl_links}
+		except Exception:
+			pass  # tabPayment Ledger absent; fall back to SQL-only unallocated amount
 
 		for je in je_raw:
 			linked = links_map.get((je["name"], je["account"]), 0)
