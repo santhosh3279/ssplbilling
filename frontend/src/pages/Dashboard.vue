@@ -250,6 +250,16 @@
       :initial-to-date="stockLedgerToDate"
       @close="closeStockLedgerAndReturnToSearch"
     />
+
+    <!-- OUTSTANDING BILLS MODAL -->
+    <OutstandingBillsModal
+      :show="showOutstandingBillsModal"
+      :party="outstandingParty"
+      :party-type="outstandingPartyType"
+      :entered-amount="0"
+      @close="showOutstandingBillsModal = false"
+    />
+
     <!-- INVOICE TEMPLATE FULL SCREEN MODAL -->
     <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
       <Item_Invoice_Template
@@ -355,6 +365,7 @@ import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Stock_Template from '../components/Stock_Template.vue'
+import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
@@ -456,6 +467,7 @@ const allTiles = [
   { id: 'single-entry',       bucket: 'accounts', name: 'Bulk Payment',          desc: 'Fast bulk payment entries',                icon: '🧾', shortcut: ''    },
   { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
   { id: 'journal-contra',     bucket: 'accounts', name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
+  { id: 'outstanding-bills',  bucket: 'accounts', name: 'Outstanding',           desc: 'View party outstanding bills',             icon: '📋', shortcut: ''    },
   // ── Ledger View ──
   { id: 'stock-ledger',       bucket: 'ledger',   name: 'Stock',                 desc: 'View stock movement by item',              icon: '📦', shortcut: ''    },
   { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'F6'  },
@@ -525,6 +537,16 @@ function openModule(id) {
     openItemSearch()
     return
   }
+  if (id === 'outstanding-bills') {
+    searchPurpose.value = 'outstanding'
+    openCustomerSearch('All')
+    return
+  }
+  if (id === 'ledger') {
+    searchPurpose.value = 'ledger'
+    openCustomerSearch('All')
+    return
+  }
   if (routeAliases[id]) {
     router.push(routeAliases[id])
   } else if (readyModules.includes(id)) {
@@ -546,7 +568,10 @@ const routeMap = {
 useShortcuts(dashboardShortcuts({
   openModule,
   openCustomerSearch: () => {
-    if (!isBiller.value) openCustomerSearch('All')
+    if (!isBiller.value) {
+      searchPurpose.value = 'ledger'
+      openCustomerSearch('All')
+    }
   },
   openItemSearch: () => openItemSearch(),
   handleEscape: () => {
@@ -557,6 +582,7 @@ useShortcuts(dashboardShortcuts({
     if (showStockLedgerWindow.value) { showStockLedgerWindow.value = false; return }
     if (showInvoiceTemplate.value) { showInvoiceTemplate.value = false; return }
     if (showStockTemplate.value) { showStockTemplate.value = false; return }
+    if (showOutstandingBillsModal.value) { showOutstandingBillsModal.value = false; return }
   }
 }))
 
@@ -578,6 +604,9 @@ const showGeneralSettings = ref(false)
 const generalSettingsRef = ref(null)
 const isSyncing = ref(false)
 
+// ==================== SEARCH CONTEXT ====================
+const searchPurpose = ref('ledger') // 'ledger' or 'outstanding'
+
 async function handleFullSync() {
   if (isSyncing.value) return
   isSyncing.value = true
@@ -598,6 +627,9 @@ const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 const showCustomerSearchModal = ref(false)
 const searchType = ref('All')
 const showLedgerWindow = ref(false)
+const showOutstandingBillsModal = ref(false)
+const outstandingParty = ref('')
+const outstandingPartyType = ref('')
 const ledgerCustomerName = ref('')
 const ledgerType = ref('Customer')
 const ledgerFromDate = ref('')
@@ -626,6 +658,12 @@ function closeLedgerAndReturnToSearch() {
 
 function pickCust(item, dates) {
   showCustomerSearchModal.value = false
+  if (searchPurpose.value === 'outstanding') {
+    outstandingParty.value = item.name
+    outstandingPartyType.value = item.type || 'Customer'
+    showOutstandingBillsModal.value = true
+    return
+  }
   ledgerCustomerName.value = item.name
   ledgerType.value = item.type || 'Customer'
   if (dates) {
