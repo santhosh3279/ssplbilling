@@ -164,6 +164,69 @@ def get_party_outstanding(party_type, party):
 			if je["unallocated_amount"] > 0.005:
 				journal_entries.append(dict(je))
 
+	# ── Linked document counts ───────────────────────────────────────────────────────────────────
+	# Invoices: count of submitted PEs + submitted JEs that reference each invoice
+	if invoices:
+		inv_names = tuple(i["name"] for i in invoices)
+		pe_inv_counts = frappe.db.sql(
+			"""
+			SELECT per.reference_name, COUNT(DISTINCT per.parent) AS cnt
+			FROM `tabPayment Entry Reference` per
+			JOIN `tabPayment Entry` pe ON pe.name = per.parent
+			WHERE per.reference_name IN %s AND pe.docstatus = 1
+			GROUP BY per.reference_name
+			""",
+			(inv_names,), as_dict=True,
+		)
+		je_inv_counts = frappe.db.sql(
+			"""
+			SELECT jea.reference_name, COUNT(DISTINCT jea.parent) AS cnt
+			FROM `tabJournal Entry Account` jea
+			JOIN `tabJournal Entry` je ON je.name = jea.parent
+			WHERE jea.reference_name IN %s AND je.docstatus = 1
+			GROUP BY jea.reference_name
+			""",
+			(inv_names,), as_dict=True,
+		)
+		pe_inv_map = {r["reference_name"]: int(r["cnt"]) for r in pe_inv_counts}
+		je_inv_map = {r["reference_name"]: int(r["cnt"]) for r in je_inv_counts}
+		for inv in invoices:
+			inv["linked_count"] = pe_inv_map.get(inv["name"], 0) + je_inv_map.get(inv["name"], 0)
+
+	# Payment entries: count of reference rows on the PE
+	if payment_entries:
+		pe_names = tuple(p["name"] for p in payment_entries)
+		pe_ref_counts = frappe.db.sql(
+			"""
+			SELECT parent, COUNT(*) AS cnt
+			FROM `tabPayment Entry Reference`
+			WHERE parent IN %s
+			GROUP BY parent
+			""",
+			(pe_names,), as_dict=True,
+		)
+		pe_ref_map = {r["parent"]: int(r["cnt"]) for r in pe_ref_counts}
+		for pe in payment_entries:
+			pe["linked_count"] = pe_ref_map.get(pe["name"], 0)
+
+	# Journal entries: count of submitted PEs referencing each JE
+	if journal_entries:
+		je_final_names = tuple(j["name"] for j in journal_entries)
+		je_lnk_counts = frappe.db.sql(
+			"""
+			SELECT per.reference_name, COUNT(DISTINCT per.parent) AS cnt
+			FROM `tabPayment Entry Reference` per
+			JOIN `tabPayment Entry` pe ON pe.name = per.parent
+			WHERE per.reference_doctype = 'Journal Entry'
+			      AND per.reference_name IN %s AND pe.docstatus = 1
+			GROUP BY per.reference_name
+			""",
+			(je_final_names,), as_dict=True,
+		)
+		je_lnk_map = {r["reference_name"]: int(r["cnt"]) for r in je_lnk_counts}
+		for je in journal_entries:
+			je["linked_count"] = je_lnk_map.get(je["name"], 0)
+
 	# ── Summary ──────────────────────────────────────────────────────────────────────────────────
 	inv_dr = sum(abs(float(i["outstanding_amount"])) for i in invoices if i["direction"] == "Dr")
 	inv_cr = sum(abs(float(i["outstanding_amount"])) for i in invoices if i["direction"] == "Cr")

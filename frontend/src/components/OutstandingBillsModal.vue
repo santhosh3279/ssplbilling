@@ -68,13 +68,14 @@
 
         <table v-else class="w-full table-fixed border-collapse">
           <colgroup>
-            <col style="width:26%" />
-            <col style="width:9%" />
-            <col style="width:9%" />
-            <col style="width:7%" />
+            <col style="width:24%" />
+            <col style="width:8%" />
+            <col style="width:8%" />
             <col style="width:6%" />
+            <col style="width:5%" />
             <col style="width:13%" />
-            <col style="width:16%" />
+            <col style="width:7%" />
+            <col style="width:15%" />
             <col style="width:14%" />
           </colgroup>
 
@@ -86,6 +87,7 @@
               <th class="px-3 py-3 text-center">Age</th>
               <th class="px-3 py-3 text-center">Dir</th>
               <th class="px-3 py-3 text-right">Outstanding</th>
+              <th class="px-3 py-3 text-center">Linked</th>
               <th class="px-3 py-3 text-right">Allocate</th>
               <th class="px-3 py-3 text-right">Balance</th>
             </tr>
@@ -96,7 +98,7 @@
             <!-- OUTSTANDING INVOICES -->
             <template v-if="filteredInvoices.length">
               <tr class="bg-[var(--color-danger)]/5 border-b border-[var(--color-danger)]/15">
-                <td colspan="8" class="px-6 py-2">
+                <td colspan="9" class="px-6 py-2">
                   <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-danger)] shrink-0"></span>
                     <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-danger)]">Outstanding Invoices & Returns</span>
@@ -133,6 +135,13 @@
                     / ₹{{ fmt(inv.grand_total) }}
                   </span>
                 </td>
+                <td class="px-3 py-3 text-center">
+                  <span v-if="inv.linked_count > 0"
+                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]">
+                    {{ inv.linked_count }}
+                  </span>
+                  <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
+                </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[inv.name]" type="number" step="0.01" min="0"
                     :max="Math.abs(inv.outstanding_amount)"
@@ -152,7 +161,7 @@
             <!-- UNLINKED PAYMENT ENTRIES -->
             <template v-if="filteredPayments.length">
               <tr class="bg-[var(--color-success)]/5 border-b border-[var(--color-success)]/15">
-                <td colspan="8" class="px-6 py-2">
+                <td colspan="9" class="px-6 py-2">
                   <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-success)] shrink-0"></span>
                     <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-success)]">Unlinked Payment Entries</span>
@@ -182,6 +191,13 @@
                     / ₹{{ fmt(pe.paid_amount) }}
                   </span>
                 </td>
+                <td class="px-3 py-3 text-center">
+                  <span v-if="pe.linked_count > 0"
+                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]">
+                    {{ pe.linked_count }}
+                  </span>
+                  <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
+                </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[pe.name]" type="number" step="0.01" min="0"
                     :max="Math.abs(pe.unallocated_amount)"
@@ -201,7 +217,7 @@
             <!-- UNLINKED JOURNAL ENTRIES -->
             <template v-if="filteredJournals.length">
               <tr class="bg-[var(--color-info)]/5 border-b border-[var(--color-info)]/15">
-                <td colspan="8" class="px-6 py-2">
+                <td colspan="9" class="px-6 py-2">
                   <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[var(--color-info)] shrink-0"></span>
                     <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Journal Entries</span>
@@ -230,6 +246,13 @@
                     class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
                     / ₹{{ fmt(je.journal_total_debit || je.total_amount) }}
                   </span>
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <span v-if="je.linked_count > 0"
+                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]">
+                    {{ je.linked_count }}
+                  </span>
+                  <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
                 </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[je.reference_row]" type="number" step="0.01" min="0"
