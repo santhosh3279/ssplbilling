@@ -435,6 +435,7 @@ const todayDay = computed(() => {
 const BUCKETS = [
   { id: 'sale',     label: 'Sale' },
   { id: 'purchase', label: 'Purchase' },
+  { id: 'accounts', label: 'Accounts' },
   { id: 'ledger',   label: 'Ledger View' },
   { id: 'sspl',     label: 'SSPL Special' },
   { id: 'report',   label: 'Report' },
@@ -451,6 +452,10 @@ const allTiles = [
   { id: 'purchase-invoice',   bucket: 'purchase', name: 'Purchase Invoice',      desc: 'Fast purchase invoice entry',              icon: '🧾', shortcut: ''    },
   { id: 'purchase-order',     bucket: 'purchase', name: 'Purchase Order',        desc: 'Create & manage purchase orders',          icon: '📋', shortcut: 'F7'  },
   { id: 'purchase-submit',    bucket: 'purchase', name: 'Purchase Desk',         desc: 'Confirm & submit purchases',               icon: '📥', shortcut: 'F4'  },
+  // ── Accounts ──
+  { id: 'single-entry',       bucket: 'accounts', name: 'Bulk Payment',          desc: 'Fast bulk payment entries',                icon: '🧾', shortcut: ''    },
+  { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
+  { id: 'journal-contra',     bucket: 'accounts', name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
   // ── Ledger View ──
   { id: 'stock-ledger',       bucket: 'ledger',   name: 'Stock',                 desc: 'View stock movement by item',              icon: '📦', shortcut: ''    },
   { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'F6'  },
@@ -461,10 +466,7 @@ const allTiles = [
   { id: 'loading-receipt',    bucket: 'sspl',     name: 'Loading Receipt',       desc: 'Generate loading receipts',                icon: '🚚', shortcut: ''    },
   { id: 'parcel-address',     bucket: 'sspl',     name: 'Parcel Address',        desc: 'Manage parcel addresses',                  icon: '📦', shortcut: ''    },
   { id: 'gst-dummy-ledger',   bucket: 'sspl',     name: 'WGB PAYMENTS',          desc: 'Manage WGB payment entries',               icon: '📖', shortcut: ''    },
-  { id: 'single-entry',       bucket: 'sspl',     name: 'Bulk Payment',          desc: 'Fast bulk payment entries',                icon: '🧾', shortcut: ''    },
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Pricing Rule',          desc: 'Sync & manage pricing rules',              icon: '🏷️', shortcut: ''    },
-  { id: 'payment',            bucket: 'sspl',     name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
-  { id: 'journal-contra',     bucket: 'sspl',     name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
   { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
   { id: 'store-transfer',     bucket: 'sspl',   name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'F9'  },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
