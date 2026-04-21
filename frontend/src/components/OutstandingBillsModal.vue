@@ -52,7 +52,7 @@
 
         <!-- Column Headers (sticky) -->
         <div class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-6 py-3 grid gap-3 text-[20px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]"
-          style="grid-template-columns: minmax(200px,2fr) 100px 110px 60px 160px 180px 150px;">
+          style="grid-template-columns: 25ch 20ch 20ch 3ch 11ch 8ch 1fr;">
           <div>Reference</div>
           <div>Type</div>
           <div class="text-center">Date / Age</div>
@@ -91,7 +91,7 @@
               v-for="inv in filteredInvoices"
               :key="inv.name"
               class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(200px,2fr) 100px 110px 60px 160px 180px 150px;"
+              style="grid-template-columns: 25ch 20ch 20ch 3ch 11ch 8ch 1fr;"
             >
               <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
               <div class="text-[20px] font-semibold text-[var(--color-text-muted)] truncate">
@@ -147,7 +147,7 @@
               v-for="pe in filteredPayments"
               :key="pe.name"
               class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(200px,2fr) 100px 110px 60px 160px 180px 150px;"
+              style="grid-template-columns: 25ch 20ch 20ch 3ch 11ch 8ch 1fr;"
             >
               <div class="flex flex-col min-w-0">
                 <span class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</span>
@@ -202,7 +202,7 @@
               v-for="je in filteredJournals"
               :key="je.reference_row || (je.name + je.account)"
               class="px-6 py-3 border-b border-[var(--color-border)] grid gap-3 items-center hover:bg-[var(--color-midlight)]/20 transition-colors"
-              style="grid-template-columns: minmax(200px,2fr) 100px 110px 60px 160px 180px 150px;"
+              style="grid-template-columns: 25ch 20ch 20ch 3ch 11ch 8ch 1fr;"
             >
               <div class="flex flex-col min-w-0">
                 <span class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ je.name }}</span>
