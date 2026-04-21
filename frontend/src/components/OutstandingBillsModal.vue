@@ -165,7 +165,7 @@
               <span class="w-2.5 h-2.5 rounded-full bg-[var(--color-info)]"></span>
               Unlinked Journal Entries
             </h3>
-            <div v-for="je in filteredJournals" :key="je.reference_row" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 shadow-md flex items-center gap-6 group hover:border-[var(--color-highlight)]/30 transition-all">
+            <div v-for="je in filteredJournals" :key="je.reference_row || (je.name + (je.account || ''))" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 shadow-md flex items-center gap-6 group hover:border-[var(--color-highlight)]/30 transition-all">
               <div class="w-[250px] shrink-0 flex flex-col min-w-0">
                 <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ je.name }}</div>
                 <div v-if="je.remarks" class="text-[11px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</div>
@@ -177,10 +177,10 @@
               </div>
               <div class="w-[180px] shrink-0 text-right">
                 <div class="text-[22px] font-black font-mono text-[var(--color-info)]">
-                  ₹{{ fmt(je.journal_total_debit || je.total_amount) }}
+                  ₹{{ fmt(je.journal_total_debit || je.total_amount || 0) }}
                 </div>
-                <div v-if="(je.journal_total_debit || je.total_amount) && Math.abs((je.journal_total_debit || je.total_amount) - (je.unallocated_amount || 0)) > 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
-                  Lnk: ₹{{ fmt((je.journal_total_debit || je.total_amount) - (je.unallocated_amount || 0)) }}
+                <div v-if="(je.unallocated_amount || 0) < (je.total_amount || 0) - 0.005" class="text-[10px] font-bold text-[var(--color-text-muted)] opacity-60">
+                  Lnk: ₹{{ fmt((je.total_amount || 0) - (je.unallocated_amount || 0)) }}
                 </div>
               </div>
               <div class="flex-1 flex justify-end">
@@ -188,7 +188,7 @@
                   <input
                     v-model.number="localModalAmounts[je.reference_row]"
                     type="number" step="0.01" min="0"
-                    :max="Math.abs(je.unallocated_amount)"
+                    :max="Math.abs(je.unallocated_amount || 0)"
                     :disabled="remainingBalance <= 0.005 && !(localModalAmounts[je.reference_row] > 0)"
                     class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-right font-mono text-[22px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 transition-all outline-none disabled:opacity-20 disabled:grayscale"
                     @keydown.enter="focusNextAllocate($event)"

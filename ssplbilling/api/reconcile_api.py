@@ -43,6 +43,7 @@ def get_unlinked_entries(party_type, party):
 		"""
 		SELECT
 			jea.parent                                                        AS name,
+			jea.account                                                       AS account,
 			MAX(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
 			         THEN jea.name ELSE NULL END)                             AS reference_row,
 			MAX(je.posting_date)                                              AS posting_date,
@@ -74,32 +75,30 @@ def get_unlinked_entries(party_type, party):
 	# Accurate unallocated_amount calculation via Payment Ledger
 	if je_entries:
 		je_names = list(set(r["name"] for r in je_entries))
-		# Sum of all reconciled amounts for these JEs and this party
+		# Sum of all reconciled amounts for these JEs, this party, and these specific accounts.
+		# Linkage is defined as voucher_no != against_voucher_no.
+		# We look for ANY entry in Payment Ledger for our JE/Account/Party that is part of a link.
 		pl_links = frappe.db.sql(
 			"""
-			SELECT name, SUM(linked_amount) as linked_amount FROM (
-				SELECT voucher_no as name, SUM(ABS(amount_in_account_currency)) as linked_amount
-				FROM `tabPayment Ledger`
-				WHERE voucher_no IN %s AND against_voucher_no != voucher_no
-				  AND party = %s AND delinked = 0
-				GROUP BY voucher_no
-				UNION ALL
-				SELECT against_voucher_no as name, SUM(ABS(amount_in_account_currency)) as linked_amount
-				FROM `tabPayment Ledger`
-				WHERE against_voucher_no IN %s AND voucher_no != against_voucher_no
-				  AND party = %s AND delinked = 0
-				GROUP BY against_voucher_no
-			) t GROUP BY name
+			SELECT 
+				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END as name,
+				account,
+				SUM(ABS(amount_in_account_currency)) as linked_amount
+			FROM `tabPayment Ledger`
+			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
+			  AND against_voucher_no != voucher_no
+			  AND party = %s AND delinked = 0
+			GROUP BY name, account
 			""",
-			(tuple(je_names), party, tuple(je_names), party),
+			(tuple(je_names), tuple(je_names), tuple(je_names), party),
 			as_dict=True,
 		)
 
-		links_map = {r["name"]: float(r["linked_amount"]) for r in pl_links}
+		links_map = {(r["name"], r["account"]): float(r["linked_amount"]) for r in pl_links}
 		
 		processed_jes = []
 		for je in je_entries:
-			linked = links_map.get(je["name"], 0)
+			linked = links_map.get((je["name"], je["account"]), 0)
 			# Re-calculate unallocated_amount: Total party-specific amount minus PL links
 			je["unallocated_amount"] = max(0, float(je["total_amount"]) - linked)
 			if je["unallocated_amount"] > 0.005:
