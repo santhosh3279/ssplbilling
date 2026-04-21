@@ -55,6 +55,7 @@
                 <th class="px-4 py-3 w-40 text-right text-[var(--color-success)]">Credit (Cr)</th>
                 <th class="px-4 py-3 w-48 text-right">Outstanding</th>
                 <th class="px-4 py-3 w-48 text-right">New Balance</th>
+                <th class="px-4 py-3 min-w-[200px]">Remarks</th>
                 <th class="px-4 py-3 min-w-[400px]">Linked Invoices / References</th>
                 <th class="px-4 py-3 w-16"></th>
               </tr>
@@ -124,6 +125,18 @@
                     {{ Math.abs(calculateNewBalance(row)).toLocaleString('en-IN') }} {{ calculateNewBalance(row) > 0 ? 'Dr' : 'Cr' }}
                   </div>
                   <div v-else class="text-[var(--color-text-muted)] italic">—</div>
+                </td>
+
+                <!-- Remarks -->
+                <td class="px-2 py-1.5">
+                  <input
+                    ref="remarkInputs"
+                    v-model="row.remarks"
+                    type="text"
+                    @keydown.enter.prevent="handleRemarkEnter(idx)"
+                    class="w-full bg-transparent text-xl font-bold focus:outline-none focus:bg-[var(--color-midlight)]/10 rounded-lg px-2 py-1"
+                    placeholder="Remarks..."
+                  />
                 </td>
 
                 <!-- Linked Invoices (Horizontal Scroll) -->
@@ -260,6 +273,7 @@ const mopBtnRef = ref(null)
 const partyInputs = ref([])
 const drInputs = ref([])
 const crInputs = ref([])
+const remarkInputs = ref([])
 
 // --- Core State ---
 const mopAccount = ref('')
@@ -290,7 +304,8 @@ function createEmptyRow() {
     cr: null,
     outstanding: null,
     allocations: [],
-    modalAmounts: {}
+    modalAmounts: {},
+    remarks: ''
   }
 }
 
@@ -395,8 +410,16 @@ function handleCrEnter(idx) {
   if (val > 0) {
     triggerModal(idx)
   } else {
-    nextRowAndSearch(idx)
+    // Focus Remarks
+    nextTick(() => {
+      remarkInputs.value[idx]?.focus()
+      remarkInputs.value[idx]?.select()
+    })
   }
+}
+
+function handleRemarkEnter(idx) {
+  nextRowAndSearch(idx)
 }
 
 function nextRowAndSearch(currentIdx) {
@@ -456,8 +479,11 @@ function updateRowAllocations(allocations) {
     })
     rows.value[idx].modalAmounts = newModalAmounts
 
-    // After updating allocations and modal closes, move to next row
-    nextRowAndSearch(idx)
+    // Focus remarks after modal
+    nextTick(() => {
+      remarkInputs.value[idx]?.focus()
+      remarkInputs.value[idx]?.select()
+    })
   }
 }
 
@@ -486,7 +512,8 @@ async function saveAllEntries() {
         mode_of_payment: 'Cash', // Default
         account: mopAccount.value,
         posting_date: postingDate.value,
-        remarks: `Bulk Entry - ${row.party_name}`,
+        remarks: row.remarks || `Bulk Entry - ${row.party_name}`,
+        "Custom Remarks": 1,
         references: row.allocations.map(a => ({
           reference_doctype: a.reference_doctype,
           reference_name: a.reference_name,
