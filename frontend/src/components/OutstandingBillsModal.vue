@@ -404,7 +404,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
 
 const props = defineProps({
@@ -483,6 +483,7 @@ async function fetchData() {
     console.error('[OutstandingBillsModal] fetch failed:', e)
   } finally {
     localLoading.value = false
+    nextTick(focusFirstAllocate)
   }
 }
 
@@ -638,12 +639,20 @@ function dueDays(dateStr) {
   return Math.floor((today - d) / 86400000)
 }
 
+function focusFirstAllocate() {
+  const inputs = document.querySelectorAll('.allocate-input:not(:disabled)')
+  if (inputs.length > 0) { inputs[0].focus(); inputs[0].select() }
+}
+
 function focusNextAllocate(event) {
-  if (Math.abs(remainingBalance.value) < 0.005) { confirmBtn.value?.focus(); return }
   const inputs = Array.from(document.querySelectorAll('.allocate-input:not(:disabled)'))
   const idx = inputs.indexOf(event.target)
-  if (idx >= 0 && idx < inputs.length - 1) { inputs[idx + 1].focus(); inputs[idx + 1].select() }
-  else confirmBtn.value?.focus()
+  if (idx >= 0 && idx < inputs.length - 1) {
+    inputs[idx + 1].focus()
+    inputs[idx + 1].select()
+  } else {
+    confirmBtn.value?.focus()
+  }
 }
 </script>
 
