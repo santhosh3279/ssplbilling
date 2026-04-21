@@ -128,6 +128,10 @@
                     :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                     ₹{{ fmt(inv.outstanding_amount) }}
                   </span>
+                  <span v-if="inv.grand_total && Math.abs(inv.grand_total - inv.outstanding_amount) > 0.005"
+                    class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
+                    / ₹{{ fmt(inv.grand_total) }}
+                  </span>
                 </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[inv.name]" type="number" step="0.01" min="0"
@@ -172,11 +176,11 @@
                   </span>
                 </td>
                 <td class="px-3 py-3 text-right">
-                  <div class="text-[20px] font-black font-mono text-[var(--color-success)]">₹{{ fmt(pe.unallocated_amount) }}</div>
-                  <div v-if="pe.paid_amount && Math.abs(pe.paid_amount - pe.unallocated_amount) > 0.005"
-                    class="text-[20px] text-[var(--color-text-muted)] opacity-50">
-                    of ₹{{ fmt(pe.paid_amount) }}
-                  </div>
+                  <span class="text-[20px] font-black font-mono text-[var(--color-success)]">₹{{ fmt(pe.unallocated_amount) }}</span>
+                  <span v-if="pe.paid_amount && Math.abs(pe.paid_amount - pe.unallocated_amount) > 0.005"
+                    class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
+                    / ₹{{ fmt(pe.paid_amount) }}
+                  </span>
                 </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[pe.name]" type="number" step="0.01" min="0"
@@ -222,6 +226,10 @@
                 </td>
                 <td class="px-3 py-3 text-right">
                   <span class="text-[20px] font-black font-mono text-[var(--color-info)]">₹{{ fmt(je.unallocated_amount) }}</span>
+                  <span v-if="(je.journal_total_debit || je.total_amount) && Math.abs((je.journal_total_debit || je.total_amount) - je.unallocated_amount) > 0.005"
+                    class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
+                    / ₹{{ fmt(je.journal_total_debit || je.total_amount) }}
+                  </span>
                 </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[je.reference_row]" type="number" step="0.01" min="0"
