@@ -1144,8 +1144,8 @@ function scrollRowToEdge(idx, direction) {
   const rowEl = rowRefs.value[idx]; if (!rowEl) return
   const container = rowEl.closest('.overflow-y-auto'); if (!container) return
   const rowRect = rowEl.getBoundingClientRect(), cRect = container.getBoundingClientRect()
-  if (direction === 'down') container.scrollTop += (rowRect.bottom - cRect.bottom)
-  else container.scrollTop += (rowRect.top - cRect.top - (container.querySelector('thead')?.offsetHeight || 0))
+  if (direction === 'down') { if (rowRect.bottom > cRect.bottom) container.scrollTop += (rowRect.bottom - cRect.bottom) }
+  else { const theadH = container.querySelector('thead')?.offsetHeight || 0; if (rowRect.top < cRect.top + theadH) container.scrollTop += (rowRect.top - cRect.top - theadH) }
 }
 
 function focusRow(idx, direction = null) {

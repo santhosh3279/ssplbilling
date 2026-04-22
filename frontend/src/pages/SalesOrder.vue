@@ -1677,13 +1677,12 @@ function scrollRowToEdge(idx, direction) {
   const rowRect = rowEl.getBoundingClientRect()
   const cRect = container.getBoundingClientRect()
   if (direction === 'down') {
-    // Align row bottom with container bottom
-    container.scrollTop += (rowRect.bottom - cRect.bottom)
+    if (rowRect.bottom > cRect.bottom)
+      container.scrollTop += (rowRect.bottom - cRect.bottom)
   } else {
-    // Align row top with container top (below sticky thead)
-    const thead = container.querySelector('thead')
-    const theadH = thead ? thead.offsetHeight : 0
-    container.scrollTop += (rowRect.top - cRect.top - theadH)
+    const theadH = container.querySelector('thead')?.offsetHeight || 0
+    if (rowRect.top < cRect.top + theadH)
+      container.scrollTop += (rowRect.top - cRect.top - theadH)
   }
 }
 
