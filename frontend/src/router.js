@@ -31,6 +31,7 @@ import DailyReport from './pages/DailyReport.vue'
 import GeneralLedger from './pages/GeneralLedger.vue'
 import StoreTransfer from './pages/StoreTransfer.vue'
 import SingleEntry from './pages/SingleEntry.vue'
+import Cancellation from './pages/Cancellation.vue'
 
 const routes = [
   {
@@ -38,6 +39,11 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true },
+  },
+  {
+    path: '/cancellation',
+    name: 'Cancellation',
+    component: Cancellation,
   },
   {
     path: '/single-entry',
