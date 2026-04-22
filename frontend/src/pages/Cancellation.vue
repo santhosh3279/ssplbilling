@@ -328,10 +328,10 @@
               </button>
             </div>
 
-            <!-- AMEND + SUBMIT buttons (for cancelled) -->
+            <!-- AMEND buttons (for cancelled) -->
             <div v-else class="space-y-3">
               <div class="rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] p-3 text-[18px] text-[var(--color-text-muted)] leading-relaxed">
-                Amending creates a new draft copy of this cancelled document for correction. You can then save or submit the amendment.
+                Amending creates a new draft copy of this cancelled document for correction.
               </div>
               <button
                 @click="doAmend"
@@ -341,17 +341,6 @@
                 <span v-if="actioning && actionType === 'amend'" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
                 {{ amendedName ? 'Amended: ' + amendedName : 'Amend Document' }}
-              </button>
-
-              <button
-                v-if="amendedName"
-                @click="doSubmitAmended"
-                :disabled="actioning"
-                class="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[18px] font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 shadow-lg bg-[var(--color-success)] text-[var(--color-text-on-highlight)] hover:opacity-90"
-              >
-                <span v-if="actioning && actionType === 'submit'" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                Submit Amendment
               </button>
             </div>
           </template>
@@ -560,27 +549,6 @@ async function doAmend() {
     })
     amendedName.value = res.name
     actionSuccess.value = `Amendment created: ${res.name}. Review and submit when ready.`
-  } catch (e) {
-    actionError.value = e.message
-  } finally {
-    actioning.value = false
-    actionType.value = ''
-  }
-}
-
-async function doSubmitAmended() {
-  actioning.value = true
-  actionType.value = 'submit'
-  actionError.value = ''
-  actionSuccess.value = ''
-  try {
-    await frappePost(`${API}.submit_amended_document`, {
-      doctype: currentDoctype.value,
-      name: amendedName.value,
-    })
-    actionSuccess.value = `${amendedName.value} submitted successfully.`
-    amendedName.value = ''
-    await loadDocs()
   } catch (e) {
     actionError.value = e.message
   } finally {
