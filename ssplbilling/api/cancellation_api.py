@@ -114,6 +114,18 @@ def get_document_detail(doctype, name):
 
 	result = doc.as_dict()
 
+	# Check if this cancelled document has already been amended
+	if doc.docstatus == 2:
+		amendments = frappe.get_all(
+			doctype,
+			filters={"amended_from": name, "docstatus": ["!=", 2]},
+			fields=["name"],
+			limit=1,
+		)
+		result["amended_to"] = amendments[0]["name"] if amendments else None
+	else:
+		result["amended_to"] = None
+
 	# Attach items/accounts child table if present
 	if doctype in ("Sales Invoice", "Purchase Invoice"):
 		result["items"] = [

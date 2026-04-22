@@ -330,17 +330,24 @@
 
             <!-- AMEND buttons (for cancelled) -->
             <div v-else class="space-y-3">
-              <div class="rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] p-3 text-[18px] text-[var(--color-text-muted)] leading-relaxed">
+              <!-- Amended bill info card -->
+              <div v-if="amendedName" class="rounded-xl border-2 border-[var(--color-warning)] bg-[var(--color-warning)]/10 p-4 text-center">
+                <div class="text-[13px] uppercase tracking-widest font-bold text-[var(--color-warning)] mb-1">Amended As</div>
+                <div class="text-[21px] font-mono font-bold text-[var(--color-text)]">{{ amendedName }}</div>
+                <div class="mt-1 text-[15px] text-[var(--color-text-muted)]">Review the draft and submit when ready.</div>
+              </div>
+              <div v-else class="rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] p-3 text-[18px] text-[var(--color-text-muted)] leading-relaxed">
                 Amending creates a new draft copy of this cancelled document for correction.
               </div>
               <button
                 @click="doAmend"
                 :disabled="actioning || !!amendedName"
-                class="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[18px] font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 shadow-lg bg-[var(--color-warning)] text-[var(--color-text-on-highlight)] hover:opacity-90"
+                class="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[18px] font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg"
+                :class="amendedName ? 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed opacity-50' : 'bg-[var(--color-warning)] text-[var(--color-text-on-highlight)] hover:opacity-90'"
               >
                 <span v-if="actioning && actionType === 'amend'" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
-                {{ amendedName ? 'Amended: ' + amendedName : 'Amend Document' }}
+                {{ amendedName ? 'Already Amended' : 'Amend Document' }}
               </button>
             </div>
           </template>
@@ -482,6 +489,9 @@ async function selectDoc(doc) {
       doctype: currentDoctype.value,
       name: doc.name,
     })
+    if (detail.value?.amended_to) {
+      amendedName.value = detail.value.amended_to
+    }
   } catch (e) {
     actionError.value = e.message
   } finally {
