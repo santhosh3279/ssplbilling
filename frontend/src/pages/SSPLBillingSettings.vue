@@ -146,15 +146,20 @@
               <tr>
                 <th class="px-2 py-2">User</th>
                 <th class="px-2 py-2">Allowed Series</th>
+                <th class="px-2 py-2">Zoom</th>
                 <th class="px-2 py-2">Cash</th>
                 <th class="px-2 py-2">UPI</th>
                 <th class="px-2 py-2">Card</th>
                 <th class="px-2 py-2">Bank</th>
+                <th class="px-2 py-2">Warehouse</th>
+                <th class="px-2 py-2">Cost Center</th>
                 <th class="px-2 py-2">Income</th>
                 <th class="px-2 py-2 text-center" title="Admin">A</th>
                 <th class="px-2 py-2 text-center" title="Cashier">C</th>
                 <th class="px-2 py-2 text-center" title="Biller">B</th>
                 <th class="px-2 py-2 text-center" title="Accounts">Acc</th>
+                <th class="px-2 py-2">Printer</th>
+                <th class="px-2 py-2">Theme</th>
                 <th class="px-2 py-2"></th>
               </tr>
             </thead>
@@ -162,15 +167,26 @@
               <tr v-for="(row, idx) in settings.user_series" :key="idx" class="border-b border-[var(--color-border)]">
                 <td class="px-1 py-2"><input v-model="row.user" list="dl-users" class="w-full min-w-[100px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.allowed_series_seperated_by_comma" placeholder="ALL or prefixes" class="w-full min-w-[100px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.zoom_value" type="number" placeholder="100" class="w-full min-w-[60px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.cash" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.upi" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.card" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.bank" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.warehouse" list="dl-warehouses" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.cost_center" list="dl-cost-centers" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.income_account" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.admin" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.cashier" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.biller" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.accounts" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
+                <td class="px-1 py-2"><input v-model="row.default_printer" list="dl-printers" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-1 py-2">
+                  <select v-model="row.theme" class="w-full min-w-[70px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none text-[var(--color-text)]">
+                    <option value="">—</option>
+                    <option value="Light">Light</option>
+                    <option value="Dark">Dark</option>
+                  </select>
+                </td>
                 <td class="px-1 py-2 text-right"><button @click="removeRow('user_series', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
             </tbody>
@@ -180,7 +196,7 @@
         <!-- Section: Printer Settings -->
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm overflow-x-auto">
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
-            <h2 class="text-xl font-bold text-[var(--color-text)]">Printer Settings (table_vycb)</h2>
+            <h2 class="text-xl font-bold text-[var(--color-text)]">Printer Settings</h2>
             <button @click="addRow('table_vycb')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text-on-highlight)]">+ Add Row</button>
           </div>
           <table class="w-full text-sm text-left">
@@ -266,7 +282,7 @@ async function fetchLists() {
     const [acc, usr, pf, pl, tax, wh, cc, serSI, serQT, prn] = await Promise.all([
       frappeGet('frappe.client.get_list', { doctype: 'Account', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'User', fields: ['name'], limit_page_length: 0 }),
-      frappeGet('frappe.client.get_list', { doctype: 'Print Format', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'Print Template', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'Price List', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'Sales Taxes and Charges Template', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'Warehouse', fields: ['name'], limit_page_length: 0 }),
@@ -323,9 +339,16 @@ async function saveSettings() {
   }
 }
 
+const CHILD_DOCTYPE = {
+  billing_series: 'SSPL Billing Series',
+  user_series: 'USER SERIES',
+  table_vycb: 'Printer and Format',
+  visible_accounts: 'SSPL Visible Account',
+}
+
 function addRow(tableName) {
   if (!settings.value[tableName]) settings.value[tableName] = []
-  settings.value[tableName].push({})
+  settings.value[tableName].push({ doctype: CHILD_DOCTYPE[tableName] })
 }
 
 function removeRow(tableName, idx) {
