@@ -65,7 +65,7 @@
     <div class="flex flex-1 overflow-hidden">
 
       <!-- LEFT: Document List -->
-      <aside class="flex w-80 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
+      <aside class="flex w-[400px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
         <!-- Search -->
         <div class="p-3 border-b border-[var(--color-border)]">
           <div class="relative">
@@ -284,7 +284,7 @@
       </main>
 
       <!-- RIGHT: Actions -->
-      <aside class="flex w-72 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+      <aside class="flex w-[360px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
         <div class="flex-1 flex flex-col justify-center p-6 space-y-4">
           <div v-if="!selected" class="flex flex-col items-center text-center text-[var(--color-text-muted)] opacity-40">
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="m9 9-2 2 2 2"/><path d="m15 9 2 2-2 2"/><path d="M3 12h18"/></svg>
