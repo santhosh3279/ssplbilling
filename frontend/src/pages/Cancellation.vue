@@ -151,7 +151,7 @@
             <div class="h-7 w-7 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></div>
           </div>
           <div v-else-if="detail" class="flex-1 overflow-y-auto p-6 custom-scrollbar">
-            <div class="mx-auto max-w-2xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 shadow-md space-y-6">
+            <div class="mx-auto max-w-5xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 shadow-md space-y-6">
 
               <!-- Meta info -->
               <div class="grid grid-cols-2 gap-4 pb-4 border-b border-[var(--color-border)]">
@@ -197,7 +197,7 @@
                   </tbody>
                 </table>
                 <div class="flex justify-end pt-2 border-t border-[var(--color-border)]">
-                  <div class="w-56 space-y-1.5">
+                  <div class="w-[448px] space-y-1.5">
                     <div v-for="tax in detail.taxes" :key="tax.description" class="flex justify-between text-[18px] text-[var(--color-text-muted)]">
                       <span>{{ tax.description }}</span>
                       <span class="font-mono">₹{{ fmt(tax.tax_amount) }}</span>
