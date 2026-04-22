@@ -472,10 +472,10 @@
                 ref="postButton"
                 @click="processPayment"
                 :disabled="!canSubmit"
-                class="group w-full rounded-xl py-4 font-black uppercase tracking-[0.2em] text-sm transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
-                :class="isCredit 
-                  ? 'bg-[var(--color-danger)] hover:bg-[var(--color-danger)] text-[var(--color-text-on-highlight)] shadow-lg shadow-[var(--color-danger)]/40' 
-                  : 'bg-[var(--color-success)]/70 hover:bg-[var(--color-success)]/80 text-[var(--color-text-on-highlight)] shadow-lg shadow-[var(--color-success)]/20'"
+                class="group w-full rounded-xl py-4 font-black uppercase tracking-[0.2em] text-sm transition-all active:scale-95 focus:outline-none disabled:opacity-30 disabled:pointer-events-none"
+                :class="isCredit
+                  ? 'bg-[var(--color-danger)] border-2 border-[var(--color-danger)] text-[var(--color-text-on-highlight)] hover:brightness-110 active:bg-[var(--color-danger)] shadow-lg shadow-[var(--color-danger)]/40'
+                  : 'bg-transparent border-2 border-[var(--color-success)] text-[var(--color-success)] hover:bg-[var(--color-success)]/10 active:bg-[var(--color-success)] active:text-[var(--color-text-on-highlight)] focus:bg-[var(--color-success)] focus:text-[var(--color-text-on-highlight)] shadow-md shadow-[var(--color-success)]/20'"
               >
                 <div v-if="isSubmitting" class="flex items-center justify-center gap-3">
                   <div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
