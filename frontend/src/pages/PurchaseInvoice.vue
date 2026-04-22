@@ -111,34 +111,36 @@
                   v-model="supplierInvoiceNo"
                   :disabled="isReadOnly"
                   placeholder="Bill No"
-                  class="bg-transparent border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] placeholder:text-[var(--color-text-muted)] w-48"
+                  class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-48"
                   @keydown.enter.prevent="supplierInvoiceNo.trim() ? supplierInvoiceDateInputRef?.focus() : alert('Supplier Invoice No is mandatory.')"
                 />
               </div>
 
               <div class="flex items-center gap-2">
                 <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Supp. Date</label>
-                <div class="flex items-center gap-1 border-b border-[var(--color-border)]">
-                  <button 
-                    @click="handleSupplierInvoiceDateChange(-1)" 
+                <div class="flex items-center gap-1 border-b border-[var(--color-border)]" :class="suppDateFocused ? 'bg-[var(--color-focus)]' : ''">
+                  <button
+                    @click="handleSupplierInvoiceDateChange(-1)"
                     :disabled="isReadOnly"
-                    class="text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)] disabled:opacity-30 px-1 text-3xl"
+                    class="disabled:opacity-30 px-1 text-3xl" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)]'"
                   >&larr;</button>
                   <div class="relative min-w-[140px] flex items-center justify-center">
-                    <span class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(supplierInvoiceDate) }}</span>
+                    <span class="text-4xl font-bold tabular-nums" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatDateShort(supplierInvoiceDate) }}</span>
                     <input
                       ref="supplierInvoiceDateInputRef"
                       type="date"
                       v-model="supplierInvoiceDate"
                       :disabled="isReadOnly"
                       class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      @focus="suppDateFocused = true"
+                      @blur="suppDateFocused = false"
                       @keydown.enter.prevent="supplierInvoiceNo.trim() ? focusBarcodeInput() : (alert('Supplier Invoice No is mandatory.'), supplierInvoiceNoRef?.focus())"
                     />
                   </div>
-                  <button 
-                    @click="handleSupplierInvoiceDateChange(1)" 
+                  <button
+                    @click="handleSupplierInvoiceDateChange(1)"
                     :disabled="isReadOnly"
-                    class="text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)] disabled:opacity-30 px-1 text-3xl"
+                    class="disabled:opacity-30 px-1 text-3xl" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)]'"
                   >&rarr;</button>
                 </div>
               </div>
@@ -704,6 +706,7 @@ const inclusiveTaxRef = ref(null)
 const costCenterRef = ref(null)
 const supplierInvoiceNoRef = ref(null)
 const supplierInvoiceDateInputRef = ref(null)
+const suppDateFocused = ref(false)
 const saveBtnRef = ref(null)
 const showPrintModal = ref(false)
 const showBarcodeModal = ref(false)
