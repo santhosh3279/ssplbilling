@@ -35,6 +35,7 @@
       <datalist id="dl-warehouses"><option v-for="o in lists.warehouses" :key="o" :value="o"></option></datalist>
       <datalist id="dl-cost-centers"><option v-for="o in lists.costCenters" :key="o" :value="o"></option></datalist>
       <datalist id="dl-series"><option v-for="o in lists.series" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-themes"><option value="Light"></option><option value="Dark"></option></datalist>
 
       <div v-if="isLoading" class="flex h-full items-center justify-center text-[var(--color-text-muted)]">
         <span class="text-xl animate-pulse">Loading settings...</span>
@@ -180,13 +181,7 @@
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.biller" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.accounts" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2"><input v-model="row.default_printer" list="dl-printers" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2">
-                  <select v-model="row.theme" class="w-full min-w-[70px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none text-[var(--color-text)]">
-                    <option value="">—</option>
-                    <option value="Light">Light</option>
-                    <option value="Dark">Dark</option>
-                  </select>
-                </td>
+                <td class="px-1 py-2"><input v-model="row.theme" list="dl-themes" class="w-full min-w-[70px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2 text-right"><button @click="removeRow('user_series', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
             </tbody>
