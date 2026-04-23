@@ -54,7 +54,7 @@ def get_item_prices(item_code):
 			"item_price_name": base.get("name") if isinstance(base, dict) else None,
 		})
 
-	return {"prices": results, "uoms": uoms, "stock_uom": stock_uom}
+	return {"prices": results, "uoms": uoms, "stock_uom": stock_uom, "item_name": item.item_name}
 
 @frappe.whitelist()
 def update_item_price(item_code, price_list, rate, uom=""):

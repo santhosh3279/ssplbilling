@@ -18,8 +18,8 @@
           >
             &larr; Dashboard
           </button>
-          <h1 class="text-xl font-bold text-[var(--color-text)]">Update Item Prices</h1>
-          <div v-if="itemCode" class="rounded-full bg-[var(--color-info)]/20 px-3 py-1 text-sm font-bold text-[var(--color-info)]">
+          <h1 class="text-xl font-bold text-[var(--color-text)]">{{ itemName || 'Update Item Prices' }}</h1>
+          <div v-if="itemCode" class="rounded-full bg-[var(--color-info)]/20 px-3 py-1 text-xs font-bold text-[var(--color-info)]">
             {{ itemCode }}
           </div>
         </div>
@@ -178,6 +178,7 @@ const router = useRouter()
 const route = useRoute()
 
 const prices = ref([])
+const itemName = ref('')
 const uoms = ref([])
 const stockUom = ref('')
 const factor = ref(props.initialFactor)
@@ -196,6 +197,7 @@ async function loadPrices(code) {
   loading.value = true
   try {
     const data = await frappeGet('ssplbilling.api.pricelist_api.get_item_prices', { item_code: code })
+    itemName.value = data.item_name || ''
     uoms.value = data.uoms || []
     stockUom.value = data.stock_uom || ''
     prices.value = (data.prices || []).map(p => ({
