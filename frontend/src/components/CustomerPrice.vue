@@ -67,8 +67,8 @@
     :is-sub-window="true"
     :item-code="data.item_code"
     :selected-price-list="priceList"
-    @close="showPriceListUpdate = false"
-    @saved="showPriceListUpdate = false"
+    @close="$emit('dismiss')"
+    @saved="$emit('dismiss')"
   />
 </template>
 
