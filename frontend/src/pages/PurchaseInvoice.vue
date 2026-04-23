@@ -797,7 +797,7 @@ async function handleSelectSidebarItem(item) {
 
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
-    if (data.set_warehouse) warehouse.value = data.set_warehouse
+    warehouse.value = data.set_warehouse || localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None'
     isInclusiveTax.value = data.is_inclusive === 1
     isReturn.value = data.is_return === 1
     if (data.cost_center) costCenter.value = data.cost_center
@@ -1067,7 +1067,7 @@ async function clearBill() {
   isReturn.value = false
   isReadOnly.value = false
   isSaved.value = false
-
+  warehouse.value = localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None'
   if (selectedSeries.value) {
     try {
       const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Purchase Invoice' })
