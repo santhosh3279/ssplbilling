@@ -125,16 +125,17 @@
                     class="disabled:opacity-30 px-1 text-3xl" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)]'"
                   >&larr;</button>
                   <div class="relative min-w-[140px] flex items-center justify-center">
-                    <span class="text-4xl font-bold tabular-nums" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatDateShort(supplierInvoiceDate) }}</span>
+                    <span v-show="!suppDateFocused" class="text-4xl font-bold tabular-nums" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatDateShort(supplierInvoiceDate) }}</span>
                     <input
                       ref="supplierInvoiceDateInputRef"
-                      type="date"
-                      v-model="supplierInvoiceDate"
+                      type="text"
+                      v-model="suppDateEntry"
                       :disabled="isReadOnly"
-                      class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      @focus="suppDateFocused = true"
+                      class="text-4xl font-bold tabular-nums text-center outline-none bg-transparent"
+                      :class="suppDateFocused ? 'w-full text-[var(--color-text-on-focus)]' : 'absolute inset-0 opacity-0 cursor-pointer w-full h-full'"
+                      @focus="onSuppDateFocus"
                       @blur="suppDateFocused = false"
-                      @keydown.enter.prevent="supplierInvoiceNo.trim() ? focusBarcodeInput() : (alert('Supplier Invoice No is mandatory.'), supplierInvoiceNoRef?.focus())"
+                      @keydown.enter.prevent="parseSuppDate"
                     />
                   </div>
                   <button
@@ -710,6 +711,49 @@ const costCenterRef = ref(null)
 const supplierInvoiceNoRef = ref(null)
 const supplierInvoiceDateInputRef = ref(null)
 const suppDateFocused = ref(false)
+const suppDateEntry = ref('')
+
+function onSuppDateFocus(e) {
+  suppDateFocused.value = true
+  suppDateEntry.value = formatDateShort(supplierInvoiceDate.value)
+  nextTick(() => { e.target.select() })
+}
+
+function parseSuppDate() {
+  const raw = suppDateEntry.value.trim().replace(/[^\d]/g, '')
+  if (raw && /^\d{1,4}$/.test(raw)) {
+    const now = new Date()
+    let d = now.getDate()
+    let m = now.getMonth()
+    let y = now.getFullYear()
+
+    if (raw.length <= 2) {
+      d = parseInt(raw)
+    } else if (raw.length === 3) {
+      d = parseInt(raw.slice(0, 1))
+      m = parseInt(raw.slice(1)) - 1
+    } else {
+      d = parseInt(raw.slice(0, 2))
+      m = parseInt(raw.slice(2)) - 1
+    }
+
+    let target = new Date(y, m, d)
+    if (target > now) {
+      target = new Date(y, m - 1, d)
+    }
+
+    if (!isNaN(target.getTime())) {
+      supplierInvoiceDate.value = target.toISOString().split('T')[0]
+    }
+  }
+  
+  if (supplierInvoiceNo.value.trim()) {
+    focusBarcodeInput()
+  } else {
+    alert('Supplier Invoice No is mandatory.')
+    supplierInvoiceNoRef.value?.focus()
+  }
+}
 const saveBtnRef = ref(null)
 const showPrintModal = ref(false)
 const showBarcodeModal = ref(false)
