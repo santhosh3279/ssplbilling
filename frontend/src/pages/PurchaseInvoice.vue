@@ -393,14 +393,17 @@
 
           <!-- Additional Info -->
           <div class="grid grid-cols-2 gap-2">
-            <!-- Warehouse (Readonly) -->
+            <!-- Warehouse -->
             <div class="flex flex-col gap-0.5">
               <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Warehouse</label>
-              <input
-                :value="warehouse"
-                readonly
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-base text-[var(--color-text-muted)] outline-none cursor-not-allowed"
-              />
+              <select
+                v-model="warehouse"
+                :disabled="isReadOnly"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-default"
+              >
+                <option v-for="w in localWarehouses" :key="w" :value="w">{{ w }}</option>
+                <option v-if="!localWarehouses.length" :value="warehouse">{{ warehouse }}</option>
+              </select>
             </div>
 
             <!-- Cost Center -->
@@ -1017,6 +1020,14 @@ watch(priceList, (newList) => {
   if (!newList) return
   updateTableRates()
   refreshItemCache('Purchase', newList, warehouse.value)
+    .then(() => updateTableRates())
+    .catch(e => console.warn('[PurchaseInvoice] Background price refresh failed:', e))
+})
+
+watch(warehouse, (newVal) => {
+  if (!newVal) return
+  localStorage.setItem('wb-warehouse', newVal)
+  refreshItemCache('Purchase', priceList.value, newVal)
     .then(() => updateTableRates())
     .catch(e => console.warn('[PurchaseInvoice] Background price refresh failed:', e))
 })
