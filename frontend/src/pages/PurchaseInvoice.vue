@@ -797,6 +797,7 @@ async function handleSelectSidebarItem(item) {
 
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
+    if (data.set_warehouse) warehouse.value = data.set_warehouse
     isInclusiveTax.value = data.is_inclusive === 1
     isReturn.value = data.is_return === 1
     if (data.cost_center) costCenter.value = data.cost_center
@@ -1026,7 +1027,6 @@ watch(priceList, (newList) => {
 
 watch(warehouse, (newVal) => {
   if (!newVal) return
-  localStorage.setItem('wb-warehouse', newVal)
   refreshItemCache('Purchase', priceList.value, newVal)
     .then(() => updateTableRates())
     .catch(e => console.warn('[PurchaseInvoice] Background price refresh failed:', e))
@@ -1172,7 +1172,7 @@ async function handleSave() {
     discount_percentage: discountPct.value,
     tax_template: taxTemplate.value,
     cost_center: costCenter.value,
-    warehouse: warehouse.value,
+    set_warehouse: warehouse.value,
     is_inclusive: isInclusiveTax.value ? 1 : 0,
     is_return: isReturn.value ? 1 : 0,
     taxes: additionalCharges,
@@ -1184,7 +1184,6 @@ async function handleSave() {
       rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount_percentage: i.discount || 0,
-      warehouse: warehouse.value,
     }))
   }
 

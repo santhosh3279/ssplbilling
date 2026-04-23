@@ -217,6 +217,8 @@ def create_purchase_invoice(data=None, **kwargs):
     pi.naming_series = data.get("naming_series", "PINV-.YY.-")
     pi.is_return = data.get("is_return", 0)
     pi.update_stock = 1
+    if data.get("set_warehouse"):
+        pi.set_warehouse = data["set_warehouse"]
     if data.get("cost_center"):
         pi.cost_center = data["cost_center"]
 
@@ -441,6 +443,7 @@ def get_purchase_invoice(invoice_name):
         "tax_template": pi.taxes_and_charges or "",
         "is_inclusive": is_inclusive,
         "cost_center": cost_center or "",
+        "set_warehouse": pi.set_warehouse or "",
         "docstatus": pi.docstatus,
         "status": pi.status,
         "items": [
@@ -484,6 +487,8 @@ def update_purchase_invoice(data=None, **kwargs):
 
     pi.is_return = data.get("is_return", 0)
     pi.cost_center = data.get("cost_center")
+    if data.get("set_warehouse"):
+        pi.set_warehouse = data["set_warehouse"]
     pi.bill_no = data.get("bill_no")
     pi.bill_date = data.get("bill_date")
     pi.posting_date = data.get("date", frappe.utils.today())
