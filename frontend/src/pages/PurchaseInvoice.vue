@@ -131,10 +131,14 @@
                       type="text"
                       v-model="suppDateEntry"
                       :disabled="isReadOnly"
+                      maxlength="10"
+                      placeholder="DD/MM/YYYY"
                       class="text-4xl font-bold tabular-nums text-center outline-none bg-transparent"
                       :class="suppDateFocused ? 'w-full text-[var(--color-text-on-focus)]' : 'absolute inset-0 opacity-0 cursor-pointer w-full h-full'"
                       @focus="onSuppDateFocus"
-                      @blur="suppDateFocused = false"
+                      @blur="onSuppDateBlur"
+                      @input="onSuppDateInput"
+                      @keydown.backspace="handleSuppDateBackspace"
                       @keydown.enter.prevent="parseSuppDate"
                     />
                   </div>
@@ -713,40 +717,85 @@ const supplierInvoiceDateInputRef = ref(null)
 const suppDateFocused = ref(false)
 const suppDateEntry = ref('')
 
+function isoToDisplayDate(iso) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
 function onSuppDateFocus(e) {
   suppDateFocused.value = true
-  suppDateEntry.value = formatDateShort(supplierInvoiceDate.value)
+  suppDateEntry.value = isoToDisplayDate(supplierInvoiceDate.value)
   nextTick(() => { e.target.select() })
 }
 
-function parseSuppDate() {
-  const raw = suppDateEntry.value.trim().replace(/[^\d]/g, '')
-  if (raw && /^\d{1,4}$/.test(raw)) {
-    const now = new Date()
-    let d = now.getDate()
-    let m = now.getMonth()
-    let y = now.getFullYear()
+function onSuppDateBlur() {
+  autoCompleteSuppDate()
+  suppDateFocused.value = false
+}
 
-    if (raw.length <= 2) {
-      d = parseInt(raw)
-    } else if (raw.length === 3) {
-      d = parseInt(raw.slice(0, 1))
-      m = parseInt(raw.slice(1)) - 1
-    } else {
-      d = parseInt(raw.slice(0, 2))
-      m = parseInt(raw.slice(2)) - 1
-    }
+function onSuppDateInput(e) {
+  let val = e.target.value.replace(/\D/g, '')
 
-    let target = new Date(y, m, d)
-    if (target > now) {
-      target = new Date(y, m - 1, d)
-    }
-
-    if (!isNaN(target.getTime())) {
-      supplierInvoiceDate.value = target.toISOString().split('T')[0]
+  if (val.length === 4) {
+    const day = parseInt(val.slice(0, 2))
+    const month = parseInt(val.slice(2, 4))
+    if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
+      const now = new Date()
+      const opts = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const [y, m] = new Intl.DateTimeFormat('en-CA', opts).format(now).split('-').map(Number)
+      let year = y
+      if (month > m) year--
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = month.toString().padStart(2, '0')
+      supplierInvoiceDate.value = `${year}-${monthStr}-${dayStr}`
+      suppDateEntry.value = `${dayStr}/${monthStr}/${year}`
+      return
     }
   }
-  
+
+  if (val.length > 2 && val.length <= 4) {
+    val = val.slice(0, 2) + '/' + val.slice(2)
+  } else if (val.length > 4) {
+    val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4, 8)
+  }
+
+  suppDateEntry.value = val
+
+  if (val.length === 10) {
+    const [d, m, y] = val.split('/')
+    if (d && m && y && y.length === 4) {
+      supplierInvoiceDate.value = `${y}-${m}-${d}`
+    }
+  }
+}
+
+function handleSuppDateBackspace(e) {
+  if (suppDateEntry.value && suppDateEntry.value.length > 0) {
+    e.preventDefault()
+    suppDateEntry.value = ''
+    supplierInvoiceDate.value = ''
+  }
+}
+
+function autoCompleteSuppDate() {
+  const val = suppDateEntry.value.replace(/\D/g, '')
+  if (val.length >= 1 && val.length <= 2) {
+    const day = parseInt(val)
+    if (!isNaN(day) && day >= 1 && day <= 31) {
+      const now = new Date()
+      const opts = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const [y, m] = new Intl.DateTimeFormat('en-CA', opts).format(now).split('-').map(Number)
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = m.toString().padStart(2, '0')
+      supplierInvoiceDate.value = `${y}-${monthStr}-${dayStr}`
+      suppDateEntry.value = `${dayStr}/${monthStr}/${y}`
+    }
+  }
+}
+
+function parseSuppDate() {
+  autoCompleteSuppDate()
   if (supplierInvoiceNo.value.trim()) {
     focusBarcodeInput()
   } else {
