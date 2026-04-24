@@ -5,12 +5,12 @@ from frappe.utils import flt, getdate
 def get_daily_reports(report_type, from_date, to_date, naming_series=None):
         """
         Returns a list of documents for a specific date range and type.
-        report_type: 'Invoice', 'Payment', 'Journal', 'Quotation', 'Loading'
+        report_type: 'Sales Invoice', 'Purchase Invoice', 'Payment', 'Journal', 'Quotation', 'Loading'
         """
         if not from_date: from_date = frappe.utils.today()
         if not to_date: to_date = frappe.utils.today()
 
-        if report_type == 'Invoice':
+        if report_type == 'Sales Invoice':
                 filters = {
                         "posting_date": ["between", [from_date, to_date]],
                         "docstatus": ["<", 2]
@@ -22,6 +22,21 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
                         "Sales Invoice",
                         filters=filters,
                         fields=["name", "customer_name", "grand_total", "docstatus", "posting_date", "posting_time", "naming_series"],
+                        order_by="posting_date desc, posting_time desc"
+                )
+
+        elif report_type == 'Purchase Invoice':
+                filters = {
+                        "posting_date": ["between", [from_date, to_date]],
+                        "docstatus": ["<", 2]
+                }
+                if naming_series:
+                        filters["naming_series"] = naming_series
+
+                return frappe.get_all(
+                        "Purchase Invoice",
+                        filters=filters,
+                        fields=["name", "supplier_name", "grand_total", "docstatus", "posting_date", "posting_time", "naming_series"],
                         order_by="posting_date desc, posting_time desc"
                 )
 

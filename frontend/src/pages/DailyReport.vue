@@ -25,8 +25,8 @@
           </button>
         </div>
 
-        <!-- Series Filter (only for Invoice tab) -->
-        <div v-if="activeTab === 'Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
+        <!-- Series Filter (only for Invoice tabs) -->
+        <div v-if="activeTab === 'Sales Invoice' || activeTab === 'Purchase Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Series</label>
           <select 
             v-model="seriesFilter"
@@ -169,7 +169,7 @@
 
       <!-- Inline Detail View -->
       <div v-else class="h-full">
-        <SalesInvoice v-if="modalType === 'Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" />
+        <SalesInvoice v-if="modalType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" />
         <Quotation v-else-if="modalType === 'Quotation'" :is-subwindow="true" :quotation-name="selectedDoc" />
       </div>
     </div>
@@ -189,7 +189,7 @@ const selectedDoc = ref('')
 const modalType = ref('')
 const pageTitle = computed(() => {
   if (!showDetail.value) return 'Daily Reports'
-  if (modalType.value === 'Invoice') return `Sales Invoice: ${selectedDoc.value}`
+  if (modalType.value === 'Sales Invoice') return `Sales Invoice: ${selectedDoc.value}`
   if (modalType.value === 'Quotation') return `Quotation: ${selectedDoc.value}`
   return 'Daily Reports'
 })
@@ -306,7 +306,8 @@ async function setPreset(type) {
 }
 
 const tabs = [
-  { label: 'Invoices', value: 'Invoice' },
+  { label: 'Sales Invoices', value: 'Sales Invoice' },
+  { label: 'Purchase Invoices', value: 'Purchase Invoice' },
   { label: 'Payments', value: 'Payment' },
   { label: 'Journals', value: 'Journal' },
   { label: 'Quotations', value: 'Quotation' },
@@ -314,11 +315,20 @@ const tabs = [
 ]
 
 const columns = computed(() => {
-  if (activeTab.value === 'Invoice') {
+  if (activeTab.value === 'Sales Invoice') {
     return [
       { label: 'Date', key: 'date', type: 'date' },
       { label: 'Invoice No', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
+      { label: 'Time', key: 'posting_time', type: 'time' },
+      { label: 'Amount', key: 'display_amount', type: 'currency' },
+      { label: 'Status', key: 'docstatus' },
+    ]
+  } else if (activeTab.value === 'Purchase Invoice') {
+    return [
+      { label: 'Date', key: 'date', type: 'date' },
+      { label: 'Invoice No', key: 'name' },
+      { label: 'Supplier', key: 'supplier_name' },
       { label: 'Time', key: 'posting_time', type: 'time' },
       { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
@@ -385,7 +395,7 @@ async function fetchReport() {
       let display_amount = 0
       let direction = ''
       
-      if (activeTab.value === 'Invoice' || activeTab.value === 'Quotation') {
+      if (activeTab.value === 'Sales Invoice' || activeTab.value === 'Purchase Invoice' || activeTab.value === 'Quotation') {
         display_amount = row.grand_total || 0
         direction = 'DR'
       } else if (activeTab.value === 'Payment') {
@@ -416,8 +426,13 @@ async function fetchReport() {
 }
 
 async function fetchAvailableSeries() {
+  seriesFilter.value = ''
+  if (activeTab.value !== 'Sales Invoice' && activeTab.value !== 'Purchase Invoice') {
+    availableSeries.value = []
+    return
+  }
   try {
-    const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' })
+    const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: activeTab.value })
     availableSeries.value = res.allowed_series || []
   } catch (e) {
     console.warn('Failed to fetch series for filter:', e)
@@ -425,9 +440,8 @@ async function fetchAvailableSeries() {
 }
 
 function handleRowClick(row) {
-  if (activeTab.value === 'Loading') {
-    // Navigate to loading receipt or show something?
-    // For now just stay here or we could implement a detail view if needed.
+  if (activeTab.value === 'Loading' || activeTab.value === 'Purchase Invoice') {
+    // For now, no detail view for Loading and Purchase Invoice
     return
   }
   selectedDoc.value = row.name
@@ -435,7 +449,10 @@ function handleRowClick(row) {
   showDetail.value = true
 }
 
-watch(activeTab, fetchReport)
+watch(activeTab, () => {
+  fetchAvailableSeries()
+  fetchReport()
+})
 
 onMounted(() => {
   fetchAvailableSeries()
