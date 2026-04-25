@@ -152,6 +152,20 @@ def get_all_ledgers():
         if i.customer in ledger_map:
             ledger_map[i.customer]["last_invoice_date"] = str(i.last_date)
 
+    # 8. Batch fetch Party Links
+    party_links = frappe.get_all(
+        "Party Link",
+        fields=["parent", "party_type", "party"]
+    )
+    for pl in party_links:
+        if pl.parent in ledger_map:
+            if "party_links" not in ledger_map[pl.parent]:
+                ledger_map[pl.parent]["party_links"] = []
+            ledger_map[pl.parent]["party_links"].append({
+                "party_type": pl.party_type,
+                "party": pl.party
+            })
+
     return sorted(ledgers, key=lambda x: x["label"].lower())
 
 @frappe.whitelist()
