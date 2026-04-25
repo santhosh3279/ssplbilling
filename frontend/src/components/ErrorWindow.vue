@@ -23,6 +23,7 @@
             <span v-else>Copy Error</span>
           </button>
           <button 
+            ref="dismissButton"
             @click="$emit('close')" 
             class="rounded-xl bg-[var(--color-danger)] px-8 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-danger)] shadow-md transition-all active:scale-95"
           >
@@ -35,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
   show: Boolean,
@@ -45,6 +46,15 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const copied = ref(false)
+const dismissButton = ref(null)
+
+watch(() => props.show, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      dismissButton.value?.focus()
+    })
+  }
+})
 
 async function copyError() {
   try {
