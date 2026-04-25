@@ -256,6 +256,7 @@
       :initial-type="entryType === 'Contra' ? 'Account' : (entryType === 'Opening Entry' ? 'Customer' : 'All')"
       :show="showSearchModal"
       :skip-date-filter="true"
+      :hideSecondary="true"
       @close="showSearchModal = false"
       @select="selectLedger"
     />
@@ -265,6 +266,7 @@
       :allowed-types="['Account']"
       initial-type="Account"
       :skip-date-filter="true"
+      :hideSecondary="true"
       @close="showBalancingSearch = false"
       @select="ledger => { balancingAccount = { name: ledger.name, label: ledger.label }; showBalancingSearch = false }"
     />

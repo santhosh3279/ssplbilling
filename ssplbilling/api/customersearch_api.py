@@ -168,6 +168,7 @@ def get_all_ledgers():
             })
         # Link secondary to primary
         if pl.secondary_party in ledger_map:
+            ledger_map[pl.secondary_party]["is_secondary"] = True
             if "party_links" not in ledger_map[pl.secondary_party]:
                 ledger_map[pl.secondary_party]["party_links"] = []
             ledger_map[pl.secondary_party]["party_links"].append({

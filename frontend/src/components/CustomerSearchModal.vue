@@ -247,7 +247,8 @@ const props = defineProps({
   filterList: { type: Array, default: null },
   overrideLedgers: { type: Array, default: null },
   initialQuery: { type: String, default: '' },
-  isInternalTransfer: { type: Boolean, default: false }
+  isInternalTransfer: { type: Boolean, default: false },
+  hideSecondary: { type: Boolean, default: false }
 })
 
 const availableTabs = computed(() => {
@@ -356,6 +357,11 @@ const results = computed(() => {
       const group = (l.group || '').toLowerCase()
       return group === 'bank' || group === 'cash'
     })
+  }
+
+  // Hide Secondary Party Filter
+  if (props.hideSecondary) {
+    list = list.filter(l => !l.is_secondary)
   }
 
   if (!q) return list

@@ -227,6 +227,7 @@
       :allowedTypes="searchTarget === 'party' ? ['Customer', 'Supplier'] : ['Account']"
       :initialType="searchTarget === 'party' ? 'All' : 'Account'"
       :skipDateFilter="true"
+      :hideSecondary="true"
       @close="showSearchModal = false"
       @select="handleSearchSelect"
     />
