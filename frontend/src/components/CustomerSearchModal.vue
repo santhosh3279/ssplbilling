@@ -246,7 +246,8 @@ const props = defineProps({
   allowedTypes: { type: Array, default: () => ['Customer', 'Supplier', 'Employee', 'Account'] },
   filterList: { type: Array, default: null },
   overrideLedgers: { type: Array, default: null },
-  initialQuery: { type: String, default: '' }
+  initialQuery: { type: String, default: '' },
+  isInternalTransfer: { type: Boolean, default: false }
 })
 
 const availableTabs = computed(() => {
@@ -347,6 +348,16 @@ const results = computed(() => {
   } // end non-admin Account filter
 
   if (activeType.value !== 'All') list = list.filter(l => l.type === activeType.value)
+
+  // Internal Transfer Filter: only Bank/Cash accounts
+  if (props.isInternalTransfer) {
+    list = list.filter(l => {
+      if (l.type !== 'Account') return true
+      const group = (l.group || '').toLowerCase()
+      return group === 'bank' || group === 'cash'
+    })
+  }
+
   if (!q) return list
   return list.filter(l => tokenMatch(l, ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']))
 })

@@ -355,6 +355,7 @@
       :allowedTypes="allowedTypes"
       :initialType="initialSearchType"
       :skipDateFilter="true"
+      :isInternalTransfer="activeTab === 'Internal Transfer'"
       @close="showSearchModal = false"
       @select="handleSelect"
     />
