@@ -155,15 +155,24 @@ def get_all_ledgers():
     # 8. Batch fetch Party Links
     party_links = frappe.get_all(
         "Party Link",
-        fields=["parent", "party_type", "party"]
+        fields=["primary_party", "primary_role", "secondary_party", "secondary_role"]
     )
     for pl in party_links:
-        if pl.parent in ledger_map:
-            if "party_links" not in ledger_map[pl.parent]:
-                ledger_map[pl.parent]["party_links"] = []
-            ledger_map[pl.parent]["party_links"].append({
-                "party_type": pl.party_type,
-                "party": pl.party
+        # Link primary to secondary
+        if pl.primary_party in ledger_map:
+            if "party_links" not in ledger_map[pl.primary_party]:
+                ledger_map[pl.primary_party]["party_links"] = []
+            ledger_map[pl.primary_party]["party_links"].append({
+                "party_type": pl.secondary_role,
+                "party": pl.secondary_party
+            })
+        # Link secondary to primary
+        if pl.secondary_party in ledger_map:
+            if "party_links" not in ledger_map[pl.secondary_party]:
+                ledger_map[pl.secondary_party]["party_links"] = []
+            ledger_map[pl.secondary_party]["party_links"].append({
+                "party_type": pl.primary_role,
+                "party": pl.primary_party
             })
 
     return sorted(ledgers, key=lambda x: x["label"].lower())
