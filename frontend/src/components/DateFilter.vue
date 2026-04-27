@@ -20,6 +20,7 @@
             @focus="selectText"
             @keydown.backspace="handleBackspace($event, 'from')"
             @keydown.enter.prevent="focusToDate"
+            @keydown.down.prevent="focusToDate"
             @keydown.esc.stop="$emit('close')"
           />
         </div>
@@ -35,6 +36,7 @@
             @focus="selectText"
             @keydown.backspace="handleBackspace($event, 'to')"
             @keydown.enter.prevent="confirmDate"
+            @keydown.up.prevent="focusFromDate"
             @keydown.esc.stop="$emit('close')"
           />
         </div>
@@ -192,6 +194,14 @@ function focusToDate() {
   nextTick(() => {
     toDateInput.value?.focus()
     toDateInput.value?.select()
+  })
+}
+
+function focusFromDate() {
+  autoCompleteDate('to')
+  nextTick(() => {
+    fromDateInput.value?.focus()
+    fromDateInput.value?.select()
   })
 }
 
