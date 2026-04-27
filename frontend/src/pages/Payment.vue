@@ -785,14 +785,11 @@ async function handleSubmit() {
       successDocName.value = res.payment_entry
       showSuccess.value = true
       
-      // Reset immediately so user can continue with next entry
-      resetForm()
-      showInitialSelection.value = true
-
-      // Auto-hide after 5 seconds
+      // Auto-hide success message and reload after a short delay
       setTimeout(() => {
         showSuccess.value = false
-      }, 5000)
+        window.location.reload()
+      }, 1500)
     }
   } catch (e) {
     console.error('Submission failed:', e)
