@@ -234,7 +234,7 @@
                     ref="saveButton"
                     @click="saveEntry"
                     @keydown.enter="saveEntry"
-                    :disabled="isSubmitting || !canSave"
+                    :disabled="isSubmitting || !canSave || submitting"
                     class="flex items-center gap-2 rounded-xl bg-[var(--color-info)] px-8 py-3 text-base font-bold text-[var(--color-text-on-highlight)] shadow-lg shadow-blue-900/50 hover:bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <span v-if="isSubmitting" class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-1"></span>
@@ -365,6 +365,7 @@ const rows = ref([
 ])
 const activeRowIdx = ref(0)
 const isSubmitting = ref(false)
+const submitting = ref(false)
 const showSearchModal = ref(false)
 const ledgerSearchModal = ref(null)
 const remarksInput = ref(null)
@@ -638,8 +639,9 @@ onMounted(() => {
 })
 
 async function saveEntry() {
-  if (!canSave.value || isSubmitting.value) return
+  if (!canSave.value || isSubmitting.value || submitting.value) return
   isSubmitting.value = true
+  submitting.value = true
   try {
     const payload = {
       voucher_type: entryType.value,
@@ -668,6 +670,7 @@ async function saveEntry() {
     alert('Failed to save: ' + e.message)
   } finally {
     isSubmitting.value = false
+    submitting.value = false
   }
 }
 

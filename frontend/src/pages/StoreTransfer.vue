@@ -205,6 +205,7 @@ const selectedSeries = ref('')
 
 const isReadOnly = ref(false)
 const isDraft = ref(false)
+const submitting = ref(false)
 const transferName = ref('')
 
 const barcodeQuery = ref('')
@@ -394,6 +395,7 @@ function handleRowKeydown(e, idx) {
 }
 
 async function handleSave() {
+  if (submitting.value) return
   if (isReadOnly.value && !isDraft.value) {
     resetForm()
     return
@@ -406,6 +408,7 @@ async function handleSave() {
   if (!items.value.length) { alert('No items to save'); return }
   if (fromWarehouse.value === toWarehouse.value) { alert('Source and Destination warehouses must be different'); return }
 
+  submitting.value = true
   try {
     const res = await frappePost('ssplbilling.api.storetransfer_api.save_store_transfer', {
       data: {
@@ -424,6 +427,8 @@ async function handleSave() {
     await fetchRecentTransfers()
   } catch (err) {
     console.error(err)
+  } finally {
+    submitting.value = false
   }
 }
 

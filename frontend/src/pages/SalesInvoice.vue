@@ -368,7 +368,7 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button ref="saveBtnRef" @click="handleSave" @keydown.end.prevent="handleSave" :disabled="isSubmitted" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]/70'">{{ saveButtonText }}</button>
+            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted || submitting" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted || submitting ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]/70'">{{ saveButtonText }}</button>
             <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
@@ -853,6 +853,7 @@ const customerState = ref('')
 const customerModifier = ref(null)
 const ignoreModifier = ref(false)
 const customerPricing = ref({}) // { item_code: multiplication_factor }
+const submitting = ref(false)
 
 const newItemCode = ref('')
 const newCodeInput = ref(null)
@@ -1102,7 +1103,7 @@ function handlePageUp() {
 }
 
 async function handleSave() {
-  if (isSubmitted.value) return
+  if (isSubmitted.value || submitting.value) return
   if (isReadOnly.value && isSaved.value) {
     isReadOnly.value = false
     if (items.value.length > 0) {
@@ -1119,6 +1120,7 @@ async function handleSave() {
   if (!customerId.value) { alert('Please select a customer first.'); return; }
   if (!selectedSeries.value) { alert('Please select a series first.'); return; }
 
+  submitting.value = true
   const additionalCharges = []
   const freight = parseFloat(freightEntry.value) || 0
   const loading = parseFloat(loadingEntry.value) || 0
@@ -1202,6 +1204,8 @@ async function handleSave() {
   } catch (error) {
     console.error('Error saving invoice:', error)
     alert(isUpdate ? 'Failed to update invoice.' : 'Failed to save invoice.')
+  } finally {
+    submitting.value = false
   }
 }
 

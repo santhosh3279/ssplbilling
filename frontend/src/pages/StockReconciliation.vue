@@ -272,7 +272,7 @@
             <button
               ref="saveButton"
               @click="saveEntry"
-              :disabled="entryDocStatus !== 0 || items.length === 0"
+              :disabled="entryDocStatus !== 0 || items.length === 0 || submitting"
               class="flex-1 rounded-xl bg-[var(--color-info)] text-lg font-bold text-[var(--color-text-on-highlight)] shadow-lg hover:bg-[var(--color-info)] active:scale-95 transition-all disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)]"
             >
               {{ entryName ? 'Update Draft' : 'Save Draft (Ctrl+S)' }}
@@ -336,6 +336,7 @@ const warehouse = ref('')
 const purpose = ref('Stock Reconciliation')
 const entryName = ref(null)
 const entryDocStatus = ref(0)
+const submitting = ref(false)
 const entryDate = ref(new Date().toISOString().split('T')[0])
 const availableWarehouses = ref([])
 const availablePurposes = ref(['Stock Reconciliation', 'Opening Stock'])
@@ -554,6 +555,7 @@ function removeItem(idx) {
 }
 
 async function saveEntry() {
+  if (submitting.value) return
   if (!warehouse.value) { alert('Select warehouse'); return }
   if (!items.value.length) { alert('No items to save'); return }
 
@@ -574,6 +576,7 @@ async function saveEntry() {
     if (!confirm('No items have been adjusted. Save anyway?')) return
   }
 
+  submitting.value = true
   try {
     const method = entryName.value ? 'update_stock_reconciliation' : 'create_stock_reconciliation'
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
@@ -581,6 +584,9 @@ async function saveEntry() {
     alert(`Entry ${res.name} saved as Draft`)
     fetchSidebarEntries()
   } catch (e) { alert(e.message || 'Save failed') }
+  finally {
+    submitting.value = false
+  }
 }
 
 async function submitEntry() {
