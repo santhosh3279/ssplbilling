@@ -6,7 +6,11 @@
     <div class="max-w-4xl mx-auto">
       <!-- History and Suggestions -->
       <div v-if="history.length || suggestions.length" class="mb-2 max-h-80 overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)]">
-        <div v-for="(item, i) in history" :key="'h-'+i" class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0">
+        <div v-for="(item, i) in history" :key="'h-'+i" 
+             class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-surface-raised)]"
+             :class="{ 'bg-[var(--color-surface-raised)] !text-[var(--color-text)]': i === historyIndex }"
+             @click="selectHistory(i)"
+        >
           <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
         </div>
         <div v-for="(route, i) in suggestions" :key="'r-'+i" 
@@ -91,6 +95,12 @@ function handleKeydown(e) {
   }
 
   if (e.key === 'Enter') {
+    if (historyIndex.value !== -1) {
+      query.value = history.value[historyIndex.value].input
+      historyIndex.value = -1
+      updateSuggestions()
+      return
+    }
     execute()
     return
   }
@@ -100,13 +110,11 @@ function handleKeydown(e) {
     if (suggestions.value.length > 0) {
       activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
     } else if (historyIndex.value !== -1) {
-      // Move towards newer (end of array)
+      // Move towards newer (bottom of list)
       if (historyIndex.value < history.value.length - 1) {
         historyIndex.value++
-        query.value = history.value[historyIndex.value].input
       } else {
         historyIndex.value = -1
-        query.value = ''
       }
     }
   } else if (e.key === 'ArrowUp') {
@@ -114,15 +122,21 @@ function handleKeydown(e) {
     if (suggestions.value.length > 0) {
       activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
     } else if (history.value.length > 0) {
-      // Move towards older (start of array)
+      // Move towards older (top of list)
       if (historyIndex.value === -1) {
         historyIndex.value = history.value.length - 1
       } else if (historyIndex.value > 0) {
         historyIndex.value--
       }
-      query.value = history.value[historyIndex.value].input
     }
   }
+}
+
+function selectHistory(index) {
+  query.value = history.value[index].input
+  historyIndex.value = -1
+  updateSuggestions()
+  inputRef.value?.focus()
 }
 
 function updateSuggestions() {
