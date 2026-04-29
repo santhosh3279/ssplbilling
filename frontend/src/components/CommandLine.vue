@@ -162,8 +162,14 @@ function execute() {
   try {
     // Simple math check to avoid security issues with eval (though this is local)
     if (/^[\d\s+\-*\/%().]+$/.test(q)) {
-      // Handle % as percentage (e.g., 50% -> 50/100)
-      const mathExpr = q.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)')
+      // Handle billing-style percentages (e.g., 100 + 5% -> 100 * (1 + 5/100))
+      // 1. Handle addition: x + y% -> x * (1 + y/100)
+      let mathExpr = q.replace(/(\d+(?:\.\d+)?)\s*\+\s*(\d+(?:\.\d+)?)%/g, '($1 * (1 + $2/100))')
+      // 2. Handle subtraction: x - y% -> x * (1 - y/100)
+      mathExpr = mathExpr.replace(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)%/g, '($1 * (1 - $2/100))')
+      // 3. Handle standard percentage (e.g., 50% -> 50/100) for cases like 1000 * 5%
+      mathExpr = mathExpr.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)')
+      
       // eslint-disable-next-line no-eval
       const result = eval(mathExpr)
       history.value.push({ input: q, result: Number(result.toFixed(8)) })
