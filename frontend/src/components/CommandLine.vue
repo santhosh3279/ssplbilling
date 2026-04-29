@@ -56,6 +56,7 @@ const query = ref('')
 const history = ref([])
 const suggestions = ref([])
 const activeSuggestionIndex = ref(0)
+const historyIndex = ref(-1)
 const lastActiveElement = ref(null)
 
 // Block global shortcuts when command line is open
@@ -65,6 +66,7 @@ useSubwindowWatcher(computed(() => props.show), {
 
 function close() {
   emit('close')
+  historyIndex.value = -1
   if (lastActiveElement.value && typeof lastActiveElement.value.focus === 'function') {
     nextTick(() => lastActiveElement.value.focus())
   }
@@ -75,6 +77,7 @@ watch(() => props.show, (val) => {
     lastActiveElement.value = document.activeElement
     query.value = ''
     suggestions.value = []
+    historyIndex.value = -1
     nextTick(() => {
       inputRef.value?.focus()
     })
@@ -94,14 +97,30 @@ function handleKeydown(e) {
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
-    activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
+    if (suggestions.value.length > 0) {
+      activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
+    } else if (historyIndex.value >= 0) {
+      historyIndex.value--
+      query.value = historyIndex.value === -1 ? '' : history.value[historyIndex.value].input
+    }
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
-    activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
+    if (suggestions.value.length > 0) {
+      activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
+    } else if (history.value.length > 0) {
+      historyIndex.value = Math.min(historyIndex.value + 1, history.value.length - 1)
+      query.value = history.value[historyIndex.value].input
+    }
   }
 }
 
 function updateSuggestions() {
+  // Reset history index if user types something manually
+  const isFromHistory = historyIndex.value !== -1 && history.value[historyIndex.value]?.input === query.value
+  if (!isFromHistory) {
+    historyIndex.value = -1
+  }
+
   if (!query.value.trim()) {
     suggestions.value = []
     return
@@ -135,8 +154,9 @@ function execute() {
       // eslint-disable-next-line no-eval
       const result = eval(q)
       history.value.unshift({ input: q, result })
-      if (history.value.length > 5) history.value.pop()
+      if (history.value.length > 3) history.value.pop()
       query.value = ''
+      historyIndex.value = -1
       return
     }
   } catch (err) {
