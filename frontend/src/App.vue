@@ -33,13 +33,9 @@ function toggleCommandLine() {
 }
 
 function handleGlobalKeydown(e) {
-  if (e.key === '?' && !showCommandLine.value) {
-    const active = document.activeElement;
-    const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
-    if (!isInput) {
-      e.preventDefault();
-      toggleCommandLine();
-    }
+  if (e.key === 'F1' && e.shiftKey && !showCommandLine.value) {
+    e.preventDefault();
+    toggleCommandLine();
   }
 }
 
