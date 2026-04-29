@@ -248,7 +248,7 @@ const props = defineProps({
   overrideLedgers: { type: Array, default: null },
   initialQuery: { type: String, default: '' },
   isInternalTransfer: { type: Boolean, default: false },
-  hideSecondary: { type: Boolean, default: false }
+  hideSecondary: { type: Boolean, default: true }
 })
 
 const availableTabs = computed(() => {
@@ -359,7 +359,7 @@ const results = computed(() => {
     })
   }
 
-  // Hide Secondary Party Filter
+  // Hide Secondary Party Filter: Only show primary if hideSecondary is enabled
   if (props.hideSecondary) {
     list = list.filter(l => !l.is_secondary)
   }

@@ -166,6 +166,9 @@ def get_all_ledgers():
                 "party_type": pl.secondary_role,
                 "party": pl.secondary_party
             })
+            # Mark primary explicitly
+            ledger_map[pl.primary_party]["is_primary"] = True
+            
         # Link secondary to primary
         if pl.secondary_party in ledger_map:
             ledger_map[pl.secondary_party]["is_secondary"] = True
