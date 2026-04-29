@@ -5,17 +5,17 @@
   >
     <div class="max-w-4xl mx-auto">
       <!-- History and Suggestions -->
-      <div v-if="history.length || suggestions.length" class="mb-2 max-h-40 overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)] p-2">
-        <div v-for="(item, i) in history" :key="'h-'+i" class="text-xs text-[var(--color-text-muted)] font-mono py-0.5 border-b border-[var(--color-border)] last:border-0">
+      <div v-if="history.length || suggestions.length" class="mb-4 max-h-80 overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)] p-4">
+        <div v-for="(item, i) in history" :key="'h-'+i" class="text-lg text-[var(--color-text-muted)] font-mono py-2 border-b border-[var(--color-border)] last:border-0">
           <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
         </div>
         <div v-for="(route, i) in suggestions" :key="'r-'+i" 
-             class="text-sm py-1 px-2 cursor-pointer hover:bg-[var(--color-surface-raised)] rounded flex justify-between items-center"
+             class="text-lg py-2 px-3 cursor-pointer hover:bg-[var(--color-surface-raised)] rounded flex justify-between items-center"
              :class="{ 'bg-[var(--color-surface-raised)]': i === activeSuggestionIndex }"
              @click="navigateTo(route)"
         >
           <span>{{ route.meta?.title || route.name }}</span>
-          <span class="text-[var(--color-text-muted)] text-xs font-mono">{{ route.path }}</span>
+          <span class="text-[var(--color-text-muted)] text-sm font-mono">{{ route.path }}</span>
         </div>
       </div>
 
