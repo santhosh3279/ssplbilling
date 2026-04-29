@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="show"
-    class="fixed bottom-0 left-0 right-0 z-[1000] bg-[var(--color-surface)] border-t border-[var(--color-border)] shadow-2xl p-2 animate-in slide-in-from-bottom duration-200"
+    class="fixed bottom-0 left-0 right-0 z-[1000] bg-[var(--color-surface)] border-t border-[var(--color-border)] shadow-2xl p-1 animate-in slide-in-from-bottom duration-200"
   >
     <div class="max-w-4xl mx-auto">
       <!-- History and Suggestions -->
-      <div v-if="history.length || suggestions.length" class="mb-4 max-h-80 overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)]">
+      <div v-if="history.length || suggestions.length" class="mb-2 max-h-80 overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)]">
         <div v-for="(item, i) in history" :key="'h-'+i" class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0">
           <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
         </div>
@@ -21,19 +21,19 @@
 
       <!-- Input Line -->
       <div class="flex items-center gap-2">
-        <div class="text-[var(--color-info)] font-mono font-bold text-lg">></div>
+        <div class="text-[var(--color-info)] font-mono font-bold text-3xl">></div>
         <input
           ref="inputRef"
           v-model="query"
           type="text"
-          class="flex-1 bg-transparent border-none outline-none text-[var(--color-text)] font-mono text-lg placeholder:text-[var(--color-text-muted)]/50"
+          class="flex-1 bg-transparent border-none outline-none text-[var(--color-text)] font-mono text-3xl placeholder:text-[var(--color-text-muted)]/50"
           placeholder="Calculate or search page..."
           @keydown="handleKeydown"
           @input="updateSuggestions"
         />
         <div class="flex items-center gap-2 text-[var(--color-text-muted)] text-[10px] uppercase font-bold tracking-tighter">
-          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)]">ENTER</span> to execute
-          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)]">ESC</span> to close
+          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)]">ENTER</span>
+          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)]">ESC</span>
         </div>
       </div>
     </div>
