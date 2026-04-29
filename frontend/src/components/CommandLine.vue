@@ -99,16 +99,27 @@ function handleKeydown(e) {
     e.preventDefault()
     if (suggestions.value.length > 0) {
       activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
-    } else if (historyIndex.value >= 0) {
-      historyIndex.value--
-      query.value = historyIndex.value === -1 ? '' : history.value[historyIndex.value].input
+    } else if (historyIndex.value !== -1) {
+      // Move towards newer (end of array)
+      if (historyIndex.value < history.value.length - 1) {
+        historyIndex.value++
+        query.value = history.value[historyIndex.value].input
+      } else {
+        historyIndex.value = -1
+        query.value = ''
+      }
     }
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     if (suggestions.value.length > 0) {
       activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
     } else if (history.value.length > 0) {
-      historyIndex.value = Math.min(historyIndex.value + 1, history.value.length - 1)
+      // Move towards older (start of array)
+      if (historyIndex.value === -1) {
+        historyIndex.value = history.value.length - 1
+      } else if (historyIndex.value > 0) {
+        historyIndex.value--
+      }
       query.value = history.value[historyIndex.value].input
     }
   }
@@ -153,8 +164,8 @@ function execute() {
     if (/^[\d\s+\-*/%().]+$/.test(q)) {
       // eslint-disable-next-line no-eval
       const result = eval(q)
-      history.value.unshift({ input: q, result })
-      if (history.value.length > 3) history.value.pop()
+      history.value.push({ input: q, result })
+      if (history.value.length > 3) history.value.shift()
       query.value = ''
       historyIndex.value = -1
       return
