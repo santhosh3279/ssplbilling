@@ -138,7 +138,7 @@ function updateSuggestions() {
   }
 
   // If it looks like a math expression, don't show route suggestions as prominently or filter them
-  const isMath = /^[\d\s+\-*/%().]+$/.test(query.value)
+  const isMath = /^[\d\s+\-*\/%().]+$/.test(query.value)
   if (isMath) {
     suggestions.value = []
     return
@@ -161,10 +161,12 @@ function execute() {
   // Try math evaluation
   try {
     // Simple math check to avoid security issues with eval (though this is local)
-    if (/^[\d\s+\-*/%().]+$/.test(q)) {
+    if (/^[\d\s+\-*\/%().]+$/.test(q)) {
+      // Handle % as percentage (e.g., 50% -> 50/100)
+      const mathExpr = q.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)')
       // eslint-disable-next-line no-eval
-      const result = eval(q)
-      history.value.push({ input: q, result })
+      const result = eval(mathExpr)
+      history.value.push({ input: q, result: Number(result.toFixed(8)) })
       if (history.value.length > 3) history.value.shift()
       query.value = ''
       historyIndex.value = -1
