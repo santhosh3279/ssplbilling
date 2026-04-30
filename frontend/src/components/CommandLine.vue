@@ -103,20 +103,50 @@ watch(() => props.show, (val) => {
     nextTick(() => {
       inputRef.value?.focus()
     })
+    window.addEventListener('keydown', blockShortcuts, true)
+  } else {
+    window.removeEventListener('keydown', blockShortcuts, true)
   }
 })
+
+function blockShortcuts(e) {
+  // Allow the command line's own input to work
+  if (e.target === inputRef.value) {
+    // We still want to stop propagation so other global listeners don't catch these
+    // But we don't preventDefault here as that would stop typing
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      close()
+    }
+    // Let Enter, Arrows, etc. bubble up to our local handleKeydown
+    return
+  }
+
+  // Block everything else
+  const isDevTools = e.key === 'F12'
+  const isReload = (e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R')
+  
+  if (!isDevTools && !isReload) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  if (e.key === 'Escape') {
+    close()
+  }
+}
 
 // Scroll to bottom when history grows
 watch(() => history.value.length, () => {
   scrollToBottom()
 })
 
-function handleKeydown(e) {
-  if (e.key === 'Escape') {
-    close()
-    return
-  }
+onUnmounted(() => {
+  window.removeEventListener('keydown', blockShortcuts, true)
+})
 
+function handleKeydown(e) {
   if (e.key === 'Enter') {
     if (historyIndex.value !== -1) {
       query.value = history.value[historyIndex.value].input
