@@ -5,7 +5,10 @@
   >
     <div class="max-w-4xl mx-auto">
       <!-- History and Suggestions -->
-      <div v-if="history.length || suggestions.length" class="mb-2 max-h-80 overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)]">
+      <div v-if="history.length || suggestions.length" 
+           ref="scrollContainer"
+           class="mb-2 max-h-[140px] overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)]"
+      >
         <div v-for="(item, i) in history" :key="'h-'+i" 
              class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-surface-raised)]"
              :class="{ 'bg-[var(--color-surface-raised)] !text-[var(--color-text)]': i === historyIndex }"
@@ -61,6 +64,7 @@ const emit = defineEmits(['close'])
 
 const router = useRouter()
 const inputRef = ref(null)
+const scrollContainer = ref(null)
 const query = ref('')
 const history = ref([])
 const suggestions = ref([])
@@ -72,6 +76,14 @@ const lastActiveElement = ref(null)
 useSubwindowWatcher(computed(() => props.show), {
   'ESCAPE': () => close()
 })
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+    }
+  })
+}
 
 function close() {
   emit('close')
@@ -87,10 +99,16 @@ watch(() => props.show, (val) => {
     query.value = ''
     suggestions.value = []
     historyIndex.value = -1
+    scrollToBottom()
     nextTick(() => {
       inputRef.value?.focus()
     })
   }
+})
+
+// Scroll to bottom when history grows
+watch(() => history.value.length, () => {
+  scrollToBottom()
 })
 
 function handleKeydown(e) {
@@ -119,6 +137,7 @@ function handleKeydown(e) {
       if (historyIndex.value < history.value.length - 1) {
         historyIndex.value++
         query.value = history.value[historyIndex.value].input
+        syncScroll()
       } else {
         historyIndex.value = -1
         query.value = ''
@@ -136,8 +155,28 @@ function handleKeydown(e) {
         historyIndex.value--
       }
       query.value = history.value[historyIndex.value].input
+      syncScroll()
     }
   }
+}
+
+function syncScroll() {
+  nextTick(() => {
+    if (scrollContainer.value) {
+      let el
+      if (suggestions.value.length > 0) {
+        // Find element index: history list comes first, then suggestions
+        const suggestionElIndex = history.value.length + activeSuggestionIndex.value
+        el = scrollContainer.value.children[suggestionElIndex]
+      } else if (historyIndex.value !== -1) {
+        el = scrollContainer.value.children[historyIndex.value]
+      }
+      
+      if (el) {
+        el.scrollIntoView({ block: 'nearest' })
+      }
+    }
+  })
 }
 
 function selectHistory(index) {
