@@ -32,6 +32,7 @@ import GeneralLedger from './pages/GeneralLedger.vue'
 import StoreTransfer from './pages/StoreTransfer.vue'
 import SingleEntry from './pages/SingleEntry.vue'
 import Cancellation from './pages/Cancellation.vue'
+import PartyLink from './pages/PartyLink.vue'
 
 const routes = [
   {
@@ -39,6 +40,12 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true, title: 'Login' },
+  },
+  {
+    path: '/party-link',
+    name: 'PartyLink',
+    component: PartyLink,
+    meta: { title: 'Party Link' },
   },
   {
     path: '/cancellation',

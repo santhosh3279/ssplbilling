@@ -34,6 +34,7 @@ export const BILLER_ROUTES = new Set([
   'DailyReport',
   'StockLedger',
   'StoreTransfer',
+  'PartyLink',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -133,6 +134,7 @@ const TILE_ROUTE_MAP = {
   'stock-ledger':      'StockLedger',
   'store-transfer':    'StoreTransfer',
   'single-entry':      'SingleEntry',
+  'party-link':        'PartyLink',
   'invoice-template':  'Dashboard',
   'stock-template':    'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',

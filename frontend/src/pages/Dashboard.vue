@@ -469,6 +469,7 @@ const allTiles = [
   { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
   { id: 'journal-contra',     bucket: 'accounts', name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
   { id: 'outstanding-bills',  bucket: 'accounts', name: 'Outstanding',           desc: 'View party outstanding bills',             icon: '📋', shortcut: ''    },
+  { id: 'party-link',         bucket: 'accounts', name: 'Party Link',            desc: 'Link customers and suppliers',             icon: '🔗', shortcut: ''    },
   // ── Ledger View ──
   { id: 'stock-ledger',       bucket: 'ledger',   name: 'Stock',                 desc: 'View stock movement by item',              icon: '📦', shortcut: ''    },
   { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'F6'  },
