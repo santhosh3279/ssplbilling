@@ -39,6 +39,34 @@ def get_all_naming_series():
     return result
 
 @frappe.whitelist()
+def update_naming_series(doctype, series_list):
+    """Update naming series options for a DocType via Property Setter."""
+    if isinstance(series_list, str):
+        series_list = json.loads(series_list)
+    
+    # Ensure standard Frappe format: one series per line
+    value = "\n".join([s.strip() for s in series_list if s.strip()])
+    
+    # Create or update Property Setter
+    ps_name = frappe.db.get_value("Property Setter", {"doc_type": doctype, "field_name": "naming_series", "property": "options"})
+    
+    if ps_name:
+        frappe.db.set_value("Property Setter", ps_name, "value", value)
+    else:
+        frappe.get_doc({
+            "doctype": "Property Setter",
+            "doctype_or_field": "DocField",
+            "doc_type": doctype,
+            "field_name": "naming_series",
+            "property": "options",
+            "property_type": "Text",
+            "value": value
+        }).insert(ignore_permissions=True)
+    
+    frappe.clear_cache(doctype=doctype)
+    return {"status": "success", "doctype": doctype, "value": value}
+
+@frappe.whitelist()
 def get_all_users():
     """Return a list of all users from SSPL Billing Settings -> User Series."""
     settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

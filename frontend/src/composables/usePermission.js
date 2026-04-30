@@ -47,6 +47,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'CashierManagement',
   'DailyReport',
   'SingleEntry',
+  'NamingSettings',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
@@ -135,6 +136,7 @@ const TILE_ROUTE_MAP = {
   'store-transfer':    'StoreTransfer',
   'single-entry':      'SingleEntry',
   'party-link':        'PartyLink',
+  'naming-settings':   'NamingSettings',
   'invoice-template':  'Dashboard',
   'stock-template':    'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',

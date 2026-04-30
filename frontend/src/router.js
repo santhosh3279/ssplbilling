@@ -33,6 +33,7 @@ import StoreTransfer from './pages/StoreTransfer.vue'
 import SingleEntry from './pages/SingleEntry.vue'
 import Cancellation from './pages/Cancellation.vue'
 import PartyLink from './pages/PartyLink.vue'
+import NamingSettings from './pages/NamingSettings.vue'
 
 const routes = [
   {
@@ -40,6 +41,12 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true, title: 'Login' },
+  },
+  {
+    path: '/naming-settings',
+    name: 'NamingSettings',
+    component: NamingSettings,
+    meta: { title: 'Naming Settings' },
   },
   {
     path: '/party-link',

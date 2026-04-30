@@ -483,6 +483,7 @@ const allTiles = [
   { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
   { id: 'store-transfer',     bucket: 'sspl',   name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'F9'  },
   { id: 'party-link',         bucket: 'sspl',   name: 'Party Link',            desc: 'Link customers and suppliers',             icon: '🔗', shortcut: ''    },
+  { id: 'naming-settings',    bucket: 'sspl',   name: 'Naming Settings',       desc: 'Configure document series',                icon: '🔢', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
   { id: 'invoice-template',   bucket: 'sspl',     name: 'Invoice Template',      desc: 'Reusable invoice UI template',             icon: '🎨', shortcut: ''    },
   { id: 'stock-template',     bucket: 'sspl',     name: 'Stock Template',        desc: 'Reusable stock UI template',               icon: '📦', shortcut: ''    },
@@ -500,7 +501,7 @@ function tilesInBucket(bucketId) {
   return tiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation']
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'party-link', 'naming-settings']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -526,6 +527,7 @@ const routeAliases = {
   reports: '/reports',
   cancellation: '/cancellation',
   'party-link': '/party-link',
+  'naming-settings': '/naming-settings',
 }
 
 function openModule(id) {
