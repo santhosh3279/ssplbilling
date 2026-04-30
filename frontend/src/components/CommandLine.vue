@@ -11,7 +11,12 @@
              :class="{ 'bg-[var(--color-surface-raised)] !text-[var(--color-text)]': i === historyIndex }"
              @click="selectHistory(i)"
         >
-          <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
+          <template v-if="item.result !== undefined">
+            <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
+          </template>
+          <template v-else>
+            {{ item.input }}
+          </template>
         </div>
         <div v-for="(route, i) in suggestions" :key="'r-'+i" 
              class="text-3xl px-2 cursor-pointer hover:bg-[var(--color-surface-raised)] rounded flex justify-between items-center"
@@ -209,7 +214,14 @@ function execute() {
   )
   if (exactMatch) {
     navigateTo(exactMatch)
+    return
   }
+
+  // Fallback: record as plain text in history
+  history.value.push({ input: q })
+  if (history.value.length > 3) history.value.shift()
+  query.value = ''
+  historyIndex.value = -1
 }
 
 function navigateTo(route) {
