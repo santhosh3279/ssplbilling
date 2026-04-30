@@ -185,6 +185,11 @@ function selectHistory(index) {
 }
 
 function updateSuggestions() {
+  // Replace double space with %
+  if (query.value.includes('  ')) {
+    query.value = query.value.replace('  ', '%')
+  }
+
   // Reset history index if user types something manually
   const isFromHistory = historyIndex.value !== -1 && history.value[historyIndex.value]?.input === query.value
   if (!isFromHistory) {
