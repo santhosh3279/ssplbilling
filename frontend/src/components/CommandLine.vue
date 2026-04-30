@@ -127,33 +127,34 @@ function handleKeydown(e) {
     execute()
     return
   }
-if (e.key === 'ArrowDown') {
-  e.preventDefault()
-  if (suggestions.value.length > 0) {
-    activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
-    syncScroll()
-  } else if (historyIndex.value !== -1) {
-    // Move towards newer (bottom of list)
-    if (historyIndex.value < history.value.length - 1) {
-      historyIndex.value++
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (suggestions.value.length > 0) {
+      activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
       syncScroll()
-    } else {
-      historyIndex.value = -1
+    } else if (historyIndex.value !== -1) {
+      // Move towards newer (bottom of list)
+      if (historyIndex.value < history.value.length - 1) {
+        historyIndex.value++
+        syncScroll()
+      } else {
+        historyIndex.value = -1
+      }
     }
-  }
-} else if (e.key === 'ArrowUp') {
-  e.preventDefault()
-  if (suggestions.value.length > 0) {
-    activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
-    syncScroll()
-  } else if (history.value.length > 0) {
-    // Move towards older (top of list)
-    if (historyIndex.value === -1) {
-      historyIndex.value = history.value.length - 1
-    } else if (historyIndex.value > 0) {
-      historyIndex.value--
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (suggestions.value.length > 0) {
+      activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
+      syncScroll()
+    } else if (history.value.length > 0) {
+      // Move towards older (top of list)
+      if (historyIndex.value === -1) {
+        historyIndex.value = history.value.length - 1
+      } else if (historyIndex.value > 0) {
+        historyIndex.value--
+      }
+      syncScroll()
     }
-    syncScroll()
   }
 }
 
