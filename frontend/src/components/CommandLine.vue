@@ -195,7 +195,7 @@ function execute() {
       // eslint-disable-next-line no-eval
       const result = eval(mathExpr)
       history.value.push({ input: q, result: Number(result.toFixed(8)) })
-      if (history.value.length > 3) history.value.shift()
+      if (history.value.length > 15) history.value.shift()
       query.value = ''
       historyIndex.value = -1
       return
@@ -222,7 +222,7 @@ function execute() {
 
   // Fallback: record as plain text in history
   history.value.push({ input: q })
-  if (history.value.length > 3) history.value.shift()
+  if (history.value.length > 15) history.value.shift()
   query.value = ''
   historyIndex.value = -1
 }
@@ -240,5 +240,20 @@ function navigateTo(route) {
 }
 .animate-in {
   animation-fill-mode: both;
+}
+
+/* Custom Scrollbar for History */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 10px;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 </style>
