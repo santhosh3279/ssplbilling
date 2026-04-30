@@ -525,6 +525,7 @@ const routeAliases = {
   'general-ledger': '/general-ledger',
   reports: '/reports',
   cancellation: '/cancellation',
+  'party-link': '/party-link',
 }
 
 function openModule(id) {
