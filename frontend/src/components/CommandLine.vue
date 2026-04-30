@@ -118,8 +118,10 @@ function handleKeydown(e) {
       // Move towards newer (bottom of list)
       if (historyIndex.value < history.value.length - 1) {
         historyIndex.value++
+        query.value = history.value[historyIndex.value].input
       } else {
         historyIndex.value = -1
+        query.value = ''
       }
     }
   } else if (e.key === 'ArrowUp') {
@@ -133,6 +135,7 @@ function handleKeydown(e) {
       } else if (historyIndex.value > 0) {
         historyIndex.value--
       }
+      query.value = history.value[historyIndex.value].input
     }
   }
 }
