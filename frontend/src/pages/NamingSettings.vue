@@ -42,31 +42,28 @@
               <span class="rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">{{ series.length }} series</span>
             </div>
 
-            <div class="space-y-3">
-              <div v-for="(s, index) in series" :key="index" class="flex flex-col gap-1 border-b border-[var(--color-border)]/50 pb-3 last:border-0">
-                <div class="flex gap-2">
-                  <input 
-                    v-model="s.prefix"
-                    class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-info)] font-mono"
-                    placeholder="e.g. SINV-.YYYY.-####"
-                  />
-                  <button 
-                    @click="removeSeries(doctype, index)"
-                    class="text-red-400 hover:text-red-600 px-1"
-                    title="Remove"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div class="flex items-center gap-2 pl-1">
-                  <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)]">Next Counter:</span>
+            <div class="space-y-2">
+              <div v-for="(s, index) in series" :key="index" class="flex items-center gap-2 border-b border-[var(--color-border)]/50 pb-2 last:border-0">
+                <input 
+                  v-model="s.prefix"
+                  class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-info)] font-mono"
+                  placeholder="e.g. SINV-.YYYY.-####"
+                />
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="text-[9px] uppercase font-bold text-[var(--color-text-muted)]">Next:</span>
                   <input 
                     v-model.number="s.current"
                     type="number"
-                    class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-0.5 text-[10px] outline-none focus:border-[var(--color-info)] font-mono"
+                    class="w-16 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xs outline-none focus:border-[var(--color-info)] font-mono text-center"
                   />
-                  <span class="text-[9px] text-[var(--color-text-muted)] italic">(Used if template matches today)</span>
                 </div>
+                <button 
+                  @click="removeSeries(doctype, index)"
+                  class="text-red-400 hover:text-red-600 px-1 shrink-0"
+                  title="Remove"
+                >
+                  ✕
+                </button>
               </div>
               
               <button 
