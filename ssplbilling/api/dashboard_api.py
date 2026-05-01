@@ -47,7 +47,7 @@ def get_all_naming_series():
             
             details.append({
                 "prefix": s,
-                "current": current
+                "current": int(current) + 1
             })
         return details
 
@@ -95,7 +95,8 @@ def update_naming_series(doctype, series_list):
             try:
                 resolved = parse_naming_series(item["prefix"])
                 prefix = re.sub(r"#+$", "", resolved)
-                new_val = int(item["current"])
+                # Next value from UI - 1 = current value in DB
+                new_val = max(0, int(item["current"]) - 1)
                 
                 if frappe.db.exists("Series", prefix):
                     frappe.db.set_value("Series", prefix, "current", new_val)

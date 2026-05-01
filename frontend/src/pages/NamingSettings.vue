@@ -17,6 +17,13 @@
         </div>
         <div class="flex items-center gap-2">
           <button 
+            @click="fetchNamingSeries" 
+            :disabled="loading"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:text-[var(--color-info)] transition-colors"
+          >
+            ↻ Refresh
+          </button>
+          <button 
             @click="saveAll" 
             :disabled="saving"
             class="rounded bg-[var(--color-info)] px-4 py-1.5 text-xs font-bold text-white hover:bg-[var(--color-info)]/90 disabled:opacity-50"
