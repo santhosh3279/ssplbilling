@@ -1458,8 +1458,12 @@ function focusEditField(field, idx) {
 }
 
 function exitEditMode(idx, cancel = false) {
-  if (cancel) { clearItem(idx); editingRowIdx.value = -1; editingField.value = null; quickSearchResults.value = []; editQuickSearchRowIdx.value = null; focusBarcodeInput(); return }
-  recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null; quickSearchResults.value = []; editQuickSearchRowIdx.value = null; nextTick(() => { rowRefs.value[idx]?.focus() })
+  if (cancel && !items.value[idx]?.item_code) {
+    clearItem(idx)
+    focusBarcodeInput()
+    return
+  }
+  recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null; quickSearchResults.value = []; editQuickSearchRowIdx.value = null; nextTick(() => { focusRow(idx) })
 }
 
 function clearItem(idx) { if (idx !== -1 && items.value[idx]) { items.value.splice(idx, 1); if (editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null } } }

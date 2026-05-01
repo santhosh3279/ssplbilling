@@ -1630,18 +1630,14 @@ function focusEditField(field, idx) {
 }
 
 function exitEditMode(idx, cancel = false) {
-  if (cancel) {
+  if (cancel && !items.value[idx]?.item_code) {
     clearItem(idx)
-    editingRowIdx.value = -1
-    editingField.value = null
-    quickSearchResults.value = []
-    editQuickSearchRowIdx.value = null
     focusBarcodeInput()
     return
   }
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
   quickSearchResults.value = []; editQuickSearchRowIdx.value = null
-  nextTick(() => { rowRefs.value[idx]?.focus() })
+  nextTick(() => { focusRow(idx) })
 }
 
 function getItemUoms(itemCode) {
