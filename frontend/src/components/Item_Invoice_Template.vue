@@ -392,6 +392,12 @@
                   <td class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ subtotal }}</td>
                   <td class="border border-[var(--color-border)]"></td>
                 </tr>
+                <!-- Tax -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
+                  <td class="p-0 border border-[var(--color-border)]"></td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ totalTax }}</td>
+                </tr>
                 <!-- Freight -->
                 <tr>
                   <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
@@ -461,12 +467,6 @@
                   <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Round Off</td>
                   <td class="p-0 border border-[var(--color-border)]"></td>
                   <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">{{ Number(roundOff || 0).toFixed(2) }}</td>
-                </tr>
-                <!-- Tax -->
-                <tr>
-                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
-                  <td class="p-0 border border-[var(--color-border)]"></td>
-                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ totalTax }}</td>
                 </tr>
               </slot>
             </tbody>
