@@ -155,14 +155,22 @@ def get_allowed_series(doctype="Sales Invoice", user=None):
     user_series_rows = []
     try:
         settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-        if doctype == "Sales Invoice":
-            available = [r.series for r in settings.billing_series if r.series]
-        elif doctype == "Purchase Invoice":
-            available = [r.series for r in settings.billing_series if r.series]
-        elif doctype == "Quotation":
+        
+        if doctype == "Quotation":
             from ssplbilling.api.quotation_api import get_naming_series
             available = get_naming_series()
-        
+        else:
+            # Get global billing series
+            global_series = [r.series for r in settings.billing_series if r.series]
+            # Get actual naming series options for this DocType from ERPNext/Frappe
+            doctype_series_options = _fallback_series()
+            
+            # Filter global series to only include those that are valid for this DocType
+            if global_series:
+                available = [s for s in global_series if s in doctype_series_options]
+            else:
+                available = doctype_series_options
+            
         user_series_rows = list(settings.user_series or [])
     except Exception:
         pass
@@ -185,7 +193,8 @@ def get_allowed_series(doctype="Sales Invoice", user=None):
     # Find rows for this user
     user_rows = [r for r in user_series_rows if r.user == target_user]
     if not user_rows:
-        return {"allowed_series": available, "user_allowed_string": ""}  # Fallback: show all
+        # If user not found in SSPL settings, they get nothing unless they are admin
+        return {"allowed_series": [], "user_allowed_string": ""}
 
     # Extract and split allowed series prefixes
     allowed_prefixes = []
@@ -205,7 +214,7 @@ def get_allowed_series(doctype="Sales Invoice", user=None):
     result = [s for s in available if any(get_alpha(s)[:3].startswith(a) for a in allowed_alphas)]
 
     return {
-        "allowed_series": result if result else available,
+        "allowed_series": result,
         "user_allowed_string": ",".join(allowed_prefixes),
     }
 

@@ -70,47 +70,11 @@ const focusedIndex = ref(0)
 async function fetchAllowedSeries() {
   loading.value = true
   try {
-    // 1. Fetch backend allowed series (fallback/legacy)
+    // 1. Fetch backend allowed series (strictly filtered)
     const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', {
       doctype: props.doctype
     })
     let series = d.allowed_series || []
-
-    // 2. Perform intersection of wb-allowed-series and wb-series-{doctype}
-    const dtKey = `wb-series-${props.doctype.toLowerCase().replace(/ /g, '-')}`
-    const storedAllowed = localStorage.getItem('wb-allowed-series')
-    const storedDtSeries = localStorage.getItem(dtKey)
-
-    if (storedAllowed && storedDtSeries) {
-      try {
-        const allowedPrefixes = JSON.parse(storedAllowed)
-        const dtSeries = JSON.parse(storedDtSeries)
-
-        if (Array.isArray(allowedPrefixes) && Array.isArray(dtSeries)) {
-          // Intersection: take all series from dtSeries that match an allowed prefix
-          // "ALL" is handled by the fact that if it's "ALL", allowedPrefixes will contain all possible prefixes
-          series = dtSeries.filter(s => {
-            const prefix = (s || '').split('.')[0]
-            return allowedPrefixes.includes(prefix)
-          })
-        }
-      } catch (e) {
-        console.warn('[Userseries] Intersection failed:', e)
-      }
-    } else if (storedAllowed) {
-      // Original logic: filter the backend-returned series by allowed prefixes
-      try {
-        const allowedPrefixes = JSON.parse(storedAllowed)
-        if (Array.isArray(allowedPrefixes) && allowedPrefixes.length) {
-          series = series.filter(s => {
-            const prefix = (s || '').split('.')[0]
-            return allowedPrefixes.includes(prefix)
-          })
-        }
-      } catch (e) {
-        console.warn('[Userseries] Failed to parse wb-allowed-series:', e)
-      }
-    }
 
     allowedSeries.value = series
     
