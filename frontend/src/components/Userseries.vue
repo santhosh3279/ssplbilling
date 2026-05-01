@@ -76,6 +76,22 @@ async function fetchAllowedSeries() {
     })
     let series = d.allowed_series || []
 
+    // 2. Intersect with wb-allowed-series from localStorage
+    const storedAllowedRaw = localStorage.getItem('wb-allowed-series')
+    if (storedAllowedRaw) {
+      try {
+        const storedAllowed = JSON.parse(storedAllowedRaw)
+        if (Array.isArray(storedAllowed) && storedAllowed.length > 0) {
+          // Match DocType series if it starts with any allowed prefix
+          series = series.filter(s => 
+            storedAllowed.some(prefix => s.startsWith(prefix))
+          )
+        }
+      } catch (e) {
+        console.error('[Userseries] Failed to parse wb-allowed-series:', e)
+      }
+    }
+
     allowedSeries.value = series
     
     // Set focused index to current series if found, otherwise 0

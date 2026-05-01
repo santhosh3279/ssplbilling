@@ -14,6 +14,22 @@ export function useAllowedSeries() {
       })
       let series = d.allowed_series || []
 
+      // 2. Intersect with wb-allowed-series from localStorage
+      const storedAllowedRaw = localStorage.getItem('wb-allowed-series')
+      if (storedAllowedRaw) {
+        try {
+          const storedAllowed = JSON.parse(storedAllowedRaw)
+          if (Array.isArray(storedAllowed) && storedAllowed.length > 0) {
+            // Match DocType series if it starts with any allowed prefix
+            series = series.filter(s => 
+              storedAllowed.some(prefix => s.startsWith(prefix))
+            )
+          }
+        } catch (e) {
+          console.error('[useAllowedSeries] Failed to parse wb-allowed-series:', e)
+        }
+      }
+
       // Store the user allowed string for reference if needed
       if (d.user_allowed_string) {
         localStorage.setItem('wb-user-allowed-string', d.user_allowed_string)
