@@ -21,6 +21,7 @@
       :item-discount-total="itemDiscountTotal"
       :total-tax="totalTax"
       :total-amount="totalAmount"
+      :round-off="roundOff"
       :price-list="priceList"
       :tax-template="taxTemplate"
       :is-inclusive-tax="isInclusiveTax"
@@ -887,7 +888,7 @@ const subtotal = computed(() => {
   }, 0).toFixed(2)
 })
 
-const totalAmount = computed(() => {
+const unroundedTotal = computed(() => {
   return (
     parseFloat(subtotal.value) +
     parseFloat(totalTax.value) +
@@ -895,7 +896,15 @@ const totalAmount = computed(() => {
     packingAmt.value +
     loadingAmt.value +
     otherAmt.value
-  ).toFixed(2)
+  )
+})
+
+const totalAmount = computed(() => {
+  return Math.round(unroundedTotal.value).toFixed(2)
+})
+
+const roundOff = computed(() => {
+  return (parseFloat(totalAmount.value) - unroundedTotal.value).toFixed(2)
 })
 
 // --- Watchers ---
