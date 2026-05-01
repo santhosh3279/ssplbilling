@@ -453,11 +453,20 @@
 
     <Warning
       :show="showClearWarning"
-      title="Clear Order"
-      message="All items will be removed and a new order number will be assigned."
+      title="Clear Bill"
+      message="All items will be removed and a new bill number will be assigned."
       @close="showClearWarning = false"
       @confirm="showClearWarning = false; clearBill()"
     />
+
+    <Warning
+      :show="showExitWarning"
+      title="Exit Page"
+      message="Are you sure you want to exit? Unsaved changes will be lost."
+      @close="showExitWarning = false"
+      @confirm="router.push('/')"
+    />
+
 
     <ShortcutPage
       :show="showShortcutPage"
@@ -554,6 +563,7 @@ const showSeriesModal = ref(false)
 const showSupplierModal = ref(false)
 const showShortcutPage = ref(false)
 const showClearWarning = ref(false)
+const showExitWarning = ref(false)
 const supplierInitialQuery = ref('')
 const invoiceTemplateRef = ref(null)
 const priceListSelectRef = ref(null)
@@ -1028,13 +1038,20 @@ async function handleSubmit() {
 }
 
 function handleCancel() {
-  if (items.value.length === 0) {
-    router.push('/')
+  const hasParty = supplierId.value;
+  const hasItems = items.value.length > 0;
+
+  if (!isReadOnly.value && (hasParty || hasItems)) {
+    showExitWarning.value = true;
   } else {
-    selectedRowIdx.value = -1
-    editingRowIdx.value = -1
-    editingField.value = null
-    focusBarcodeInput()
+    if (items.value.length === 0 || isReadOnly.value) {
+      router.push('/');
+    } else {
+      selectedRowIdx.value = -1
+      editingRowIdx.value = -1
+      editingField.value = null
+      focusBarcodeInput()
+    }
   }
 }
 function handleIncentive() { showIncentiveModal.value = true }

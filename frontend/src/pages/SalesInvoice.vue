@@ -523,6 +523,14 @@
       @confirm="showClearWarning = false; clearBill()"
     />
 
+    <Warning
+      :show="showExitWarning"
+      title="Exit Page"
+      message="Are you sure you want to exit? Unsaved changes will be lost."
+      @close="showExitWarning = false"
+      @confirm="router.push('/')"
+    />
+
     <ShortcutPage
       :show="showShortcutPage"
       extra-title="Sales Invoice"
@@ -683,6 +691,7 @@ const showCustomAddressModal = ref(false)
 const showHistoryModal = ref(false)
 const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
 const showClearWarning = ref(false)
+const showExitWarning = ref(false)
 const customerInitialQuery = ref('')
 const invoiceTemplateRef = ref(null)
 const saveBtnRef = ref(null)
@@ -1271,10 +1280,17 @@ async function closePrintModal() {
 }
 
 function handleCancel() {
-  if (activeItems.value.length === 0) {
-    router.push('/')
+  const hasParty = customerId.value;
+  const hasItems = activeItems.value.length > 0;
+
+  if (!isReadOnly.value && (hasParty || hasItems)) {
+    showExitWarning.value = true;
   } else {
-    focusBarcodeInput()
+    if (activeItems.value.length === 0 || isReadOnly.value) {
+      router.push('/');
+    } else {
+      focusBarcodeInput();
+    }
   }
 }
 

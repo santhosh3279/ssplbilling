@@ -578,6 +578,14 @@
       @confirm="showClearWarning = false; clearBill()"
     />
 
+    <Warning
+      :show="showExitWarning"
+      title="Exit Page"
+      message="Are you sure you want to exit? Unsaved changes will be lost."
+      @close="showExitWarning = false"
+      @confirm="router.push('/')"
+    />
+
     <ShortcutPage
       :show="showShortcutPage"
       extra-title="Purchase Invoice"
@@ -706,6 +714,7 @@ const showShortcutPage = ref(false)
 const showIncentiveModal = ref(false)
 const incentiveRows = ref([])
 const showClearWarning = ref(false)
+const showExitWarning = ref(false)
 const supplierInitialQuery = ref('')
 const invoiceTemplateRef = ref(null)
 const priceListSelectRef = ref(null)
@@ -1390,13 +1399,20 @@ async function closePrintModal() {
 }
 
 function handleCancel() {
-  if (items.value.length === 0) {
-    router.push('/')
+  const hasParty = supplierId.value;
+  const hasItems = items.value.length > 0;
+
+  if (!isReadOnly.value && (hasParty || hasItems)) {
+    showExitWarning.value = true;
   } else {
-    selectedRowIdx.value = -1
-    editingRowIdx.value = -1
-    editingField.value = null
-    focusBarcodeInput()
+    if (items.value.length === 0 || isReadOnly.value) {
+      router.push('/');
+    } else {
+      selectedRowIdx.value = -1
+      editingRowIdx.value = -1
+      editingField.value = null
+      focusBarcodeInput()
+    }
   }
 }
 

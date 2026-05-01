@@ -480,11 +480,20 @@
 
     <Warning
       :show="showClearWarning"
-      title="Clear Quotation"
-      message="All items will be removed and a new quotation number will be assigned."
+      title="Clear Bill"
+      message="All items will be removed and a new bill number will be assigned."
       @close="showClearWarning = false"
       @confirm="showClearWarning = false; clearBill()"
     />
+
+    <Warning
+      :show="showExitWarning"
+      title="Exit Page"
+      message="Are you sure you want to exit? Unsaved changes will be lost."
+      @close="showExitWarning = false"
+      @confirm="router.push('/')"
+    />
+
 
     <CustomAddress
       v-if="showCustomAddressModal"
@@ -594,6 +603,7 @@ const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
 const showShortcutPage = ref(false)
 const showClearWarning = ref(false)
+const showExitWarning = ref(false)
 const showCustomAddressModal = ref(false)
 const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
 const customerInitialQuery = ref('')
@@ -1175,13 +1185,20 @@ async function handleSubmit() {
 }
 
 function handleCancel() {
-  if (items.value.length === 0) {
-    router.push('/')
+  const hasParty = customerId.value;
+  const hasItems = items.value.length > 0;
+
+  if (!isReadOnly.value && (hasParty || hasItems)) {
+    showExitWarning.value = true;
   } else {
-    selectedRowIdx.value = -1
-    editingRowIdx.value = -1
-    editingField.value = null
-    focusBarcodeInput()
+    if (items.value.length === 0 || isReadOnly.value) {
+      router.push('/');
+    } else {
+      selectedRowIdx.value = -1
+      editingRowIdx.value = -1
+      editingField.value = null
+      focusBarcodeInput()
+    }
   }
 }
 
