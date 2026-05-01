@@ -60,16 +60,12 @@ const emit = defineEmits(['select', 'close'])
 const selectedIndex = ref(0)
 const scrollContainer = ref(null)
 
-// Prioritize items with history, then exact matches
+// Prioritize exact matches first, then items with history
 const sortedResults = computed(() => {
   const query = (props.query || '').trim().toLowerCase()
   
   return [...props.results].sort((a, b) => {
-    // 1. History priority
-    if (a.has_history && !b.has_history) return -1
-    if (!a.has_history && b.has_history) return 1
-    
-    // 2. Exact match priority (if history status is same)
+    // 1. Exact match priority (highest)
     if (query) {
       const isExactA = (a.item_code || '').toLowerCase() === query || (a.barcodes || '').toLowerCase().split(',').includes(query)
       const isExactB = (b.item_code || '').toLowerCase() === query || (b.barcodes || '').toLowerCase().split(',').includes(query)
@@ -77,6 +73,10 @@ const sortedResults = computed(() => {
       if (isExactA && !isExactB) return -1
       if (!isExactA && isExactB) return 1
     }
+
+    // 2. History priority (if exact match status is same)
+    if (a.has_history && !b.has_history) return -1
+    if (!a.has_history && b.has_history) return 1
     
     return 0
   })
