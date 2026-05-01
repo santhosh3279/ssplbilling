@@ -306,164 +306,172 @@
         </div>
 
         <!-- Summary / Right Column (Calculation Panel + Actions) -->
-        <table class="flex-1 bg-[var(--color-surface-raised)]/50 border-collapse text-base border border-[var(--color-border)] h-full" style="table-layout:fixed">
-          <colgroup>
-            <col style="width:17%"><col style="width:18%"><col style="width:14%"><col style="width:51%">
-          </colgroup>
-          <tbody>
-            <slot name="calculation-rows">
-              <!-- Default Calculation Rows (Props based) -->
-              <!-- Item Discount -->
-              <tr>
-                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Item Discount</td>
-                <td class="p-0 border-y border-[var(--color-border)] text-center text-lg text-[var(--color-text-muted)] italic">Auto</td>
-                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ itemDiscountTotal }}</td>
-                <td class="border border-[var(--color-border)] px-2 bg-[var(--color-bg)] align-top" rowspan="11">
-                  <slot name="actions">
-                    <div class="flex flex-col gap-2 h-full py-2">
-                      <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
-                        <div class="flex justify-between items-start mb-1">
-                          <div class="text-lg font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
-                          <div class="text-xl font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
+        <div class="flex-1 overflow-y-auto scrollbar-none border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+          <table class="w-full border-collapse text-base h-full" style="table-layout:fixed">
+            <colgroup>
+              <col style="width:17%"><col style="width:18%"><col style="width:14%"><col style="width:51%">
+            </colgroup>
+            <tbody>
+              <slot name="calculation-rows">
+                <!-- Default Calculation Rows (Props based) -->
+                <!-- Item Discount -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Item Discount</td>
+                  <td class="p-0 border-y border-[var(--color-border)] text-center text-lg text-[var(--color-text-muted)] italic">Auto</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ itemDiscountTotal }}</td>
+                  <td class="border border-[var(--color-border)] px-2 bg-[var(--color-bg)] align-top" rowspan="15">
+                    <slot name="actions">
+                      <div class="flex flex-col gap-2 h-full py-2">
+                        <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
+                          <div class="flex justify-between items-start mb-1">
+                            <div class="text-lg font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
+                            <div class="text-xl font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
+                          </div>
+                          <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                            <span class="text-[9mm] font-black">₹</span>
+                            <span class="font-mono text-[15.75mm] font-black leading-none">{{ totalAmount }}</span>
+                          </div>
                         </div>
-                        <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                          <span class="text-[9mm] font-black">₹</span>
-                          <span class="font-mono text-[15.75mm] font-black leading-none">{{ totalAmount }}</span>
+
+                        <!-- Row 1: Save and Print -->
+                        <div class="flex gap-2">
+                          <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)] focus:outline-none">{{ saveButtonText }}</button>
+                          <button @click="$emit('print')" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
+                        </div>
+
+                        <!-- Row 2: Cancel and Incentive/Submit -->
+                        <div class="flex gap-2">
+                          <button @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
+                          <button v-if="showSubmitButton" v-show="isDraft && isReadOnly" @click="$emit('submit')" class="flex-1 rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition-colors uppercase">Submit</button>
+                          <button v-else-if="!showSubmitButton" @click="$emit('incentive')" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
                         </div>
                       </div>
-
-                      <!-- Row 1: Save and Print -->
-                      <div class="flex gap-2">
-                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)] focus:outline-none">{{ saveButtonText }}</button>
-                        <button @click="$emit('print')" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
+                    </slot>
+                  </td>
+                </tr>
+                <!-- Global Discount -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Discount</td>
+                  <td class="p-0 border border-[var(--color-border)]">
+                    <div class="flex h-full items-stretch">
+                      <!-- Pct Half -->
+                      <div class="flex flex-1 items-center border-r border-[var(--color-border)]/50">
+                        <span class="pl-2 pr-1 text-[var(--color-text-muted)] font-bold text-lg">%</span>
+                        <input
+                          ref="discountPctRef"
+                          type="number"
+                          :value="discountPct"
+                          @input="$emit('update:discountPct', $event.target.value)"
+                          @keydown="$emit('discount-pct-keydown', $event)"
+                          :disabled="isReadOnly"
+                          class="w-full h-full bg-transparent text-[var(--color-text)] font-mono text-3xl text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                        />
                       </div>
-
-                      <!-- Row 2: Cancel and Incentive/Submit -->
-                      <div class="flex gap-2">
-                        <button @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
-                        <button v-if="showSubmitButton" v-show="isDraft && isReadOnly" @click="$emit('submit')" class="flex-1 rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition-colors uppercase">Submit</button>
-                        <button v-else-if="!showSubmitButton" @click="$emit('incentive')" class="flex-1 rounded border border-[#D8C9A8] bg-[#EDE3CC] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#E0D4B8] transition-colors">Incentive</button>
+                      <!-- Amt Half -->
+                      <div class="flex flex-1 items-center">
+                        <input
+                          ref="discountAmtRef"
+                          type="number"
+                          :value="discountDirectAmt"
+                          @input="$emit('update:discountDirectAmt', $event.target.value)"
+                          @keydown.enter.prevent="freightRef?.focus(); freightRef?.select()"
+                          @keydown="$emit('discount-amt-keydown', $event)"
+                          :disabled="isReadOnly"
+                          class="w-full h-full bg-transparent text-[var(--color-text)] font-mono text-3xl text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
+                          placeholder="Amt"
+                        />
                       </div>
                     </div>
-                  </slot>
-                </td>
-              </tr>
-              <!-- Global Discount -->
-              <tr>
-                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Discount</td>
-                <td class="p-0 border border-[var(--color-border)]">
-                  <div class="flex h-full items-stretch">
-                    <!-- Pct Half -->
-                    <div class="flex flex-1 items-center border-r border-[var(--color-border)]/50">
-                      <span class="pl-2 pr-1 text-[var(--color-text-muted)] font-bold text-lg">%</span>
-                      <input
-                        ref="discountPctRef"
-                        type="number"
-                        :value="discountPct"
-                        @input="$emit('update:discountPct', $event.target.value)"
-                        @keydown="$emit('discount-pct-keydown', $event)"
-                        :disabled="isReadOnly"
-                        class="w-full h-full bg-transparent text-[var(--color-text)] font-mono text-3xl text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
-                      />
-                    </div>
-                    <!-- Amt Half -->
-                    <div class="flex flex-1 items-center">
-                      <input
-                        ref="discountAmtRef"
-                        type="number"
-                        :value="discountDirectAmt"
-                        @input="$emit('update:discountDirectAmt', $event.target.value)"
-                        @keydown.enter.prevent="freightRef?.focus(); freightRef?.select()"
-                        @keydown="$emit('discount-amt-keydown', $event)"
-                        :disabled="isReadOnly"
-                        class="w-full h-full bg-transparent text-[var(--color-text)] font-mono text-3xl text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
-                        placeholder="Amt"
-                      />
-                    </div>
-                  </div>
-                </td>
-                <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ Number(discountAmt || 0).toFixed(2) }}</td>
-              </tr>
-              <!-- Subtotal -->
-              <tr class="bg-[var(--color-surface-raised)]/40">
-                <td class="px-2 text-2xl text-[var(--color-text)]/80 border border-[var(--color-border)]">Subtotal</td>
-                <td class="p-0 border border-[var(--color-border)] h-full"></td>
-                <td class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ subtotal }}</td>
-                <td class="border border-[var(--color-border)]"></td>
-              </tr>
-              <!-- Freight -->
-              <tr>
-                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
-                <td class="p-0 border border-[var(--color-border)]">
-                  <input
-                    ref="freightRef"
-                    type="number"
-                    :value="freightEntry"
-                    @input="$emit('update:freightEntry', $event.target.value)"
-                    @keydown.enter.prevent="packingRef?.focus(); packingRef?.select()"
-                    :disabled="isReadOnly"
-                    class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
-                  />
-                </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
-              </tr>
-              <!-- Packing -->
-              <tr>
-                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Packing</td>
-                <td class="p-0 border border-[var(--color-border)]">
-                  <input
-                    ref="packingRef"
-                    type="number"
-                    :value="packingEntry"
-                    @input="$emit('update:packingEntry', $event.target.value)"
-                    @keydown.enter.prevent="loadingRef?.focus(); loadingRef?.select()"
-                    :disabled="isReadOnly"
-                    class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
-                  />
-                </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
-              </tr>
-              <!-- Loading -->
-              <tr>
-                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">{{ loadingLabel }}</td>
-                <td class="p-0 border border-[var(--color-border)]">
-                  <input
-                    ref="loadingRef"
-                    type="number"
-                    :value="loadingEntry"
-                    @input="$emit('update:loadingEntry', $event.target.value)"
-                    @keydown.enter.prevent="otherRef?.focus(); otherRef?.select()"
-                    :disabled="isReadOnly"
-                    class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
-                  />
-                </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
-              </tr>
-              <!-- Other -->
-              <tr>
-                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Other</td>
-                <td class="p-0 border border-[var(--color-border)]">
-                  <input
-                    ref="otherRef"
-                    type="number"
-                    :value="otherEntry"
-                    @input="$emit('update:otherEntry', $event.target.value)"
-                    @keydown.enter.prevent="$emit('other-entry-enter'); saveBtnRef?.focus()"
-                    :disabled="isReadOnly"
-                    class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
-                  />
-                </td>
-                <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
-              </tr>
-              <!-- Tax -->
-              <tr>
-                <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
-                <td class="p-0 border border-[var(--color-border)]"></td>
-                <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ totalTax }}</td>
-              </tr>
-            </slot>
-          </tbody>
-        </table>
+                  </td>
+                  <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ Number(discountAmt || 0).toFixed(2) }}</td>
+                </tr>
+                <!-- Subtotal -->
+                <tr class="bg-[var(--color-surface-raised)]/40">
+                  <td class="px-2 text-2xl text-[var(--color-text)]/80 border border-[var(--color-border)]">Subtotal</td>
+                  <td class="p-0 border border-[var(--color-border)] h-full"></td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ subtotal }}</td>
+                  <td class="border border-[var(--color-border)]"></td>
+                </tr>
+                <!-- Freight -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Freight</td>
+                  <td class="p-0 border border-[var(--color-border)]">
+                    <input
+                      ref="freightRef"
+                      type="number"
+                      :value="freightEntry"
+                      @input="$emit('update:freightEntry', $event.target.value)"
+                      @keydown.enter.prevent="packingRef?.focus(); packingRef?.select()"
+                      :disabled="isReadOnly"
+                      class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    />
+                  </td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
+                </tr>
+                <!-- Packing -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Packing</td>
+                  <td class="p-0 border border-[var(--color-border)]">
+                    <input
+                      ref="packingRef"
+                      type="number"
+                      :value="packingEntry"
+                      @input="$emit('update:packingEntry', $event.target.value)"
+                      @keydown.enter.prevent="loadingRef?.focus(); loadingRef?.select()"
+                      :disabled="isReadOnly"
+                      class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    />
+                  </td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
+                </tr>
+                <!-- Loading -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">{{ loadingLabel }}</td>
+                  <td class="p-0 border border-[var(--color-border)]">
+                    <input
+                      ref="loadingRef"
+                      type="number"
+                      :value="loadingEntry"
+                      @input="$emit('update:loadingEntry', $event.target.value)"
+                      @keydown.enter.prevent="otherRef?.focus(); otherRef?.select()"
+                      :disabled="isReadOnly"
+                      class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    />
+                  </td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
+                </tr>
+                <!-- Other -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Other</td>
+                  <td class="p-0 border border-[var(--color-border)]">
+                    <input
+                      ref="otherRef"
+                      type="number"
+                      :value="otherEntry"
+                      @input="$emit('update:otherEntry', $event.target.value)"
+                      @keydown.enter.prevent="$emit('other-entry-enter'); saveBtnRef?.focus()"
+                      :disabled="isReadOnly"
+                      class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
+                    />
+                  </td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
+                </tr>
+                <!-- Round Off -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Round Off</td>
+                  <td class="p-0 border border-[var(--color-border)]"></td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">{{ Number(roundOff || 0).toFixed(2) }}</td>
+                </tr>
+                <!-- Tax -->
+                <tr>
+                  <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
+                  <td class="p-0 border border-[var(--color-border)]"></td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ totalTax }}</td>
+                </tr>
+              </slot>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -534,6 +542,7 @@ const props = defineProps({
   loadingLabel: { type: String, default: 'Loading' },
   otherEntry: { type: String, default: '' },
   otherAmt: { type: [Number, String], default: '0.00' },
+  roundOff: { type: [Number, String], default: '0.00' },
   totalTax: { type: [Number, String], default: '0.00' },
   totalAmount: { type: [Number, String], default: '0.00' },
   saveButtonText: { type: String, default: 'Save' },
