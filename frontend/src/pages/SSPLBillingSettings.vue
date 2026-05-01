@@ -102,6 +102,14 @@
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               />
             </div>
+            <div>
+              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Round Off</label>
+              <input 
+                v-model="settings.round_off" list="dl-accounts" 
+                type="text" 
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              />
+            </div>
           </div>
         </section>
 

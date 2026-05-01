@@ -420,6 +420,7 @@ def get_billing_settings(user=None):
 		"packing_charge": settings.packing_charge or "",
 		"loading": settings.loading or "",
 		"other_charges": settings.other_charges or "",
+		"round_off": settings.round_off or "",
 		"cipher_map": settings.cipher_map or "",
 		"mop_map": mop_map,
 		"user_zoom": user_zoom,

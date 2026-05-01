@@ -105,6 +105,10 @@
                     <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.other_charges || '--' }}</td>
                   </tr>
                   <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Round Off</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.round_off || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
                     <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Cipher Map</td>
                     <td class="px-3 py-1.5 font-mono text-[var(--color-text)]">{{ rawSettings.cipher_map || '--' }}</td>
                   </tr>
@@ -371,6 +375,9 @@ function applyToLocalStorage(settings, targetUserArg) {
   }
   if (settings.other_charges) {
     localStorage.setItem('wb-other-charges', settings.other_charges)
+  }
+  if (settings.round_off) {
+    localStorage.setItem('wb-round-off', settings.round_off)
   }
 
   // Visible accounts — global list of GL accounts exposed in the ledger search modal

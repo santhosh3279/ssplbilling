@@ -13,6 +13,7 @@
   "packing_charge",
   "loading",
   "other_charges",
+  "round_off",
   "section_break_series",
   "column_break_raod",
   "billing_series",
@@ -98,6 +99,12 @@
    "fieldname": "other_charges",
    "fieldtype": "Link",
    "label": "Other Charges",
+   "options": "Account"
+  },
+  {
+   "fieldname": "round_off",
+   "fieldtype": "Link",
+   "label": "Round Off",
    "options": "Account"
   },
   {
