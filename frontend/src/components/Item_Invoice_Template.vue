@@ -334,7 +334,7 @@
 
                       <!-- Row 1: Save and Print -->
                       <div class="flex gap-2">
-                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)]/70 focus:outline-none">{{ saveButtonText }}</button>
+                        <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)] focus:outline-none">{{ saveButtonText }}</button>
                         <button @click="$emit('print')" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
                       </div>
 
