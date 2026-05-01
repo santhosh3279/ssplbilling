@@ -43,19 +43,30 @@
             </div>
 
             <div class="space-y-3">
-              <div v-for="(s, index) in series" :key="index" class="flex gap-2">
-                <input 
-                  v-model="namingSeries[doctype][index]"
-                  class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-info)]"
-                  placeholder="e.g. SINV-.YYYY.-"
-                />
-                <button 
-                  @click="removeSeries(doctype, index)"
-                  class="text-red-400 hover:text-red-600 px-1"
-                  title="Remove"
-                >
-                  ✕
-                </button>
+              <div v-for="(s, index) in series" :key="index" class="flex flex-col gap-1 border-b border-[var(--color-border)]/50 pb-3 last:border-0">
+                <div class="flex gap-2">
+                  <input 
+                    v-model="s.prefix"
+                    class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-info)] font-mono"
+                    placeholder="e.g. SINV-.YYYY.-####"
+                  />
+                  <button 
+                    @click="removeSeries(doctype, index)"
+                    class="text-red-400 hover:text-red-600 px-1"
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div class="flex items-center gap-2 pl-1">
+                  <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)]">Next Counter:</span>
+                  <input 
+                    v-model.number="s.current"
+                    type="number"
+                    class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-0.5 text-[10px] outline-none focus:border-[var(--color-info)] font-mono"
+                  />
+                  <span class="text-[9px] text-[var(--color-text-muted)] italic">(Used if template matches today)</span>
+                </div>
               </div>
               
               <button 
@@ -75,6 +86,7 @@
             <li>Use <code class="font-bold">.YYYY.</code> for 4-digit year, <code class="font-bold">.YY.</code> for 2-digit year.</li>
             <li>Use <code class="font-bold">.MM.</code> for month, <code class="font-bold">.DD.</code> for day.</li>
             <li>The number of hashes (<code class="font-bold">#</code>) at the end determines the digits in the sequence (e.g. <code class="font-bold">####</code> for 0001).</li>
+            <li><code class="font-bold">Next Counter</code>: This is the number that will be used for the next document. Incremented automatically.</li>
             <li>Example: <code class="font-bold">SINV-.YYYY.-.MM.-####</code> becomes <code class="font-bold">SINV-2026-04-0001</code>.</li>
           </ul>
         </div>
@@ -95,12 +107,7 @@ async function fetchNamingSeries() {
   loading.value = true
   try {
     const data = await frappeGet('ssplbilling.api.dashboard_api.get_all_naming_series')
-    // Ensure all arrays are independent
-    const processed = {}
-    Object.keys(data).forEach(dt => {
-      processed[dt] = [...(data[dt] || [])]
-    })
-    namingSeries.value = processed
+    namingSeries.value = data
   } catch (err) {
     console.error(err)
   } finally {
@@ -109,7 +116,7 @@ async function fetchNamingSeries() {
 }
 
 function addSeries(doctype) {
-  namingSeries.value[doctype].push('')
+  namingSeries.value[doctype].push({ prefix: '', current: 0 })
 }
 
 function removeSeries(doctype, index) {
@@ -120,8 +127,8 @@ async function saveAll() {
   saving.value = true
   try {
     const promises = Object.entries(namingSeries.value).map(([doctype, series]) => {
-      // Filter out empty strings
-      const filtered = series.filter(s => s.trim())
+      // Filter out empty prefixes
+      const filtered = series.filter(s => s.prefix && s.prefix.trim())
       return frappePost('ssplbilling.api.dashboard_api.update_naming_series', {
         doctype,
         series_list: filtered
@@ -129,7 +136,7 @@ async function saveAll() {
     })
     
     await Promise.all(promises)
-    alert('All naming series updated successfully!')
+    alert('All naming series and counters updated successfully!')
     await fetchNamingSeries()
   } catch (err) {
     console.error(err)

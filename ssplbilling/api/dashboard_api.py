@@ -5,11 +5,14 @@ import re
 
 @frappe.whitelist()
 def get_all_naming_series():
-    """Return naming series for Sales Invoice, Purchase Invoice, Quotation, Sales Order, and Purchase Order."""
+    """Return naming series and their current values for core DocTypes."""
+    from frappe.model.naming import parse_naming_series
+    
     doctypes = ["Sales Invoice", "Purchase Invoice", "Quotation", "Sales Order", "Purchase Order"]
     result = {}
 
-    def _get_series(dt):
+    def _get_series_details(dt):
+        series_options = []
         try:
             prop_value = frappe.db.get_value(
                 "Property Setter",
@@ -17,24 +20,39 @@ def get_all_naming_series():
                 "value",
             )
             if prop_value:
-                series = [s.strip() for s in prop_value.split("\n") if s.strip()]
-                if series:
-                    return series
+                series_options = [s.strip() for s in prop_value.split("\n") if s.strip()]
         except Exception:
             pass
-        try:
-            meta = frappe.get_meta(dt)
-            sf = meta.get_field("naming_series")
-            if sf and sf.options:
-                series = [s.strip() for s in sf.options.split("\n") if s.strip()]
-                if series:
-                    return series
-        except Exception:
-            pass
-        return []
+            
+        if not series_options:
+            try:
+                meta = frappe.get_meta(dt)
+                sf = meta.get_field("naming_series")
+                if sf and sf.options:
+                    series_options = [s.strip() for s in sf.options.split("\n") if s.strip()]
+            except Exception:
+                pass
+        
+        details = []
+        for s in series_options:
+            current = 0
+            try:
+                # Resolve the template (e.g. SINV-.YYYY.-#### -> SINV-2026-####)
+                resolved = parse_naming_series(s)
+                # Extract the prefix before the hashes
+                prefix = re.sub(r"#+$", "", resolved)
+                current = frappe.db.get_value("Series", prefix, "current") or 0
+            except Exception:
+                pass
+            
+            details.append({
+                "prefix": s,
+                "current": current
+            })
+        return details
 
     for dt in doctypes:
-        result[dt] = _get_series(dt)
+        result[dt] = _get_series_details(dt)
     
     return result
 
@@ -44,8 +62,15 @@ def update_naming_series(doctype, series_list):
     if isinstance(series_list, str):
         series_list = json.loads(series_list)
     
-    # Ensure standard Frappe format: one series per line
-    value = "\n".join([s.strip() for s in series_list if s.strip()])
+    # Extract prefixes from the list of objects
+    prefixes = []
+    for item in series_list:
+        if isinstance(item, dict):
+            prefixes.append(item.get("prefix"))
+        else:
+            prefixes.append(str(item))
+
+    value = "\n".join([s.strip() for s in prefixes if s.strip()])
     
     # Create or update Property Setter
     ps_name = frappe.db.get_value("Property Setter", {"doc_type": doctype, "field_name": "naming_series", "property": "options"})
@@ -63,8 +88,24 @@ def update_naming_series(doctype, series_list):
             "value": value
         }).insert(ignore_permissions=True)
     
+    # Also update counters if provided
+    from frappe.model.naming import parse_naming_series
+    for item in series_list:
+        if isinstance(item, dict) and "current" in item:
+            try:
+                resolved = parse_naming_series(item["prefix"])
+                prefix = re.sub(r"#+$", "", resolved)
+                new_val = int(item["current"])
+                
+                if frappe.db.exists("Series", prefix):
+                    frappe.db.set_value("Series", prefix, "current", new_val)
+                else:
+                    frappe.db.sql("insert into tabSeries (name, current) values (%s, %s)", (prefix, new_val))
+            except Exception:
+                pass
+
     frappe.clear_cache(doctype=doctype)
-    return {"status": "success", "doctype": doctype, "value": value}
+    return {"status": "success"}
 
 @frappe.whitelist()
 def get_all_users():
