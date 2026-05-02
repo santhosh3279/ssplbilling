@@ -53,15 +53,15 @@
           <!-- Hide Secondary Toggle -->
           <div
             @click="hideSecondary = !hideSecondary"
-            class="flex items-center gap-2 bg-[var(--color-bg)] px-3 py-1.5 rounded-lg border border-[var(--color-border)] shadow-sm mx-1 cursor-pointer select-none transition-colors hover:bg-[var(--color-surface-raised)]"
+            class="flex items-center gap-3 bg-[var(--color-bg)] px-4 py-2 rounded-lg border border-[var(--color-border)] shadow-sm mx-1 cursor-pointer select-none transition-colors hover:bg-[var(--color-surface-raised)]"
           >
-            <span class="text-xs font-bold uppercase tracking-wider" :class="hideSecondary ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">Hide Secondary</span>
+            <span class="text-lg font-semibold uppercase tracking-wider" :class="hideSecondary ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">Hide Secondary</span>
             <button
-              class="relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none pointer-events-none"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none pointer-events-none"
               :class="hideSecondary ? 'bg-[var(--color-info)]' : 'bg-gray-400'"
             >
               <span
-                class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                 :class="hideSecondary ? 'translate-x-5' : 'translate-x-0'"
               ></span>
             </button>
