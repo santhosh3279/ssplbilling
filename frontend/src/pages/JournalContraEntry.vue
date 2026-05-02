@@ -287,6 +287,7 @@ const router = useRouter()
 
 // --- STATE ---
 const entryType = ref('Journal Entry')
+const cashAccount = localStorage.getItem('wb-cash') || ''
 const balancingAccount = ref({ name: '', label: '' })
 const balancingAccountRef = ref(null)
 const isContra = computed(() => entryType.value === 'Contra')
@@ -297,14 +298,14 @@ watch(entryType, () => {
   rows.value = [
     { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
   ]
-  balancingAccount.value = { name: '', label: '' }
+  balancingAccount.value = {
+    name: entryType.value === 'Opening Entry' ? cashAccount : '',
+    label: entryType.value === 'Opening Entry' ? cashAccount : ''
+  }
   activeRowIdx.value = 0
   nextTick(() => {
-    if (entryType.value === 'Opening Entry') {
-      balancingAccountRef.value?.focus()
-    } else {
-      ledgerRefs[0]?.focus()
-    }
+    // Focus to first row ledger search as requested
+    ledgerRefs[0]?.focus()
   })
 })
 
