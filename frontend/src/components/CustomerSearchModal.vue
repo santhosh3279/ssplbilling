@@ -50,20 +50,21 @@
             Edit Details <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-text-muted)]">F3</kbd>
           </button>
 
-          <!-- Primary/Secondary Toggle -->
-          <div class="flex items-center gap-3 bg-[var(--color-bg)] px-3 py-1.5 rounded-lg border border-[var(--color-border)] shadow-sm mx-1">
-            <span class="text-sm font-bold uppercase tracking-tight" :class="showPrimaryOnly ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">Primary</span>
+          <!-- Hide Secondary Toggle -->
+          <div
+            @click="hideSecondary = !hideSecondary"
+            class="flex items-center gap-2 bg-[var(--color-bg)] px-3 py-1.5 rounded-lg border border-[var(--color-border)] shadow-sm mx-1 cursor-pointer select-none transition-colors hover:bg-[var(--color-surface-raised)]"
+          >
+            <span class="text-xs font-bold uppercase tracking-wider" :class="hideSecondary ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">Hide Secondary</span>
             <button
-              @click="showPrimaryOnly = !showPrimaryOnly"
-              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-              :class="showPrimaryOnly ? 'bg-[var(--color-info)]' : 'bg-gray-400'"
+              class="relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none pointer-events-none"
+              :class="hideSecondary ? 'bg-[var(--color-info)]' : 'bg-gray-400'"
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                :class="showPrimaryOnly ? 'translate-x-5' : 'translate-x-0'"
+                class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                :class="hideSecondary ? 'translate-x-5' : 'translate-x-0'"
               ></span>
             </button>
-            <span class="text-sm font-bold uppercase tracking-tight" :class="!showPrimaryOnly ? 'text-gray-600' : 'text-[var(--color-text-muted)]'">Secondary</span>
           </div>
 
           <button
@@ -321,7 +322,7 @@ const showEditForm   = ref(false)
 const showDateModal  = ref(false)
 const formPartyType  = ref('Customer') // 'Customer' | 'Supplier' | 'Employee'
 const newCustomerName = ref('')
-const showPrimaryOnly = ref(true)
+const hideSecondary = ref(true)
 
 // ─── Data Preloading ──────────────────────────────────────────────────────────
 async function preloadLedger(force = false) {
@@ -403,11 +404,9 @@ const results = computed(() => {
     })
   }
 
-  // Party Link Filter: Toggle between Primary and Secondary
-  if (showPrimaryOnly.value) {
+  // Party Link Filter: Toggle to hide secondary parties
+  if (hideSecondary.value) {
     list = list.filter(l => !l.is_secondary)
-  } else {
-    list = list.filter(l => l.is_secondary)
   }
 
   if (!q) return list
