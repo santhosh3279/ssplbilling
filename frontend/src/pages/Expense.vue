@@ -286,7 +286,7 @@ import { journalContraShortcuts } from '../shortcuts/journalContraShortcuts'
 const router = useRouter()
 
 // --- STATE ---
-const entryType = ref('Journal Entry')
+const entryType = ref('Opening Entry')
 const balancingAccount = ref({ name: '', label: '' })
 const balancingAccountRef = ref(null)
 const isContra = computed(() => entryType.value === 'Contra')
@@ -669,7 +669,7 @@ async function saveEntry() {
     }
 
     // We'll need a backend method for this or use frappe.client.insert
-    await frappePost('ssplbilling.api.journalcontra_api.create_journal_contra_entry', { data: payload })
+    await frappePost('ssplbilling.api.expense_api.create_expense_entry', { data: payload })
     alert('Entry saved successfully!')
     userRemarks.value = ''
     rows.value = [
