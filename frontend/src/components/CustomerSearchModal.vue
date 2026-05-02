@@ -49,6 +49,23 @@
           >
             Edit Details <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-text-muted)]">F3</kbd>
           </button>
+
+          <!-- Primary/Secondary Toggle -->
+          <div class="flex items-center gap-3 bg-[var(--color-bg)] px-3 py-1.5 rounded-lg border border-[var(--color-border)] shadow-sm mx-1">
+            <span class="text-sm font-bold uppercase tracking-tight" :class="showPrimaryOnly ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">Primary</span>
+            <button
+              @click="showPrimaryOnly = !showPrimaryOnly"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+              :class="showPrimaryOnly ? 'bg-[var(--color-info)]' : 'bg-gray-400'"
+            >
+              <span
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                :class="showPrimaryOnly ? 'translate-x-5' : 'translate-x-0'"
+              ></span>
+            </button>
+            <span class="text-sm font-bold uppercase tracking-tight" :class="!showPrimaryOnly ? 'text-gray-600' : 'text-[var(--color-text-muted)]'">Secondary</span>
+          </div>
+
           <button
             @click="preloadLedger(true)"
             class="flex items-center gap-2 rounded-lg border border-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-2 text-lg font-semibold text-[var(--color-highlight)] transition-colors"
@@ -304,6 +321,7 @@ const showEditForm   = ref(false)
 const showDateModal  = ref(false)
 const formPartyType  = ref('Customer') // 'Customer' | 'Supplier' | 'Employee'
 const newCustomerName = ref('')
+const showPrimaryOnly = ref(true)
 
 // ─── Data Preloading ──────────────────────────────────────────────────────────
 async function preloadLedger(force = false) {
@@ -385,9 +403,11 @@ const results = computed(() => {
     })
   }
 
-  // Hide Secondary Party Filter: Only show primary if hideSecondary is enabled
-  if (props.hideSecondary) {
+  // Party Link Filter: Toggle between Primary and Secondary
+  if (showPrimaryOnly.value) {
     list = list.filter(l => !l.is_secondary)
+  } else {
+    list = list.filter(l => l.is_secondary)
   }
 
   if (!q) return list
