@@ -82,6 +82,7 @@
               <th class="px-2.5 py-1.5 text-left">Ledger Name</th>
               <th class="px-2.5 py-1.5 text-left">Mobile</th>
               <th class="px-2.5 py-1.5 text-left">Group</th>
+              <th class="px-2.5 py-1.5 text-left">Link</th>
               <th class="px-2.5 py-1.5 text-right">Balance</th>
             </tr>
           </thead>
@@ -121,6 +122,31 @@
                   {{ c.group }}
                 </span>
                 <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]/40'">--</span>
+              </td>
+              <td class="px-2.5 py-1.5">
+                <div v-if="c.is_primary" class="flex flex-col gap-0.5">
+                  <span
+                    class="px-2 py-0.5 rounded text-xl font-bold uppercase tracking-tight inline-block w-fit"
+                    :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)] border border-black/20' : 'bg-[var(--color-info)]/20 text-[var(--color-info)] border border-[var(--color-info)]/30'"
+                  >
+                    Primary
+                  </span>
+                  <div v-if="c.party_links?.length" class="text-[10px] leading-tight opacity-70 italic truncate max-w-[120px]">
+                    → {{ c.party_links[0].party }}
+                  </div>
+                </div>
+                <div v-else-if="c.is_secondary" class="flex flex-col gap-0.5">
+                  <span
+                    class="px-2 py-0.5 rounded text-xl font-bold uppercase tracking-tight inline-block w-fit"
+                    :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)] border border-black/20' : 'bg-gray-500/20 text-gray-500 border border-gray-500/30'"
+                  >
+                    Secondary
+                  </span>
+                  <div v-if="c.party_links?.length" class="text-[10px] leading-tight opacity-70 italic truncate max-w-[120px]">
+                    ← {{ c.party_links[0].party }}
+                  </div>
+                </div>
+                <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]/40' : 'text-[var(--color-text-muted)]/20'">--</span>
               </td>
               <td class="px-2.5 py-1.5 text-right">
                 <span
