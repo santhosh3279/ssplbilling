@@ -40,9 +40,9 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <!-- Balancing Account selection for Opening Entry -->
+        <!-- Account selection for Expense Entry -->
         <div v-if="entryType === 'Opening Entry'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-warning)]/40 shadow-sm">
-          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-warning)]">Balancing Account</label>
+          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-warning)]">Account</label>
           <div
             @click="showBalancingSearch = true"
             class="min-w-[200px] px-2 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-bold text-[var(--color-text)] cursor-pointer hover:border-[var(--color-info)] transition-all flex items-center justify-between"
