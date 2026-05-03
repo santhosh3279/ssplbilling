@@ -496,6 +496,7 @@ function showDebug(mode) {
     cachedTables.value = [
       { name: 'Items (Memory)', count: cachedItems.value.length },
       { name: 'Ledgers (Local)', count: cachedLedgers.value.length },
+      { name: 'Party Links (Local)', count: Object.keys(partyLinks.value).length },
       { name: 'Discount Rules (Local)', count: cachedDiscountRules.value.length },
       { name: 'UOM Map (Local)', count: Object.keys(JSON.parse(localStorage.getItem('sspl-item-uoms') || '{}')).length }
     ]

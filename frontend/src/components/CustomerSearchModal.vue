@@ -142,26 +142,26 @@
                 <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]/40'">--</span>
               </td>
               <td class="px-2.5 py-1.5">
-                <div v-if="c.is_primary" class="flex flex-col gap-0.5">
+                <div v-if="partyLinks[c.name]?.is_primary" class="flex flex-col gap-0.5">
                   <span
                     class="px-2 py-0.5 rounded text-xl font-bold uppercase tracking-tight inline-block w-fit"
                     :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)] border border-black/20' : 'bg-[var(--color-info)]/20 text-[var(--color-info)] border border-[var(--color-info)]/30'"
                   >
                     Primary
                   </span>
-                  <div v-if="c.party_links?.length" class="text-[10px] leading-tight opacity-70 italic truncate max-w-[120px]">
-                    → {{ c.party_links[0].party }}
+                  <div v-if="partyLinks[c.name]?.links?.length" class="text-[10px] leading-tight opacity-70 italic truncate max-w-[120px]">
+                    → {{ partyLinks[c.name].links[0].party }}
                   </div>
                 </div>
-                <div v-else-if="c.is_secondary" class="flex flex-col gap-0.5">
+                <div v-else-if="partyLinks[c.name]?.is_secondary" class="flex flex-col gap-0.5">
                   <span
                     class="px-2 py-0.5 rounded text-xl font-bold uppercase tracking-tight inline-block w-fit"
                     :class="selectedIdx === idx ? 'bg-black/10 text-[var(--color-text-on-focus)] border border-black/20' : 'bg-gray-500/20 text-gray-500 border border-gray-500/30'"
                   >
                     Secondary
                   </span>
-                  <div v-if="c.party_links?.length" class="text-[10px] leading-tight opacity-70 italic truncate max-w-[120px]">
-                    ← {{ c.party_links[0].party }}
+                  <div v-if="partyLinks[c.name]?.links?.length" class="text-[10px] leading-tight opacity-70 italic truncate max-w-[120px]">
+                    ← {{ partyLinks[c.name].links[0].party }}
                   </div>
                 </div>
                 <span v-else :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]/40' : 'text-[var(--color-text-muted)]/20'">--</span>
@@ -306,7 +306,7 @@ const emit = defineEmits(['close', 'select'])
 useSubwindowWatcher(computed(() => props.show))
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const { ledgers: allLedgers, refreshLedgerCache, syncLoading } = useLedgerCache()
+const { ledgers: allLedgers, partyLinks, refreshLedgerCache, syncLoading } = useLedgerCache()
 const query        = ref('')
 const activeType   = ref(props.initialType)
 const selectedIdx  = ref(0)
@@ -406,7 +406,7 @@ const results = computed(() => {
 
   // Party Link Filter: Toggle to hide secondary parties
   if (hideSecondary.value) {
-    list = list.filter(l => !l.is_secondary)
+    list = list.filter(l => !partyLinks.value[l.name]?.is_secondary)
   }
 
   if (!q) return list
