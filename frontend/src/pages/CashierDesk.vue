@@ -340,8 +340,13 @@
               <div class="flex gap-2">
                 <button
                   @click="toggleCredit(false)"
+                  :disabled="isSecondaryParty"
                   class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
-                  :class="!isCredit ? 'bg-[var(--color-success)]/30 border-[var(--color-success)] text-[var(--color-success)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+                  :class="[
+                    !isCredit ? 'bg-[var(--color-success)]/30 border-[var(--color-success)] text-[var(--color-success)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]',
+                    isSecondaryParty ? 'opacity-30 cursor-not-allowed' : ''
+                  ]"
+                  :title="isSecondaryParty ? 'Secondary parties can only process Credit Sales' : ''"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                   Cash Bill
@@ -584,6 +589,7 @@ import { session } from '../session'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
+import { useLedgerCache } from '../services/ledgerCache'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
 
@@ -685,6 +691,13 @@ const cardRefInput = ref(null)
 const dateInput = ref(null)
 
 // ==================== COMPUTED ====================
+const { partyLinks } = useLedgerCache()
+
+const isSecondaryParty = computed(() => {
+  if (!selectedInvoice.value?.customer) return false
+  return !!partyLinks.value[selectedInvoice.value.customer]?.is_secondary
+})
+
 const userInitials = computed(() => {
   const name = String(session.fullName.value || session.user.value || 'U')
   return name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || 'U'
@@ -918,7 +931,11 @@ async function selectInvoice(inv) {
 
     if (unallocatedPayments.value.length > 0 && (details.outstanding_amount || details.grand_total) > 0) {
       showReconcileModal.value = true
-    }    
+    }
+    
+    if (isSecondaryParty.value) {
+      toggleCredit(true)
+    }
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
   } finally {
@@ -977,7 +994,14 @@ function initAccountsFromLocalStorage() {
 }
 
 function toggleCredit(val) {
-  isCredit.value = (val !== undefined && typeof val === 'boolean') ? val : !isCredit.value
+  const targetVal = (val !== undefined && typeof val === 'boolean') ? val : !isCredit.value
+  
+  if (!targetVal && isSecondaryParty.value) {
+    errorMsg.value = "Secondary parties can only process Credit Sales."
+    return
+  }
+
+  isCredit.value = targetVal
   payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
   if (isCredit.value) {
     nextTick(() => dueDateInput.value?.focus())
