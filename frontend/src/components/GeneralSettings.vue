@@ -274,6 +274,23 @@
               </tr>
             </tbody>
           </table>
+
+          <!-- Cached Tables Summary -->
+          <div class="mt-8 mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)]">📦 Cached Tables Summary</div>
+          <table class="w-full text-left text-xs text-[var(--color-text)] border-collapse">
+            <thead>
+              <tr class="border-b border-[var(--color-border)] text-[var(--color-text-muted)]">
+                <th class="py-2 px-3 font-semibold">Table / Cache</th>
+                <th class="py-2 px-3 font-semibold text-right">Record Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="t in cachedTables" :key="t.name" class="border-b border-[var(--color-border)]/50 hover:bg-[var(--color-surface)]/30">
+                <td class="py-2 px-3 font-medium">{{ t.name }}</td>
+                <td class="py-2 px-3 text-right font-mono font-bold text-[var(--color-highlight)]">{{ t.count.toLocaleString() }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <div class="border-t border-[var(--color-border)] px-5 py-3 bg-[var(--color-surface)] rounded-b-xl flex justify-end">
           <button @click="showDebugModal = false" class="rounded bg-[var(--color-surface-raised)] px-4 py-1.5 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]">Close</button>
@@ -289,6 +306,8 @@ import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { getUserRole } from '../composables/usePermission'
+import { useItemCache } from '../services/itemCache'
+import { useLedgerCache } from '../services/ledgerCache'
 
 const props = defineProps({
   show: Boolean,
@@ -298,10 +317,14 @@ const emit = defineEmits(['close'])
 
 useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
+const { items: cachedItems, discountRules: cachedDiscountRules } = useItemCache()
+const { ledgers: cachedLedgers } = useLedgerCache()
+
 const rawSettings = ref(null)
 const syncing = ref(false)
 const showDebugModal = ref(false)
 const localVariables = ref([])
+const cachedTables = ref([])
 const permissionTrigger = ref(0)
 
 defineExpose({ loadSettings, syncing })
@@ -446,12 +469,21 @@ function showLocalVariables() {
   const vars = []
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
-    if (key.startsWith('wb-') || key.startsWith('wb_')) {
+    if (key.startsWith('wb-') || key.startsWith('wb_') || key.includes('cache')) {
       vars.push({ key, value: localStorage.getItem(key) })
     }
   }
   vars.sort((a, b) => a.key.localeCompare(b.key))
   localVariables.value = vars
+
+  // Populate Cached Tables Summary
+  cachedTables.value = [
+    { name: 'Items (Memory)', count: cachedItems.value.length },
+    { name: 'Ledgers (Local)', count: cachedLedgers.value.length },
+    { name: 'Discount Rules (Local)', count: cachedDiscountRules.value.length },
+    { name: 'UOM Map (Local)', count: Object.keys(JSON.parse(localStorage.getItem('sspl-item-uoms') || '{}')).length }
+  ]
+
   showDebugModal.value = true
 }
 
