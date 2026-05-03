@@ -222,17 +222,17 @@
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ idx + 1 }}</td>
                     <td class="px-2 py-1 border-r border(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
-                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ item.qty }}</td>
+                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ format(item.qty) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom || 'Nos' }}</td>
-                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.rate }}</td>
-                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)] text-4xl font-mono text-right">{{ item.discount_percentage || '0' }}</td>
+                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ format(item.rate) }}</td>
+                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)] text-4xl font-mono text-right">{{ format(item.discount_percentage) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)]/80 text-4xl font-mono text-right tabular-nums">
-                      {{ item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)).toFixed(2) : '—' }}
+                      {{ format(item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)) : 0) }}
                     </td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-4xl font-mono text-right tabular-nums">
-                      {{ item.tax_rate != null ? item.tax_rate : defaultTaxRate }}
+                      {{ format(item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}
                     </td>
-                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.amount }}</td>
+                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ format(item.amount) }}</td>
                     <td class="px-2 py-1 text-center">
                       <button class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="$emit('delete-item', idx)">&times;</button>
                     </td>
@@ -318,7 +318,7 @@
                 <tr>
                   <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Item Discount</td>
                   <td class="p-0 border-y border-[var(--color-border)] text-center text-lg text-[var(--color-text-muted)] italic">Auto</td>
-                  <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ itemDiscountTotal }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ format(itemDiscountTotal) }}</td>
                   <td class="border border-[var(--color-border)] px-2 bg-[var(--color-bg)] align-top" rowspan="15">
                     <slot name="actions">
                       <div class="flex flex-col gap-2 h-full py-2">
@@ -329,7 +329,7 @@
                           </div>
                           <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                             <span class="text-[9mm] font-black">₹</span>
-                            <span class="font-mono text-[15.75mm] font-black leading-none">{{ totalAmount }}</span>
+                            <span class="font-mono text-[15.75mm] font-black leading-none">{{ format(totalAmount) }}</span>
                           </div>
                         </div>
 
@@ -383,20 +383,20 @@
                       </div>
                     </div>
                   </td>
-                  <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ Number(discountAmt || 0).toFixed(2) }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ format(discountAmt) }}</td>
                 </tr>
                 <!-- Subtotal -->
                 <tr class="bg-[var(--color-surface-raised)]/40">
                   <td class="px-2 text-2xl text-[var(--color-text)]/80 border border-[var(--color-border)]">Subtotal</td>
                   <td class="p-0 border border-[var(--color-border)] h-full"></td>
-                  <td class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ subtotal }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ format(subtotal) }}</td>
                   <td class="border border-[var(--color-border)]"></td>
                 </tr>
                 <!-- Tax -->
                 <tr>
                   <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
                   <td class="p-0 border border-[var(--color-border)]"></td>
-                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ totalTax }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ format(totalTax) }}</td>
                 </tr>
                 <!-- Freight -->
                 <tr>
@@ -412,7 +412,7 @@
                       class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                     />
                   </td>
-                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(freightAmt || 0).toFixed(2) }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ format(freightAmt) }}</td>
                 </tr>
                 <!-- Packing -->
                 <tr>
@@ -428,7 +428,7 @@
                       class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                     />
                   </td>
-                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(packingAmt || 0).toFixed(2) }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ format(packingAmt) }}</td>
                 </tr>
                 <!-- Loading -->
                 <tr>
@@ -444,7 +444,7 @@
                       class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                     />
                   </td>
-                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(loadingAmt || 0).toFixed(2) }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ format(loadingAmt) }}</td>
                 </tr>
                 <!-- Other -->
                 <tr>
@@ -460,13 +460,13 @@
                       class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                     />
                   </td>
-                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ Number(otherAmt || 0).toFixed(2) }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-highlight)] text-4xl border border-[var(--color-border)]">+{{ format(otherAmt) }}</td>
                 </tr>
                 <!-- Round Off -->
                 <tr>
                   <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Round Off</td>
                   <td class="p-0 border border-[var(--color-border)]"></td>
-                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">{{ Number(roundOff || 0).toFixed(2) }}</td>
+                  <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">{{ format(roundOff) }}</td>
                 </tr>
               </slot>
             </tbody>
@@ -637,6 +637,12 @@ function formatDate(dateString) {
   if (isNaN(d)) return dateString
   // Format as DD-MMM-YYYY
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+}
+
+function format(val) {
+  if (val === null || val === undefined || val === '') return '0.00'
+  const num = Number(val)
+  return isNaN(num) ? '0.00' : num.toFixed(2)
 }
 </script>
 

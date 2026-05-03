@@ -89,18 +89,20 @@ export function useBilling() {
     rows.value.filter((r) => r.itemCode && Number(r.qty) > 0)
   );
 
-  const subtotal = computed(() =>
-    rows.value.reduce((s, r) => s + Number(r.qty || 0) * Number(r.rate || 0), 0)
-  );
+  const subtotal = computed(() => {
+    const total = rows.value.reduce((s, r) => s + Number(r.qty || 0) * Number(r.rate || 0), 0)
+    return parseFloat(total.toFixed(2))
+  });
 
-  const totalDiscount = computed(() =>
-    rows.value.reduce((s, r) => {
+  const totalDiscount = computed(() => {
+    const total = rows.value.reduce((s, r) => {
       const base = Number(r.qty || 0) * Number(r.rate || 0);
       return s + base * (Number(r.discount || 0) / 100);
     }, 0)
-  );
+    return parseFloat(total.toFixed(2))
+  });
 
-  const grandTotal = computed(() => subtotal.value - totalDiscount.value);
+  const grandTotal = computed(() => parseFloat((subtotal.value - totalDiscount.value).toFixed(2)));
 
   // ─── Initialisation ────────────────────────────────────────────────────────
 

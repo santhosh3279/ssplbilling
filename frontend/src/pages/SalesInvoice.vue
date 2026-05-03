@@ -129,7 +129,7 @@
               @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.qty) }}</span>
           </td>
 
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -157,7 +157,7 @@
               @keydown.enter.prevent="focusEditField('disc', index)"
               @keydown.escape="exitEditMode(index, true)"
             />
-            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.rate }}</span>
+            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.rate) }}</span>
           </td>
 
           <!-- disc % -->
@@ -170,16 +170,16 @@
               @keydown.enter.prevent="finishRowEdit(index)"
               @keydown.escape="exitEditMode(index, true)"
             />
-            <span v-else class="block px-2 py-1 text-4xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ item.discount || '0' }}</span>
+            <span v-else class="block px-2 py-1 text-4xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ format(item.discount) }}</span>
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
-            {{ item.discount ? (item.rate * (1 - item.discount / 100)).toFixed(2) : '—' }}
+            {{ format(item.discount ? (item.rate * (1 - item.discount / 100)) : 0) }}
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-            {{ isExempted ? 0 : (item.tax_rate ?? 0) }}
+            {{ format(isExempted ? 0 : (item.tax_rate ?? 0)) }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.amount }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.amount) }}</td>
           <td class="px-2 py-1 text-center">
             <button
               class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
@@ -1041,6 +1041,12 @@ function formatDateShort(dateStr) {
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const year = String(d.getFullYear()).slice(-2)
   return `${day}-${month}-${year}`
+}
+
+function format(val) {
+  if (val === null || val === undefined || val === '') return '0.00'
+  const num = Number(val)
+  return isNaN(num) ? '0.00' : num.toFixed(2)
 }
 
 async function clearBill() {
