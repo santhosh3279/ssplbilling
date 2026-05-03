@@ -217,12 +217,12 @@
             <tbody>
               <!-- #row slot wraps the entire <tr> so consumers can add :class/:ref/@click on the row -->
               <template v-for="(item, idx) in items" :key="idx">
-                <slot name="row" :item="item" :index="idx">
+                <slot name="row" :item="item" :index="idx" :formatQty="formatQty" :format="format">
                   <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50">
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ idx + 1 }}</td>
                     <td class="px-2 py-1 border-r border(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
-                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ format(item.qty) }}</td>
+                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ formatQty(item.qty, item.uom) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom || 'Nos' }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ format(item.rate) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)] text-4xl font-mono text-right">{{ format(item.discount_percentage) }}</td>
@@ -643,6 +643,17 @@ function format(val) {
   if (val === null || val === undefined || val === '') return '0.00'
   const num = Number(val)
   return isNaN(num) ? '0.00' : num.toFixed(2)
+}
+
+function formatQty(val, uom) {
+  if (val === null || val === undefined || val === '') return '0'
+  const num = Number(val)
+  if (isNaN(num)) return '0'
+  // For 'Nos' UOM, don't show decimals and don't allow float (truncate)
+  if (uom === 'Nos' || !uom) {
+    return Math.floor(num).toString()
+  }
+  return num.toFixed(2)
 }
 </script>
 

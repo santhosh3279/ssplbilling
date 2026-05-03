@@ -70,7 +70,7 @@
         <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">Quotation Mode</span>
       </template>
 
-      <template #row="{ item, index }">
+      <template #row="{ item, index, formatQty }">
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
           :tabindex="isReadOnly ? -1 : 0"
@@ -114,12 +114,14 @@
               ref="editQtyInput"
               v-model.number="item.qty"
               type="number" min="0"
+              :step="item.uom === 'Nos' ? '1' : '0.01'"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @input="item.uom === 'Nos' && (item.qty = Math.floor(item.qty))"
               @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.qty) }}</span>
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty, item.uom) }}</span>
           </td>
 
           <td class="p-0 border-r border-[var(--color-border)]">

@@ -163,12 +163,12 @@
             </thead>
             <tbody>
               <template v-for="(item, idx) in items" :key="idx">
-                <slot name="row" :item="item" :index="idx">
+                <slot name="row" :item="item" :index="idx" :formatQty="formatQty">
                   <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50">
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ idx + 1 }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
-                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ item.qty }}</td>
+                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ formatQty(item.qty, item.uom) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom || 'Nos' }}</td>
                     <td v-if="showRate" class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.rate }}</td>
                     <td v-if="showAmount" class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.amount || (item.qty * item.rate).toFixed(2) }}</td>
@@ -384,6 +384,16 @@ function formatDate(dateString) {
   const d = new Date(dateString)
   if (isNaN(d)) return dateString
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+}
+
+function formatQty(val, uom) {
+  if (val === null || val === undefined || val === '') return '0'
+  const num = Number(val)
+  if (isNaN(num)) return '0'
+  if (uom === 'Nos' || !uom) {
+    return Math.floor(num).toString()
+  }
+  return num.toFixed(2)
 }
 </script>
 

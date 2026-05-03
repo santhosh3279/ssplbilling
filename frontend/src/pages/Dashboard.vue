@@ -284,8 +284,8 @@
         ]"
         selected-sidebar-item-name="INV-TEMP-001"
         :items="[
-          { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 10, rate: 100, amount: 1000 },
-          { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 5, rate: 250, amount: 1250 }
+          { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 100, uom: 'Nos', rate: 10, amount: 1000 },
+          { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 50.5, uom: 'Kg', rate: 25, amount: 1262.5 }
         ]"
         subtotal="2250.00"
         total-tax="0.00"
