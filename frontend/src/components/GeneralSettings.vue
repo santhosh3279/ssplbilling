@@ -6,12 +6,20 @@
       <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center justify-between bg-[var(--color-surface)]">
         <div class="flex items-center gap-4">
           <div class="text-sm font-semibold text-[var(--color-text)]">⚙️ General Settings</div>
-          <button
-            @click="showLocalVariables"
-            class="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-[10px] font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
-          >
-            DEBUG: View Local Variables
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              @click="showDebug('vars')"
+              class="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-[10px] font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
+            >
+              DEBUG: Variables
+            </button>
+            <button
+              @click="showDebug('cache')"
+              class="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-[10px] font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
+            >
+              DEBUG: Cache
+            </button>
+          </div>
         </div>
         <div class="flex items-center gap-3">
           <button @click="$emit('close')" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
@@ -249,15 +257,19 @@
 
     </div>
 
-    <!-- Debug Variables Modal -->
+    <!-- Debug Modal -->
     <div v-if="showDebugModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showDebugModal = false">
-      <div class="w-[600px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl flex flex-col max-h-[80vh]">
+      <div class="rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl flex flex-col max-h-[80vh]" :class="debugMode === 'vars' ? 'w-[600px]' : 'w-[400px]'">
         <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center justify-between bg-[var(--color-surface)] rounded-t-xl">
-          <div class="text-sm font-semibold text-[var(--color-text)]">🛠️ Debug Local Variables</div>
+          <div class="text-sm font-semibold text-[var(--color-text)]">
+            {{ debugMode === 'vars' ? '🛠️ Debug Local Variables' : '📦 Cached Tables Summary' }}
+          </div>
           <button @click="showDebugModal = false" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
         </div>
+        
         <div class="overflow-y-auto p-5">
-          <table class="w-full text-left text-xs text-[var(--color-text)] border-collapse">
+          <!-- Variables Mode -->
+          <table v-if="debugMode === 'vars'" class="w-full text-left text-xs text-[var(--color-text)] border-collapse">
             <thead>
               <tr class="border-b border-[var(--color-border)] text-[var(--color-text-muted)]">
                 <th class="py-2 px-3 font-semibold">Key</th>
@@ -275,9 +287,8 @@
             </tbody>
           </table>
 
-          <!-- Cached Tables Summary -->
-          <div class="mt-8 mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-info)]">📦 Cached Tables Summary</div>
-          <table class="w-full text-left text-xs text-[var(--color-text)] border-collapse">
+          <!-- Cache Mode -->
+          <table v-if="debugMode === 'cache'" class="w-full text-left text-xs text-[var(--color-text)] border-collapse">
             <thead>
               <tr class="border-b border-[var(--color-border)] text-[var(--color-text-muted)]">
                 <th class="py-2 px-3 font-semibold">Table / Cache</th>
@@ -292,6 +303,7 @@
             </tbody>
           </table>
         </div>
+        
         <div class="border-t border-[var(--color-border)] px-5 py-3 bg-[var(--color-surface)] rounded-b-xl flex justify-end">
           <button @click="showDebugModal = false" class="rounded bg-[var(--color-surface-raised)] px-4 py-1.5 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]">Close</button>
         </div>
@@ -323,6 +335,7 @@ const { ledgers: cachedLedgers } = useLedgerCache()
 const rawSettings = ref(null)
 const syncing = ref(false)
 const showDebugModal = ref(false)
+const debugMode = ref('vars') // 'vars' | 'cache'
 const localVariables = ref([])
 const cachedTables = ref([])
 const permissionTrigger = ref(0)
@@ -465,24 +478,28 @@ async function handleSync() {
   await loadSettings()
 }
 
-function showLocalVariables() {
-  const vars = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key.startsWith('wb-') || key.startsWith('wb_') || key.includes('cache')) {
-      vars.push({ key, value: localStorage.getItem(key) })
+function showDebug(mode) {
+  debugMode.value = mode
+  
+  if (mode === 'vars') {
+    const vars = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key.startsWith('wb-') || key.startsWith('wb_') || key.includes('cache')) {
+        vars.push({ key, value: localStorage.getItem(key) })
+      }
     }
+    vars.sort((a, b) => a.key.localeCompare(b.key))
+    localVariables.value = vars
+  } else {
+    // Populate Cached Tables Summary
+    cachedTables.value = [
+      { name: 'Items (Memory)', count: cachedItems.value.length },
+      { name: 'Ledgers (Local)', count: cachedLedgers.value.length },
+      { name: 'Discount Rules (Local)', count: cachedDiscountRules.value.length },
+      { name: 'UOM Map (Local)', count: Object.keys(JSON.parse(localStorage.getItem('sspl-item-uoms') || '{}')).length }
+    ]
   }
-  vars.sort((a, b) => a.key.localeCompare(b.key))
-  localVariables.value = vars
-
-  // Populate Cached Tables Summary
-  cachedTables.value = [
-    { name: 'Items (Memory)', count: cachedItems.value.length },
-    { name: 'Ledgers (Local)', count: cachedLedgers.value.length },
-    { name: 'Discount Rules (Local)', count: cachedDiscountRules.value.length },
-    { name: 'UOM Map (Local)', count: Object.keys(JSON.parse(localStorage.getItem('sspl-item-uoms') || '{}')).length }
-  ]
 
   showDebugModal.value = true
 }
