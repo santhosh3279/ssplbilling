@@ -227,7 +227,7 @@
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ format(item.rate) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)] text-4xl font-mono text-right">{{ format(item.discount_percentage) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)]/80 text-4xl font-mono text-right tabular-nums">
-                      {{ format(item.discount_percentage ? (item.rate * (1 - item.discount_percentage / 100)) : 0) }}
+                      {{ format((item.rate || 0) * (1 - (item.discount_percentage || item.discount || 0) / 100)) }}
                     </td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-4xl font-mono text-right tabular-nums">
                       {{ format(item.tax_rate != null ? item.tax_rate : defaultTaxRate) }}

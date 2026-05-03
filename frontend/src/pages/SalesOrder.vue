@@ -168,7 +168,7 @@
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
-            {{ format(item.discount ? (item.rate * (1 - item.discount / 100)) : 0) }}
+            {{ format((item.rate || 0) * (1 - (item.discount || 0) / 100)) }}
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
             {{ format(isExempted ? 0 : (item.tax_rate ?? 0)) }}
@@ -1602,7 +1602,8 @@ function finishRowEdit(idx) {
 function recalcAmount(idx) {
   const item = items.value[idx]
   if (!item) return
-  item.amount = parseFloat(((item.qty || 0) * (item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(2))
+  const netRate = parseFloat(((item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(2))
+  item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(2))
 }
 
 function effectiveModifier() {
