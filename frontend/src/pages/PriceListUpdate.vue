@@ -111,7 +111,7 @@
                 <td
                   v-for="(p, idx) in prices"
                   :key="p.price_list"
-                  class="px-2 py-2 text-right"
+                  class="px-2 py-2 text-right align-top"
                   :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
                 >
                   <input
@@ -119,12 +119,26 @@
                     type="number"
                     v-model.number="p.uom_rates[u.uom]"
                     step="0.01"
-                    class="w-40 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
+                    class="w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors mb-1"
                     :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
                     @keydown.enter.prevent="onRateEnter(idx, uidx)"
                     @keydown.up.prevent="moveVertical(uidx, -1, idx)"
                     @keydown.down.prevent="moveVertical(uidx, 1, idx)"
                   />
+                  <div class="flex flex-col items-end gap-0.5 font-mono text-[11px] select-none">
+                    <div class="text-[var(--color-text-muted)] font-bold flex items-center gap-1">
+                      <span class="text-[9px] uppercase opacity-50">Curr:</span>
+                      &#8377;{{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
+                    </div>
+                    <div 
+                      class="text-[var(--color-info)] flex items-center gap-1 cursor-pointer hover:underline decoration-dotted" 
+                      title="Click to apply calculated rate"
+                      @click="p.uom_rates[u.uom] = Number((p.original_rate * u.conversion_factor).toFixed(2))"
+                    >
+                      <span class="text-[9px] uppercase opacity-50">Calc:</span>
+                      &#8377;{{ (p.original_rate * u.conversion_factor).toFixed(2) }}
+                    </div>
+                  </div>
                 </td>
               </tr>
             </tbody>
