@@ -102,7 +102,6 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
-            <tbody class="divide-y divide-slate-700">
               <tr
                 v-for="(u, uidx) in uoms"
                 :key="u.uom"
