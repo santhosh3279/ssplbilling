@@ -60,8 +60,8 @@
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
                   <div class="flex justify-end gap-1">
-                    <span v-if="p.buying" class="rounded bg-[var(--color-success)]/20 px-2 py-0.5 text-[10px] font-black text-[var(--color-success)] uppercase tracking-tight">Buy</span>
-                    <span v-if="p.selling" class="rounded bg-[var(--color-info)]/20 px-2 py-0.5 text-[10px] font-black text-[var(--color-info)] uppercase tracking-tight">Sell</span>
+                    <span v-if="p.buying" class="rounded-lg bg-[var(--color-success)]/20 px-4 py-1.5 text-[20px] font-black text-[var(--color-success)] uppercase tracking-wide shadow-sm">Buy</span>
+                    <span v-if="p.selling" class="rounded-lg bg-[var(--color-info)]/20 px-4 py-1.5 text-[20px] font-black text-[var(--color-info)] uppercase tracking-wide shadow-sm">Sell</span>
                   </div>
                 </th>
               </tr>
