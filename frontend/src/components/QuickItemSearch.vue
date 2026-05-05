@@ -6,7 +6,17 @@
   >
     <div class="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-border)] flex justify-between items-center">
       <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Quick Search</span>
-      <span class="text-xs text-[var(--color-text-muted)]">{{ sortedResults.length }} matches</span>
+      <div class="flex items-center gap-3">
+        <button 
+          @click.stop="handleRefresh" 
+          class="p-1 rounded hover:bg-[var(--color-surface-raised)] transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+          :class="{ 'animate-spin text-[var(--color-primary)]': syncLoading }"
+          title="Refresh Items Cache"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+        </button>
+        <span class="text-xs text-[var(--color-text-muted)]">{{ sortedResults.length }} matches</span>
+      </div>
     </div>
     
     <div ref="scrollContainer" class="max-h-[600px] overflow-y-auto scrollbar-none relative">
@@ -47,15 +57,26 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useItemCache } from '../services/itemCache'
 
 const props = defineProps({
   results: { type: Array, default: () => [] },
   query: { type: String, default: '' },
   priceList: { type: String, default: '' },
+  searchType: { type: String, default: 'Sales' },
+  warehouse: { type: String, default: '' },
   anchorEl: { type: Object, default: null } // Optional: to position relative to
 })
 
-const emit = defineEmits(['select', 'close'])
+const emit = defineEmits(['select', 'close', 'refresh'])
+
+const { refreshItemCache, syncLoading } = useItemCache()
+
+async function handleRefresh() {
+  if (syncLoading.value) return
+  await refreshItemCache(props.searchType, props.priceList, props.warehouse)
+  emit('refresh')
+}
 
 const selectedIndex = ref(0)
 const scrollContainer = ref(null)

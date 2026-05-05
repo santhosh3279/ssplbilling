@@ -433,9 +433,12 @@
       :results="quickSearchResults"
       :query="quickSearchQuery"
       :price-list="priceList"
+      search-type="Sales"
+      :warehouse="warehouse"
       :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
+      @refresh="onQuickSearchRefresh"
     />
 
     <ItemSearch
@@ -1749,6 +1752,13 @@ function clearItem(idx) {
       editingRowIdx.value = -1
       editingField.value = null
     }
+  }
+}
+
+function onQuickSearchRefresh() {
+  // After cache refresh, re-run search if there's a query
+  if (newItemCode.value) {
+    quickSearchResults.value = searchItemsInCache(newItemCode.value)
   }
 }
 

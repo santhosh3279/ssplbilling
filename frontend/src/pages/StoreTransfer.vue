@@ -165,9 +165,12 @@
       ref="quickSearchRef"
       :results="quickSearchResults"
       :query="barcodeQuery"
+      search-type="Sales"
+      :warehouse="fromWarehouse"
       :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
+      @refresh="onQuickSearchRefresh"
     />
 
     <!-- Item Search Modal -->
@@ -312,6 +315,13 @@ async function handleBarcodeEnter() {
     } else {
       openItemSearch(barcodeQuery.value)
     }
+  }
+}
+
+function onQuickSearchRefresh() {
+  // After cache refresh, re-run search if there's a query
+  if (barcodeQuery.value) {
+    quickSearchResults.value = searchItemsInCache(barcodeQuery.value)
   }
 }
 
