@@ -78,16 +78,34 @@
                   <div v-if="p.price_list === selectedPriceList" class="text-[9px] font-black text-[var(--color-info)] uppercase mt-0.5">Active</div>
                 </th>
               </tr>
-              <!-- Row 3: Current Base Rate -->
+              <!-- Row 3: Calc Row (Input for Base Rate) -->
               <tr>
-                <th class="px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Base Rate</th>
+                <th class="px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Calc</th>
                 <th
-                  v-for="p in prices"
-                  :key="`rate-val-${p.price_list}`"
-                  class="px-2 py-1.5 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[84px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
+                  v-for="(p, idx) in prices"
+                  :key="`calc-row-${p.price_list}`"
+                  class="px-2 py-1.5 text-right sticky top-[84px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
-                  <div class="font-mono text-[var(--color-text-muted)] text-[15px] font-bold">&#8377;{{ p.original_rate.toFixed(2) }}</div>
+                  <div class="flex items-center justify-end gap-1">
+                    <input
+                      :ref="el => inputRefs[`calc-${idx}`] = el"
+                      type="number"
+                      v-model.number="p.rate"
+                      step="0.01"
+                      placeholder="Base"
+                      class="w-32 rounded border border-[var(--color-info)]/30 bg-[var(--color-info)]/5 px-1 py-1 text-right font-mono font-bold text-[var(--color-info)] text-[18px] outline-none focus:ring-1 transition-colors"
+                      @keydown.enter.prevent="onCalcEnter(idx)"
+                      @keydown.down.prevent="focusInput(`rate-${idx}-0`)"
+                    />
+                    <button
+                      @click="applyCalc(p)"
+                      class="rounded bg-[var(--color-info)] p-1 text-white hover:bg-[var(--color-info)]/80 shadow-sm transition-transform active:scale-95"
+                      title="Apply to all UOMs"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </button>
+                  </div>
                 </th>
               </tr>
             </thead>
@@ -221,12 +239,19 @@ async function loadPrices(code) {
     }
 
     nextTick(() => {
-      focusInput(`rate-${startPlIdx}-0`)
+      focusInput(`calc-${startPlIdx}`)
     })
   } catch (e) {
     alert('Failed to load prices: ' + e.message)
   } finally {
     loading.value = false
+  }
+}
+
+function applyCalc(p) {
+  const base = p.rate || 0
+  for (const u of uoms.value) {
+    p.uom_rates[u.uom] = Number((base * u.conversion_factor).toFixed(2))
   }
 }
 
@@ -271,6 +296,14 @@ async function saveAll() {
     alert('Update failed: ' + e.message)
   } finally {
     saving.value = false
+  }
+}
+
+function onCalcEnter(idx) {
+  if (idx < prices.value.length - 1) {
+    focusInput(`calc-${idx + 1}`)
+  } else {
+    focusInput(`rate-0-0`)
   }
 }
 
