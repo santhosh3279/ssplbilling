@@ -1,6 +1,6 @@
 <template>
   <div :class="isSubWindow ? 'fixed inset-0 z-[210] flex items-center justify-center bg-black/80 backdrop-blur-md p-4' : 'min-h-screen bg-[var(--color-bg)] flex flex-col'">
-    <div :class="isSubWindow ? 'flex h-[70vh] w-[70vw] flex-col overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl' : 'flex flex-1 flex-col'">
+    <div :class="isSubWindow ? 'flex h-[90vh] w-[90vw] flex-col overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl' : 'flex flex-1 flex-col'">
       <!-- Header -->
       <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
         <div class="flex items-center gap-4">
