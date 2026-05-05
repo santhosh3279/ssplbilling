@@ -87,7 +87,7 @@
                   class="px-2 py-1.5 text-right sticky top-[84px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
-                  <div class="flex items-center justify-end gap-1">
+                  <div v-if="idx !== 0" class="flex items-center justify-end gap-1">
                     <input
                       :ref="el => inputRefs[`calc-${idx}`] = el"
                       type="number"
@@ -274,7 +274,13 @@ async function loadPrices(code) {
     }
 
     nextTick(() => {
-      focusInput(`calc-${startPlIdx}`)
+      // If first column, try to focus its first proposed rate since calc is missing,
+      // or focus the second column's calc. Let's focus second column calc if it exists.
+      if (startPlIdx === 0 && prices.value.length > 1) {
+        focusInput(`calc-1`)
+      } else {
+        focusInput(`calc-${startPlIdx}`)
+      }
     })
   } catch (e) {
     alert('Failed to load prices: ' + e.message)
