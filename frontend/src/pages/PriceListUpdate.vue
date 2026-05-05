@@ -52,11 +52,11 @@
             <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <!-- Row 1: Indicators -->
               <tr>
-                <th class="px-4 py-3 sticky left-0 top-0 bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40 text-xs font-bold uppercase text-[var(--color-text-muted)]">Type</th>
+                <th class="px-2 py-1.5 sticky left-0 top-0 bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40 text-xs font-bold uppercase text-[var(--color-text-muted)]">Type</th>
                 <th
                   v-for="p in prices"
                   :key="`ind-${p.price_list}`"
-                  class="px-4 py-3 text-right border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-surface)] z-10"
+                  class="px-2 py-1.5 text-right border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-surface)] z-10"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
                   <div class="flex justify-end gap-1">
@@ -67,11 +67,11 @@
               </tr>
               <!-- Row 2: Price List Name -->
               <tr>
-                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[60px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Price List</th>
+                <th class="px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[48px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Price List</th>
                 <th
                   v-for="p in prices"
                   :key="`name-${p.price_list}`"
-                  class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[60px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
+                  class="px-2 py-1.5 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[48px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
                   <div class="font-bold text-[var(--color-text)] truncate" :title="p.price_list">{{ p.price_list }}</div>
@@ -80,14 +80,14 @@
               </tr>
               <!-- Row 3: Current Base Rate -->
               <tr>
-                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[108px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Base Rate</th>
+                <th class="px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Base Rate</th>
                 <th
                   v-for="p in prices"
                   :key="`rate-val-${p.price_list}`"
-                  class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[108px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
+                  class="px-2 py-1.5 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[84px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
-                  <div class="font-mono text-[var(--color-text-muted)] text-[12px]">&#8377;{{ p.original_rate.toFixed(2) }}</div>
+                  <div class="font-mono text-[var(--color-text-muted)] text-[15px] font-bold">&#8377;{{ p.original_rate.toFixed(2) }}</div>
                 </th>
               </tr>
             </thead>
@@ -99,7 +99,7 @@
                 :class="{ 'bg-[var(--color-info)]/30': activeRow === uidx }"
                 @click="activeRow = uidx"
               >
-                <td class="px-4 py-4 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
+                <td class="px-2 py-2 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
                   <div class="font-bold text-[var(--color-text)]" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
                     {{ u.uom }}
                   </div>
@@ -111,7 +111,7 @@
                 <td
                   v-for="(p, idx) in prices"
                   :key="p.price_list"
-                  class="px-4 py-4 text-right"
+                  class="px-2 py-2 text-right"
                   :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
                 >
                   <input
@@ -119,7 +119,7 @@
                     type="number"
                     v-model.number="p.uom_rates[u.uom]"
                     step="0.01"
-                    class="w-32 rounded border bg-[var(--color-surface)] px-2 py-2 text-right font-mono font-bold text-[var(--color-text)] outline-none focus:ring-1 transition-colors"
+                    class="w-40 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
                     :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
                     @keydown.enter.prevent="onRateEnter(idx, uidx)"
                     @keydown.up.prevent="moveVertical(uidx, -1, idx)"
