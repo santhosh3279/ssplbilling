@@ -66,7 +66,6 @@
                     {{ u.uom }}<span v-if="u.conversion_factor !== 1" class="ml-1 text-[var(--color-text-muted)]">×{{ u.conversion_factor }}</span>
                   </span>
                 </th>
-                <th v-if="selectedPriceList" class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Disc %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
@@ -107,22 +106,6 @@
                     @keydown.up.prevent="moveVertical(idx, -1, uidx)"
                     @keydown.down.prevent="moveVertical(idx, 1, uidx)"
                   />
-                </td>
-                <td v-if="selectedPriceList" class="px-4 py-3 text-right">
-                  <input
-                    v-if="p.price_list === selectedPriceList"
-                    :ref="el => inputRefs[`disc-${idx}`] = el"
-                    type="number"
-                    v-model.number="discount"
-                    step="0.5"
-                    min="0"
-                    max="100"
-                    class="w-20 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 px-3 py-1.5 text-right font-mono font-bold text-[var(--color-info)] outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20"
-                    @keydown.enter.prevent="onDiscEnter(idx)"
-                    @keydown.up.prevent="moveVertical(idx, -1, uoms.length - 1)"
-                    @keydown.down.prevent="moveVertical(idx, 1, uoms.length - 1)"
-                  />
-                  <span v-else class="text-[var(--color-text-muted)]">--</span>
                 </td>
               </tr>
             </tbody>
@@ -273,16 +256,7 @@ function onRateEnter(idx, uidx) {
     focusInput(`rate-${idx}-${uidx + 1}`)
     return
   }
-  // Last UOM column: go to disc if this row has it
-  if (props.selectedPriceList && prices.value[idx].price_list === props.selectedPriceList) {
-    focusInput(`disc-${idx}`)
-  } else {
-    goToNextRow(idx)
-  }
-}
-
-function onDiscEnter(idx) {
-  activeRow.value = idx
+  // Last UOM column: go to next row
   goToNextRow(idx)
 }
 
