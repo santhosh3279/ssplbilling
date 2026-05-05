@@ -33,7 +33,7 @@
 
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto p-6">
-        <div class="mx-auto max-w-4xl rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden">
+        <div class="mx-auto max-w-5xl rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-x-auto">
           <div v-if="loading" class="flex items-center justify-center py-20">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-info)] border-t-transparent"></div>
           </div>
@@ -48,63 +48,59 @@
             />
           </div>
 
-          <table v-else class="w-full text-left border-collapse">
+          <table v-else class="w-full text-left border-collapse min-w-full">
             <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <tr>
-                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Price List</th>
-                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Type</th>
-                <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Current Rate</th>
-                <!-- One "New Rate" column per UOM -->
+                <th class="px-4 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 bg-[var(--color-surface)] z-20 border-r border-[var(--color-border)] w-40">UOM \ Price List</th>
                 <th
-                  v-for="u in uoms"
-                  :key="u.uom"
-                  class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider"
-                  :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'"
+                  v-for="(p, idx) in prices"
+                  :key="p.price_list"
+                  class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider min-w-[160px]"
+                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
-                  New Rate
-                  <span class="block font-normal normal-case text-[10px] mt-0.5 opacity-80">
-                    {{ u.uom }}<span v-if="u.conversion_factor !== 1" class="ml-1 text-[var(--color-text-muted)]">×{{ u.conversion_factor }}</span>
-                  </span>
+                  <div class="font-bold text-[var(--color-text)] truncate" :title="p.price_list">{{ p.price_list }}</div>
+                  <div class="flex justify-end gap-1 mt-1">
+                    <span v-if="p.buying" class="rounded bg-[var(--color-success)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-success)] uppercase">Buy</span>
+                    <span v-if="p.selling" class="rounded bg-[var(--color-info)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-info)] uppercase">Sell</span>
+                  </div>
+                  <div class="mt-1 font-mono text-[var(--color-text-muted)] text-[10px]">&#8377;{{ p.original_rate.toFixed(2) }}</div>
+                  <div v-if="p.price_list === selectedPriceList" class="text-[9px] font-black text-[var(--color-info)] uppercase mt-0.5">Active</div>
                 </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
               <tr
-                v-for="(p, idx) in prices"
-                :key="p.price_list"
+                v-for="(u, uidx) in uoms"
+                :key="u.uom"
                 class="hover:bg-[var(--color-surface)]/40 transition-colors"
-                :class="{ 'bg-[var(--color-info)]/30': activeRow === idx }"
-                @click="activeRow = idx"
+                :class="{ 'bg-[var(--color-info)]/30': activeRow === uidx }"
+                @click="activeRow = uidx"
               >
-                <td class="px-4 py-3">
-                  <div class="font-semibold text-[var(--color-text)]">{{ p.price_list }}</div>
-                  <div v-if="p.price_list === selectedPriceList" class="text-[10px] font-bold text-[var(--color-info)] uppercase">Selected in entry</div>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex gap-1">
-                    <span v-if="p.buying" class="rounded bg-[var(--color-success)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-success)]">BUY</span>
-                    <span v-if="p.selling" class="rounded bg-[var(--color-info)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-info)]">SELL</span>
+                <td class="px-4 py-4 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
+                  <div class="font-bold text-[var(--color-text)]" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
+                    {{ u.uom }}
                   </div>
+                  <div v-if="u.conversion_factor !== 1" class="text-[10px] text-[var(--color-text-muted)] italic">
+                    Factor: {{ u.conversion_factor }}
+                  </div>
+                  <div v-if="u.uom === stockUom" class="text-[9px] font-bold text-[var(--color-info)] uppercase mt-0.5">Stock UOM</div>
                 </td>
-                <td class="px-4 py-3 text-right font-mono text-[var(--color-text-muted)]">
-                  &#8377;{{ p.original_rate.toFixed(2) }}
-                </td>
-                <!-- Rate input per UOM -->
                 <td
-                  v-for="(u, uidx) in uoms"
-                  :key="u.uom"
-                  class="px-4 py-3 text-right"
+                  v-for="(p, idx) in prices"
+                  :key="p.price_list"
+                  class="px-4 py-4 text-right"
+                  :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
                 >
                   <input
                     :ref="el => inputRefs[`rate-${idx}-${uidx}`] = el"
                     type="number"
                     v-model.number="p.uom_rates[u.uom]"
                     step="0.01"
-                    class="w-28 rounded border bg-[var(--color-surface)] px-2 py-1.5 text-right font-mono font-bold text-[var(--color-text)] outline-none focus:ring-1 transition-colors"
+                    class="w-32 rounded border bg-[var(--color-surface)] px-2 py-2 text-right font-mono font-bold text-[var(--color-text)] outline-none focus:ring-1 transition-colors"
                     :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
                     @keydown.enter.prevent="onRateEnter(idx, uidx)"
-                    @keydown.up.prevent="moveVertical(idx, -1, uidx)"
-                    @keydown.down.prevent="moveVertical(idx, 1, uidx)"
+                    @keydown.up.prevent="moveVertical(uidx, -1, idx)"
+                    @keydown.down.prevent="moveVertical(uidx, 1, idx)"
                   />
                 </td>
               </tr>
@@ -190,13 +186,15 @@ async function loadPrices(code) {
     }))
 
     // Set active row to selected price list if exists
+    activeRow.value = 0 // In transposed, activeRow is UOM index
+    let startPlIdx = 0
     if (props.selectedPriceList) {
       const idx = prices.value.findIndex(p => p.price_list === props.selectedPriceList)
-      if (idx !== -1) activeRow.value = idx
+      if (idx !== -1) startPlIdx = idx
     }
 
     nextTick(() => {
-      focusInput(`rate-${activeRow.value}-0`)
+      focusInput(`rate-${startPlIdx}-0`)
     })
   } catch (e) {
     alert('Failed to load prices: ' + e.message)
@@ -250,30 +248,30 @@ async function saveAll() {
 }
 
 function onRateEnter(idx, uidx) {
-  activeRow.value = idx
-  // Move right across UOM columns first
-  if (uidx < uoms.value.length - 1) {
-    focusInput(`rate-${idx}-${uidx + 1}`)
+  activeRow.value = uidx
+  // Move right across Price List columns first
+  if (idx < prices.value.length - 1) {
+    focusInput(`rate-${idx + 1}-${uidx}`)
     return
   }
-  // Last UOM column: go to next row
-  goToNextRow(idx)
+  // Last PL column: go to next UOM row
+  goToNextRow(uidx)
 }
 
-function goToNextRow(idx) {
-  if (idx < prices.value.length - 1) {
-    activeRow.value = idx + 1
-    focusInput(`rate-${idx + 1}-0`)
+function goToNextRow(uidx) {
+  if (uidx < uoms.value.length - 1) {
+    activeRow.value = uidx + 1
+    focusInput(`rate-0-${uidx + 1}`)
   } else {
     saveAll()
   }
 }
 
-function moveVertical(idx, dir, uidx) {
-  const next = idx + dir
-  if (next >= 0 && next < prices.value.length) {
+function moveVertical(uidx, dir, idx) {
+  const next = uidx + dir
+  if (next >= 0 && next < uoms.value.length) {
     activeRow.value = next
-    focusInput(`rate-${next}-${uidx ?? 0}`)
+    focusInput(`rate-${idx}-${next}`)
   }
 }
 
