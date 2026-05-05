@@ -90,16 +90,6 @@
                   <div class="font-mono text-[var(--color-text-muted)] text-[12px]">&#8377;{{ p.original_rate.toFixed(2) }}</div>
                 </th>
               </tr>
-              <!-- Row 4: UOM Header Label -->
-              <tr>
-                <th class="px-4 py-2 sticky left-0 top-[156px] bg-[var(--color-surface-raised)] z-30 border-r border-b border-[var(--color-border)] w-40 text-[10px] font-black uppercase text-[var(--color-text)]">UOM \ Rates</th>
-                <th
-                  v-for="p in prices"
-                  :key="`spacer-${p.price_list}`"
-                  class="px-4 py-2 sticky top-[156px] bg-[var(--color-surface-raised)] z-10 border-b border-[var(--color-border)]"
-                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
-                ></th>
-              </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
               <tr
