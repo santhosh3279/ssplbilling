@@ -110,45 +110,61 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
-              <tr
-                v-for="(u, uidx) in uoms"
-                :key="u.uom"
-                class="hover:bg-[var(--color-surface)]/40 transition-colors"
-                :class="{ 'bg-[var(--color-info)]/30': activeRow === uidx }"
-                @click="activeRow = uidx"
-              >
-                <td class="px-2 py-2 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
-                  <div class="font-bold text-[var(--color-text)]" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
-                    {{ u.uom }}
-                  </div>
-                  <div v-if="u.conversion_factor !== 1" class="text-[10px] text-[var(--color-text-muted)] italic">
-                    Factor: {{ u.conversion_factor }}
-                  </div>
-                  <div v-if="u.uom === stockUom" class="text-[9px] font-bold text-[var(--color-info)] uppercase mt-0.5">Stock UOM</div>
-                </td>
-                <td
-                  v-for="(p, idx) in prices"
-                  :key="p.price_list"
-                  class="px-2 py-2 text-right align-top"
-                  :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
-                >
-                  <input
-                    :ref="el => inputRefs[`rate-${idx}-${uidx}`] = el"
-                    type="number"
-                    v-model.number="p.uom_rates[u.uom]"
-                    step="0.01"
-                    class="w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors mb-1"
-                    :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
-                    @keydown.enter.prevent="onRateEnter(idx, uidx)"
-                    @keydown.up.prevent="moveVertical(uidx, -1, idx)"
-                    @keydown.down.prevent="moveVertical(uidx, 1, idx)"
-                  />
-                  <div class="mt-0.5 font-mono text-[11px] select-none text-[var(--color-text-muted)] font-bold flex justify-end items-center gap-1">
-                    <span class="text-[9px] uppercase opacity-50">Curr:</span>
+              <template v-for="(u, uidx) in uoms" :key="u.uom">
+                <!-- Row A: Current Rate (Read Only) -->
+                <tr class="bg-[var(--color-surface)]/10 text-[var(--color-text-muted)] group border-t-2 border-[var(--color-border)]/50">
+                  <td class="px-2 py-1 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[11px] font-black uppercase truncate">{{ u.uom }}</span>
+                      <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-surface-raised)] uppercase">Current</span>
+                    </div>
+                  </td>
+                  <td
+                    v-for="p in prices"
+                    :key="`curr-${p.price_list}-${u.uom}`"
+                    class="px-2 py-1 text-right font-mono text-[14px] font-bold"
+                    :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
+                  >
                     &#8377;{{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                </tr>
+                <!-- Row B: Proposed Rate (Interactive) -->
+                <tr
+                  class="hover:bg-[var(--color-surface)]/40 transition-colors"
+                  :class="{ 'bg-[var(--color-info)]/30': activeRow === uidx }"
+                  @click="activeRow = uidx"
+                >
+                  <td class="px-2 py-2 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="font-bold text-[13px]" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
+                        {{ u.uom }}
+                      </div>
+                      <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)]/20 text-[var(--color-info)] uppercase">Proposed</span>
+                    </div>
+                    <div v-if="u.conversion_factor !== 1" class="text-[10px] text-[var(--color-text-muted)] italic leading-none mt-1">
+                      Factor: {{ u.conversion_factor }}
+                    </div>
+                  </td>
+                  <td
+                    v-for="(p, idx) in prices"
+                    :key="`prop-${p.price_list}-${u.uom}`"
+                    class="px-2 py-2 text-right"
+                    :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
+                  >
+                    <input
+                      :ref="el => inputRefs[`rate-${idx}-${uidx}`] = el"
+                      type="number"
+                      v-model.number="p.uom_rates[u.uom]"
+                      step="0.01"
+                      class="w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
+                      :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
+                      @keydown.enter.prevent="onRateEnter(idx, uidx)"
+                      @keydown.up.prevent="moveVertical(uidx, -1, idx)"
+                      @keydown.down.prevent="moveVertical(uidx, 1, idx)"
+                    />
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
