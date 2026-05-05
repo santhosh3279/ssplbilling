@@ -175,12 +175,17 @@
                   <td
                     v-for="p in prices"
                     :key="`calc-uom-${p.price_list}-${u.uom}`"
-                    class="px-2 py-1 text-right font-mono text-[14px] font-bold cursor-pointer hover:underline decoration-dotted"
-                    :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
-                    @click="p.uom_rates[u.uom] = Number((p.rate * u.conversion_factor).toFixed(2))"
-                    title="Click to apply to proposed"
+                    class="px-2 py-1 text-right font-mono text-[14px] font-bold"
+                    :class="{ 
+                      'bg-[var(--color-info)]/5': p.price_list === selectedPriceList,
+                      'cursor-pointer hover:underline decoration-dotted': !p.buying
+                    }"
+                    @click="!p.buying && (p.uom_rates[u.uom] = Number((p.rate * u.conversion_factor).toFixed(2)))"
+                    :title="!p.buying ? 'Click to apply to proposed' : ''"
                   >
-                    &#8377;{{ (p.rate * u.conversion_factor).toFixed(2) }}
+                    <template v-if="!p.buying">
+                      &#8377;{{ (p.rate * u.conversion_factor).toFixed(2) }}
+                    </template>
                   </td>
                 </tr>
               </template>
