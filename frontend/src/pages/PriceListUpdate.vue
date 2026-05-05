@@ -50,13 +50,13 @@
 
           <table v-else class="w-full text-left border-collapse min-w-full">
             <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-              <!-- Indicators Row -->
+              <!-- Row 1: Indicators -->
               <tr>
-                <th class="px-4 py-2 sticky left-0 top-0 bg-[var(--color-surface)] z-20 border-r border-b border-[var(--color-border)] w-40"></th>
+                <th class="px-4 py-3 sticky left-0 top-0 bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40 text-xs font-bold uppercase text-[var(--color-text-muted)]">Type</th>
                 <th
                   v-for="p in prices"
                   :key="`ind-${p.price_list}`"
-                  class="px-4 py-2 text-right border-b border-[var(--color-border)]"
+                  class="px-4 py-3 text-right border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-surface)] z-10"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
                   <div class="flex justify-end gap-1">
@@ -65,21 +65,43 @@
                   </div>
                 </th>
               </tr>
-              <!-- Name & Rate Row -->
+              <!-- Row 2: Price List Name -->
               <tr>
-                <th class="px-4 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[40px] bg-[var(--color-surface)] z-20 border-r border-[var(--color-border)] w-40">UOM \ Price List</th>
+                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[60px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Price List</th>
                 <th
-                  v-for="(p, idx) in prices"
-                  :key="p.price_list"
-                  class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[40px] bg-[var(--color-surface)]"
+                  v-for="p in prices"
+                  :key="`name-${p.price_list}`"
+                  class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[60px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
                   <div class="font-bold text-[var(--color-text)] truncate" :title="p.price_list">{{ p.price_list }}</div>
-                  <div class="mt-1 font-mono text-[var(--color-text-muted)] text-[11px]">&#8377;{{ p.original_rate.toFixed(2) }}</div>
                   <div v-if="p.price_list === selectedPriceList" class="text-[9px] font-black text-[var(--color-info)] uppercase mt-0.5">Active</div>
                 </th>
               </tr>
+              <!-- Row 3: Current Base Rate -->
+              <tr>
+                <th class="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[108px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Base Rate</th>
+                <th
+                  v-for="p in prices"
+                  :key="`rate-val-${p.price_list}`"
+                  class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[108px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
+                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
+                >
+                  <div class="font-mono text-[var(--color-text-muted)] text-[12px]">&#8377;{{ p.original_rate.toFixed(2) }}</div>
+                </th>
+              </tr>
+              <!-- Row 4: UOM Header Label -->
+              <tr>
+                <th class="px-4 py-2 sticky left-0 top-[156px] bg-[var(--color-surface-raised)] z-30 border-r border-b border-[var(--color-border)] w-40 text-[10px] font-black uppercase text-[var(--color-text)]">UOM \ Rates</th>
+                <th
+                  v-for="p in prices"
+                  :key="`spacer-${p.price_list}`"
+                  class="px-4 py-2 sticky top-[156px] bg-[var(--color-surface-raised)] z-10 border-b border-[var(--color-border)]"
+                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
+                ></th>
+              </tr>
             </thead>
+            <tbody class="divide-y divide-slate-700">
             <tbody class="divide-y divide-slate-700">
               <tr
                 v-for="(u, uidx) in uoms"
