@@ -125,19 +125,9 @@
                     @keydown.up.prevent="moveVertical(uidx, -1, idx)"
                     @keydown.down.prevent="moveVertical(uidx, 1, idx)"
                   />
-                  <div class="flex flex-col items-end gap-0.5 font-mono text-[11px] select-none">
-                    <div class="text-[var(--color-text-muted)] font-bold flex items-center gap-1">
-                      <span class="text-[9px] uppercase opacity-50">Curr:</span>
-                      &#8377;{{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
-                    </div>
-                    <div 
-                      class="text-[var(--color-info)] flex items-center gap-1 cursor-pointer hover:underline decoration-dotted" 
-                      title="Click to apply calculated rate"
-                      @click="p.uom_rates[u.uom] = Number((p.original_rate * u.conversion_factor).toFixed(2))"
-                    >
-                      <span class="text-[9px] uppercase opacity-50">Calc:</span>
-                      &#8377;{{ (p.original_rate * u.conversion_factor).toFixed(2) }}
-                    </div>
+                  <div class="mt-0.5 font-mono text-[11px] select-none text-[var(--color-text-muted)] font-bold flex justify-end items-center gap-1">
+                    <span class="text-[9px] uppercase opacity-50">Curr:</span>
+                    &#8377;{{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
                   </div>
                 </td>
               </tr>
