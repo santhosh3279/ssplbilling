@@ -33,7 +33,7 @@
 
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto p-6">
-        <div class="mx-auto max-w-5xl rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-x-auto">
+        <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-x-auto">
           <div v-if="loading" class="flex items-center justify-center py-20">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-info)] border-t-transparent"></div>
           </div>
@@ -172,7 +172,7 @@
 
       <!-- Footer -->
       <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
-        <div class="mx-auto max-w-4xl flex items-center justify-between">
+        <div class="flex items-center justify-between">
           <div class="text-sm text-[var(--color-text-muted)]">
             Total Price Lists: <span class="font-bold text-[var(--color-text)]">{{ prices.length }}</span>
           </div>
