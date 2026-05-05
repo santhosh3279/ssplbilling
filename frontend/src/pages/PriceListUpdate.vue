@@ -112,7 +112,7 @@
             <tbody class="divide-y divide-slate-700">
               <template v-for="(u, uidx) in uoms" :key="u.uom">
                 <!-- Row A: Current Rate (Read Only) -->
-                <tr class="bg-[var(--color-surface)]/10 text-[var(--color-text-muted)] group border-t-2 border-[var(--color-border)]/50">
+                <tr class="bg-[var(--color-surface)]/10 text-[var(--color-text-muted)] border-t-2 border-[var(--color-border)]/50">
                   <td class="px-2 py-1 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-[11px] font-black uppercase truncate">{{ u.uom }}</span>
@@ -128,7 +128,26 @@
                     &#8377;{{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
                   </td>
                 </tr>
-                <!-- Row B: Proposed Rate (Interactive) -->
+                <!-- Row B: Calculated Rate (Based on Header Calc) -->
+                <tr class="bg-[var(--color-info)]/5 text-[var(--color-info)]/80">
+                  <td class="px-2 py-1 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[11px] font-black uppercase truncate">{{ u.uom }}</span>
+                      <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)]/20 uppercase">Calculated</span>
+                    </div>
+                  </td>
+                  <td
+                    v-for="p in prices"
+                    :key="`calc-uom-${p.price_list}-${u.uom}`"
+                    class="px-2 py-1 text-right font-mono text-[14px] font-bold cursor-pointer hover:underline decoration-dotted"
+                    :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
+                    @click="p.uom_rates[u.uom] = Number((p.rate * u.conversion_factor).toFixed(2))"
+                    title="Click to apply to proposed"
+                  >
+                    &#8377;{{ (p.rate * u.conversion_factor).toFixed(2) }}
+                  </td>
+                </tr>
+                <!-- Row C: Proposed Rate (Interactive) -->
                 <tr
                   class="hover:bg-[var(--color-surface)]/40 transition-colors"
                   :class="{ 'bg-[var(--color-info)]/30': activeRow === uidx }"
@@ -139,7 +158,7 @@
                       <div class="font-bold text-[13px]" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
                         {{ u.uom }}
                       </div>
-                      <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)]/20 text-[var(--color-info)] uppercase">Proposed</span>
+                      <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)] text-white uppercase">Proposed</span>
                     </div>
                     <div v-if="u.conversion_factor !== 1" class="text-[10px] text-[var(--color-text-muted)] italic leading-none mt-1">
                       Factor: {{ u.conversion_factor }}
