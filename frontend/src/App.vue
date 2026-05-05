@@ -33,7 +33,7 @@ function toggleCommandLine() {
 }
 
 function handleGlobalKeydown(e) {
-  if (e.key === 'F1' && e.shiftKey && !showCommandLine.value) {
+  if (e.key === 'F1' && !showCommandLine.value) {
     e.preventDefault();
     toggleCommandLine();
   }

@@ -454,7 +454,7 @@ const BUCKETS = [
 
 const allTiles = [
   // ── Sale ──
-  { id: 'sales',              bucket: 'sale',     name: 'Sales Invoice',         desc: 'Create sales invoices',                    icon: '🧾', shortcut: 'F1'  },
+  { id: 'sales',              bucket: 'sale',     name: 'Sales Invoice',         desc: 'Create sales invoices',                    icon: '🧾', shortcut: ''  },
   { id: 'quotation',          bucket: 'sale',     name: 'Quotation',             desc: 'Create quotations',                        icon: '📄', shortcut: 'F10' },
   { id: 'cashier',            bucket: 'sale',     name: 'Cashier Desk',          desc: 'Modern payment desk',                      icon: '🏧', shortcut: 'F5'  },
   { id: 'sales-order',        bucket: 'sale',     name: 'Sales Order',           desc: 'Create & manage sales orders',             icon: '📝', shortcut: ''    },
@@ -566,7 +566,7 @@ function openModule(id) {
 
 // ==================== F-KEY SHORTCUTS ====================
 const routeMap = {
-  F1: 'sales', F2: 'purchase-invoice', F3: 'payment',
+  F2: 'purchase-invoice', F3: 'payment',
   F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
   F7: 'purchase-order', F8: 'journal-contra', F9: 'store-transfer',
   F10: 'quotation',

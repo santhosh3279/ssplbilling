@@ -66,11 +66,31 @@ const router = useRouter()
 const inputRef = ref(null)
 const scrollContainer = ref(null)
 const query = ref('')
-const history = ref([])
+const history = ref(JSON.parse(localStorage.getItem('command_line_history') || '[]'))
 const suggestions = ref([])
 const activeSuggestionIndex = ref(0)
 const historyIndex = ref(-1)
 const lastActiveElement = ref(null)
+
+// Watch history to save to localStorage
+watch(history, (newHistory) => {
+  localStorage.setItem('command_line_history', JSON.stringify(newHistory))
+}, { deep: true })
+
+// Sync history across tabs
+function handleStorageChange(e) {
+  if (e.key === 'command_line_history') {
+    history.value = JSON.parse(e.newValue || '[]')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('storage', handleStorageChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange)
+})
 
 // Block global shortcuts when command line is open
 useSubwindowWatcher(computed(() => props.show), {
@@ -267,7 +287,7 @@ function execute() {
       // eslint-disable-next-line no-eval
       const result = eval(mathExpr)
       history.value.push({ input: q, result: Number(result.toFixed(8)) })
-      if (history.value.length > 15) history.value.shift()
+      if (history.value.length > 20) history.value.shift()
       query.value = ''
       historyIndex.value = -1
       return
@@ -294,7 +314,7 @@ function execute() {
 
   // Fallback: record as plain text in history
   history.value.push({ input: q })
-  if (history.value.length > 15) history.value.shift()
+  if (history.value.length > 20) history.value.shift()
   query.value = ''
   historyIndex.value = -1
 }
