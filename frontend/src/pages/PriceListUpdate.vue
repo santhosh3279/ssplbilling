@@ -50,20 +50,32 @@
 
           <table v-else class="w-full text-left border-collapse min-w-full">
             <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+              <!-- Indicators Row -->
               <tr>
-                <th class="px-4 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 bg-[var(--color-surface)] z-20 border-r border-[var(--color-border)] w-40">UOM \ Price List</th>
+                <th class="px-4 py-2 sticky left-0 top-0 bg-[var(--color-surface)] z-20 border-r border-b border-[var(--color-border)] w-40"></th>
+                <th
+                  v-for="p in prices"
+                  :key="`ind-${p.price_list}`"
+                  class="px-4 py-2 text-right border-b border-[var(--color-border)]"
+                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
+                >
+                  <div class="flex justify-end gap-1">
+                    <span v-if="p.buying" class="rounded bg-[var(--color-success)]/20 px-2 py-0.5 text-[10px] font-black text-[var(--color-success)] uppercase tracking-tight">Buy</span>
+                    <span v-if="p.selling" class="rounded bg-[var(--color-info)]/20 px-2 py-0.5 text-[10px] font-black text-[var(--color-info)] uppercase tracking-tight">Sell</span>
+                  </div>
+                </th>
+              </tr>
+              <!-- Name & Rate Row -->
+              <tr>
+                <th class="px-4 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[40px] bg-[var(--color-surface)] z-20 border-r border-[var(--color-border)] w-40">UOM \ Price List</th>
                 <th
                   v-for="(p, idx) in prices"
                   :key="p.price_list"
-                  class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider min-w-[160px]"
+                  class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[40px] bg-[var(--color-surface)]"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
                   <div class="font-bold text-[var(--color-text)] truncate" :title="p.price_list">{{ p.price_list }}</div>
-                  <div class="flex justify-end gap-1 mt-1">
-                    <span v-if="p.buying" class="rounded bg-[var(--color-success)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-success)] uppercase">Buy</span>
-                    <span v-if="p.selling" class="rounded bg-[var(--color-info)]/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-info)] uppercase">Sell</span>
-                  </div>
-                  <div class="mt-1 font-mono text-[var(--color-text-muted)] text-[10px]">&#8377;{{ p.original_rate.toFixed(2) }}</div>
+                  <div class="mt-1 font-mono text-[var(--color-text-muted)] text-[11px]">&#8377;{{ p.original_rate.toFixed(2) }}</div>
                   <div v-if="p.price_list === selectedPriceList" class="text-[9px] font-black text-[var(--color-info)] uppercase mt-0.5">Active</div>
                 </th>
               </tr>
