@@ -42,7 +42,7 @@
           :disabled="saving"
           @click="saveForCustomer"
           @keydown="onKeydown"
-          class="w-full rounded-xl bg-[var(--color-highlight)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 shadow-lg transition-all outline-none focus:ring-2 focus:ring-[var(--color-highlight)] disabled:opacity-50"
+          class="w-full rounded-xl bg-[var(--color-highlight)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 shadow-lg transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
         >
           {{ saving ? 'Saving…' : 'Save for Customer' }}
         </button>
@@ -50,7 +50,7 @@
           ref="savePriceNoBtn"
           @click="$emit('dismiss')"
           @keydown="onKeydown"
-          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:ring-2 focus:ring-[var(--color-border)]"
+          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)]"
         >
           Dismiss
         </button>
