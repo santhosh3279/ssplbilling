@@ -136,7 +136,7 @@
                   >
                     <div class="flex items-center justify-end gap-2">
                       <span class="text-[14px] font-mono italic opacity-100 pointer-events-none select-none text-[var(--color-text-muted)]">
-                        &#8377;{{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
+                        {{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
                       </span>
                       <input
                         :ref="el => inputRefs[`rate-${idx}-${uidx}`] = el"
@@ -172,7 +172,7 @@
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
                     <template v-if="idx !== 0">
-                      &#8377;{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
+                      {{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
                     </template>
                   </td>
                 </tr>
