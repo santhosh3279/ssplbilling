@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 rounded-t-xl sticky top-0">
         <div class="text-sm font-bold uppercase tracking-wider text-[var(--color-text)]">Keyboard Shortcuts</div>
         <div class="flex items-center gap-3">
-          <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">F1</kbd>
+          <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">Shift+F1</kbd>
           <span class="text-[10px] text-[var(--color-text-muted)]">to toggle</span>
           <button @click="$emit('close')" class="ml-2 rounded px-2 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] text-lg leading-none">&times;</button>
         </div>
@@ -103,7 +103,8 @@ const billShortcuts = [
   { key: 'Ctrl+S / F8',  desc: 'Save bill' },
   { key: 'F2',           desc: 'New bill' },
   { key: 'F5',           desc: 'Print bill' },
-  { key: 'F1',           desc: 'Show this shortcuts panel' },
+  { key: 'Shift+F1',     desc: 'Show this shortcuts panel' },
+  { key: 'F1',           desc: 'Open Command Line' },
   { key: 'Esc',          desc: 'Back / cancel' },
   { key: 'End',          desc: 'Jump to discount / save' },
   { key: 'Insert',       desc: 'Open incentive entry' },

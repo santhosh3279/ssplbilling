@@ -32,18 +32,10 @@ function toggleCommandLine() {
   showCommandLine.value = !showCommandLine.value;
 }
 
-function handleGlobalKeydown(e) {
-  if (e.key === 'F1' && !showCommandLine.value) {
-    e.preventDefault();
-    toggleCommandLine();
-  }
-}
-
 const _nativeAlert = window.alert.bind(window);
 
 onMounted(() => {
   initTheme();
-  window.addEventListener('keydown', handleGlobalKeydown);
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.addEventListener('wb-global-command-line-toggle', toggleCommandLine);
   window.alert = (msg) => {
@@ -53,7 +45,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleGlobalKeydown);
   window.removeEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.removeEventListener('wb-global-command-line-toggle', toggleCommandLine);
   window.alert = _nativeAlert;

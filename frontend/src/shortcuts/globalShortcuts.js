@@ -18,6 +18,9 @@ export const globalShortcuts = {
   'ALT+D': () => {
     window.dispatchEvent(new CustomEvent('wb-global-date-focus'));
   },
+  'F1': () => {
+    window.dispatchEvent(new CustomEvent('wb-global-command-line-toggle'));
+  },
   'F12': () => {
     window.dispatchEvent(new CustomEvent('wb-global-calculator-toggle'));
   }

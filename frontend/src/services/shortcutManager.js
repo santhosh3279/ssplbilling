@@ -47,6 +47,15 @@ function getEventKey(e) {
 function handleKeyDown(e) {
   const key = getEventKey(e)
 
+  // 0. Priority Exception: F1 (Command Line) is always global
+  if (key === 'F1') {
+    if (registry.global.has('F1')) {
+      e.preventDefault()
+      registry.global.get('F1')(e)
+      return
+    }
+  }
+
   // 1. Active subwindow — only the top of the stack is checked.
   //    Even if the top map has no matching key, local/global are still blocked.
   if (subwindowStack.length > 0) {

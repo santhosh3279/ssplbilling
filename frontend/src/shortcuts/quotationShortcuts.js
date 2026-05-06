@@ -5,7 +5,7 @@
  */
 
 export const quotationShortcuts = (handlers) => ({
-  'F1':      handlers.openShortcuts    || (() => {}),
+  'SHIFT+F1': handlers.openShortcuts    || (() => {}),
   'F2':      handlers.clearBill        || (() => {}),
   'F3':      handlers.focusModifyPanel || (() => {}),
   'F4':      handlers.openSeries       || (() => {}),

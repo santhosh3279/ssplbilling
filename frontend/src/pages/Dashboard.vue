@@ -181,7 +181,7 @@
       <div class="mx-auto max-w-4xl px-6 pb-12">
         <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--color-text-muted)]">
           <span class="flex items-center gap-1.5">
-            Press <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">F1</kbd> – <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">F10</kbd>
+            Press <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Shift+F2</kbd> – <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Shift+F11</kbd>
             to quick open
           </span>
           <span class="text-[var(--color-lowlight)]">|</span>
@@ -455,24 +455,24 @@ const BUCKETS = [
 const allTiles = [
   // ── Sale ──
   { id: 'sales',              bucket: 'sale',     name: 'Sales Invoice',         desc: 'Create sales invoices',                    icon: '🧾', shortcut: ''  },
-  { id: 'quotation',          bucket: 'sale',     name: 'Quotation',             desc: 'Create quotations',                        icon: '📄', shortcut: 'F10' },
-  { id: 'cashier',            bucket: 'sale',     name: 'Cashier Desk',          desc: 'Modern payment desk',                      icon: '🏧', shortcut: 'F5'  },
+  { id: 'quotation',          bucket: 'sale',     name: 'Quotation',             desc: 'Create quotations',                        icon: '📄', shortcut: 'Shift+F10' },
+  { id: 'cashier',            bucket: 'sale',     name: 'Cashier Desk',          desc: 'Modern payment desk',                      icon: '🏧', shortcut: 'Shift+F5'  },
   { id: 'sales-order',        bucket: 'sale',     name: 'Sales Order',           desc: 'Create & manage sales orders',             icon: '📝', shortcut: ''    },
   { id: 'Cashier-Management', bucket: 'sale',     name: 'Cashier Management',    desc: 'Daily reconciliation & denominations',     icon: '📓', shortcut: ''    },
   { id: 'cancellation',       bucket: 'sale',     name: 'Cancellation',          desc: 'Cancel & amend submitted bills',           icon: '🚫', shortcut: ''    },
   // ── Purchase ──
   { id: 'purchase-invoice',   bucket: 'purchase', name: 'Purchase Invoice',      desc: 'Fast purchase invoice entry',              icon: '🧾', shortcut: ''    },
-  { id: 'purchase-order',     bucket: 'purchase', name: 'Purchase Order',        desc: 'Create & manage purchase orders',          icon: '📋', shortcut: 'F7'  },
-  { id: 'purchase-submit',    bucket: 'purchase', name: 'Purchase Desk',         desc: 'Confirm & submit purchases',               icon: '📥', shortcut: 'F4'  },
+  { id: 'purchase-order',     bucket: 'purchase', name: 'Purchase Order',        desc: 'Create & manage purchase orders',          icon: '📋', shortcut: 'Shift+F7'  },
+  { id: 'purchase-submit',    bucket: 'purchase', name: 'Purchase Desk',         desc: 'Confirm & submit purchases',               icon: '📥', shortcut: 'Shift+F4'  },
   // ── Accounts ──
   { id: 'single-entry',       bucket: 'accounts', name: 'Bulk Payment',          desc: 'Fast bulk payment entries',                icon: '🧾', shortcut: ''    },
-  { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'F3'  },
+  { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'Shift+F3'  },
   { id: 'expense',            bucket: 'accounts', name: 'Expense',               desc: 'Create & manage expenses',                 icon: '💳', shortcut: ''    },
-  { id: 'journal-contra',     bucket: 'accounts', name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'F8'  },
+  { id: 'journal-contra',     bucket: 'accounts', name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'Shift+F8'  },
   { id: 'outstanding-bills',  bucket: 'accounts', name: 'Outstanding',           desc: 'View party outstanding bills',             icon: '📋', shortcut: ''    },
   // ── Ledger View ──
   { id: 'stock-ledger',       bucket: 'ledger',   name: 'Stock',                 desc: 'View stock movement by item',              icon: '📦', shortcut: ''    },
-  { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'F6'  },
+  { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'Shift+F6'  },
   { id: 'gst-ledger',         bucket: 'ledger',   name: 'GST Ledger',            desc: 'View GST Quotation ledger',                icon: '📜', shortcut: ''    },
   { id: 'incentive-ledger',   bucket: 'ledger',   name: 'Incentive Ledger',      desc: 'Employee incentives',                      icon: '🏆', shortcut: ''    },
   { id: 'general-ledger',    bucket: 'ledger',   name: 'General Ledger',        desc: 'GL ledger via ERPNext report engine',       icon: '📒', shortcut: ''    },
@@ -482,7 +482,7 @@ const allTiles = [
   { id: 'gst-dummy-ledger',   bucket: 'sspl',     name: 'WGB PAYMENTS',          desc: 'Manage WGB payment entries',               icon: '📖', shortcut: ''    },
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Pricing Rule',          desc: 'Sync & manage pricing rules',              icon: '🏷️', shortcut: ''    },
   { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
-  { id: 'store-transfer',     bucket: 'sspl',   name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'F9'  },
+  { id: 'store-transfer',     bucket: 'sspl',   name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'Shift+F9'  },
   { id: 'party-link',         bucket: 'sspl',   name: 'Party Link',            desc: 'Link customers and suppliers',             icon: '🔗', shortcut: ''    },
   { id: 'naming-settings',    bucket: 'sspl',   name: 'Naming Settings',       desc: 'Configure document series',                icon: '🔢', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
@@ -566,10 +566,10 @@ function openModule(id) {
 
 // ==================== F-KEY SHORTCUTS ====================
 const routeMap = {
-  F2: 'purchase-invoice', F3: 'payment',
-  F4: 'purchase-submit', F5: 'cashier', F6: 'ledger',
-  F7: 'purchase-order', F8: 'journal-contra', F9: 'store-transfer',
-  F10: 'quotation',
+  'SHIFT+F2': 'purchase-invoice', 'SHIFT+F3': 'payment',
+  'SHIFT+F4': 'purchase-submit', 'SHIFT+F5': 'cashier', 'SHIFT+F6': 'ledger',
+  'SHIFT+F7': 'purchase-order', 'SHIFT+F8': 'journal-contra', 'SHIFT+F9': 'store-transfer',
+  'SHIFT+F10': 'quotation',
 }
 
 // ==================== KEYBOARD SHORTCUTS ====================

@@ -5,15 +5,15 @@
  */
 
 export const dashboardShortcuts = (handlers) => ({
-  'F2': () => handlers.openModule('purchase'),
-  'F3': () => handlers.openModule('payment'),
-  'F4': () => handlers.openModule('purchase-submit'),
-  'F5': () => handlers.openModule('cashier'),
-  'F6': () => handlers.openModule('ledger'),
-  'F7': () => handlers.openModule('barcode-print'),
-  'F8': () => handlers.openModule('journal-contra'),
-  'F9': () => handlers.openModule('material-transfer'),
-  'F10': () => handlers.openModule('quotation'),
+  'SHIFT+F2': () => handlers.openModule('purchase'),
+  'SHIFT+F3': () => handlers.openModule('payment'),
+  'SHIFT+F4': () => handlers.openModule('purchase-submit'),
+  'SHIFT+F5': () => handlers.openModule('cashier'),
+  'SHIFT+F6': () => handlers.openModule('ledger'),
+  'SHIFT+F7': () => handlers.openModule('barcode-print'),
+  'SHIFT+F8': () => handlers.openModule('journal-contra'),
+  'SHIFT+F9': () => handlers.openModule('material-transfer'),
+  'SHIFT+F10': () => handlers.openModule('quotation'),
   'CTRL+R': () => handlers.openModule('stock-reconciliation'),
   
   'CTRL+L': () => handlers.openCustomerSearch?.(),
