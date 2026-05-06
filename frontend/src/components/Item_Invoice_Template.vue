@@ -164,13 +164,15 @@
                   </span>
                 </div>
 
-                <div v-if="showMop" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
+                <div v-if="showMop" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
                   <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">MOP</span>
                   <select
+                    ref="mopSelectRef"
                     :value="mop"
                     @change="$emit('update:mop', $event.target.value)"
                     :disabled="isReadOnly"
                     class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] disabled:opacity-80"
+                    @keydown.enter.prevent="$emit('mop-enter')"
                   >
                     <option value="Cash">Cash</option>
                     <option value="Credit">Credit</option>
@@ -646,12 +648,15 @@ watch(() => props.selectedSidebarItemName, (newVal) => {
   })
 })
 
+const mopSelectRef = ref(null)
+
 defineExpose({
   focusSidebar: () => sidebarSearchRef.value?.focus(),
   focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
   focusDiscountPct: () => { discountPctRef.value?.focus(); discountPctRef.value?.select() },
   focusDiscountAmt: () => { discountAmtRef.value?.focus(); discountAmtRef.value?.select() },
   focusSaveBtn: () => saveBtnRef.value?.focus(),
+  focusMop: () => mopSelectRef.value?.focus(),
 })
 
 function formatDate(dateString) {
