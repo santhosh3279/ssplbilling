@@ -584,6 +584,23 @@
       :invoice-name="selectedInvoice?.name"
       @close="showPrintModal = false"
     />
+
+    <!-- SUCCESS SETTLEMENT POPUP (BOTTOM RIGHT) -->
+    <transition name="slide-up">
+      <div v-if="showSuccessModal" @click="showSuccessModal = false" class="fixed bottom-8 right-8 z-[110] cursor-pointer">
+        <div class="flex items-center gap-4 rounded-2xl border border-[var(--color-success)]/30 bg-[var(--color-surface)] p-4 pr-6 shadow-2xl shadow-[var(--color-success)]/20 animate-in slide-in-from-right-4 fade-in duration-300">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-success)]/20 text-[var(--color-success)] border border-[var(--color-success)]/30">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="flex flex-col">
+            <h2 class="text-lg font-black text-[var(--color-text)] uppercase tracking-tight leading-none">Bill Settled</h2>
+            <p class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mt-1.5 opacity-70">
+              {{ processedInvoiceName }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -644,7 +661,9 @@ function toggleAllSeries() {
 const showCardRefModal = ref(false)
 const showPrintModal = ref(false)
 const showReconcileModal = ref(false)
+const showSuccessModal = ref(false)
 const cardRefNo = ref('')
+const processedInvoiceName = ref('')
 const showOpeningRequiredModal = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
@@ -1079,16 +1098,23 @@ async function processPayment() {
     
     await submitInvoiceWithPayment(payload)
     
-    successMsg.value = `Invoice ${selectedInvoice.value.name} processed successfully!`
+    processedInvoiceName.value = selectedInvoice.value.name
+    showSuccessModal.value = true
     
     const nameToRemove = selectedInvoice.value.name
+    
+    // Clear state immediately for next transaction
+    invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
+    selectedInvoice.value = null
+    previewItems.value = []
+    unallocatedPayments.value = []
+    errorMsg.value = ''
+    successMsg.value = ''
+    
+    // Auto-hide success modal after 1.5 seconds
     setTimeout(() => {
-      invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
-      selectedInvoice.value = null
-      previewItems.value = []
-      unallocatedPayments.value = []
-      successMsg.value = ''
-    }, 2000)
+      showSuccessModal.value = false
+    }, 1500)
     
   } catch (e) {
     errorMsg.value = e.message
@@ -1335,5 +1361,17 @@ input[type=number] {
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
+}
+
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateX(40px);
 }
 </style>
