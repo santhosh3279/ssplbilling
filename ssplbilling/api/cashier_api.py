@@ -243,7 +243,51 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 		if si.get("payment_schedule"):
 			si.payment_schedule = []
+
+		# --- Handle Sales Invoice/Purchase Invoice Advances (Credit/Debit Notes) ---
+		# Standard reconcile_against_document (called during SI.submit) fails for these types in v16.
+		special_advances = []
+		if si.get("advances"):
+			special_advances = [
+				adv for adv in si.advances 
+				if adv.reference_type in ["Sales Invoice", "Purchase Invoice"]
+			]
+			if special_advances:
+				si.advances = [
+					adv for adv in si.advances 
+					if adv.reference_type not in ["Sales Invoice", "Purchase Invoice"]
+				]
+
 		si.submit()
+
+		# Reconcile special advances manually after submission
+		if special_advances:
+			from erpnext.accounts.doctype.payment_reconciliation.payment_reconciliation import reconcile_dr_cr_note
+			
+			reconcile_args = []
+			for adv in special_advances:
+				# Use 'credit_in_account_currency' for Sales Invoice (new SI gets credited)
+				# For PI, it might be different but reconcile_dr_cr_note handles it based on voucher_type
+				reconcile_args.append(frappe._dict({
+					"voucher_type": adv.reference_type,
+					"voucher_no": adv.reference_name,
+					"allocated_amount": adv.allocated_amount,
+					"unadjusted_amount": adv.advance_amount,
+					"dr_or_cr": "credit_in_account_currency" if si.doctype == "Sales Invoice" else "debit_in_account_currency",
+					"account": si.debit_to if si.doctype == "Sales Invoice" else si.credit_to,
+					"party_type": "Customer" if si.doctype == "Sales Invoice" else "Supplier",
+					"party": si.customer if si.doctype == "Sales Invoice" else si.supplier,
+					"against_voucher_type": si.doctype,
+					"against_voucher": si.name,
+					"currency": si.currency,
+					"exchange_rate": si.conversion_rate,
+					"cost_center": si.cost_center,
+					"company": si.company,
+					"difference_amount": 0.0
+				}))
+			
+			if reconcile_args:
+				reconcile_dr_cr_note(reconcile_args, si.company)
 
 	if is_credit:
 		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted"}
