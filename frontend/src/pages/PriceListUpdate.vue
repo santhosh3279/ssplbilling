@@ -52,7 +52,7 @@
             <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <!-- Row 1: Indicators -->
               <tr>
-                <th class="px-2 py-1.5 sticky left-0 top-0 bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40 text-xs font-bold uppercase text-[var(--color-text-muted)]">Type</th>
+                <th class="px-2 py-1.5 sticky left-0 top-0 bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40 text-xl font-bold uppercase text-[var(--color-text-muted)]">Type</th>
                 <th
                   v-for="p in prices"
                   :key="`ind-${p.price_list}`"
@@ -67,7 +67,7 @@
               </tr>
               <!-- Row 2: Price List Name -->
               <tr>
-                <th class="px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[48px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Price List</th>
+                <th class="px-2 py-1.5 text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[48px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Price List</th>
                 <th
                   v-for="p in prices"
                   :key="`name-${p.price_list}`"
@@ -80,7 +80,7 @@
               </tr>
               <!-- Row 3: Calc Row (Input for Base Rate) -->
               <tr>
-                <th class="px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Calc</th>
+                <th class="px-2 py-1.5 text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Calc</th>
                 <th
                   v-for="(p, idx) in prices"
                   :key="`calc-row-${p.price_list}`"
@@ -119,7 +119,7 @@
                 >
                   <td class="px-2 py-2 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
                     <div class="flex items-center justify-between gap-2">
-                      <div class="font-bold text-[13px]" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
+                      <div class="font-bold text-2xl" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
                         {{ u.uom }}
                       </div>
                       <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)] text-white uppercase">Price</span>
@@ -156,7 +156,7 @@
                 <tr class="bg-[var(--color-info)]/5 text-[var(--color-info)]/80">
                   <td class="px-2 py-1 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
                     <div class="flex items-center justify-between gap-2">
-                      <span class="text-[11px] font-black uppercase truncate">{{ u.uom }}</span>
+                      <span class="text-xl font-black uppercase truncate">{{ u.uom }}</span>
                       <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)]/20 uppercase">Calculated</span>
                     </div>
                   </td>
