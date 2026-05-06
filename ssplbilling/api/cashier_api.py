@@ -83,7 +83,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
             "Sales Invoice",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
+            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -91,7 +91,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
         invoices = frappe.get_all(
             "Sales Invoice",
             filters=filters,
-            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
+            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -156,6 +156,7 @@ def get_sales_invoice(invoice_name):
         "customer_rate_multiplier": frappe.utils.cint(si.get("customer_rate_multiplier") or 0),
         "cost_center": cost_center or "",
         "price_list": si.selling_price_list or "",
+        "mop": si.get("mop") or "Cash",
         "docstatus": si.docstatus,
         "status": si.status,
         "items": [

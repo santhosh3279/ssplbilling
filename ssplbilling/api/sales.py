@@ -36,7 +36,7 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
         "Sales Invoice",
         filters=filters,
         or_filters=or_filters,
-        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name"],
+        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
         limit=int(limit),
         order_by="name desc",
     )
@@ -64,6 +64,7 @@ def post_sales_invoice(payload):
 def _apply_payload_to_doc(doc, payload):
     """Shared helper: populate a Sales Invoice doc from the given payload dict."""
     doc.customer = payload.get("customer")
+    doc.mop = payload.get("mop")
     doc.set_posting_time = 1
     doc.posting_date = payload.get("posting_date")
     doc.selling_price_list = payload.get("price_list")

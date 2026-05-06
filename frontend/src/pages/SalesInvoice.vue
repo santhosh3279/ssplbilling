@@ -39,6 +39,8 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
+      show-mop
+      v-model:mop="mop"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -789,6 +791,7 @@ async function handleSelectSidebarItem(item) {
     customerId.value = data.customer || ''
     customerName.value = data.customer_name || 'Select Customer...'
     customerState.value = data.state || ''
+    mop.value = data.mop || 'Cash'
 
     // Settings
     if (data.price_list) priceList.value = data.price_list
@@ -868,6 +871,7 @@ const customerState = ref('')
 const customerModifier = ref(null)
 const ignoreModifier = ref(false)
 const customerPricing = ref({}) // { item_code: multiplication_factor }
+const mop = ref('Cash')
 const submitting = ref(false)
 
 const newItemCode = ref('')
@@ -1076,6 +1080,7 @@ async function clearBill() {
   isReadOnly.value = false
   isSaved.value = false
   isSubmitted.value = false
+  mop.value = 'Cash'
 
   if (selectedSeries.value) {
     try {
@@ -1179,6 +1184,7 @@ async function handleSave() {
   const payload = {
     series: selectedSeries.value,
     customer: customerId.value,
+    mop: mop.value,
     posting_date: invoiceDate.value,
     price_list: priceList.value,
     discount_pct: discountPct.value,

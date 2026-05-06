@@ -86,6 +86,10 @@
                 <div class="flex items-center gap-1.5 truncate min-w-0">
                   <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
                   <span class="truncate font-mono text-2xl group-hover:brightness-125 group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
+                  <span v-if="inv.mop" class="text-[10px] px-1 rounded border uppercase font-bold shrink-0"
+                    :class="inv.mop === 'Cash' ? 'border-[var(--color-success)]/40 text-[var(--color-success)]' : 'border-[var(--color-warning)]/40 text-[var(--color-warning)]'">
+                    {{ inv.mop }}
+                  </span>
                 </div>
                 <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.grand_total }}</span>
               </div>
@@ -158,6 +162,19 @@
                     ₹ {{ Math.abs(partyBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                     <span class="text-xl">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
                   </span>
+                </div>
+
+                <div v-if="showMop" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
+                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">MOP</span>
+                  <select
+                    :value="mop"
+                    @change="$emit('update:mop', $event.target.value)"
+                    :disabled="isReadOnly"
+                    class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] disabled:opacity-80"
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="Credit">Credit</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -502,6 +519,8 @@ const props = defineProps({
   partyMobile: { type: String, default: '' },
   partyGstin: { type: String, default: '' },
   partyBalance: { type: [Number, String], default: null },
+  mop: { type: String, default: 'Cash' },
+  showMop: { type: Boolean, default: false },
   partyLastInvDate: { type: String, default: '' },
   partyModifier: { type: [Number, String], default: null },
   ignoreModifier: { type: Boolean, default: false },

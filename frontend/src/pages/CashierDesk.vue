@@ -25,6 +25,10 @@
             <div v-if="selectedInvoice.docstatus === 1 && (selectedInvoice.outstanding_amount || 0) <= 0.01" class="rounded px-1.5 py-0.5 bg-[var(--color-success)]/30 border border-[var(--color-success)]/30 shrink-0">
               <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-success)]">Paid</span>
             </div>
+            <div v-if="selectedInvoice.mop" class="rounded px-1.5 py-0.5 shrink-0 border"
+              :class="selectedInvoice.mop === 'Cash' ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/20 border-[var(--color-warning)]/30 text-[var(--color-warning)]'">
+              <span class="text-[9px] font-black uppercase tracking-widest">{{ selectedInvoice.mop }}</span>
+            </div>
             <div class="h-4 w-[1px] bg-[var(--color-border)] shrink-0"></div>
             <span class="text-[17.5px] font-bold uppercase tracking-wider text-[var(--color-info)] truncate">{{ selectedInvoice.customer }}</span>
           </div>
