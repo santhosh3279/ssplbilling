@@ -321,13 +321,8 @@ async function loadPrices(code) {
     }
 
     nextTick(() => {
-      // If first column, try to focus its first proposed rate since calc is missing,
-      // or focus the second column's calc. Let's focus second column calc if it exists.
-      if (startPlIdx === 0 && prices.value.length > 1) {
-        focusInput(`calc-1`)
-      } else {
-        focusInput(`calc-${startPlIdx}`)
-      }
+      // Always focus the first UOM rate of the first price list
+      focusInput('rate-0-0')
     })
   } catch (e) {
     alert('Failed to load prices: ' + e.message)
