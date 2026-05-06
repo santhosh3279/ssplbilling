@@ -582,20 +582,19 @@
           <button
             v-for="(s, idx) in availableSeries"
             :key="s"
-            class="flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all focus:outline-none"
-            :class="idx === seriesHighlightIdx
-              ? 'border-[var(--color-info)] bg-[var(--color-info)]/30 text-[var(--color-text-on-highlight)] ring-1 ring-[var(--color-info)]'
-              : s === billSeries
-                ? 'border-[var(--color-info)] bg-[var(--color-info)]/20 text-[var(--color-info)]'
-                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'"
+            class="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 text-left transition-colors focus:outline-none border-l-4"
+            :class="idx === seriesHighlightIdx || s === billSeries
+              ? 'bg-[var(--color-focus)] border-l-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold' 
+              : 'bg-[var(--color-surface)] border-l-transparent hover:bg-[var(--color-midlight)]/40 text-[var(--color-text)]'"
             @click="selectSeries(s)"
             @mouseenter="seriesHighlightIdx = idx"
           >
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] font-mono text-sm font-black text-[var(--color-text)]">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono text-sm font-black transition-colors"
+                  :class="idx === seriesHighlightIdx || s === billSeries ? 'bg-black/10 text-[var(--color-text-on-focus)]' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)]'">
               {{ idx + 1 }}
             </span>
-            <span class="font-bold tracking-wide">{{ s }}</span>
-            <span v-if="s === billSeries" class="ml-auto text-[10px] font-bold text-[var(--color-info)]">ACTIVE</span>
+            <span class="font-bold tracking-wide" :class="idx === seriesHighlightIdx || s === billSeries ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ s }}</span>
+            <span v-if="s === billSeries" class="ml-auto text-[10px] font-bold" :class="idx === seriesHighlightIdx || s === billSeries ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-highlight)]'">ACTIVE</span>
           </button>
         </div>
         <div class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 px-5 py-2 text-[10px] text-[var(--color-text-muted)] text-center">

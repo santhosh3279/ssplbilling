@@ -18,25 +18,26 @@
           v-for="(s, idx) in allowedSeries" 
           :key="s"
           @click="selectSeries(s)"
-          class="group flex cursor-pointer items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 transition-all hover:translate-x-1"
-          :class="{ 
-            'border-[var(--color-highlight)] ring-2 ring-[var(--color-highlight)]/20 bg-[var(--color-surface-raised)]': currentSeries === s || focusedIndex === idx,
-            'translate-x-1 border-[var(--color-highlight)] bg-[var(--color-surface-raised)]': focusedIndex === idx
-          }"
+          class="group flex cursor-pointer items-center justify-between border-b border-[var(--color-border)] px-5 py-4 transition-colors border-l-4"
+          :class="focusedIndex === idx || currentSeries === s
+            ? 'bg-[var(--color-focus)] border-l-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold' 
+            : 'bg-[var(--color-surface)] border-l-transparent hover:bg-[var(--color-midlight)]/40'"
         >
           <div class="flex items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-xl relative">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg text-xl relative"
+                 :class="focusedIndex === idx || currentSeries === s ? 'bg-black/10' : 'bg-[var(--color-highlight)]'">
               🔖
-              <span class="absolute -top-1.5 -left-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-text)] text-[9px] text-[var(--color-bg)] font-black">
+              <span class="absolute -top-1.5 -left-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black"
+                    :class="focusedIndex === idx || currentSeries === s ? 'bg-[var(--color-text-on-focus)] text-[var(--color-focus)]' : 'bg-[var(--color-text)] text-[var(--color-bg)]'">
                 {{ idx + 1 }}
               </span>
             </div>
             <div>
-              <div class="text-lg font-bold text-[var(--color-text)]">{{ s }}</div>
-              <div class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">Naming Series</div>
+              <div class="text-lg font-bold" :class="focusedIndex === idx || currentSeries === s ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ s }}</div>
+              <div class="text-[10px] font-medium uppercase tracking-wider" :class="focusedIndex === idx || currentSeries === s ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">Naming Series</div>
             </div>
           </div>
-          <div v-if="currentSeries === s" class="text-[var(--color-highlight)]">
+          <div v-if="currentSeries === s" :class="focusedIndex === idx || currentSeries === s ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">
             <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
             </svg>
