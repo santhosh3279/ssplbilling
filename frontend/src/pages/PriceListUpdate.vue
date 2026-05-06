@@ -91,15 +91,15 @@
                     <input
                       :ref="el => inputRefs[`calc-${idx}`] = el"
                       type="number"
-                      v-model.number="p.rate"
+                      v-model.number="p.markup"
                       step="0.01"
-                      placeholder="Base"
+                      placeholder="%"
                       class="w-32 rounded border border-[var(--color-info)]/30 bg-[var(--color-info)]/5 px-1 py-1 text-right font-mono font-bold text-[var(--color-info)] text-[18px] outline-none focus:ring-1 transition-colors"
                       @keydown.enter.prevent="onCalcEnter(idx)"
                       @keydown.down.prevent="focusInput(`rate-${idx}-0`)"
                     />
                     <button
-                      @click="applyCalc(p)"
+                      @click="applyCalc(p, idx)"
                       class="rounded bg-[var(--color-info)] p-1 text-white hover:bg-[var(--color-info)]/80 shadow-sm transition-transform active:scale-95"
                       title="Apply to all UOMs"
                     >
@@ -173,19 +173,25 @@
                     </div>
                   </td>
                   <td
-                    v-for="p in prices"
+                    v-for="(p, idx) in prices"
                     :key="`calc-uom-${p.price_list}-${u.uom}`"
-                    class="px-2 py-1 text-right font-mono text-[14px] font-bold"
+                    class="px-2 py-1 text-right font-mono text-[11px] font-bold"
                     :class="{ 
                       'bg-[var(--color-info)]/5': p.price_list === selectedPriceList,
-                      'cursor-pointer hover:underline decoration-dotted': !p.buying
+                      'cursor-pointer hover:underline decoration-dotted': idx !== 0
                     }"
-                    @click="!p.buying && (p.uom_rates[u.uom] = Number((p.rate * u.conversion_factor).toFixed(2)))"
-                    :title="!p.buying ? 'Click to apply to proposed' : ''"
+                    @click="idx !== 0 && (p.uom_rates[u.uom] = Number((calculatedBaseRates[idx] * u.conversion_factor).toFixed(2)), u.uom === stockUom && (p.rate = calculatedBaseRates[idx]))"
+                    :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
-                    <template v-if="!p.buying">
-                      &#8377;{{ (p.rate * u.conversion_factor).toFixed(2) }}
-                    </template>
+                    <div v-if="idx !== 0" class="flex flex-col items-end">
+                      <div class="text-[9px] opacity-60">
+                        {{ calculatedBaseRates[idx-1].toFixed(2) }} * (1 + {{ p.markup }}/100) 
+                        <span v-if="u.conversion_factor !== 1"> * {{ u.conversion_factor }}</span>
+                      </div>
+                      <div class="text-[14px]">
+                        &#8377;{{ (calculatedBaseRates[idx] * u.conversion_factor).toFixed(2) }}
+                      </div>
+                    </div>
                   </td>
                 </tr>
               </template>
@@ -222,7 +228,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
@@ -252,9 +258,33 @@ const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
 
+const calculatedBaseRates = computed(() => {
+  const rates = []
+  for (let i = 0; i < prices.value.length; i++) {
+    if (i === 0) {
+      rates.push(prices.value[0]?.rate || 0)
+    } else {
+      const prevBase = prices.value[i - 1]?.rate || 0
+      const markup = prices.value[i]?.markup || 0
+      rates.push(prevBase * (1 + markup / 100))
+    }
+  }
+  return rates
+})
+
 watch(() => props.initialFactor, (val) => {
   factor.value = val
 })
+
+watch(() => prices.value, (newPrices) => {
+  if (!newPrices || !stockUom.value) return
+  newPrices.forEach(p => {
+    const stockRate = p.uom_rates[stockUom.value]
+    if (stockRate !== undefined && p.rate !== stockRate) {
+      p.rate = stockRate
+    }
+  })
+}, { deep: true })
 
 async function loadPrices(code) {
   if (!code) return
@@ -264,11 +294,19 @@ async function loadPrices(code) {
     itemName.value = data.item_name || ''
     uoms.value = data.uoms || []
     stockUom.value = data.stock_uom || ''
-    prices.value = (data.prices || []).map(p => ({
-      ...p,
-      original_rate: p.rate,
-      original_uom_rates: { ...(p.uom_rates || {}) },
-    }))
+    prices.value = (data.prices || []).map((p, idx, arr) => {
+      let markup = 0
+      if (idx > 0) {
+        const prevRate = arr[idx - 1].rate || 1
+        markup = Number(((p.rate / prevRate - 1) * 100).toFixed(2))
+      }
+      return {
+        ...p,
+        markup,
+        original_rate: p.rate,
+        original_uom_rates: { ...(p.uom_rates || {}) },
+      }
+    })
 
     // Set active row to selected price list if exists
     activeRow.value = 0 // In transposed, activeRow is UOM index
@@ -294,8 +332,9 @@ async function loadPrices(code) {
   }
 }
 
-function applyCalc(p) {
-  const base = p.rate || 0
+function applyCalc(p, idx) {
+  const base = calculatedBaseRates.value[idx] || 0
+  p.rate = base
   for (const u of uoms.value) {
     p.uom_rates[u.uom] = Number((base * u.conversion_factor).toFixed(2))
   }
