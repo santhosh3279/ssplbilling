@@ -33,6 +33,7 @@ fixtures = [
 					"custom_mobile_number",
 					"customer_rate_multiplier",
 					"custom_half_tax_discount",
+					"mop",
 				],
 			],
 		],

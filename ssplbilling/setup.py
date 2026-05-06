@@ -78,6 +78,15 @@ CUSTOM_FIELDS = {
 			"translatable": 0,
 		}
 	],
+	"Sales Invoice": [
+		{
+			"fieldname": "mop",
+			"label": "MOP",
+			"fieldtype": "Select",
+			"options": "Cash\nCredit",
+			"insert_after": "customer_name",
+		}
+	],
 }
 
 
