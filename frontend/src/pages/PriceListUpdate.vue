@@ -71,11 +71,11 @@
                 <th
                   v-for="p in prices"
                   :key="`name-${p.price_list}`"
-                  class="px-2 py-1.5 text-right text-xs font-bold uppercase tracking-wider min-w-[160px] sticky top-[48px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
+                  class="px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider min-w-[160px] sticky top-[48px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
                   :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
                 >
                   <div class="font-bold text-[var(--color-text)] truncate" :title="p.price_list">{{ p.price_list }}</div>
-                  <div v-if="p.price_list === selectedPriceList" class="text-[9px] font-black text-[var(--color-info)] uppercase mt-0.5">Active</div>
+                  <div v-if="p.price_list === selectedPriceList" class="text-[11px] font-black text-[var(--color-info)] uppercase mt-0.5">Active</div>
                 </th>
               </tr>
               <!-- Row 3: Calc Row (Input for Base Rate) -->
