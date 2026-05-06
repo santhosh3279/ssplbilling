@@ -2123,7 +2123,13 @@ function handleCustomerSelected(cust) {
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
   showCustomerModal.value = false
-  nextTick(() => { invoiceTemplateRef.value?.focusMop() })
+  
+  // Ensure MOP is focused after selection, especially for new bills.
+  // We use a small timeout to ensure the modal's return-focus logic doesn't override this.
+  setTimeout(() => {
+    invoiceTemplateRef.value?.focusMop()
+  }, 150)
+
   if (cust.last_invoice_date) {
     const d = new Date(cust.last_invoice_date)
     customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
@@ -2132,8 +2138,6 @@ function handleCustomerSelected(cust) {
   }
   applyRegionalTaxLogic()
   fetchCustomerSalesHistory(cust.name)
-  showCustomerModal.value = false
-  nextTick(() => { newCodeInput.value?.focus() })
 }
 
 async function handleSeriesSelected(series) {
