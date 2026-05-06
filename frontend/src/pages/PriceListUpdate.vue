@@ -135,7 +135,7 @@
                     :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
                   >
                     <div class="flex items-center justify-end gap-2">
-                      <span class="text-[14px] font-mono italic opacity-[0.08] pointer-events-none select-none">
+                      <span class="text-[14px] font-mono italic opacity-100 pointer-events-none select-none text-[var(--color-text-muted)]">
                         &#8377;{{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
                       </span>
                       <input
