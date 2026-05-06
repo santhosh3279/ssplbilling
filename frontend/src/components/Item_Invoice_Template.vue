@@ -171,7 +171,7 @@
                     :value="mop"
                     @change="$emit('update:mop', $event.target.value)"
                     :disabled="isReadOnly"
-                    class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] disabled:opacity-80"
+                    class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)] disabled:opacity-80"
                     @keydown.enter.prevent="$emit('mop-enter')"
                   >
                     <option value="Cash">Cash</option>
