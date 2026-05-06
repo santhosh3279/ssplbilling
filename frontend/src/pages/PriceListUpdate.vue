@@ -264,7 +264,9 @@ const calculatedBaseRates = computed(() => {
     if (i === 0) {
       rates.push(prices.value[0]?.rate || 0)
     } else {
-      const prevBase = prices.value[i - 1]?.rate || 0
+      // For the second price list (i=1), rates[0] is prices[0].rate
+      // For the third price list (i>=2) onwards, use the previously calculated rate
+      const prevBase = rates[i - 1]
       const markup = prices.value[i]?.markup || 0
       rates.push(prevBase * (1 + markup / 100))
     }
