@@ -180,16 +180,15 @@
                       'bg-[var(--color-info)]/5': p.price_list === selectedPriceList,
                       'cursor-pointer hover:underline decoration-dotted': idx !== 0
                     }"
-                    @click="idx !== 0 && (p.uom_rates[u.uom] = Number((calculatedBaseRates[idx] * u.conversion_factor).toFixed(2)), u.uom === stockUom && (p.rate = calculatedBaseRates[idx]))"
+                    @click="idx !== 0 && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
                     <div v-if="idx !== 0" class="flex flex-col items-end">
                       <div class="text-[9px] opacity-60">
-                        {{ calculatedBaseRates[idx-1].toFixed(2) }} * (1 + {{ p.markup }}/100) 
-                        <span v-if="u.conversion_factor !== 1"> * {{ u.conversion_factor }}</span>
+                        {{ ((calculatedRatesByUom[u.uom] || [])[idx-1] || 0).toFixed(2) }} * (1 + {{ p.markup }}/100)
                       </div>
                       <div class="text-[14px]">
-                        &#8377;{{ (calculatedBaseRates[idx] * u.conversion_factor).toFixed(2) }}
+                        &#8377;{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
                       </div>
                     </div>
                   </td>
@@ -258,20 +257,24 @@ const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
 
-const calculatedBaseRates = computed(() => {
-  const rates = []
-  for (let i = 0; i < prices.value.length; i++) {
-    if (i === 0) {
-      rates.push(prices.value[0]?.rate || 0)
-    } else {
-      // For the second price list (i=1), rates[0] is prices[0].rate
-      // For the third price list (i>=2) onwards, use the previously calculated rate
-      const prevBase = rates[i - 1]
+const calculatedRatesByUom = computed(() => {
+  const result = {}
+  if (!uoms.value.length || !prices.value.length) return result
+
+  for (const u of uoms.value) {
+    const rates = []
+    // Base rate for this UOM is the first price list's rate for this UOM
+    const firstRate = prices.value[0]?.uom_rates[u.uom] || 0
+    rates.push(firstRate)
+    
+    for (let i = 1; i < prices.value.length; i++) {
+      const prev = rates[i - 1]
       const markup = prices.value[i]?.markup || 0
-      rates.push(prevBase * (1 + markup / 100))
+      rates.push(prev * (1 + markup / 100))
     }
+    result[u.uom] = rates
   }
-  return rates
+  return result
 })
 
 watch(() => props.initialFactor, (val) => {
@@ -335,10 +338,9 @@ async function loadPrices(code) {
 }
 
 function applyCalc(p, idx) {
-  const base = calculatedBaseRates.value[idx] || 0
-  p.rate = base
+  p.rate = (calculatedRatesByUom.value[stockUom.value] || [])[idx] || 0
   for (const u of uoms.value) {
-    p.uom_rates[u.uom] = Number((base * u.conversion_factor).toFixed(2))
+    p.uom_rates[u.uom] = Number(((calculatedRatesByUom.value[u.uom] || [])[idx] || 0).toFixed(2))
   }
 }
 
