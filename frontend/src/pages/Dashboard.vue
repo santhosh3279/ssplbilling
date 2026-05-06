@@ -846,7 +846,8 @@ async function fetchSettings(user = null) {
         localStorage.setItem(key, JSON.stringify(seriesList))
         
         seriesList.forEach(s => {
-          const prefix = (s || '').split('.')[0]
+          const val = typeof s === 'string' ? s : (s?.prefix || '')
+          const prefix = val.split('.')[0]
           if (prefix) allPrefixes.add(prefix)
         })
       })

@@ -851,9 +851,11 @@ async function fetchSeriesList() {
         const allowedPrefixes = JSON.parse(storedAllowed)
         const dtSeries = JSON.parse(storedDtSeries)
         if (Array.isArray(allowedPrefixes) && Array.isArray(dtSeries)) {
-          finalSeries = dtSeries.filter(s => 
-            allowedPrefixes.some(prefix => s.startsWith(prefix))
-          )
+          finalSeries = dtSeries
+            .map(s => typeof s === 'string' ? s : s.prefix)
+            .filter(s => 
+              allowedPrefixes.some(prefix => s && s.startsWith(prefix))
+            )
         }
       } catch (e) {
         console.warn('[CashierDesk] Local series parsing failed:', e)
