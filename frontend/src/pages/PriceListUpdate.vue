@@ -283,12 +283,21 @@ watch(() => props.initialFactor, (val) => {
 
 watch(() => prices.value, (newPrices) => {
   if (!newPrices || !stockUom.value) return
+  
+  // 1. Sync base rate with stock UOM proposed rate
   newPrices.forEach(p => {
     const stockRate = p.uom_rates[stockUom.value]
     if (stockRate !== undefined && p.rate !== stockRate) {
       p.rate = stockRate
     }
   })
+
+  // 2. Persist markups to local storage
+  const markups = {}
+  newPrices.forEach(p => {
+    if (p.price_list) markups[p.price_list] = p.markup
+  })
+  localStorage.setItem('sspl_pricelist_markups', JSON.stringify(markups))
 }, { deep: true })
 
 async function loadPrices(code) {
@@ -299,9 +308,16 @@ async function loadPrices(code) {
     itemName.value = data.item_name || ''
     uoms.value = data.uoms || []
     stockUom.value = data.stock_uom || ''
+
+    const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
+
     prices.value = (data.prices || []).map((p, idx, arr) => {
       let markup = 0
-      if (idx > 0) {
+      // Prioritize saved markup from local storage if it exists
+      if (savedMarkups[p.price_list] !== undefined) {
+        markup = savedMarkups[p.price_list]
+      } else if (idx > 0) {
+        // Fallback to calculating markup from existing rates
         const prevRate = arr[idx - 1].rate || 1
         markup = Number(((p.rate / prevRate - 1) * 100).toFixed(2))
       }
