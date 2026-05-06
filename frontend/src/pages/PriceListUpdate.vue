@@ -163,7 +163,7 @@
                   <td
                     v-for="(p, idx) in prices"
                     :key="`calc-uom-${p.price_list}-${u.uom}`"
-                    class="px-2 py-1 text-right font-mono text-[11px] font-bold"
+                    class="px-2 py-1 text-right font-mono text-[14px] font-bold"
                     :class="{ 
                       'bg-[var(--color-info)]/5': p.price_list === selectedPriceList,
                       'cursor-pointer hover:underline decoration-dotted': idx !== 0
@@ -171,14 +171,9 @@
                     @click="idx !== 0 && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
-                    <div v-if="idx !== 0" class="flex flex-col items-end">
-                      <div class="text-[9px] opacity-60">
-                        {{ ((calculatedRatesByUom[u.uom] || [])[idx-1] || 0).toFixed(2) }} * (1 + {{ p.markup }}/100)
-                      </div>
-                      <div class="text-[14px]">
-                        &#8377;{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
-                      </div>
-                    </div>
+                    <template v-if="idx !== 0">
+                      &#8377;{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
+                    </template>
                   </td>
                 </tr>
               </template>
