@@ -9,9 +9,9 @@
         
         <!-- Date Filter -->
         <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-0 bg-[var(--color-bg)]">
-          <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&larr;</button>
+          <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-[var(--color-text-muted)]">&larr;</button>
           <div class="flex-1 text-center font-bold text-[var(--color-text)] text-lg">{{ formatDate(sidebarDate) }}</div>
-          <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&rarr;</button>
+          <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-[var(--color-text-muted)]">&rarr;</button>
         </div>
 
         <!-- Search & Series Filters -->
@@ -38,7 +38,7 @@
             
             <!-- Dropdown Menu -->
             <div v-if="showSeriesDropdown" class="absolute top-full left-0 mt-1 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
-              <div class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 hover:bg-[var(--color-surface-raised)] cursor-pointer select-none" @click="toggleAllSeries">
+              <div class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 cursor-pointer select-none" @click="toggleAllSeries">
                 <input 
                   type="checkbox" 
                   :checked="sidebarSeries.length === availableSeries.length" 
@@ -46,7 +46,7 @@
                 />
                 <span class="text-[13px] font-bold uppercase tracking-wider">All Series</span>
               </div>
-              <div v-for="s in availableSeries" :key="s" class="px-3 py-1.5 flex items-center gap-2 hover:bg-[var(--color-surface-raised)] cursor-pointer select-none" @click="toggleSeries(s)">
+              <div v-for="s in availableSeries" :key="s" class="px-3 py-1.5 flex items-center gap-2 cursor-pointer select-none" @click="toggleSeries(s)">
                 <input 
                   type="checkbox" 
                   :checked="isSeriesSelected(s)" 
@@ -59,7 +59,7 @@
           <button
             @click="$emit('toggle-draft-only')"
             class="w-full rounded-xl border py-1.5 text-[10px] font-bold uppercase transition-all"
-            :class="draftOnly ? 'bg-[var(--color-warning)]/40 border-[var(--color-warning)] text-[var(--color-warning)] shadow-sm' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+            :class="draftOnly ? 'bg-[var(--color-warning)]/40 border-[var(--color-warning)] text-[var(--color-warning)] shadow-sm' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]'"
           >
             {{ draftOnly ? 'Drafts Only' : 'All Bills' }}
           </button>
@@ -79,13 +79,13 @@
               @keydown.enter="$emit('select-sidebar-item', inv)"
               @keydown.up.prevent="navigateSidebar(idx, -1)"
               @keydown.down.prevent="navigateSidebar(idx, 1)"
-              class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
+              class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
               :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': selectedSidebarItemName === inv.name }"
             >
               <div class="flex items-center justify-between gap-1">
                 <div class="flex items-center gap-1.5 truncate min-w-0">
                   <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
-                  <span class="truncate font-mono text-2xl group-hover:brightness-125 group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
+                  <span class="truncate font-mono text-2xl group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
                   <span v-if="inv.mop" class="text-[10px] px-1 rounded border uppercase font-bold shrink-0"
                     :class="inv.mop === 'Cash' ? 'border-[var(--color-success)]/40 text-[var(--color-success)]' : 'border-[var(--color-warning)]/40 text-[var(--color-warning)]'">
                     {{ inv.mop }}
