@@ -6,14 +6,14 @@
         <div class="flex items-center gap-4">
           <button
             v-if="isSubWindow"
-            class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
+            class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
             @click="$emit('close')"
           >
             &larr; Back to Entry
           </button>
           <button
             v-else
-            class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
+            class="rounded px-2 py-1 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
             @click="router.push('/')"
           >
             &larr; Dashboard
@@ -105,7 +105,7 @@
                     />
                     <button
                       @click="applyCalc(p, idx)"
-                      class="rounded bg-[var(--color-info)] p-1 text-white hover:bg-[var(--color-info)]/80 shadow-sm transition-transform active:scale-95"
+                      class="rounded bg-[var(--color-info)] p-1 text-white hover:bg-[var(--color-info)]/80 shadow-sm transition-transform active:scale-95 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                       title="Apply to all UOMs"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -197,13 +197,13 @@
           </div>
           <div class="flex gap-3">
             <button
-              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]"
+              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)]"
               @click="isSubWindow ? $emit('close') : router.push('/')"
             >
               Cancel
             </button>
             <button
-              class="rounded-lg bg-[var(--color-info)] px-8 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-info)] active:scale-95"
+              class="rounded-lg bg-[var(--color-info)] px-8 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-info)] active:scale-95 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:ring-2 focus:ring-[var(--color-focus)]"
               @click="saveAll"
               :disabled="saving"
             >
