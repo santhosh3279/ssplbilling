@@ -438,10 +438,27 @@ function focusInput(key) {
 const handleGlobalKeydown = (e) => {
   if (e.key === 'F8') {
     e.preventDefault()
+    e.stopPropagation()
     saveAll()
   } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
     if (props.isSubWindow) emit('close')
     else router.push('/')
+  } else if (e.key === 'PageUp') {
+    e.preventDefault()
+    e.stopPropagation()
+    // Focus the first editable Calc input (idx 1 since idx 0 is usually buying/base)
+    // If only one PL exists or we want the very first possible calc input:
+    if (inputRefs.value['calc-1']) {
+      focusInput('calc-1')
+    } else {
+      focusInput('calc-0')
+    }
+  } else {
+    // Disable all other global shortcuts by stopping propagation
+    // This prevents parent containers/window listeners from catching common keys (F1, F2, etc.)
+    e.stopPropagation()
   }
 }
 
