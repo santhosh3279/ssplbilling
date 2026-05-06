@@ -56,8 +56,10 @@
                 <th
                   v-for="p in prices"
                   :key="`ind-${p.price_list}`"
-                  class="px-2 py-1.5 text-right border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-surface)] z-10"
-                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
+                  class="px-2 py-1.5 text-right sticky top-0 bg-[var(--color-surface)] z-10"
+                  :class="p.price_list === selectedPriceList 
+                    ? 'bg-[var(--color-info)]/10 border-x-2 border-t-2 border-[var(--color-info)]' 
+                    : 'border-b border-[var(--color-border)]'"
                 >
                   <div class="flex justify-end gap-1">
                     <span v-if="p.buying" class="rounded-lg bg-[var(--color-success)]/20 px-4 py-1.5 text-[20px] font-black text-[var(--color-success)] uppercase tracking-wide shadow-sm">Buy</span>
@@ -71,11 +73,12 @@
                 <th
                   v-for="p in prices"
                   :key="`name-${p.price_list}`"
-                  class="px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider min-w-[160px] sticky top-[48px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
-                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
+                  class="px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider min-w-[160px] sticky top-[48px] bg-[var(--color-surface)] z-10"
+                  :class="p.price_list === selectedPriceList 
+                    ? 'bg-[var(--color-info)]/10 border-x-2 border-[var(--color-info)]' 
+                    : 'border-b border-[var(--color-border)]'"
                 >
                   <div class="font-bold text-[var(--color-text)] truncate" :title="p.price_list">{{ p.price_list }}</div>
-                  <div v-if="p.price_list === selectedPriceList" class="text-[11px] font-black text-[var(--color-info)] uppercase mt-0.5">Active</div>
                 </th>
               </tr>
               <!-- Row 3: Calc Row (Input for Base Rate) -->
@@ -84,8 +87,10 @@
                 <th
                   v-for="(p, idx) in prices"
                   :key="`calc-row-${p.price_list}`"
-                  class="px-2 py-1.5 text-right sticky top-[84px] bg-[var(--color-surface)] z-10 border-b border-[var(--color-border)]"
-                  :class="{ 'bg-[var(--color-info)]/10': p.price_list === selectedPriceList }"
+                  class="px-2 py-1.5 text-right sticky top-[84px] bg-[var(--color-surface)] z-10"
+                  :class="p.price_list === selectedPriceList 
+                    ? 'bg-[var(--color-info)]/10 border-x-2 border-b-2 border-[var(--color-info)]' 
+                    : 'border-b border-[var(--color-border)]'"
                 >
                   <div v-if="idx !== 0" class="flex items-center justify-end gap-1">
                     <input
@@ -132,7 +137,9 @@
                     v-for="(p, idx) in prices"
                     :key="`prop-${p.price_list}-${u.uom}`"
                     class="px-2 py-2 text-right"
-                    :class="{ 'bg-[var(--color-info)]/5': p.price_list === selectedPriceList }"
+                    :class="p.price_list === selectedPriceList 
+                      ? 'bg-[var(--color-info)]/5 border-x-2 border-[var(--color-info)]' 
+                      : 'border-b border-[var(--color-border)]/10'"
                   >
                     <div class="flex items-center justify-end gap-2">
                       <span class="text-[14px] font-mono italic opacity-100 pointer-events-none select-none text-[var(--color-text-muted)]">
@@ -164,10 +171,10 @@
                     v-for="(p, idx) in prices"
                     :key="`calc-uom-${p.price_list}-${u.uom}`"
                     class="px-2 py-1 text-right font-mono text-[14px] font-bold"
-                    :class="{ 
-                      'bg-[var(--color-info)]/5': p.price_list === selectedPriceList,
-                      'cursor-pointer hover:underline decoration-dotted': idx !== 0
-                    }"
+                    :class="[
+                      p.price_list === selectedPriceList ? 'bg-[var(--color-info)]/5 border-x-2 border-[var(--color-info)]' : '',
+                      idx !== 0 ? 'cursor-pointer hover:underline decoration-dotted' : ''
+                    ]"
                     @click="idx !== 0 && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
