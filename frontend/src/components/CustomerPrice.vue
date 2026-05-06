@@ -1,48 +1,48 @@
 <template>
   <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-[2px]" v-if="!showPriceListUpdate">
-    <div class="w-[420px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-highlight)]/40 shadow-2xl">
-      <div class="bg-[var(--color-highlight)]/20 px-6 py-4 flex items-center gap-3 border-b border-[var(--color-highlight)]/30">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-highlight)]/40 text-xl text-[var(--color-highlight)]">💰</div>
+    <div class="w-[700px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-highlight)]/40 shadow-2xl">
+      <div class="bg-[var(--color-highlight)]/20 px-8 py-6 flex items-center gap-5 border-b border-[var(--color-highlight)]/30">
+        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-highlight)]/40 text-4xl text-[var(--color-highlight)]">💰</div>
         <div>
-          <div class="text-lg font-bold text-[var(--color-text)]">Update Item Price?</div>
-          <div class="text-[10px] text-[var(--color-highlight)] uppercase tracking-wider font-bold">Price Change Detected</div>
+          <div class="text-4xl font-bold text-[var(--color-text)]">Update Item Price?</div>
+          <div class="text-xl text-[var(--color-highlight)] uppercase tracking-wider font-bold">Price Change Detected</div>
         </div>
       </div>
 
-      <div class="p-6 space-y-4">
-        <div class="flex flex-col gap-1">
-          <div class="text-sm font-bold text-[var(--color-text)]">{{ data.item_name || data.item_code }}</div>
-          <div class="text-xs text-[var(--color-text-muted)]">Item Code: {{ data.item_code }}</div>
+      <div class="p-8 space-y-6">
+        <div class="flex flex-col gap-2">
+          <div class="text-3xl font-bold text-[var(--color-text)]">{{ data.item_name || data.item_code }}</div>
+          <div class="text-xl text-[var(--color-text-muted)]">Item Code: {{ data.item_code }}</div>
         </div>
 
-        <div class="grid grid-cols-3 gap-3 rounded-xl bg-[var(--color-surface-raised)]/50 p-4 border border-[var(--color-border)]/50">
+        <div class="grid grid-cols-3 gap-6 rounded-xl bg-[var(--color-surface-raised)]/50 p-6 border border-[var(--color-border)]/50">
           <div class="flex flex-col">
-            <span class="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Price List Rate</span>
-            <span class="text-xl font-mono text-[var(--color-text-muted)]">{{ (data.standard_rate || 0).toFixed(2) }}</span>
+            <span class="text-lg text-[var(--color-text-muted)] uppercase font-bold">Price List Rate</span>
+            <span class="text-5xl font-mono text-[var(--color-text-muted)]">{{ (data.standard_rate || 0).toFixed(2) }}</span>
           </div>
           <div class="flex flex-col">
-            <span class="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">New Rate</span>
-            <span class="text-xl font-mono text-[var(--color-text)]">{{ (data.current_rate || 0).toFixed(2) }}</span>
+            <span class="text-lg text-[var(--color-text-muted)] uppercase font-bold">New Rate</span>
+            <span class="text-5xl font-mono text-[var(--color-text)]">{{ (data.current_rate || 0).toFixed(2) }}</span>
           </div>
           <div class="flex flex-col">
-            <span class="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Factor</span>
-            <span class="text-xl font-mono text-[var(--color-highlight)]">{{ multiplicationFactor.toFixed(4) }}</span>
+            <span class="text-lg text-[var(--color-text-muted)] uppercase font-bold">Factor</span>
+            <span class="text-5xl font-mono text-[var(--color-highlight)]">{{ multiplicationFactor.toFixed(4) }}</span>
           </div>
         </div>
 
-        <div class="text-xs text-[var(--color-text-muted)] leading-relaxed">
+        <div class="text-2xl text-[var(--color-text-muted)] leading-relaxed">
           Factor = New Rate ÷ Price List Rate. Saved as a special discount for
           <span class="text-[var(--color-text)] font-medium">{{ customer }}</span>.
         </div>
       </div>
 
-      <div class="flex flex-col gap-2 p-6 pt-0">
+      <div class="flex flex-col gap-3 p-8 pt-0">
         <button
           ref="savePriceYesBtn"
           :disabled="saving"
           @click="saveForCustomer"
           @keydown="onKeydown"
-          class="w-full rounded-xl bg-[var(--color-highlight)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 shadow-lg transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
+          class="w-full rounded-xl bg-[var(--color-highlight)] px-6 py-4 text-3xl font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 shadow-lg transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
         >
           {{ saving ? 'Saving…' : 'Save for Customer' }}
         </button>
@@ -50,13 +50,13 @@
           ref="savePriceNoBtn"
           @click="$emit('dismiss')"
           @keydown="onKeydown"
-          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)]"
+          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)]"
         >
           Dismiss
         </button>
-        <div class="mt-2 text-center">
-          <span class="text-[9px] text-[var(--color-text-muted)] uppercase font-bold tracking-widest">
-            Press <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 font-mono text-[var(--color-text-muted)]">F4</kbd> for Advanced Update
+        <div class="mt-4 text-center">
+          <span class="text-lg text-[var(--color-text-muted)] uppercase font-bold tracking-widest">
+            Press <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text-muted)]">F4</kbd> for Advanced Update
           </span>
         </div>
       </div>
