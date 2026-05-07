@@ -18,14 +18,14 @@
       <div class="flex gap-4">
         <button
           ref="noBtn"
-          class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] focus:border-[var(--color-info)] focus:bg-[var(--color-surface-raised)] focus:ring-4 focus:ring-[var(--color-info)]/20"
+          class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)]"
           @click="$emit('close')"
         >
           No (Esc)
         </button>
         <button
           ref="yesBtn"
-          class="flex-1 rounded-xl bg-[var(--color-danger)] py-3 text-xl font-bold text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-danger)] focus:ring-4 focus:ring-[var(--color-danger)]/20 shadow-lg shadow-red-900/20"
+          class="flex-1 rounded-xl bg-[var(--color-highlight)] py-3 text-xl font-bold text-[var(--color-text-on-highlight)] transition-all hover:brightness-110 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)] shadow-lg"
           @click="$emit('confirm')"
         >
           Yes
