@@ -161,9 +161,6 @@
                     <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
                     <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
                   </div>
-                  <span v-if="tile.shortcut" class="shrink-0 rounded bg-black/10 px-1.5 py-0.5 font-mono text-[10px] font-black text-[var(--color-text)] opacity-70">
-                    {{ tile.shortcut }}
-                  </span>
                 </div>
               </div>
             </div>
@@ -179,20 +176,6 @@
       </div>
 
       <div class="mx-auto max-w-4xl px-6 pb-12">
-        <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--color-text-muted)]">
-          <span class="flex items-center gap-1.5">
-            Press <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Shift+F2</kbd> – <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Shift+F11</kbd>
-            to quick open
-          </span>
-          <span class="text-[var(--color-lowlight)]">|</span>
-          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Ctrl+L</kbd> Customer</span>
-          <span class="text-[var(--color-lowlight)]">|</span>
-          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Ctrl+I</kbd> Item Search</span>
-          <span class="text-[var(--color-lowlight)]">|</span>
-          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">Ctrl+R</kbd> Stock Reconcile</span>
-          <span class="text-[var(--color-lowlight)]">|</span>
-          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--color-text)]">ESC</kbd> Close Modals</span>
-        </div>
       </div>
     </main>
 
