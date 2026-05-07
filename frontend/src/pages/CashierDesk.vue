@@ -178,6 +178,14 @@
                 >
                   {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
                 </span>
+                <span v-if="inv.mop"
+                  class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider border ml-1"
+                  :class="selectedInvoice?.name === inv.name
+                    ? 'border-white/30 text-white'
+                    : inv.mop === 'Cash' ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20 text-[var(--color-warning)]'"
+                >
+                  {{ inv.mop }}
+                </span>
                 <div class="flex items-center gap-3">
                   <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
                   <span class="text-[15px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
@@ -960,6 +968,8 @@ async function selectInvoice(inv) {
     
     if (isSecondaryParty.value) {
       toggleCredit(true)
+    } else if (details.mop) {
+      toggleCredit(details.mop === 'Credit')
     }
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
