@@ -45,7 +45,14 @@ loadFromStorage()
 /**
  * Fetch all ledgers from the backend and update the global cache.
  */
-export async function refreshLedgerCache() {
+export async function refreshLedgerCache(force = false) {
+  if (syncLoading.value) return ledgers.value
+  
+  // Throttle background refreshes: skip if last sync was < 60s ago, unless forced
+  if (!force && lastSync.value > 0 && (Date.now() - lastSync.value) < 60000) {
+    return ledgers.value
+  }
+
   syncLoading.value = true
   try {
     const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers')

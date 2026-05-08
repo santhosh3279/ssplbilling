@@ -329,13 +329,13 @@ async function preloadLedger(force = false) {
   if (force || allLedgers.value.length === 0) {
     // Block if forced or if we have no data at all
     try {
-      await refreshLedgerCache()
+      await refreshLedgerCache(force)
     } catch (e) {
       console.error('[CustomerSearchModal] Preload failed:', e)
     }
   } else {
     // Non-blocking background refresh to ensure latest data/balances
-    refreshLedgerCache().catch(e => {
+    refreshLedgerCache(force).catch(e => {
       console.warn('[CustomerSearchModal] Background refresh failed:', e)
     })
   }
@@ -409,8 +409,8 @@ const results = computed(() => {
     list = list.filter(l => !partyLinks.value[l.name]?.is_secondary)
   }
 
-  if (!q) return list
-  return list.filter(l => tokenMatch(l, ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']))
+  if (!q) return list.slice(0, 100)
+  return list.filter(l => tokenMatch(l, ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email'])).slice(0, 100)
 })
 
 watch([query, activeType], () => { selectedIdx.value = 0 })
