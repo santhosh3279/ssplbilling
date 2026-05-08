@@ -53,7 +53,7 @@ import { ref, watch, nextTick } from 'vue'
 const props = defineProps({
   show: Boolean,
   message: { type: String, default: '' },
-  title: { type: String, default: 'Error Occurred' },
+  title: { type: String, default: '' },
   type: { type: String, default: 'error' } // 'error' | 'success'
 })
 
