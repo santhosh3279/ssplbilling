@@ -409,8 +409,8 @@ const results = computed(() => {
     list = list.filter(l => !partyLinks.value[l.name]?.is_secondary)
   }
 
-  if (!q) return list.slice(0, 100)
-  return list.filter(l => tokenMatch(l, ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email'])).slice(0, 100)
+  if (!q) return list.slice(0, 5000)
+  return list.filter(l => tokenMatch(l, ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email'])).slice(0, 5000)
 })
 
 watch([query, activeType], () => { selectedIdx.value = 0 })
