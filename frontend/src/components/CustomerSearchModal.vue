@@ -381,10 +381,10 @@ const results = computed(() => {
 
   // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
   if (props.overrideLedgers) {
-    if (tokens.length === 0) return props.overrideLedgers.slice(0, 500)
+    if (tokens.length === 0) return props.overrideLedgers.slice(0, 100)
     return props.overrideLedgers
       .filter(l => tokenMatch(l, ['label', 'name'], tokens))
-      .slice(0, 500)
+      .slice(0, 100)
   }
 
   let list = allLedgers.value.filter(l => props.allowedTypes.includes(l.type))
@@ -418,12 +418,12 @@ const results = computed(() => {
     list = list.filter(l => !partyLinks.value[l.name]?.is_secondary)
   }
 
-  if (tokens.length === 0) return list.slice(0, 500)
+  if (tokens.length === 0) return list.slice(0, 100)
   
   const searchFields = ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']
   return list
     .filter(l => tokenMatch(l, searchFields, tokens))
-    .slice(0, 500)
+    .slice(0, 100)
 })
 
 watch([query, activeType], () => { selectedIdx.value = 0 })
