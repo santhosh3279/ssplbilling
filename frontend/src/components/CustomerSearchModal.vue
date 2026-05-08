@@ -342,22 +342,49 @@ async function preloadLedger(force = false) {
 }
 
 // ─── Filtering ────────────────────────────────────────────────────────────────
-function tokenMatch(l, fields) {
-  // Split query into tokens; all tokens must appear somewhere in the combined field text
-  const q = query.value.trim().toLowerCase()
-  if (!q) return true
-  const tokens = q.split(/\s+/)
-  const haystack = fields.map(f => (l[f] || '').toLowerCase()).join(' ')
+const userRole = computed(() => getUserRole())
+const allowedAccountSet = computed(() => {
+  const role = userRole.value
+  if (role === 'admin' || role === 'accounts') return null
+
+  const accounts = [
+    localStorage.getItem('wb-cash'),
+    localStorage.getItem('wb-card'),
+    localStorage.getItem('wb-bank'),
+    localStorage.getItem('wb-upi'),
+  ].filter(Boolean)
+
+  try {
+    const raw = localStorage.getItem('wb-visible-accounts')
+    if (raw) accounts.push(...JSON.parse(raw))
+  } catch (_) {}
+
+  return new Set(accounts)
+})
+
+function tokenMatch(l, fields, tokens) {
+  if (tokens.length === 0) return true
+  
+  // Create a single searchable string for this item once per match call
+  let haystack = ''
+  for (const f of fields) {
+    const val = l[f]
+    if (val) haystack += ' ' + val.toLowerCase()
+  }
+  
   return tokens.every(t => haystack.includes(t))
 }
 
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
+  const tokens = q ? q.split(/\s+/) : []
 
   // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
   if (props.overrideLedgers) {
-    if (!q) return props.overrideLedgers
-    return props.overrideLedgers.filter(l => tokenMatch(l, ['label', 'name']))
+    if (tokens.length === 0) return props.overrideLedgers.slice(0, 500)
+    return props.overrideLedgers
+      .filter(l => tokenMatch(l, ['label', 'name'], tokens))
+      .slice(0, 500)
   }
 
   let list = allLedgers.value.filter(l => props.allowedTypes.includes(l.type))
@@ -367,33 +394,15 @@ const results = computed(() => {
     list = list.filter(l => props.filterList.includes(l.name))
   }
 
-  // Admin and accounts role see all GL accounts — skip the Account filter entirely
-  const _role = getUserRole()
-  if (_role !== 'admin' && _role !== 'accounts') {
-
-  // Build allowed Account set: user's MOP accounts (cash/card/bank/upi) UNION global visible_accounts.
-  // If neither is configured, no Account filter is applied (show all).
-  const userMopAccounts = [
-    localStorage.getItem('wb-cash'),
-    localStorage.getItem('wb-card'),
-    localStorage.getItem('wb-bank'),
-    localStorage.getItem('wb-upi'),
-  ].filter(Boolean)
-
-  let globalVisibleAccounts = []
-  try {
-    const raw = localStorage.getItem('wb-visible-accounts')
-    if (raw) globalVisibleAccounts = JSON.parse(raw)
-  } catch (_) { /* ignore malformed JSON */ }
-
-  const allowedAccountSet = new Set([...userMopAccounts, ...globalVisibleAccounts])
-  if (allowedAccountSet.size > 0) {
-    list = list.filter(l => l.type !== 'Account' || allowedAccountSet.has(l.name))
+  // Account visibility filter
+  const allowedSet = allowedAccountSet.value
+  if (allowedSet && allowedSet.size > 0) {
+    list = list.filter(l => l.type !== 'Account' || allowedSet.has(l.name))
   }
 
-  } // end non-admin Account filter
-
-  if (activeType.value !== 'All') list = list.filter(l => l.type === activeType.value)
+  if (activeType.value !== 'All') {
+    list = list.filter(l => l.type === activeType.value)
+  }
 
   // Internal Transfer Filter: only Bank/Cash accounts
   if (props.isInternalTransfer) {
@@ -409,8 +418,12 @@ const results = computed(() => {
     list = list.filter(l => !partyLinks.value[l.name]?.is_secondary)
   }
 
-  if (!q) return list.slice(0, 5000)
-  return list.filter(l => tokenMatch(l, ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email'])).slice(0, 5000)
+  if (tokens.length === 0) return list.slice(0, 500)
+  
+  const searchFields = ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']
+  return list
+    .filter(l => tokenMatch(l, searchFields, tokens))
+    .slice(0, 500)
 })
 
 watch([query, activeType], () => { selectedIdx.value = 0 })
