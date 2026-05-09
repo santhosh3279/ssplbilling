@@ -654,7 +654,7 @@ async function saveEntry() {
   submitting.value = true
   try {
     const payload = {
-      voucher_type: entryType.value,
+      voucher_type: entryType.value === 'Opening Entry' ? 'Journal Entry' : entryType.value,
       posting_date: postingDate.value,
       user_remark: userRemarks.value,
       balancing_account: balancingAccount.value.name,
