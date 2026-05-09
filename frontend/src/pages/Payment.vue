@@ -355,7 +355,6 @@
       :allowedTypes="allowedTypes"
       :initialType="initialSearchType"
       :skipDateFilter="true"
-      :isInternalTransfer="activeTab === 'Expenses'"
       :hideSecondary="true"
       @close="showSearchModal = false"
       @select="handleSelect"

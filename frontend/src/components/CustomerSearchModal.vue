@@ -292,7 +292,6 @@ const props = defineProps({
   filterList: { type: Array, default: null },
   overrideLedgers: { type: Array, default: null },
   initialQuery: { type: String, default: '' },
-  isInternalTransfer: { type: Boolean, default: false },
   hideSecondary: { type: Boolean, default: true },
   showHideSecondary: { type: Boolean, default: true }
 })
@@ -409,15 +408,6 @@ const results = computed(() => {
 
   if (activeType.value !== 'All') {
     list = list.filter(l => l.type === activeType.value)
-  }
-
-  // Internal Transfer Filter: only Bank/Cash accounts
-  if (props.isInternalTransfer) {
-    list = list.filter(l => {
-      if (l.type !== 'Account') return true
-      const group = (l.group || '').toLowerCase()
-      return group === 'bank' || group === 'cash'
-    })
   }
 
   // Party Link Filter: Toggle to hide secondary parties
