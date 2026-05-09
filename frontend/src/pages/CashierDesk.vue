@@ -352,13 +352,13 @@
               <div class="flex gap-2">
                 <button
                   @click="toggleCredit(false)"
-                  :disabled="isSecondaryParty"
+                  :disabled="isLinkedParty"
                   class="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest transition-all border"
                   :class="[
                     !isCredit ? 'bg-[var(--color-success)]/30 border-[var(--color-success)] text-[var(--color-success)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]',
-                    isSecondaryParty ? 'opacity-30 cursor-not-allowed' : ''
+                    isLinkedParty ? 'opacity-30 cursor-not-allowed' : ''
                   ]"
-                  :title="isSecondaryParty ? 'Secondary parties can only process Credit Sales' : ''"
+                  :title="isLinkedParty ? 'Linked parties can only process Credit Sales' : ''"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                   Cash Bill
@@ -724,9 +724,9 @@ const dateInput = ref(null)
 // ==================== COMPUTED ====================
 const { partyLinks } = useLedgerCache()
 
-const isSecondaryParty = computed(() => {
+const isLinkedParty = computed(() => {
   if (!selectedInvoice.value?.customer) return false
-  return !!partyLinks.value[selectedInvoice.value.customer]?.is_secondary
+  return !!partyLinks.value[selectedInvoice.value.customer]
 })
 
 const userInitials = computed(() => {
@@ -966,7 +966,7 @@ async function selectInvoice(inv) {
       showReconcileModal.value = true
     }
     
-    if (isSecondaryParty.value) {
+    if (isLinkedParty.value) {
       toggleCredit(true)
     } else if (details.mop) {
       toggleCredit(details.mop === 'Credit')
@@ -1031,8 +1031,8 @@ function initAccountsFromLocalStorage() {
 function toggleCredit(val) {
   const targetVal = (val !== undefined && typeof val === 'boolean') ? val : !isCredit.value
   
-  if (!targetVal && isSecondaryParty.value) {
-    errorMsg.value = "Secondary parties can only process Credit Sales."
+  if (!targetVal && isLinkedParty.value) {
+    errorMsg.value = "Linked parties can only process Credit Sales."
     return
   }
 
