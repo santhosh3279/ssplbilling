@@ -254,7 +254,7 @@
     <!-- MODAL -->
     <CustomerSearchModal
       ref="ledgerSearchModal"
-      :allowed-types="entryType === 'Contra' ? ['Account'] : (entryType === 'Opening Entry' ? ['Customer', 'Supplier', 'Employee'] : ['Customer', 'Supplier', 'Account'])"
+      :allowed-types="entryType === 'Contra' ? ['Account'] : ['Customer', 'Supplier', 'Employee', 'Account']"
       :initial-type="entryType === 'Contra' ? 'Account' : (entryType === 'Opening Entry' ? 'Customer' : 'All')"
       :show="showSearchModal"
       :skip-date-filter="true"
@@ -265,7 +265,7 @@
 
     <CustomerSearchModal
       :show="showBalancingSearch"
-      :allowed-types="['Account']"
+      :allowed-types="['Customer', 'Supplier', 'Employee', 'Account']"
       initial-type="Account"
       :skip-date-filter="true"
       :hideSecondary="true"
