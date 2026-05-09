@@ -53,7 +53,7 @@ def create_expense_entry(data):
             debit = float(acc.get("debit_in_account_currency") or 0)
             credit = float(acc.get("credit_in_account_currency") or 0)
 
-            if references and party_type and voucher_type != "Opening Entry":
+            if references and party_type and voucher_type not in ["Opening Entry", "Journal Entry"]:
                 is_credit_side = credit >= debit
                 base_amount = credit if is_credit_side else debit
                 total_ref_alloc = sum(float(r.get("alloc_amount") or 0) for r in references)
@@ -95,19 +95,20 @@ def create_expense_entry(data):
                     "user_remark": acc.get("user_remark")
                 })
 
-                if voucher_type == "Opening Entry":
+                if voucher_type == "Opening Entry" or (voucher_type == "Journal Entry" and data.get("balancing_account")):
                     temp_opening = data.get("balancing_account")
-                    if not temp_opening:
+                    if not temp_opening and voucher_type == "Opening Entry":
                         abbr = frappe.db.get_value("Company", company, "abbr")
                         temp_opening = f"Temporary Opening - {abbr}"
                     
-                    je.append("accounts", {
-                        "account": temp_opening,
-                        "debit_in_account_currency": credit,
-                        "credit_in_account_currency": debit,
-                        "cost_center": acc.get("cost_center"),
-                        "user_remark": acc.get("user_remark") or user_remark
-                    })
+                    if temp_opening:
+                        je.append("accounts", {
+                            "account": temp_opening,
+                            "debit_in_account_currency": credit,
+                            "credit_in_account_currency": debit,
+                            "cost_center": acc.get("cost_center"),
+                            "user_remark": acc.get("user_remark") or user_remark
+                        })
         
         je.insert()
         je.submit()
