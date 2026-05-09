@@ -552,7 +552,8 @@ const searchTarget = ref('party')
 const showSearchModal = ref(false)
 
 const allowedTypes = computed(() => {
-  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee']
+  if (activeTab.value === 'Expenses') return ['Account']
+  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee', 'Account']
   return ['Account']
 })
 
