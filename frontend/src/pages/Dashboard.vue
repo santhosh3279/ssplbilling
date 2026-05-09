@@ -198,6 +198,8 @@
       :show="showCustomerSearchModal"
       :initialType="searchType"
       :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
+      :hide-secondary="false"
+      :show-hide-secondary="false"
       @close="closeCustomerSearchModal"
       @select="pickCust"
     />

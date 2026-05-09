@@ -462,6 +462,8 @@
       initial-type="Customer"
       :allowed-types="['Customer', 'Supplier', 'Employee']"
       :initial-query="customerInitialQuery"
+      :hide-secondary="false"
+      :show-hide-secondary="false"
       @close="showCustomerModal = false; customerInitialQuery = ''"
       @select="handleCustomerSelected"
     />
