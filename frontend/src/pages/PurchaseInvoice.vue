@@ -542,6 +542,8 @@
       initial-type="Supplier"
       :allowed-types="['Supplier']"
       :initial-query="supplierInitialQuery"
+      :hide-secondary="false"
+      :show-hide-secondary="false"
       @close="showSupplierModal = false; supplierInitialQuery = ''"
       @select="handleSupplierSelected"
     />

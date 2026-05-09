@@ -52,6 +52,7 @@
 
           <!-- Hide Secondary Toggle -->
           <div
+            v-if="showHideSecondary"
             @click="hideSecondary = !hideSecondary"
             class="flex items-center gap-3 bg-[var(--color-bg)] px-4 py-2 rounded-lg border border-[var(--color-border)] shadow-sm mx-1 cursor-pointer select-none transition-colors hover:bg-[var(--color-surface-raised)]"
           >
@@ -292,7 +293,8 @@ const props = defineProps({
   overrideLedgers: { type: Array, default: null },
   initialQuery: { type: String, default: '' },
   isInternalTransfer: { type: Boolean, default: false },
-  hideSecondary: { type: Boolean, default: true }
+  hideSecondary: { type: Boolean, default: true },
+  showHideSecondary: { type: Boolean, default: true }
 })
 
 const availableTabs = computed(() => {
@@ -322,7 +324,12 @@ const showEditForm   = ref(false)
 const showDateModal  = ref(false)
 const formPartyType  = ref('Customer') // 'Customer' | 'Supplier' | 'Employee'
 const newCustomerName = ref('')
-const hideSecondary = ref(true)
+const hideSecondary = ref(props.hideSecondary)
+
+// Update internal state if prop changes
+watch(() => props.hideSecondary, (val) => {
+  hideSecondary.value = val
+})
 
 // ─── Data Preloading ──────────────────────────────────────────────────────────
 async function preloadLedger(force = false) {

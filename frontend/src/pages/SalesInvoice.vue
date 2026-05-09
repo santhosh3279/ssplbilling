@@ -473,6 +473,8 @@
       initial-type="Customer"
       :allowed-types="['Customer']"
       :initial-query="customerInitialQuery"
+      :hide-secondary="false"
+      :show-hide-secondary="false"
       @close="showCustomerModal = false; customerInitialQuery = ''"
       @select="handleCustomerSelected"
     />
