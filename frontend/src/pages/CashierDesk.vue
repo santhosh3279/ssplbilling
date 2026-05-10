@@ -170,14 +170,14 @@
               :data-inv-name="inv.name"
               @click="selectInvoice(inv)"
               class="group flex w-full flex-col rounded-xl p-2 text-left transition-all active:scale-[0.98]"
-              :class="selectedInvoice?.name === inv.name
+              :class="highlightedInvoiceName === inv.name
                 ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] shadow-lg'
                 : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
             >
               <div class="flex items-center justify-between mb-0.5">
                 <span
                   class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider"
-                  :class="selectedInvoice?.name === inv.name
+                  :class="highlightedInvoiceName === inv.name
                     ? 'bg-[var(--color-focus)]/50 text-[var(--color-text-on-focus)]'
                     : inv.docstatus === 0 
                       ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
@@ -187,7 +187,7 @@
                 </span>
                 <span v-if="inv.mop"
                   class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider border ml-1"
-                  :class="selectedInvoice?.name === inv.name
+                  :class="highlightedInvoiceName === inv.name
                     ? 'border-white/30 text-white'
                     : inv.mop === 'Cash' ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20 text-[var(--color-warning)]'"
                 >
@@ -195,16 +195,16 @@
                 </span>
                 <div class="flex items-center gap-3">
                   <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
-                  <span class="text-[15px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                  <span class="text-[15px] font-medium" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                     {{ formatDate(inv.posting_date) }}
                   </span>
                 </div>
               </div>
               <div class="flex items-center justify-between mb-0.5">
-                <div class="text-[17.5px] font-bold leading-tight" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-                <div class="font-mono text-[27px] font-bold shrink-0" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : (inv.grand_total < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.grand_total) }}</div>
+                <div class="text-[17.5px] font-bold leading-tight" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
+                <div class="font-mono text-[27px] font-bold shrink-0" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : (inv.grand_total < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.grand_total) }}</div>
               </div>
-              <div class="truncate text-[16.5px] mt-0.5" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+              <div class="truncate text-[16.5px] mt-0.5" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
               </div>
             </button>
@@ -701,6 +701,7 @@ useSubwindowWatcher(showOpeningRequiredModal)
 
 const invoices = ref([])
 const selectedInvoice = ref(null)
+const highlightedInvoiceName = ref('')
 const previewItems = ref([])
 const unallocatedPayments = ref([])
 const allocatedAdvances = ref([])
@@ -858,6 +859,9 @@ async function loadInvoices() {
   loadingList.value = true
   try {
     invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, sidebarSeries.value.join(','))
+    if (invoices.value.length > 0 && !highlightedInvoiceName.value) {
+      highlightedInvoiceName.value = invoices.value[0].name
+    }
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
@@ -948,6 +952,7 @@ function debouncedSearch() {
 }
 
 async function selectInvoice(inv) {
+  highlightedInvoiceName.value = inv.name
   if (selectedInvoice.value?.name === inv.name) return
   
   loadingPreview.value = true
@@ -1139,6 +1144,7 @@ async function processPayment() {
     // Clear state immediately for next transaction
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
     selectedInvoice.value = null
+    highlightedInvoiceName.value = invoices.value.length > 0 ? invoices.value[0].name : ''
     previewItems.value = []
     unallocatedPayments.value = []
     errorMsg.value = ''
@@ -1219,14 +1225,17 @@ function handleAllocationSuccess(res) {
 // Shortcut Handlers
 function navigateBills(dir) {
   if (!invoices.value.length) return
-  if (!selectedInvoice.value) {
-    selectInvoice(invoices.value[0])
-    return
+  
+  let currentIdx = -1
+  if (highlightedInvoiceName.value) {
+    currentIdx = invoices.value.findIndex(i => i.name === highlightedInvoiceName.value)
+  } else if (selectedInvoice.value) {
+    currentIdx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
   }
-  const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
-  const nextIdx = idx + dir
+
+  const nextIdx = currentIdx + dir
   if (nextIdx >= 0 && nextIdx < invoices.value.length) {
-    selectInvoice(invoices.value[nextIdx])
+    highlightedInvoiceName.value = invoices.value[nextIdx].name
     nextTick(() => {
       const el = document.querySelector(`[data-inv-name="${invoices.value[nextIdx].name}"]`)
       el?.scrollIntoView({ block: 'nearest' })
@@ -1237,15 +1246,23 @@ function navigateBills(dir) {
 function handleEnter(e) {
   const active = document.activeElement
   
-  // 1. If no invoice selected, focus first bill
-  if (!selectedInvoice.value) {
-    if (invoices.value.length) selectInvoice(invoices.value[0])
-    return
-  }
-
-  // 2. Navigation Logic
+  // 1. If we are in navigation mode (no input focused)
   if (active.tagName !== 'INPUT' && active !== postButton.value) {
-    // If we just selected a bill, go to side panel if exists, else cash
+    // If there's a highlighted invoice and it's not the selected one, select it
+    if (highlightedInvoiceName.value && (!selectedInvoice.value || selectedInvoice.value.name !== highlightedInvoiceName.value)) {
+      const inv = invoices.value.find(i => i.name === highlightedInvoiceName.value)
+      if (inv) {
+        selectInvoice(inv)
+        return
+      }
+    }
+
+    if (!selectedInvoice.value) {
+      if (invoices.value.length) selectInvoice(invoices.value[0])
+      return
+    }
+
+    // If already selected, proceed to next step
     if (unallocatedPayments.value.length > 0 && (selectedInvoice.value.grand_total || 0) > 0) {
       showReconcileModal.value = true
     } else if (isCredit.value) {
