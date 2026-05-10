@@ -1239,6 +1239,10 @@ async function handleSave() {
 
     if (res.status === 'success') {
       if (isUpdate) {
+        if (props.isSubwindow) {
+          emit('close')
+          return
+        }
         isReadOnly.value = true
         isSaved.value = true
         fetchRecentInvoices()
