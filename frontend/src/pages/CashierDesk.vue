@@ -316,6 +316,22 @@
 
           <template v-else>
             <div class="space-y-3">
+              <!-- Allocated Advances -->
+              <div v-if="selectedInvoice?.advances?.length > 0" class="space-y-2 mb-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                <div class="flex items-center gap-2 px-1 mb-1">
+                  <div class="h-1 w-1 rounded-full bg-[var(--color-info)]"></div>
+                  <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-info)]">Allocated Advances</span>
+                </div>
+                <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" 
+                  class="flex items-center justify-between p-2.5 rounded-xl bg-[var(--color-info)]/10 border border-[var(--color-info)]/20 text-[11px] font-bold uppercase tracking-wider text-[var(--color-info)] group hover:bg-[var(--color-info)]/15 transition-colors shadow-sm">
+                  <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="opacity-70 group-hover:scale-110 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    <span class="truncate max-w-[150px]">{{ adv.reference_name }}</span>
+                  </div>
+                  <span class="font-mono text-[13px] font-black">₹{{ fmt(adv.allocated_amount) }}</span>
+                </div>
+              </div>
+
               <!-- Summary Mini-Card -->
               <div class="relative rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] p-4">
                 <!-- Credit Badge -->
@@ -1216,8 +1232,8 @@ function handleAllocationSuccess(res) {
     successMsg.value = "Advances cover full amount. Click Post Settlement to finalise."
     nextTick(() => postButton.value?.focus())
   } else {
-    // Pre-fill cash with the remaining balance and guide user to payment fields
-    payments.value = { cash: remaining, upi: 0, card: 0, discount: 0 }
+    // Keep first entry box as zero instead of the balance amount
+    payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
     successMsg.value = `₹${fmt(remaining)} remaining after advance allocation.`
     nextTick(() => { cashInput.value?.focus(); cashInput.value?.select() })
   }
