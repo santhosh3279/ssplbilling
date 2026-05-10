@@ -292,6 +292,27 @@
                   </div>
                 </button>
 
+                <!-- Allocated Advances Table in Bottom Panel -->
+                <div v-if="selectedInvoice?.advances?.length > 0" class="flex flex-col mr-2">
+                  <div class="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info)]/5 overflow-hidden shadow-sm">
+                    <table class="min-w-[280px] border-collapse">
+                      <tbody class="divide-y divide-[var(--color-info)]/10">
+                        <tr v-for="adv in selectedInvoice.advances.slice(0, 3)" :key="adv.reference_name" class="hover:bg-[var(--color-info)]/10 transition-colors">
+                          <td class="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[var(--color-info)] border-r border-[var(--color-info)]/10 bg-[var(--color-info)]/5">
+                            <div class="flex items-center gap-2">
+                              <div class="h-1 w-1 rounded-full bg-[var(--color-info)]"></div>
+                              <span class="truncate max-w-[150px]">{{ adv.reference_name }}</span>
+                            </div>
+                          </td>
+                          <td class="px-3 py-1 text-right font-mono text-[16px] font-black text-[var(--color-text)]">
+                            ₹{{ fmt(adv.allocated_amount) }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 <div class="flex items-center gap-4 bg-[var(--color-info)]/10 px-4 py-2 rounded-xl border border-[var(--color-info)]/20 shadow-sm">
                   <div class="text-[15px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
                   <div class="text-[36px] font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
