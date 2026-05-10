@@ -1267,6 +1267,26 @@ function handleArrowDown() {
   }
 }
 
+function handleArrowLeft() {
+  const active = document.activeElement
+  if (active.tagName === 'INPUT') {
+    active.blur()
+    // By blurring, we return to "navigation mode" where ArrowUp/Down work on the sidebar
+  }
+}
+
+function handleArrowRight() {
+  const active = document.activeElement
+  if (active.tagName !== 'INPUT' && selectedInvoice.value) {
+    if (isCredit.value) {
+      dueDateInput.value?.focus()
+    } else {
+      cashInput.value?.focus()
+      cashInput.value?.select()
+    }
+  }
+}
+
 function handleEnter(e) {
   const active = document.activeElement
   
@@ -1416,6 +1436,8 @@ onUnmounted(() => {
 useShortcuts(cashierpageShortcuts({
   navigateBillsUp: handleArrowUp,
   navigateBillsDown: handleArrowDown,
+  navigatePanelLeft: handleArrowLeft,
+  navigatePanelRight: handleArrowRight,
   handleEnter: handleEnter,
   toggleCredit: () => { if (!hasPaymentValues.value) toggleCredit() },
   submitPayment: processPayment,

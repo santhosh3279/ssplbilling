@@ -5,10 +5,12 @@
  */
 
 export const cashierpageShortcuts = (handlers) => ({
-  'ARROWUP':   handlers.navigateBillsUp,
-  'ARROWDOWN': handlers.navigateBillsDown,
-  'ENTER':     handlers.handleEnter,
-  'R':         handlers.toggleCredit,
-  'F9':        handlers.submitPayment,
-  'ESCAPE':    handlers.goBack,
+  'ARROWUP':    handlers.navigateBillsUp,
+  'ARROWDOWN':  handlers.navigateBillsDown,
+  'ARROWLEFT':  handlers.navigatePanelLeft,
+  'ARROWRIGHT': handlers.navigatePanelRight,
+  'ENTER':      handlers.handleEnter,
+  'R':          handlers.toggleCredit,
+  'F9':         handlers.submitPayment,
+  'ESCAPE':     handlers.goBack,
 });
