@@ -76,12 +76,15 @@
                 <button @click="adjustDate(-1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
-                <div class="flex-1 text-center">
+                <div class="flex-1 text-center relative">
+                  <div class="text-[18px] font-black text-[var(--color-text)] uppercase pointer-events-none">
+                    {{ formatDate(filterDate) }}
+                  </div>
                   <input
                     ref="dateInput"
                     type="date"
                     v-model="filterDate"
-                    class="bg-transparent border-none text-[18px] font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
+                    class="absolute inset-0 opacity-0 cursor-pointer w-full"
                     @change="loadInvoices"
                   />
                 </div>
@@ -189,7 +192,7 @@
                 <div class="flex items-center gap-3">
                   <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
                   <span class="text-[15px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                    {{ inv.posting_time }}
+                    {{ formatDate(inv.posting_date) }}
                   </span>
                 </div>
               </div>

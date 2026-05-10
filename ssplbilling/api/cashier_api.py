@@ -83,7 +83,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
             "Sales Invoice",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
+            fields=["name", "customer", "customer_name", "posting_date", "posting_time", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -91,7 +91,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
         invoices = frappe.get_all(
             "Sales Invoice",
             filters=filters,
-            fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
+            fields=["name", "customer", "customer_name", "posting_date", "posting_time", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
             limit=int(limit),
             order_by="name desc",
         )
