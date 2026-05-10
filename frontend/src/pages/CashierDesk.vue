@@ -899,11 +899,13 @@ function updatePayment(field, value) {
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  })
+  // Use T00:00:00 to ensure local timezone parsing for YYYY-MM-DD strings
+  const date = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00')
+  const day = String(date.getDate()).padStart(2, '0')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[date.getMonth()]
+  const year = String(date.getFullYear()).slice(-2)
+  return `${day}-${month}-${year}`
 }
 
 function adjustDate(days) {
