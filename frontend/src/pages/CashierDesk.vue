@@ -36,6 +36,10 @@
           <!-- Right: Date & Print -->
           <div class="flex items-center gap-4 shrink-0">
             <span class="text-[13.75px] font-bold text-[var(--color-text-muted)] whitespace-nowrap">{{ formatDate(selectedInvoice.posting_date) }}</span>
+            <button @click="showModifyModal = true" class="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[12.5px] font-black uppercase tracking-widest text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+              Modify
+            </button>
             <button @click="showPrintModal = true" class="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[12.5px] font-black uppercase tracking-widest text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
               Print
@@ -596,6 +600,15 @@
       @close="showPrintModal = false"
     />
 
+    <!-- MODIFY BILL SUBWINDOW -->
+    <div v-if="showModifyModal" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
+      <SalesInvoice 
+        is-subwindow 
+        :invoice-name="selectedInvoice?.name" 
+        @close="handleModifyClose" 
+      />
+    </div>
+
     <!-- SUCCESS SETTLEMENT POPUP (BOTTOM RIGHT) -->
     <transition name="slide-up">
       <div v-if="showSuccessModal" @click="showSuccessModal = false" class="fixed bottom-8 right-8 z-[110] cursor-pointer">
@@ -624,6 +637,7 @@ import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 import { useLedgerCache } from '../services/ledgerCache'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
+import SalesInvoice from './SalesInvoice.vue'
 
 /**
  * HELPER: getTodayIST
@@ -671,6 +685,7 @@ function toggleAllSeries() {
 
 const showCardRefModal = ref(false)
 const showPrintModal = ref(false)
+const showModifyModal = ref(false)
 const showReconcileModal = ref(false)
 const showSuccessModal = ref(false)
 const cardRefNo = ref('')
@@ -680,6 +695,7 @@ const showOpeningRequiredModal = ref(false)
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
 useSubwindowWatcher(showPrintModal)
+useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
 useSubwindowWatcher(showOpeningRequiredModal)
 
@@ -1144,6 +1160,23 @@ async function confirmCardRef() {
   if (!cardRefNo.value) return
   showCardRefModal.value = false
   await processPayment()
+}
+
+async function handleModifyClose() {
+  showModifyModal.value = false
+  if (selectedInvoice.value) {
+    const currentName = selectedInvoice.value.name
+    // Re-fetch the entire list to ensure grand total and other metadata are fresh
+    await loadInvoices()
+    // Re-select to refresh preview items and payment amounts
+    const inv = invoices.value.find(i => i.name === currentName)
+    if (inv) {
+      // Small delay to ensure template re-renders and refs are ready
+      selectedInvoice.value = null
+      await nextTick()
+      await selectInvoice(inv)
+    }
+  }
 }
 
 function handleReconcileClose() {

@@ -640,6 +640,8 @@ const props = defineProps({
   invoiceName: String
 })
 
+const emit = defineEmits(['close'])
+
 const router = useRouter()
 
 // --- Data Fetching & State Management ---
@@ -1044,7 +1046,13 @@ watch(taxTemplate, (val) => {
 
 // --- Methods ---
 
-function goBack() { router.push('/') }
+function goBack() { 
+  if (props.isSubwindow) {
+    emit('close')
+  } else {
+    router.push('/')
+  }
+}
 
 function formatDateShort(dateStr) {
   if (!dateStr) return '-'
@@ -2177,7 +2185,7 @@ useShortcuts(salesInvoiceShortcuts({
       deleteItem(selectedRowIdx.value)
     }
   },
-}))
+}), props.isSubwindow ? 'subwindow' : 'local')
 
 onMounted(() => {
   if (props.isSubwindow && props.invoiceName) {
