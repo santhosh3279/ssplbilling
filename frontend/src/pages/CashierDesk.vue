@@ -1243,6 +1243,30 @@ function navigateBills(dir) {
   }
 }
 
+function handleArrowUp() {
+  const active = document.activeElement
+  if (active.tagName === 'INPUT') {
+    if (active === upiInput.value) { cashInput.value?.focus(); cashInput.value?.select() }
+    else if (active === cardInput.value) { upiInput.value?.focus(); upiInput.value?.select() }
+    else if (active === creditInput.value) { cardInput.value?.focus(); cardInput.value?.select() }
+    else if (active === discountInput.value) { creditInput.value?.focus(); creditInput.value?.select() }
+  } else {
+    navigateBills(-1)
+  }
+}
+
+function handleArrowDown() {
+  const active = document.activeElement
+  if (active.tagName === 'INPUT') {
+    if (active === cashInput.value) { upiInput.value?.focus(); upiInput.value?.select() }
+    else if (active === upiInput.value) { cardInput.value?.focus(); cardInput.value?.select() }
+    else if (active === cardInput.value) { creditInput.value?.focus(); creditInput.value?.select() }
+    else if (active === creditInput.value) { discountInput.value?.focus(); discountInput.value?.select() }
+  } else {
+    navigateBills(1)
+  }
+}
+
 function handleEnter(e) {
   const active = document.activeElement
   
@@ -1390,8 +1414,8 @@ onUnmounted(() => {
 
 // Register shortcuts
 useShortcuts(cashierpageShortcuts({
-  navigateBillsUp: () => navigateBills(-1),
-  navigateBillsDown: () => navigateBills(1),
+  navigateBillsUp: handleArrowUp,
+  navigateBillsDown: handleArrowDown,
   handleEnter: handleEnter,
   toggleCredit: () => { if (!hasPaymentValues.value) toggleCredit() },
   submitPayment: processPayment,
