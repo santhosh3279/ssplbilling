@@ -192,59 +192,6 @@
       @close="showSystemPerformance = false"
     />
 
-    <!-- CUSTOMER SEARCH MODAL -->
-    <CustomerSearchModal
-      ref="custSearchModalRef"
-      :show="showCustomerSearchModal"
-      :initialType="searchType"
-      :allowed-types="isBiller ? ['Customer', 'Supplier', 'Employee'] : undefined"
-      :hide-secondary="false"
-      :show-hide-secondary="false"
-      @close="closeCustomerSearchModal"
-      @select="pickCust"
-    />
-
-    <!-- ITEM SEARCH MODAL -->
-    <ItemSearch
-      ref="itemSearchModalRef"
-      :show="showItemSearchModal"
-      search-type="Sales"
-      :price-list="filteredBillingSeries[0]?.price_list || defaultSeries || 'Standard Selling'"
-      :warehouse="defaultWarehouse"
-      @close="showItemSearchModal = false"
-      @select="pickItem"
-    />
-
-    <!-- CUSTOMER LEDGER SUB-WINDOW -->
-    <CustomerLedger
-      v-if="showLedgerWindow"
-      :is-sub-window="true"
-      :ledger-name="ledgerCustomerName"
-      :ledger-type="ledgerType"
-      :initial-from-date="ledgerFromDate"
-      :initial-to-date="ledgerToDate"
-      @close="closeLedgerAndReturnToSearch"
-    />
-
-    <!-- STOCK LEDGER SUB-WINDOW -->
-    <StockLedger
-      v-if="showStockLedgerWindow"
-      :is-sub-window="true"
-      :item-code="stockLedgerItemCode"
-      :initial-from-date="stockLedgerFromDate"
-      :initial-to-date="stockLedgerToDate"
-      @close="closeStockLedgerAndReturnToSearch"
-    />
-
-    <!-- OUTSTANDING BILLS MODAL -->
-    <OutstandingBillsModal
-      :show="showOutstandingBillsModal"
-      :party="outstandingParty"
-      :party-type="outstandingPartyType"
-      :entered-amount="0"
-      @close="showOutstandingBillsModal = false"
-    />
-
     <!-- INVOICE TEMPLATE FULL SCREEN MODAL -->
     <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
       <Item_Invoice_Template
@@ -341,16 +288,11 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
-import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import CustomerLedger from './CustomerLedger.vue'
-import StockLedger from './StockLedger.vue'
-import ItemSearch from '../components/ItemSearch.vue'
 import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Stock_Template from '../components/Stock_Template.vue'
-import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
@@ -560,22 +502,10 @@ const routeMap = {
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(dashboardShortcuts({
   openModule,
-  openCustomerSearch: () => {
-    if (!isBiller.value) {
-      searchPurpose.value = 'ledger'
-      openCustomerSearch('All')
-    }
-  },
-  openItemSearch: () => openItemSearch(),
   handleEscape: () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
-    if (showCustomerSearchModal.value) { closeCustomerSearchModal(); return }
-    if (showItemSearchModal.value) { showItemSearchModal.value = false; return }
-    if (showLedgerWindow.value) { showLedgerWindow.value = false; return }
-    if (showStockLedgerWindow.value) { showStockLedgerWindow.value = false; return }
     if (showInvoiceTemplate.value) { showInvoiceTemplate.value = false; return }
     if (showStockTemplate.value) { showStockTemplate.value = false; return }
-    if (showOutstandingBillsModal.value) { showOutstandingBillsModal.value = false; return }
   }
 }))
 
@@ -597,9 +527,6 @@ const showGeneralSettings = ref(false)
 const generalSettingsRef = ref(null)
 const isSyncing = ref(false)
 
-// ==================== SEARCH CONTEXT ====================
-const searchPurpose = ref('ledger') // 'ledger' or 'outstanding'
-
 async function handleFullSync() {
   if (isSyncing.value) return
   isSyncing.value = true
@@ -615,112 +542,6 @@ async function handleFullSync() {
 
 const defaultSeries = ref(localStorage.getItem('wb-series') || '')
 const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
-
-// ==================== CUSTOMER SEARCH ====================
-const showCustomerSearchModal = ref(false)
-const searchType = ref('All')
-const showLedgerWindow = ref(false)
-const showOutstandingBillsModal = ref(false)
-const outstandingParty = ref('')
-const outstandingPartyType = ref('')
-const ledgerCustomerName = ref('')
-const ledgerType = ref('Customer')
-const ledgerFromDate = ref('')
-const ledgerToDate = ref('')
-const custSearchModalRef = ref(null)
-
-async function openCustomerSearch(type = 'All') {
-  searchType.value = type
-  showCustomerSearchModal.value = true
-  
-  // Reset any open sub-forms or date filters when opening the search modal
-  nextTick(() => {
-    custSearchModalRef.value?.closeSubForm()
-    custSearchModalRef.value?.focus()
-  })
-}
-
-function closeCustomerSearchModal() {
-  showCustomerSearchModal.value = false
-}
-
-function closeLedgerAndReturnToSearch() {
-  showLedgerWindow.value = false
-  openCustomerSearch(searchType.value)
-}
-
-async function pickCust(item, dates) {
-  showCustomerSearchModal.value = false
-  if (searchPurpose.value === 'outstanding') {
-    try {
-      const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
-        party_type: item.type || 'Customer',
-        party: item.name,
-      })
-      
-      const hasInvoices = (res.invoices || []).length > 0
-      const hasPayments = (res.payment_entries || []).length > 0
-      const hasJournals = (res.journal_entries || []).length > 0
-      
-      if (hasInvoices || hasPayments || hasJournals) {
-        outstandingParty.value = item.name
-        outstandingPartyType.value = item.type || 'Customer'
-        showOutstandingBillsModal.value = true
-      } else {
-        console.log('No outstanding items found for party:', item.name)
-        // Optionally show a toast or message
-      }
-    } catch (e) {
-      console.error('Failed to fetch outstanding items:', e)
-    }
-    return
-  }
-  ledgerCustomerName.value = item.name
-  ledgerType.value = item.type || 'Customer'
-  if (dates) {
-    ledgerFromDate.value = dates.from
-    ledgerToDate.value = dates.to
-  } else {
-    ledgerFromDate.value = ''
-    ledgerToDate.value = ''
-  }
-  showLedgerWindow.value = true
-}
-
-// ==================== ITEM SEARCH ====================
-const showItemSearchModal = ref(false)
-const showStockLedgerWindow = ref(false)
-const stockLedgerItemCode = ref('')
-const stockLedgerFromDate = ref('')
-const stockLedgerToDate = ref('')
-const itemSearchModalRef = ref(null)
-
-async function openItemSearch(clear = true) {
-  showItemSearchModal.value = true
-  // Reset any open sub-forms or date filters when opening the search modal
-  nextTick(() => {
-    itemSearchModalRef.value?.closeSubForm()
-    itemSearchModalRef.value?.focus()
-  })
-}
-
-function pickItem(item, dates) {
-  showItemSearchModal.value = false
-  stockLedgerItemCode.value = item.item_code
-  if (dates) {
-    stockLedgerFromDate.value = dates.from
-    stockLedgerToDate.value = dates.to
-  } else {
-    stockLedgerFromDate.value = ''
-    stockLedgerToDate.value = ''
-  }
-  showStockLedgerWindow.value = true
-}
-
-function closeStockLedgerAndReturnToSearch() {
-  showStockLedgerWindow.value = false
-  openItemSearch(false) // Return without clearing search
-}
 
 async function syncSettings() {
   localStorage.removeItem(SETTINGS_CACHE_KEY)
@@ -885,8 +706,6 @@ function cleanupOldKeys() {
 
 onMounted(async () => {
   cleanupOldKeys()
-  window.addEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))
-  window.addEventListener('wb-global-item-search', openItemSearch)
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   
   if (isActualAdmin.value) {
@@ -902,8 +721,6 @@ onMounted(async () => {
   refreshLedgerCache()      // Preload ledgers for fast search
 })
 onUnmounted(() => {
-  window.removeEventListener('wb-global-ledger-search', () => openCustomerSearch('All'))
-  window.removeEventListener('wb-global-item-search', openItemSearch)
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
 })
 

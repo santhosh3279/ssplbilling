@@ -15,9 +15,7 @@ export const dashboardShortcuts = (handlers) => ({
   'SHIFT+F9': () => handlers.openModule('material-transfer'),
   'SHIFT+F10': () => handlers.openModule('quotation'),
   'CTRL+R': () => handlers.openModule('stock-reconciliation'),
-  
-  'CTRL+L': () => handlers.openCustomerSearch?.(),
-  'CTRL+I': () => handlers.openItemSearch?.(),
 
   'ESCAPE': handlers.handleEscape,
-});
+  });
+

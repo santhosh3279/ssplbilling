@@ -3,6 +3,7 @@
     <router-view />
     <Calculator :show="showCalculator" @close="showCalculator = false" />
     <CommandLine :show="showCommandLine" @close="showCommandLine = false" @open="showCommandLine = true" />
+    <GlobalModals />
     <GeneralLedger v-if="showGeneralLedger" :is-sub-window="true" @close="showGeneralLedger = false" />
     <ErrorWindow :show="showError" :message="errorMessage" @close="showError = false" />
   </div>
@@ -14,6 +15,7 @@ import { useShortcuts } from './services/shortcutManager';
 import { globalShortcuts } from './shortcuts/globalShortcuts';
 import Calculator from './components/Calculator.vue';
 import CommandLine from './components/CommandLine.vue';
+import GlobalModals from './components/GlobalModals.vue';
 import GeneralLedger from './pages/GeneralLedger.vue';
 import ErrorWindow from './components/ErrorWindow.vue';
 import { useTheme } from './composables/useTheme';
