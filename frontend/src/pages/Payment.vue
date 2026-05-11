@@ -273,13 +273,13 @@
         
         <div class="flex items-center gap-8 flex-1">
           <!-- Left: Remarks Input -->
-          <div class="flex-1 max-w-xl flex flex-col gap-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Internal Remarks</label>
+          <div class="flex-1 max-w-xl flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Internal Remarks</label>
             <textarea
               ref="remarksInput"
               v-model="form.remarks"
               rows="2"
-              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all resize-none"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:bg-black/5 focus:outline-none transition-all resize-none placeholder:text-inherit"
               placeholder="Add internal notes..."
               @keydown.enter.prevent="refNoInput?.focus()"
             ></textarea>
@@ -287,27 +287,27 @@
 
           <!-- Middle: Reference Info -->
           <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
+            <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
+              <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">
                 Ref No (Cheque/UPI)
               </label>
               <input
                 ref="refNoInput"
                 v-model="form.reference_no"
                 type="text"
-                class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all"
+                class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all focus:bg-black/5 placeholder:text-inherit"
                 :class="form.reference_no.length > 0 
-                  ? (refValid ? 'border-[var(--color-success)] bg-[var(--color-success)]/10 focus:border-[var(--color-success)]' : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)] focus:border-[var(--color-danger)]')
-                  : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] focus:border-[var(--color-highlight)]'"
+                  ? (refValid ? 'border-[var(--color-success)] bg-[var(--color-success)]/10' : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)]')
+                  : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]'"
                 placeholder="Ref / Chq No..."
                 @keydown.enter="saveBtn?.focus()"
               />            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref Date</label>
+            <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
+              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Ref Date</label>
               <input
                 v-model="form.reference_date"
                 type="date"
-                class="w-36 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                class="w-36 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:bg-black/5 focus:outline-none transition-all"
               />
             </div>
           </div>
