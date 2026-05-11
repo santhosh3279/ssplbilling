@@ -136,6 +136,7 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Print Format</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Price List</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Tax Template</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Tax Incl.</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -144,9 +145,10 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ bs.print_format || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ bs.price_list || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ bs.tax_template || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center font-medium text-[var(--color-text)]">{{ bs.tax_type_incl ? '✓' : '--' }}</td>
                   </tr>
                   <tr v-if="!visibleBillingSeries.length">
-                    <td colspan="4" class="px-2 py-3 text-center text-[var(--color-text-muted)]">No billing series configured</td>
+                    <td colspan="5" class="px-2 py-3 text-center text-[var(--color-text-muted)]">No billing series configured</td>
                   </tr>
                 </tbody>
               </table>
