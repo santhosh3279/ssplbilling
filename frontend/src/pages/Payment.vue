@@ -36,20 +36,20 @@
       <!-- Right: Posting Date with arrow nav -->
       <div class="flex items-center gap-2">
         <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
-        <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+        <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
           <button
             @click="adjustDate(-1)"
-            class="rounded-l-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors"
+            class="rounded-l-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors focus:bg-black/10"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <div class="relative min-w-[110px] px-3 py-1.5 text-center">
             <span class="text-2xl">{{ displayDate }}</span>
-            <input type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer" />
+            <input type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer focus:outline-none" />
           </div>
           <button
             @click="adjustDate(1)"
-            class="rounded-r-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors"
+            class="rounded-r-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors focus:bg-black/10"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </button>
@@ -82,31 +82,31 @@
             @click="selectEntryType('Payment')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
             :class="selectionIdx === 0
-              ? 'bg-red-500/25 border-red-500 scale-105 shadow-xl'
-              : 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20 hover:border-red-500'"
+              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
+              : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500'"
           >
             <span class="text-8xl">💸</span>
-            <span class="text-4xl font-black text-red-500 uppercase">Payment</span>
+            <span class="text-4xl font-black uppercase">Payment</span>
           </button>
           <button
             @click="selectEntryType('Receipt')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
             :class="selectionIdx === 1
-              ? 'bg-green-500/25 border-green-500 scale-105 shadow-xl'
-              : 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20 hover:border-green-500'"
+              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
+              : 'bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20 hover:border-green-500'"
           >
             <span class="text-8xl">💰</span>
-            <span class="text-4xl font-black text-green-500 uppercase">Receipt</span>
+            <span class="text-4xl font-black uppercase">Receipt</span>
           </button>
           <button
             @click="selectEntryType('Expenses')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
             :class="selectionIdx === 2
-              ? 'bg-blue-500/25 border-blue-500 scale-105 shadow-xl'
-              : 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-500'"
+              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
+              : 'bg-blue-500/10 border-blue-500/30 text-blue-500 hover:bg-blue-500/20 hover:border-blue-500'"
           >
             <span class="text-8xl">🔄</span>
-            <span class="text-4xl font-black text-blue-500 uppercase">Expenses</span>
+            <span class="text-4xl font-black uppercase">Expenses</span>
           </button>
         </div>
         <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -138,44 +138,44 @@
             <tbody>
               <tr class="divide-x divide-[var(--color-border)]">
                 <!-- Party Name / Paid From -->
-                <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors">
+                <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
                       v-model="partyQuery"
                       @click="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'party')"
                       @keydown.enter="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'party')"
                       readonly
-                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none"
+                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       :placeholder="activeTab === 'Expenses' ? 'Select From Account...' : 'Search Party...'"
                     />
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
                 </td>
 
                 <!-- Bank/Cash Account -->
-                <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors">
+                <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
                       v-model="mopAccountQuery"
                       @click="openSearch('mop')"
                       @keydown.enter="openSearch('mop')"
                       readonly
-                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none"
+                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       placeholder="Select Account..."
                     />
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold">CLICK TO SEARCH</div>
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
                 </td>
 
                 <!-- Amount -->
-                <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
+                <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <input
                     ref="amountInputRef"
                     v-model.number="form.amount"
                     type="number"
                     step="0.01"
                     @keydown.enter="handleAmountEnter"
-                    class="w-full bg-transparent text-7xl font-light text-right focus:outline-none text-[var(--color-text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="w-full bg-transparent text-7xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
                   />
                 </td>
@@ -235,15 +235,15 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
-                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="hover:bg-[var(--color-midlight)]/30 transition-colors">
+                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="group hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <td class="px-4 py-3 font-mono text-3xl font-black">{{ ref.reference_name }}</td>
-                  <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)]">{{ ref.reference_doctype }}</td>
-                  <td class="px-4 py-3 text-right text-3xl text-[var(--color-text-muted)]">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
+                  <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)] group-focus-within:text-[var(--color-text-on-focus)]">{{ ref.reference_doctype }}</td>
+                  <td class="px-4 py-3 text-right text-3xl text-[var(--color-text-muted)] group-focus-within:text-[var(--color-text-on-focus)]">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
                   <td class="px-4 py-3 text-right">
                     <input
                       v-model.number="ref.allocated_amount"
                       type="number" step="0.01" min="0"
-                      class="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-3xl font-black text-right focus:border-[var(--color-highlight)] focus:outline-none transition-all"
+                      class="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-3xl font-black text-right focus:bg-black/10 focus:outline-none transition-all placeholder:text-inherit"
                     />
                   </td>
                   <td class="px-4 py-3 text-right">
