@@ -153,12 +153,12 @@
             <span class="rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1.5 text-[var(--color-text-muted)]">
               Opening
               <span class="ml-1 font-semibold" :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }}
+                {{ fmt(Math.abs(ledgerData.opening_balance)) }}
                 {{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}
               </span>
             </span>
             <span class="rounded bg-[var(--color-success)]/15 border border-[var(--color-success)]/30 px-2.5 py-1.5 text-[var(--color-success)]">
-              Dr ₹{{ fmt(ledgerData.total_debit) }}
+              Dr {{ fmt(ledgerData.total_debit) }}
             </span>
             <span class="rounded bg-[var(--color-danger)]/15 border border-[var(--color-danger)]/30 px-2.5 py-1.5 text-[var(--color-danger)]">
               Cr {{ fmt(ledgerData.total_credit) }}
@@ -169,7 +169,7 @@
                 ? 'bg-[var(--color-danger)]/15 border-[var(--color-danger)]/30 text-[var(--color-danger)]'
                 : 'bg-[var(--color-success)]/15 border-[var(--color-success)]/30 text-[var(--color-success)]'"
             >
-              Balance ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
+              Balance {{ fmt(Math.abs(ledgerData.closing_balance)) }}
               {{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}
             </span>
           </div>
@@ -223,14 +223,14 @@
                 <span class="ml-1 opacity-60">(before {{ fmtDate(ledgerData.from_date) }})</span>
               </td>
               <td class="px-3 py-2 text-right text-[var(--color-success)] font-mono">
-                {{ ledgerData.opening_balance > 0 ? '₹' + fmt(ledgerData.opening_balance) : '—' }}
+                {{ ledgerData.opening_balance > 0 ? fmt(ledgerData.opening_balance) : '—' }}
               </td>
               <td class="px-3 py-2 text-right text-[var(--color-danger)] font-mono">
-                {{ ledgerData.opening_balance < 0 ? '₹' + fmt(Math.abs(ledgerData.opening_balance)) : '—' }}
+                {{ ledgerData.opening_balance < 0 ? fmt(Math.abs(ledgerData.opening_balance)) : '—' }}
               </td>
               <td class="px-3 py-2 text-right font-mono font-semibold"
                 :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                ₹{{ fmt(Math.abs(ledgerData.opening_balance)) }}
+                {{ fmt(Math.abs(ledgerData.opening_balance)) }}
                 <span class="ml-0.5 text-[10px] font-normal text-[var(--color-text-muted)]">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
             </tr>
@@ -272,16 +272,16 @@
                 <span v-else class="block truncate">{{ entry.remarks || '—' }}</span>
               </td>
               <td class="px-3 py-2 text-right font-mono">
-                <span v-if="entry.debit" class="text-[var(--color-success)]">₹{{ fmt(entry.debit) }}</span>
+                <span v-if="entry.debit" class="text-[var(--color-success)]">{{ fmt(entry.debit) }}</span>
                 <span v-else class="text-[var(--color-text-muted)]">—</span>
               </td>
               <td class="px-3 py-2 text-right font-mono">
-                <span v-if="entry.credit" class="text-[var(--color-danger)]">₹{{ fmt(entry.credit) }}</span>
+                <span v-if="entry.credit" class="text-[var(--color-danger)]">{{ fmt(entry.credit) }}</span>
                 <span v-else class="text-[var(--color-text-muted)]">—</span>
               </td>
               <td class="px-3 py-2 text-right font-mono font-semibold"
                 :class="entry.balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                ₹{{ fmt(Math.abs(entry.balance)) }}
+                {{ fmt(Math.abs(entry.balance)) }}
                 <span class="ml-0.5 text-[10px] font-normal text-[var(--color-text-muted)]">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
             </tr>
@@ -292,8 +292,8 @@
               <td colspan="3" class="px-3 py-2 text-xs text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
               </td>
-              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-success)]">₹{{ fmt(ledgerData.total_debit) }}</td>
-              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-danger)]">₹{{ fmt(ledgerData.total_credit) }}</td>
+              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-success)]">{{ fmt(ledgerData.total_debit) }}</td>
+              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-danger)]">{{ fmt(ledgerData.total_credit) }}</td>
               <td class="px-3 py-2 text-right font-mono font-bold"
                 :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ fmt(Math.abs(ledgerData.closing_balance)) }}
