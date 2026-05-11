@@ -2,6 +2,21 @@
   <transition name="fade">
     <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
       <div class="flex w-full max-w-[80vw] flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl overflow-hidden max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-5">
+          <div class="flex flex-col">
+            <h3 class="text-[24px] font-black text-[var(--color-text)] uppercase tracking-tight leading-none">
+              {{ invoice?.customer_name || 'Customer' }}
+            </h3>
+            <p class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em] mt-2">
+              Payment Adjustment for <span class="text-[var(--color-info)]">{{ invoice?.name }}</span>
+            </p>
+          </div>
+          <button @click="$emit('close')" class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)] transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
         <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
           <!-- Already Allocated Section -->
           <div v-if="invoice?.advances && invoice.advances.length > 0" class="mb-8 space-y-3">
@@ -18,9 +33,6 @@
           <div v-if="localUnallocated.length > 0" class="space-y-3">
             <div class="flex items-center justify-between px-3 mb-4">
               <h4 class="text-[16px] font-black uppercase tracking-widest text-[var(--color-warning)]">Unlinked Payments & Credits</h4>
-              <button @click="$emit('close')" class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-raised)] transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
             </div>
 
             <!-- Table Header -->
