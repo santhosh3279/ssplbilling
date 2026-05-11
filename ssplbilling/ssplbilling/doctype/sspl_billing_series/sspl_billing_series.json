@@ -10,7 +10,8 @@
   "print_format",
   "price_list",
   "column_break_1",
-  "tax_template"
+  "tax_template",
+  "tax_type_incl"
  ],
  "fields": [
   {
@@ -45,6 +46,13 @@
    "in_list_view": 1,
    "label": "Tax Template",
    "options": ""
+  },
+  {
+   "default": "0",
+   "fieldname": "tax_type_incl",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Tax Type incl."
   }
  ],
  "grid_page_length": 50,

@@ -785,6 +785,12 @@ async function fetchSettings(user = null) {
       localStorage.setItem('wb-role-accounts', roles.accounts ? '1' : '0')
     }
 
+    // Set billing defaults from the first visible series row
+    const firstSeries = (settings.billing_series || [])[0]
+    if (firstSeries) {
+      localStorage.setItem('wb-tax-type-incl', firstSeries.tax_type_incl ? '1' : '0')
+    }
+
     // Sync printer settings to localStorage
     if (settings && settings.user_defaults) {
       const defaults = settings.user_defaults

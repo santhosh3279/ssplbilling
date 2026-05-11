@@ -126,6 +126,7 @@
                 <th class="px-3 py-2">Print Format</th>
                 <th class="px-3 py-2">Price List</th>
                 <th class="px-3 py-2">Tax Template</th>
+                <th class="px-3 py-2 text-center">Tax Incl.</th>
                 <th class="px-3 py-2 rounded-tr-lg"></th>
               </tr>
             </thead>
@@ -135,6 +136,9 @@
                 <td class="px-2 py-2"><input v-model="row.print_format" list="dl-print-formats" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-2 py-2"><input v-model="row.price_list" list="dl-price-lists" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-2 py-2"><input v-model="row.tax_template" list="dl-tax-templates" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-2 py-2 text-center">
+                  <input type="checkbox" v-model="row.tax_type_incl" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" />
+                </td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('billing_series', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
               <tr v-if="!settings.billing_series || settings.billing_series.length === 0">

@@ -442,6 +442,7 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (firstSeries) {
     if (firstSeries.series)     localStorage.setItem('wb-series',     firstSeries.series)
     if (firstSeries.price_list) localStorage.setItem('wb-price-list', firstSeries.price_list)
+    localStorage.setItem('wb-tax-type-incl', firstSeries.tax_type_incl ? '1' : '0')
   }
 
   // Save allowed series prefixes

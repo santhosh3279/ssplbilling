@@ -438,6 +438,7 @@ def get_billing_settings(user=None):
 				"price_list": r.price_list or "",
 				"tax_template": r.tax_template or "",
 				"print_format": r.print_format or "",
+				"tax_type_incl": r.tax_type_incl or 0,
 			}
 			for r in settings.billing_series
 		],

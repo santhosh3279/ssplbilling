@@ -104,6 +104,11 @@ async function handleLogin() {
         if (settings.default_zoom) {
           localStorage.setItem('wb-zoom', settings.default_zoom)
         }
+        // Save tax_type_incl from first series
+        const firstSeries = (settings.billing_series || [])[0]
+        if (firstSeries) {
+          localStorage.setItem('wb-tax-type-incl', firstSeries.tax_type_incl ? '1' : '0')
+        }
       }
       
       // Also pre-load opening_cash
