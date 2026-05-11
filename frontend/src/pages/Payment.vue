@@ -288,8 +288,9 @@
           <!-- Middle: Reference Info -->
           <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
             <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
-              <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">
+              <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors flex items-center gap-1">
                 Ref No (Cheque/UPI)
+                <span v-if="form.mop_type === 'Bank'" class="text-[var(--color-danger)] text-base">*</span>
               </label>
               <input
                 ref="refNoInput"
@@ -298,7 +299,7 @@
                 class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all focus:bg-black/5 placeholder:text-inherit"
                 :class="form.reference_no.length > 0 
                   ? (refValid ? 'border-[var(--color-success)] bg-[var(--color-success)]/10' : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)]')
-                  : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]'"
+                  : (form.mop_type === 'Bank' ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/5' : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]')"
                 placeholder="Ref / Chq No..."
                 @keydown.enter="saveBtn?.focus()"
               />            </div>
@@ -482,6 +483,7 @@ const form = reactive({
   party_name: '',
   account: 'Debtors - SSPL',
   mop_account: '',
+  mop_type: '',
   amount: null,
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0],
@@ -512,7 +514,13 @@ const modalAmounts = reactive({})
 const refValid = computed(() => form.reference_no.replace(/\s/g, '').length > 0)
 
 const isFormValid = computed(() => {
-  return form.party && form.amount > 0 && form.mop_account
+  const basic = form.party && form.amount > 0 && form.mop_account
+  if (!basic) return false
+  // If MOP is a bank account, Reference No is mandatory
+  if (form.mop_type === 'Bank') {
+    return form.reference_no.replace(/\s/g, '').length > 0
+  }
+  return true
 })
 
 const newBalance = computed(() => {
@@ -613,6 +621,7 @@ function handleSelect(item) {
     }, 150)
   } else if (searchTarget.value === 'account' || searchTarget.value === 'mop') {
     form.mop_account = item.name
+    form.mop_type = item.group
     mopAccountQuery.value = item.label || item.account_name || item.name
     
     // Chain to Amount focus
@@ -741,6 +750,7 @@ function resetForm() {
   }
   
   form.mop_account = ''
+  form.mop_type = ''
   mopAccountQuery.value = 'Search Account'
   form.reference_no = ''
   form.reference_date = new Date().toISOString().split('T')[0]
@@ -760,7 +770,7 @@ async function handleSubmit() {
       party_type: form.party_type,
       party: form.party,
       amount: form.amount,
-      mode_of_payment: 'Cash',
+      mode_of_payment: form.mop_type === 'Bank' ? 'Bank' : 'Cash',
       account: form.mop_account,
       posting_date: postingDate.value,
       reference_no: form.reference_no,
