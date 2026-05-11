@@ -165,7 +165,7 @@ function focusNextAllocation(index) {
 
 async function submit() {
   if (totalAmountToAllocate.value <= 0) {
-    emit('success', { outstanding: props.invoice.outstanding_amount, advances: [] })
+    emit('success', { outstanding: props.invoice.outstanding_amount, advances: props.invoice.advances || [] })
     return
   }
 
@@ -181,7 +181,7 @@ async function submit() {
       }))
 
     if (allocations.length === 0) {
-      emit('success', { outstanding: props.invoice.outstanding_amount, advances: [] })
+      emit('success', { outstanding: props.invoice.outstanding_amount, advances: props.invoice.advances || [] })
       return
     }
 

@@ -1026,10 +1026,6 @@ async function selectInvoice(inv) {
     
     unallocatedAmountTotal.value = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
 
-    if (unallocatedPayments.value.length > 0 && (details.outstanding_amount || details.grand_total) > 0) {
-      showReconcileModal.value = true
-    }
-    
     if (isSecondaryParty.value) {
       toggleCredit(true)
     } else if (details.mop) {
@@ -1232,14 +1228,18 @@ function handleReconcileClose() {
 }
 
 function handleAllocationSuccess(res) {
-  selectedInvoice.value.outstanding_amount = res.outstanding
-  selectedInvoice.value.posting_date = res.posting_date
-  selectedInvoice.value.due_date = res.due_date
-  selectedInvoice.value.advances = res.advances || []
+  if (res.outstanding !== undefined) selectedInvoice.value.outstanding_amount = res.outstanding
+  if (res.posting_date) selectedInvoice.value.posting_date = res.posting_date
+  if (res.due_date) selectedInvoice.value.due_date = res.due_date
+  
+  // Only update advances if they are provided in the response
+  if (res.advances) {
+    selectedInvoice.value.advances = res.advances
+  }
 
   // Update sidebar list if needed
   const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
-  if (idx !== -1) {
+  if (idx !== -1 && res.posting_date) {
     invoices.value[idx].posting_date = res.posting_date
   }
 
