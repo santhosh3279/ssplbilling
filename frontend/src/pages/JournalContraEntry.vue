@@ -41,27 +41,27 @@
 
       <div class="flex items-center gap-4">
         <!-- Account selection for Expense Entry -->
-        <div v-if="entryType === 'Opening Entry'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-warning)]/40 shadow-sm">
-          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-warning)]">Account</label>
+        <div v-if="entryType === 'Opening Entry'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-warning)]/40 shadow-sm transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-warning)] group-focus-within:text-[var(--color-text-on-focus)]">Account</label>
           <div
             ref="balancingAccountRef"
             @click="showBalancingSearch = true"
             tabindex="0"
-            class="min-w-[200px] px-2 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-bold text-[var(--color-text)] cursor-pointer hover:border-[var(--color-info)] transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-[var(--color-info)]"
+            class="min-w-[200px] px-2 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-bold text-[var(--color-text)] cursor-pointer hover:border-[var(--color-focus)] transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-[var(--color-focus)] group-focus-within:border-black/20"
           >
             <span :class="!balancingAccount.name ? 'text-[var(--color-text-muted)] italic font-normal' : ''">
               {{ balancingAccount.label || 'Select Account...' }}
             </span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-focus-within:text-black/50"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
-          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</label>
+        <div class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-focus-within:text-[var(--color-text-on-focus)]">Posting Date</label>
           <div class="flex items-center gap-1">
             <button
               @click="changeDate(-1)"
-              class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all"
+              class="p-1 hover:bg-black/10 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all group-focus-within:text-black/70"
               tabindex="-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -70,14 +70,14 @@
               ref="dateInput"
               v-model="displayDate"
               type="text"
-              class="bg-transparent text-xl font-black text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-44 font-mono"
+              class="bg-transparent text-xl font-black text-[var(--color-text)] outline-none focus:text-inherit w-44 font-mono placeholder:text-inherit"
               placeholder="DD/MM/YYYY"
               @focus="e => e.target.select()"
               @input="onDateInput"
             />
             <button
               @click="changeDate(1)"
-              class="p-1 hover:bg-[var(--color-surface-raised)] rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all"
+              class="p-1 hover:bg-black/10 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all group-focus-within:text-black/70"
               tabindex="-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -108,19 +108,18 @@
                 v-for="(row, idx) in rows"
                 :key="idx"
                 class="group transition-colors"
-                :class="{ 'bg-[var(--color-info)]/5': activeRowIdx === idx }"
               >
                 <td class="px-4 py-0 text-center text-sm font-bold text-[var(--color-text-muted)] border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
                   {{ idx + 1 }}
                 </td>
-                <td class="px-0 py-0 border border-[var(--color-border)] relative">
+                <td class="px-0 py-0 border border-[var(--color-border)] relative transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div
                     :ref="el => { if (el) ledgerRefs[idx] = el }"
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full h-full min-h-[48px] px-3 py-2 text-2xl font-bold cursor-pointer hover:bg-[var(--color-surface-raised)] transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-info)]"
-                    :class="row.account ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'"
+                    class="w-full h-full min-h-[48px] px-3 py-2 text-2xl font-bold cursor-pointer hover:bg-black/5 transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)]"
+                    :class="row.account ? 'text-inherit' : 'text-[var(--color-text-muted)] italic group-focus-within:text-inherit/60'"
                   >
                     <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
                   </div>
@@ -130,7 +129,7 @@
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
-                <td class="px-0 py-0 border border-[var(--color-border)]">
+                <td class="px-0 py-0 border border-[var(--color-border)] transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <input
                     :ref="el => { if (el) debitRefs[idx] = el }"
                     v-model.number="row.debit"
@@ -140,12 +139,12 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full h-[48px] bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-info)] transition-all disabled:opacity-20"
+                    class="w-full h-[48px] bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)] transition-all disabled:opacity-20 focus:text-inherit placeholder:text-inherit"
                     :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
                 </td>
-                <td class="px-0 py-0 border border-[var(--color-border)]">
+                <td class="px-0 py-0 border border-[var(--color-border)] transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <input
                     :ref="el => { if (el) creditRefs[idx] = el }"
                     v-model.number="row.credit"
@@ -155,7 +154,7 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full h-[48px] bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-surface-raised)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-info)] transition-all disabled:opacity-20"
+                    class="w-full h-[48px] bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)] transition-all disabled:opacity-20 focus:text-inherit placeholder:text-inherit"
                     :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
@@ -199,14 +198,14 @@
 
           <div class="flex items-start justify-between">
             <div class="flex-1 max-w-xl">
-              <div>
-                <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 block">Remarks</label>
+              <div class="group rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 block transition-colors group-focus-within:text-inherit">Remarks</label>
                 <textarea
                   ref="remarksInput"
                   v-model="userRemarks"
                   @keydown.enter.prevent="handleRemarksEnter"
                   rows="2"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all shadow-sm"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 transition-all shadow-sm focus:text-inherit placeholder:text-inherit"
                   placeholder="Internal notes..."
                 ></textarea>
               </div>
