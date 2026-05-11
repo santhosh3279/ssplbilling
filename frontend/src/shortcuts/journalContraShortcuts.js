@@ -13,5 +13,6 @@ export const journalContraShortcuts = (handlers) => ({
   'PAGEUP':    handlers.focusDate,
   'PAGEDOWN':  handlers.focusLastRow,
   'ENTER':     handlers.handleEnter,
+  'END':       handlers.jumpToRemarks,
   'ESCAPE':    handlers.goBack,
 });

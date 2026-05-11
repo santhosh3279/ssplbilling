@@ -611,6 +611,9 @@ onMounted(() => {
         ledgerRefs[activeRowIdx.value]?.focus()
       })
     },
+    jumpToRemarks: () => {
+      remarksInput.value?.focus()
+    },
     handleEnter: (e) => {
       if (showSearchModal.value) return
       const active = document.activeElement
