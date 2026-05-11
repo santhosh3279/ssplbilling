@@ -21,6 +21,9 @@ export const globalShortcuts = {
   'F1': () => {
     window.dispatchEvent(new CustomEvent('wb-global-command-line-toggle'));
   },
+  'F4': () => {
+    window.dispatchEvent(new CustomEvent('wb-global-general-ledger-toggle'));
+  },
   'F12': () => {
     window.dispatchEvent(new CustomEvent('wb-global-calculator-toggle'));
   }

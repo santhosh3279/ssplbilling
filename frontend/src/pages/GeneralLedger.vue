@@ -1,17 +1,32 @@
 <template>
-  <div class="flex min-h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px]">
+  <div
+    :class="[
+      isSubWindow
+        ? 'fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm'
+        : 'flex min-h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px]'
+    ]"
+    @keydown.esc="isSubWindow && $emit('close')"
+  >
+    <div
+      :class="[
+        isSubWindow
+          ? 'flex h-[92vh] w-[96vw] flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl'
+          : 'flex flex-1 flex-col'
+      ]"
+    >
 
     <!-- ═══════ HEADER ═══════ -->
     <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <button
+            v-if="!isSubWindow"
             @click="$router.push('/')"
             class="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
           >
             ← Dashboard
           </button>
-          <span class="text-[var(--color-text-muted)]">|</span>
+          <span v-if="!isSubWindow" class="text-[var(--color-text-muted)]">|</span>
           <h1 class="text-sm font-semibold text-[var(--color-text)]">
             General Ledger
             <span v-if="ledgerData" class="ml-2 text-[var(--color-text-muted)] font-normal">— {{ ledgerData.label }}</span>
@@ -53,6 +68,16 @@
             </div>
             <button @click="zoom = Math.min(200, zoom + 10)" class="flex h-7 w-7 items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&plus;</button>
           </div>
+
+          <!-- Close -->
+          <button
+            v-if="isSubWindow"
+            @click="$emit('close')"
+            class="ml-2 flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
+            title="Close (Esc)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
       </div>
     </header>
@@ -313,6 +338,7 @@
       doctype="General Ledger"
       @close="showPrintModal = false"
     />
+    </div>
   </div>
 </template>
 
@@ -322,6 +348,17 @@ import { useRouter, useRoute } from 'vue-router'
 import { frappeGet } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import { useSubwindowWatcher } from '../services/shortcutManager'
+
+const props = defineProps({
+  isSubWindow: { type: Boolean, default: false }
+})
+
+const emit = defineEmits(['close'])
+
+useSubwindowWatcher(ref(props.isSubWindow), {
+  'ESCAPE': () => emit('close')
+})
 
 const router = useRouter()
 const route = useRoute()
