@@ -588,7 +588,7 @@ const priceList = ref(localPriceLists.value[0] || 'Standard Selling')
 const taxTemplate = ref(localTaxTemplates.value[0] || '')
 const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenters.value[0] || 'None')
-const isInclusiveTax = ref(true)
+const isInclusiveTax = ref(localStorage.getItem('wb-tax-type-incl') === '1')
 
 // --- Additional Charges ---
 const freightEntry = ref('')
@@ -1949,6 +1949,21 @@ async function handleSeriesSelected(series) {
     defaultTemplate.value = res.print_format || ''
     if (res.warehouse) warehouse.value = res.warehouse
     if (res.cost_center) costCenter.value = res.cost_center
+
+    // Update inclusive tax from billing series settings
+    try {
+      const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
+      if (cached?.data?.billing_series) {
+        const entry = cached.data.billing_series.find(bs => bs.series === series)
+        if (entry) {
+          isInclusiveTax.value = !!entry.tax_type_incl
+          localStorage.setItem('wb-tax-type-incl', entry.tax_type_incl ? '1' : '0')
+        }
+      }
+    } catch (e) {
+      console.warn('[Quotation] Failed to sync inclusive tax from series settings:', e)
+    }
+
     showSeriesModal.value = false
     customerInitialQuery.value = ''
     showCustomerModal.value = true

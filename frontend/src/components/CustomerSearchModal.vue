@@ -275,6 +275,7 @@
 
 <script setup>
 import { ref, nextTick, watch, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { getUserRole } from '../composables/usePermission.js'
@@ -306,6 +307,8 @@ const emit = defineEmits(['close', 'select'])
 
 useSubwindowWatcher(computed(() => props.show))
 
+const router = useRouter()
+
 // ─── State ────────────────────────────────────────────────────────────────────
 const { ledgers: allLedgers, partyLinks, refreshLedgerCache, syncLoading } = useLedgerCache()
 const query        = ref('')
@@ -321,6 +324,7 @@ const supplierCreatorRef = ref(null)
 const showNewForm    = ref(false)
 const showEditForm   = ref(false)
 const showDateModal  = ref(false)
+const isGlMode       = ref(false)
 const formPartyType  = ref('Customer') // 'Customer' | 'Supplier' | 'Employee'
 const newCustomerName = ref('')
 const hideSecondary = ref(props.hideSecondary)
@@ -468,6 +472,13 @@ function handleGlobalKeydown(e) {
     e.preventDefault()
     const item = results.value[selectedIdx.value]
     if (item && (item.type === 'Customer' || item.type === 'Supplier' || item.type === 'Employee')) openEditForm(item)
+  } else if (e.key === 'F4') {
+    e.preventDefault()
+    const item = results.value[selectedIdx.value]
+    if (item) {
+      isGlMode.value = true
+      showDateModal.value = true
+    }
   } else if (e.key === 'F5') {
     e.preventDefault()
     preloadLedger(true)
@@ -486,13 +497,33 @@ function handleSelect(item) {
   if (props.skipDateFilter) {
     emit('select', item)
   } else {
+    isGlMode.value = false
     showDateModal.value = true
   }
 }
 
 function handleDateConfirm(dates) {
   const item = results.value[selectedIdx.value]
-  if (item) { showDateModal.value = false; emit('select', item, dates) }
+  if (item) {
+    if (isGlMode.value) {
+      showDateModal.value = false
+      isGlMode.value = false
+      router.push({
+        name: 'GeneralLedger',
+        query: {
+          party: item.name,
+          party_type: item.type,
+          label: item.label,
+          from: dates.from,
+          to: dates.to
+        }
+      })
+      emit('close')
+    } else {
+      showDateModal.value = false
+      emit('select', item, dates)
+    }
+  }
 }
 
 function focus() {

@@ -161,7 +161,7 @@
               Dr ₹{{ fmt(ledgerData.total_debit) }}
             </span>
             <span class="rounded bg-[var(--color-danger)]/15 border border-[var(--color-danger)]/30 px-2.5 py-1.5 text-[var(--color-danger)]">
-              Cr ₹{{ fmt(ledgerData.total_credit) }}
+              Cr {{ fmt(ledgerData.total_credit) }}
             </span>
             <span
               class="rounded border px-2.5 py-1.5 font-bold"
@@ -296,7 +296,7 @@
               <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-danger)]">₹{{ fmt(ledgerData.total_credit) }}</td>
               <td class="px-3 py-2 text-right font-mono font-bold"
                 :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                ₹{{ fmt(Math.abs(ledgerData.closing_balance)) }}
+                {{ fmt(Math.abs(ledgerData.closing_balance)) }}
                 <span class="ml-0.5 text-[10px] font-normal text-[var(--color-text-muted)]">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
             </tr>
@@ -317,13 +317,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { frappeGet } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // ── Filter state ──
 const partyType = ref('Customer')
@@ -332,6 +333,17 @@ const partyOptions = ref([])
 const selectedParty = ref(null)   // { name, label }
 const fromDate = ref((() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().split('T')[0] })())
 const toDate = ref(new Date().toISOString().split('T')[0])
+
+onMounted(() => {
+  const { party, party_type, label, from, to } = route.query
+  if (party && party_type) {
+    partyType.value = party_type
+    selectedParty.value = { name: party, label: label || party }
+    if (from) fromDate.value = from
+    if (to) toDate.value = to
+    loadLedger()
+  }
+})
 
 // ── Data state ──
 const ledgerData = ref(null)

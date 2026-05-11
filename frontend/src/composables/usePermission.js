@@ -118,6 +118,7 @@ const TILE_ROUTE_MAP = {
   'cashier':           'CashierDesk',
   'purchase-submit':   'PurchaseSubmit',
   'ledger':            'CustomerLedger',
+  'general-ledger':    'GeneralLedger',
   'purchase-order':    'PurchaseOrder',
   'journal-contra':    'JournalContraEntry',
   'expense':           'Expense',

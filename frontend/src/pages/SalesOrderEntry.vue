@@ -763,7 +763,7 @@ const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || '')
 const priceList = ref('Standard Selling')
 const taxTemplate = ref('')
-const isInclusiveTax = ref(false)
+const isInclusiveTax = ref(localStorage.getItem('wb-tax-type-incl') === '1')
 
 watch(taxTemplate, (val) => {
   if (val.toLowerCase().includes('inclusive')) {
@@ -876,6 +876,21 @@ function openSeriesModal() {
 function selectSeries(s) {
   billSeries.value = s
   showSeriesDropdown.value = false
+
+  // Update inclusive tax from billing series settings
+  try {
+    const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
+    if (cached?.data?.billing_series) {
+      const entry = cached.data.billing_series.find(bs => bs.series === s)
+    if (entry) {
+      isInclusiveTax.value = !!entry.tax_type_incl
+      localStorage.setItem('wb-tax-type-incl', entry.tax_type_incl ? '1' : '0')
+    }
+    }
+  } catch (e) {
+    console.warn('[SalesOrderEntry] Failed to sync inclusive tax from series settings:', e)
+  }
+
   nextTick(() => openCustomerSearch())
 }
 
