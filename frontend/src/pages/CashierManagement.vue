@@ -63,8 +63,10 @@
       <div class="flex items-center gap-4">
         <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-5 py-2.5 shadow-inner backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-0.5">
-            <div class="h-1.5 w-1.5 rounded-full animate-pulse" :class="liveLedgerLoading ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'"></div>
-            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Live Cash Ledger</span>
+            <div class="h-1.5 w-1.5 rounded-full" :class="[liveLedgerLoading ? 'bg-[var(--color-warning)] animate-pulse' : 'bg-[var(--color-success)]', !isToday ? 'animate-none' : 'animate-pulse']"></div>
+            <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+              {{ isToday ? 'Live Cash Ledger' : 'Date Closing Balance' }}
+            </span>
           </div>
           <div class="flex items-baseline gap-2">
             <span class="font-mono text-2xl font-black leading-none"
@@ -690,7 +692,10 @@ async function refreshLiveLedger() {
       }
     }
     liveLedgerAccount.value = account
-    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { account })
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { 
+      account,
+      date: currentDate.value 
+    })
     liveLedgerBalance.value = res.balance ?? 0
   } catch (e) {
     console.warn('[Cahier] Live ledger fetch failed:', e)
@@ -952,7 +957,14 @@ async function refreshAll() {
       date: today, op_type: 'Closing', account
     })
     closingTotal.value = res.total || 0
-    closingLedger.value = res.cash_ledger_balance || 0
+    if (!isToday.value) {
+      const balanceRes = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { 
+        account, date: today 
+      })
+      closingLedger.value = balanceRes.balance || 0
+    } else {
+      closingLedger.value = res.cash_ledger_balance || 0
+    }
     localStorage.setItem('closing_cash', String(closingTotal.value))
     localStorage.setItem('closing_ledger_balance', String(closingLedger.value))
   } catch (e) { console.warn('[Cahier] Closing fetch failed:', e) }
