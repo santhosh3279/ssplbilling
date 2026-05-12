@@ -174,7 +174,7 @@
                     v-model.number="form.amount"
                     type="number"
                     step="0.01"
-                    @keydown.enter="handleAmountEnter"
+                    @keydown.enter.prevent="handleAmountEnter"
                     class="w-full bg-transparent text-7xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
                   />
@@ -243,7 +243,8 @@
                     <input
                       v-model.number="ref.allocated_amount"
                       type="number" step="0.01" min="0"
-                      class="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-3xl font-black text-right focus:bg-black/10 focus:outline-none transition-all placeholder:text-inherit"
+                      class="allocation-ref-input w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-3xl font-black text-right focus:bg-black/10 focus:outline-none transition-all placeholder:text-inherit"
+                      @keydown.enter.prevent="focusNextAllocation($event)"
                     />
                   </td>
                   <td class="px-4 py-3 text-right">
@@ -301,7 +302,7 @@
                   ? (refValid ? 'border-[var(--color-success)] bg-[var(--color-success)]/10' : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)]')
                   : (form.mop_type === 'Bank' ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/5' : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]')"
                 placeholder="Ref / Chq No..."
-                @keydown.enter="saveBtn?.focus()"
+                @keydown.enter.prevent="saveBtn?.focus()"
               />            </div>
             <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Ref Date</label>
@@ -643,6 +644,17 @@ function updateAllocations(allocations) {
 
 function removeAllocation(idx) {
   allocationRefs.value.splice(idx, 1)
+}
+
+function focusNextAllocation(event) {
+  const inputs = Array.from(document.querySelectorAll('.allocation-ref-input'))
+  const idx = inputs.indexOf(event.target)
+  if (idx >= 0 && idx < inputs.length - 1) {
+    inputs[idx + 1].focus()
+    inputs[idx + 1].select()
+  } else {
+    remarksInput.value?.focus()
+  }
 }
 
 function handleAmountEnter() {

@@ -648,6 +648,7 @@ function focusFirstAllocate() {
 }
 
 function focusNextAllocate(event) {
+  event.preventDefault()
   const inputs = Array.from(document.querySelectorAll('.allocate-input:not(:disabled)'))
   const idx = inputs.indexOf(event.target)
   if (idx >= 0 && idx < inputs.length - 1) {
