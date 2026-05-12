@@ -584,7 +584,7 @@ const modalSubtitle = computed(() => {
 
 const allowedTypes = computed(() => {
   if (activeTab.value === 'Expenses') return ['Account']
-  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee', 'Account']
+  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee']
   return ['Account']
 })
 
