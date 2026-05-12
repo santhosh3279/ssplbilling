@@ -606,11 +606,10 @@
           </div>
           <div class="flex flex-col gap-2 p-5">
             <button
-              @click="$router.push('/Cashier-Management')"
-              class="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-highlight)] px-4 py-3 text-sm font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-highlight)] active:scale-[0.98] transition-all"
+              @click="showCashierEntry = true"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] hover:bg-[var(--color-info)] transition-all active:scale-95"
             >
               <span>Record Opening Now</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </button>
             <button
               @click="$router.push('/')"
@@ -635,6 +634,15 @@
       v-if="showPrintModal"
       :invoice-name="selectedInvoice?.name"
       @close="showPrintModal = false"
+    />
+
+    <!-- CASHIER ENTRY MODAL -->
+    <CashierEntry
+      v-if="showCashierEntry"
+      title="Cashier Opening"
+      :date="getTodayIST()"
+      @close="showCashierEntry = false"
+      @saved="handleCashierEntrySaved"
     />
 
     <!-- MODIFY BILL SUBWINDOW -->
@@ -674,6 +682,7 @@ import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 import { useLedgerCache } from '../services/ledgerCache'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
+import CashierEntry from '../components/CashierEntry.vue'
 import SalesInvoice from './SalesInvoice.vue'
 
 /**
@@ -728,6 +737,7 @@ const showSuccessModal = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
 const showOpeningRequiredModal = ref(false)
+const showCashierEntry = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
@@ -735,6 +745,7 @@ useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
 useSubwindowWatcher(showOpeningRequiredModal)
+useSubwindowWatcher(showCashierEntry)
 
 const invoices = ref([])
 const selectedInvoice = ref(null)
@@ -878,6 +889,7 @@ async function checkDayOpening() {
   // Only block access if looking at Today or posting for Today
   if (filterDate.value !== today && postingDate.value !== today) {
     showOpeningRequiredModal.value = false
+    showCashierEntry.value = false
     return
   }
 
@@ -887,10 +899,26 @@ async function checkDayOpening() {
       user: session.user.value
     })
     const boxCash = Number(localStorage.getItem('wb-opening-box-cash') || 0)
-    showOpeningRequiredModal.value = !hasOpening || !boxCash
+    
+    if (!hasOpening || !boxCash) {
+      showOpeningRequiredModal.value = true
+      showCashierEntry.value = true
+    } else {
+      showOpeningRequiredModal.value = false
+      showCashierEntry.value = false
+    }
   } catch (e) {
     console.error('[CashierDesk] Opening check failed:', e)
   }
+}
+
+function handleCashierEntrySaved(data) {
+  if (data && data.total !== undefined) {
+    localStorage.setItem('wb-opening-box-cash', String(data.total))
+  }
+  showCashierEntry.value = false
+  showOpeningRequiredModal.value = false
+  loadInvoices()
 }
 
 async function loadInvoices() {
@@ -1459,6 +1487,7 @@ onMounted(() => {
   // Immediately block if no opening recorded (fast path via localStorage)
   if (!Number(localStorage.getItem('wb-opening-box-cash') || 0)) {
     showOpeningRequiredModal.value = true
+    showCashierEntry.value = true
   }
   checkDayOpening()
   window.addEventListener('keydown', handleKeydown)
