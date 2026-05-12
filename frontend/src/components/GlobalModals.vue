@@ -5,7 +5,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       :initial-type="searchType"
-      :allowed-types="['Customer', 'Supplier', 'Employee', 'Account']"
+      :allowed-types="['Account', 'Customer', 'Supplier', 'Employee']"
       @close="showCustomerSearchModal = false"
       @select="pickCust"
     />
@@ -171,13 +171,21 @@ function closeStockLedgerAndReturnToSearch() {
   openItemSearch()
 }
 
+function handleGlobalLedgerSearch() {
+  openCustomerSearch('All', 'ledger')
+}
+
+function handleGlobalItemSearch() {
+  openItemSearch()
+}
+
 onMounted(() => {
-  window.addEventListener('wb-global-ledger-search', () => openCustomerSearch('All', 'ledger'))
-  window.addEventListener('wb-global-item-search', openItemSearch)
+  window.addEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
+  window.addEventListener('wb-global-item-search', handleGlobalItemSearch)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('wb-global-ledger-search', () => openCustomerSearch('All', 'ledger'))
-  window.removeEventListener('wb-global-item-search', openItemSearch)
+  window.removeEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
+  window.removeEventListener('wb-global-item-search', handleGlobalItemSearch)
 })
 </script>

@@ -15,7 +15,7 @@ export const dashboardShortcuts = (handlers) => ({
   'SHIFT+F9': () => handlers.openModule('material-transfer'),
   'SHIFT+F10': () => handlers.openModule('quotation'),
   'CTRL+R': () => handlers.openModule('stock-reconciliation'),
+  'CTRL+L': () => window.dispatchEvent(new CustomEvent('wb-global-ledger-search')),
 
   'ESCAPE': handlers.handleEscape,
   });
-
