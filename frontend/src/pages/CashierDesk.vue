@@ -591,35 +591,6 @@
       </div>
     </div>
 
-    <!-- DAY OPENING CHECK MODAL -->
-    <transition name="fade">
-      <div v-if="showOpeningRequiredModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-bg)]/80 backdrop-blur-sm p-4">
-        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--color-warning)]/50 bg-[var(--color-surface)] shadow-2xl animate-in zoom-in-95 duration-200">
-          <div class="bg-[var(--color-warning)]/30 border-b border-[var(--color-warning)]/40 p-6 flex flex-col items-center text-center">
-            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-warning)]/50 text-[var(--color-warning)] border border-[var(--color-warning)]/50">
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-            </div>
-            <h2 class="mb-2 text-lg font-black text-[var(--color-text)] uppercase tracking-tight">Day Opening Required</h2>
-            <p class="text-sm font-medium text-[var(--color-text-muted)] leading-relaxed">
-              Please record the Day Opening Box Cash before processing any payments for today.
-            </p>
-          </div>
-          <div class="flex flex-col gap-2 p-5">
-            <button
-              @click="showCashierEntry = true"
-              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] hover:bg-[var(--color-info)] transition-all active:scale-95"
-            >
-              <span>Record Opening Now</span>
-            </button>
-            <button
-              @click="$router.push('/')"
-              class="w-full px-4 py-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-muted)] transition-colors"
-            >Back to Dashboard</button>
-          </div>
-        </div>
-      </div>
-    </transition>
-
     <!-- RECONCILIATION MODAL -->
     <Unallocated
       :show="showReconcileModal"
@@ -736,7 +707,6 @@ const showReconcileModal = ref(false)
 const showSuccessModal = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
-const showOpeningRequiredModal = ref(false)
 const showCashierEntry = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
@@ -744,7 +714,6 @@ useSubwindowWatcher(showCardRefModal)
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
-useSubwindowWatcher(showOpeningRequiredModal)
 useSubwindowWatcher(showCashierEntry)
 
 const invoices = ref([])
@@ -888,7 +857,6 @@ async function checkDayOpening() {
   const today = getTodayIST()
   // Only block access if looking at Today or posting for Today
   if (filterDate.value !== today && postingDate.value !== today) {
-    showOpeningRequiredModal.value = false
     showCashierEntry.value = false
     return
   }
@@ -901,10 +869,8 @@ async function checkDayOpening() {
     const boxCash = Number(localStorage.getItem('wb-opening-box-cash') || 0)
     
     if (!hasOpening || !boxCash) {
-      showOpeningRequiredModal.value = true
       showCashierEntry.value = true
     } else {
-      showOpeningRequiredModal.value = false
       showCashierEntry.value = false
     }
   } catch (e) {
@@ -917,7 +883,6 @@ function handleCashierEntrySaved(data) {
     localStorage.setItem('wb-opening-box-cash', String(data.total))
   }
   showCashierEntry.value = false
-  showOpeningRequiredModal.value = false
   loadInvoices()
 }
 
@@ -1143,7 +1108,7 @@ async function processPayment() {
         user: session.user.value
       })
       if (!hasOpening) {
-        showOpeningRequiredModal.value = true
+        showCashierEntry.value = true
         return
       }
     } catch (e) { console.error(e) }
@@ -1486,7 +1451,6 @@ onMounted(() => {
   loadInvoices()
   // Immediately block if no opening recorded (fast path via localStorage)
   if (!Number(localStorage.getItem('wb-opening-box-cash') || 0)) {
-    showOpeningRequiredModal.value = true
     showCashierEntry.value = true
   }
   checkDayOpening()
