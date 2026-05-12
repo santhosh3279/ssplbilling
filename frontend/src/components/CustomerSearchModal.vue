@@ -11,8 +11,8 @@
       <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center bg-[var(--color-surface-raised)]">
         <!-- Left: Title -->
         <div class="w-1/3">
-          <div class="text-2xl font-semibold text-[var(--color-text)]">Detailed Ledger Search</div>
-          <div class="text-lg text-[var(--color-text-muted)]">Search Customers, Suppliers, and Accounting Ledgers</div>
+          <div class="text-2xl font-semibold text-[var(--color-text)]">{{ title || 'Detailed Ledger Search' }}</div>
+          <div class="text-lg text-[var(--color-text-muted)]">{{ subtitle || 'Search Customers, Suppliers, and Accounting Ledgers' }}</div>
         </div>
 
         <!-- Center: Quick Filter Tabs -->
@@ -287,6 +287,8 @@ import EmployeeCreator from './EmployeeCreator.vue'
 
 const props = defineProps({
   show: Boolean,
+  title: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
   skipDateFilter: { type: Boolean, default: false },
   initialType: { type: String, default: 'All' },
   allowedTypes: { type: Array, default: () => ['Customer', 'Supplier', 'Employee', 'Account'] },

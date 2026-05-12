@@ -354,6 +354,8 @@
     <CustomerSearchModal
       ref="custSearchModalRef"
       :show="showSearchModal"
+      :title="modalTitle"
+      :subtitle="modalSubtitle"
       :allowedTypes="allowedTypes"
       :initialType="initialSearchType"
       :skipDateFilter="true"
@@ -558,6 +560,27 @@ function updateTime() {
 // --- Methods ---
 const searchTarget = ref('party')
 const showSearchModal = ref(false)
+
+const modalTitle = computed(() => {
+  if (activeTab.value === 'Expenses') {
+    return searchTarget.value === 'paid_from' ? 'Expense - Paid From' : 'Expense - Paid To'
+  }
+  const type = activeTab.value // Payment or Receipt
+  return searchTarget.value === 'party' ? `${type} - Party Name` : `${type} - Mode of Payment`
+})
+
+const modalSubtitle = computed(() => {
+  if (activeTab.value === 'Expenses') {
+    return searchTarget.value === 'paid_from' ? 'Select Account Paid From (Credit)' : 'Select Account Paid To (Debit)'
+  }
+  if (activeTab.value === 'Payment') {
+    return searchTarget.value === 'party' ? 'Select Party to Pay (Debit)' : 'Select Account Paid From (Credit)'
+  }
+  if (activeTab.value === 'Receipt') {
+    return searchTarget.value === 'party' ? 'Select Party to Receive From (Credit)' : 'Select Account Paid To (Debit)'
+  }
+  return ''
+})
 
 const allowedTypes = computed(() => {
   if (activeTab.value === 'Expenses') return ['Account']
