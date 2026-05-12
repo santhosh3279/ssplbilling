@@ -25,35 +25,21 @@
         <!-- Row 1: Date (editable) + Opening/Closing (read-only) -->
         <div class="grid grid-cols-2 gap-2">
           <div class="relative">
-            <label class="mb-1 block text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</label>
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</label>
             <div class="flex items-center gap-1">
               <input
                 type="text"
                 v-model="displayDate"
                 @blur="onDisplayDateBlur"
                 @keydown.enter.prevent="onDisplayDateBlur"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-2xl text-[var(--color-text)] font-mono focus:border-[var(--color-info)] outline-none placeholder-[var(--color-text-muted)]/50"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm text-[var(--color-text)] font-mono focus:border-[var(--color-info)] outline-none placeholder-[var(--color-text-muted)]/50"
                 placeholder="DD-MMM-YYYY"
-              />
-              <button
-                type="button"
-                @click="datePicker?.showPicker()"
-                class="flex h-16 w-16 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] transition hover:text-[var(--color-text)]"
-                title="Open Calendar"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              </button>
-              <input
-                ref="datePicker"
-                type="date"
-                v-model="form.date"
-                class="pointer-events-none absolute h-0 w-0 opacity-0"
               />
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Opening or Closing</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1.25 text-2xl text-[var(--color-text)] font-mono opacity-80">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Opening or Closing</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1.25 text-sm text-[var(--color-text)] font-mono opacity-80">
               {{ form.opening_or_closing }}
             </div>
           </div>
@@ -62,15 +48,15 @@
         <!-- Row 2: Cash Account + User -->
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="mb-1 block text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Account</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-2xl font-mono truncate"
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Account</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm font-mono truncate"
                  :class="form.cash ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'">
               {{ form.cash || (loadingSettings ? 'Loading…' : 'Not configured') }}
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">User</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-2xl text-[var(--color-text)] font-mono">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">User</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm text-[var(--color-text)] font-mono">
               {{ form.user }}
             </div>
           </div>
@@ -79,16 +65,16 @@
         <!-- Row 3: Cash Ledger Balance (read-only) + Difference (computed) -->
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="mb-1 block text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Ledger Balance</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-2xl font-mono"
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Ledger Balance</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm font-mono"
                  :class="loadingBalance ? 'text-[var(--color-text-muted)] italic' : (ledgerBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
               {{ loadingBalance ? 'Fetching…' : Math.abs(ledgerBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-              <span v-if="!loadingBalance" class="text-[20px] ml-1">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
+              <span v-if="!loadingBalance" class="text-[10px] ml-1">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Difference</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-2xl font-mono"
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Difference</label>
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm font-mono"
                  :class="difference >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
               {{ difference.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </div>
@@ -191,7 +177,6 @@ const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1]
 const denomInputRefs = ref([])
 onBeforeUpdate(() => { denomInputRefs.value = [] })
 
-const datePicker = ref(null)
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 function formatDate(dateStr) {
