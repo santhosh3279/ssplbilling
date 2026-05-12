@@ -24,17 +24,10 @@
 
         <!-- Row 1: Date (editable) + Opening/Closing (read-only) -->
         <div class="grid grid-cols-2 gap-2">
-          <div class="relative">
+          <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</label>
-            <div class="flex items-center gap-1">
-              <input
-                type="text"
-                v-model="displayDate"
-                @blur="onDisplayDateBlur"
-                @keydown.enter.prevent="onDisplayDateBlur"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm text-[var(--color-text)] font-mono focus:border-[var(--color-info)] outline-none placeholder-[var(--color-text-muted)]/50"
-                placeholder="DD-MMM-YYYY"
-              />
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm text-[var(--color-text)] font-mono opacity-80">
+              {{ displayDate }}
             </div>
           </div>
           <div>
@@ -186,19 +179,6 @@ function formatDate(dateStr) {
   return `${d}-${month}-${y}`
 }
 
-function parseDate(displayStr) {
-  if (!displayStr) return null
-  const parts = displayStr.split("-")
-  if (parts.length !== 3) return null
-  const d = parts[0].padStart(2, '0')
-  const mIdx = monthNames.findIndex(m => m.toLowerCase() === parts[1].toLowerCase())
-  if (mIdx === -1) return null
-  const m = String(mIdx + 1).padStart(2, '0')
-  const y = parts[2]
-  if (y.length !== 4) return null
-  return `${y}-${m}-${d}`
-}
-
 function onDenomEnter(index) {
   if (index < denominations.length - 1) {
     denomInputRefs.value[index + 1]?.focus()
@@ -221,15 +201,6 @@ watch(() => form.date, (newVal) => {
   displayDate.value = formatDate(newVal)
   fetchExistingRecord()
 })
-
-function onDisplayDateBlur() {
-  const parsed = parseDate(displayDate.value)
-  if (parsed && parsed !== form.date) {
-    form.date = parsed
-  } else {
-    displayDate.value = formatDate(form.date)
-  }
-}
 
 const loadingSettings = ref(false)
 const loadingBalance = ref(false)
