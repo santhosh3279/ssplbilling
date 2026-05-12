@@ -53,8 +53,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { frappeGet } from '../api'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
@@ -62,6 +63,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'selected'])
+
+useSubwindowWatcher(computed(() => props.show), {
+  ESCAPE: () => emit('close')
+})
 
 const allowedSeries = ref([])
 const loading = ref(false)
