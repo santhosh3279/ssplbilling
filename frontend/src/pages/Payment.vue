@@ -125,10 +125,10 @@
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-2">
-                  {{ activeTab === 'Expenses' ? 'Paid From (Bank/Cash)' : 'Party Name' }}
+                  {{ activeTab === 'Expenses' ? 'Paid To (Debit Account)' : 'Party Name' }}
                 </th>
                 <th class="px-4 py-2">
-                  {{ activeTab === 'Expenses' ? 'Paid To (Bank/Cash)' : (activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)') }}
+                  {{ activeTab === 'Expenses' ? 'Paid From (Bank/Cash)' : (activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)') }}
                 </th>
                 <th class="px-6 py-2 text-right w-64">Amount</th>
                 <th class="px-6 py-2 text-right w-80">Outstanding</th>
@@ -137,31 +137,31 @@
             </thead>
             <tbody>
               <tr class="divide-x divide-[var(--color-border)]">
-                <!-- Party Name / Paid From -->
+                <!-- Party Name / Paid To -->
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
                       v-model="partyQuery"
-                      @click="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'party')"
-                      @keydown.enter="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'party')"
+                      @click="openSearch(activeTab === 'Expenses' ? 'paid_to' : 'party')"
+                      @keydown.enter="openSearch(activeTab === 'Expenses' ? 'paid_to' : 'party')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Expenses' ? 'Select From Account...' : 'Search Party...'"
+                      :placeholder="activeTab === 'Expenses' ? 'Select Expense/Asset (Debit)...' : 'Search Party...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
                 </td>
 
-                <!-- Bank/Cash Account -->
+                <!-- Bank/Cash Account / Paid From -->
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
                       v-model="mopAccountQuery"
-                      @click="openSearch('mop')"
-                      @keydown.enter="openSearch('mop')"
+                      @click="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'mop')"
+                      @keydown.enter="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'mop')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      placeholder="Select Account..."
+                      :placeholder="activeTab === 'Expenses' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
@@ -563,7 +563,7 @@ const showSearchModal = ref(false)
 
 const modalTitle = computed(() => {
   if (activeTab.value === 'Expenses') {
-    return searchTarget.value === 'paid_from' ? 'Expense - Paid From' : 'Expense - Paid To'
+    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Expense - Paid To' : 'Expense - Paid From'
   }
   const type = activeTab.value // Payment or Receipt
   return searchTarget.value === 'party' ? `${type} - Party Name` : `${type} - Mode of Payment`
@@ -571,7 +571,7 @@ const modalTitle = computed(() => {
 
 const modalSubtitle = computed(() => {
   if (activeTab.value === 'Expenses') {
-    return searchTarget.value === 'paid_from' ? 'Select Account Paid From (Credit)' : 'Select Account Paid To (Debit)'
+    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Select Account Paid To (Debit)' : 'Select Account Paid From (Credit)'
   }
   if (activeTab.value === 'Payment') {
     return searchTarget.value === 'party' ? 'Select Party to Pay (Debit)' : 'Select Account Paid From (Credit)'
@@ -604,9 +604,9 @@ function openSearch(target) {
 
 function handleSelect(item) {
   showSearchModal.value = false
-  if (searchTarget.value === 'party') {
+  if (searchTarget.value === 'party' || searchTarget.value === 'paid_to') {
     form.party = item.name
-    form.party_name = item.label || item.customer_name || item.supplier_name || item.employee_name || item.name
+    form.party_name = item.label || item.customer_name || item.supplier_name || item.employee_name || item.account_name || item.name
     partyQuery.value = form.party_name
     
     // Clear previous allocations
@@ -614,36 +614,29 @@ function handleSelect(item) {
     clearModalAmounts()
     
     // Automatically select party type based on selection
-    if (item.type) {
+    if (item.type && item.type !== 'Account') {
       form.party_type = item.type
-    }
-    
-    // Automatically set default Account based on type
-    if (form.party_type === 'Customer') {
-      form.account = 'Debtors - SSPL'
-      accountQuery.value = 'Debtors'
     } else {
-      form.account = 'Creditors - SSPL'
-      accountQuery.value = 'Creditors'
+      form.party_type = '' // Account type
     }
     
-    fetchOutstanding()
+    if (activeTab.value !== 'Expenses') {
+      // Automatically set default Account based on type
+      if (form.party_type === 'Customer') {
+        form.account = 'Debtors - SSPL'
+        accountQuery.value = 'Debtors'
+      } else if (form.party_type === 'Supplier') {
+        form.account = 'Creditors - SSPL'
+        accountQuery.value = 'Creditors'
+      }
+      fetchOutstanding()
+    }
     
     // Automatically chain to MOP account selection
     setTimeout(() => {
-      openSearch('mop')
+      openSearch(activeTab.value === 'Expenses' ? 'paid_from' : 'mop')
     }, 150)
-  } else if (searchTarget.value === 'paid_from') {
-    form.party = item.name
-    form.party_name = item.label || item.account_name || item.name
-    partyQuery.value = form.party_name
-    form.party_type = '' // Not a standard party
-    
-    // Chain to MOP (Paid To)
-    setTimeout(() => {
-      openSearch('mop')
-    }, 150)
-  } else if (searchTarget.value === 'account' || searchTarget.value === 'mop') {
+  } else if (searchTarget.value === 'paid_from' || searchTarget.value === 'account' || searchTarget.value === 'mop') {
     form.mop_account = item.name
     form.mop_type = item.group
     mopAccountQuery.value = item.label || item.account_name || item.name
