@@ -5,7 +5,7 @@
       ref="custSearchModalRef"
       :show="showCustomerSearchModal"
       :initial-type="searchType"
-      :allowed-types="['Customer', 'Supplier', 'Employee']"
+      :allowed-types="['Customer', 'Supplier', 'Employee', 'Account']"
       @close="showCustomerSearchModal = false"
       @select="pickCust"
     />
