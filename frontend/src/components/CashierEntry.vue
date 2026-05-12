@@ -9,10 +9,10 @@
       <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
         <div>
           <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{{ title }}</div>
-          <div class="text-base font-bold text-[var(--color-text-on-highlight)]">BOX Cash Entry</div>
+          <div class="text-base font-bold text-[var(--color-text)]">BOX Cash Entry</div>
         </div>
         <button
-          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)]"
+          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs text-[var(--color-text)] transition hover:brightness-110 active:scale-95"
           @click="$emit('close')"
         >
           ✕ Close
@@ -32,13 +32,13 @@
                 v-model="displayDate"
                 @blur="onDisplayDateBlur"
                 @keydown.enter.prevent="onDisplayDateBlur"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm text-[var(--color-text)] font-mono focus:border-[var(--color-info)] outline-none"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm text-[var(--color-text)] font-mono focus:border-[var(--color-info)] outline-none placeholder-[var(--color-text-muted)]/50"
                 placeholder="DD-MMM-YYYY"
               />
               <button
                 type="button"
                 @click="datePicker?.showPicker()"
-                class="flex h-9 w-10 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)]"
+                class="flex h-9 w-10 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] transition hover:text-[var(--color-text)]"
                 title="Open Calendar"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -53,7 +53,7 @@
           </div>
           <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Opening or Closing</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2.5 text-sm text-[var(--color-text)] font-mono">
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2.5 text-sm text-[var(--color-text)] font-mono opacity-80">
               {{ form.opening_or_closing }}
             </div>
           </div>
@@ -63,7 +63,7 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Account</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm font-mono"
+            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm font-mono truncate"
                  :class="form.cash ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'">
               {{ form.cash || (loadingSettings ? 'Loading…' : 'Not configured') }}
             </div>
@@ -112,7 +112,7 @@
                   type="number"
                   min="0"
                   placeholder="0"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm text-[var(--color-text-on-highlight)] placeholder-slate-500 outline-none focus:border-[var(--color-info)]"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)]"
                   @keydown.enter.prevent="onDenomEnter(i)"
                   @keydown.down.prevent="denomInputRefs[i + 1]?.focus()"
                   @keydown.up.prevent="denomInputRefs[i - 1]?.focus()"
@@ -125,7 +125,7 @@
             </div>
 
             <!-- Right column: total -->
-            <div class="flex flex-col items-center justify-center rounded-xl bg-[var(--color-surface-raised)]/50 border border-[var(--color-border)] p-4 gap-1">
+            <div class="flex flex-col items-center justify-center rounded-xl bg-[var(--color-surface-raised)]/30 border border-[var(--color-border)] p-4 gap-1">
               <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">BOX Total</div>
               <div class="text-3xl font-black text-[var(--color-success)] font-mono">
                 {{ total.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
@@ -135,24 +135,24 @@
         </div>
 
         <!-- Error -->
-        <div v-if="saveError" class="rounded-lg bg-[var(--color-danger)]/40 border border-[var(--color-danger)] px-4 py-2 text-sm text-[var(--color-danger)]">
+        <div v-if="saveError" class="rounded-lg bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30 px-4 py-2 text-sm text-[var(--color-danger)]">
           {{ saveError }}
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between border-t border-[var(--color-border)] px-6 py-4">
-        <div v-if="savedName" class="text-xs text-[var(--color-success)] font-mono">Saved: {{ savedName }}</div>
-        <div v-else class="text-xs text-[var(--color-text-muted)]">Fill denominations and save</div>
+      <div class="flex items-center justify-between border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface-raised)]/10">
+        <div v-if="savedName" class="text-xs text-[var(--color-success)] font-mono font-bold">Saved: {{ savedName }}</div>
+        <div v-else class="text-xs text-[var(--color-text-muted)] font-medium">Fill denominations and save</div>
         <div class="flex gap-3">
           <button
-            class="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]"
+            class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition active:scale-95"
             @click="$emit('close')"
           >
             Cancel
           </button>
           <button
-            class="rounded-lg bg-[var(--color-info)] px-5 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition disabled:opacity-50"
+            class="rounded-lg bg-[var(--color-info)] px-5 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:brightness-110 active:scale-95 transition disabled:opacity-50 disabled:active:scale-100"
             :disabled="saving || !form.cash"
             @click="handleSave"
           >
