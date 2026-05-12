@@ -22,52 +22,52 @@
       <!-- Body -->
       <div class="p-3 space-y-2.5 max-h-[80vh] overflow-y-auto">
 
-        <!-- Row 1: Date (editable) + Opening/Closing (read-only) -->
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm text-[var(--color-text)] font-mono opacity-80">
+        <!-- Row 1: Date + Opening/Closing (read-only) -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Date</label>
+            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-2 py-1 text-sm text-[var(--color-text)] font-mono opacity-80 text-right">
               {{ displayDate }}
             </div>
           </div>
-          <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Opening or Closing</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1.25 text-sm text-[var(--color-text)] font-mono opacity-80">
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Type</label>
+            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-2 py-1 text-sm text-[var(--color-text)] font-mono opacity-80 text-right">
               {{ form.opening_or_closing }}
             </div>
           </div>
         </div>
 
         <!-- Row 2: Cash Account + User -->
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Account</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm font-mono truncate"
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Account</label>
+            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-2 py-1 text-sm font-mono truncate text-right"
                  :class="form.cash ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)] italic'">
               {{ form.cash || (loadingSettings ? 'Loading…' : 'Not configured') }}
             </div>
           </div>
-          <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">User</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm text-[var(--color-text)] font-mono">
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">User</label>
+            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-2 py-1 text-sm text-[var(--color-text)] font-mono text-right">
               {{ form.user }}
             </div>
           </div>
         </div>
 
         <!-- Row 3: Cash Ledger Balance (read-only) + Difference (computed) -->
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Cash Ledger Balance</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm font-mono"
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Balance</label>
+            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-2 py-1 text-sm font-mono text-right"
                  :class="loadingBalance ? 'text-[var(--color-text-muted)] italic' : (ledgerBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
               {{ loadingBalance ? 'Fetching…' : Math.abs(ledgerBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
               <span v-if="!loadingBalance" class="text-[10px] ml-1">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
             </div>
           </div>
-          <div>
-            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Difference</label>
-            <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-1 text-sm font-mono"
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Diff</label>
+            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-2 py-1 text-sm font-mono text-right"
                  :class="difference >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
               {{ difference.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </div>
