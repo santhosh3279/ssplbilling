@@ -796,10 +796,10 @@ async function handleSubmit() {
     const payload = {
       payment_type: paymentType,
       party_type: form.party_type,
-      party: form.party,
+      party: activeTab.value === 'Expenses' ? form.mop_account : form.party,
       amount: form.amount,
       mode_of_payment: form.mop_type === 'Bank' ? 'Bank' : 'Cash',
-      account: form.mop_account,
+      account: activeTab.value === 'Expenses' ? form.party : form.mop_account,
       posting_date: postingDate.value,
       reference_no: form.reference_no,
       reference_date: form.reference_date,
