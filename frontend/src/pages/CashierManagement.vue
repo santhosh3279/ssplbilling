@@ -692,10 +692,13 @@ async function refreshLiveLedger() {
       }
     }
     liveLedgerAccount.value = account
-    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { 
-      account,
-      date: currentDate.value 
-    })
+    const params = { account }
+    if (!isToday.value) {
+      const d = new Date(currentDate.value + 'T00:00:00')
+      d.setDate(d.getDate() + 1)
+      params.date = d.toLocaleDateString('en-CA')
+    }
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', params)
     liveLedgerBalance.value = res.balance ?? 0
   } catch (e) {
     console.warn('[Cahier] Live ledger fetch failed:', e)
@@ -958,8 +961,10 @@ async function refreshAll() {
     })
     closingTotal.value = res.total || 0
     if (!isToday.value) {
+      const d = new Date(today + 'T00:00:00')
+      d.setDate(d.getDate() + 1)
       const balanceRes = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { 
-        account, date: today 
+        account, date: d.toLocaleDateString('en-CA') 
       })
       closingLedger.value = balanceRes.balance || 0
     } else {
