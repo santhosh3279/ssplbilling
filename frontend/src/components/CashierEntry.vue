@@ -89,7 +89,7 @@
           <div>
             <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Difference</label>
             <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-3 py-2 text-sm font-mono"
-                 :class="difference >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                 :class="difference >= 0 ? 'text-[var(--color-success)]' : 'text(--color-danger)'">
               {{ difference.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
             </div>
           </div>
@@ -166,7 +166,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted, watch, onBeforeUpdate } from 'vue'
+import { reactive, ref, computed, onMounted, watch, onBeforeUpdate, nextTick } from 'vue'
 import { session } from '../session'
 import { frappeGet, frappePost } from '../api.js'
 
@@ -305,6 +305,10 @@ onMounted(async () => {
       await fetchLedgerBalanceManual(form.cash)
     }
   }
+
+  nextTick(() => {
+    denomInputRefs.value[0]?.focus()
+  })
 })
 
 async function fetchExistingRecord() {
@@ -413,6 +417,7 @@ async function handleSave() {
     })
     
     emit('saved', { total: total.value, name: res.name })
+    emit('close')
   } catch (e) {
     saveError.value = e.message || 'Save failed'
   } finally {
