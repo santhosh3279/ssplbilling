@@ -160,7 +160,7 @@
           />
         </div>
 
-        <!-- Load Button -->
+        <!-- Refresh Button -->
         <button
           @click="loadLedger"
           :disabled="!selectedParty || loading"
@@ -169,7 +169,7 @@
             ? 'bg-[var(--color-info)] text-white hover:opacity-90 cursor-pointer'
             : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] cursor-not-allowed'"
         >
-          {{ loading ? 'Loading…' : 'Load Ledger' }}
+          {{ loading ? 'Loading…' : 'Refresh Ledger' }}
         </button>
 
         <!-- Summary chips -->
@@ -208,7 +208,7 @@
       <!-- Empty state -->
       <div v-if="!ledgerData && !loading && !error" class="flex flex-col items-center justify-center gap-3 py-24 text-[var(--color-text-muted)]">
         <div class="text-5xl">📒</div>
-        <div class="text-sm font-semibold">Select a party and click Load Ledger</div>
+        <div class="text-sm font-semibold">Select a party and click Refresh Ledger</div>
         <div class="text-xs">Powered by ERPNext General Ledger report engine</div>
       </div>
 
@@ -464,7 +464,7 @@ function clearSelection() {
   error.value = ''
 }
 
-// ── Load ledger ──
+// ── Refresh ledger ──
 async function loadLedger() {
   if (!selectedParty.value || loading.value) return
   loading.value = true
