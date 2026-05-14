@@ -367,9 +367,10 @@ onMounted(async () => {
       try {
         const nameField = party_type === 'Customer' ? 'customer_name'
           : party_type === 'Supplier' ? 'supplier_name'
+          : party_type === 'Account' ? 'account_name'
           : 'employee_name'
         
-        if (['Customer', 'Supplier', 'Employee'].includes(party_type)) {
+        if (['Customer', 'Supplier', 'Employee', 'Account'].includes(party_type)) {
           const doc = await frappeGet('frappe.client.get', { doctype: party_type, name: party })
           displayLabel = doc[nameField] || party
         }
