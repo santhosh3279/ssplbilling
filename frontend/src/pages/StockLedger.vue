@@ -330,10 +330,10 @@
       @close="showSalesEntryWindow = false"
     />
 
-    <CustomerLedger
+    <GeneralLedger
       v-if="showCustomerLedgerWindow"
       :is-sub-window="true"
-      :customer-name="ledgerCustomerName"
+      :ledger-name="ledgerCustomerName"
       :initial-from-date="ledgerFromDate"
       :initial-to-date="ledgerToDate"
       @close="showCustomerLedgerWindow = false"
@@ -365,7 +365,7 @@ import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { fetchStockLedger, frappeGet } from '../api.js'
 import SalesEntry from './SalesInvoice.vue'
-import CustomerLedger from './CustomerLedger.vue'
+import GeneralLedger from './GeneralLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { useSubwindow } from '../services/shortcutManager'

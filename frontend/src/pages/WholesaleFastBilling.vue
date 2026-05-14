@@ -351,10 +351,10 @@
       @select="onModalItemSelected"
     />
 
-    <CustomerLedger
+    <GeneralLedger
       v-if="showCustomerLedgerWindow"
       :is-sub-window="true"
-      :customer-name="ledgerCustomerName"
+      :ledger-name="ledgerCustomerName"
       :initial-from-date="ledgerFromDate"
       :initial-to-date="ledgerToDate"
       @close="showCustomerLedgerWindow = false"
@@ -401,7 +401,7 @@
 import { ref, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
 import ItemSearch from "../components/ItemSearch.vue";
 import CustomerSearchModal from "../components/CustomerSearchModal.vue";
-import CustomerLedger from "./CustomerLedger.vue";
+import GeneralLedger from "./GeneralLedger.vue";
 import StockLedger from "./StockLedger.vue";
 import { useBilling } from "../composables/useBilling.js";
 

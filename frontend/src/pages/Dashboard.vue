@@ -469,17 +469,15 @@ function openModule(id) {
     return
   }
   if (id === 'stock-ledger') {
-    openItemSearch()
+    window.dispatchEvent(new CustomEvent('wb-global-item-search'))
     return
   }
   if (id === 'outstanding-bills') {
-    searchPurpose.value = 'outstanding'
-    openCustomerSearch('All')
+    window.dispatchEvent(new CustomEvent('wb-global-ledger-search', { detail: { purpose: 'outstanding' } }))
     return
   }
   if (id === 'ledger') {
-    searchPurpose.value = 'ledger'
-    openCustomerSearch('All')
+    window.dispatchEvent(new CustomEvent('wb-global-ledger-search', { detail: { purpose: 'ledger' } }))
     return
   }
   if (routeAliases[id]) {

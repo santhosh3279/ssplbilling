@@ -22,7 +22,7 @@
     />
 
     <!-- CUSTOMER LEDGER SUB-WINDOW -->
-    <CustomerLedger
+    <GeneralLedger
       v-if="showLedgerWindow"
       :is-sub-window="true"
       :ledger-name="ledgerCustomerName"
@@ -57,7 +57,7 @@
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import CustomerSearchModal from './CustomerSearchModal.vue'
 import ItemSearch from './ItemSearch.vue'
-import CustomerLedger from '../pages/CustomerLedger.vue'
+import GeneralLedger from '../pages/GeneralLedger.vue'
 import StockLedger from '../pages/StockLedger.vue'
 import OutstandingBillsModal from './OutstandingBillsModal.vue'
 import { frappeGet } from '../api.js'
@@ -171,8 +171,9 @@ function closeStockLedgerAndReturnToSearch() {
   openItemSearch()
 }
 
-function handleGlobalLedgerSearch() {
-  openCustomerSearch('All', 'ledger')
+function handleGlobalLedgerSearch(e) {
+  const purpose = e?.detail?.purpose || 'ledger'
+  openCustomerSearch('All', purpose)
 }
 
 function handleGlobalItemSearch() {

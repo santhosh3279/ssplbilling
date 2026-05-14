@@ -10,7 +10,7 @@ import PriceListUpdate from './pages/PriceListUpdate.vue'
 import BarcodePrintPage from './pages/BarcodePrintPage.vue'
 import CashierDesk from './pages/CashierDesk.vue'
 import PurchaseSubmit from './pages/PurchaseSubmit.vue'
-import CustomerLedger from './pages/CustomerLedger.vue'
+import GeneralLedger from './pages/GeneralLedger.vue'
 import Payment from './pages/Payment.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import CashierManagement from './pages/CashierManagement.vue'
@@ -28,7 +28,6 @@ import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
 import GstDummyLedger from './pages/GstDummyLedger.vue'
 import GstLedger from './pages/GstLedger.vue'
 import DailyReport from './pages/DailyReport.vue'
-import GeneralLedger from './pages/GeneralLedger.vue'
 import StoreTransfer from './pages/StoreTransfer.vue'
 import SingleEntry from './pages/SingleEntry.vue'
 import Expense from './pages/Expense.vue'
@@ -148,7 +147,7 @@ const routes = [
   {
     path: '/ledger',
     name: 'CustomerLedger',
-    component: CustomerLedger,
+    component: GeneralLedger,
     meta: { title: 'Customer Ledger' },
   },
   {

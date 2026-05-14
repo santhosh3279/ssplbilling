@@ -351,7 +351,11 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
-  isSubWindow: { type: Boolean, default: false }
+  isSubWindow: { type: Boolean, default: false },
+  ledgerName: { type: String, default: '' },
+  ledgerType: { type: String, default: 'Customer' },
+  initialFromDate: { type: String, default: '' },
+  initialToDate: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close'])
@@ -371,13 +375,35 @@ const selectedParty = ref(null)   // { name, label }
 const fromDate = ref((() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().split('T')[0] })())
 const toDate = ref(new Date().toISOString().split('T')[0])
 
-onMounted(() => {
-  const { party, party_type, label, from, to } = route.query
+onMounted(async () => {
+  if (props.initialFromDate) fromDate.value = props.initialFromDate
+  if (props.initialToDate) toDate.value = props.initialToDate
+
+  const party = props.ledgerName || route.query.party || route.query.customer || route.query.ledger
+  const party_type = props.ledgerType || route.query.party_type || (route.query.customer ? 'Customer' : 'Account')
+  const label = route.query.label
+
   if (party && party_type) {
     partyType.value = party_type
-    selectedParty.value = { name: party, label: label || party }
-    if (from) fromDate.value = from
-    if (to) toDate.value = to
+    
+    let displayLabel = label || party
+    if (!label && party) {
+      // Try to fetch label if not provided
+      try {
+        const nameField = party_type === 'Customer' ? 'customer_name'
+          : party_type === 'Supplier' ? 'supplier_name'
+          : 'employee_name'
+        
+        if (['Customer', 'Supplier', 'Employee'].includes(party_type)) {
+          const doc = await frappeGet('frappe.client.get', { doctype: party_type, name: party })
+          displayLabel = doc[nameField] || party
+        }
+      } catch (e) {
+        console.warn('Failed to fetch party label:', e)
+      }
+    }
+
+    selectedParty.value = { name: party, label: displayLabel }
     loadLedger()
   }
 })
