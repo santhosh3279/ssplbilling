@@ -480,7 +480,7 @@ async function loadLedger() {
     ledgerData.value = data
   } catch (e) {
     console.error('Failed to load GL ledger:', e)
-    error.value = e?.message || 'Failed to load ledger. Check console for details.'
+    error.value = e?.message || 'Failed to refresh ledger. Check console for details.'
   } finally {
     loading.value = false
   }
