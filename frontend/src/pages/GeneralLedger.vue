@@ -98,30 +98,11 @@
             <span class="ml-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xs">✕</span>
           </div>
           <div v-else class="relative">
-            <input
-              ref="partyInputRef"
-              v-model="partyQuery"
-              @input="onPartyInput"
-              @keydown.enter.prevent="partyOptions.length && selectParty(partyOptions[0])"
-              @keydown.escape.prevent="partyOptions = []"
-              @blur="() => setTimeout(() => { partyOptions = [] }, 200)"
-              :placeholder="`Search ${partyType}...`"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-            />
-            <!-- Dropdown -->
             <div
-              v-if="partyOptions.length"
-              class="absolute left-0 top-full z-50 mt-1 max-h-52 w-full overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg"
+              @click="openCustomerSearch"
+              class="w-full cursor-pointer rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-muted)] outline-none hover:border-[var(--color-info)]"
             >
-              <div
-                v-for="p in partyOptions"
-                :key="p.name"
-                @mousedown.prevent="selectParty(p)"
-                class="cursor-pointer px-3 py-2 hover:bg-[var(--color-surface-raised)]"
-              >
-                <div class="text-sm text-[var(--color-text)]">{{ p.label }}</div>
-                <div v-if="p.name !== p.label" class="text-[10px] text-[var(--color-text-muted)]">{{ p.name }}</div>
-              </div>
+              Select a party...
             </div>
           </div>
         </div>
@@ -324,16 +305,26 @@
       doctype="General Ledger"
       @close="showPrintModal = false"
     />
+
+    <!-- Customer Search Modal -->
+    <CustomerSearchModal
+      ref="ledgerCustSearchModalRef"
+      :show="showCustomerSearchModal"
+      :skip-date-filter="true"
+      @close="showCustomerSearchModal = false"
+      @select="pickCustomer"
+    />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -355,9 +346,7 @@ const route = useRoute()
 
 // ── Filter state ──
 const partyType = ref('Customer')
-const partyQuery = ref('')
-const partyOptions = ref([])
-const selectedParty = ref(null)   // { name, label }
+const selectedParty = ref(null)   // { name, label, type }
 const fromDate = ref((() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().split('T')[0] })())
 const toDate = ref(new Date().toISOString().split('T')[0])
 
@@ -389,7 +378,7 @@ onMounted(async () => {
       }
     }
 
-    selectedParty.value = { name: party, label: displayLabel }
+    selectedParty.value = { name: party, label: displayLabel, type: party_type }
     loadLedger()
   }
 })
@@ -402,50 +391,26 @@ const expandedIdx = ref(null)
 
 // ── UI ──
 const zoom = ref(100)
-const partyInputRef = ref(null)
 const showPrintModal = ref(false)
 
-// ── Party search ──
-let searchTimer = null
-function onPartyInput() {
-  clearTimeout(searchTimer)
-  if (!partyQuery.value || partyQuery.value.length < 2) { partyOptions.value = []; return }
-  searchTimer = setTimeout(doPartySearch, 250)
+// ── Customer Search Modal ──
+const showCustomerSearchModal = ref(false)
+const ledgerCustSearchModalRef = ref(null)
+
+function openCustomerSearch() {
+  showCustomerSearchModal.value = true
+  nextTick(() => ledgerCustSearchModalRef.value?.focus())
 }
 
-async function doPartySearch() {
-  const q = partyQuery.value.trim()
-  if (!q) return
-  try {
-    const nameField = partyType.value === 'Customer' ? 'customer_name'
-      : partyType.value === 'Supplier' ? 'supplier_name'
-      : 'employee_name'
-
-    const rows = await frappeGet('frappe.client.get_list', {
-      doctype: partyType.value,
-      filters: JSON.stringify([[partyType.value, nameField, 'like', `%${q}%`]]),
-      fields: JSON.stringify(['name', nameField]),
-      limit_page_length: 20,
-    })
-    partyOptions.value = (rows || []).map(r => ({
-      name: r.name,
-      label: r[nameField] || r.name,
-    }))
-  } catch {
-    partyOptions.value = []
-  }
-}
-
-function selectParty(p) {
-  selectedParty.value = p
-  partyQuery.value = ''
-  partyOptions.value = []
+function pickCustomer(item) {
+  showCustomerSearchModal.value = false
+  selectedParty.value = item
+  partyType.value = item.type
+  loadLedger()
 }
 
 function clearSelection() {
   selectedParty.value = null
-  partyQuery.value = ''
-  partyOptions.value = []
   ledgerData.value = null
   error.value = ''
 }
