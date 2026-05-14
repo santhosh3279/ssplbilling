@@ -853,7 +853,7 @@ const discountAmt = computed(() => {
   const grossSubtotal = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
   if (p > 0) {
     const additionalChargesTotal = freightAmt.value + packingAmt.value + loadingAmt.value + otherAmt.value
-    const undiscountedTotal = grossSubtotal + taxOnGross.value + additionalChargesTotal
+    const undiscountedTotal = grossSubtotal + (isInclusiveTax.value ? 0 : taxOnGross.value) + additionalChargesTotal
     return undiscountedTotal * (p / 100)
   }
   return a
