@@ -86,20 +86,6 @@
     <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex flex-wrap items-end gap-3">
 
-        <!-- Party Type -->
-        <div>
-          <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Party Type</label>
-          <select
-            v-model="partyType"
-            @change="clearSelection"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          >
-            <option value="Customer">Customer</option>
-            <option value="Supplier">Supplier</option>
-            <option value="Employee">Employee</option>
-          </select>
-        </div>
-
         <!-- Party Search -->
         <div class="relative w-72">
           <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Party</label>
