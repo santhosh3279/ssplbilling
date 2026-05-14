@@ -706,7 +706,9 @@ async function handleSelectSidebarItem(item) {
     // Settings
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
-    isInclusiveTax.value = data.is_inclusive === 1
+    nextTick(() => {
+      isInclusiveTax.value = data.is_inclusive === 1
+    })
     halfTaxDiscount.value = data.custom_half_tax_discount === 1
     if (data.cost_center) costCenter.value = data.cost_center
 

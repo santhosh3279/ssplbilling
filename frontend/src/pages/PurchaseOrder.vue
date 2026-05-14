@@ -660,7 +660,9 @@ async function handleSelectSidebarItem(item) {
 
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
-    isInclusiveTax.value = data.is_inclusive === 1
+    nextTick(() => {
+      isInclusiveTax.value = data.is_inclusive === 1
+    })
     if (data.cost_center) costCenter.value = data.cost_center
 
     freightEntry.value = data.freight_amount || ''

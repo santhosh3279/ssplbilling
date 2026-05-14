@@ -801,7 +801,9 @@ async function handleSelectSidebarItem(item) {
     // Settings
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
-    isInclusiveTax.value = data.is_inclusive === 1
+    nextTick(() => {
+      isInclusiveTax.value = data.is_inclusive === 1
+    })
     isReturn.value = data.is_return === 1
     ignoreModifier.value = data.customer_rate_multiplier === 0
     if (data.cost_center) costCenter.value = data.cost_center
@@ -2172,8 +2174,10 @@ async function handleSeriesSelected(series) {
       if (cached?.data?.billing_series) {
         const entry = cached.data.billing_series.find(bs => bs.series === series)
         if (entry) {
-          isInclusiveTax.value = !!entry.tax_type_incl
-          localStorage.setItem('wb-tax-type-incl', entry.tax_type_incl ? '1' : '0')
+          nextTick(() => {
+            isInclusiveTax.value = !!entry.tax_type_incl
+            localStorage.setItem('wb-tax-type-incl', entry.tax_type_incl ? '1' : '0')
+          })
         }
       }
     } catch (e) {

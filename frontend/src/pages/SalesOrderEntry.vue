@@ -1217,7 +1217,9 @@ async function loadOrder(orderName) {
     freightAmt.value = so.freight_amount || 0
     loadingAmt.value = so.other_charges_amount || 0
     if (so.tax_template !== undefined) taxTemplate.value = so.tax_template || ''
-    isInclusiveTax.value = !!so.is_inclusive
+    nextTick(() => {
+      isInclusiveTax.value = !!so.is_inclusive
+    })
     items.value = so.items.map(i => ({
       ...i,
       rate: i.price_list_rate || i.rate,

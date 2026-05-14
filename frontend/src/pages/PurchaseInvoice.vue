@@ -908,7 +908,9 @@ async function handleSelectSidebarItem(item) {
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
     warehouse.value = data.set_warehouse || localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None'
-    isInclusiveTax.value = data.is_inclusive === 1
+    nextTick(() => {
+      isInclusiveTax.value = data.is_inclusive === 1
+    })
     isReturn.value = data.is_return === 1
     if (data.cost_center) costCenter.value = data.cost_center
 
