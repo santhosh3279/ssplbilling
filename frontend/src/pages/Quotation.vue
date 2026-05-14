@@ -854,8 +854,9 @@ const itemDiscountTotal = computed(() => {
 
 const discountFactor = computed(() => {
   const grossSubtotal = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
-  if (grossSubtotal <= 0) return 1
-  return (grossSubtotal - discountAmt.value) / grossSubtotal
+  const discountBase = grossSubtotal + (isInclusiveTax.value ? 0 : taxOnGross.value)
+  if (discountBase <= 0) return 1
+  return (discountBase - discountAmt.value) / discountBase
 })
 
 const selectedItemHistory = computed(() => {
