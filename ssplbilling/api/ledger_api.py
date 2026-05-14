@@ -305,16 +305,21 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None):
 		label = frappe.db.get_value("Supplier", party, "supplier_name") or party
 	elif party_type == "Employee":
 		label = frappe.db.get_value("Employee", party, "employee_name") or party
+        elif party_type == "Account":
+                label = frappe.db.get_value("Account", party, "account_name") or party
 
 	filters = frappe._dict({
-		"company": company,
-		"from_date": from_date,
-		"to_date": to_date,
-		"party_type": party_type,
-		"party": [party],
-		"categorize_by": "Categorize by Voucher (Consolidated)",
-		"show_remarks": 1,
+	        "company": company,
+	        "from_date": from_date,
+	        "to_date": to_date,
+	        "categorize_by": "Categorize by Voucher (Consolidated)",
+	        "show_remarks": 1,
 	})
+	if party_type == "Account":
+	        filters["account"] = [party]
+	else:
+	        filters["party_type"] = party_type
+	        filters["party"] = [party]
 
 	_columns, rows = _gl_execute(filters)
 
