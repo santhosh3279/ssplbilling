@@ -86,29 +86,6 @@
     <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex flex-wrap items-center gap-3">
 
-        <!-- Party Search -->
-        <div class="flex items-center gap-3 bg-[var(--color-surface-raised)]/50 px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
-          <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap">Party</label>
-          <div class="relative w-64">
-            <div
-              v-if="selectedParty"
-              class="flex items-center justify-between rounded border border-[var(--color-info)] bg-[var(--color-info)]/10 px-3 py-1 text-sm cursor-pointer"
-              @click="clearSelection"
-            >
-              <span class="font-semibold text-[var(--color-info)] truncate max-w-[200px]">{{ selectedParty.label }}</span>
-              <span class="ml-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xs">✕</span>
-            </div>
-            <div v-else class="relative">
-              <div
-                @click="openCustomerSearch"
-                class="w-full cursor-pointer rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)] outline-none hover:border-[var(--color-info)]"
-              >
-                Select a party...
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- From Date -->
         <div class="flex items-center gap-3 bg-[var(--color-surface-raised)]/50 px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">From</label>
