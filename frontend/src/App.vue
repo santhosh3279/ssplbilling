@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[var(--color-bg)] flex overflow-hidden">
     <!-- Main App Content -->
     <div 
-      :class="[isTablet ? (isSidebarCollapsed ? 'w-[60%]' : 'w-[80%]') : 'w-full']"
+      :class="[isTablet ? (isSidebarCollapsed ? 'w-[70%]' : 'w-[80%]') : 'w-full']"
       class="relative h-screen overflow-hidden transform-gpu flex flex-col bg-[var(--color-bg)] transition-all duration-300 ease-in-out"
     >
       <router-view class="flex-1 overflow-hidden" />
@@ -17,7 +17,7 @@
     <!-- Tablet Side Panel (Keyboard) -->
     <div 
       v-if="isTablet" 
-      :class="isSidebarCollapsed ? 'w-[40%]' : 'w-[20%]'"
+      :class="isSidebarCollapsed ? 'w-[30%]' : 'w-[20%]'"
       class="h-screen border-l border-[var(--color-border)] shadow-2xl z-50 overflow-hidden shrink-0 bg-[var(--color-surface)] transition-all duration-300 ease-in-out"
     >
       <Keyboard />
