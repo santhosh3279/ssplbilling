@@ -29,9 +29,10 @@
 
       <!-- QWERTY Layout -->
       <div class="flex flex-col gap-1">
-        <!-- Numbers Row -->
-        <div class="flex gap-1">
-          <button v-for="k in '1234567890'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+        <!-- Numpad Area (Above QWERTY) -->
+        <div class="grid grid-cols-3 gap-1 mb-1">
+          <button v-for="k in '123456789'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty">{{ k }}</button>
+          <button @pointerdown.prevent="pressKey('0')" class="key-btn qwerty col-span-3">0</button>
         </div>
 
         <!-- Alpha Row 1 -->
