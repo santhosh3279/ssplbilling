@@ -1,6 +1,18 @@
 <template>
-  <div :class="isSubWindow ? 'fixed inset-0 z-[100] bg-[var(--color-bg)]' : 'flex min-h-screen flex-col bg-[var(--color-bg)]'">
-    <div class="flex h-full flex-col">
+  <div
+    :class="[
+      isSubWindow
+        ? 'fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm'
+        : 'flex min-h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)]'
+    ]"
+  >
+    <div
+      :class="[
+        isSubWindow
+          ? 'flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl'
+          : 'flex h-full flex-col'
+      ]"
+    >
     <!-- ═══════ HEADER ═══════ -->
     <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center justify-between">
