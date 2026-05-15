@@ -40,7 +40,7 @@
           <!-- Print -->
           <button
             v-if="ledgerData"
-            @click="showPrintModal = true"
+            @click="openLedgerPrint"
             class="flex items-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
             title="Print ledger"
           >
@@ -421,6 +421,15 @@
         <!-- Panel Footer -->
         <div class="border-t border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)]/30">
           <button
+            v-if="['Sales Invoice', 'Purchase Invoice'].includes(selectedEntry.voucher_type)"
+            @click="openVoucherPrint"
+            class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-info)] py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:bg-[var(--color-info)]/90 active:scale-95"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print {{ voucherLabel(selectedEntry.voucher_type) }}
+          </button>
+
+          <button
             @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
             class="w-full rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] py-2 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-all"
           >
@@ -434,10 +443,10 @@
 
   <!-- Print Modal -->
     <PrintOptionsModal
-      v-if="showPrintModal && ledgerData"
-      :invoice-name="ledgerData.party"
-      doctype="General Ledger"
-      @close="showPrintModal = false"
+      v-if="printModalVisible"
+      :invoice-name="printModalInvoiceName"
+      :doctype="printModalDoctype"
+      @close="printModalVisible = false"
     />
 
     <!-- Customer Search Modal -->
@@ -569,7 +578,9 @@ const focusedIdx = ref(-1)
 
 // ── UI ──
 const zoom = ref(parseInt(localStorage.getItem('wb-zoom')) || 100)
-const showPrintModal = ref(false)
+const printModalVisible = ref(false)
+const printModalInvoiceName = ref('')
+const printModalDoctype = ref('')
 const tableBodyRef = ref(null)
 
 watch(zoom, (newV) => {
@@ -581,6 +592,21 @@ function onStorage(e) {
   if (e.key === 'wb-zoom') {
     zoom.value = parseInt(e.newValue) || 100
   }
+}
+
+// ── Print Logic ──
+function openLedgerPrint() {
+  if (!ledgerData.value) return
+  printModalInvoiceName.value = ledgerData.value.party
+  printModalDoctype.value = 'General Ledger'
+  printModalVisible.value = true
+}
+
+function openVoucherPrint() {
+  if (!selectedEntry.value) return
+  printModalInvoiceName.value = selectedEntry.value.voucher_no
+  printModalDoctype.value = selectedEntry.value.voucher_type
+  printModalVisible.value = true
 }
 
 // ── Customer Search Modal ──
@@ -658,7 +684,7 @@ function closeDetail() {
 }
 
 function onGlobalKeydown(e) {
-  if (showCustomerSearchModal.value || showPrintModal.value) return
+  if (showCustomerSearchModal.value || printModalVisible.value) return
   if (!ledgerData.value || !ledgerData.value.entries.length) return
 
   const len = ledgerData.value.entries.length
