@@ -170,7 +170,10 @@
     </div>
 
     <!-- ═══════ CONTENT ═══════ -->
-    <div class="flex-1 overflow-auto">
+    <div class="flex flex-1 overflow-hidden">
+      
+      <!-- Table Container -->
+      <div class="flex-1 overflow-auto">
 
       <!-- Empty state -->
       <div v-if="!ledgerData && !loading && !error" class="flex flex-col items-center justify-center gap-3 py-24 text-[var(--color-text-muted)]">
@@ -298,7 +301,115 @@
       </template>
     </div>
 
-    <!-- Print Modal -->
+    <!-- Detail Panel -->
+    <transition name="slide">
+      <div
+        v-if="selectedEntry"
+        class="flex w-96 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl"
+      >
+        <!-- Panel header -->
+        <div class="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-raised)]">
+          <div class="flex items-center gap-2">
+            <span class="rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" :class="voucherBadge(selectedEntry.voucher_type)">
+              {{ voucherLabel(selectedEntry.voucher_type) }}
+            </span>
+            <span class="font-mono text-sm font-bold text-[var(--color-text)]">{{ selectedEntry.voucher_no }}</span>
+          </div>
+          <button @click="closeDetail" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-colors">✕</button>
+        </div>
+
+        <!-- Loading detail -->
+        <div v-if="loadingDetail" class="flex flex-1 items-center justify-center text-sm text-[var(--color-text-muted)]">
+          <div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></div>
+          Fetching details…
+        </div>
+
+        <!-- Detail Content -->
+        <div v-else-if="voucherDetail" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          
+          <!-- Summary Card -->
+          <div class="mb-4 space-y-2 rounded-lg bg-[var(--color-surface-raised)] p-3 text-[11px]">
+            <div class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Posting Date</span>
+              <span class="font-semibold text-[var(--color-text)]">{{ fmtDate(voucherDetail.posting_date) }}</span>
+            </div>
+            <div v-if="voucherDetail.party_name" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Party</span>
+              <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.party_name }}</span>
+            </div>
+            <div class="flex justify-between border-t border-[var(--color-border)] pt-2 mt-2">
+              <span class="text-[var(--color-text-muted)] font-bold uppercase">Total Amount</span>
+              <span class="font-bold text-[var(--color-info)]">₹{{ fmt(voucherDetail.total_amount) }}</span>
+            </div>
+          </div>
+
+          <!-- Items list -->
+          <div v-if="voucherDetail.items?.length">
+            <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+              {{ ['Payment Entry', 'Journal Entry'].includes(selectedEntry.voucher_type) ? 'Entries / References' : 'Items' }}
+            </div>
+            <div class="space-y-2">
+              <div v-for="(it, i) in voucherDetail.items" :key="i" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-[11px]">
+                
+                <!-- For Sales/Purchase/Credit Invoices -->
+                <template v-if="it.item_code">
+                  <div class="flex justify-between font-semibold">
+                    <span class="text-[var(--color-info)]">{{ it.item_code }}</span>
+                    <span>₹{{ fmt(it.amount) }}</span>
+                  </div>
+                  <div class="text-[10px] text-[var(--color-text-muted)] truncate">{{ it.item_name }}</div>
+                  <div class="mt-1 flex gap-2 text-[10px] opacity-70">
+                    <span>{{ it.qty }} {{ it.uom }}</span>
+                    <span>@ ₹{{ fmt(it.rate) }}</span>
+                  </div>
+                </template>
+
+                <!-- For Payment Entry References -->
+                <template v-else-if="it.reference_name">
+                  <div class="flex justify-between font-semibold">
+                    <span class="text-[var(--color-info)]">{{ it.reference_name }}</span>
+                    <span class="text-[var(--color-success)]">₹{{ fmt(it.allocated_amount) }}</span>
+                  </div>
+                  <div class="text-[10px] text-[var(--color-text-muted)]">{{ it.reference_doctype }}</div>
+                </template>
+
+                <!-- For Journal Entry Accounts -->
+                <template v-else-if="it.account">
+                  <div class="flex justify-between font-semibold">
+                    <span class="truncate pr-2">{{ it.account }}</span>
+                    <span :class="it.debit ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      ₹{{ fmt(it.debit || it.credit) }} {{ it.debit ? 'Dr' : 'Cr' }}
+                    </span>
+                  </div>
+                  <div v-if="it.party" class="text-[10px] text-[var(--color-text-muted)]">Party: {{ it.party }}</div>
+                </template>
+
+              </div>
+            </div>
+          </div>
+
+          <div v-if="selectedEntry.remarks" class="mt-6 border-t border-[var(--color-border)] pt-4">
+            <div class="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Remarks</div>
+            <p class="text-[11px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap">{{ selectedEntry.remarks }}</p>
+          </div>
+
+        </div>
+
+        <!-- Panel Footer -->
+        <div class="border-t border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)]/30">
+          <button
+            @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
+            class="w-full rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] py-2 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-all"
+          >
+            Open in ERPNext ↗
+          </button>
+        </div>
+      </div>
+    </transition>
+
+  </div>
+
+  <!-- Print Modal -->
     <PrintOptionsModal
       v-if="showPrintModal && ledgerData"
       :invoice-name="ledgerData.party"
@@ -319,9 +430,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { frappeGet } from '../api.js'
+import { frappeGet, fetchVoucherDetail } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
@@ -338,7 +449,13 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 useSubwindowWatcher(ref(props.isSubWindow), {
-  'ESCAPE': () => emit('close')
+  'ESCAPE': () => {
+    if (selectedEntry.value) {
+      closeDetail()
+    } else {
+      emit('close')
+    }
+  }
 })
 
 const router = useRouter()
@@ -351,6 +468,7 @@ const fromDate = ref((() => { const d = new Date(); d.setDate(d.getDate() - 90);
 const toDate = ref(new Date().toISOString().split('T')[0])
 
 onMounted(async () => {
+  window.addEventListener('keydown', onGlobalKeydown)
   if (props.initialFromDate) fromDate.value = props.initialFromDate
   if (props.initialToDate) toDate.value = props.initialToDate
 
@@ -384,15 +502,26 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  window.removeEventListener('keydown', onGlobalKeydown)
+})
+
 // ── Data state ──
 const ledgerData = ref(null)
 const loading = ref(false)
 const error = ref('')
 const expandedIdx = ref(null)
 
+// ── Detail panel state ──
+const selectedEntry = ref(null)
+const voucherDetail = ref(null)
+const loadingDetail = ref(false)
+const focusedIdx = ref(-1)
+
 // ── UI ──
 const zoom = ref(100)
 const showPrintModal = ref(false)
+const tableBodyRef = ref(null)
 
 // ── Customer Search Modal ──
 const showCustomerSearchModal = ref(false)
@@ -414,6 +543,7 @@ function clearSelection() {
   selectedParty.value = null
   ledgerData.value = null
   error.value = ''
+  closeDetail()
 }
 
 // ── Refresh ledger ──
@@ -422,6 +552,7 @@ async function loadLedger() {
   loading.value = true
   error.value = ''
   expandedIdx.value = null
+  closeDetail()
   try {
     const data = await frappeGet('ssplbilling.api.ledger_api.get_general_ledger', {
       party_type: partyType.value,
@@ -438,7 +569,61 @@ async function loadLedger() {
   }
 }
 
-// ── Row expand ──
+// ── Row selection & Preview ──
+async function onRowClick(entry, idx) {
+  focusedIdx.value = idx
+  if (selectedEntry.value === entry) {
+    // Already selected, maybe toggle or just stay
+    return
+  }
+  selectedEntry.value = entry
+  voucherDetail.value = null
+  loadingDetail.value = true
+  try {
+    voucherDetail.value = await fetchVoucherDetail(entry.voucher_type, entry.voucher_no)
+  } catch (e) {
+    console.warn('Failed to fetch voucher detail:', e)
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
+function closeDetail() {
+  selectedEntry.value = null
+  voucherDetail.value = null
+  focusedIdx.value = -1
+}
+
+function onGlobalKeydown(e) {
+  if (showCustomerSearchModal.value || showPrintModal.value) return
+  if (!ledgerData.value || !ledgerData.value.entries.length) return
+
+  const len = ledgerData.value.entries.length
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    const nextIdx = Math.min(focusedIdx.value + 1, len - 1)
+    onRowClick(ledgerData.value.entries[nextIdx], nextIdx)
+    scrollRowIntoView(nextIdx)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    const prevIdx = Math.max(focusedIdx.value - 1, 0)
+    onRowClick(ledgerData.value.entries[prevIdx], prevIdx)
+    scrollRowIntoView(prevIdx)
+  } else if (e.key === 'Escape' && selectedEntry.value) {
+    e.preventDefault()
+    closeDetail()
+  }
+}
+
+function scrollRowIntoView(idx) {
+  nextTick(() => {
+    const rows = tableBodyRef.value?.querySelectorAll('tr[data-idx]')
+    rows?.[idx]?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+// ── Row expand (keep as fallback for remarks) ──
 function toggleExpand(idx) {
   expandedIdx.value = expandedIdx.value === idx ? null : idx
 }
