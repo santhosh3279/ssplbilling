@@ -86,24 +86,27 @@
     <div class="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex flex-wrap items-center gap-3">
 
-        <!-- From Date -->
+        <!-- Date Filters -->
         <div class="flex items-center gap-2 bg-[var(--color-surface-raised)]/50 px-1 py-0.5 rounded-xl border border-[var(--color-border)] shadow-sm">
-          <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-2">From</label>
-          <input
-            v-model="fromDate"
-            type="date"
-            class="bg-transparent text-3xl font-mono text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-48"
-          />
-        </div>
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-2">From</label>
+            <input
+              v-model="fromDate"
+              type="date"
+              class="bg-transparent text-3xl font-mono text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-48"
+            />
+          </div>
+          
+          <div class="h-8 w-px bg-[var(--color-border)] opacity-30 mx-1"></div>
 
-        <!-- To Date -->
-        <div class="flex items-center gap-2 bg-[var(--color-surface-raised)]/50 px-1 py-0.5 rounded-xl border border-[var(--color-border)] shadow-sm">
-          <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-2">To</label>
-          <input
-            v-model="toDate"
-            type="date"
-            class="bg-transparent text-3xl font-mono text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-48"
-          />
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">To</label>
+            <input
+              v-model="toDate"
+              type="date"
+              class="bg-transparent text-3xl font-mono text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-48"
+            />
+          </div>
         </div>
 
         <!-- Refresh Button -->
