@@ -10,48 +10,53 @@
     <!-- Scrollable Key Area -->
     <div class="flex-1 overflow-y-auto p-1 flex flex-col gap-1 custom-scrollbar">
       
-      <!-- Function Keys Row (Grid) -->
-      <div class="grid grid-cols-4 gap-1 mb-2">
+      <!-- Function Keys Row -->
+      <div class="grid grid-cols-6 gap-1 mb-1">
         <button v-for="n in 12" :key="'f'+n" 
-                @click="pressKey('F' + n)"
-                class="key-btn text-[10px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-highlight)] border border-[var(--color-border)] rounded shadow-sm">
+                @mousedown.prevent="pressKey('F' + n)"
+                class="key-btn text-[9px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-highlight)] border border-[var(--color-border)] rounded shadow-sm">
           F{{ n }}
         </button>
       </div>
 
       <!-- Special Utility Keys -->
-      <div class="grid grid-cols-2 gap-1 mb-2">
-        <button @click="pressKey('Escape')" class="key-btn utility bg-[var(--color-danger)]/10 text-[var(--color-danger)] py-3 text-xs font-bold rounded border border-[var(--color-danger)]/20 shadow-sm">ESC</button>
-        <button @click="pressKey('End')" class="key-btn utility bg-[var(--color-info)]/10 text-[var(--color-info)] py-3 text-xs font-bold rounded border border-[var(--color-info)]/20 shadow-sm">END</button>
-        <button @click="pressShortcut('l', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-3 text-xs font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">CTRL+L</button>
-        <button @click="pressShortcut('i', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-3 text-xs font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">CTRL+I</button>
+      <div class="grid grid-cols-4 gap-1 mb-2">
+        <button @mousedown.prevent="pressKey('Escape')" class="key-btn utility bg-[var(--color-danger)]/10 text-[var(--color-danger)] py-2 text-[10px] font-bold rounded border border-[var(--color-danger)]/20 shadow-sm">ESC</button>
+        <button @mousedown.prevent="pressKey('End')" class="key-btn utility bg-[var(--color-info)]/10 text-[var(--color-info)] py-2 text-[10px] font-bold rounded border border-[var(--color-info)]/20 shadow-sm">END</button>
+        <button @mousedown.prevent="pressShortcut('l', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+L</button>
+        <button @mousedown.prevent="pressShortcut('i', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+I</button>
       </div>
 
-      <!-- Compact QWERTY Rows -->
+      <!-- QWERTY Layout -->
       <div class="flex flex-col gap-1">
         <!-- Numbers Row -->
-        <div class="grid grid-cols-5 gap-1">
-          <button v-for="k in ['1','2','3','4','5','6','7','8','9','0']" :key="k" @click="pressKey(k)" class="key-btn qwerty">{{ k }}</button>
+        <div class="flex gap-1">
+          <button v-for="k in '1234567890'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
         </div>
 
-        <!-- Alpha Rows (Stacked for narrow width) -->
-        <div class="grid grid-cols-4 gap-1">
-          <button v-for="k in 'QWERTYUIOP'.split('')" :key="k" @click="pressKey(k)" class="key-btn qwerty">{{ k }}</button>
-        </div>
-        <div class="grid grid-cols-4 gap-1">
-          <button v-for="k in 'ASDFGHJKL'.split('')" :key="k" @click="pressKey(k)" class="key-btn qwerty">{{ k }}</button>
-        </div>
-        <div class="grid grid-cols-4 gap-1">
-          <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @click="pressKey(k)" class="key-btn qwerty">{{ k }}</button>
-          <button @click="pressKey('Backspace')" class="key-btn qwerty text-[var(--color-danger)]">⌫</button>
+        <!-- Alpha Row 1 -->
+        <div class="flex gap-1">
+          <button v-for="k in 'QWERTYUIOP'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
         </div>
 
-        <!-- Symbols / Misc -->
-        <div class="grid grid-cols-4 gap-1">
-          <button @click="pressKey('.')" class="key-btn qwerty">.</button>
-          <button @click="pressKey(',')" class="key-btn qwerty">,</button>
-          <button @click="pressKey('-')" class="key-btn qwerty">-</button>
-          <button @click="pressKey('/')" class="key-btn qwerty">/</button>
+        <!-- Alpha Row 2 -->
+        <div class="flex gap-1 px-2">
+          <button v-for="k in 'ASDFGHJKL'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+        </div>
+
+        <!-- Alpha Row 3 -->
+        <div class="flex gap-1">
+          <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button @mousedown.prevent="pressKey('Backspace')" class="key-btn qwerty flex-[1.5] text-[var(--color-danger)]">⌫</button>
+        </div>
+
+        <!-- Symbols / Misc Row 4 -->
+        <div class="flex gap-1">
+          <button @mousedown.prevent="pressKey('.')" class="key-btn qwerty flex-1">.</button>
+          <button @mousedown.prevent="pressKey(',')" class="key-btn qwerty flex-1">,</button>
+          <button @mousedown.prevent="pressKey(' ')" class="key-btn qwerty flex-[4] text-[10px]">SPACE</button>
+          <button @mousedown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
+          <button @mousedown.prevent="pressKey('/')" class="key-btn qwerty flex-1">/</button>
         </div>
       </div>
     </div>
@@ -59,8 +64,8 @@
     <!-- Bottom Enter Key -->
     <div class="p-2 bg-[var(--color-surface-raised)] border-t border-[var(--color-border)] shrink-0">
       <button 
-        @click="pressKey('Enter')"
-        class="w-full py-6 rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-2xl uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+        @mousedown.prevent="pressKey('Enter')"
+        class="w-full py-5 rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-xl uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
       >
         Enter
       </button>
@@ -133,10 +138,10 @@ function pressShortcut(key, mods = {}) {
 
 <style scoped>
 .key-btn {
-  @apply transition-all active:scale-90 active:brightness-90;
+  @apply transition-all active:scale-90 active:brightness-90 flex items-center justify-center;
 }
 .qwerty {
-  @apply py-3 bg-[var(--color-bg)] text-[var(--color-text)] font-bold text-sm border border-[var(--color-border)] rounded shadow-sm;
+  @apply py-3 bg-[var(--color-bg)] text-[var(--color-text)] font-bold text-xs border border-[var(--color-border)] rounded shadow-sm;
 }
 .utility {
   @apply flex items-center justify-center uppercase tracking-tighter;
