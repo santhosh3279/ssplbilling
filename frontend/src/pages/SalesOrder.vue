@@ -536,9 +536,9 @@
       extra-title="Sales Order"
       :extra="[
         { key: 'F2', desc: 'Clear order / refresh order number' },
-        { key: 'F3', desc: 'Focus sidebar order list' },
-        { key: 'F4', desc: 'Select series' },
+        { key: 'F3', desc: 'Focus modify panel' },
         { key: 'F5', desc: 'Print order' },
+
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save order' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },

@@ -599,9 +599,9 @@
       extra-title="Purchase Invoice"
       :extra="[
         { key: 'F2', desc: 'Clear bill / refresh bill number' },
-        { key: 'F3', desc: 'Focus sidebar bill list' },
-        { key: 'F4', desc: 'Select series' },
+        { key: 'F3', desc: 'Focus modify panel' },
         { key: 'F5', desc: 'Print invoice' },
+
         { key: 'ALT + P', desc: 'Print barcodes' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
         { key: 'Insert', desc: 'Open incentive entry' },

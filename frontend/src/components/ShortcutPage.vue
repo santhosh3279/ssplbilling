@@ -96,7 +96,6 @@ const navigationShortcuts = [
   { key: 'Home',         desc: 'Jump to first row' },
   { key: 'Page Up',      desc: 'Focus series selector' },
   { key: 'F3',           desc: 'Focus modify panel (sidebar)' },
-  { key: 'F4',           desc: 'Focus sidebar series' },
 ]
 
 const billShortcuts = [

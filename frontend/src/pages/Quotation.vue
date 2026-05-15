@@ -515,9 +515,9 @@
       extra-title="Quotation"
       :extra="[
         { key: 'F2', desc: 'Clear quotation / refresh number' },
-        { key: 'F3', desc: 'Focus sidebar list' },
-        { key: 'F4', desc: 'Select series' },
+        { key: 'F3', desc: 'Focus modify panel' },
         { key: 'F5', desc: 'Print quotation' },
+
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save quotation' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
