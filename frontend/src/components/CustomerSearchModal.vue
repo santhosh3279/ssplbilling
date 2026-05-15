@@ -496,37 +496,28 @@ function handleGlobalKeydown(e) {
 }
 
 function handleSelect(item) {
-  if (props.skipDateFilter) {
-    emit('select', item)
-  } else {
-    isGlMode.value = false
-    showDateModal.value = true
-  }
+  // Enter or Click now always performs immediate selection (e.g., for the invoice or default ledger view)
+  emit('select', item)
 }
 
 function handleDateConfirm(dates) {
   const item = results.value[selectedIdx.value]
   if (item) {
-    if (isGlMode.value) {
-      showDateModal.value = false
-      isGlMode.value = false
-      
-      // Dispatch global event instead of router.push to allow subwindow opening
-      window.dispatchEvent(new CustomEvent('wb-open-general-ledger', {
-        detail: {
-          party: item.name,
-          party_type: item.type,
-          label: item.label,
-          from: dates.from,
-          to: dates.to
-        }
-      }))
-      
-      emit('close')
-    } else {
-      showDateModal.value = false
-      emit('select', item, dates)
-    }
+    // Date confirmation now always results in opening the General Ledger subwindow (only triggered via F4)
+    showDateModal.value = false
+    isGlMode.value = false
+    
+    window.dispatchEvent(new CustomEvent('wb-open-general-ledger', {
+      detail: {
+        party: item.name,
+        party_type: item.type,
+        label: item.label,
+        from: dates.from,
+        to: dates.to
+      }
+    }))
+    
+    emit('close')
   }
 }
 
