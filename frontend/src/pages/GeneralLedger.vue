@@ -120,29 +120,42 @@
 
         <!-- Summary chips -->
         <template v-if="ledgerData">
-          <div class="flex items-center gap-2 text-xs flex-wrap">
-            <span class="rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1.5 text-[var(--color-text-muted)]">
-              Opening
-              <span class="ml-1 font-semibold" :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+          <div class="flex items-center gap-6 flex-wrap ml-4">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Opening</span>
+              <span class="text-2xl font-mono leading-none" :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ fmt(Math.abs(ledgerData.opening_balance)) }}
-                {{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}
+                <span class="text-xs font-normal opacity-70">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
               </span>
-            </span>
-            <span class="rounded bg-[var(--color-success)]/15 border border-[var(--color-success)]/30 px-2.5 py-1.5 text-[var(--color-success)]">
-              Dr {{ fmt(ledgerData.total_debit) }}
-            </span>
-            <span class="rounded bg-[var(--color-danger)]/15 border border-[var(--color-danger)]/30 px-2.5 py-1.5 text-[var(--color-danger)]">
-              Cr {{ fmt(ledgerData.total_credit) }}
-            </span>
-            <span
-              class="rounded border px-2.5 py-1.5 font-bold"
-              :class="ledgerData.closing_balance < 0
-                ? 'bg-[var(--color-danger)]/15 border-[var(--color-danger)]/30 text-[var(--color-danger)]'
-                : 'bg-[var(--color-success)]/15 border-[var(--color-success)]/30 text-[var(--color-success)]'"
-            >
-              Balance {{ fmt(Math.abs(ledgerData.closing_balance)) }}
-              {{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}
-            </span>
+            </div>
+
+            <div class="h-8 w-px bg-[var(--color-border)] opacity-50"></div>
+
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Total Debit</span>
+              <span class="text-2xl font-mono leading-none text-[var(--color-success)]">
+                {{ fmt(ledgerData.total_debit) }}
+              </span>
+            </div>
+
+            <div class="h-8 w-px bg-[var(--color-border)] opacity-50"></div>
+
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Total Credit</span>
+              <span class="text-2xl font-mono leading-none text-[var(--color-danger)]">
+                {{ fmt(ledgerData.total_credit) }}
+              </span>
+            </div>
+
+            <div class="h-8 w-px bg-[var(--color-border)] opacity-50"></div>
+
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Closing Balance</span>
+              <span class="text-2xl font-mono leading-none" :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                {{ fmt(Math.abs(ledgerData.closing_balance)) }}
+                <span class="text-xs font-normal opacity-70">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
+              </span>
+            </div>
           </div>
         </template>
       </div>
