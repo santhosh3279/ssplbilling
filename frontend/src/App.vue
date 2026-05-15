@@ -58,21 +58,58 @@ const _nativeAlert = window.alert.bind(window);
 // Global Keyboard Suppression for Tablet
 function suppressKeyboard(e) {
   if (!isTablet.value) return;
-  
+
   const target = e.target;
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
     // Force inputmode to none to prevent virtual keyboard
     target.setAttribute('inputmode', 'none');
+    // Newer standard for chromium browsers
+    target.setAttribute('virtualkeyboardpolicy', 'manual');
   }
 }
+
+let observer = null;
 
 onMounted(() => {
   initTheme();
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.addEventListener('wb-global-command-line-toggle', toggleCommandLine);
-  
-  // Attach global focus listener for keyboard suppression
-  document.addEventListener('focusin', suppressKeyboard, true);
+
+  // Initial scan and setup for tablet
+  if (isTablet.value) {
+    const applyToAll = () => {
+      document.querySelectorAll('input, textarea, select').forEach(el => {
+        el.setAttribute('inputmode', 'none');
+        el.setAttribute('virtualkeyboardpolicy', 'manual');
+      });
+    };
+    
+    applyToAll();
+
+    // Attach global focus listener for keyboard suppression
+    document.addEventListener('focusin', suppressKeyboard, true);
+    document.addEventListener('touchstart', suppressKeyboard, true);
+
+    // Watch for dynamic inputs (modals, new rows, etc)
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element
+            if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA' || node.tagName === 'SELECT') {
+              node.setAttribute('inputmode', 'none');
+              node.setAttribute('virtualkeyboardpolicy', 'manual');
+            }
+            node.querySelectorAll?.('input, textarea, select').forEach(el => {
+              el.setAttribute('inputmode', 'none');
+              el.setAttribute('virtualkeyboardpolicy', 'manual');
+            });
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
 
   window.alert = (msg) => {
     errorMessage.value = String(msg ?? '')
@@ -84,6 +121,8 @@ onUnmounted(() => {
   window.removeEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.removeEventListener('wb-global-command-line-toggle', toggleCommandLine);
   document.removeEventListener('focusin', suppressKeyboard, true);
+  document.removeEventListener('touchstart', suppressKeyboard, true);
+  if (observer) observer.disconnect();
   window.alert = _nativeAlert;
 });
 </script>
