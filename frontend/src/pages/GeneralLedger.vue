@@ -27,11 +27,11 @@
             ← Dashboard
           </button>
           <span v-if="!isSubWindow" class="text-[var(--color-text-muted)]">|</span>
-          <h1 class="text-sm font-semibold text-[var(--color-text)]">
+          <h1 class="text-2xl font-bold text-[var(--color-text)]">
             General Ledger
-            <span v-if="ledgerData" class="ml-2 text-[var(--color-text-muted)] font-normal">— {{ ledgerData.label }}</span>
+            <span v-if="ledgerData" class="ml-3 text-xl text-[var(--color-text-muted)] font-medium">— {{ ledgerData.label }}</span>
           </h1>
-          <span v-if="ledgerData" class="rounded bg-[var(--color-info)]/20 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-info)]">
+          <span v-if="ledgerData" class="rounded-lg bg-[var(--color-info)]/20 px-3 py-1 text-lg font-bold text-[var(--color-info)] shadow-sm">
             {{ ledgerData.entries.length }} entries
           </span>
         </div>
