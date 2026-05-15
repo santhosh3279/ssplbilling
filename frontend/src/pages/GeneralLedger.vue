@@ -198,6 +198,14 @@
         <table class="w-full border-collapse" :style="{ fontSize: `${(13 * zoom) / 100}px` }">
           <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
+              <th class="w-10 px-3 py-2 text-center">
+                <input
+                  type="checkbox"
+                  :checked="isAllSelected"
+                  @change="toggleSelectAll"
+                  class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-info)]"
+                />
+              </th>
               <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
               <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
               <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
@@ -209,10 +217,11 @@
               <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody ref="tableBodyRef">
 
             <!-- Opening Balance -->
             <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+              <td class="px-3 py-2"></td>
               <td colspan="6" class="px-3 py-2 text-[var(--color-text-muted)] text-xs">
                 Opening Balance
                 <span class="ml-1 opacity-60">(before {{ fmtDate(ledgerData.from_date) }})</span>
@@ -232,7 +241,7 @@
 
             <!-- No entries -->
             <tr v-if="!ledgerData.entries.length">
-              <td colspan="9" class="px-3 py-12 text-center text-[var(--color-text-muted)]">
+              <td colspan="10" class="px-3 py-12 text-center text-[var(--color-text-muted)]">
                 No transactions in the selected date range.
               </td>
             </tr>
@@ -241,13 +250,25 @@
             <tr
               v-for="(entry, idx) in ledgerData.entries"
               :key="idx"
-              @click="toggleExpand(idx)"
-              class="cursor-pointer border-b border-[var(--color-border)] transition-colors"
-              :class="expandedIdx === idx
-                ? 'bg-[var(--color-info)]/15'
-                : 'hover:bg-[var(--color-surface-raised)]/60'"
+              :data-idx="idx"
+              tabindex="0"
+              @click="onRowClick(entry, idx)"
+              class="cursor-pointer border-b border-[var(--color-border)] transition-all outline-none"
+              :class="{
+                'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-inner z-10 relative': focusedIdx === idx,
+                'bg-[var(--color-info)]/10': selectedRows.has(idx) && focusedIdx !== idx,
+                'hover:bg-[var(--color-surface-raised)]/60': focusedIdx !== idx
+              }"
             >
-              <td class="px-3 py-2 text-[var(--color-text-muted)] whitespace-nowrap font-mono">{{ fmtDate(entry.date) }}</td>
+              <td class="px-3 py-2 text-center" @click.stop>
+                <input
+                  type="checkbox"
+                  :checked="selectedRows.has(idx)"
+                  @change="toggleSelectRow(idx)"
+                  class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-info)]"
+                />
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap font-mono" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
               <td class="px-3 py-2 whitespace-nowrap">
                 <span
                   class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
@@ -257,32 +278,34 @@
               <td class="px-3 py-2 whitespace-nowrap">
                 <button
                   @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
-                  class="font-mono text-[var(--color-info)] hover:underline"
+                  class="font-mono hover:underline"
+                  :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-info)]'"
                 >{{ entry.voucher_no }}</button>
               </td>
-              <td class="px-3 py-2 text-[var(--color-text-muted)] max-w-[160px] truncate" :title="entry.account">{{ entry.account }}</td>
-              <td class="px-3 py-2 text-[var(--color-text-muted)] max-w-[200px] truncate" :title="entry.against">{{ entry.against || '—' }}</td>
-              <td class="px-3 py-2 text-[var(--color-text-muted)] max-w-[220px]">
+              <td class="px-3 py-2 max-w-[160px] truncate" :title="entry.account" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.account }}</td>
+              <td class="px-3 py-2 max-w-[200px] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
+              <td class="px-3 py-2 max-w-[220px]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 <span v-if="expandedIdx === idx" class="whitespace-pre-wrap break-words">{{ entry.remarks || '—' }}</span>
                 <span v-else class="block truncate">{{ entry.remarks || '—' }}</span>
               </td>
               <td class="px-3 py-2 text-right font-mono">
-                <span v-if="entry.debit" class="text-[var(--color-success)]">{{ fmt(entry.debit) }}</span>
-                <span v-else class="text-[var(--color-text-muted)]">—</span>
+                <span v-if="entry.debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.debit) }}</span>
+                <span v-else :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]'">—</span>
               </td>
               <td class="px-3 py-2 text-right font-mono">
-                <span v-if="entry.credit" class="text-[var(--color-danger)]">{{ fmt(entry.credit) }}</span>
-                <span v-else class="text-[var(--color-text-muted)]">—</span>
+                <span v-if="entry.credit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">{{ fmt(entry.credit) }}</span>
+                <span v-else :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]'">—</span>
               </td>
               <td class="px-3 py-2 text-right font-mono font-semibold"
-                :class="entry.balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">
                 {{ fmt(Math.abs(entry.balance)) }}
-                <span class="ml-0.5 text-[10px] font-normal text-[var(--color-text-muted)]">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
+                <span class="ml-0.5 text-[10px] font-normal" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
             </tr>
 
             <!-- Closing row -->
             <tr v-if="ledgerData.entries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+              <td class="px-3 py-2"></td>
               <td colspan="3" class="px-3 py-2 font-semibold text-[var(--color-text)]">Closing Balance</td>
               <td colspan="3" class="px-3 py-2 text-xs text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
@@ -513,6 +536,30 @@ const ledgerData = ref(null)
 const loading = ref(false)
 const error = ref('')
 const expandedIdx = ref(null)
+const selectedRows = ref(new Set())
+
+const isAllSelected = computed(() => {
+  const entries = ledgerData.value?.entries || []
+  return entries.length > 0 && selectedRows.value.size === entries.length
+})
+
+function toggleSelectAll() {
+  const entries = ledgerData.value?.entries || []
+  if (isAllSelected.value) {
+    selectedRows.value.clear()
+  } else {
+    entries.forEach((_, idx) => selectedRows.value.add(idx))
+  }
+}
+
+function toggleSelectRow(idx, event) {
+  if (event) event.stopPropagation()
+  if (selectedRows.value.has(idx)) {
+    selectedRows.value.delete(idx)
+  } else {
+    selectedRows.value.add(idx)
+  }
+}
 
 // ── Detail panel state ──
 const selectedEntry = ref(null)
@@ -556,6 +603,7 @@ function clearSelection() {
   selectedParty.value = null
   ledgerData.value = null
   error.value = ''
+  selectedRows.value.clear()
   closeDetail()
 }
 
@@ -565,6 +613,7 @@ async function loadLedger() {
   loading.value = true
   error.value = ''
   expandedIdx.value = null
+  selectedRows.value.clear()
   closeDetail()
   try {
     const data = await frappeGet('ssplbilling.api.ledger_api.get_general_ledger', {
@@ -586,7 +635,8 @@ async function loadLedger() {
 async function onRowClick(entry, idx) {
   focusedIdx.value = idx
   if (selectedEntry.value === entry) {
-    // Already selected, maybe toggle or just stay
+    // If already open, clicking same row toggles remarks expansion
+    toggleExpand(idx)
     return
   }
   selectedEntry.value = entry
@@ -623,6 +673,11 @@ function onGlobalKeydown(e) {
     const prevIdx = Math.max(focusedIdx.value - 1, 0)
     onRowClick(ledgerData.value.entries[prevIdx], prevIdx)
     scrollRowIntoView(prevIdx)
+  } else if (e.key === ' ') {
+    if (focusedIdx.value !== -1) {
+      e.preventDefault()
+      toggleSelectRow(focusedIdx.value)
+    }
   } else if (e.key === 'Escape' && selectedEntry.value) {
     e.preventDefault()
     closeDetail()
