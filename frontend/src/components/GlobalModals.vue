@@ -191,15 +191,25 @@ function handleOpenGeneralLedger(e) {
   showLedgerWindow.value = true
 }
 
+function handleGlobalLedgerToggle() {
+  ledgerCustomerName.value = ''
+  ledgerType.value = 'Customer'
+  ledgerFromDate.value = ''
+  ledgerToDate.value = ''
+  showLedgerWindow.value = !showLedgerWindow.value
+}
+
 onMounted(() => {
   window.addEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
   window.addEventListener('wb-global-item-search', handleGlobalItemSearch)
   window.addEventListener('wb-open-general-ledger', handleOpenGeneralLedger)
+  window.addEventListener('wb-global-general-ledger-toggle', handleGlobalLedgerToggle)
 })
 
 onUnmounted(() => {
   window.removeEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
   window.removeEventListener('wb-global-item-search', handleGlobalItemSearch)
   window.removeEventListener('wb-open-general-ledger', handleOpenGeneralLedger)
+  window.removeEventListener('wb-global-general-ledger-toggle', handleGlobalLedgerToggle)
 })
 </script>
