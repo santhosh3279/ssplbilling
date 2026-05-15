@@ -264,7 +264,7 @@ router.beforeEach(async (to, from, next) => {
 
 router.afterEach((to) => {
   const title = to.meta.title || 'Billing'
-  document.title = `SSPL | ${title}`
+  document.title = title
 })
 
 export default router
