@@ -553,7 +553,7 @@ def get_erpnext_stock_ledger(item_code, from_date=None, to_date=None, warehouse=
         "company": company,
         "from_date": from_date,
         "to_date": to_date,
-        "item_code": item_code,
+        "item_code": [item_code] if isinstance(item_code, str) else item_code,
         "include_uom": 1,
     })
     if warehouse:
