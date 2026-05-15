@@ -444,7 +444,7 @@ def _batch_voucher_details(entries):
         headers = {r.name: r for r in frappe.get_all(
             vtype,
             filters={"name": ["in", names]},
-            fields=["name", party_field, total_field],
+            fields=["name", party_field, total_field, "posting_date"],
         )}
         items_rows = frappe.get_all(
             child_dt,
@@ -466,7 +466,7 @@ def _batch_voucher_details(entries):
             details[name] = {
                 "voucher_type": vtype,
                 "party_name": h.get(party_field) or "",
-                "total_amount": float(h.get(total_field) or 0),
+                "total_amount": float(h.get(total_field) or 0), "posting_date": str(h.get("posting_date") or "" ),
                 "items": items_map.get(name, []),
             }
 
@@ -476,7 +476,7 @@ def _batch_voucher_details(entries):
         headers = {r.name: r for r in frappe.get_all(
             "Stock Entry",
             filters={"name": ["in", names]},
-            fields=["name", "stock_entry_type", "total_amount"],
+            fields=["name", "stock_entry_type", "total_amount", "posting_date"],
         )}
         items_rows = frappe.get_all(
             "Stock Entry Detail",
@@ -498,7 +498,7 @@ def _batch_voucher_details(entries):
             details[name] = {
                 "voucher_type": "Stock Entry",
                 "party_name": h.get("stock_entry_type") or "",
-                "total_amount": float(h.get("total_amount") or 0),
+                "total_amount": float(h.get("total_amount") or 0), "posting_date": str(h.get("posting_date") or "" ),
                 "items": items_map.get(name, []),
             }
 
@@ -585,7 +585,7 @@ def get_erpnext_stock_ledger(item_code, from_date=None, to_date=None, warehouse=
             continue
 
         entries.append({
-            "date": str(row.get("date") or ""),
+            "date": str(row.get("date") or row.get("posting_date") or ""),
             "voucher_type": row.get("voucher_type") or "",
             "voucher_no": row.get("voucher_no") or "",
             "warehouse": row.get("warehouse") or "",
