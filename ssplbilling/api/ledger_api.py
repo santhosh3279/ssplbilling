@@ -532,6 +532,82 @@ def _batch_voucher_details(entries):
 
 
 @frappe.whitelist()
+def get_erpnext_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
+    """Return Stock Ledger entries using ERPNext's built-in Stock Ledger report engine."""
+    from erpnext.stock.report.stock_ledger.stock_ledger import execute as _sl_execute
+    from erpnext import get_default_company
+
+    company = frappe.defaults.get_user_default("company") or get_default_company()
+    to_date = to_date or frappe.utils.today()
+    from_date = from_date or frappe.utils.add_days(to_date, -30)
+
+    filters = frappe._dict({
+        "company": company,
+        "from_date": from_date,
+        "to_date": to_date,
+        "item_code": item_code,
+        "include_uom": 1,
+    })
+    if warehouse:
+        filters["warehouse"] = warehouse
+
+    _columns, rows = _sl_execute(filters)
+
+    opening_balance = 0.0
+    closing_balance = 0.0
+    total_in = 0.0
+    total_out = 0.0
+    entries = []
+
+    # ERPNext Stock Ledger rows usually include:
+    # date, voucher_type, voucher_no, warehouse, actual_qty, qty_after_transaction, stock_uom, etc.
+    
+    # We need to find the opening balance (first row usually contains it if there's history)
+    # Actually ERPNext Stock Ledger report returns rows in chronological order.
+    
+    # Pre-fetch voucher details for the right panel
+    voucher_details = _batch_voucher_details(rows)
+
+    for row in (rows or []):
+        qty = float(row.get("actual_qty") or 0)
+        balance = float(row.get("qty_after_transaction") or 0)
+        
+        # If it's a summary or header row (ERPNext sometimes returns these)
+        if not row.get("voucher_no") and not row.get("actual_qty"):
+            continue
+
+        entries.append({
+            "date": str(row.get("date") or ""),
+            "voucher_type": row.get("voucher_type") or "",
+            "voucher_no": row.get("voucher_no") or "",
+            "warehouse": row.get("warehouse") or "",
+            "actual_qty": qty,
+            "balance": balance,
+            "stock_uom": row.get("stock_uom") or "",
+            "detail": voucher_details.get(row.get("voucher_no"))
+        })
+
+        if qty > 0:
+            total_in += qty
+        else:
+            total_out += abs(qty)
+
+    if entries:
+        # Opening = Balance of first entry - Qty of first entry
+        opening_balance = entries[0]["balance"] - entries[0]["actual_qty"]
+        closing_balance = entries[-1]["balance"]
+
+    return {
+        "item_code": item_code,
+        "entries": entries,
+        "opening_balance": round(opening_balance, 2),
+        "total_in": round(total_in, 2),
+        "total_out": round(total_out, 2),
+        "closing_balance": round(closing_balance, 2),
+    }
+
+
+@frappe.whitelist()
 def get_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
     """Return Stock Ledger Entry rows with running balance, summary totals, and pre-loaded voucher details."""
     to_date = to_date or frappe.utils.today()

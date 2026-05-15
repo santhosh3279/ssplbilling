@@ -494,7 +494,7 @@ export async function fetchVoucherDetail(voucherType, voucherNo) {
  * @returns {Promise<Object>}
  */
 export async function fetchStockLedger(itemCode, fromDate, toDate, warehouse = null) {
-  return frappeGet("ssplbilling.api.ledger_api.get_stock_ledger", {
+  return frappeGet("ssplbilling.api.ledger_api.get_erpnext_stock_ledger", {
     item_code: itemCode,
     from_date: fromDate,
     to_date: toDate,
