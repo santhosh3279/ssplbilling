@@ -705,18 +705,6 @@ function onGlobalKeydown(e) {
     }
   }
 
-  if (e.ctrlKey && e.key === 'l') {
-    e.preventDefault()
-    openCustomerSearch()
-    return
-  }
-
-  if (e.ctrlKey && e.key === 'i') {
-    e.preventDefault()
-    openItemSearch()
-    return
-  }
-
   if (!ledgerData.value) return
   onTableKeydown(e)
 }
