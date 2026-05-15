@@ -14,17 +14,17 @@
       <div class="grid grid-cols-6 gap-1 mb-1">
         <button v-for="n in 12" :key="'f'+n" 
                 @pointerdown.prevent="pressKey('F' + n)"
-                class="key-btn text-[9px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-highlight)] border border-[var(--color-border)] rounded shadow-sm">
+                class="key-btn text-[9px] font-bold py-3 bg-[var(--color-bg)] text-[var(--color-highlight)] border border-[var(--color-border)] rounded shadow-sm">
           F{{ n }}
         </button>
       </div>
 
       <!-- Special Utility Keys -->
       <div class="grid grid-cols-4 gap-1 mb-2">
-        <button @pointerdown.prevent="pressKey('Escape')" class="key-btn utility bg-[var(--color-danger)]/10 text-[var(--color-danger)] py-2 text-[10px] font-bold rounded border border-[var(--color-danger)]/20 shadow-sm">ESC</button>
-        <button @pointerdown.prevent="pressKey('End')" class="key-btn utility bg-[var(--color-info)]/10 text-[var(--color-info)] py-2 text-[10px] font-bold rounded border border-[var(--color-info)]/20 shadow-sm">END</button>
-        <button @pointerdown.prevent="pressShortcut('l', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+L</button>
-        <button @pointerdown.prevent="pressShortcut('i', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+I</button>
+        <button @pointerdown.prevent="pressKey('Escape')" class="key-btn utility bg-[var(--color-danger)]/10 text-[var(--color-danger)] py-3 text-[10px] font-bold rounded border border-[var(--color-danger)]/20 shadow-sm">ESC</button>
+        <button @pointerdown.prevent="pressKey('End')" class="key-btn utility bg-[var(--color-info)]/10 text-[var(--color-info)] py-3 text-[10px] font-bold rounded border border-[var(--color-info)]/20 shadow-sm">END</button>
+        <button @pointerdown.prevent="pressShortcut('l', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-3 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+L</button>
+        <button @pointerdown.prevent="pressShortcut('i', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-3 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+I</button>
       </div>
 
       <!-- QWERTY Layout -->
@@ -73,7 +73,7 @@
     <div class="p-2 bg-[var(--color-surface-raised)] border-t border-[var(--color-border)] shrink-0">
       <button 
         @pointerdown.prevent="pressKey('Enter')"
-        class="w-full py-5 rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-xl uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+        class="w-full py-[30px] rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-xl uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
       >
         Enter
       </button>
@@ -188,7 +188,7 @@ function pressShortcut(key, mods = {}) {
   @apply transition-all active:scale-90 active:brightness-90 flex items-center justify-center touch-none;
 }
 .qwerty {
-  @apply py-3 bg-[var(--color-bg)] text-[var(--color-text)] font-bold text-xs border border-[var(--color-border)] rounded shadow-sm;
+  @apply py-[18px] bg-[var(--color-bg)] text-[var(--color-text)] font-bold text-xs border border-[var(--color-border)] rounded shadow-sm;
 }
 .utility {
   @apply flex items-center justify-center uppercase tracking-tighter;
