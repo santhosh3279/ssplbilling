@@ -29,6 +29,14 @@
 
       <!-- QWERTY Layout -->
       <div class="flex flex-col gap-1">
+        <!-- Full Width Backspace Row (Top of Numpad) -->
+        <div class="flex mb-1">
+          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full text-[var(--color-danger)] font-black flex gap-4">
+            <span>⌫</span>
+            <span class="text-[20px] uppercase tracking-[0.2em]">Backspace</span>
+          </button>
+        </div>
+
         <!-- Numpad Area (Above QWERTY) -->
         <div class="grid grid-cols-3 gap-1 mb-1">
           <button v-for="k in '123456789'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty">{{ k }}</button>
@@ -48,7 +56,6 @@
         <!-- Alpha Row 3 -->
         <div class="flex gap-1">
           <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
-          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty flex-[1.5] text-[var(--color-danger)]">⌫</button>
         </div>
 
         <!-- Symbols / Misc Row 4 -->
@@ -58,14 +65,6 @@
           <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty flex-[4] text-[20px]">SPACE</button>
           <button @pointerdown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
           <button @pointerdown.prevent="pressKey('/')" class="key-btn qwerty flex-1">/</button>
-        </div>
-
-        <!-- Full Width Backspace Row 5 -->
-        <div class="flex mt-1">
-          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full text-[var(--color-danger)] font-black flex gap-2">
-            <span>⌫</span>
-            <span class="text-[20px] uppercase tracking-[0.2em]">Backspace</span>
-          </button>
         </div>
       </div>
     </div>
