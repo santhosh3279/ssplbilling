@@ -47,8 +47,8 @@ function getEventKey(e) {
 function handleKeyDown(e) {
   const key = getEventKey(e)
 
-  // 0. Priority Exception: F1 (Command Line) is always global
-  if (key === 'F1') {
+  // 0. Priority Exception: F1, CTRL+I, and CTRL+L are always global
+  if (key === 'F1' || key === 'CTRL+I' || key === 'CTRL+L') {
     if (registry.global.has(key)) {
       e.preventDefault()
       registry.global.get(key)(e)
