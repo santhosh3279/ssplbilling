@@ -466,7 +466,15 @@ function handleGlobalKeydown(e) {
     selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
   } else if (e.key === 'Enter') {
     const item = results.value[selectedIdx.value]
-    if (item) { e.preventDefault(); handleSelect(item) }
+    if (item) {
+      e.preventDefault()
+      if (props.skipDateFilter) {
+        handleSelect(item)
+      } else {
+        isGlMode.value = true
+        showDateModal.value = true
+      }
+    }
   } else if (e.key === 'F2') {
     e.preventDefault()
     if (activeType.value === 'Customer' || activeType.value === 'Supplier' || activeType.value === 'Employee') openNewForm()

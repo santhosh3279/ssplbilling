@@ -462,6 +462,14 @@
       @select="pickCustomer"
     />
 
+    <DateFilter
+      v-if="showDateModal"
+      :show="showDateModal"
+      :customer-name="ledgerData?.label || selectedParty?.label"
+      @close="showDateModal = false"
+      @confirm="handleDateConfirm"
+    />
+
     <!-- ═══════ BILL DETAIL OVERLAY ═══════ -->
     <div v-if="showBillDetail" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div class="flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl">
@@ -496,6 +504,7 @@ import { frappeGet, fetchVoucherDetail } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import DateFilter from '../components/DateFilter.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
@@ -607,6 +616,14 @@ const selectedEntry = ref(null)
 const voucherDetail = ref(null)
 const loadingDetail = ref(false)
 const focusedIdx = ref(-1)
+
+const showDateModal = ref(false)
+
+function handleDateConfirm(dates) {
+  fromDate.value = dates.from
+  toDate.value = dates.to
+  loadLedger()
+}
 
 // ── UI ──
 const zoom = ref(parseInt(localStorage.getItem('wb-zoom')) || 100)
@@ -743,6 +760,9 @@ function onGlobalKeydown(e) {
     const prevIdx = Math.max(focusedIdx.value - 1, 0)
     onRowClick(ledgerData.value.entries[prevIdx], prevIdx)
     scrollRowIntoView(prevIdx)
+  } else if (e.key === 'F4' || e.key === 'Enter') {
+    e.preventDefault()
+    showDateModal.value = true
   } else if (e.key === ' ') {
     if (focusedIdx.value !== -1) {
       e.preventDefault()
