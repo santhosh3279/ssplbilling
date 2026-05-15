@@ -468,23 +468,26 @@
     />
 
     <!-- ═══════ BILL DETAIL OVERLAY ═══════ -->
-    <div v-if="showBillDetail" class="absolute inset-0 z-[70] flex flex-col bg-[var(--color-bg)]">
-      <header class="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-sm">
-        <div class="flex items-center gap-4">
-          <button
-            @click="showBillDetail = false"
-            class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <h2 class="text-sm font-semibold text-[var(--color-text)] uppercase tracking-widest">
-            {{ billType }}: {{ billName }}
-          </h2>
+    <div v-if="showBillDetail" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl">
+        <header class="flex h-12 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-sm">
+          <div class="flex items-center gap-4">
+            <button
+              @click="showBillDetail = false"
+              class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <h2 class="text-sm font-semibold text-[var(--color-text)] uppercase tracking-widest">
+              {{ billType }}: {{ billName }}
+            </h2>
+          </div>
+          <button @click="showBillDetail = false" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">✕</button>
+        </header>
+        <div class="flex-1 overflow-hidden">
+          <SalesInvoice v-if="billType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="billName" @close="showBillDetail = false" />
+          <Quotation v-else-if="billType === 'Quotation'" :is-subwindow="true" :quotation-name="billName" @close="showBillDetail = false" />
         </div>
-      </header>
-      <div class="flex-1 overflow-hidden">
-        <SalesInvoice v-if="billType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="billName" />
-        <Quotation v-else-if="billType === 'Quotation'" :is-subwindow="true" :quotation-name="billName" />
       </div>
     </div>
     </div>
