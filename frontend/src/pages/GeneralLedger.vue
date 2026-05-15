@@ -421,6 +421,15 @@
         <!-- Panel Footer -->
         <div class="border-t border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)]/30">
           <button
+            v-if="['Sales Invoice', 'Quotation'].includes(selectedEntry.voucher_type)"
+            @click="openBillDetail"
+            class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:bg-[var(--color-success)]/90 active:scale-95"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open Bill
+          </button>
+
+          <button
             v-if="['Sales Invoice', 'Purchase Invoice'].includes(selectedEntry.voucher_type)"
             @click="openVoucherPrint"
             class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-info)] py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:bg-[var(--color-info)]/90 active:scale-95"
@@ -457,6 +466,27 @@
       @close="showCustomerSearchModal = false"
       @select="pickCustomer"
     />
+
+    <!-- ═══════ BILL DETAIL OVERLAY ═══════ -->
+    <div v-if="showBillDetail" class="absolute inset-0 z-[70] flex flex-col bg-[var(--color-bg)]">
+      <header class="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-sm">
+        <div class="flex items-center gap-4">
+          <button
+            @click="showBillDetail = false"
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <h2 class="text-sm font-semibold text-[var(--color-text)] uppercase tracking-widest">
+            {{ billType }}: {{ billName }}
+          </h2>
+        </div>
+      </header>
+      <div class="flex-1 overflow-hidden">
+        <SalesInvoice v-if="billType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="billName" />
+        <Quotation v-else-if="billType === 'Quotation'" :is-subwindow="true" :quotation-name="billName" />
+      </div>
+    </div>
     </div>
   </div>
 </template>
@@ -468,6 +498,8 @@ import { frappeGet, fetchVoucherDetail } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import SalesInvoice from './SalesInvoice.vue'
+import Quotation from './Quotation.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -482,7 +514,9 @@ const emit = defineEmits(['close'])
 
 useSubwindowWatcher(ref(props.isSubWindow), {
   'ESCAPE': () => {
-    if (selectedEntry.value) {
+    if (showBillDetail.value) {
+      showBillDetail.value = false
+    } else if (selectedEntry.value) {
       closeDetail()
     } else {
       emit('close')
@@ -582,6 +616,18 @@ const printModalVisible = ref(false)
 const printModalInvoiceName = ref('')
 const printModalDoctype = ref('')
 const tableBodyRef = ref(null)
+
+// ── Bill Detail Subwindow ──
+const showBillDetail = ref(false)
+const billName = ref('')
+const billType = ref('')
+
+function openBillDetail() {
+  if (!selectedEntry.value) return
+  billName.value = selectedEntry.value.voucher_no
+  billType.value = selectedEntry.value.voucher_type
+  showBillDetail.value = true
+}
 
 watch(zoom, (newV) => {
   localStorage.setItem('wb-zoom', String(newV))
@@ -684,7 +730,7 @@ function closeDetail() {
 }
 
 function onGlobalKeydown(e) {
-  if (showCustomerSearchModal.value || printModalVisible.value) return
+  if (showCustomerSearchModal.value || printModalVisible.value || showBillDetail.value) return
   if (!ledgerData.value || !ledgerData.value.entries.length) return
 
   const len = ledgerData.value.entries.length
