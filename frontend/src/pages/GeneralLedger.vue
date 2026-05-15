@@ -469,6 +469,7 @@ const toDate = ref(new Date().toISOString().split('T')[0])
 
 onMounted(async () => {
   window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('storage', onStorage)
   if (props.initialFromDate) fromDate.value = props.initialFromDate
   if (props.initialToDate) toDate.value = props.initialToDate
 
@@ -504,6 +505,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('storage', onStorage)
 })
 
 // ── Data state ──
@@ -519,9 +521,20 @@ const loadingDetail = ref(false)
 const focusedIdx = ref(-1)
 
 // ── UI ──
-const zoom = ref(100)
+const zoom = ref(parseInt(localStorage.getItem('wb-zoom')) || 100)
 const showPrintModal = ref(false)
 const tableBodyRef = ref(null)
+
+watch(zoom, (newV) => {
+  localStorage.setItem('wb-zoom', String(newV))
+})
+
+// ── Storage Sync ──
+function onStorage(e) {
+  if (e.key === 'wb-zoom') {
+    zoom.value = parseInt(e.newValue) || 100
+  }
+}
 
 // ── Customer Search Modal ──
 const showCustomerSearchModal = ref(false)
