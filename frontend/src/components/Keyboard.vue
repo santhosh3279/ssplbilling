@@ -13,7 +13,7 @@
       <!-- Function Keys Row -->
       <div class="grid grid-cols-6 gap-1 mb-1">
         <button v-for="n in 12" :key="'f'+n" 
-                @mousedown.prevent="pressKey('F' + n)"
+                @pointerdown.prevent="pressKey('F' + n)"
                 class="key-btn text-[9px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-highlight)] border border-[var(--color-border)] rounded shadow-sm">
           F{{ n }}
         </button>
@@ -21,42 +21,42 @@
 
       <!-- Special Utility Keys -->
       <div class="grid grid-cols-4 gap-1 mb-2">
-        <button @mousedown.prevent="pressKey('Escape')" class="key-btn utility bg-[var(--color-danger)]/10 text-[var(--color-danger)] py-2 text-[10px] font-bold rounded border border-[var(--color-danger)]/20 shadow-sm">ESC</button>
-        <button @mousedown.prevent="pressKey('End')" class="key-btn utility bg-[var(--color-info)]/10 text-[var(--color-info)] py-2 text-[10px] font-bold rounded border border-[var(--color-info)]/20 shadow-sm">END</button>
-        <button @mousedown.prevent="pressShortcut('l', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+L</button>
-        <button @mousedown.prevent="pressShortcut('i', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+I</button>
+        <button @pointerdown.prevent="pressKey('Escape')" class="key-btn utility bg-[var(--color-danger)]/10 text-[var(--color-danger)] py-2 text-[10px] font-bold rounded border border-[var(--color-danger)]/20 shadow-sm">ESC</button>
+        <button @pointerdown.prevent="pressKey('End')" class="key-btn utility bg-[var(--color-info)]/10 text-[var(--color-info)] py-2 text-[10px] font-bold rounded border border-[var(--color-info)]/20 shadow-sm">END</button>
+        <button @pointerdown.prevent="pressShortcut('l', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+L</button>
+        <button @pointerdown.prevent="pressShortcut('i', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-2 text-[10px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+I</button>
       </div>
 
       <!-- QWERTY Layout -->
       <div class="flex flex-col gap-1">
         <!-- Numbers Row -->
         <div class="flex gap-1">
-          <button v-for="k in '1234567890'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button v-for="k in '1234567890'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
         </div>
 
         <!-- Alpha Row 1 -->
         <div class="flex gap-1">
-          <button v-for="k in 'QWERTYUIOP'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button v-for="k in 'QWERTYUIOP'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
         </div>
 
         <!-- Alpha Row 2 -->
         <div class="flex gap-1 px-2">
-          <button v-for="k in 'ASDFGHJKL'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button v-for="k in 'ASDFGHJKL'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
         </div>
 
         <!-- Alpha Row 3 -->
         <div class="flex gap-1">
-          <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @mousedown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
-          <button @mousedown.prevent="pressKey('Backspace')" class="key-btn qwerty flex-[1.5] text-[var(--color-danger)]">⌫</button>
+          <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty flex-[1.5] text-[var(--color-danger)]">⌫</button>
         </div>
 
         <!-- Symbols / Misc Row 4 -->
         <div class="flex gap-1">
-          <button @mousedown.prevent="pressKey('.')" class="key-btn qwerty flex-1">.</button>
-          <button @mousedown.prevent="pressKey(',')" class="key-btn qwerty flex-1">,</button>
-          <button @mousedown.prevent="pressKey(' ')" class="key-btn qwerty flex-[4] text-[10px]">SPACE</button>
-          <button @mousedown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
-          <button @mousedown.prevent="pressKey('/')" class="key-btn qwerty flex-1">/</button>
+          <button @pointerdown.prevent="pressKey('.')" class="key-btn qwerty flex-1">.</button>
+          <button @pointerdown.prevent="pressKey(',')" class="key-btn qwerty flex-1">,</button>
+          <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty flex-[4] text-[10px]">SPACE</button>
+          <button @pointerdown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
+          <button @pointerdown.prevent="pressKey('/')" class="key-btn qwerty flex-1">/</button>
         </div>
       </div>
     </div>
@@ -64,7 +64,7 @@
     <!-- Bottom Enter Key -->
     <div class="p-2 bg-[var(--color-surface-raised)] border-t border-[var(--color-border)] shrink-0">
       <button 
-        @mousedown.prevent="pressKey('Enter')"
+        @pointerdown.prevent="pressKey('Enter')"
         class="w-full py-5 rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-xl uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
       >
         Enter
@@ -74,23 +74,57 @@
 </template>
 
 <script setup>
-function pressKey(key) {
-  const activeEl = document.activeElement;
-  const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+import { onMounted, onUnmounted } from 'vue';
 
-  // Handle standard characters vs special keys
+let lastActiveElement = null;
+
+const handleFocusIn = (e) => {
+  const target = e.target;
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+    lastActiveElement = target;
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('focusin', handleFocusIn);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('focusin', handleFocusIn);
+});
+
+function pressKey(key) {
+  // Use current active element if it's an input, otherwise fallback to last known input
+  let activeEl = document.activeElement;
+  if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+    activeEl = lastActiveElement;
+  }
+
+  if (!activeEl) return;
+
+  const isInput = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA';
+
   if (key.length === 1) {
     if (isInput) {
-      const start = activeEl.selectionStart;
-      const end = activeEl.selectionEnd;
-      const val = activeEl.value;
-      activeEl.value = val.substring(0, start) + key + val.substring(end);
-      activeEl.selectionStart = activeEl.selectionEnd = start + 1;
-      // Trigger input event for Vue/other listeners
-      activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+      // Ensure element is focused before typing
+      activeEl.focus();
+      
+      // Try using execCommand for better compatibility with framework state (Vue/React)
+      const success = document.execCommand('insertText', false, key);
+      
+      if (!success) {
+        // Fallback for environments where execCommand might fail
+        const start = activeEl.selectionStart;
+        const end = activeEl.selectionEnd;
+        const val = activeEl.value;
+        activeEl.value = val.substring(0, start) + key + val.substring(end);
+        activeEl.selectionStart = activeEl.selectionEnd = start + 1;
+        activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+        activeEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     }
   } else {
-    // Dispatch keyboard event for special keys (Enter, Esc, F-keys, etc.)
+    // Dispatch keyboard event for special keys
     const event = new KeyboardEvent('keydown', {
       key: key,
       code: key,
@@ -99,24 +133,29 @@ function pressKey(key) {
     });
     
     if (isInput && key === 'Backspace') {
+      activeEl.focus();
+      // Try to use execCommand for backspace if possible (some browsers support 'delete')
+      // but standard manual manipulation is often safer for backspace
       const start = activeEl.selectionStart;
       const end = activeEl.selectionEnd;
       if (start === end && start > 0) {
         activeEl.value = activeEl.value.substring(0, start - 1) + activeEl.value.substring(end);
         activeEl.selectionStart = activeEl.selectionEnd = start - 1;
-      } else {
+      } else if (start !== end) {
         activeEl.value = activeEl.value.substring(0, start) + activeEl.value.substring(end);
         activeEl.selectionStart = activeEl.selectionEnd = start;
       }
       activeEl.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-    // Special case for Enter on buttons/inputs
-    if (key === 'Enter' && activeEl) {
-       // Also dispatch to the element specifically
+    // Special case for Enter
+    if (key === 'Enter') {
        activeEl.dispatchEvent(event);
        if (activeEl.tagName === 'BUTTON') activeEl.click();
+       // Also try dispatching to document as many global shortcuts listen there
+       document.dispatchEvent(event);
     } else {
+       activeEl.dispatchEvent(event);
        document.dispatchEvent(event);
     }
   }
@@ -138,7 +177,7 @@ function pressShortcut(key, mods = {}) {
 
 <style scoped>
 .key-btn {
-  @apply transition-all active:scale-90 active:brightness-90 flex items-center justify-center;
+  @apply transition-all active:scale-90 active:brightness-90 flex items-center justify-center touch-none;
 }
 .qwerty {
   @apply py-3 bg-[var(--color-bg)] text-[var(--color-text)] font-bold text-xs border border-[var(--color-border)] rounded shadow-sm;
