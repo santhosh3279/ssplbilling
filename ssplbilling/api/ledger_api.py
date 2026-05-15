@@ -418,7 +418,15 @@ def _batch_voucher_details(entries):
 
     by_type = defaultdict(list)
     for e in entries:
-        by_type[e.voucher_type].append(e.voucher_no)
+        if isinstance(e, dict):
+            v_type = e.get("voucher_type")
+            v_no = e.get("voucher_no")
+        else:
+            v_type = getattr(e, "voucher_type", None)
+            v_no = getattr(e, "voucher_no", None)
+        
+        if v_type and v_no:
+            by_type[v_type].append(v_no)
 
     details = {}  # voucher_no -> detail dict
 
