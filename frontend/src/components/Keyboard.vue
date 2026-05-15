@@ -74,7 +74,7 @@
     <div class="p-2 bg-[var(--color-surface-raised)] border-t border-[var(--color-border)] shrink-0">
       <button 
         @pointerdown.prevent="pressKey('Enter')"
-        class="w-full py-[30px] rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-[40px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+        class="w-full py-[22px] rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-[30px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
       >
         Enter
       </button>
