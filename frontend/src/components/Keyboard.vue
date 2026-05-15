@@ -9,6 +9,8 @@
 
     <!-- Scrollable Key Area -->
     <div class="flex-1 overflow-y-auto p-1 flex flex-col gap-1 custom-scrollbar">
+      <!-- Spacer to push content to bottom -->
+      <div class="flex-1"></div>
       
       <!-- Function Keys Row -->
       <div class="grid grid-cols-6 gap-1 mb-1">
@@ -20,7 +22,7 @@
       </div>
 
       <!-- Special Utility Keys -->
-      <div class="grid grid-cols-4 gap-1 mb-2">
+      <div class="grid grid-cols-4 gap-1 mb-1">
         <button @pointerdown.prevent="pressKey('Escape')" class="key-btn utility bg-[var(--color-danger)]/10 text-[var(--color-danger)] py-3 text-[20px] font-bold rounded border border-[var(--color-danger)]/20 shadow-sm">ESC</button>
         <button @pointerdown.prevent="pressKey('End')" class="key-btn utility bg-[var(--color-info)]/10 text-[var(--color-info)] py-3 text-[20px] font-bold rounded border border-[var(--color-info)]/20 shadow-sm">END</button>
         <button @pointerdown.prevent="pressShortcut('l', { ctrlKey: true })" class="key-btn utility bg-[var(--color-warning)]/10 text-[var(--color-warning)] py-3 text-[20px] font-bold rounded border border-[var(--color-warning)]/20 shadow-sm">C+L</button>
@@ -65,17 +67,17 @@
           <button @pointerdown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
           <button @pointerdown.prevent="pressKey('/')" class="key-btn qwerty flex-1">/</button>
         </div>
-
-        <!-- Enter Key (Now inside QWERTY section) -->
-        <div class="mt-1">
-          <button 
-            @pointerdown.prevent="pressKey('Enter')"
-            class="w-full py-[30px] rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-[40px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
-          >
-            Enter
-          </button>
-        </div>
       </div>
+    </div>
+
+    <!-- Bottom Enter Key -->
+    <div class="p-2 bg-[var(--color-surface-raised)] border-t border-[var(--color-border)] shrink-0">
+      <button 
+        @pointerdown.prevent="pressKey('Enter')"
+        class="w-full py-[30px] rounded-xl bg-[var(--color-success)] text-[var(--color-text-on-highlight)] font-black text-[40px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+      >
+        Enter
+      </button>
     </div>
   </div>
 </template>
