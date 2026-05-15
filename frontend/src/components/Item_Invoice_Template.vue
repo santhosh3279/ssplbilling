@@ -525,6 +525,7 @@
 
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useDevice } from '../composables/useDevice'
+import { useLayout } from '../composables/useLayout'
 
 const props = defineProps({
   title: { type: String, default: 'Invoice' },
@@ -604,7 +605,7 @@ const emit = defineEmits([
 ])
 
 const { isTablet } = useDevice()
-const isSidebarCollapsed = ref(false)
+const { isSidebarCollapsed } = useLayout()
 
 onMounted(() => {
   if (isTablet.value) {

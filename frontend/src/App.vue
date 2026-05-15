@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen bg-[var(--color-bg)] flex overflow-hidden">
-    <!-- Main App Content (80% width on tablet) -->
+    <!-- Main App Content -->
     <div 
-      :class="[isTablet ? 'w-[80%]' : 'w-full']"
-      class="relative h-screen overflow-hidden transform-gpu flex flex-col bg-[var(--color-bg)]"
+      :class="[isTablet ? (isSidebarCollapsed ? 'w-[60%]' : 'w-[80%]') : 'w-full']"
+      class="relative h-screen overflow-hidden transform-gpu flex flex-col bg-[var(--color-bg)] transition-all duration-300 ease-in-out"
     >
       <router-view class="flex-1 overflow-hidden" />
       
@@ -14,10 +14,11 @@
       <ErrorWindow :show="showError" :message="errorMessage" @close="showError = false" />
     </div>
 
-    <!-- Tablet Side Panel (Keyboard) - 20% -->
+    <!-- Tablet Side Panel (Keyboard) -->
     <div 
       v-if="isTablet" 
-      class="w-[20%] h-screen border-l border-[var(--color-border)] shadow-2xl z-50 overflow-hidden shrink-0 bg-[var(--color-surface)]"
+      :class="isSidebarCollapsed ? 'w-[40%]' : 'w-[20%]'"
+      class="h-screen border-l border-[var(--color-border)] shadow-2xl z-50 overflow-hidden shrink-0 bg-[var(--color-surface)] transition-all duration-300 ease-in-out"
     >
       <Keyboard />
     </div>
@@ -35,6 +36,7 @@ import GlobalModals from './components/GlobalModals.vue';
 import ErrorWindow from './components/ErrorWindow.vue';
 import { useTheme } from './composables/useTheme';
 import { useDevice } from './composables/useDevice';
+import { useLayout } from './composables/useLayout';
 
 const showCalculator = ref(false);
 const showCommandLine = ref(false);
@@ -42,6 +44,7 @@ const showError = ref(false);
 const errorMessage = ref('');
 const { initTheme } = useTheme();
 const { isTablet } = useDevice();
+const { isSidebarCollapsed } = useLayout();
 
 useShortcuts(globalShortcuts, 'global');
 
