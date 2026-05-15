@@ -149,10 +149,11 @@
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">↑↓</kbd> Navigate</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Enter</kbd> Select</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+E</kbd> Toggle Enc</span>
-        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F2</kbd> New Item</span>
-        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F3</kbd> Edit Item</span>
-        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F4</kbd> Update Price</span>
-        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F5</kbd> Refresh</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F2</kbd> New</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F3</kbd> Edit</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F4</kbd> Stock Ledger</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">S+F4</kbd> Price</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F5</kbd> Sync</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
 
@@ -270,6 +271,14 @@ useSubwindowWatcher(computed(() => props.show), {
   F4: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
     e.preventDefault()
+    if (results.value[selectedIdx.value]) {
+      isSlMode.value = true
+      showDateModal.value = true
+    }
+  },
+  'SHIFT+F4': (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
     if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
   },
   Home: (e) => {
@@ -292,6 +301,7 @@ const selectedIdx = ref(0)
 const searchInput = ref(null)
 const scrollContainer = ref(null)
 const showDateModal = ref(false)
+const isSlMode = ref(false)
 const showCreationModal = ref(false)
 const showEditModal = ref(false)
 const editItemCode = ref('')
@@ -471,8 +481,21 @@ function handleItemUpdated() {
 function handleDateConfirm(dates) {
   const item = results.value[selectedIdx.value]
   if (item) {
-    showDateModal.value = false
-    emit('select', item, dates)
+    if (isSlMode.value) {
+      showDateModal.value = false
+      isSlMode.value = false
+      window.dispatchEvent(new CustomEvent('wb-open-stock-ledger', {
+        detail: {
+          item_code: item.item_code,
+          from: dates.from,
+          to: dates.to
+        }
+      }))
+      emit('close')
+    } else {
+      showDateModal.value = false
+      emit('select', item, dates)
+    }
   }
 }
 
@@ -500,7 +523,13 @@ function closeSubForm() {
 }
 
 function handleGlobalItemSearch() {
-  preloadItems(true)
+  if (props.show && results.value[selectedIdx.value]) {
+    // If already open and an item is selected, trigger stock ledger (via date selector)
+    isSlMode.value = true
+    showDateModal.value = true
+  } else {
+    preloadItems(true)
+  }
 }
 
 defineExpose({ focus, closeSubForm })
