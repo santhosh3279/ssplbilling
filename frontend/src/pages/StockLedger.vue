@@ -246,11 +246,11 @@
             </div>
             <div class="flex items-center gap-2">
               <button
-                v-if="selectedEntry.voucher_type === 'Sales Invoice'"
-                @click="openInternalSalesEntry(selectedEntry.voucher_no)"
+                v-if="['Sales Invoice', 'Quotation'].includes(selectedEntry.voucher_type)"
+                @click="openBillDetail(selectedEntry.voucher_type, selectedEntry.voucher_no)"
                 class="rounded px-2 py-1 text-[10px] font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/20"
               >
-                View / Edit
+                View Bill
               </button>
               <button
                 @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
@@ -323,12 +323,29 @@
 
     </div>
 
-    <SalesEntry
-      v-if="showSalesEntryWindow"
-      :is-sub-window="true"
-      :invoice-name="subWindowInvoiceName"
-      @close="showSalesEntryWindow = false"
-    />
+    <!-- ═══════ BILL DETAIL OVERLAY ═══════ -->
+    <div v-if="showBillDetail" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl">
+        <header class="flex h-12 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-sm">
+          <div class="flex items-center gap-4">
+            <button
+              @click="showBillDetail = false"
+              class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <h2 class="text-sm font-semibold text-[var(--color-text)] uppercase tracking-widest">
+              {{ billType }}: {{ billName }}
+            </h2>
+          </div>
+          <button @click="showBillDetail = false" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">✕</button>
+        </header>
+        <div class="flex-1 overflow-hidden">
+          <SalesInvoice v-if="billType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="billName" @close="showBillDetail = false" />
+          <Quotation v-else-if="billType === 'Quotation'" :is-subwindow="true" :quotation-name="billName" @close="showBillDetail = false" />
+        </div>
+      </div>
+    </div>
 
     <GeneralLedger
       v-if="showCustomerLedgerWindow"
@@ -364,11 +381,12 @@
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { fetchStockLedger, frappeGet } from '../api.js'
-import SalesEntry from './SalesInvoice.vue'
+import SalesInvoice from './SalesInvoice.vue'
+import Quotation from './Quotation.vue'
 import GeneralLedger from './GeneralLedger.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import { useSubwindow } from '../services/shortcutManager'
+import { useSubwindow, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 
 const props = defineProps({
   isSubWindow: {
@@ -391,7 +409,33 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-if (props.isSubWindow) useSubwindow()
+// Layer 1: The Stock Ledger itself (if in subwindow mode)
+useSubwindowWatcher(computed(() => props.isSubWindow), {
+  'ESCAPE': () => {
+    if (selectedEntry.value) {
+      closeDetail()
+    } else {
+      emit('close')
+    }
+  }
+})
+
+// Layer 2: The Bill Detail Subwindow
+const showBillDetail = ref(false)
+const billName = ref('')
+const billType = ref('')
+
+function openBillDetail(voucherType, voucherNo) {
+  billName.value = voucherNo
+  billType.value = voucherType
+  showBillDetail.value = true
+}
+
+useSubwindowWatcher(showBillDetail, {
+  'ESCAPE': () => {
+    showBillDetail.value = false
+  }
+})
 
 const router = useRouter()
 const route = useRoute()
@@ -403,9 +447,6 @@ function handleBack() {
     router.push('/')
   }
 }
-
-const showSalesEntryWindow = ref(false)
-const subWindowInvoiceName = ref('')
 
 // ─── Customer Ledger Sub-window ──────────────────────────────────────────────
 const showCustomerLedgerWindow = ref(false)
@@ -601,16 +642,11 @@ function onRowMouseEnter(entry, idx) {
 
 function onRowClick(entry, idx) {
   if (idx !== undefined) focusedIdx.value = idx
-  if (entry.voucher_type === 'Sales Invoice') {
-    openInternalSalesEntry(entry.voucher_no)
+  if (['Sales Invoice', 'Quotation'].includes(entry.voucher_type)) {
+    openBillDetail(entry.voucher_type, entry.voucher_no)
     return
   }
   updatePreview(entry, idx)
-}
-
-function openInternalSalesEntry(invoiceNo) {
-  subWindowInvoiceName.value = invoiceNo
-  showSalesEntryWindow.value = true
 }
 
 function closeDetail() {
@@ -636,8 +672,8 @@ function onTableKeydown(e) {
   } else if (e.key === 'Enter' && focusedIdx.value >= 0) {
     e.preventDefault()
     const entry = ledgerData.value.entries[focusedIdx.value]
-    if (entry.voucher_type === 'Sales Invoice') {
-      openInternalSalesEntry(entry.voucher_no)
+    if (['Sales Invoice', 'Quotation'].includes(entry.voucher_type)) {
+      openBillDetail(entry.voucher_type, entry.voucher_no)
     } else {
       onRowClick(entry, focusedIdx.value)
     }
@@ -652,7 +688,7 @@ function scrollRowIntoView(idx) {
 }
 
 function onGlobalKeydown(e) {
-  if (showSalesEntryWindow.value) return
+  if (isSubwindowActive()) return
   if (showItemSearchModal.value || showCustomerSearchModal.value) {
     if (e.key === 'Escape') {
       if (showItemSearchModal.value) showItemSearchModal.value = false
@@ -665,11 +701,6 @@ function onGlobalKeydown(e) {
     if (selectedEntry.value) {
       e.preventDefault()
       closeDetail()
-      return
-    }
-    if (props.isSubWindow) {
-      e.preventDefault()
-      handleBack()
       return
     }
   }
