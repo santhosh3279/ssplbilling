@@ -378,21 +378,19 @@
     />
 
     <!-- ══ TOAST STACK ════════════════════════════════════════════════════════ -->
-    <Teleport to="body">
-      <div class="toast-stack">
-        <TransitionGroup name="toast-anim" tag="div">
-          <div
-            v-for="t in toasts"
-            :key="t.id"
-            :class="['toast', `toast-${t.type}`]"
-            @click="dismissToast(t.id)"
-          >
-            <span class="toast-icon">{{ t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : 'ℹ' }}</span>
-            <span class="toast-msg">{{ t.message }}</span>
-          </div>
-        </TransitionGroup>
-      </div>
-    </Teleport>
+    <div class="toast-stack">
+      <TransitionGroup name="toast-anim" tag="div">
+        <div
+          v-for="t in toasts"
+          :key="t.id"
+          :class="['toast', `toast-${t.type}`]"
+          @click="dismissToast(t.id)"
+        >
+          <span class="toast-icon">{{ t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : 'ℹ' }}</span>
+          <span class="toast-msg">{{ t.message }}</span>
+        </div>
+      </TransitionGroup>
+    </div>
 
   </div>
 </template>
