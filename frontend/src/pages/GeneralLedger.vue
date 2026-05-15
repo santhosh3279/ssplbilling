@@ -123,35 +123,35 @@
           <div class="flex items-center gap-6 flex-wrap ml-4">
             <div class="flex flex-col">
               <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Opening</span>
-              <span class="text-2xl font-mono leading-none" :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+              <span class="text-3xl font-mono leading-none" :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ fmt(Math.abs(ledgerData.opening_balance)) }}
                 <span class="text-xs font-normal opacity-70">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
               </span>
             </div>
 
-            <div class="h-8 w-px bg-[var(--color-border)] opacity-50"></div>
+            <div class="h-10 w-px bg-[var(--color-border)] opacity-50"></div>
 
             <div class="flex flex-col">
               <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Total Debit</span>
-              <span class="text-2xl font-mono leading-none text-[var(--color-success)]">
+              <span class="text-3xl font-mono leading-none text-[var(--color-success)]">
                 {{ fmt(ledgerData.total_debit) }}
               </span>
             </div>
 
-            <div class="h-8 w-px bg-[var(--color-border)] opacity-50"></div>
+            <div class="h-10 w-px bg-[var(--color-border)] opacity-50"></div>
 
             <div class="flex flex-col">
               <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Total Credit</span>
-              <span class="text-2xl font-mono leading-none text-[var(--color-danger)]">
+              <span class="text-3xl font-mono leading-none text-[var(--color-danger)]">
                 {{ fmt(ledgerData.total_credit) }}
               </span>
             </div>
 
-            <div class="h-8 w-px bg-[var(--color-border)] opacity-50"></div>
+            <div class="h-10 w-px bg-[var(--color-border)] opacity-50"></div>
 
             <div class="flex flex-col">
               <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Closing Balance</span>
-              <span class="text-2xl font-mono leading-none" :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+              <span class="text-3xl font-mono leading-none" :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ fmt(Math.abs(ledgerData.closing_balance)) }}
                 <span class="text-xs font-normal opacity-70">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
               </span>
