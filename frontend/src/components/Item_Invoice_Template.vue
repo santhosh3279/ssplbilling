@@ -1,8 +1,13 @@
 <template>
   <div class="flex h-full overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)] font-sans">
     <!-- Optional Sidebar (based on SalesEntry) -->
-    <aside v-if="showSidebar" class="flex w-[15%] flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden shrink-0">
-      <slot name="sidebar">
+    <aside 
+      v-if="showSidebar" 
+      class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden shrink-0 transition-all duration-300 ease-in-out"
+      :class="isSidebarCollapsed ? 'w-0 border-r-0' : 'w-[20%] xl:w-[15%]'"
+    >
+      <div :class="{'opacity-0 invisible': isSidebarCollapsed, 'opacity-100 visible': !isSidebarCollapsed}" class="flex flex-col h-full transition-opacity duration-200">
+        <slot name="sidebar">
         <div class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2 text-center">
           <div class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ sidebarTitle }}</div>
         </div>
@@ -100,6 +105,7 @@
           </slot>
         </div>
       </slot>
+      </div>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -111,6 +117,17 @@
         :class="!titleBarColor ? 'bg-[var(--color-surface-raised)]/60' : ''"
       >
         <div class="flex items-center gap-3">
+          <!-- Sidebar Toggle (Collapsible) -->
+          <button
+            v-if="showSidebar"
+            @click="isSidebarCollapsed = !isSidebarCollapsed"
+            class="flex items-center justify-center rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-colors mr-1"
+            :title="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'"
+          >
+            <svg v-if="isSidebarCollapsed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+          </button>
+
           <button v-if="showBackButton" class="rounded px-2 py-1 text-2xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back</button>
           <span v-if="showBackButton" class="text-[var(--color-border)] text-2xl">|</span>
           <span class="text-2xl font-semibold text-[var(--color-text)]">{{ title }}</span>
@@ -506,7 +523,8 @@
  * A reusable UI template component based on SalesEntry.vue
  */
 
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useDevice } from '../composables/useDevice'
 
 const props = defineProps({
   title: { type: String, default: 'Invoice' },
@@ -585,6 +603,15 @@ const emit = defineEmits([
   'update:ignoreModifier', 'other-entry-enter'
 ])
 
+const { isTablet } = useDevice()
+const isSidebarCollapsed = ref(false)
+
+onMounted(() => {
+  if (isTablet.value) {
+    isSidebarCollapsed.value = true
+  }
+})
+
 const sidebarSearchRef = ref(null)
 const sidebarListRef = ref(null)
 const showSeriesDropdown = ref(false)
@@ -657,6 +684,18 @@ defineExpose({
   focusDiscountAmt: () => { discountAmtRef.value?.focus(); discountAmtRef.value?.select() },
   focusSaveBtn: () => saveBtnRef.value?.focus(),
   focusMop: () => mopSelectRef.value?.focus(),
+  toggleSidebar: () => { isSidebarCollapsed.value = !isSidebarCollapsed.value }
+})
+
+onMounted(() => {
+  const handleKeyDown = (e) => {
+    if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault()
+      isSidebarCollapsed.value = !isSidebarCollapsed.value
+    }
+  }
+  window.addEventListener('keydown', handleKeyDown)
+  onUnmounted(() => window.removeEventListener('keydown', handleKeyDown))
 })
 
 function formatDate(dateString) {
