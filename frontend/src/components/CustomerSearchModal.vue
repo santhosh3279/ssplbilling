@@ -510,16 +510,18 @@ function handleDateConfirm(dates) {
     if (isGlMode.value) {
       showDateModal.value = false
       isGlMode.value = false
-      router.push({
-        name: 'GeneralLedger',
-        query: {
+      
+      // Dispatch global event instead of router.push to allow subwindow opening
+      window.dispatchEvent(new CustomEvent('wb-open-general-ledger', {
+        detail: {
           party: item.name,
           party_type: item.type,
           label: item.label,
           from: dates.from,
           to: dates.to
         }
-      })
+      }))
+      
       emit('close')
     } else {
       showDateModal.value = false

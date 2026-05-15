@@ -180,13 +180,26 @@ function handleGlobalItemSearch() {
   openItemSearch()
 }
 
+function handleOpenGeneralLedger(e) {
+  const { party, party_type, from, to } = e.detail || {}
+  if (!party) return
+
+  ledgerCustomerName.value = party
+  ledgerType.value = party_type || 'Customer'
+  ledgerFromDate.value = from || ''
+  ledgerToDate.value = to || ''
+  showLedgerWindow.value = true
+}
+
 onMounted(() => {
   window.addEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
   window.addEventListener('wb-global-item-search', handleGlobalItemSearch)
+  window.addEventListener('wb-open-general-ledger', handleOpenGeneralLedger)
 })
 
 onUnmounted(() => {
   window.removeEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
   window.removeEventListener('wb-global-item-search', handleGlobalItemSearch)
+  window.removeEventListener('wb-open-general-ledger', handleOpenGeneralLedger)
 })
 </script>
