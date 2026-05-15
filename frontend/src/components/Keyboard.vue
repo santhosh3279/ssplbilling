@@ -58,6 +58,14 @@
           <button @pointerdown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
           <button @pointerdown.prevent="pressKey('/')" class="key-btn qwerty flex-1">/</button>
         </div>
+
+        <!-- Full Width Backspace Row 5 -->
+        <div class="flex mt-1">
+          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full text-[var(--color-danger)] font-black flex gap-2">
+            <span>⌫</span>
+            <span class="text-[10px] uppercase tracking-[0.2em]">Backspace</span>
+          </button>
+        </div>
       </div>
     </div>
 
