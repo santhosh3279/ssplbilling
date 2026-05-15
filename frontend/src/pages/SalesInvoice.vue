@@ -731,6 +731,7 @@ const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
+const isLoadingBill = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
@@ -785,6 +786,7 @@ watch(sidebarSearch, () => {
 
 async function handleSelectSidebarItem(item) {
   try {
+    isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: item.name })
 
     // Header
@@ -863,6 +865,8 @@ async function handleSelectSidebarItem(item) {
   } catch (e) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
+  } finally {
+    isLoadingBill.value = false
   }
 }
 
@@ -1622,6 +1626,8 @@ function handlePendingQtyKeydown(e) {
     }
   } else if (e.key === 'Escape') {
     cancelPendingItem()
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault(); openItemSearch(pendingItem.value.item_code); return
   } else if (e.key === 'Backspace' && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
     e.preventDefault()
     cancelPendingItem()
@@ -1631,7 +1637,8 @@ function handlePendingQtyKeydown(e) {
 function handleRowKeydown(e, idx) {
   const item = items.value[idx]
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-  if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
+  if (e.key === 'ArrowRight') { e.preventDefault(); openItemSearch(item.item_code, idx) }
+  else if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
   else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') {
@@ -1814,7 +1821,7 @@ watch(isReturn, (val) => {
 
 // Reprice all rows when price list is changed in settings panel
 watch(priceList, (newList) => {
-  if (!newList) return
+  if (!newList || isLoadingBill.value) return
   localStorage.setItem('wb-pricelist-selected', newList) // Persist selection
   
   // 1. Update UI INSTANTLY using whatever is already in the local cache
@@ -2030,6 +2037,8 @@ function onEditCodeInput(rowIdx) {
 }
 
 function onEditCodeKeydown(e, rowIdx) {
+  if (e.key === 'ArrowRight') { e.preventDefault(); openItemSearch((items.value[rowIdx]?.item_code || '').trim(), rowIdx); return }
+
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return
