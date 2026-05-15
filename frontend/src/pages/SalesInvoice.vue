@@ -548,8 +548,8 @@
       :extra="[
         { key: 'F2', desc: 'Clear bill / refresh bill number' },
         { key: 'F3', desc: 'Focus sidebar bill list' },
-        { key: 'F4', desc: 'Select series' },
         { key: 'F5', desc: 'Print invoice' },
+
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
         { key: 'Insert', desc: 'Open incentive entry' },

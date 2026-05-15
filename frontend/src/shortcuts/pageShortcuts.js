@@ -13,6 +13,5 @@ export const entryFormShortcuts = (handlers) => ({
   'F8':     handlers.save,
   'CTRL+S': handlers.save,
   'F2':     handlers.newCustomer || (() => {}),
-  'F4':     handlers.searchItem || (() => {}),
   'DELETE': handlers.deleteRow || (() => {}),
 });

@@ -7,12 +7,11 @@
 import { entryFormShortcuts } from './pageShortcuts';
 
 export const stockReconciliationShortcuts = (handlers) => ({
-  // Include standard entry form shortcuts (F8, Ctrl+S, F4, Delete)
+  // Include standard entry form shortcuts (F8, Ctrl+S, Delete)
   ...entryFormShortcuts(handlers),
 
   // Stock Reconciliation specific
   'F2': handlers.focusWarehouse,
-  'F4': handlers.focusNewCode,
   'F7': handlers.fetchItems,
   'ESCAPE': handlers.contextualBack,
 });
