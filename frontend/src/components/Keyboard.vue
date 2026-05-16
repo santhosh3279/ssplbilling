@@ -103,9 +103,9 @@ onUnmounted(() => {
 });
 
 function pressKey(key) {
-  // Use current active element if it's an input, otherwise fallback to last known input
+  // Use current active element if it's not the body, otherwise fallback to last known input
   let activeEl = document.activeElement;
-  if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+  if (!activeEl || activeEl === document.body) {
     activeEl = lastActiveElement;
   }
 
@@ -118,11 +118,9 @@ function pressKey(key) {
       // Ensure element is focused before typing
       activeEl.focus();
       
-      // Try using execCommand for better compatibility with framework state (Vue/React)
       const success = document.execCommand('insertText', false, key);
       
       if (!success) {
-        // Fallback for environments where execCommand might fail
         const start = activeEl.selectionStart;
         const end = activeEl.selectionEnd;
         const val = activeEl.value;
@@ -134,17 +132,20 @@ function pressKey(key) {
     }
   } else {
     // Dispatch keyboard event for special keys
-    const event = new KeyboardEvent('keydown', {
+    const eventInit = {
       key: key,
       code: key,
       bubbles: true,
-      cancelable: true
-    });
+      cancelable: true,
+      keyCode: key === 'Enter' ? 13 : (key === 'Backspace' ? 8 : 0),
+      which: key === 'Enter' ? 13 : (key === 'Backspace' ? 8 : 0)
+    };
+
+    const keydownEvent = new KeyboardEvent('keydown', eventInit);
+    const keyupEvent = new KeyboardEvent('keyup', eventInit);
     
     if (isInput && key === 'Backspace') {
       activeEl.focus();
-      // Try to use execCommand for backspace if possible (some browsers support 'delete')
-      // but standard manual manipulation is often safer for backspace
       const start = activeEl.selectionStart;
       const end = activeEl.selectionEnd;
       if (start === end && start > 0) {
@@ -157,15 +158,24 @@ function pressKey(key) {
       activeEl.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-    // Special case for Enter
+    // Dispatch events
+    activeEl.dispatchEvent(keydownEvent);
+
     if (key === 'Enter') {
-       activeEl.dispatchEvent(event);
        if (activeEl.tagName === 'BUTTON') activeEl.click();
-       // Also try dispatching to document as many global shortcuts listen there
-       document.dispatchEvent(event);
+       // Only dispatch to document if activeEl is not in the document to avoid double bubbling
+       if (!document.contains(activeEl)) {
+         document.dispatchEvent(keydownEvent);
+       }
     } else {
-       activeEl.dispatchEvent(event);
-       document.dispatchEvent(event);
+       if (!document.contains(activeEl)) {
+         document.dispatchEvent(keydownEvent);
+       }
+    }
+    
+    activeEl.dispatchEvent(keyupEvent);
+    if (!document.contains(activeEl)) {
+      document.dispatchEvent(keyupEvent);
     }
   }
 }
