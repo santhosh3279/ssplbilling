@@ -75,8 +75,7 @@
         <!-- Symbols Side (Left) -->
         <div class="flex-1 grid grid-cols-4 gap-1">
           <button v-for="s in symbols" :key="s" @pointerdown.prevent="pressKey(s)" class="key-btn qwerty text-[20px]">{{ s }}</button>
-          <button @pointerdown.prevent="currentLayout = 'qwerty'" class="key-btn qwerty col-span-2 text-[var(--color-info)] text-[20px]">ABC</button>
-          <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty col-span-2 text-[16px]">SPACE</button>
+          <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty col-span-4 text-[16px]">SPACE</button>
         </div>
 
         <!-- Numpad Side (Right) -->
@@ -87,6 +86,7 @@
             <button @pointerdown.prevent="pressKey('.')" class="key-btn qwerty py-6 text-[32px]">.</button>
           </div>
           <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full py-4 text-[var(--color-danger)] text-[24px]">⌫ Backspace</button>
+          <button @pointerdown.prevent="currentLayout = 'qwerty'" class="key-btn qwerty w-full py-4 text-[var(--color-info)] text-[24px]">ABC</button>
         </div>
       </div>
     </div>
