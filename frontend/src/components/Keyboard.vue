@@ -55,8 +55,9 @@
         </div>
 
         <!-- Alpha Row 3 -->
-        <div class="flex gap-1">
+        <div class="flex gap-1 px-4">
           <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty flex-1 text-[var(--color-danger)] font-bold">⌫</button>
         </div>
 
         <!-- Symbols / Misc Row 4 -->
