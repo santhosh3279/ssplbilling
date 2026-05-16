@@ -46,23 +46,23 @@
 
         <!-- Alpha Row 1 -->
         <div class="flex gap-1">
-          <button v-for="k in 'QWERTYUIOP'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button v-for="k in 'QWERTYUIOP'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ isCapsLock ? k : k.toLowerCase() }}</button>
         </div>
 
         <!-- Alpha Row 2 -->
         <div class="flex gap-1 px-2">
-          <button v-for="k in 'ASDFGHJKL'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button v-for="k in 'ASDFGHJKL'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ isCapsLock ? k : k.toLowerCase() }}</button>
         </div>
 
         <!-- Alpha Row 3 -->
         <div class="flex gap-1 px-4">
-          <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ k }}</button>
+          <button v-for="k in 'ZXCVBNM'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty flex-1">{{ isCapsLock ? k : k.toLowerCase() }}</button>
           <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty flex-1 text-[var(--color-danger)] font-bold">⌫</button>
         </div>
 
         <!-- Symbols / Misc Row 4 -->
         <div class="flex gap-1">
-          <button @pointerdown.prevent="pressKey('.')" class="key-btn qwerty flex-1">.</button>
+          <button @pointerdown.prevent="toggleCapsLock" class="key-btn qwerty flex-1 text-[14px] leading-tight" :class="{'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]': isCapsLock}">CAPS</button>
           <button @pointerdown.prevent="pressKey(',')" class="key-btn qwerty flex-1">,</button>
           <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty flex-[4] text-[20px]">SPACE</button>
           <button @pointerdown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
@@ -84,9 +84,14 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
+const isCapsLock = ref(true);
 let lastActiveElement = null;
+
+const toggleCapsLock = () => {
+  isCapsLock.value = !isCapsLock.value;
+};
 
 const handleFocusIn = (e) => {
   const target = e.target;
@@ -119,13 +124,18 @@ function pressKey(key) {
       // Ensure element is focused before typing
       activeEl.focus();
       
-      const success = document.execCommand('insertText', false, key);
+      let char = key;
+      if (/[a-zA-Z]/.test(key)) {
+        char = isCapsLock.value ? key.toUpperCase() : key.toLowerCase();
+      }
+
+      const success = document.execCommand('insertText', false, char);
       
       if (!success) {
         const start = activeEl.selectionStart;
         const end = activeEl.selectionEnd;
         const val = activeEl.value;
-        activeEl.value = val.substring(0, start) + key + val.substring(end);
+        activeEl.value = val.substring(0, start) + char + val.substring(end);
         activeEl.selectionStart = activeEl.selectionEnd = start + 1;
         activeEl.dispatchEvent(new Event('input', { bubbles: true }));
         activeEl.dispatchEvent(new Event('change', { bubbles: true }));
