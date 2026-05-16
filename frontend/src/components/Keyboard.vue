@@ -96,7 +96,7 @@
           <div class="grid grid-cols-3 gap-1 mt-1">
             <button @pointerdown.prevent="currentLayout = 'qwerty'" class="key-btn qwerty py-4 text-[var(--color-info)] text-[20px] font-black">ABC</button>
             <button @pointerdown.prevent="pressKey('ArrowUp')" class="key-btn qwerty py-4">▲</button>
-            <button @pointerdown.prevent="pressKey('Enter')" class="key-btn qwerty py-4 !bg-[var(--color-success)] !text-[var(--color-text-on-highlight)] font-black text-[14px]">ENT</button>
+            <button @pointerdown.prevent="pressKey('Enter')" class="key-btn qwerty py-4 !bg-[var(--color-success)] !text-[var(--color-text-on-highlight)] font-black text-[20px]">↵</button>
             
             <button @pointerdown.prevent="pressKey('ArrowLeft')" class="key-btn qwerty py-4">◀</button>
             <button @pointerdown.prevent="pressKey('ArrowDown')" class="key-btn qwerty py-4">▼</button>
