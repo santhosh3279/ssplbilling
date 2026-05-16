@@ -81,6 +81,11 @@
         <!-- Numpad Side (Right) -->
         <div class="w-[45%] flex flex-col gap-1 border-l border-[var(--color-border)] pl-1">
           <div class="grid grid-cols-3 gap-1">
+            <!-- Spacer Row to align with symbols -->
+            <div class="py-6"></div>
+            <div class="py-6"></div>
+            <div class="py-6"></div>
+            
             <button v-for="k in '789456123'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty py-6 text-[32px]">{{ k }}</button>
             <button @pointerdown.prevent="pressKey('0')" class="key-btn qwerty py-6 text-[32px]">0</button>
             <button @pointerdown.prevent="pressKey('.')" class="key-btn qwerty py-6 text-[32px]">.</button>
