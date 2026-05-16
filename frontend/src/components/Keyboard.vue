@@ -169,11 +169,19 @@ function pressKey(key) {
       const success = document.execCommand('insertText', false, char);
       
       if (!success) {
-        const start = activeEl.selectionStart;
-        const end = activeEl.selectionEnd;
-        const val = activeEl.value;
-        activeEl.value = val.substring(0, start) + char + val.substring(end);
-        activeEl.selectionStart = activeEl.selectionEnd = start + 1;
+        try {
+          const start = activeEl.selectionStart;
+          const end = activeEl.selectionEnd;
+          if (typeof start === 'number') {
+            const val = activeEl.value;
+            activeEl.value = val.substring(0, start) + char + val.substring(end);
+            activeEl.selectionStart = activeEl.selectionEnd = start + 1;
+          } else {
+            activeEl.value = activeEl.value.toString() + char;
+          }
+        } catch (e) {
+          activeEl.value = activeEl.value.toString() + char;
+        }
         activeEl.dispatchEvent(new Event('input', { bubbles: true }));
         activeEl.dispatchEvent(new Event('change', { bubbles: true }));
       }
@@ -194,14 +202,26 @@ function pressKey(key) {
     
     if (isInput && key === 'Backspace') {
       activeEl.focus();
-      const start = activeEl.selectionStart;
-      const end = activeEl.selectionEnd;
-      if (start === end && start > 0) {
-        activeEl.value = activeEl.value.substring(0, start - 1) + activeEl.value.substring(end);
-        activeEl.selectionStart = activeEl.selectionEnd = start - 1;
-      } else if (start !== end) {
-        activeEl.value = activeEl.value.substring(0, start) + activeEl.value.substring(end);
-        activeEl.selectionStart = activeEl.selectionEnd = start;
+      try {
+        const start = activeEl.selectionStart;
+        const end = activeEl.selectionEnd;
+        if (typeof start === 'number') {
+          if (start === end && start > 0) {
+            activeEl.value = activeEl.value.substring(0, start - 1) + activeEl.value.substring(end);
+            activeEl.selectionStart = activeEl.selectionEnd = start - 1;
+          } else if (start !== end) {
+            activeEl.value = activeEl.value.substring(0, start) + activeEl.value.substring(end);
+            activeEl.selectionStart = activeEl.selectionEnd = start;
+          }
+        } else {
+          // Fallback for number inputs
+          const val = activeEl.value.toString();
+          activeEl.value = val.substring(0, val.length - 1);
+        }
+      } catch (e) {
+        // Fallback if selectionStart access throws
+        const val = activeEl.value.toString();
+        activeEl.value = val.substring(0, val.length - 1);
       }
       activeEl.dispatchEvent(new Event('input', { bubbles: true }));
     }
