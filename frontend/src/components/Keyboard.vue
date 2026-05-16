@@ -65,7 +65,7 @@
           <button @pointerdown.prevent="toggleCapsLock" class="key-btn qwerty flex-1 text-[14px] leading-tight transition-all duration-200" :class="isCapsLock ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] ring-2 ring-[var(--color-focus)]/50 shadow-lg' : 'bg-[var(--color-bg)] text-[var(--color-text)]'">CAPS</button>
           <button @pointerdown.prevent="pressKey(',')" class="key-btn qwerty flex-1">,</button>
           <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty flex-[4] text-[20px]">SPACE</button>
-          <button @pointerdown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
+          <button @pointerdown.prevent="pressKey('.')" class="key-btn qwerty flex-1">.</button>
           <button @pointerdown.prevent="currentLayout = 'numpad'" class="key-btn qwerty flex-1 text-[16px] text-[var(--color-info)]">123</button>
         </div>
       </div>
