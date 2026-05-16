@@ -30,7 +30,7 @@
       </div>
 
       <!-- QWERTY Layout -->
-      <div class="flex flex-col gap-1">
+      <div v-if="currentLayout === 'qwerty'" class="flex flex-col gap-1">
         <!-- Full Width Backspace Row (Top of Numpad) -->
         <div class="flex mb-1">
           <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full text-[var(--color-danger)] font-black flex gap-4">
@@ -66,7 +66,27 @@
           <button @pointerdown.prevent="pressKey(',')" class="key-btn qwerty flex-1">,</button>
           <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty flex-[4] text-[20px]">SPACE</button>
           <button @pointerdown.prevent="pressKey('-')" class="key-btn qwerty flex-1">-</button>
-          <button @pointerdown.prevent="pressKey('/')" class="key-btn qwerty flex-1">/</button>
+          <button @pointerdown.prevent="currentLayout = 'numpad'" class="key-btn qwerty flex-1 text-[16px] text-[var(--color-info)]">123</button>
+        </div>
+      </div>
+
+      <!-- NUMPAD / SYMBOLS Layout -->
+      <div v-else class="flex gap-1">
+        <!-- Symbols Side (Left) -->
+        <div class="flex-1 grid grid-cols-4 gap-1">
+          <button v-for="s in '@#$%&*()_+=[]{}|\\:;\"\'<>\?'.split('')" :key="s" @pointerdown.prevent="pressKey(s)" class="key-btn qwerty text-[20px]">{{ s }}</button>
+          <button @pointerdown.prevent="currentLayout = 'qwerty'" class="key-btn qwerty col-span-2 text-[var(--color-info)] text-[20px]">ABC</button>
+          <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty col-span-2 text-[16px]">SPACE</button>
+        </div>
+
+        <!-- Numpad Side (Right) -->
+        <div class="w-[45%] flex flex-col gap-1 border-l border-[var(--color-border)] pl-1">
+          <div class="grid grid-cols-3 gap-1">
+            <button v-for="k in '789456123'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty py-6 text-[32px]">{{ k }}</button>
+            <button @pointerdown.prevent="pressKey('0')" class="key-btn qwerty col-span-2 py-6 text-[32px]">0</button>
+            <button @pointerdown.prevent="pressKey('.')" class="key-btn qwerty py-6 text-[32px]">.</button>
+          </div>
+          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full py-4 text-[var(--color-danger)] text-[24px]">⌫ Backspace</button>
         </div>
       </div>
     </div>
@@ -87,6 +107,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
 const isCapsLock = ref(true);
+const currentLayout = ref('qwerty');
 let lastActiveElement = null;
 
 const toggleCapsLock = () => {
