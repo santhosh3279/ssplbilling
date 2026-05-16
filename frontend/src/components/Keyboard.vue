@@ -82,10 +82,10 @@
         <div class="w-[45%] flex flex-col gap-1 border-l border-[var(--color-border)] pl-1">
           <div class="grid grid-cols-3 gap-1">
             <button v-for="k in '789456123'.split('')" :key="k" @pointerdown.prevent="pressKey(k)" class="key-btn qwerty py-6 text-[32px]">{{ k }}</button>
-            <button @pointerdown.prevent="pressKey('0')" class="key-btn qwerty col-span-2 py-6 text-[32px]">0</button>
+            <button @pointerdown.prevent="pressKey('0')" class="key-btn qwerty py-6 text-[32px]">0</button>
             <button @pointerdown.prevent="pressKey('.')" class="key-btn qwerty py-6 text-[32px]">.</button>
+            <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty py-6 text-[var(--color-danger)] text-[32px]">⌫</button>
           </div>
-          <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full py-4 text-[var(--color-danger)] text-[24px]">⌫ Backspace</button>
           <button @pointerdown.prevent="currentLayout = 'qwerty'" class="key-btn qwerty w-full py-4 text-[var(--color-info)] text-[24px]">ABC</button>
           
           <!-- Arrow Keys -->
