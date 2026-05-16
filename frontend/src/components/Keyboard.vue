@@ -87,6 +87,17 @@
           </div>
           <button @pointerdown.prevent="pressKey('Backspace')" class="key-btn qwerty w-full py-4 text-[var(--color-danger)] text-[24px]">⌫ Backspace</button>
           <button @pointerdown.prevent="currentLayout = 'qwerty'" class="key-btn qwerty w-full py-4 text-[var(--color-info)] text-[24px]">ABC</button>
+          
+          <!-- Arrow Keys -->
+          <div class="grid grid-cols-3 gap-1 mt-1">
+            <div class="flex-1"></div>
+            <button @pointerdown.prevent="pressKey('ArrowUp')" class="key-btn qwerty py-4">▲</button>
+            <div class="flex-1"></div>
+            
+            <button @pointerdown.prevent="pressKey('ArrowLeft')" class="key-btn qwerty py-4">◀</button>
+            <button @pointerdown.prevent="pressKey('ArrowDown')" class="key-btn qwerty py-4">▼</button>
+            <button @pointerdown.prevent="pressKey('ArrowRight')" class="key-btn qwerty py-4">▶</button>
+          </div>
         </div>
       </div>
     </div>
