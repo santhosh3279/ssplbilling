@@ -74,7 +74,7 @@
       <div v-else class="flex gap-1">
         <!-- Symbols Side (Left) -->
         <div class="flex-1 grid grid-cols-4 gap-1">
-          <button v-for="s in '@#$%&*()_+=[]{}|\\:;\"\'<>\?'.split('')" :key="s" @pointerdown.prevent="pressKey(s)" class="key-btn qwerty text-[20px]">{{ s }}</button>
+          <button v-for="s in symbols" :key="s" @pointerdown.prevent="pressKey(s)" class="key-btn qwerty text-[20px]">{{ s }}</button>
           <button @pointerdown.prevent="currentLayout = 'qwerty'" class="key-btn qwerty col-span-2 text-[var(--color-info)] text-[20px]">ABC</button>
           <button @pointerdown.prevent="pressKey(' ')" class="key-btn qwerty col-span-2 text-[16px]">SPACE</button>
         </div>
@@ -108,6 +108,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 
 const isCapsLock = ref(true);
 const currentLayout = ref('qwerty');
+const symbols = '@#$%&*()_+=[]{}|\\:;"\'<>?'.split('');
 let lastActiveElement = null;
 
 const toggleCapsLock = () => {
