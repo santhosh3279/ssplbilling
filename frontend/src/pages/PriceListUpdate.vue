@@ -18,7 +18,7 @@
           >
             &larr; Dashboard
           </button>
-          <h1 class="text-xl font-bold text-[var(--color-text)]">{{ itemName || 'Update Item Prices' }}</h1>
+          <h1 class="text-3xl text-[var(--color-text)]">{{ itemName || 'Update Item Prices' }}</h1>
           <div v-if="itemCode" class="rounded-full bg-[var(--color-info)]/20 px-3 py-1 text-xs font-bold text-[var(--color-info)]">
             {{ itemCode }}
           </div>
