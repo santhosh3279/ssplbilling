@@ -485,8 +485,29 @@
               </select>
               <span v-else class="block px-2 py-1 text-xl text-[var(--color-text-muted)]">{{ pendingItem.uom || 'Nos' }}</span>
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ pendingItem.rate }}</td>
-            <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter qty and press Enter</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ format(pendingItem.rate) }}</td>
+            <!-- disc % -->
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <input
+                ref="pendingDiscInput"
+                v-model.number="pendingItem.discount"
+                type="number" min="0" max="100" step="0.5"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                @keydown="handlePendingDiscKeydown"
+              />
+            </td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums text-[var(--color-warning)]/80">
+              {{ format((pendingItem.rate || 0) * (1 - (pendingItem.discount || 0) / 100)) }}
+            </td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums text-[var(--color-text-muted)]">
+              {{ format(isExempted ? 0 : (pendingItem.tax_rate ?? 0)) }}
+            </td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums text-[var(--color-text)]">
+              {{ format((pendingItem.qty || 0) * (pendingItem.rate || 0) * (1 - (pendingItem.discount || 0) / 100)) }}
+            </td>
+            <td class="px-2 text-[var(--color-text-muted)] italic text-lg text-center">
+              <button class="text-2xl opacity-50 hover:opacity-100" @click="cancelPendingItem()">×</button>
+            </td>
           </tr>
         </template>
 
@@ -988,6 +1009,7 @@ const itemSearchTargetRowIdx = ref(null)
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const pendingUomSelect = ref(null)
+const pendingDiscInput = ref(null)
 const selectedRowIdx = ref(-1)
 const rowRefs = ref([])
 const editingRowIdx = ref(-1)
@@ -1826,7 +1848,7 @@ function onPriceListUpdateSaved(data) {
         pendingItem.value._base_rate = newRate
       }
     }
-    confirmPendingItem()
+    focusPendingDisc()
   }
 }
 
@@ -1837,8 +1859,15 @@ function onPriceListUpdateClose() {
     editRowPriceUpdateIdx.value = null
     focusEditField('rate', idx)
   } else {
-    confirmPendingItem()
+    focusPendingDisc()
   }
+}
+
+function focusPendingDisc() {
+  nextTick(() => {
+    pendingDiscInput.value?.focus()
+    pendingDiscInput.value?.select()
+  })
 }
 
 function confirmPendingItem() {
@@ -2018,6 +2047,20 @@ function handlePendingQtyKeydown(e) {
   } else if (e.key === 'Backspace' && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
     e.preventDefault()
     cancelPendingItem()
+  }
+}
+
+function handlePendingDiscKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    confirmPendingItem()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    cancelPendingItem()
+  } else if (e.key === 'Backspace' && (!pendingItem.value.discount || pendingItem.value.discount === 0)) {
+    e.preventDefault()
+    pendingQtyInput.value?.focus()
+    pendingQtyInput.value?.select()
   }
 }
 
