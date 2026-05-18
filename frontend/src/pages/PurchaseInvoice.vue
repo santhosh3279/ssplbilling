@@ -1837,7 +1837,7 @@ function onPriceListUpdateSaved(data) {
         recalcAmount(idx)
       }
     }
-    focusEditField('rate', idx)
+    focusEditField('disc', idx)
   } else {
     if (pendingItem.value && data.changedPrices?.length) {
       const pl = data.changedPrices.find(p => p.price_list === priceList.value)
@@ -1857,7 +1857,7 @@ function onPriceListUpdateClose() {
   if (editRowPriceUpdateIdx.value !== null) {
     const idx = editRowPriceUpdateIdx.value
     editRowPriceUpdateIdx.value = null
-    focusEditField('rate', idx)
+    focusEditField('disc', idx)
   } else {
     focusPendingDisc()
   }
