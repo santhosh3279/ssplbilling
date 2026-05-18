@@ -1605,17 +1605,6 @@ function handleNewCodeKeydown(e) {
 
 function handlePendingQtyKeydown(e) {
   if (e.key === 'Enter') {
-    const now = Date.now()
-    const isDouble = (now - lastEnterTime.value < 400)
-    lastEnterTime.value = now
-
-    if (isDouble && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
-      e.preventDefault()
-      cancelPendingItem(true)
-      lastEnterTime.value = 0
-      return
-    }
-
     if (pendingItem.value.qty) {
       e.preventDefault()
       if (getItemUoms(pendingItem.value.item_code).length > 1) {
