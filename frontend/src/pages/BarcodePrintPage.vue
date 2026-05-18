@@ -120,8 +120,8 @@
                   <th class="w-8 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Code</th>
                   <th class="border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
+                  <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Barcode</th>
                   <th class="w-24 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">UOM</th>
-                  <th v-for="pl in allPriceLists" :key="pl" class="w-32 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ pl }}</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
                   <th class="w-8 border-[var(--color-border)]"></th>
                 </tr>
@@ -161,6 +161,18 @@
                   </td>
                   <!-- Item Name -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text)] font-medium">{{ item.item_name || '—' }}</td>
+                  <!-- Barcode -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <input
+                      v-if="selectedRow === idx"
+                      :ref="el => setRef(el, 'barcode', idx)"
+                      v-model="item.barcode"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                      @keydown.enter.prevent="focusField('qty', idx)"
+                      @keydown.tab.prevent="focusField('qty', idx)"
+                    />
+                    <span v-else class="font-mono text-[var(--color-text-muted)]">{{ item.barcode || '—' }}</span>
+                  </td>
                   <!-- UOM -->
                   <td class="p-0 border-r border-[var(--color-border)]">
                     <select
@@ -168,18 +180,14 @@
                       :ref="el => setRef(el, 'uom', idx)"
                       v-model="item.uom"
                       class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
-                      @keydown.enter.prevent="focusField('qty', idx)"
-                      @keydown.tab.prevent="focusField('qty', idx)"
+                      @keydown.enter.prevent="focusField('barcode', idx)"
+                      @keydown.tab.prevent="focusField('barcode', idx)"
                       @keydown.shift.tab.prevent="focusField('code', idx)"
                       @change="onUomChange(idx)"
                     >
                       <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
                     </select>
                     <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ item.uom || 'Nos' }}</span>
-                  </td>
-                  <!-- Price list rates -->
-                  <td v-for="pl in allPriceLists" :key="pl" class="px-2 py-1.5 border-r border-[var(--color-border)] text-right font-mono text-xl text-[var(--color-text)] font-bold">
-                    {{ item.prices?.[pl] ?? '—' }}
                   </td>
                   <!-- Qty -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
@@ -192,7 +200,7 @@
                         class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                         @keydown.enter.prevent="moveToNextQty(idx)"
                         @keydown.tab.prevent="moveToNextQty(idx)"
-                        @keydown.shift.tab.prevent="moveToPrevQty(idx)"
+                        @keydown.shift.tab.prevent="focusField('barcode', idx)"
                         @keydown.down.prevent="moveToNextQty(idx)"
                         @keydown.up.prevent="moveToPrevQty(idx)"
                       />
@@ -230,6 +238,17 @@
                   </td>
                   <!-- Pending item name -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-xl italic">{{ newPending.item_name || '—' }}</td>
+                  <!-- Pending Barcode -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <input
+                      ref="newBarcodeInput"
+                      v-model="newPending.barcode"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                      placeholder="Barcode…"
+                      @keydown.enter.prevent="focusNewQty"
+                      @keydown.tab.prevent="focusNewQty"
+                    />
+                  </td>
                   <!-- Pending UOM -->
                   <td class="p-0 border-r border-[var(--color-border)]">
                     <select
@@ -237,18 +256,14 @@
                       ref="newUomSelect"
                       v-model="newPending.uom"
                       class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
-                      @keydown.enter.prevent="focusNewQty"
-                      @keydown.tab.prevent="focusNewQty"
+                      @keydown.enter.prevent="focusNewBarcode"
+                      @keydown.tab.prevent="focusNewBarcode"
                       @keydown.shift.tab.prevent="focusNewCode"
                       @change="onNewUomChange"
                     >
                       <option v-for="u in getItemUoms(newPending.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
                     </select>
                     <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ newPending.uom || '—' }}</span>
-                  </td>
-                  <!-- New Pending prices -->
-                  <td v-for="pl in allPriceLists" :key="pl" class="px-2 py-1.5 border-r border-[var(--color-border)] text-right font-mono text-xl text-[var(--color-text-muted)] font-bold italic">
-                    {{ newPending.prices?.[pl] ?? '—' }}
                   </td>
                   <!-- Qty input -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
@@ -259,7 +274,7 @@
                       :disabled="printing"
                       class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-50"
                       @keydown.enter.prevent="addNewItem"
-                      @keydown.shift.tab.prevent="focusNewCode"
+                      @keydown.shift.tab.prevent="focusNewBarcode"
                     />
                   </td>
                   <td></td>
@@ -303,75 +318,24 @@ const templates = ref([])
 const selectedPrinter = ref('')
 const selectedTemplate = ref('')
 const loadingResources = ref(false)
-const allPriceLists = ref([])
 
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 
-async function fetchAllPriceLists() {
+async function fetchBarcodeForItem(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  if (cached && cached.barcode) return cached.barcode
+
   try {
     const res = await frappeGet('frappe.client.get_list', {
-      doctype: 'Price List',
-      fields: ['name'],
-      filters: { enabled: 1 },
-      limit: 100
+      doctype: 'Item Barcode',
+      fields: ['barcode'],
+      filters: { parent: itemCode },
+      limit: 1
     })
-    allPriceLists.value = res.map(r => r.name)
+    return res.length ? res[0].barcode : itemCode
   } catch (e) {
-    console.error('[BarcodePrintPage] fetchAllPriceLists failed', e)
+    return itemCode
   }
-}
-
-async function fetchAllPricesForItem(itemCode, targetUom = null) {
-  const cached = lookupItemInCache(itemCode)
-  const prices = {}
-  
-  if (cached) {
-    const uom = targetUom || cached.uom || 'Nos'
-    const conversion = (cached.uoms || []).find(u => u.uom === uom)?.conversion_factor || 1
-    
-    allPriceLists.value.forEach(pl => {
-      // 1. Try specific UOM price first
-      if (cached.uom_price_lists?.[pl]?.[uom] != null) {
-        prices[pl] = cached.uom_price_lists[pl][uom]
-      } else {
-        // 2. Fallback to base price * conversion factor
-        const plEntry = (cached.price_lists || []).find(p => p.name === pl)
-        const baseRate = plEntry ? plEntry.rate : 0
-        prices[pl] = parseFloat((baseRate * conversion).toFixed(2))
-      }
-    })
-    return prices
-  }
-
-  // Fallback for non-cached items (rare)
-  await Promise.all(allPriceLists.value.map(async (pl) => {
-    try {
-      const rows = await frappeGet('frappe.client.get_list', {
-        doctype: 'Item Price',
-        fields: ['price_list_rate'],
-        filters: { item_code: itemCode, price_list: pl, uom: targetUom },
-        limit: 1,
-        order_by: 'valid_from desc'
-      })
-      if (rows.length) {
-        prices[pl] = Number(rows[0].price_list_rate)
-      } else {
-        // Try base UOM price if target not found
-        const baseRows = await frappeGet('frappe.client.get_list', {
-          doctype: 'Item Price',
-          fields: ['price_list_rate'],
-          filters: { item_code: itemCode, price_list: pl },
-          limit: 1,
-          order_by: 'valid_from desc'
-        })
-        prices[pl] = baseRows.length ? Number(baseRows[0].price_list_rate) : 0
-        // (Conversion factor fetch skipped here for simplicity as cache is primary)
-      }
-    } catch {
-      prices[pl] = 0
-    }
-  }))
-  return prices
 }
 
 function getUserPrinterSettings() {
@@ -459,9 +423,6 @@ async function loadResources() {
   }
 }
 
-// ── Price list ────────────────────────────────────────────────────────────────
-const priceList = ref(localStorage.getItem('wb-price-list') || 'Standard Selling')
-
 // ── Item table state ─────────────────────────────────────────────────────────
 const itemsToPrint = ref([])
 const selectedRow = ref(-1)
@@ -482,9 +443,10 @@ function focusField(field, idx) {
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const newUomSelect = ref(null)
+const newBarcodeInput = ref(null)
 const newItemCode = ref('')
 const newQty = ref(1)
-const newPending = reactive({ item_code: '', item_name: '', uom: '', rate: 0, prices: {} })
+const newPending = reactive({ item_code: '', item_name: '', uom: '', barcode: '' })
 
 function getItemUoms(itemCode) {
   const cached = lookupItemInCache(itemCode)
@@ -496,28 +458,20 @@ function focusNewQty() {
   nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() })
 }
 function focusNewUom() { nextTick(() => newUomSelect.value?.focus()) }
+function focusNewBarcode() { nextTick(() => newBarcodeInput.value?.focus()) }
 function focusAfterCode(idx) {
   if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) focusField('uom', idx)
-  else focusField('qty', idx)
+  else focusField('barcode', idx)
 }
 function focusNewAfterCode() {
   if (newPending.item_code && getItemUoms(newPending.item_code).length > 1) focusNewUom()
-  else focusNewQty()
+  else focusNewBarcode()
 }
 
 async function onUomChange(idx) {
-  const item = itemsToPrint.value[idx]
-  if (!item) return
-  const prices = await fetchAllPricesForItem(item.item_code, item.uom)
-  item.prices = prices
-  item.rate = prices[priceList.value] || 0
 }
 
 async function onNewUomChange() {
-  if (!newPending.item_code) return
-  const prices = await fetchAllPricesForItem(newPending.item_code, newPending.uom)
-  newPending.prices = prices
-  newPending.rate = prices[priceList.value] || 0
 }
 
 function selectQtyField(idx) {
@@ -593,10 +547,10 @@ async function onCodeEnter(idx) {
     itemsToPrint.value[idx].item_code = r.item_code || code
     itemsToPrint.value[idx].item_name = r.item_name
     itemsToPrint.value[idx].uom = r.uom || 'Nos'
+    itemsToPrint.value[idx].barcode = r.barcode || r.item_code || code
     
-    fetchAllPricesForItem(r.item_code || code).then(prices => {
-      itemsToPrint.value[idx].prices = prices
-      itemsToPrint.value[idx].rate = prices[priceList.value] || 0
+    fetchBarcodeForItem(r.item_code || code).then(bc => {
+      itemsToPrint.value[idx].barcode = bc
     })
     
     focusAfterCode(idx)
@@ -612,12 +566,10 @@ async function onNewCodeEnter() {
     newPending.item_code = r.item_code || code
     newPending.item_name = r.item_name
     newPending.uom = r.uom || 'Nos'
-    newPending.rate = 0
-    newPending.prices = {}
+    newPending.barcode = r.barcode || r.item_code || code
 
-    fetchAllPricesForItem(newPending.item_code).then(prices => {
-      newPending.prices = prices
-      newPending.rate = prices[priceList.value] || 0
+    fetchBarcodeForItem(newPending.item_code).then(bc => {
+      newPending.barcode = bc
     })
 
     nextTick(() => focusNewAfterCode())
@@ -625,9 +577,8 @@ async function onNewCodeEnter() {
     newPending.item_code = code
     newPending.item_name = ''
     newPending.uom = 'Nos'
-    newPending.rate = 0
-    newPending.prices = {}
-    focusNewQty()
+    newPending.barcode = code
+    focusNewBarcode()
   }
 }
 
@@ -640,8 +591,7 @@ async function addNewItem() {
     item_name: newPending.item_name || code,
     uom: newPending.uom || 'Nos',
     qty: newQty.value,
-    rate: newPending.rate || 0,
-    prices: { ...newPending.prices }
+    barcode: newPending.barcode || code
   })
 
   newItemCode.value = ''
@@ -649,8 +599,7 @@ async function addNewItem() {
   newPending.item_code = ''
   newPending.item_name = ''
   newPending.uom = ''
-  newPending.rate = 0
-  newPending.prices = {}
+  newPending.barcode = ''
   selectedRow.value = -1
   focusNewCode()
 }
@@ -679,7 +628,6 @@ async function triggerPrint() {
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
       items: JSON.stringify(itemsToPrint.value),
       bill_no: localBillNo.value || null,
-      price_list: priceList.value,
     })
     if (!docName) { setStatus('Failed to create barcode entry.', true); return }
     const res = await frappePost(
@@ -702,24 +650,20 @@ async function triggerPrint() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 onMounted(async () => {
-  await Promise.all([
-    loadResources(),
-    fetchAllPriceLists()
-  ])
+  await loadResources()
 
   // Handle props or route query
   localBillNo.value = props.billNo || route.query.bill || ''
   
   if (props.items && props.items.length > 0) {
     itemsToPrint.value = await Promise.all(props.items.map(async i => {
-      const prices = await fetchAllPricesForItem(i.item_code)
+      const bc = await fetchBarcodeForItem(i.item_code)
       return {
         item_code: i.item_code,
         item_name: i.item_name,
         uom: i.uom || 'Nos',
         qty: i.qty || 1,
-        rate: i.rate || prices[priceList.value] || 0,
-        prices
+        barcode: bc || i.item_code
       }
     }))
   } else {
@@ -728,14 +672,13 @@ onMounted(async () => {
       try {
         const parsed = JSON.parse(decodeURIComponent(rawItems))
         itemsToPrint.value = await Promise.all(parsed.map(async i => {
-          const prices = await fetchAllPricesForItem(i.item_code)
+          const bc = await fetchBarcodeForItem(i.item_code)
           return {
             item_code: i.item_code,
             item_name: i.item_name,
             uom: i.uom || 'Nos',
             qty: i.qty || 1,
-            rate: i.rate || prices[priceList.value] || 0,
-            prices
+            barcode: bc || i.item_code
           }
         }))
       } catch (e) {
