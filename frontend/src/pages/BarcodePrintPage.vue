@@ -121,6 +121,7 @@
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Code</th>
                   <th class="border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
                   <th class="w-24 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">UOM</th>
+                  <th v-for="pl in allPriceLists" :key="pl" class="w-32 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ pl }}</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
                   <th class="w-8 border-[var(--color-border)]"></th>
                 </tr>
@@ -170,10 +171,15 @@
                       @keydown.enter.prevent="focusField('qty', idx)"
                       @keydown.tab.prevent="focusField('qty', idx)"
                       @keydown.shift.tab.prevent="focusField('code', idx)"
+                      @change="onUomChange(idx)"
                     >
                       <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
                     </select>
                     <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ item.uom || 'Nos' }}</span>
+                  </td>
+                  <!-- Price list rates -->
+                  <td v-for="pl in allPriceLists" :key="pl" class="px-2 py-1.5 border-r border-[var(--color-border)] text-right font-mono text-xl text-[var(--color-text)] font-bold">
+                    {{ item.prices?.[pl] ?? '—' }}
                   </td>
                   <!-- Qty -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
@@ -234,10 +240,15 @@
                       @keydown.enter.prevent="focusNewQty"
                       @keydown.tab.prevent="focusNewQty"
                       @keydown.shift.tab.prevent="focusNewCode"
+                      @change="onNewUomChange"
                     >
                       <option v-for="u in getItemUoms(newPending.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
                     </select>
                     <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ newPending.uom || '—' }}</span>
+                  </td>
+                  <!-- New Pending prices -->
+                  <td v-for="pl in allPriceLists" :key="pl" class="px-2 py-1.5 border-r border-[var(--color-border)] text-right font-mono text-xl text-[var(--color-text-muted)] font-bold italic">
+                    {{ newPending.prices?.[pl] ?? '—' }}
                   </td>
                   <!-- Qty input -->
                   <td class="px-2 py-1.5 border-r border-[var(--color-border)] text-right">
@@ -292,8 +303,76 @@ const templates = ref([])
 const selectedPrinter = ref('')
 const selectedTemplate = ref('')
 const loadingResources = ref(false)
+const allPriceLists = ref([])
 
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
+
+async function fetchAllPriceLists() {
+  try {
+    const res = await frappeGet('frappe.client.get_list', {
+      doctype: 'Price List',
+      fields: ['name'],
+      filters: { enabled: 1 },
+      limit: 100
+    })
+    allPriceLists.value = res.map(r => r.name)
+  } catch (e) {
+    console.error('[BarcodePrintPage] fetchAllPriceLists failed', e)
+  }
+}
+
+async function fetchAllPricesForItem(itemCode, targetUom = null) {
+  const cached = lookupItemInCache(itemCode)
+  const prices = {}
+  
+  if (cached) {
+    const uom = targetUom || cached.uom || 'Nos'
+    const conversion = (cached.uoms || []).find(u => u.uom === uom)?.conversion_factor || 1
+    
+    allPriceLists.value.forEach(pl => {
+      // 1. Try specific UOM price first
+      if (cached.uom_price_lists?.[pl]?.[uom] != null) {
+        prices[pl] = cached.uom_price_lists[pl][uom]
+      } else {
+        // 2. Fallback to base price * conversion factor
+        const plEntry = (cached.price_lists || []).find(p => p.name === pl)
+        const baseRate = plEntry ? plEntry.rate : 0
+        prices[pl] = parseFloat((baseRate * conversion).toFixed(2))
+      }
+    })
+    return prices
+  }
+
+  // Fallback for non-cached items (rare)
+  await Promise.all(allPriceLists.value.map(async (pl) => {
+    try {
+      const rows = await frappeGet('frappe.client.get_list', {
+        doctype: 'Item Price',
+        fields: ['price_list_rate'],
+        filters: { item_code: itemCode, price_list: pl, uom: targetUom },
+        limit: 1,
+        order_by: 'valid_from desc'
+      })
+      if (rows.length) {
+        prices[pl] = Number(rows[0].price_list_rate)
+      } else {
+        // Try base UOM price if target not found
+        const baseRows = await frappeGet('frappe.client.get_list', {
+          doctype: 'Item Price',
+          fields: ['price_list_rate'],
+          filters: { item_code: itemCode, price_list: pl },
+          limit: 1,
+          order_by: 'valid_from desc'
+        })
+        prices[pl] = baseRows.length ? Number(baseRows[0].price_list_rate) : 0
+        // (Conversion factor fetch skipped here for simplicity as cache is primary)
+      }
+    } catch {
+      prices[pl] = 0
+    }
+  }))
+  return prices
+}
 
 function getUserPrinterSettings() {
   try {
@@ -405,7 +484,7 @@ const newQtyInput = ref(null)
 const newUomSelect = ref(null)
 const newItemCode = ref('')
 const newQty = ref(1)
-const newPending = reactive({ item_code: '', item_name: '', uom: '', rate: 0 })
+const newPending = reactive({ item_code: '', item_name: '', uom: '', rate: 0, prices: {} })
 
 function getItemUoms(itemCode) {
   const cached = lookupItemInCache(itemCode)
@@ -425,6 +504,22 @@ function focusNewAfterCode() {
   if (newPending.item_code && getItemUoms(newPending.item_code).length > 1) focusNewUom()
   else focusNewQty()
 }
+
+async function onUomChange(idx) {
+  const item = itemsToPrint.value[idx]
+  if (!item) return
+  const prices = await fetchAllPricesForItem(item.item_code, item.uom)
+  item.prices = prices
+  item.rate = prices[priceList.value] || 0
+}
+
+async function onNewUomChange() {
+  if (!newPending.item_code) return
+  const prices = await fetchAllPricesForItem(newPending.item_code, newPending.uom)
+  newPending.prices = prices
+  newPending.rate = prices[priceList.value] || 0
+}
+
 function selectQtyField(idx) {
   nextTick(() => { const el = fieldRefs[idx]?.qty; if (el) { el.focus(); el.select() } })
 }
@@ -498,9 +593,12 @@ async function onCodeEnter(idx) {
     itemsToPrint.value[idx].item_code = r.item_code || code
     itemsToPrint.value[idx].item_name = r.item_name
     itemsToPrint.value[idx].uom = r.uom || 'Nos'
-    fetchItemPrice(r.item_code || code, priceList.value).then(rate => {
-      itemsToPrint.value[idx].rate = rate
+    
+    fetchAllPricesForItem(r.item_code || code).then(prices => {
+      itemsToPrint.value[idx].prices = prices
+      itemsToPrint.value[idx].rate = prices[priceList.value] || 0
     })
+    
     focusAfterCode(idx)
   }
 }
@@ -515,15 +613,20 @@ async function onNewCodeEnter() {
     newPending.item_name = r.item_name
     newPending.uom = r.uom || 'Nos'
     newPending.rate = 0
-    fetchItemPrice(newPending.item_code, priceList.value).then(rate => {
-      newPending.rate = rate
+    newPending.prices = {}
+
+    fetchAllPricesForItem(newPending.item_code).then(prices => {
+      newPending.prices = prices
+      newPending.rate = prices[priceList.value] || 0
     })
+
     nextTick(() => focusNewAfterCode())
   } else {
     newPending.item_code = code
     newPending.item_name = ''
     newPending.uom = 'Nos'
     newPending.rate = 0
+    newPending.prices = {}
     focusNewQty()
   }
 }
@@ -531,24 +634,23 @@ async function onNewCodeEnter() {
 async function addNewItem() {
   const code = newPending.item_code || newItemCode.value.trim()
   if (!code) return
-  const existing = itemsToPrint.value.findIndex(i => i.item_code === code)
-  if (existing >= 0) {
-    itemsToPrint.value[existing].qty += newQty.value
-  } else {
-    itemsToPrint.value.push({
-      item_code: code,
-      item_name: newPending.item_name || code,
-      uom: newPending.uom || 'Nos',
-      qty: newQty.value,
-      rate: newPending.rate || 0,
-    })
-  }
+
+  itemsToPrint.value.push({
+    item_code: code,
+    item_name: newPending.item_name || code,
+    uom: newPending.uom || 'Nos',
+    qty: newQty.value,
+    rate: newPending.rate || 0,
+    prices: { ...newPending.prices }
+  })
+
   newItemCode.value = ''
   newQty.value = 1
   newPending.item_code = ''
   newPending.item_name = ''
   newPending.uom = ''
   newPending.rate = 0
+  newPending.prices = {}
   selectedRow.value = -1
   focusNewCode()
 }
@@ -600,30 +702,41 @@ async function triggerPrint() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 onMounted(async () => {
-  await loadResources()
+  await Promise.all([
+    loadResources(),
+    fetchAllPriceLists()
+  ])
 
   // Handle props or route query
   localBillNo.value = props.billNo || route.query.bill || ''
   
   if (props.items && props.items.length > 0) {
-    itemsToPrint.value = props.items.map(i => ({
-      item_code: i.item_code,
-      item_name: i.item_name,
-      uom: i.uom || 'Nos',
-      qty: i.qty || 1,
-      rate: i.rate || 0,
+    itemsToPrint.value = await Promise.all(props.items.map(async i => {
+      const prices = await fetchAllPricesForItem(i.item_code)
+      return {
+        item_code: i.item_code,
+        item_name: i.item_name,
+        uom: i.uom || 'Nos',
+        qty: i.qty || 1,
+        rate: i.rate || prices[priceList.value] || 0,
+        prices
+      }
     }))
   } else {
     const rawItems = route.query.items
     if (rawItems) {
       try {
         const parsed = JSON.parse(decodeURIComponent(rawItems))
-        itemsToPrint.value = parsed.map(i => ({
-          item_code: i.item_code,
-          item_name: i.item_name,
-          uom: i.uom || 'Nos',
-          qty: i.qty || 1,
-          rate: i.rate || 0,
+        itemsToPrint.value = await Promise.all(parsed.map(async i => {
+          const prices = await fetchAllPricesForItem(i.item_code)
+          return {
+            item_code: i.item_code,
+            item_name: i.item_name,
+            uom: i.uom || 'Nos',
+            qty: i.qty || 1,
+            rate: i.rate || prices[priceList.value] || 0,
+            prices
+          }
         }))
       } catch (e) {
         console.warn('[BarcodePrintPage] Failed to parse items from query', e)

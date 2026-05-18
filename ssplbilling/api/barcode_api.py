@@ -2,11 +2,11 @@ import frappe
 import json
 
 
-def _get_item_price(item_code, price_list):
+def _get_item_price(item_code, price_list, uom=None):
 	"""Return the price_list_rate for an item from Item Price."""
 	row = frappe.db.get_value(
 		"Item Price",
-		{"item_code": item_code, "price_list": price_list, "selling": 1},
+                {"item_code": item_code, "price_list": price_list, "selling": 1, "uom": uom if uom else frappe.db.get_value("Item", item_code, "stock_uom")},
 		"price_list_rate",
 		order_by="valid_from desc",
 	)
@@ -15,7 +15,7 @@ def _get_item_price(item_code, price_list):
 	# Fallback: try without selling filter (buying price lists)
 	row = frappe.db.get_value(
 		"Item Price",
-		{"item_code": item_code, "price_list": price_list},
+                {"item_code": item_code, "price_list": price_list, "uom": uom if uom else frappe.db.get_value("Item", item_code, "stock_uom")},
 		"price_list_rate",
 		order_by="valid_from desc",
 	)
@@ -51,7 +51,7 @@ def create_barcode_print_entry(items, bill_no=None, price_list=None):
 
 		rate = float(item.get("rate") or 0)
 		if not rate:
-			rate = _get_item_price(item_code, effective_price_list)
+			rate = _get_item_price(item_code, effective_price_list, item.get("uom"))
 
 		doc.append("items", {
 			"item_code": item_code,
