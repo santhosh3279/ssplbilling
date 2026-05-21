@@ -593,26 +593,37 @@ function moveToPrevQty(idx) {
 
 // ── Item lookup from cache ────────────────────────────────────────────────────
 function lookupItem(code) {
+  const q = code.toLowerCase().trim()
+  if (!q) return null
+
+  // Helper to check if a code matches any barcode of an item
+  const isAnyBarcodeMatch = (item, qVal) => {
+    const barcode = (item.barcode || '').toLowerCase()
+    const barcodesList = (item.barcodes || '').toLowerCase().split(',').map(b => b.trim())
+    const detailed = item.barcodes_detailed || []
+    return barcode === qVal || barcodesList.includes(qVal) || detailed.some(b => (b.barcode || '').toLowerCase() === qVal)
+  }
+
   const cached = lookupItemInCache(code)
   if (cached) {
-    // If found via barcode, the cleanCode was the barcode
-    if (cached._from_barcode) {
+    const itm_code = (cached.item_code || '').toLowerCase()
+    // If it's a barcode match or not the canonical item code, use the input as the matched barcode
+    if (itm_code !== q || isAnyBarcodeMatch(cached, q)) {
       cached._matched_barcode = code.trim()
     }
     return cached
   }
+
   // Fuzzy from full list
-  const q = code.toLowerCase().trim()
   const found = allItems.value.find(i => {
     const itm_code = (i.item_code || '').toLowerCase()
-    const barcode = (i.barcode || '').toLowerCase()
-    const barcodesList = (i.barcodes || '').toLowerCase().split(',').map(b => b.trim())
-    const detailed = i.barcodes_detailed || []
-    return itm_code === q || barcode === q || barcodesList.includes(q) || detailed.some(b => (b.barcode || '').toLowerCase() === q)
+    return itm_code === q || isAnyBarcodeMatch(i, q)
   })
+
   if (found) {
     const item = { ...found }
-    if ((item.item_code || '').toLowerCase() !== q) {
+    const itm_code = (item.item_code || '').toLowerCase()
+    if (itm_code !== q || isAnyBarcodeMatch(item, q)) {
       item._matched_barcode = code.trim()
       // Resolve UOM for fuzzy barcode match
       if (item.barcodes_detailed) {
@@ -687,6 +698,16 @@ function onNewCodeInput() {
 }
 
 function handleCodeKeydown(e, idx) {
+  if (e.key === 'Enter') {
+    const code = itemsToPrint.value[idx].item_code.trim()
+    if (code && lookupItem(code)) {
+      e.preventDefault()
+      quickSearchResults.value = []
+      onCodeEnter(idx)
+      return
+    }
+  }
+
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
       e.preventDefault()
@@ -706,6 +727,16 @@ function handleCodeKeydown(e, idx) {
 }
 
 function handleNewCodeKeydown(e) {
+  if (e.key === 'Enter') {
+    const code = newItemCode.value.trim()
+    if (code && lookupItem(code)) {
+      e.preventDefault()
+      quickSearchResults.value = []
+      onNewCodeEnter()
+      return
+    }
+  }
+
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
       e.preventDefault()
