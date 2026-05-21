@@ -673,6 +673,7 @@ async function triggerPrint() {
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
       items: JSON.stringify(itemsWithRates),
       bill_no: localBillNo.value || null,
+      price_lists: JSON.stringify(availablePriceLists.value.slice(0, 10))
     })
     if (!docName) { setStatus('Failed to create barcode entry.', true); return }
     const res = await frappePost(
