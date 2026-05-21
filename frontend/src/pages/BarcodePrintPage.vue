@@ -665,7 +665,7 @@ async function triggerPrint() {
     const itemsWithRates = itemsToPrint.value.map(item => {
       const itm = { ...item }
       availablePriceLists.value.forEach((pl, idx) => {
-        if (idx < 4) itm[`rate_${idx + 1}`] = item.rates?.[pl] || 0
+        if (idx < 10) itm[`rate_${idx + 1}`] = item.rates?.[pl] || 0
       })
       return itm
     })

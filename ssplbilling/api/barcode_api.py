@@ -36,6 +36,12 @@ def create_barcode_print_entry(items, bill_no=None):
                         "rate_2": float(item.get("rate_2") or 0),
                         "rate_3": float(item.get("rate_3") or 0),
                         "rate_4": float(item.get("rate_4") or 0),
+                        "rate_5": float(item.get("rate_5") or 0),
+                        "rate_6": float(item.get("rate_6") or 0),
+                        "rate_7": float(item.get("rate_7") or 0),
+                        "rate_8": float(item.get("rate_8") or 0),
+                        "rate_9": float(item.get("rate_9") or 0),
+                        "rate_10": float(item.get("rate_10") or 0),
                 })
 
         doc.insert(ignore_permissions=True)
