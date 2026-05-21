@@ -318,7 +318,6 @@ async function triggerPrint() {
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
       items: JSON.stringify(itemsToPrint.value),
       bill_no: props.billNo || null,
-      price_list: localStorage.getItem('wb-price-list') || 'Standard Selling',
     })
 
     if (!docName) {

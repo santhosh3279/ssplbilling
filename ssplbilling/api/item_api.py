@@ -259,7 +259,6 @@ def print_barcodes(items, bill_no=None):
 		item_code = item.get("item_code")
 		item_doc = frappe.get_cached_doc("Item", item_code) if item_code else None
 		item_name = item.get("item_name") or (item_doc.item_name if item_doc else item_code)
-		rate = item.get("rate") or (item_doc.standard_rate if item_doc else 0)
 		# Use item_code itself as the barcode value (barcode to print)
 		barcode_val = item_code
 		if item_doc and item_doc.barcodes:
@@ -268,7 +267,6 @@ def print_barcodes(items, bill_no=None):
 			"item_code": item_code,
 			"item_name": item_name,
 			"qty": item.get("qty", 1),
-			"rate": rate,
 			"barcode": barcode_val,
 		})
 	doc.insert(ignore_permissions=True)

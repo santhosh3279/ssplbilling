@@ -2,7 +2,7 @@ import frappe
 import json
 
 @frappe.whitelist()
-def create_barcode_print_entry(items, bill_no=None, price_list=None):
+def create_barcode_print_entry(items, bill_no=None):
         """
         Create a Barcode_Prinitng document.
         Removed rate/valuation_rate as per request.
