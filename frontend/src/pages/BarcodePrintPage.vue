@@ -324,7 +324,7 @@ useShortcuts({
   'ESCAPE': handleBack
 }, props.isSubWindow ? 'subwindow' : 'local')
 
-const { items: allItems, lookupItemInCache } = useItemCache()
+const { items: allItems, lookupItemInCache, refreshItemCache } = useItemCache()
 
 // ── Price Lists ──────────────────────────────────────────────────────────────
 const availablePriceLists = ref([])
@@ -337,8 +337,31 @@ try {
 async function fetchAllRates(item) {
   if (!item.item_code) return
   const rates = {}
+  
+  // 1. Try to find in cache first
+  const cached = lookupItemInCache(item.item_code)
+  if (cached) {
+    // Check base price lists
+    if (cached.price_lists) {
+      cached.price_lists.forEach(pl => {
+        rates[pl.name] = pl.rate
+      })
+    }
+    // Check per-UOM price lists if UOM is specified
+    if (item.uom && cached.uom_price_lists) {
+      Object.entries(cached.uom_price_lists).forEach(([plName, uomMap]) => {
+        if (uomMap[item.uom] !== undefined) {
+          rates[plName] = uomMap[item.uom]
+        }
+      })
+    }
+  }
+
+  // 2. Fetch missing ones from API
   await Promise.all(availablePriceLists.value.map(async pl => {
-    rates[pl] = await fetchItemPrice(item.item_code, pl)
+    if (rates[pl] === undefined) {
+      rates[pl] = await fetchItemPrice(item.item_code, pl)
+    }
   }))
   item.rates = rates
 }
@@ -534,11 +557,12 @@ function lookupItem(code) {
   }
   // Fuzzy from full list
   const q = code.toLowerCase().trim()
-  const found = allItems.value.find(i =>
-    (i.item_code || '').toLowerCase() === q ||
-    (i.barcode || '').toLowerCase() === q ||
-    (i.barcodes || '').toLowerCase().split(',').includes(q)
-  )
+  const found = allItems.value.find(i => {
+    const code = (i.item_code || '').toLowerCase()
+    const barcode = (i.barcode || '').toLowerCase()
+    const barcodesList = (i.barcodes || '').toLowerCase().split(',').map(b => b.trim())
+    return code === q || barcode === q || barcodesList.includes(q)
+  })
   if (found) {
     const item = { ...found }
     if ((item.item_code || '').toLowerCase() !== q) {
@@ -615,6 +639,7 @@ async function onNewCodeEnter() {
   if (!code) return
   const r = lookupItem(code)
   if (r) {
+    newItemCode.value = r.item_code
     newPending.item_code = r.item_code
     newPending.item_name = r.item_name
     newPending.uom = r.uom || 'Nos'
@@ -719,6 +744,13 @@ async function triggerPrint() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 onMounted(async () => {
+  if (!allItems.value.length) {
+    try {
+      await refreshItemCache('Sales')
+    } catch (e) {
+      console.warn('[BarcodePrintPage] Item cache refresh failed:', e)
+    }
+  }
   await loadResources()
 
   // Handle props or route query
