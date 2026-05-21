@@ -29,8 +29,13 @@ def create_barcode_print_entry(items, bill_no=None):
                 doc.append("items", {
                         "item_code": item_code,
                         "item_name": item.get("item_name") or "",
+                        "uom": item.get("uom") or "Nos",
                         "qty": int(item.get("qty") or 1),
                         "barcode": item.get("barcode") or "",
+                        "rate_1": float(item.get("rate_1") or 0),
+                        "rate_2": float(item.get("rate_2") or 0),
+                        "rate_3": float(item.get("rate_3") or 0),
+                        "rate_4": float(item.get("rate_4") or 0),
                 })
 
         doc.insert(ignore_permissions=True)

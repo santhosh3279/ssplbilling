@@ -662,8 +662,16 @@ async function triggerPrint() {
   printing.value = true
   statusMsg.value = ''
   try {
+    const itemsWithRates = itemsToPrint.value.map(item => {
+      const itm = { ...item }
+      availablePriceLists.value.forEach((pl, idx) => {
+        if (idx < 4) itm[`rate_${idx + 1}`] = item.rates?.[pl] || 0
+      })
+      return itm
+    })
+
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
-      items: JSON.stringify(itemsToPrint.value),
+      items: JSON.stringify(itemsWithRates),
       bill_no: localBillNo.value || null,
     })
     if (!docName) { setStatus('Failed to create barcode entry.', true); return }
