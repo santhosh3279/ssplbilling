@@ -356,7 +356,7 @@ function selectItem(item) {
     existing.qty++
     existing.uom = uom
   } else {
-    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, uom, qty: 1, rate: item.rate || 0 })
+    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, uom, qty: 1 })
   }
   query.value = ''
   showResults.value = false
@@ -372,8 +372,7 @@ function syncInitialItems() {
     item_code: i.item_code,
     item_name: i.item_name,
     uom: i.uom || lookupItemInCache(i.item_code)?.uom || 'Nos',
-    qty: i.qty || 1,
-    rate: i.rate || 0,
+    qty: i.qty || 1
   }))
 }
 </script>
