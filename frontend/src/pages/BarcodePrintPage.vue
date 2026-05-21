@@ -351,12 +351,6 @@ async function fetchAllRates(item) {
   // 1. Try to find in cache first
   const cached = lookupItemInCache(item.item_code)
   if (cached) {
-    // Check base price lists
-    if (cached.price_lists) {
-      cached.price_lists.forEach(pl => {
-        rates[pl.name] = pl.rate
-      })
-    }
     // Check per-UOM price lists if UOM is specified
     if (item.uom && cached.uom_price_lists) {
       Object.entries(cached.uom_price_lists).forEach(([plName, uomMap]) => {
@@ -365,12 +359,20 @@ async function fetchAllRates(item) {
         }
       })
     }
+    // Check base price lists (if not already set by UOM check)
+    if (cached.price_lists) {
+      cached.price_lists.forEach(pl => {
+        if (rates[pl.name] === undefined) {
+          rates[pl.name] = pl.rate
+        }
+      })
+    }
   }
 
   // 2. Fetch missing ones from API
   await Promise.all(availablePriceLists.value.map(async pl => {
     if (rates[pl] === undefined) {
-      rates[pl] = await fetchItemPrice(item.item_code, pl)
+      rates[pl] = await fetchItemPrice(item.item_code, pl, item.uom)
     }
   }))
   item.rates = rates
@@ -550,9 +552,26 @@ function focusNewAfterCode() {
 }
 
 async function onUomChange(idx) {
+  const row = itemsToPrint.value[idx]
+  if (row) {
+    // If UOM changed, try to find a specific barcode for this UOM
+    const cached = lookupItemInCache(row.item_code)
+    if (cached?.barcodes_detailed) {
+      const bcMatch = cached.barcodes_detailed.find(b => b.uom === row.uom)
+      if (bcMatch) row.barcode = bcMatch.barcode
+    }
+    await fetchAllRates(row)
+  }
 }
 
 async function onNewUomChange() {
+  // If UOM changed, try to find a specific barcode for this UOM
+  const cached = lookupItemInCache(newPending.item_code)
+  if (cached?.barcodes_detailed) {
+    const bcMatch = cached.barcodes_detailed.find(b => b.uom === newPending.uom)
+    if (bcMatch) newPending.barcode = bcMatch.barcode
+  }
+  await fetchAllRates(newPending)
 }
 
 function selectQtyField(idx) {
@@ -585,15 +604,23 @@ function lookupItem(code) {
   // Fuzzy from full list
   const q = code.toLowerCase().trim()
   const found = allItems.value.find(i => {
-    const code = (i.item_code || '').toLowerCase()
+    const itm_code = (i.item_code || '').toLowerCase()
     const barcode = (i.barcode || '').toLowerCase()
     const barcodesList = (i.barcodes || '').toLowerCase().split(',').map(b => b.trim())
-    return code === q || barcode === q || barcodesList.includes(q)
+    const detailed = i.barcodes_detailed || []
+    return itm_code === q || barcode === q || barcodesList.includes(q) || detailed.some(b => (b.barcode || '').toLowerCase() === q)
   })
   if (found) {
     const item = { ...found }
     if ((item.item_code || '').toLowerCase() !== q) {
       item._matched_barcode = code.trim()
+      // Resolve UOM for fuzzy barcode match
+      if (item.barcodes_detailed) {
+        const match = item.barcodes_detailed.find(b => (b.barcode || '').toLowerCase() === q)
+        if (match && match.uom) {
+          item.uom = match.uom
+        }
+      }
     }
     return item
   }

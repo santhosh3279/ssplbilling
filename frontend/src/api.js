@@ -263,21 +263,45 @@ export async function searchItems(query) {
  */
 export async function fetchItemPrice(
   itemCode,
-  priceList = "Standard Selling"
+  priceList = "Standard Selling",
+  uom = null
 ) {
   try {
+    const filters = [
+      ["item_code", "=", itemCode],
+      ["price_list", "=", priceList],
+      ["selling", "=", 1],
+    ];
+    if (uom) filters.push(["uom", "=", uom]);
+    
     const rows = await frappeGet("frappe.client.get_list", {
       doctype: "Item Price",
       fields: ["price_list_rate"],
-      filters: [
-        ["item_code", "=", itemCode],
-        ["price_list", "=", priceList],
-        ["selling", "=", 1],
-      ],
+      filters: filters,
       limit_page_length: 1,
       order_by: "valid_from desc",
     });
-    return rows.length ? Number(rows[0].price_list_rate) : 0;
+    
+    if (rows.length) return Number(rows[0].price_list_rate);
+    
+    // If not found with specific UOM, try without UOM filter
+    if (uom) {
+      const rowsAnyUom = await frappeGet("frappe.client.get_list", {
+        doctype: "Item Price",
+        fields: ["price_list_rate"],
+        filters: [
+          ["item_code", "=", itemCode],
+          ["price_list", "=", priceList],
+          ["selling", "=", 1],
+          ["uom", "=", ""],
+        ],
+        limit_page_length: 1,
+        order_by: "valid_from desc",
+      });
+      return rowsAnyUom.length ? Number(rowsAnyUom[0].price_list_rate) : 0;
+    }
+    
+    return 0;
   } catch {
     return 0;
   }
