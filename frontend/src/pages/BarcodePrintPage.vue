@@ -155,10 +155,8 @@
                       :ref="el => setRef(el, 'code', idx)"
                       v-model="item.item_code"
                       class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-                      @keydown.enter.prevent="onCodeEnter(idx)"
-                      @keydown.tab.prevent="focusAfterCode(idx)"
-                      @keydown.down.prevent="moveRow(idx, 1)"
-                      @keydown.up.prevent="moveRow(idx, -1)"
+                      @input="onCodeInput(idx)"
+                      @keydown="handleCodeKeydown($event, idx)"
                       @keydown.delete.stop
                     />
                     <span v-else class="font-mono text-[var(--color-text-muted)]">{{ item.item_code }}</span>
@@ -240,9 +238,8 @@
                       :disabled="printing"
                       class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/50 disabled:opacity-50"
                       placeholder="Item code…"
-                      @keydown.enter.prevent="onNewCodeEnter"
-                      @keydown.tab.prevent="focusNewAfterCode"
-                      @keydown.up.prevent="moveToLastRow"
+                      @input="onNewCodeInput"
+                      @keydown="handleNewCodeKeydown"
                     />
                   </td>
                   <!-- Pending item name -->
@@ -299,15 +296,28 @@
         </div>
       </div>
     </div>
+
+    <QuickItemSearch
+      ref="quickSearchRef"
+      :results="quickSearchResults"
+      :query="quickSearchQuery"
+      price-list="Standard Selling"
+      search-type="Sales"
+      :anchor-el="quickSearchAnchor"
+      @select="onQuickSearchSelect"
+      @close="quickSearchResults = []"
+      @refresh="onQuickSearchRefresh"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useItemCache } from '../services/itemCache.js'
+import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
 import { frappeGet, frappePost, fetchItemPrice } from '../api.js'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
 
 const props = defineProps({
   isSubWindow: Boolean,
@@ -481,6 +491,23 @@ async function loadResources() {
 const itemsToPrint = ref([])
 const selectedRow = ref(-1)
 
+// ── Quick Search state ───────────────────────────────────────────────────────
+const quickSearchRef = ref(null)
+const quickSearchResults = ref([])
+const editQuickSearchRowIdx = ref(null) // null for NEW row, index for existing rows
+const quickSearchAnchor = computed(() => {
+  if (editQuickSearchRowIdx.value !== null) {
+    return fieldRefs[editQuickSearchRowIdx.value]?.code
+  }
+  return newCodeInput.value
+})
+const quickSearchQuery = computed(() => {
+  if (editQuickSearchRowIdx.value !== null) {
+    return itemsToPrint.value[editQuickSearchRowIdx.value]?.item_code || ''
+  }
+  return newItemCode.value
+})
+
 // Row refs for focus management (like SalesEntry)
 const rowRefs = {}
 const fieldRefs = {}
@@ -590,6 +617,86 @@ function moveToLastRow() {
   if (last >= 0) { selectedRow.value = last; nextTick(() => rowRefs[last]?.focus()) }
 }
 
+// ── Quick Search handlers ───────────────────────────────────────────────────
+function onQuickSearchSelect(item) {
+  if (editQuickSearchRowIdx.value !== null) {
+    // Existing row
+    const idx = editQuickSearchRowIdx.value
+    itemsToPrint.value[idx].item_code = item.item_code
+    onCodeEnter(idx)
+  } else {
+    // New row
+    newItemCode.value = item.item_code
+    onNewCodeEnter()
+  }
+  quickSearchResults.value = []
+  editQuickSearchRowIdx.value = null
+}
+
+function onQuickSearchRefresh() {
+  const q = quickSearchQuery.value
+  if (q.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(q)
+  }
+}
+
+function onCodeInput(idx) {
+  editQuickSearchRowIdx.value = idx
+  const val = itemsToPrint.value[idx].item_code
+  if (val.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(val)
+  } else {
+    quickSearchResults.value = []
+  }
+}
+
+function onNewCodeInput() {
+  editQuickSearchRowIdx.value = null
+  if (newItemCode.value.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(newItemCode.value)
+  } else {
+    quickSearchResults.value = []
+  }
+}
+
+function handleCodeKeydown(e, idx) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+      e.preventDefault()
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      quickSearchResults.value = []
+      return
+    }
+  }
+  
+  if (e.key === 'ArrowDown')  { e.preventDefault(); moveRow(idx, 1) }
+  else if (e.key === 'ArrowUp')   { e.preventDefault(); moveRow(idx, -1) }
+  else if (e.key === 'Tab') { e.preventDefault(); focusAfterCode(idx) }
+}
+
+function handleNewCodeKeydown(e) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+      e.preventDefault()
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      quickSearchResults.value = []
+      return
+    }
+  }
+  
+  if (e.key === 'Enter') { e.preventDefault(); onNewCodeEnter() }
+  else if (e.key === 'Tab') { e.preventDefault(); focusNewAfterCode() }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveToLastRow() }
+}
+
 function handleBack() {
   if (props.isSubWindow) emit('close')
   else router.push('/')
@@ -612,6 +719,7 @@ function onRowKeydown(e, idx) {
 async function onCodeEnter(idx) {
   const code = itemsToPrint.value[idx].item_code.trim()
   if (!code) return
+  quickSearchResults.value = []
   const r = lookupItem(code)
   if (r) {
     const row = itemsToPrint.value[idx]
@@ -637,6 +745,7 @@ async function onCodeEnter(idx) {
 async function onNewCodeEnter() {
   const code = newItemCode.value.trim()
   if (!code) return
+  quickSearchResults.value = []
   const r = lookupItem(code)
   if (r) {
     newItemCode.value = r.item_code
