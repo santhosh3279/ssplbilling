@@ -525,13 +525,28 @@ function moveToPrevQty(idx) {
 // ── Item lookup from cache ────────────────────────────────────────────────────
 function lookupItem(code) {
   const cached = lookupItemInCache(code)
-  if (cached) return cached
+  if (cached) {
+    // If found via barcode, the cleanCode was the barcode
+    if (cached._from_barcode) {
+      cached._matched_barcode = code.trim()
+    }
+    return cached
+  }
   // Fuzzy from full list
-  const q = code.toLowerCase()
-  return allItems.value.find(i =>
+  const q = code.toLowerCase().trim()
+  const found = allItems.value.find(i =>
     (i.item_code || '').toLowerCase() === q ||
-    (i.barcode || '').toLowerCase() === q
-  ) || null
+    (i.barcode || '').toLowerCase() === q ||
+    (i.barcodes || '').toLowerCase().split(',').includes(q)
+  )
+  if (found) {
+    const item = { ...found }
+    if ((item.item_code || '').toLowerCase() !== q) {
+      item._matched_barcode = code.trim()
+    }
+    return item
+  }
+  return null
 }
 
 // ── Row navigation ────────────────────────────────────────────────────────────
@@ -575,17 +590,21 @@ async function onCodeEnter(idx) {
   if (!code) return
   const r = lookupItem(code)
   if (r) {
-    itemsToPrint.value[idx].item_code = r.item_code || code
-    itemsToPrint.value[idx].item_name = r.item_name
-    itemsToPrint.value[idx].uom = r.uom || 'Nos'
-    itemsToPrint.value[idx].barcode = r.barcode || r.item_code || code
+    const row = itemsToPrint.value[idx]
+    row.item_code = r.item_code
+    row.item_name = r.item_name
+    row.uom = r.uom || 'Nos'
     
-    fetchBarcodeForItem(r.item_code || code).then(bc => {
-      itemsToPrint.value[idx].barcode = bc
-    })
+    if (r._matched_barcode) {
+      row.barcode = r._matched_barcode
+    } else {
+      row.barcode = r.barcode || r.item_code
+      fetchBarcodeForItem(r.item_code).then(bc => {
+        if (bc) row.barcode = bc
+      })
+    }
     
-    fetchAllRates(itemsToPrint.value[idx])
-    
+    await fetchAllRates(row)
     focusAfterCode(idx)
   }
 }
@@ -596,23 +615,27 @@ async function onNewCodeEnter() {
   if (!code) return
   const r = lookupItem(code)
   if (r) {
-    newPending.item_code = r.item_code || code
+    newPending.item_code = r.item_code
     newPending.item_name = r.item_name
     newPending.uom = r.uom || 'Nos'
-    newPending.barcode = r.barcode || r.item_code || code
+    
+    if (r._matched_barcode) {
+      newPending.barcode = r._matched_barcode
+    } else {
+      newPending.barcode = r.barcode || r.item_code
+      fetchBarcodeForItem(r.item_code).then(bc => {
+        if (bc) newPending.barcode = bc
+      })
+    }
 
-    fetchBarcodeForItem(newPending.item_code).then(bc => {
-      newPending.barcode = bc
-    })
-
-    fetchAllRates(newPending)
-
+    await fetchAllRates(newPending)
     nextTick(() => focusNewAfterCode())
   } else {
     newPending.item_code = code
     newPending.item_name = ''
     newPending.uom = 'Nos'
     newPending.barcode = code
+    newPending.rates = {}
     focusNewBarcode()
   }
 }
