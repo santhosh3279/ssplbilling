@@ -878,7 +878,7 @@ async function triggerPrint() {
   statusMsg.value = ''
   try {
     const itemsWithRates = itemsToPrint.value.map(item => {
-      const itm = { ...item }
+      const itm = { ...item, Bcode: item.barcode }
       availablePriceLists.value.forEach((pl, idx) => {
         if (idx < 10) itm[`rate_${idx + 1}`] = item.rates?.[pl] || 0
       })
