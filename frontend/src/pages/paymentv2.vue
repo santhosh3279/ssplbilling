@@ -207,14 +207,14 @@
                 </td>
               </tr>
 
-              <!-- Row 2: Account Paid From/To -->
-              <tr class="divide-x divide-[var(--color-border)]">
+              <!-- Row(s): Account Paid From/To -->
+              <tr v-for="(row, idx) in form.mop_rows" :key="idx" class="divide-x divide-[var(--color-border)]">
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
-                      v-model="mopAccountQuery"
-                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop')"
-                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop')"
+                      v-model="row.query"
+                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
+                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       :placeholder="activeTab === 'Internal Transfer' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
@@ -227,10 +227,10 @@
                 <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Receipt' ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
                   <input
                     v-if="activeTab === 'Receipt'"
-                    ref="amountInputRef2"
-                    v-model.number="form.mop_amount"
+                    :ref="el => { if (el) mopAmountRefs[idx] = el }"
+                    v-model.number="row.amount"
                     type="number" step="0.01"
-                    @keydown.enter.prevent="remarksInput?.focus()"
+                    @keydown.enter.prevent="handleMopAmountEnter(idx)"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
                   />
@@ -241,10 +241,10 @@
                 <td class="px-4 py-1.5 transition-colors" :class="(activeTab === 'Payment' || activeTab === 'Internal Transfer') ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
                   <input
                     v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'"
-                    ref="amountInputRef2"
-                    v-model.number="form.mop_amount"
+                    :ref="el => { if (el) mopAmountRefs[idx] = el }"
+                    v-model.number="row.amount"
                     type="number" step="0.01"
-                    @keydown.enter.prevent="remarksInput?.focus()"
+                    @keydown.enter.prevent="handleMopAmountEnter(idx)"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
                   />
@@ -253,9 +253,9 @@
 
                 <!-- Account Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
-                  <div v-if="mopBalance !== null" class="flex flex-col items-end">
-                    <div class="text-4xl font-black" :class="mopBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                      {{ Math.abs(mopBalance).toLocaleString('en-IN') }} {{ mopBalance > 0 ? 'Dr' : 'Cr' }}
+                  <div v-if="row.balance !== null" class="flex flex-col items-end">
+                    <div class="text-4xl font-black" :class="row.balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(row.balance).toLocaleString('en-IN') }} {{ row.balance > 0 ? 'Dr' : 'Cr' }}
                     </div>
                   </div>
                   <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
@@ -263,9 +263,9 @@
 
                 <!-- Account New Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
-                  <div v-if="mopBalance !== null" class="flex flex-col items-end">
-                    <div class="text-4xl font-black" :class="newMopBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                      {{ Math.abs(newMopBalance).toLocaleString('en-IN') }} {{ newMopBalance > 0 ? 'Dr' : 'Cr' }}
+                  <div v-if="row.balance !== null" class="flex flex-col items-end">
+                    <div class="text-4xl font-black" :class="getNewMopBalance(row) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(getNewMopBalance(row)).toLocaleString('en-IN') }} {{ getNewMopBalance(row) > 0 ? 'Dr' : 'Cr' }}
                     </div>
                   </div>
                   <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
@@ -473,13 +473,26 @@ const router = useRouter()
 const activeTab = ref('Payment')
 const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
-const amountInputRef2 = ref(null)
+const mopAmountRefs = ref([])
 const remarksInput = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
 const selectionOverlayRef = ref(null)
 const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt, 2 = Internal Transfer
 const ENTRY_TYPES = ['Payment', 'Receipt', 'Internal Transfer']
+
+const currentMopRowIdx = ref(0)
+
+function addMopRow() {
+  form.mop_rows.push({
+    account: '',
+    name: '',
+    type: '',
+    amount: null,
+    balance: null,
+    query: 'Search Account'
+  })
+}
 
 function cycleTab() {
   if (activeTab.value === 'Payment') activeTab.value = 'Receipt'
@@ -506,6 +519,9 @@ function onSelectionKeydown(e) {
 function selectEntryType(type) {
   activeTab.value = type
   showInitialSelection.value = false
+  // Add initial MOP row
+  form.mop_rows = []
+  addMopRow()
   setTimeout(() => {
     openSearch('party')
   }, 100)
@@ -543,10 +559,8 @@ const form = reactive({
   party: '',
   party_name: '',
   account: 'Debtors - SSPL',
-  mop_account: '',
-  mop_type: '',
   amount: null,
-  mop_amount: null,
+  mop_rows: [], // Will contain { account, name, type, amount, balance, query }
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0],
   remarks: ''
@@ -558,13 +572,11 @@ const custSearchModalRef = ref(null)
 const partyQuery = ref('')
 
 const accountQuery = ref('Debtors')
-const mopAccountQuery = ref('Search Account')
 
 const submitting = ref(false)
 const showSuccess = ref(false)
 const successDocName = ref('')
 const outstandingBalance = ref(null)
-const mopBalance = ref(null)
 const invoices = ref([])
 const unlinkedPayments = ref([])
 const unlinkedJournals = ref([])
@@ -576,11 +588,20 @@ const modalAmounts = reactive({})
 // --- Computed ---
 const refValid = computed(() => form.reference_no.replace(/\s/g, '').length > 0)
 
+const totalMopAmount = computed(() => 
+  form.mop_rows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0)
+)
+
 const isFormValid = computed(() => {
-  const basic = form.party && form.amount > 0 && form.mop_account
+  const basic = form.party && form.amount > 0 && form.mop_rows.length > 0 && form.mop_rows.every(r => r.account && r.amount > 0)
   if (!basic) return false
-  // If MOP is a bank account, Reference No is mandatory
-  if (form.mop_type === 'Bank') {
+  
+  // Total MOP must match Party amount
+  if (Math.abs(totalMopAmount.value - form.amount) > 0.01) return false
+
+  // If any MOP is a bank account, Reference No is mandatory
+  const hasBank = form.mop_rows.some(r => r.type === 'Bank')
+  if (hasBank) {
     return form.reference_no.replace(/\s/g, '').length > 0
   }
   return true
@@ -594,13 +615,14 @@ const newBalance = computed(() => {
   return outstandingBalance.value - amt
 })
 
-const newMopBalance = computed(() => {
-  if (mopBalance.value === null) return 0
-  const amt = parseFloat(form.mop_amount !== null ? form.mop_amount : form.amount) || 0
+// MOP row balances
+const getNewMopBalance = (row) => {
+  if (row.balance === null) return 0
+  const amt = parseFloat(row.amount) || 0
   // MOP Account is Credited for Payment/Transfer, Debited for Receipt
-  if (activeTab.value === 'Payment' || activeTab.value === 'Internal Transfer') return mopBalance.value - amt
-  return mopBalance.value + amt
-})
+  if (activeTab.value === 'Payment' || activeTab.value === 'Internal Transfer') return row.balance - amt
+  return row.balance + amt
+}
 
 const invoiceDocType = computed(() =>
   form.party_type === 'Customer' ? 'Sales Invoice' : 'Purchase Invoice'
@@ -659,8 +681,9 @@ const initialSearchType = computed(() => {
   return 'Account'
 })
 
-function openSearch(target) {
+function openSearch(target, idx = 0) {
   searchTarget.value = target
+  currentMopRowIdx.value = idx
   showSearchModal.value = true
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
@@ -706,31 +729,34 @@ function handleSelect(item) {
       }, 50)
     })
   } else if (searchTarget.value === 'paid_from' || searchTarget.value === 'account' || searchTarget.value === 'mop') {
-    form.mop_account = item.name
-    form.mop_type = item.group
-    mopAccountQuery.value = item.label || item.account_name || item.name
+    const row = form.mop_rows[currentMopRowIdx.value]
+    row.account = item.name
+    row.type = item.group
+    row.name = item.label || item.account_name || item.name
+    row.query = row.name
     
-    fetchMopBalance()
+    fetchMopBalance(currentMopRowIdx.value)
     
-    // Chain to Amount focus (Row 2)
+    // Chain to Amount focus (MOP Row)
     nextTick(() => {
       setTimeout(() => {
-        amountInputRef2.value?.focus()
-        amountInputRef2.value?.select()
+        mopAmountRefs.value[currentMopRowIdx.value]?.focus()
+        mopAmountRefs.value[currentMopRowIdx.value]?.select()
       }, 50)
     })
   }
 }
 
-async function fetchMopBalance() {
-  if (!form.mop_account) return
+async function fetchMopBalance(idx) {
+  const row = form.mop_rows[idx]
+  if (!row.account) return
   try {
     const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
-      ledger_name: form.mop_account,
+      ledger_name: row.account,
       ledger_type: 'Account',
     })
     if (res && res.closing_balance !== undefined) {
-      mopBalance.value = res.closing_balance
+      row.balance = res.closing_balance
     }
   } catch (e) {
     console.error('Failed to fetch MOP balance:', e)
@@ -759,10 +785,27 @@ function focusNextAllocation(event) {
   }
 }
 
+function handleMopAmountEnter(idx) {
+  const diff = form.amount - totalMopAmount.value
+  if (diff > 0.01) {
+    addMopRow()
+    const nextIdx = form.mop_rows.length - 1
+    setTimeout(() => {
+      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', nextIdx)
+    }, 50)
+  } else {
+    remarksInput.value?.focus()
+  }
+}
+
 function handleAmountEnter() {
   if (form.amount > 0 && form.party) {
-    if (form.mop_amount === null || form.mop_amount === 0) {
-      form.mop_amount = form.amount
+    if (form.mop_rows.length === 0) {
+      addMopRow()
+    }
+    const firstMopRow = form.mop_rows[0]
+    if (firstMopRow.amount === null || firstMopRow.amount === 0) {
+      firstMopRow.amount = form.amount
     }
     fetchInvoices(true) // Pass true to auto-show only if items present
   }
@@ -829,7 +872,8 @@ function handlePartyTypeChange() {
   form.party_name = ''
   partyQuery.value = ''
   outstandingBalance.value = null
-  mopBalance.value = null
+  form.mop_rows = []
+  addMopRow()
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
@@ -853,7 +897,8 @@ function resetForm() {
   form.amount = null
   form.remarks = ''
   outstandingBalance.value = null
-  mopBalance.value = null
+  form.mop_rows = []
+  addMopRow()
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
@@ -868,9 +913,6 @@ function resetForm() {
     accountQuery.value = 'Creditors'
   }
   
-  form.mop_account = ''
-  form.mop_type = ''
-  mopAccountQuery.value = 'Search Account'
   form.reference_no = ''
   form.reference_date = new Date().toISOString().split('T')[0]
 }
@@ -884,42 +926,44 @@ async function handleSubmit() {
     if (activeTab.value === 'Receipt') paymentType = 'Receive'
     else if (activeTab.value === 'Internal Transfer') paymentType = 'Internal Transfer'
 
-    const payload = {
-      payment_type: paymentType,
-      party_type: form.party_type,
-      party: activeTab.value === 'Internal Transfer' ? form.mop_account : form.party,
-      amount: form.amount,
-      mode_of_payment: form.mop_type === 'Bank' ? 'Bank' : 'Cash',
-      account: activeTab.value === 'Internal Transfer' ? form.party : form.mop_account,
-      posting_date: postingDate.value,
-      reference_no: form.reference_no,
-      reference_date: form.reference_date,
-      cost_center: localStorage.getItem('wb-cost-center') || null,
-      remarks: form.remarks,
-      "Custom Remarks": 1,
-      references: allocationRefs.value.map(r => ({
-        reference_doctype: r.reference_doctype,
-        reference_name: r.reference_name,
-        total_amount: r.total_amount,
-        outstanding_amount: r.outstanding_amount,
-        allocated_amount: parseFloat(r.allocated_amount) || 0,
-      })),
-    }
-    
-    const res = await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
-      data: JSON.stringify(payload)
-    })
-    
-    if (res && res.payment_entry) {
-      successDocName.value = res.payment_entry
-      showSuccess.value = true
+    for (const mopRow of form.mop_rows) {
+      const payload = {
+        payment_type: paymentType,
+        party_type: form.party_type,
+        party: activeTab.value === 'Internal Transfer' ? mopRow.account : form.party,
+        amount: mopRow.amount,
+        mode_of_payment: mopRow.type === 'Bank' ? 'Bank' : 'Cash',
+        account: activeTab.value === 'Internal Transfer' ? form.party : mopRow.account,
+        posting_date: postingDate.value,
+        reference_no: form.reference_no,
+        reference_date: form.reference_date,
+        cost_center: localStorage.getItem('wb-cost-center') || null,
+        remarks: form.remarks,
+        "Custom Remarks": 1,
+        references: mopRow === form.mop_rows[0] ? allocationRefs.value.map(r => ({
+          reference_doctype: r.reference_doctype,
+          reference_name: r.reference_name,
+          total_amount: r.total_amount,
+          outstanding_amount: r.outstanding_amount,
+          allocated_amount: parseFloat(r.allocated_amount) || 0,
+        })) : [],
+      }
       
-      // Auto-hide success message and reload after a short delay
-      setTimeout(() => {
-        showSuccess.value = false
-        window.location.reload()
-      }, 1500)
+      const res = await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
+        data: JSON.stringify(payload)
+      })
+      
+      if (res && res.payment_entry) {
+        successDocName.value = res.payment_entry
+      }
     }
+    
+    showSuccess.value = true
+    setTimeout(() => {
+      showSuccess.value = false
+      window.location.reload()
+    }, 1500)
+    
   } catch (e) {
     console.error('Submission failed:', e)
     alert('Failed to create payment entry: ' + (e.message || e))
