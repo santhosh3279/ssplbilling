@@ -154,9 +154,9 @@
                 <td class="px-3 py-3 text-right">
                   <span class="text-[20px] font-black font-mono"
                     :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                    ₹{{ fmt(inv.outstanding_amount) }}
+                    ₹{{ fmt(getAdjustedOutstanding(inv)) }}
                   </span>
-                  <span v-if="inv.grand_total && Math.abs(inv.grand_total - inv.outstanding_amount) > 0.005"
+                  <span v-if="inv.grand_total && Math.abs(inv.grand_total - getAdjustedOutstanding(inv)) > 0.005"
                     class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
                     / ₹{{ fmt(inv.grand_total) }}
                   </span>
@@ -171,14 +171,14 @@
                 </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[inv.name]" type="number" step="0.01" min="0"
-                    :max="Math.abs(inv.outstanding_amount)"
+                    :max="getAdjustedOutstanding(inv)"
                     class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                     @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(inv.name)" />
                 </td>
                 <td class="px-3 py-3 text-right">
                   <span class="text-[20px] font-black font-mono"
-                    :class="balanceFor(inv.name, inv.outstanding_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                    ₹{{ fmt(balanceFor(inv.name, inv.outstanding_amount)) }}
+                    :class="balanceFor(inv.name, getAdjustedOutstanding(inv)) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
+                    ₹{{ fmt(balanceFor(inv.name, getAdjustedOutstanding(inv))) }}
                   </span>
                 </td>
               </tr>
@@ -211,8 +211,8 @@
                   </span>
                 </td>
                 <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono text-[var(--color-success)]">₹{{ fmt(pe.unallocated_amount) }}</span>
-                  <span v-if="pe.paid_amount && Math.abs(pe.paid_amount - pe.unallocated_amount) > 0.005"
+                  <span class="text-[20px] font-black font-mono text-[var(--color-success)]">₹{{ fmt(getAdjustedOutstanding(pe)) }}</span>
+                  <span v-if="pe.paid_amount && Math.abs(pe.paid_amount - getAdjustedOutstanding(pe)) > 0.005"
                     class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
                     / ₹{{ fmt(pe.paid_amount) }}
                   </span>
@@ -227,14 +227,14 @@
                 </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[pe.name]" type="number" step="0.01" min="0"
-                    :max="Math.abs(pe.unallocated_amount)"
+                    :max="getAdjustedOutstanding(pe)"
                     class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                     @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(pe.name)" />
                 </td>
                 <td class="px-3 py-3 text-right">
                   <span class="text-[20px] font-black font-mono"
-                    :class="balanceFor(pe.name, pe.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                    ₹{{ fmt(balanceFor(pe.name, pe.unallocated_amount)) }}
+                    :class="balanceFor(pe.name, getAdjustedOutstanding(pe)) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
+                    ₹{{ fmt(balanceFor(pe.name, getAdjustedOutstanding(pe))) }}
                   </span>
                 </td>
               </tr>
@@ -267,8 +267,8 @@
                   </span>
                 </td>
                 <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono text-[var(--color-info)]">₹{{ fmt(je.unallocated_amount) }}</span>
-                  <span v-if="(je.journal_total_debit || je.total_amount) && Math.abs((je.journal_total_debit || je.total_amount) - je.unallocated_amount) > 0.005"
+                  <span class="text-[20px] font-black font-mono text-[var(--color-info)]">₹{{ fmt(getAdjustedOutstanding(je)) }}</span>
+                  <span v-if="(je.journal_total_debit || je.total_amount) && Math.abs((je.journal_total_debit || je.total_amount) - getAdjustedOutstanding(je)) > 0.005"
                     class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
                     / ₹{{ fmt(je.journal_total_debit || je.total_amount) }}
                   </span>
@@ -283,14 +283,14 @@
                 </td>
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[je.reference_row]" type="number" step="0.01" min="0"
-                    :max="Math.abs(je.unallocated_amount)"
+                    :max="getAdjustedOutstanding(je)"
                     class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                     @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(je.reference_row)" />
                 </td>
                 <td class="px-3 py-3 text-right">
                   <span class="text-[20px] font-black font-mono"
-                    :class="balanceFor(je.reference_row, je.unallocated_amount) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                    ₹{{ fmt(balanceFor(je.reference_row, je.unallocated_amount)) }}
+                    :class="balanceFor(je.reference_row, getAdjustedOutstanding(je)) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
+                    ₹{{ fmt(balanceFor(je.reference_row, getAdjustedOutstanding(je))) }}
                   </span>
                 </td>
               </tr>
@@ -412,6 +412,7 @@ const props = defineProps({
   enteredAmount: { type: Number, default: 0 },
   activeTab: String,
   modalAmounts: { type: Object, default: () => ({}) },
+  otherAllocations: { type: Array, default: () => [] },
   disablePayments: { type: Boolean, default: false },
   // Backward-compat props (used when data is passed in from parent)
   invoices: { type: Array, default: () => [] },
@@ -536,6 +537,17 @@ async function showLinkedDocs(doctype, docname) {
 
 function balanceFor(key, outstanding) {
   return Math.max(0, Math.abs(outstanding) - (parseFloat(localAmounts.value[key]) || 0))
+}
+
+function getAdjustedOutstanding(item) {
+  // key is reference_name for Inv/PE, or reference_row for JE
+  const key = item.reference_row || item.name
+  const others = props.otherAllocations
+    .filter(a => (a._row || a.reference_name) === key)
+    .reduce((s, a) => s + (parseFloat(a.allocated_amount) || 0), 0)
+  
+  const raw = Math.abs(item.outstanding_amount || item.unallocated_amount || 0)
+  return Math.max(0, raw - others)
 }
 
 function onAllocationChange(key) {

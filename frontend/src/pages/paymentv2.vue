@@ -454,6 +454,7 @@
       :enteredAmount="currentMopAmount"
       :activeTab="activeTab"
       :modalAmounts="modalAmounts"
+      :otherAllocations="otherAllocations"
       :disablePayments="true"
       @close="showInvoicesModal = false"
       @update-allocations="updateAllocations"
@@ -595,7 +596,22 @@ const allocationRefs = computed(() => {
     }))
   )
 })
-const modalAmounts = reactive({})
+const modalAmounts = computed(() => {
+  const row = form.mop_rows[currentMopRowIdx.value]
+  if (!row || !row.allocations) return {}
+  const res = {}
+  row.allocations.forEach(a => {
+    const key = a._row || a.reference_name
+    res[key] = a.allocated_amount
+  })
+  return res
+})
+
+const otherAllocations = computed(() => {
+  return form.mop_rows
+    .filter((_, idx) => idx !== currentMopRowIdx.value)
+    .flatMap(row => row.allocations || [])
+})
 
 const currentMopAmount = computed(() => {
   const row = form.mop_rows[currentMopRowIdx.value]
