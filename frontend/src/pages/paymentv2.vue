@@ -684,10 +684,13 @@ function handleSelect(item) {
       fetchOutstanding()
     }
     
-    // Automatically chain to MOP account selection
-    setTimeout(() => {
-      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
-    }, 150)
+    // Focus amount input after party selection
+    nextTick(() => {
+      setTimeout(() => {
+        amountInputRef.value?.focus()
+        amountInputRef.value?.select()
+      }, 50)
+    })
   } else if (searchTarget.value === 'paid_from' || searchTarget.value === 'account' || searchTarget.value === 'mop') {
     form.mop_account = item.name
     form.mop_type = item.group
@@ -695,11 +698,10 @@ function handleSelect(item) {
     
     fetchMopBalance()
     
-    // Chain to Amount focus
+    // Chain to Remarks focus
     nextTick(() => {
       setTimeout(() => {
-        amountInputRef.value?.focus()
-        amountInputRef.value?.select()
+        remarksInput.value?.focus()
       }, 50)
     })
   }
@@ -723,7 +725,7 @@ async function fetchMopBalance() {
 function updateAllocations(allocations) {
   allocationRefs.value = allocations
   nextTick(() => {
-    remarksInput.value?.focus()
+    openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
   })
 }
 
@@ -769,16 +771,16 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
       if (!autoShowOnlyIfItems) {
         console.log('No outstanding items found for direction:', targetDir)
       }
-      // Move focus to remarks if no modal is shown
+      // Move focus to MOP selection if no modal is shown
       nextTick(() => {
-        remarksInput.value?.focus()
+        openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
       })
     }
   } catch (e) {
     console.error('Failed to fetch outstanding items:', e)
     // Fallback focus
     nextTick(() => {
-      remarksInput.value?.focus()
+      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
     })
   } finally {
     loadingInvoices.value = false
