@@ -124,20 +124,16 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-4 py-2">
-                  {{ activeTab === 'Internal Transfer' ? 'Paid To (Debit Account)' : 'Party Name' }}
-                </th>
-                <th class="px-4 py-2">
-                  {{ activeTab === 'Internal Transfer' ? 'Paid From (Bank/Cash)' : (activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)') }}
-                </th>
-                <th class="px-6 py-2 text-right w-64">Amount</th>
-                <th class="px-6 py-2 text-right w-80">Outstanding</th>
-                <th class="px-6 py-2 text-right w-80">New Balance</th>
+                <th class="px-4 py-2 w-1/3">Account / Party</th>
+                <th class="px-4 py-2 text-right w-48 text-[var(--color-danger)]">Debit (Dr)</th>
+                <th class="px-4 py-2 text-right w-48 text-[var(--color-success)]">Credit (Cr)</th>
+                <th class="px-6 py-2 text-right w-64">Balance</th>
+                <th class="px-6 py-2 text-right w-64">New Balance</th>
               </tr>
             </thead>
             <tbody>
-              <tr class="divide-x divide-[var(--color-border)]">
-                <!-- Party Name / Paid To -->
+              <!-- Row 1: Party Name / Paid To -->
+              <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
@@ -152,7 +148,67 @@
                   </div>
                 </td>
 
-                <!-- Bank/Cash Account / Paid From -->
+                <!-- Party Debit (Dr) -->
+                <td class="px-4 py-1.5 transition-colors" :class="(activeTab === 'Payment' || activeTab === 'Internal Transfer') ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
+                  <input
+                    v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'"
+                    ref="amountInputRef"
+                    v-model.number="form.amount"
+                    type="number" step="0.01"
+                    @keydown.enter.prevent="handleAmountEnter"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    placeholder="0.00"
+                  />
+                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
+                </td>
+
+                <!-- Party Credit (Cr) -->
+                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Receipt' ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
+                  <input
+                    v-if="activeTab === 'Receipt'"
+                    ref="amountInputRef"
+                    v-model.number="form.amount"
+                    type="number" step="0.01"
+                    @keydown.enter.prevent="handleAmountEnter"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    placeholder="0.00"
+                  />
+                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
+                </td>
+
+                <!-- Party Balance -->
+                <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
+                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
+                    <div class="flex items-center gap-3">
+                      <div class="text-4xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                        {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
+                      </div>
+                      <button 
+                        v-if="form.party"
+                        @click="fetchInvoices"
+                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-highlight)]/10 text-xl font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-white"
+                        title="View Outstanding & Unlinked Items"
+                      >
+                        📄
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
+                </td>
+
+                <!-- Party New Balance -->
+                <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
+                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
+                    <div class="text-4xl font-black" :class="newBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(newBalance).toLocaleString('en-IN') }} {{ newBalance > 0 ? 'Dr' : 'Cr' }}
+                    </div>
+                  </div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
+                </td>
+              </tr>
+
+              <!-- Row 2: Account Paid From/To -->
+              <tr class="divide-x divide-[var(--color-border)]">
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
@@ -167,51 +223,40 @@
                   </div>
                 </td>
 
-                <!-- Amount -->
-                <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-                  <input
-                    ref="amountInputRef"
-                    v-model.number="form.amount"
-                    type="number"
-                    step="0.01"
-                    @keydown.enter.prevent="handleAmountEnter"
-                    class="w-full bg-transparent text-7xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
-                    placeholder="0.00"
-                  />
+                <!-- Account Debit (Dr) -->
+                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Receipt' ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
+                  <div v-if="activeTab === 'Receipt'" class="text-right text-[var(--color-text)] font-light text-5xl">
+                    {{ form.amount ? form.amount.toFixed(2) : '0.00' }}
+                  </div>
+                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
                 </td>
 
-                <!-- Outstanding -->
+                <!-- Account Credit (Cr) -->
+                <td class="px-4 py-1.5 transition-colors" :class="(activeTab === 'Payment' || activeTab === 'Internal Transfer') ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
+                  <div v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'" class="text-right text-[var(--color-text)] font-light text-5xl">
+                    {{ form.amount ? form.amount.toFixed(2) : '0.00' }}
+                  </div>
+                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
+                </td>
+
+                <!-- Account Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
-                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
-                    <div class="flex items-center gap-3">
-                      <div class="text-5xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                        {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
-                      </div>
-                      <button 
-                        v-if="form.party"
-                        @click="fetchInvoices"
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-highlight)]/10 text-xl font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-white"
-                        title="View Outstanding & Unlinked Items"
-                      >
-                        📄
-                      </button>
+                  <div v-if="mopBalance !== null" class="flex flex-col items-end">
+                    <div class="text-4xl font-black" :class="mopBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(mopBalance).toLocaleString('en-IN') }} {{ mopBalance > 0 ? 'Dr' : 'Cr' }}
                     </div>
                   </div>
-                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">
-                    —
-                  </div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
                 </td>
 
-                <!-- New Balance -->
+                <!-- Account New Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
-                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
-                    <div class="text-5xl font-black" :class="newBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                      {{ Math.abs(newBalance).toLocaleString('en-IN') }} {{ newBalance > 0 ? 'Dr' : 'Cr' }}
+                  <div v-if="mopBalance !== null" class="flex flex-col items-end">
+                    <div class="text-4xl font-black" :class="newMopBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(newMopBalance).toLocaleString('en-IN') }} {{ newMopBalance > 0 ? 'Dr' : 'Cr' }}
                     </div>
                   </div>
-                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">
-                    —
-                  </div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
                 </td>
               </tr>
             </tbody>
@@ -505,6 +550,7 @@ const submitting = ref(false)
 const showSuccess = ref(false)
 const successDocName = ref('')
 const outstandingBalance = ref(null)
+const mopBalance = ref(null)
 const invoices = ref([])
 const unlinkedPayments = ref([])
 const unlinkedJournals = ref([])
@@ -529,11 +575,17 @@ const isFormValid = computed(() => {
 const newBalance = computed(() => {
   if (outstandingBalance.value === null) return 0
   const amt = parseFloat(form.amount) || 0
-  // If Payment (we pay), it's a Debit to the party (increases balance if Dr)
-  // If Receipt (we receive), it's a Credit to the party (decreases balance if Dr)
-  // If Internal Transfer, the 'From' account (party) is credited (decreases balance if Dr)
-  if (activeTab.value === 'Payment') return outstandingBalance.value + amt
+  // Party is Debited for Payment/Transfer, Credited for Receipt
+  if (activeTab.value === 'Payment' || activeTab.value === 'Internal Transfer') return outstandingBalance.value + amt
   return outstandingBalance.value - amt
+})
+
+const newMopBalance = computed(() => {
+  if (mopBalance.value === null) return 0
+  const amt = parseFloat(form.amount) || 0
+  // MOP Account is Credited for Payment/Transfer, Debited for Receipt
+  if (activeTab.value === 'Payment' || activeTab.value === 'Internal Transfer') return mopBalance.value - amt
+  return mopBalance.value + amt
 })
 
 const invoiceDocType = computed(() =>
@@ -641,6 +693,8 @@ function handleSelect(item) {
     form.mop_type = item.group
     mopAccountQuery.value = item.label || item.account_name || item.name
     
+    fetchMopBalance()
+    
     // Chain to Amount focus
     nextTick(() => {
       setTimeout(() => {
@@ -648,6 +702,21 @@ function handleSelect(item) {
         amountInputRef.value?.select()
       }, 50)
     })
+  }
+}
+
+async function fetchMopBalance() {
+  if (!form.mop_account) return
+  try {
+    const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
+      ledger_name: form.mop_account,
+      ledger_type: 'Account',
+    })
+    if (res && res.closing_balance !== undefined) {
+      mopBalance.value = res.closing_balance
+    }
+  } catch (e) {
+    console.error('Failed to fetch MOP balance:', e)
   }
 }
 
@@ -740,6 +809,7 @@ function handlePartyTypeChange() {
   form.party_name = ''
   partyQuery.value = ''
   outstandingBalance.value = null
+  mopBalance.value = null
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
@@ -763,6 +833,7 @@ function resetForm() {
   form.amount = null
   form.remarks = ''
   outstandingBalance.value = null
+  mopBalance.value = null
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
