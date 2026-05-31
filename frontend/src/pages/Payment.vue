@@ -21,7 +21,7 @@
       <!-- Center: Payment / Receipt / Transfer tabs -->
       <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
         <button
-          v-for="t in ['Payment', 'Receipt', 'Expenses']"
+          v-for="t in ['Payment', 'Receipt', 'Internal Transfer']"
           :key="t"
           @click="activeTab = t"
           class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
@@ -99,14 +99,14 @@
             <span class="text-4xl font-black uppercase">Receipt</span>
           </button>
           <button
-            @click="selectEntryType('Expenses')"
+            @click="selectEntryType('Internal Transfer')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
             :class="selectionIdx === 2
               ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
               : 'bg-blue-500/10 border-blue-500/30 text-blue-500 hover:bg-blue-500/20 hover:border-blue-500'"
           >
             <span class="text-8xl">🔄</span>
-            <span class="text-4xl font-black uppercase">Expenses</span>
+            <span class="text-4xl font-black uppercase">Internal Transfer</span>
           </button>
         </div>
         <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -125,10 +125,10 @@
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-2">
-                  {{ activeTab === 'Expenses' ? 'Paid To (Debit Account)' : 'Party Name' }}
+                  {{ activeTab === 'Internal Transfer' ? 'Paid To (Debit Account)' : 'Party Name' }}
                 </th>
                 <th class="px-4 py-2">
-                  {{ activeTab === 'Expenses' ? 'Paid From (Bank/Cash)' : (activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)') }}
+                  {{ activeTab === 'Internal Transfer' ? 'Paid From (Bank/Cash)' : (activeTab === 'Payment' ? 'Account Paid From (Bank/Cash)' : 'Account Paid To (Bank/Cash)') }}
                 </th>
                 <th class="px-6 py-2 text-right w-64">Amount</th>
                 <th class="px-6 py-2 text-right w-80">Outstanding</th>
@@ -142,11 +142,11 @@
                   <div class="relative">
                     <input
                       v-model="partyQuery"
-                      @click="openSearch(activeTab === 'Expenses' ? 'paid_to' : 'party')"
-                      @keydown.enter="openSearch(activeTab === 'Expenses' ? 'paid_to' : 'party')"
+                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
+                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Expenses' ? 'Select Expense/Asset (Debit)...' : 'Search Party...'"
+                      :placeholder="activeTab === 'Internal Transfer' ? 'Select Internal Transfer/Asset (Debit)...' : 'Search Party...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
@@ -157,11 +157,11 @@
                   <div class="relative">
                     <input
                       v-model="mopAccountQuery"
-                      @click="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'mop')"
-                      @keydown.enter="openSearch(activeTab === 'Expenses' ? 'paid_from' : 'mop')"
+                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop')"
+                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Expenses' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
+                      :placeholder="activeTab === 'Internal Transfer' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
@@ -420,12 +420,12 @@ const remarksInput = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
 const selectionOverlayRef = ref(null)
-const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt, 2 = Expenses
-const ENTRY_TYPES = ['Payment', 'Receipt', 'Expenses']
+const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt, 2 = Internal Transfer
+const ENTRY_TYPES = ['Payment', 'Receipt', 'Internal Transfer']
 
 function cycleTab() {
   if (activeTab.value === 'Payment') activeTab.value = 'Receipt'
-  else if (activeTab.value === 'Receipt') activeTab.value = 'Expenses'
+  else if (activeTab.value === 'Receipt') activeTab.value = 'Internal Transfer'
   else activeTab.value = 'Payment'
 }
 
@@ -531,7 +531,7 @@ const newBalance = computed(() => {
   const amt = parseFloat(form.amount) || 0
   // If Payment (we pay), it's a Debit to the party (increases balance if Dr)
   // If Receipt (we receive), it's a Credit to the party (decreases balance if Dr)
-  // If Expenses, the 'From' account (party) is credited (decreases balance if Dr)
+  // If Internal Transfer, the 'From' account (party) is credited (decreases balance if Dr)
   if (activeTab.value === 'Payment') return outstandingBalance.value + amt
   return outstandingBalance.value - amt
 })
@@ -562,15 +562,15 @@ const searchTarget = ref('party')
 const showSearchModal = ref(false)
 
 const modalTitle = computed(() => {
-  if (activeTab.value === 'Expenses') {
-    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Expense - Paid To' : 'Expense - Paid From'
+  if (activeTab.value === 'Internal Transfer') {
+    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Internal Transfer - Paid To' : 'Internal Transfer - Paid From'
   }
   const type = activeTab.value // Payment or Receipt
   return searchTarget.value === 'party' ? `${type} - Party Name` : `${type} - Mode of Payment`
 })
 
 const modalSubtitle = computed(() => {
-  if (activeTab.value === 'Expenses') {
+  if (activeTab.value === 'Internal Transfer') {
     return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Select Account Paid To (Debit)' : 'Select Account Paid From (Credit)'
   }
   if (activeTab.value === 'Payment') {
@@ -583,7 +583,7 @@ const modalSubtitle = computed(() => {
 })
 
 const allowedTypes = computed(() => {
-  if (activeTab.value === 'Expenses') return ['Account']
+  if (activeTab.value === 'Internal Transfer') return ['Account']
   if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee']
   return ['Account']
 })
@@ -620,7 +620,7 @@ function handleSelect(item) {
       form.party_type = '' // Account type
     }
     
-    if (activeTab.value !== 'Expenses') {
+    if (activeTab.value !== 'Internal Transfer') {
       // Automatically set default Account based on type
       if (form.party_type === 'Customer') {
         form.account = 'Debtors - SSPL'
@@ -634,7 +634,7 @@ function handleSelect(item) {
     
     // Automatically chain to MOP account selection
     setTimeout(() => {
-      openSearch(activeTab.value === 'Expenses' ? 'paid_from' : 'mop')
+      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
     }, 150)
   } else if (searchTarget.value === 'paid_from' || searchTarget.value === 'account' || searchTarget.value === 'mop') {
     form.mop_account = item.name
@@ -721,7 +721,7 @@ async function fetchOutstanding() {
   try {
     const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
       ledger_name: form.party,
-      ledger_type: activeTab.value === 'Expenses' ? 'Account' : form.party_type,
+      ledger_type: activeTab.value === 'Internal Transfer' ? 'Account' : form.party_type,
     })
     if (res && res.closing_balance !== undefined) {
       outstandingBalance.value = res.closing_balance
@@ -791,15 +791,15 @@ async function handleSubmit() {
   try {
     let paymentType = 'Pay'
     if (activeTab.value === 'Receipt') paymentType = 'Receive'
-    else if (activeTab.value === 'Expenses') paymentType = 'Internal Transfer'
+    else if (activeTab.value === 'Internal Transfer') paymentType = 'Internal Transfer'
 
     const payload = {
       payment_type: paymentType,
       party_type: form.party_type,
-      party: activeTab.value === 'Expenses' ? form.mop_account : form.party,
+      party: activeTab.value === 'Internal Transfer' ? form.mop_account : form.party,
       amount: form.amount,
       mode_of_payment: form.mop_type === 'Bank' ? 'Bank' : 'Cash',
-      account: activeTab.value === 'Expenses' ? form.party : form.mop_account,
+      account: activeTab.value === 'Internal Transfer' ? form.party : form.mop_account,
       posting_date: postingDate.value,
       reference_no: form.reference_no,
       reference_date: form.reference_date,
