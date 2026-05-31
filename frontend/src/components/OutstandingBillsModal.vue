@@ -172,7 +172,6 @@
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[inv.name]" type="number" step="0.01" min="0"
                     :max="Math.abs(inv.outstanding_amount)"
-                    :disabled="remainingBalance <= 0.005 && !(localAmounts[inv.name] > 0)"
                     class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                     @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(inv.name)" />
                 </td>
@@ -229,7 +228,6 @@
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[pe.name]" type="number" step="0.01" min="0"
                     :max="Math.abs(pe.unallocated_amount)"
-                    :disabled="remainingBalance <= 0.005 && !(localAmounts[pe.name] > 0)"
                     class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                     @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(pe.name)" />
                 </td>
@@ -286,7 +284,6 @@
                 <td class="px-3 py-3">
                   <input v-model.number="localAmounts[je.reference_row]" type="number" step="0.01" min="0"
                     :max="Math.abs(je.unallocated_amount)"
-                    :disabled="remainingBalance <= 0.005 && !(localAmounts[je.reference_row] > 0)"
                     class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
                     @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(je.reference_row)" />
                 </td>
