@@ -225,17 +225,29 @@
 
                 <!-- Account Debit (Dr) -->
                 <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Receipt' ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
-                  <div v-if="activeTab === 'Receipt'" class="text-right text-[var(--color-text)] font-light text-5xl">
-                    {{ form.amount ? form.amount.toFixed(2) : '0.00' }}
-                  </div>
+                  <input
+                    v-if="activeTab === 'Receipt'"
+                    ref="amountInputRef2"
+                    v-model.number="form.amount"
+                    type="number" step="0.01"
+                    @keydown.enter.prevent="remarksInput?.focus()"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    placeholder="0.00"
+                  />
                   <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
                 </td>
 
                 <!-- Account Credit (Cr) -->
                 <td class="px-4 py-1.5 transition-colors" :class="(activeTab === 'Payment' || activeTab === 'Internal Transfer') ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
-                  <div v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'" class="text-right text-[var(--color-text)] font-light text-5xl">
-                    {{ form.amount ? form.amount.toFixed(2) : '0.00' }}
-                  </div>
+                  <input
+                    v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'"
+                    ref="amountInputRef2"
+                    v-model.number="form.amount"
+                    type="number" step="0.01"
+                    @keydown.enter.prevent="remarksInput?.focus()"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    placeholder="0.00"
+                  />
                   <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
                 </td>
 
@@ -461,6 +473,7 @@ const router = useRouter()
 const activeTab = ref('Payment')
 const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
+const amountInputRef2 = ref(null)
 const remarksInput = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
@@ -698,10 +711,11 @@ function handleSelect(item) {
     
     fetchMopBalance()
     
-    // Chain to Remarks focus
+    // Chain to Amount focus (Row 2)
     nextTick(() => {
       setTimeout(() => {
-        remarksInput.value?.focus()
+        amountInputRef2.value?.focus()
+        amountInputRef2.value?.select()
       }, 50)
     })
   }
