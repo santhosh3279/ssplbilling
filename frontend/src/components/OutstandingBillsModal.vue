@@ -68,7 +68,7 @@
           <span class="text-[18px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Remaining Balance</span>
           <span class="text-5xl font-black font-mono"
             :class="Math.abs(remainingBalance) < 0.005 ? 'text-[var(--color-success)]' : remainingBalance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-info)]'">
-            ₹{{ fmt(Math.abs(remainingBalance)) }}
+            {{ remainingBalance < -0.005 ? '-' : '' }}₹{{ fmt(Math.abs(remainingBalance)) }}
           </span>
         </div>
       </div>
@@ -452,30 +452,6 @@ async function fetchData() {
     localInvoices.value = res.invoices || []
     localPayments.value = res.payment_entries || []
     localJournals.value = res.journal_entries || []
-
-    // Auto-fill allocations when entering for the first time
-    if (Object.keys(localAmounts.value).length === 0 && props.enteredAmount > 0) {
-      const targetDir = props.activeTab === 'Receipt' ? 'Dr' : 'Cr'
-      let remaining = props.enteredAmount
-
-      localInvoices.value.filter(i => i.direction === targetDir).forEach(inv => {
-        const alloc = Math.min(remaining, Math.abs(inv.outstanding_amount))
-        localAmounts.value[inv.name] = alloc
-        remaining -= alloc
-      })
-
-      localJournals.value.filter(j => j.direction === targetDir).forEach(je => {
-        const alloc = Math.min(remaining, Math.abs(je.unallocated_amount))
-        localAmounts.value[je.reference_row] = alloc
-        remaining -= alloc
-      })
-
-      localPayments.value.filter(p => p.direction === targetDir).forEach(pe => {
-        const alloc = Math.min(remaining, Math.abs(pe.unallocated_amount))
-        localAmounts.value[pe.name] = alloc
-        remaining -= alloc
-      })
-    }
   } catch (e) {
     console.error('[OutstandingBillsModal] fetch failed:', e)
   } finally {
@@ -593,30 +569,6 @@ function emitAllocations() {
 }
 
 function confirmAdjustments() {
-  if (Math.abs(remainingBalance.value) > 0.005) {
-    let targetKey = lastModifiedKey.value
-    const allVisibleKeys = [
-      ...filteredInvoices.value.map(i => i.name),
-      ...filteredPayments.value.map(p => p.name),
-      ...filteredJournals.value.map(j => j.reference_row),
-    ]
-    if (targetKey && !allVisibleKeys.includes(targetKey)) targetKey = null
-    if (!targetKey) {
-      for (let i = allVisibleKeys.length - 1; i >= 0; i--) {
-        if (localAmounts.value[allVisibleKeys[i]] > 0) { targetKey = allVisibleKeys[i]; break }
-      }
-    }
-    if (!targetKey && allVisibleKeys.length > 0) targetKey = allVisibleKeys[allVisibleKeys.length - 1]
-
-    if (targetKey) {
-      const inv = currentInvoices.value.find(i => i.name === targetKey)
-      const pe  = currentPayments.value.find(p => p.name === targetKey)
-      const je  = currentJournals.value.find(j => j.reference_row === targetKey)
-      const maxOut = inv ? Math.abs(inv.outstanding_amount) : pe ? Math.abs(pe.unallocated_amount) : je ? Math.abs(je.unallocated_amount) : Infinity
-      const current = parseFloat(localAmounts.value[targetKey]) || 0
-      localAmounts.value[targetKey] = Math.min(current + remainingBalance.value, maxOut)
-    }
-  }
   emitAllocations()
   emit('close')
 }
