@@ -292,6 +292,7 @@
             <table class="w-full border-collapse text-left">
               <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)] shadow-sm">
                 <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                  <th class="px-4 py-2">MOP Account</th>
                   <th class="px-4 py-2">Voucher No</th>
                   <th class="px-4 py-2">Inv Type</th>
                   <th class="px-4 py-2 text-right">Outstanding</th>
@@ -300,7 +301,8 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
-                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name + ref.mop_idx" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                  <td class="px-4 py-1.5 text-xl font-black text-[var(--color-highlight)]">{{ ref.mop_name }}</td>
                   <td class="px-4 py-1.5 font-mono text-xl font-bold">{{ ref.reference_name }}</td>
                   <td class="px-4 py-1.5 text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.reference_doctype }}</td>
                   <td class="px-4 py-1.5 text-right font-mono text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
@@ -491,7 +493,8 @@ function addMopRow() {
     type: '',
     amount: null,
     balance: null,
-    query: 'Search Account'
+    query: 'Search Account',
+    allocations: []
   })
 }
 
@@ -583,7 +586,15 @@ const unlinkedPayments = ref([])
 const unlinkedJournals = ref([])
 const showInvoicesModal = ref(false)
 const loadingInvoices = ref(false)
-const allocationRefs = ref([])
+const allocationRefs = computed(() => {
+  return form.mop_rows.flatMap((row, mopIdx) => 
+    row.allocations.map(alloc => ({
+      ...alloc,
+      mop_name: row.name || `Row ${mopIdx + 1}`,
+      mop_idx: mopIdx
+    }))
+  )
+})
 const modalAmounts = reactive({})
 
 // --- Computed ---
@@ -700,7 +711,7 @@ function handleSelect(item) {
     partyQuery.value = form.party_name
     
     // Clear previous allocations
-    allocationRefs.value = []
+    form.mop_rows.forEach(r => r.allocations = [])
     clearModalAmounts()
     
     // Automatically select party type based on selection
@@ -765,14 +776,20 @@ async function fetchMopBalance(idx) {
 }
 
 function updateAllocations(allocations) {
-  allocationRefs.value = allocations
+  form.mop_rows[currentMopRowIdx.value].allocations = allocations
   nextTick(() => {
-    openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
+    continueAfterMop(currentMopRowIdx.value)
   })
 }
 
 function removeAllocation(idx) {
-  allocationRefs.value.splice(idx, 1)
+  const flat = allocationRefs.value[idx]
+  if (flat) {
+    const row = form.mop_rows[flat.mop_idx]
+    if (row) {
+      row.allocations = row.allocations.filter(a => a.reference_name !== flat.reference_name)
+    }
+  }
 }
 
 function focusNextAllocation(event) {
@@ -787,6 +804,14 @@ function focusNextAllocation(event) {
 }
 
 function handleMopAmountEnter(idx) {
+  currentMopRowIdx.value = idx
+  const row = form.mop_rows[idx]
+  if (row.amount > 0 && form.party) {
+    fetchInvoices(true)
+  }
+}
+
+function continueAfterMop(idx) {
   const diff = form.amount - totalMopAmount.value
   if (diff > 0.01) {
     addMopRow()
@@ -808,7 +833,10 @@ function handleAmountEnter() {
     if (firstMopRow.amount === null || firstMopRow.amount === 0) {
       firstMopRow.amount = form.amount
     }
-    fetchInvoices(true) // Pass true to auto-show only if items present
+    // Chain to first MOP selection instead of opening invoices
+    nextTick(() => {
+      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', 0)
+    })
   }
 }
 
@@ -833,17 +861,12 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
       if (!autoShowOnlyIfItems) {
         console.log('No outstanding items found for direction:', targetDir)
       }
-      // Move focus to MOP selection if no modal is shown
-      nextTick(() => {
-        openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
-      })
+      // Move to next MOP or remarks
+      continueAfterMop(currentMopRowIdx.value)
     }
   } catch (e) {
     console.error('Failed to fetch outstanding items:', e)
-    // Fallback focus
-    nextTick(() => {
-      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop')
-    })
+    continueAfterMop(currentMopRowIdx.value)
   } finally {
     loadingInvoices.value = false
   }
@@ -878,7 +901,6 @@ function handlePartyTypeChange() {
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
-  allocationRefs.value = []
   clearModalAmounts()
   
   if (form.party_type === 'Customer') {
@@ -903,7 +925,6 @@ function resetForm() {
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
-  allocationRefs.value = []
   clearModalAmounts()
 
   if (form.party_type === 'Customer') {
@@ -928,41 +949,7 @@ async function handleSubmit() {
     if (activeTab.value === 'Receipt') paymentType = 'Receive'
     else if (activeTab.value === 'Internal Transfer') paymentType = 'Internal Transfer'
 
-    // Clone allocations to split them across separate entries
-    let remainingAllocations = allocationRefs.value.map(r => ({ 
-      ...r, 
-      allocated_amount: parseFloat(r.allocated_amount) || 0 
-    }))
-
     for (const mopRow of form.mop_rows) {
-      let mopAmount = parseFloat(mopRow.amount) || 0
-      const currentAllocations = []
-      
-      // Distribute allocations to this MOP entry
-      while (mopAmount > 0 && remainingAllocations.length > 0) {
-        const ref = remainingAllocations[0]
-        if (ref.allocated_amount <= 0) {
-          remainingAllocations.shift()
-          continue
-        }
-        
-        const take = Math.min(mopAmount, ref.allocated_amount)
-        currentAllocations.push({
-          reference_doctype: ref.reference_doctype,
-          reference_name: ref.reference_name,
-          total_amount: ref.total_amount,
-          outstanding_amount: ref.outstanding_amount,
-          allocated_amount: take,
-        })
-        
-        ref.allocated_amount -= take
-        mopAmount -= take
-        
-        if (ref.allocated_amount <= 0) {
-          remainingAllocations.shift()
-        }
-      }
-
       const payload = {
         payment_type: paymentType,
         party_type: form.party_type,
@@ -976,7 +963,13 @@ async function handleSubmit() {
         cost_center: localStorage.getItem('wb-cost-center') || null,
         remarks: form.remarks,
         "Custom Remarks": 1,
-        references: currentAllocations,
+        references: (mopRow.allocations || []).map(r => ({
+          reference_doctype: r.reference_doctype,
+          reference_name: r.reference_name,
+          total_amount: r.total_amount,
+          outstanding_amount: r.outstanding_amount,
+          allocated_amount: parseFloat(r.allocated_amount) || 0,
+        })),
       }
       
       const res = await frappePost('ssplbilling.api.paymentv2_api.create_payment_entry', {
