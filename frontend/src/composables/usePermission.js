@@ -47,7 +47,6 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'CashierManagement',
   'DailyReport',
   'SingleEntry',
-  'Expense',
   'NamingSettings',
 ])
 
@@ -57,7 +56,6 @@ export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES
 export const ACCOUNTS_ROUTES = new Set([
   'Payment',
   'JournalContraEntry',
-  'Expense',
   'Reports',
   'DailyReport',
   'SingleEntry',
@@ -121,7 +119,6 @@ const TILE_ROUTE_MAP = {
   'general-ledger':    'GeneralLedger',
   'purchase-order':    'PurchaseOrder',
   'journal-contra':    'JournalContraEntry',
-  'expense':           'Expense',
   'stock-reconciliation': 'StockReconciliation',
   'payment':           'Payment',
   'pricelist-update':  'PriceListUpdate',

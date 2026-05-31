@@ -30,7 +30,6 @@ import GstLedger from './pages/GstLedger.vue'
 import DailyReport from './pages/DailyReport.vue'
 import StoreTransfer from './pages/StoreTransfer.vue'
 import SingleEntry from './pages/SingleEntry.vue'
-import Expense from './pages/Expense.vue'
 import Cancellation from './pages/Cancellation.vue'
 import PartyLink from './pages/PartyLink.vue'
 import NamingSettings from './pages/NamingSettings.vue'
@@ -65,12 +64,6 @@ const routes = [
     name: 'SingleEntry',
     component: SingleEntry,
     meta: { title: 'Bulk Payment' },
-  },
-  {
-    path: '/expense',
-    name: 'Expense',
-    component: Expense,
-    meta: { title: 'Expense Entry' },
   },
   {
     path: '/store-transfer',
