@@ -451,7 +451,7 @@
       :show="showInvoicesModal"
       :partyType="form.party_type"
       :party="form.party"
-      :enteredAmount="form.amount"
+      :enteredAmount="currentMopAmount"
       :activeTab="activeTab"
       :modalAmounts="modalAmounts"
       :disablePayments="true"
@@ -596,6 +596,11 @@ const allocationRefs = computed(() => {
   )
 })
 const modalAmounts = reactive({})
+
+const currentMopAmount = computed(() => {
+  const row = form.mop_rows[currentMopRowIdx.value]
+  return row ? (parseFloat(row.amount) || 0) : 0
+})
 
 // --- Computed ---
 const refValid = computed(() => form.reference_no.replace(/\s/g, '').length > 0)
