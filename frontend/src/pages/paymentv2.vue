@@ -275,52 +275,53 @@
           </table>
         </div>
 
-        <!-- Payment References / Allocation Table -->
-        <div v-if="allocationRefs.length" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Payment References</h3>
+        <!-- Empty state placeholder -->
+        <div v-if="!allocationRefs.length" class="flex-1 flex items-center justify-center opacity-10">
+           <svg class="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+           </svg>
+        </div>
+
+        <!-- Payment References (Excel-style) -->
+        <div v-if="allocationRefs.length" class="mt-auto border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+          <div class="flex items-center gap-2 bg-[var(--color-surface-raised)] px-4 py-1.5 border-b border-[var(--color-border)]">
+            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Payment References / Allocations</span>
+            <div class="h-px flex-1 bg-[var(--color-border)]/50"></div>
           </div>
-          <div class="rounded-xl border border-[var(--color-border)] overflow-hidden">
-            <table class="w-full text-left">
-              <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
-                <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                  <th class="px-4 py-3">Voucher No</th>
-                  <th class="px-4 py-3">Inv Type</th>
-                  <th class="px-4 py-3 text-right">Outstanding</th>
-                  <th class="px-4 py-3 text-right">Allocated</th>
-                  <th class="px-4 py-3"></th>
+          <div class="max-h-[25vh] overflow-y-auto overflow-x-hidden">
+            <table class="w-full border-collapse text-left">
+              <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)] shadow-sm">
+                <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                  <th class="px-4 py-2">Voucher No</th>
+                  <th class="px-4 py-2">Inv Type</th>
+                  <th class="px-4 py-2 text-right">Outstanding</th>
+                  <th class="px-4 py-2 text-right w-64">Allocated</th>
+                  <th class="px-4 py-2 w-16"></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
-                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="group hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-                  <td class="px-4 py-3 font-mono text-3xl font-black">{{ ref.reference_name }}</td>
-                  <td class="px-4 py-3 text-3xl text-[var(--color-text-muted)] group-focus-within:text-[var(--color-text-on-focus)]">{{ ref.reference_doctype }}</td>
-                  <td class="px-4 py-3 text-right text-3xl text-[var(--color-text-muted)] group-focus-within:text-[var(--color-text-on-focus)]">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
-                  <td class="px-4 py-3 text-right">
+                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                  <td class="px-4 py-1.5 font-mono text-xl font-bold">{{ ref.reference_name }}</td>
+                  <td class="px-4 py-1.5 text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.reference_doctype }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
+                  <td class="px-2 py-1">
                     <input
                       v-model.number="ref.allocated_amount"
                       type="number" step="0.01" min="0"
-                      class="allocation-ref-input w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-3xl font-black text-right focus:bg-black/10 focus:outline-none transition-all placeholder:text-inherit"
+                      class="allocation-ref-input w-full bg-transparent px-3 py-1 text-2xl font-black text-right focus:outline-none placeholder:text-inherit"
                       @keydown.enter.prevent="focusNextAllocation($event)"
                     />
                   </td>
-                  <td class="px-4 py-3 text-right">
+                  <td class="px-4 py-1 text-right">
                     <button
                       @click="removeAllocation(idx)"
-                      class="h-6 w-6 rounded-md bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/25 text-[var(--color-danger)] text-xs flex items-center justify-center ml-auto transition-all"
+                      class="h-7 w-7 rounded bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/25 text-[var(--color-danger)] flex items-center justify-center ml-auto transition-all"
                     >✕</button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
-
-        <!-- Empty state placeholder -->
-        <div class="flex-1 flex items-center justify-center opacity-10">
-           <svg class="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-           </svg>
         </div>
       </div>
     </main>
