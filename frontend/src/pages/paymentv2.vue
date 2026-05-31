@@ -751,7 +751,7 @@ async function fetchMopBalance(idx) {
   const row = form.mop_rows[idx]
   if (!row.account) return
   try {
-    const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
+    const res = await frappeGet('ssplbilling.api.paymentv2_api.get_ledger', {
       ledger_name: row.account,
       ledger_type: 'Account',
     })
@@ -851,7 +851,7 @@ async function fetchInvoices(autoShowOnlyIfItems = false) {
 async function fetchOutstanding() {
   if (!form.party) return
   try {
-    const res = await frappeGet('ssplbilling.api.payment_api.get_ledger', {
+    const res = await frappeGet('ssplbilling.api.paymentv2_api.get_ledger', {
       ledger_name: form.party,
       ledger_type: activeTab.value === 'Internal Transfer' ? 'Account' : form.party_type,
     })
@@ -949,7 +949,7 @@ async function handleSubmit() {
         })) : [],
       }
       
-      const res = await frappePost('ssplbilling.api.payment_api.create_payment_entry', {
+      const res = await frappePost('ssplbilling.api.paymentv2_api.create_payment_entry', {
         data: JSON.stringify(payload)
       })
       
