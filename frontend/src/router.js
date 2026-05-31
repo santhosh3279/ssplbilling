@@ -12,6 +12,7 @@ import CashierDesk from './pages/CashierDesk.vue'
 import PurchaseSubmit from './pages/PurchaseSubmit.vue'
 import GeneralLedger from './pages/GeneralLedger.vue'
 import Payment from './pages/Payment.vue'
+import PaymentV2 from './pages/paymentv2.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import CashierManagement from './pages/CashierManagement.vue'
 import PricingRuleSync from './pages/PricingRuleSync.vue'
@@ -154,6 +155,12 @@ const routes = [
     name: 'Payment',
     component: Payment,
     meta: { title: 'Payment / Receipt' },
+  },
+  {
+    path: '/paymentv2',
+    name: 'PaymentV2',
+    component: PaymentV2,
+    meta: { title: 'Payment / Receipt V2' },
   },
   {
     path: '/stock-reconciliation',
