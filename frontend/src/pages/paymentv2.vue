@@ -228,7 +228,7 @@
                   <input
                     v-if="activeTab === 'Receipt'"
                     ref="amountInputRef2"
-                    v-model.number="form.amount"
+                    v-model.number="form.mop_amount"
                     type="number" step="0.01"
                     @keydown.enter.prevent="remarksInput?.focus()"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
@@ -242,7 +242,7 @@
                   <input
                     v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'"
                     ref="amountInputRef2"
-                    v-model.number="form.amount"
+                    v-model.number="form.mop_amount"
                     type="number" step="0.01"
                     @keydown.enter.prevent="remarksInput?.focus()"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
@@ -546,6 +546,7 @@ const form = reactive({
   mop_account: '',
   mop_type: '',
   amount: null,
+  mop_amount: null,
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0],
   remarks: ''
@@ -595,7 +596,7 @@ const newBalance = computed(() => {
 
 const newMopBalance = computed(() => {
   if (mopBalance.value === null) return 0
-  const amt = parseFloat(form.amount) || 0
+  const amt = parseFloat(form.mop_amount !== null ? form.mop_amount : form.amount) || 0
   // MOP Account is Credited for Payment/Transfer, Debited for Receipt
   if (activeTab.value === 'Payment' || activeTab.value === 'Internal Transfer') return mopBalance.value - amt
   return mopBalance.value + amt
@@ -760,6 +761,9 @@ function focusNextAllocation(event) {
 
 function handleAmountEnter() {
   if (form.amount > 0 && form.party) {
+    if (form.mop_amount === null || form.mop_amount === 0) {
+      form.mop_amount = form.amount
+    }
     fetchInvoices(true) // Pass true to auto-show only if items present
   }
 }
