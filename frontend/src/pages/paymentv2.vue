@@ -921,12 +921,47 @@ async function handleSubmit() {
   if (!isFormValid.value) return
   submitting.value = true
   
+  const createdEntries = []
   try {
     let paymentType = 'Pay'
     if (activeTab.value === 'Receipt') paymentType = 'Receive'
     else if (activeTab.value === 'Internal Transfer') paymentType = 'Internal Transfer'
 
+    // Clone allocations to split them across separate entries
+    let remainingAllocations = allocationRefs.value.map(r => ({ 
+      ...r, 
+      allocated_amount: parseFloat(r.allocated_amount) || 0 
+    }))
+
     for (const mopRow of form.mop_rows) {
+      let mopAmount = parseFloat(mopRow.amount) || 0
+      const currentAllocations = []
+      
+      // Distribute allocations to this MOP entry
+      while (mopAmount > 0 && remainingAllocations.length > 0) {
+        const ref = remainingAllocations[0]
+        if (ref.allocated_amount <= 0) {
+          remainingAllocations.shift()
+          continue
+        }
+        
+        const take = Math.min(mopAmount, ref.allocated_amount)
+        currentAllocations.push({
+          reference_doctype: ref.reference_doctype,
+          reference_name: ref.reference_name,
+          total_amount: ref.total_amount,
+          outstanding_amount: ref.outstanding_amount,
+          allocated_amount: take,
+        })
+        
+        ref.allocated_amount -= take
+        mopAmount -= take
+        
+        if (ref.allocated_amount <= 0) {
+          remainingAllocations.shift()
+        }
+      }
+
       const payload = {
         payment_type: paymentType,
         party_type: form.party_type,
@@ -940,13 +975,7 @@ async function handleSubmit() {
         cost_center: localStorage.getItem('wb-cost-center') || null,
         remarks: form.remarks,
         "Custom Remarks": 1,
-        references: mopRow === form.mop_rows[0] ? allocationRefs.value.map(r => ({
-          reference_doctype: r.reference_doctype,
-          reference_name: r.reference_name,
-          total_amount: r.total_amount,
-          outstanding_amount: r.outstanding_amount,
-          allocated_amount: parseFloat(r.allocated_amount) || 0,
-        })) : [],
+        references: currentAllocations,
       }
       
       const res = await frappePost('ssplbilling.api.paymentv2_api.create_payment_entry', {
@@ -954,10 +983,11 @@ async function handleSubmit() {
       })
       
       if (res && res.payment_entry) {
-        successDocName.value = res.payment_entry
+        createdEntries.push(res.payment_entry)
       }
     }
     
+    successDocName.value = createdEntries.join(', ')
     showSuccess.value = true
     setTimeout(() => {
       showSuccess.value = false
