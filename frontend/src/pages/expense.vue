@@ -67,6 +67,7 @@
                       :ref="el => { if (el) expenseSearchRefs[idx] = el }"
                       @click="openSearch(idx)"
                       @keydown.enter="handleAccountEnter(idx)"
+                      @keydown.end.prevent="focusReferenceNo"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       placeholder="Select Account..."
@@ -81,6 +82,7 @@
                     v-model.number="row.amount"
                     type="number" step="0.01"
                     @keydown.enter.prevent="handleAmountEnter(idx)"
+                    @keydown.end.prevent="focusReferenceNo"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
                   />
@@ -91,6 +93,7 @@
                     v-model="row.remarks"
                     :ref="el => { if (el) rowRemarksRefs[idx] = el }"
                     @keydown.enter.prevent="handleRowRemarksEnter(idx)"
+                    @keydown.end.prevent="focusReferenceNo"
                     class="w-full bg-transparent text-2xl font-bold focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] placeholder:text-inherit placeholder:opacity-30"
                     placeholder="Row notes..."
                   />
@@ -135,6 +138,7 @@
             <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
               <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Reference No</label>
               <input
+                ref="referenceNoInput"
                 v-model="form.reference_no"
                 type="text"
                 class="w-80 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-2xl font-black focus:outline-none transition-all focus:bg-black/5 placeholder:text-inherit"
@@ -227,6 +231,7 @@ const form = reactive({
 const expenseSearchRefs = ref([])
 const expenseAmountRefs = ref([])
 const rowRemarksRefs = ref([])
+const referenceNoInput = ref(null)
 const currentIdx = ref(0)
 const showSearchModal = ref(false)
 const custSearchModalRef = ref(null)
@@ -253,6 +258,11 @@ function getNewBalance(row) {
   if (row.balance === null) return 0
   const amt = parseFloat(row.amount) || 0
   return row.balance + amt
+}
+
+function focusReferenceNo() {
+  referenceNoInput.value?.focus()
+  referenceNoInput.value?.select()
 }
 
 // --- Methods ---
