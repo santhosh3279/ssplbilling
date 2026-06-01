@@ -16,8 +16,8 @@
         </button>
         <h1 class="text-2xl font-normal uppercase tracking-tight">
           Expense Entry
-          <span v-if="cashAccount.name" class="ml-4 text-sm font-bold text-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-3 py-1 rounded-full border border-[var(--color-highlight)]/20 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500">
-            <span class="opacity-60 font-medium">PAY FROM:</span> {{ cashAccount.name }}
+          <span v-if="cashAccount.name" class="ml-4 text-2xl font-normal text-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-1.5 rounded-full border border-[var(--color-highlight)]/20 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500">
+            <span class="opacity-60 font-normal">PAY FROM:</span> {{ cashAccount.name }}
           </span>
         </h1>
       </div>
