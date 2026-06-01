@@ -14,7 +14,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h1 class="text-2xl font-normal uppercase tracking-tight">Expense Entry</h1>
+        <h1 class="text-2xl font-normal uppercase tracking-tight">
+          Expense Entry
+          <span v-if="cashAccount.name" class="ml-4 text-sm font-bold text-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-3 py-1 rounded-full border border-[var(--color-highlight)]/20 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500">
+            <span class="opacity-60 font-medium">PAY FROM:</span> {{ cashAccount.name }}
+          </span>
+        </h1>
       </div>
 
       <!-- Center: Expense Entry tab -->
@@ -62,7 +67,6 @@
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-2 w-1/3">Account / Party</th>
                 <th class="px-4 py-2 text-right w-48 text-[var(--color-danger)]">Debit (Dr)</th>
-                <th class="px-4 py-2 text-right w-48 text-[var(--color-success)]">Credit (Cr)</th>
                 <th class="px-6 py-2 text-right w-64">Balance</th>
                 <th class="px-6 py-2 text-right w-64">New Balance</th>
               </tr>
@@ -74,20 +78,19 @@
                   <div class="relative">
                     <input
                       v-model="partyQuery"
-                      @click="openSearch(activeTab === 'Expense Entry' ? 'paid_to' : 'party')"
-                      @keydown.enter="openSearch(activeTab === 'Expense Entry' ? 'paid_to' : 'party')"
+                      @click="openSearch('paid_to')"
+                      @keydown.enter="openSearch('paid_to')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Expense Entry' ? 'Select Expense Account (Debit)...' : 'Search Party...'"
+                      placeholder="Select Expense Account (Debit)..."
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
                 </td>
 
                 <!-- Party Debit (Dr) -->
-                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Expense Entry' ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
+                <td class="px-4 py-1.5 transition-colors bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]">
                   <input
-                    v-if="activeTab === 'Expense Entry'"
                     ref="amountInputRef"
                     v-model.number="form.amount"
                     type="number" step="0.01"
@@ -95,12 +98,6 @@
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
                   />
-                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
-                </td>
-
-                <!-- Party Credit (Cr) -->
-                <td class="px-4 py-1.5 transition-colors bg-transparent">
-                  <div class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
                 </td>
 
                 <!-- Party Balance -->
@@ -110,14 +107,6 @@
                       <div class="text-4xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                         {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
                       </div>
-                      <button 
-                        v-if="form.party"
-                        @click="fetchInvoices"
-                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-highlight)]/10 text-xl font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-white"
-                        title="View Outstanding & Unlinked Items"
-                      >
-                        📄
-                      </button>
                     </div>
                   </div>
                   <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
@@ -133,115 +122,15 @@
                   <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
                 </td>
               </tr>
-
-              <!-- Row(s): Account Paid From/To -->
-              <tr v-for="(row, idx) in form.mop_rows" :key="idx" class="divide-x divide-[var(--color-border)]">
-                <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-                  <div class="relative">
-                    <input
-                      v-model="row.query"
-                      @click="openSearch(activeTab === 'Expense Entry' ? 'paid_from' : 'mop', idx)"
-                      @keydown.enter="openSearch(activeTab === 'Expense Entry' ? 'paid_from' : 'mop', idx)"
-                      readonly
-                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Expense Entry' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
-                    />
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
-                  </div>
-                </td>
-
-                <!-- Account Debit (Dr) -->
-                <td class="px-4 py-1.5 transition-colors bg-transparent">
-                  <div class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
-                </td>
-
-                <!-- Account Credit (Cr) -->
-                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Expense Entry' ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
-                  <input
-                    v-if="activeTab === 'Expense Entry'"
-                    :ref="el => { if (el) mopAmountRefs[idx] = el }"
-                    v-model.number="row.amount"
-                    type="number" step="0.01"
-                    @keydown.enter.prevent="handleMopAmountEnter(idx)"
-                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
-                    placeholder="0.00"
-                  />
-                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
-                </td>
-
-                <!-- Account Balance -->
-                <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
-                  <div v-if="row.balance !== null" class="flex flex-col items-end">
-                    <div class="text-4xl font-black" :class="row.balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                      {{ Math.abs(row.balance).toLocaleString('en-IN') }} {{ row.balance > 0 ? 'Dr' : 'Cr' }}
-                    </div>
-                  </div>
-                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
-                </td>
-
-                <!-- Account New Balance -->
-                <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
-                  <div v-if="row.balance !== null" class="flex flex-col items-end">
-                    <div class="text-4xl font-black" :class="getNewMopBalance(row) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                      {{ Math.abs(getNewMopBalance(row)).toLocaleString('en-IN') }} {{ getNewMopBalance(row) > 0 ? 'Dr' : 'Cr' }}
-                    </div>
-                  </div>
-                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
 
         <!-- Empty state placeholder -->
-        <div v-if="!allocationRefs.length" class="flex-1 flex items-center justify-center opacity-10">
+        <div class="flex-1 flex items-center justify-center opacity-10">
            <svg class="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
            </svg>
-        </div>
-
-        <!-- Payment References (Excel-style) -->
-        <div v-if="allocationRefs.length" class="mt-auto border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
-          <div class="flex items-center gap-2 bg-[var(--color-surface-raised)] px-4 py-1.5 border-b border-[var(--color-border)]">
-            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Payment References / Allocations</span>
-            <div class="h-px flex-1 bg-[var(--color-border)]/50"></div>
-          </div>
-          <div class="max-h-[25vh] overflow-y-auto overflow-x-hidden">
-            <table class="w-full border-collapse text-left">
-              <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)] shadow-sm">
-                <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                  <th class="px-4 py-2">MOP Account</th>
-                  <th class="px-4 py-2">Voucher No</th>
-                  <th class="px-4 py-2">Inv Type</th>
-                  <th class="px-4 py-2 text-right">Outstanding</th>
-                  <th class="px-4 py-2 text-right w-64">Allocated</th>
-                  <th class="px-4 py-2 w-16"></th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-[var(--color-border)]">
-                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name + ref.mop_idx" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-                  <td class="px-4 py-1.5 text-xl font-black text-[var(--color-highlight)]">{{ ref.mop_name }}</td>
-                  <td class="px-4 py-1.5 font-mono text-xl font-bold">{{ ref.reference_name }}</td>
-                  <td class="px-4 py-1.5 text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.reference_doctype }}</td>
-                  <td class="px-4 py-1.5 text-right font-mono text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
-                  <td class="px-2 py-1">
-                    <input
-                      v-model.number="ref.allocated_amount"
-                      type="number" step="0.01" min="0"
-                      class="allocation-ref-input w-full bg-transparent px-3 py-1 text-2xl font-black text-right focus:outline-none placeholder:text-inherit"
-                      @keydown.enter.prevent="focusNextAllocation($event)"
-                    />
-                  </td>
-                  <td class="px-4 py-1 text-right">
-                    <button
-                      @click="removeAllocation(idx)"
-                      class="h-7 w-7 rounded bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/25 text-[var(--color-danger)] flex items-center justify-center ml-auto transition-all"
-                    >✕</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </main>
@@ -269,16 +158,12 @@
             <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
               <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors flex items-center gap-1">
                 Ref No (Cheque/UPI)
-                <span v-if="form.mop_type === 'Bank'" class="text-[var(--color-danger)] text-base">*</span>
               </label>
               <input
                 ref="refNoInput"
                 v-model="form.reference_no"
                 type="text"
                 class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all focus:bg-black/5 placeholder:text-inherit"
-                :class="form.reference_no.length > 0 
-                  ? (refValid ? 'border-[var(--color-success)] bg-[var(--color-success)]/10' : 'border-[var(--color-danger)]/60 bg-[var(--color-surface-raised)]')
-                  : (form.mop_type === 'Bank' ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/5' : 'border-[var(--color-border)] bg-[var(--color-surface-raised)]')"
                 placeholder="Ref / Chq No..."
                 @keydown.enter.prevent="saveBtn?.focus()"
               />            </div>
@@ -289,14 +174,6 @@
                 type="date"
                 class="w-36 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:bg-black/5 focus:outline-none transition-all"
               />
-            </div>
-          </div>
-
-          <!-- Right: Summary -->
-          <div v-if="allocationRefs.length" class="flex flex-col text-right">
-            <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allocated Amount</div>
-            <div class="text-2xl font-black text-[var(--color-success)]">
-              {{ totalAllocated.toLocaleString('en-IN') }}
             </div>
           </div>
         </div>
@@ -404,6 +281,28 @@ const selectionIdx = ref(0) // 0 = Expense Entry
 const ENTRY_TYPES = ['Expense Entry']
 
 const currentMopRowIdx = ref(0)
+
+const cashAccount = ref({
+  account: localStorage.getItem('wb-cash') || '',
+  name: '',
+  balance: null
+})
+
+async function fetchCashAccountDetails() {
+  if (!cashAccount.value.account) return
+  try {
+    const res = await frappeGet('ssplbilling.api.expense_api.get_ledger', {
+      ledger_name: cashAccount.value.account,
+      ledger_type: 'Account',
+    })
+    if (res) {
+      cashAccount.value.name = res.account_name || res.label || cashAccount.value.account
+      cashAccount.value.balance = res.closing_balance
+    }
+  } catch (e) {
+    console.error('Failed to fetch cash account details:', e)
+  }
+}
 
 function addMopRow() {
   form.mop_rows.push({
@@ -544,18 +443,7 @@ const totalMopAmount = computed(() =>
 )
 
 const isFormValid = computed(() => {
-  const basic = form.party && form.amount > 0 && form.mop_rows.length > 0 && form.mop_rows.every(r => r.account && r.amount > 0)
-  if (!basic) return false
-  
-  // Total MOP must match Party amount
-  if (Math.abs(totalMopAmount.value - form.amount) > 0.01) return false
-
-  // If any MOP is a bank account, Reference No is mandatory
-  const hasBank = form.mop_rows.some(r => r.type === 'Bank')
-  if (hasBank) {
-    return form.reference_no.replace(/\s/g, '').length > 0
-  }
-  return true
+  return form.party && form.amount > 0 && cashAccount.value.account
 })
 
 const newBalance = computed(() => {
@@ -565,13 +453,12 @@ const newBalance = computed(() => {
   return outstandingBalance.value + amt
 })
 
-// MOP row balances
-const getNewMopBalance = (row) => {
-  if (row.balance === null) return 0
-  const amt = parseFloat(row.amount) || 0
-  // MOP Account is Credited for Expense
-  return row.balance - amt
-}
+// Cash row balance calculation (not used in table but good for logic)
+const newCashBalance = computed(() => {
+  if (cashAccount.value.balance === null) return 0
+  const amt = parseFloat(form.amount) || 0
+  return cashAccount.value.balance - amt
+})
 
 const invoiceDocType = computed(() =>
   form.party_type === 'Customer' ? 'Sales Invoice' : 'Purchase Invoice'
@@ -856,20 +743,7 @@ function resetForm() {
   form.amount = null
   form.remarks = ''
   outstandingBalance.value = null
-  form.mop_rows = []
-  addMopRow()
-  invoices.value = []
-  unlinkedPayments.value = []
-  unlinkedJournals.value = []
-  clearModalAmounts()
-
-  if (form.party_type === 'Customer') {
-    form.account = 'Debtors - SSPL'
-    accountQuery.value = 'Debtors'
-  } else {
-    form.account = 'Creditors - SSPL'
-    accountQuery.value = 'Creditors'
-  }
+  fetchCashAccountDetails()
   
   form.reference_no = ''
   form.reference_date = new Date().toISOString().split('T')[0]
@@ -879,46 +753,39 @@ async function handleSubmit() {
   if (!isFormValid.value) return
   submitting.value = true
   
-  const createdEntries = []
   try {
-    const paymentType = 'Internal Transfer'
-
-    for (const mopRow of form.mop_rows) {
-      const payload = {
-        payment_type: paymentType,
-        party_type: '',
-        party: mopRow.account,
-        amount: mopRow.amount,
-        mode_of_payment: mopRow.type === 'Bank' ? 'Bank' : 'Cash',
-        account: form.party,
-        posting_date: postingDate.value,
-        reference_no: form.reference_no,
-        reference_date: form.reference_date,
-        cost_center: localStorage.getItem('wb-cost-center') || null,
-        remarks: form.remarks,
-        "Custom Remarks": 1,
-        references: [],
-      }
-      
-      const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
-        data: JSON.stringify(payload)
-      })
-      
-      if (res && res.payment_entry) {
-        createdEntries.push(res.payment_entry)
-      }
+    const payload = {
+      payment_type: 'Internal Transfer',
+      party_type: '',
+      party: cashAccount.value.account,
+      amount: form.amount,
+      mode_of_payment: 'Cash',
+      account: form.party,
+      posting_date: postingDate.value,
+      reference_no: form.reference_no,
+      reference_date: form.reference_date,
+      cost_center: localStorage.getItem('wb-cost-center') || null,
+      remarks: form.remarks,
+      "Custom Remarks": 1,
+      references: [],
     }
     
-    successDocName.value = createdEntries.join(', ')
-    showSuccess.value = true
-    setTimeout(() => {
-      showSuccess.value = false
-      window.location.reload()
-    }, 1500)
+    const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
+      data: JSON.stringify(payload)
+    })
+    
+    if (res && res.payment_entry) {
+      successDocName.value = res.payment_entry
+      showSuccess.value = true
+      setTimeout(() => {
+        showSuccess.value = false
+        window.location.reload()
+      }, 1500)
+    }
     
   } catch (e) {
     console.error('Submission failed:', e)
-    alert('Failed to create payment entry: ' + (e.message || e))
+    alert('Failed to create expense entry: ' + (e.message || e))
   } finally {
     submitting.value = false
   }
@@ -928,7 +795,10 @@ async function handleSubmit() {
 onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
-  selectEntryType('Expense Entry')
+  fetchCashAccountDetails()
+  setTimeout(() => {
+    openSearch('party')
+  }, 300)
 })
 
 watch(activeTab, () => {
