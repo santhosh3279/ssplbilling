@@ -53,6 +53,7 @@
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-2 w-1/3">Expense Account</th>
                 <th class="px-4 py-2 text-right w-48 text-[var(--color-danger)]">Debit (Dr)</th>
+                <th class="px-4 py-2 w-1/4">Remarks</th>
                 <th class="px-6 py-2 text-right w-64">Balance</th>
                 <th class="px-6 py-2 text-right w-64">New Balance</th>
               </tr>
@@ -83,6 +84,16 @@
                     @keydown.enter.prevent="handleAmountEnter(idx)"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
+                  />
+                </td>
+
+                <td class="px-2 py-1.5 transition-colors focus-within:bg-[var(--color-focus)]">
+                  <input
+                    v-model="row.remarks"
+                    :ref="el => { if (el) rowRemarksRefs[idx] = el }"
+                    @keydown.enter.prevent="handleRowRemarksEnter(idx)"
+                    class="w-full bg-transparent text-2xl font-bold focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] placeholder:text-inherit placeholder:opacity-30"
+                    placeholder="Row notes..."
                   />
                 </td>
 
@@ -219,7 +230,7 @@ const cashAccount = ref({
 
 const form = reactive({
   rows: [
-    { account: '', account_name: '', amount: null, query: '', balance: null }
+    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '' }
   ],
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0],
@@ -228,6 +239,7 @@ const form = reactive({
 
 const expenseSearchRefs = ref([])
 const expenseAmountRefs = ref([])
+const rowRemarksRefs = ref([])
 const remarksInput = ref(null)
 const currentIdx = ref(0)
 const showSearchModal = ref(false)
@@ -336,16 +348,24 @@ async function fetchRowBalance(idx) {
 function handleAmountEnter(idx) {
   const row = form.rows[idx]
   if (row.amount > 0 && row.account) {
-    if (idx === form.rows.length - 1) {
-      form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null })
-      nextTick(() => {
-        setTimeout(() => {
-          expenseSearchRefs.value[idx + 1]?.focus()
-        }, 50)
-      })
-    } else {
-      expenseSearchRefs.value[idx + 1]?.focus()
-    }
+    nextTick(() => {
+      setTimeout(() => {
+        rowRemarksRefs.value[idx]?.focus()
+      }, 50)
+    })
+  }
+}
+
+function handleRowRemarksEnter(idx) {
+  if (idx === form.rows.length - 1) {
+    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '' })
+    nextTick(() => {
+      setTimeout(() => {
+        expenseSearchRefs.value[idx + 1]?.focus()
+      }, 50)
+    })
+  } else {
+    expenseSearchRefs.value[idx + 1]?.focus()
   }
 }
 
@@ -356,6 +376,12 @@ async function handleSubmit() {
   try {
     const validRows = form.rows.filter(r => r.account && r.amount > 0)
     for (const row of validRows) {
+      // Combine shared remarks and row specific remarks
+      let combinedRemarks = form.remarks || ''
+      if (row.remarks) {
+        combinedRemarks = combinedRemarks ? `${combinedRemarks} | ${row.remarks}` : row.remarks
+      }
+
       const payload = {
         payment_type: 'Internal Transfer',
         party: cashAccount.value.account,
@@ -366,7 +392,7 @@ async function handleSubmit() {
         reference_no: form.reference_no,
         reference_date: form.reference_date,
         cost_center: localStorage.getItem('wb-cost-center'),
-        remarks: form.remarks,
+        remarks: combinedRemarks,
         "Custom Remarks": 1
       }
       const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
