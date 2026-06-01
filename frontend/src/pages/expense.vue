@@ -67,7 +67,6 @@
                       :ref="el => { if (el) expenseSearchRefs[idx] = el }"
                       @click="openSearch(idx)"
                       @keydown.enter="handleAccountEnter(idx)"
-                      @keydown.end.prevent="focusRemarks"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       placeholder="Select Account..."
@@ -132,18 +131,7 @@
       <div class="flex items-center justify-between gap-8">
         
         <div class="flex items-center gap-8 flex-1">
-          <div class="flex-1 max-w-xl flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Shared Remarks</label>
-            <textarea
-              ref="remarksInput"
-              v-model="form.remarks"
-              rows="2"
-              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:bg-black/5 focus:outline-none transition-all resize-none placeholder:text-inherit"
-              placeholder="Add internal notes for all rows..."
-            ></textarea>
-          </div>
-
-          <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
+          <div class="flex items-center gap-6 border-r border-[var(--color-border)] px-8">
             <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
               <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Reference No</label>
               <input
@@ -233,14 +221,12 @@ const form = reactive({
     { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '' }
   ],
   reference_no: '',
-  reference_date: new Date().toISOString().split('T')[0],
-  remarks: ''
+  reference_date: new Date().toISOString().split('T')[0]
 })
 
 const expenseSearchRefs = ref([])
 const expenseAmountRefs = ref([])
 const rowRemarksRefs = ref([])
-const remarksInput = ref(null)
 const currentIdx = ref(0)
 const showSearchModal = ref(false)
 const custSearchModalRef = ref(null)
@@ -267,10 +253,6 @@ function getNewBalance(row) {
   if (row.balance === null) return 0
   const amt = parseFloat(row.amount) || 0
   return row.balance + amt
-}
-
-function focusRemarks() {
-  remarksInput.value?.focus()
 }
 
 // --- Methods ---
@@ -376,12 +358,6 @@ async function handleSubmit() {
   try {
     const validRows = form.rows.filter(r => r.account && r.amount > 0)
     for (const row of validRows) {
-      // Combine shared remarks and row specific remarks
-      let combinedRemarks = form.remarks || ''
-      if (row.remarks) {
-        combinedRemarks = combinedRemarks ? `${combinedRemarks} | ${row.remarks}` : row.remarks
-      }
-
       const payload = {
         payment_type: 'Internal Transfer',
         party: cashAccount.value.account,
@@ -392,7 +368,7 @@ async function handleSubmit() {
         reference_no: form.reference_no,
         reference_date: form.reference_date,
         cost_center: localStorage.getItem('wb-cost-center'),
-        remarks: combinedRemarks,
+        remarks: row.remarks || '',
         "Custom Remarks": 1
       }
       const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
