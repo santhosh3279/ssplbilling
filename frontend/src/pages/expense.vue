@@ -141,6 +141,7 @@
                 ref="referenceNoInput"
                 v-model="form.reference_no"
                 type="text"
+                @keydown.enter.prevent="focusReferenceDate"
                 class="w-80 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-2xl font-black focus:outline-none transition-all focus:bg-black/5 placeholder:text-inherit"
                 placeholder="Ref / Chq No..."
               />
@@ -148,8 +149,10 @@
             <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref Date</label>
               <input
+                ref="referenceDateInput"
                 v-model="form.reference_date"
                 type="date"
+                @keydown.enter.prevent="focusPostButton"
                 class="w-36 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold focus:bg-black/5 focus:outline-none transition-all"
               />
             </div>
@@ -158,6 +161,7 @@
 
         <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
           <button
+            ref="postButtonRef"
             @click="handleSubmit"
             :disabled="submitting || !isFormValid"
             class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 focus:outline-none focus:ring-8 focus:ring-[var(--color-focus)]/50"
@@ -232,6 +236,8 @@ const expenseSearchRefs = ref([])
 const expenseAmountRefs = ref([])
 const rowRemarksRefs = ref([])
 const referenceNoInput = ref(null)
+const referenceDateInput = ref(null)
+const postButtonRef = ref(null)
 const currentIdx = ref(0)
 const showSearchModal = ref(false)
 const custSearchModalRef = ref(null)
@@ -263,6 +269,14 @@ function getNewBalance(row) {
 function focusReferenceNo() {
   referenceNoInput.value?.focus()
   referenceNoInput.value?.select()
+}
+
+function focusReferenceDate() {
+  referenceDateInput.value?.focus()
+}
+
+function focusPostButton() {
+  postButtonRef.value?.focus()
 }
 
 // --- Methods ---
