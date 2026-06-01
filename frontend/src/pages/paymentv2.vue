@@ -837,6 +837,7 @@ function continueAfterMop(idx) {
   if (diff > 0.01) {
     addMopRow()
     const nextIdx = form.mop_rows.length - 1
+    form.mop_rows[nextIdx].amount = parseFloat(diff.toFixed(2))
     // Wait for modal to close and new row to render
     setTimeout(() => {
       openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', nextIdx)
