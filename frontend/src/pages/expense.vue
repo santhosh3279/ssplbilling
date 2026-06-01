@@ -66,6 +66,7 @@
                       :ref="el => { if (el) expenseSearchRefs[idx] = el }"
                       @click="openSearch(idx)"
                       @keydown.enter="handleAccountEnter(idx)"
+                      @keydown.end.prevent="focusRemarks"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       placeholder="Select Account..."
@@ -123,6 +124,7 @@
           <div class="flex-1 max-w-xl flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Shared Remarks</label>
             <textarea
+              ref="remarksInput"
               v-model="form.remarks"
               rows="2"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:bg-black/5 focus:outline-none transition-all resize-none placeholder:text-inherit"
@@ -226,6 +228,7 @@ const form = reactive({
 
 const expenseSearchRefs = ref([])
 const expenseAmountRefs = ref([])
+const remarksInput = ref(null)
 const currentIdx = ref(0)
 const showSearchModal = ref(false)
 const custSearchModalRef = ref(null)
@@ -252,6 +255,10 @@ function getNewBalance(row) {
   if (row.balance === null) return 0
   const amt = parseFloat(row.amount) || 0
   return row.balance + amt
+}
+
+function focusRemarks() {
+  remarksInput.value?.focus()
 }
 
 // --- Methods ---
