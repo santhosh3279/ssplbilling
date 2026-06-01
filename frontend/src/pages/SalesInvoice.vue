@@ -28,6 +28,7 @@
       :is-inclusive-tax="isInclusiveTax"
       :is-return="isReturn"
       :warehouse="warehouse"
+      doctype="Sales Invoice"
       :cost-center="costCenter"
       :income-account="incomeAccount"
       :sidebar-date="sidebarDate"

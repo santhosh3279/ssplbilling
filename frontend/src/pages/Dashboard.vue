@@ -207,6 +207,7 @@
         doc-date="06-Apr-2026"
         sidebar-date="06-04-2026"
         sidebar-search=""
+        doctype="Sales Invoice"
         :sidebar-series="['ALL']"
         :available-series="['ALL', 'RETL', 'WHSL']"
         :draft-only="true"

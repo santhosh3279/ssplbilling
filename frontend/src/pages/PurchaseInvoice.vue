@@ -24,6 +24,7 @@
       :is-return="isReturn"
       :warehouse="warehouse"
       :cost-center="costCenter"
+      doctype="Purchase Invoice"
       :income-account="''"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentInvoices"

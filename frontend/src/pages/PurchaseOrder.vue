@@ -24,6 +24,7 @@
       :is-return="false"
       :warehouse="warehouse"
       :cost-center="costCenter"
+      doctype="Purchase Order"
       :income-account="''"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentOrders"

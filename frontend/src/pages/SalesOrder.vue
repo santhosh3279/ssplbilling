@@ -27,6 +27,7 @@
       :is-return="isReturn"
       :warehouse="warehouse"
       :cost-center="costCenter"
+      doctype="Sales Order"
       :income-account="incomeAccount"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentInvoices"

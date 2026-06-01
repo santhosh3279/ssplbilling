@@ -28,6 +28,7 @@
       :is-return="false"
       :warehouse="warehouse"
       :cost-center="costCenter"
+      doctype="Quotation"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentQuotations"
       :sidebar-search="sidebarSearch"

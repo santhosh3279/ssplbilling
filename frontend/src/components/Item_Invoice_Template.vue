@@ -131,6 +131,17 @@
           <button v-if="showBackButton" class="rounded px-2 py-1 text-2xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back</button>
           <span v-if="showBackButton" class="text-[var(--color-border)] text-2xl">|</span>
           <span class="text-2xl font-semibold text-[var(--color-text)]">{{ title }}</span>
+
+          <!-- ERPNext Links -->
+          <div class="ml-4 flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-full border border-[var(--color-border)] shadow-sm">
+            <a :href="erpNextListUrl" target="_blank" title="Go to ERPNext Listview" class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:text-[var(--color-highlight)] transition-colors">List</a>
+            <span class="h-3 w-px bg-[var(--color-border)] opacity-50"></span>
+            <a :href="`/app/${doctype.toLowerCase().replace(/ /g, '-')}/new`" target="_blank" title="Create New in ERPNext" class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:text-[var(--color-highlight)] transition-colors">New</a>
+            <template v-if="docNumber">
+              <span class="h-3 w-px bg-[var(--color-border)] opacity-50"></span>
+              <a :href="erpNextUrl" target="_blank" title="Open this document in ERPNext" class="text-xs font-black uppercase tracking-wider text-[var(--color-highlight)] hover:underline">Open</a>
+            </template>
+          </div>
         </div>
         <div class="flex items-center gap-3 text-xl text-[var(--color-text-muted)]">
           <slot name="header-right"></slot>
@@ -592,7 +603,8 @@ const props = defineProps({
   saveButtonText: { type: String, default: 'Save' },
   isReadOnly: { type: Boolean, default: false },
   showSubmitButton: { type: Boolean, default: false },
-  isDraft: { type: Boolean, default: false }
+  isDraft: { type: Boolean, default: false },
+  doctype: { type: String, default: 'Sales Invoice' }
 })
 
 const emit = defineEmits([
@@ -606,6 +618,19 @@ const emit = defineEmits([
 
 const { isTablet } = useDevice()
 const { isSidebarCollapsed } = useLayout()
+
+const erpNextUrl = computed(() => {
+  const slug = props.doctype.toLowerCase().replace(/ /g, '-')
+  if (props.docNumber) {
+    return `/app/${slug}/${props.docNumber}`
+  }
+  return `/app/${slug}/new`
+})
+
+const erpNextListUrl = computed(() => {
+  const slug = props.doctype.toLowerCase().replace(/ /g, '-')
+  return `/app/${slug}`
+})
 
 onMounted(() => {
   if (isTablet.value) {
