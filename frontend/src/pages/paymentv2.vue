@@ -837,11 +837,15 @@ function continueAfterMop(idx) {
   if (diff > 0.01) {
     addMopRow()
     const nextIdx = form.mop_rows.length - 1
+    // Wait for modal to close and new row to render
     setTimeout(() => {
       openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', nextIdx)
-    }, 50)
+    }, 150)
   } else {
-    remarksInput.value?.focus()
+    // Wait for modal to close
+    setTimeout(() => {
+      remarksInput.value?.focus()
+    }, 150)
   }
 }
 
