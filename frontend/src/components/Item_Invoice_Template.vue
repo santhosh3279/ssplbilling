@@ -534,7 +534,7 @@
  * A reusable UI template component based on SalesEntry.vue
  */
 
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useDevice } from '../composables/useDevice'
 import { useLayout } from '../composables/useLayout'
 
