@@ -51,41 +51,6 @@
       </div>
     </header>
 
-    <!-- Initial Selection Overlay -->
-    <div
-      v-if="showInitialSelection"
-      ref="selectionOverlayRef"
-      tabindex="0"
-      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md outline-none"
-      @keydown="onSelectionKeydown"
-    >
-      <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-12 text-center shadow-2xl border border-[var(--color-border)] relative">
-        <!-- Close/Back -->
-        <button
-          @click="router.push('/')"
-          class="absolute top-6 left-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-midlight)]/20 hover:bg-[var(--color-midlight)] transition-colors"
-        >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </button>
-
-        <h2 class="mb-10 text-5xl font-black uppercase tracking-tight">Select Entry Type</h2>
-        <div class="flex justify-center">
-          <button
-            @click="selectEntryType('Expense Entry')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl"
-          >
-            <span class="text-8xl">💸</span>
-            <span class="text-4xl font-black uppercase">Expense Entry</span>
-          </button>
-        </div>
-        <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
-          ← → or Tab to navigate &nbsp;·&nbsp; Enter to select &nbsp;·&nbsp; Esc to go back
-        </p>
-      </div>
-    </div>
-
     <!-- Main Content -->
     <main class="flex-1 overflow-hidden p-4">
       <div class="flex h-full flex-col gap-4">
@@ -428,7 +393,7 @@ const router = useRouter()
 
 // --- State ---
 const activeTab = ref('Expense Entry')
-const showInitialSelection = ref(true)
+const showInitialSelection = ref(false)
 const amountInputRef = ref(null)
 const mopAmountRefs = ref([])
 const remarksInput = ref(null)
@@ -963,7 +928,7 @@ async function handleSubmit() {
 onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
-  nextTick(() => selectionOverlayRef.value?.focus())
+  selectEntryType('Expense Entry')
 })
 
 watch(activeTab, () => {
