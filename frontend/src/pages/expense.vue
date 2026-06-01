@@ -2,8 +2,7 @@
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- Header -->
     <header 
-      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
-      :class="activeTab === 'Payment' ? 'bg-red-500/30' : activeTab === 'Receipt' ? 'bg-green-500/30' : 'bg-blue-500/30'"
+      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300 bg-blue-500/30"
     >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
@@ -18,18 +17,13 @@
         <h1 class="text-2xl font-normal uppercase tracking-tight">Expense Entry</h1>
       </div>
 
-      <!-- Center: Payment / Receipt / Transfer tabs -->
+      <!-- Center: Expense Entry tab -->
       <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
         <button
-          v-for="t in ['Payment', 'Receipt', 'Internal Transfer']"
-          :key="t"
-          @click="activeTab = t"
-          class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
-          :class="activeTab === t
-            ? 'bg-[var(--color-highlight)] text-white shadow-sm'
-            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
+          @click="activeTab = 'Expense Entry'"
+          class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200 bg-[var(--color-highlight)] text-white shadow-sm"
         >
-          {{ t }}
+          Expense Entry
         </button>
       </div>
 
@@ -77,36 +71,13 @@
         </button>
 
         <h2 class="mb-10 text-5xl font-black uppercase tracking-tight">Select Entry Type</h2>
-        <div class="grid grid-cols-3 gap-8">
+        <div class="flex justify-center">
           <button
-            @click="selectEntryType('Payment')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
-            :class="selectionIdx === 0
-              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
-              : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500'"
+            @click="selectEntryType('Expense Entry')"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl"
           >
             <span class="text-8xl">💸</span>
-            <span class="text-4xl font-black uppercase">Payment</span>
-          </button>
-          <button
-            @click="selectEntryType('Receipt')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
-            :class="selectionIdx === 1
-              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
-              : 'bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20 hover:border-green-500'"
-          >
-            <span class="text-8xl">💰</span>
-            <span class="text-4xl font-black uppercase">Receipt</span>
-          </button>
-          <button
-            @click="selectEntryType('Internal Transfer')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
-            :class="selectionIdx === 2
-              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
-              : 'bg-blue-500/10 border-blue-500/30 text-blue-500 hover:bg-blue-500/20 hover:border-blue-500'"
-          >
-            <span class="text-8xl">🔄</span>
-            <span class="text-4xl font-black uppercase">Internal Transfer</span>
+            <span class="text-4xl font-black uppercase">Expense Entry</span>
           </button>
         </div>
         <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -138,20 +109,20 @@
                   <div class="relative">
                     <input
                       v-model="partyQuery"
-                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
-                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
+                      @click="openSearch(activeTab === 'Expense Entry' ? 'paid_to' : 'party')"
+                      @keydown.enter="openSearch(activeTab === 'Expense Entry' ? 'paid_to' : 'party')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Internal Transfer' ? 'Select Internal Transfer/Asset (Debit)...' : 'Search Party...'"
+                      :placeholder="activeTab === 'Expense Entry' ? 'Select Expense Account (Debit)...' : 'Search Party...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
                 </td>
 
                 <!-- Party Debit (Dr) -->
-                <td class="px-4 py-1.5 transition-colors" :class="(activeTab === 'Payment' || activeTab === 'Internal Transfer') ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
+                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Expense Entry' ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
                   <input
-                    v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'"
+                    v-if="activeTab === 'Expense Entry'"
                     ref="amountInputRef"
                     v-model.number="form.amount"
                     type="number" step="0.01"
@@ -163,17 +134,8 @@
                 </td>
 
                 <!-- Party Credit (Cr) -->
-                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Receipt' ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
-                  <input
-                    v-if="activeTab === 'Receipt'"
-                    ref="amountInputRef"
-                    v-model.number="form.amount"
-                    type="number" step="0.01"
-                    @keydown.enter.prevent="handleAmountEnter"
-                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
-                    placeholder="0.00"
-                  />
-                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
+                <td class="px-4 py-1.5 transition-colors bg-transparent">
+                  <div class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
                 </td>
 
                 <!-- Party Balance -->
@@ -213,34 +175,25 @@
                   <div class="relative">
                     <input
                       v-model="row.query"
-                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
-                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
+                      @click="openSearch(activeTab === 'Expense Entry' ? 'paid_from' : 'mop', idx)"
+                      @keydown.enter="openSearch(activeTab === 'Expense Entry' ? 'paid_from' : 'mop', idx)"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Internal Transfer' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
+                      :placeholder="activeTab === 'Expense Entry' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
                 </td>
 
                 <!-- Account Debit (Dr) -->
-                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Receipt' ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
-                  <input
-                    v-if="activeTab === 'Receipt'"
-                    :ref="el => { if (el) mopAmountRefs[idx] = el }"
-                    v-model.number="row.amount"
-                    type="number" step="0.01"
-                    @keydown.enter.prevent="handleMopAmountEnter(idx)"
-                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
-                    placeholder="0.00"
-                  />
-                  <div v-else class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
+                <td class="px-4 py-1.5 transition-colors bg-transparent">
+                  <div class="text-right text-[var(--color-text-muted)] opacity-20 text-4xl">—</div>
                 </td>
 
                 <!-- Account Credit (Cr) -->
-                <td class="px-4 py-1.5 transition-colors" :class="(activeTab === 'Payment' || activeTab === 'Internal Transfer') ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
+                <td class="px-4 py-1.5 transition-colors" :class="activeTab === 'Expense Entry' ? 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-transparent'">
                   <input
-                    v-if="activeTab === 'Payment' || activeTab === 'Internal Transfer'"
+                    v-if="activeTab === 'Expense Entry'"
                     :ref="el => { if (el) mopAmountRefs[idx] = el }"
                     v-model.number="row.amount"
                     type="number" step="0.01"
@@ -474,7 +427,7 @@ import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
 const router = useRouter()
 
 // --- State ---
-const activeTab = ref('Payment')
+const activeTab = ref('Expense Entry')
 const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
 const mopAmountRefs = ref([])
@@ -482,8 +435,8 @@ const remarksInput = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
 const selectionOverlayRef = ref(null)
-const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt, 2 = Internal Transfer
-const ENTRY_TYPES = ['Payment', 'Receipt', 'Internal Transfer']
+const selectionIdx = ref(0) // 0 = Expense Entry
+const ENTRY_TYPES = ['Expense Entry']
 
 const currentMopRowIdx = ref(0)
 
@@ -643,18 +596,16 @@ const isFormValid = computed(() => {
 const newBalance = computed(() => {
   if (outstandingBalance.value === null) return 0
   const amt = parseFloat(form.amount) || 0
-  // Party is Debited for Payment/Transfer, Credited for Receipt
-  if (activeTab.value === 'Payment' || activeTab.value === 'Internal Transfer') return outstandingBalance.value + amt
-  return outstandingBalance.value - amt
+  // Party is Debited for Expense
+  return outstandingBalance.value + amt
 })
 
 // MOP row balances
 const getNewMopBalance = (row) => {
   if (row.balance === null) return 0
   const amt = parseFloat(row.amount) || 0
-  // MOP Account is Credited for Payment/Transfer, Debited for Receipt
-  if (activeTab.value === 'Payment' || activeTab.value === 'Internal Transfer') return row.balance - amt
-  return row.balance + amt
+  // MOP Account is Credited for Expense
+  return row.balance - amt
 }
 
 const invoiceDocType = computed(() =>
@@ -683,34 +634,18 @@ const searchTarget = ref('party')
 const showSearchModal = ref(false)
 
 const modalTitle = computed(() => {
-  if (activeTab.value === 'Internal Transfer') {
-    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Internal Transfer - Paid To' : 'Internal Transfer - Paid From'
-  }
-  const type = activeTab.value // Payment or Receipt
-  return searchTarget.value === 'party' ? `${type} - Party Name` : `${type} - Mode of Payment`
+  return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Expense Entry - Account Paid To' : 'Expense Entry - Account Paid From'
 })
 
 const modalSubtitle = computed(() => {
-  if (activeTab.value === 'Internal Transfer') {
-    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Select Account Paid To (Debit)' : 'Select Account Paid From (Credit)'
-  }
-  if (activeTab.value === 'Payment') {
-    return searchTarget.value === 'party' ? 'Select Party to Pay (Debit)' : 'Select Account Paid From (Credit)'
-  }
-  if (activeTab.value === 'Receipt') {
-    return searchTarget.value === 'party' ? 'Select Party to Receive From (Credit)' : 'Select Account Paid To (Debit)'
-  }
-  return ''
+  return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Select Expense/Asset Account (Debit)' : 'Select Bank/Cash Account (Credit)'
 })
 
 const allowedTypes = computed(() => {
-  if (activeTab.value === 'Internal Transfer') return ['Account']
-  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee']
   return ['Account']
 })
 
 const initialSearchType = computed(() => {
-  if (searchTarget.value === 'party') return 'All'
   return 'Account'
 })
 
@@ -835,18 +770,28 @@ function handleMopAmountEnter(idx) {
 function continueAfterMop(idx) {
   const diff = form.amount - totalMopAmount.value
   if (diff > 0.01) {
-    addMopRow()
-    const nextIdx = form.mop_rows.length - 1
+    const lastIdx = form.mop_rows.length - 1
+    const lastRow = form.mop_rows[lastIdx]
+    let nextIdx
+    
+    if (lastRow && !lastRow.account) {
+      nextIdx = lastIdx
+    } else {
+      addMopRow()
+      nextIdx = form.mop_rows.length - 1
+    }
+    
+    currentMopRowIdx.value = nextIdx
     form.mop_rows[nextIdx].amount = parseFloat(diff.toFixed(2))
     // Wait for modal to close and new row to render
     setTimeout(() => {
-      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', nextIdx)
-    }, 150)
+      openSearch(activeTab.value === 'Expense Entry' ? 'paid_from' : 'mop', nextIdx)
+    }, 100)
   } else {
     // Wait for modal to close
     setTimeout(() => {
       remarksInput.value?.focus()
-    }, 150)
+    }, 100)
   }
 }
 
@@ -861,7 +806,7 @@ function handleAmountEnter() {
     }
     // Chain to first MOP selection instead of opening invoices
     nextTick(() => {
-      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', 0)
+      openSearch(activeTab.value === 'Expense Entry' ? 'paid_from' : 'mop', 0)
     })
   }
 }
@@ -971,31 +916,23 @@ async function handleSubmit() {
   
   const createdEntries = []
   try {
-    let paymentType = 'Pay'
-    if (activeTab.value === 'Receipt') paymentType = 'Receive'
-    else if (activeTab.value === 'Internal Transfer') paymentType = 'Internal Transfer'
+    const paymentType = 'Internal Transfer'
 
     for (const mopRow of form.mop_rows) {
       const payload = {
         payment_type: paymentType,
-        party_type: form.party_type,
-        party: activeTab.value === 'Internal Transfer' ? mopRow.account : form.party,
+        party_type: '',
+        party: mopRow.account,
         amount: mopRow.amount,
         mode_of_payment: mopRow.type === 'Bank' ? 'Bank' : 'Cash',
-        account: activeTab.value === 'Internal Transfer' ? form.party : mopRow.account,
+        account: form.party,
         posting_date: postingDate.value,
         reference_no: form.reference_no,
         reference_date: form.reference_date,
         cost_center: localStorage.getItem('wb-cost-center') || null,
         remarks: form.remarks,
         "Custom Remarks": 1,
-        references: (mopRow.allocations || []).map(r => ({
-          reference_doctype: r.reference_doctype,
-          reference_name: r.reference_name,
-          total_amount: r.total_amount,
-          outstanding_amount: r.outstanding_amount,
-          allocated_amount: parseFloat(r.allocated_amount) || 0,
-        })),
+        references: [],
       }
       
       const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
