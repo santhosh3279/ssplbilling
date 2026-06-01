@@ -34,8 +34,15 @@ import SingleEntry from './pages/SingleEntry.vue'
 import Cancellation from './pages/Cancellation.vue'
 import PartyLink from './pages/PartyLink.vue'
 import NamingSettings from './pages/NamingSettings.vue'
+import Expense from './pages/expense.vue'
 
 const routes = [
+  {
+    path: '/expense',
+    name: 'Expense',
+    component: Expense,
+    meta: { title: 'Expense Entry' },
+  },
   {
     path: '/login',
     name: 'Login',
