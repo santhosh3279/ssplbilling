@@ -22,36 +22,23 @@
         </h1>
       </div>
 
-      <!-- Center: Expense Entry tab -->
+      <!-- Center: Status -->
       <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
-        <button
-          @click="activeTab = 'Expense Entry'"
-          class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200 bg-[var(--color-highlight)] text-white shadow-sm"
-        >
-          Expense Entry
-        </button>
+        <div class="px-4 py-1 text-2xl font-black uppercase tracking-wide text-[var(--color-highlight)]">
+          CASH EXPENSE
+        </div>
       </div>
 
-      <!-- Right: Posting Date with arrow nav -->
+      <!-- Right: Posting Date -->
       <div class="flex items-center gap-2">
         <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
-          <button
-            @click="adjustDate(-1)"
-            class="rounded-l-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors focus:bg-black/10"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
+          <button @click="adjustDate(-1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
           <div class="relative min-w-[110px] px-3 py-1.5 text-center">
             <span class="text-2xl">{{ displayDate }}</span>
             <input type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer focus:outline-none" />
           </div>
-          <button
-            @click="adjustDate(1)"
-            class="rounded-r-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors focus:bg-black/10"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-          </button>
+          <button @click="adjustDate(1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>
         </div>
       </div>
     </header>
@@ -60,74 +47,67 @@
     <main class="flex-1 overflow-hidden p-4">
       <div class="flex h-full flex-col gap-4">
         
-        <!-- Form Row (Table Style) -->
         <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-4 py-2 w-1/3">Account / Party</th>
+                <th class="px-4 py-2 w-1/3">Expense Account</th>
                 <th class="px-4 py-2 text-right w-48 text-[var(--color-danger)]">Debit (Dr)</th>
                 <th class="px-6 py-2 text-right w-64">Balance</th>
                 <th class="px-6 py-2 text-right w-64">New Balance</th>
               </tr>
             </thead>
             <tbody>
-              <!-- Row 1: Party Name / Paid To -->
-              <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
+              <tr v-for="(row, idx) in form.rows" :key="idx" class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
-                      v-model="partyQuery"
-                      @click="openSearch('paid_to')"
-                      @keydown.enter="openSearch('paid_to')"
+                      v-model="row.query"
+                      :ref="el => { if (el) expenseSearchRefs[idx] = el }"
+                      @click="openSearch(idx)"
+                      @keydown.enter="handleAccountEnter(idx)"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      placeholder="Select Expense Account (Debit)..."
+                      placeholder="Select Account..."
                     />
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Search (Enter)</div>
                   </div>
                 </td>
 
-                <!-- Party Debit (Dr) -->
                 <td class="px-4 py-1.5 transition-colors bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]">
                   <input
-                    ref="amountInputRef"
-                    v-model.number="form.amount"
+                    :ref="el => { if (el) expenseAmountRefs[idx] = el }"
+                    v-model.number="row.amount"
                     type="number" step="0.01"
-                    @keydown.enter.prevent="handleAmountEnter"
+                    @keydown.enter.prevent="handleAmountEnter(idx)"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                     placeholder="0.00"
                   />
                 </td>
 
-                <!-- Party Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
-                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
-                    <div class="flex items-center gap-3">
-                      <div class="text-4xl font-black" :class="outstandingBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                        {{ Math.abs(outstandingBalance).toLocaleString('en-IN') }} {{ outstandingBalance > 0 ? 'Dr' : 'Cr' }}
-                      </div>
+                  <div v-if="row.balance !== null" class="flex flex-col items-end">
+                    <div class="text-4xl font-black" :class="row.balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(row.balance).toLocaleString('en-IN') }} {{ row.balance > 0 ? 'Dr' : 'Cr' }}
                     </div>
                   </div>
-                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic text-right">—</div>
                 </td>
 
-                <!-- Party New Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
-                  <div v-if="outstandingBalance !== null" class="flex flex-col items-end">
-                    <div class="text-4xl font-black" :class="newBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                      {{ Math.abs(newBalance).toLocaleString('en-IN') }} {{ newBalance > 0 ? 'Dr' : 'Cr' }}
+                  <div v-if="row.balance !== null" class="flex flex-col items-end">
+                    <div class="text-4xl font-black" :class="getNewBalance(row) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Math.abs(getNewBalance(row)).toLocaleString('en-IN') }} {{ getNewBalance(row) > 0 ? 'Dr' : 'Cr' }}
                     </div>
                   </div>
-                  <div v-else class="text-[var(--color-text-muted)] text-xl italic font-medium text-right">—</div>
+                  <div v-else class="text-[var(--color-text-muted)] text-xl italic text-right">—</div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Empty state placeholder -->
-        <div class="flex-1 flex items-center justify-center opacity-10">
+        <div v-if="form.rows.length === 1 && !form.rows[0].account" class="flex-1 flex items-center justify-center opacity-10">
            <svg class="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
            </svg>
@@ -136,39 +116,32 @@
     </main>
 
     <!-- Bottom Action Bar -->
-    <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+    <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-lg">
       <div class="flex items-center justify-between gap-8">
         
         <div class="flex items-center gap-8 flex-1">
-          <!-- Left: Remarks Input -->
-          <div class="flex-1 max-w-xl flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Internal Remarks</label>
+          <div class="flex-1 max-w-xl flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Shared Remarks</label>
             <textarea
-              ref="remarksInput"
               v-model="form.remarks"
               rows="2"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold focus:bg-black/5 focus:outline-none transition-all resize-none placeholder:text-inherit"
-              placeholder="Add internal notes..."
-              @keydown.enter.prevent="refNoInput?.focus()"
+              placeholder="Add internal notes for all rows..."
             ></textarea>
           </div>
 
-          <!-- Middle: Reference Info -->
           <div class="flex items-center gap-6 border-l border-r border-[var(--color-border)] px-8">
-            <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
-              <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors flex items-center gap-1">
-                Ref No (Cheque/UPI)
-              </label>
+            <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
+              <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Reference No</label>
               <input
-                ref="refNoInput"
                 v-model="form.reference_no"
                 type="text"
-                class="w-80 rounded-xl border px-4 py-3 text-2xl font-black focus:outline-none transition-all focus:bg-black/5 placeholder:text-inherit"
+                class="w-80 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-2xl font-black focus:outline-none transition-all focus:bg-black/5 placeholder:text-inherit"
                 placeholder="Ref / Chq No..."
-                @keydown.enter.prevent="saveBtn?.focus()"
-              />            </div>
-            <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5">
-              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Ref Date</label>
+              />
+            </div>
+            <div class="flex flex-col gap-1.5 rounded-xl transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5">
+              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Ref Date</label>
               <input
                 v-model="form.reference_date"
                 type="date"
@@ -178,26 +151,19 @@
           </div>
         </div>
 
-        <!-- Right End: Save Button -->
         <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
           <button
-            ref="saveBtn"
             @click="handleSubmit"
             :disabled="submitting || !isFormValid"
-            class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-white shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale focus:outline-none focus:ring-8 focus:ring-[var(--color-focus)]/50 focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:scale-[1.02]"
+            class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 focus:outline-none focus:ring-8 focus:ring-[var(--color-focus)]/50"
           >
             <span v-if="submitting" class="flex items-center gap-3">
-              <svg class="h-10 w-10 animate-spin" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Saving...
+              <svg class="h-10 w-10 animate-spin" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              Posting...
             </span>
             <span v-else class="flex items-center gap-4">
-              Save {{ activeTab }}
-              <svg class="h-10 w-10 transition-transform group-hover:translate-x-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+              Post {{ totalRows }} Entries
+              <svg class="h-10 w-10 transition-transform group-hover:translate-x-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </span>
           </button>
         </div>
@@ -205,14 +171,14 @@
       </div>
     </footer>
 
-    <!-- CUSTOMER SEARCH MODAL -->
+    <!-- Account Search Modal -->
     <CustomerSearchModal
       ref="custSearchModalRef"
       :show="showSearchModal"
-      :title="modalTitle"
-      :subtitle="modalSubtitle"
-      :allowedTypes="allowedTypes"
-      :initialType="initialSearchType"
+      title="Expense Account"
+      subtitle="Select Expense/Asset Ledger to Debit"
+      :allowedTypes="['Account']"
+      initialType="Account"
       :skipDateFilter="true"
       :hideSecondary="true"
       @close="showSearchModal = false"
@@ -220,73 +186,80 @@
     />
 
     <!-- Success Popup -->
-    <div 
-      v-if="showSuccess" 
-      class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-300"
-    >
+    <div v-if="showSuccess" class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
       <div class="rounded-3xl bg-[var(--color-surface)] p-6 shadow-2xl border-2 border-[var(--color-success)] flex items-center gap-6">
-        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)]/20 text-4xl">
-          ✅
-        </div>
+        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)]/20 text-4xl">✅</div>
         <div class="flex-1 min-w-0">
-          <h2 class="text-2xl font-black truncate">Entry Created!</h2>
+          <h2 class="text-2xl font-black truncate">Posted Successfully!</h2>
           <p class="text-lg text-[var(--color-text-muted)] font-mono truncate">{{ successDocName }}</p>
         </div>
-        <button
-          @click="showSuccess = false"
-          class="h-10 w-10 shrink-0 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center text-xl"
-        >
-          ✕
-        </button>
+        <button @click="showSuccess = false" class="h-10 w-10 shrink-0 rounded-full hover:bg-[var(--color-midlight)] transition-colors text-xl">✕</button>
       </div>
     </div>
-
-    <!-- Outstanding Invoices Modal -->
-    <OutstandingBillsModal
-      :show="showInvoicesModal"
-      :partyType="form.party_type"
-      :party="form.party"
-      :enteredAmount="currentMopAmount"
-      :activeTab="activeTab"
-      :modalAmounts="modalAmounts"
-      :otherAllocations="otherAllocations"
-      :disablePayments="true"
-      @close="showInvoicesModal = false"
-      @update-allocations="updateAllocations"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
-import { useShortcuts } from '../services/shortcutManager'
-import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
 
 const router = useRouter()
 
 // --- State ---
-const activeTab = ref('Expense Entry')
-const showInitialSelection = ref(false)
-const amountInputRef = ref(null)
-const mopAmountRefs = ref([])
-const remarksInput = ref(null)
-const refNoInput = ref(null)
-const saveBtn = ref(null)
-const selectionOverlayRef = ref(null)
-const selectionIdx = ref(0) // 0 = Expense Entry
-const ENTRY_TYPES = ['Expense Entry']
-
-const currentMopRowIdx = ref(0)
-
+const postingDate = ref(new Date().toISOString().split('T')[0])
 const cashAccount = ref({
   account: localStorage.getItem('wb-cash') || '',
   name: '',
   balance: null
 })
+
+const form = reactive({
+  rows: [
+    { account: '', account_name: '', amount: null, query: '', balance: null }
+  ],
+  reference_no: '',
+  reference_date: new Date().toISOString().split('T')[0],
+  remarks: ''
+})
+
+const expenseSearchRefs = ref([])
+const expenseAmountRefs = ref([])
+const currentIdx = ref(0)
+const showSearchModal = ref(false)
+const custSearchModalRef = ref(null)
+const submitting = ref(false)
+const showSuccess = ref(false)
+const successDocName = ref('')
+
+// --- Computed ---
+const displayDate = computed(() => {
+  if (!postingDate.value) return ''
+  const d = new Date(postingDate.value)
+  const day = String(d.getDate()).padStart(2, '0')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
+})
+
+const isFormValid = computed(() => {
+  return form.rows.some(r => r.account && r.amount > 0) && cashAccount.value.account
+})
+
+const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
+
+function getNewBalance(row) {
+  if (row.balance === null) return 0
+  const amt = parseFloat(row.amount) || 0
+  return row.balance + amt
+}
+
+// --- Methods ---
+function adjustDate(days) {
+  const d = new Date(postingDate.value)
+  d.setDate(d.getDate() + days)
+  postingDate.value = d.toISOString().split('T')[0]
+}
 
 async function fetchCashAccountDetails() {
   if (!cashAccount.value.account) return
@@ -297,213 +270,14 @@ async function fetchCashAccountDetails() {
     })
     if (res) {
       cashAccount.value.name = res.account_name || res.label || cashAccount.value.account
-      cashAccount.value.balance = res.closing_balance
     }
   } catch (e) {
-    console.error('Failed to fetch cash account details:', e)
+    console.error('Failed to fetch cash details:', e)
   }
 }
 
-function addMopRow() {
-  form.mop_rows.push({
-    account: '',
-    name: '',
-    type: '',
-    amount: null,
-    balance: null,
-    query: 'Search Account',
-    allocations: []
-  })
-}
-
-function cycleTab() {
-  if (activeTab.value === 'Payment') activeTab.value = 'Receipt'
-  else if (activeTab.value === 'Receipt') activeTab.value = 'Internal Transfer'
-  else activeTab.value = 'Payment'
-}
-
-function onSelectionKeydown(e) {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') {
-    e.preventDefault()
-    selectionIdx.value = (selectionIdx.value + 1) % 3
-  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-    e.preventDefault()
-    selectionIdx.value = (selectionIdx.value + 2) % 3
-  } else if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    selectEntryType(ENTRY_TYPES[selectionIdx.value])
-  } else if (e.key === 'Escape') {
-    e.preventDefault()
-    router.push('/')
-  }
-}
-
-function selectEntryType(type) {
-  activeTab.value = type
-  showInitialSelection.value = false
-  // Add initial MOP row
-  form.mop_rows = []
-  addMopRow()
-  setTimeout(() => {
-    openSearch('party')
-  }, 100)
-}
-
-watch(showInitialSelection, (val) => {
-  if (val) {
-    selectionIdx.value = 0
-    nextTick(() => selectionOverlayRef.value?.focus())
-  }
-})
-
-useShortcuts(paymentShortcuts({
-  cycleTab,
-}))
-const postingDate = ref(new Date().toISOString().split('T')[0])
-const displayDate = computed(() => {
-  if (!postingDate.value) return ''
-  const d = new Date(postingDate.value)
-  const day = String(d.getDate()).padStart(2, '0')
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const month = months[d.getMonth()]
-  const year = d.getFullYear()
-  return `${day}-${month}-${year}`
-})
-
-function adjustDate(days) {
-  const d = new Date(postingDate.value)
-  d.setDate(d.getDate() + days)
-  postingDate.value = d.toISOString().split('T')[0]
-}
-
-const form = reactive({
-  party_type: 'Customer',
-  party: '',
-  party_name: '',
-  account: 'Debtors - SSPL',
-  amount: null,
-  mop_rows: [], // Will contain { account, name, type, amount, balance, query }
-  reference_no: '',
-  reference_date: new Date().toISOString().split('T')[0],
-  remarks: ''
-})
-
-const showCustomerSearchModal = ref(false)
-const custSearchModalRef = ref(null)
-
-const partyQuery = ref('')
-
-const accountQuery = ref('Debtors')
-
-const submitting = ref(false)
-const showSuccess = ref(false)
-const successDocName = ref('')
-const outstandingBalance = ref(null)
-const invoices = ref([])
-const unlinkedPayments = ref([])
-const unlinkedJournals = ref([])
-const showInvoicesModal = ref(false)
-const loadingInvoices = ref(false)
-const allocationRefs = computed(() => {
-  return form.mop_rows.flatMap((row, mopIdx) => 
-    row.allocations.map(alloc => ({
-      ...alloc,
-      mop_name: row.name || `Row ${mopIdx + 1}`,
-      mop_idx: mopIdx
-    }))
-  )
-})
-const modalAmounts = computed(() => {
-  const row = form.mop_rows[currentMopRowIdx.value]
-  if (!row || !row.allocations) return {}
-  const res = {}
-  row.allocations.forEach(a => {
-    const key = a._row || a.reference_name
-    res[key] = a.allocated_amount
-  })
-  return res
-})
-
-const otherAllocations = computed(() => {
-  return form.mop_rows
-    .filter((_, idx) => idx !== currentMopRowIdx.value)
-    .flatMap(row => row.allocations || [])
-})
-
-const currentMopAmount = computed(() => {
-  const row = form.mop_rows[currentMopRowIdx.value]
-  return row ? (parseFloat(row.amount) || 0) : 0
-})
-
-// --- Computed ---
-const refValid = computed(() => form.reference_no.replace(/\s/g, '').length > 0)
-
-const totalMopAmount = computed(() => 
-  form.mop_rows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0)
-)
-
-const isFormValid = computed(() => {
-  return form.party && form.amount > 0 && cashAccount.value.account
-})
-
-const newBalance = computed(() => {
-  if (outstandingBalance.value === null) return 0
-  const amt = parseFloat(form.amount) || 0
-  // Party is Debited for Expense
-  return outstandingBalance.value + amt
-})
-
-// Cash row balance calculation (not used in table but good for logic)
-const newCashBalance = computed(() => {
-  if (cashAccount.value.balance === null) return 0
-  const amt = parseFloat(form.amount) || 0
-  return cashAccount.value.balance - amt
-})
-
-const invoiceDocType = computed(() =>
-  form.party_type === 'Customer' ? 'Sales Invoice' : 'Purchase Invoice'
-)
-
-const totalAllocated = computed(() =>
-  allocationRefs.value.reduce((sum, r) => sum + (parseFloat(r.allocated_amount) || 0), 0)
-)
-
-const todayDate = computed(() => {
-  return new Date().toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  })
-})
-
-const currentTime = ref('')
-function updateTime() {
-  currentTime.value = new Date().toLocaleTimeString('en-IN', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  })
-}
-
-// --- Methods ---
-const searchTarget = ref('party')
-const showSearchModal = ref(false)
-
-const modalTitle = computed(() => {
-  return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Expense Entry - Account Paid To' : 'Expense Entry - Account Paid From'
-})
-
-const modalSubtitle = computed(() => {
-  return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Select Expense/Asset Account (Debit)' : 'Select Bank/Cash Account (Credit)'
-})
-
-const allowedTypes = computed(() => {
-  return ['Account']
-})
-
-const initialSearchType = computed(() => {
-  return 'Account'
-})
-
-function openSearch(target, idx = 0) {
-  searchTarget.value = target
-  currentMopRowIdx.value = idx
+function openSearch(idx) {
+  currentIdx.value = idx
   showSearchModal.value = true
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
@@ -511,64 +285,33 @@ function openSearch(target, idx = 0) {
   })
 }
 
-function handleSelect(item) {
-  showSearchModal.value = false
-  if (searchTarget.value === 'party' || searchTarget.value === 'paid_to') {
-    form.party = item.name
-    form.party_name = item.label || item.customer_name || item.supplier_name || item.employee_name || item.account_name || item.name
-    partyQuery.value = form.party_name
-    
-    // Clear previous allocations
-    form.mop_rows.forEach(r => r.allocations = [])
-    clearModalAmounts()
-    
-    // Automatically select party type based on selection
-    if (item.type && item.type !== 'Account') {
-      form.party_type = item.type
-    } else {
-      form.party_type = '' // Account type
-    }
-    
-    if (activeTab.value !== 'Internal Transfer') {
-      // Automatically set default Account based on type
-      if (form.party_type === 'Customer') {
-        form.account = 'Debtors - SSPL'
-        accountQuery.value = 'Debtors'
-      } else if (form.party_type === 'Supplier') {
-        form.account = 'Creditors - SSPL'
-        accountQuery.value = 'Creditors'
-      }
-      fetchOutstanding()
-    }
-    
-    // Focus amount input after party selection
-    nextTick(() => {
-      setTimeout(() => {
-        amountInputRef.value?.focus()
-        amountInputRef.value?.select()
-      }, 50)
-    })
-  } else if (searchTarget.value === 'paid_from' || searchTarget.value === 'account' || searchTarget.value === 'mop') {
-    const row = form.mop_rows[currentMopRowIdx.value]
-    row.account = item.name
-    row.type = item.group
-    row.name = item.label || item.account_name || item.name
-    row.query = row.name
-    
-    fetchMopBalance(currentMopRowIdx.value)
-    
-    // Chain to Amount focus (MOP Row)
-    nextTick(() => {
-      setTimeout(() => {
-        mopAmountRefs.value[currentMopRowIdx.value]?.focus()
-        mopAmountRefs.value[currentMopRowIdx.value]?.select()
-      }, 50)
-    })
+function handleAccountEnter(idx) {
+  const row = form.rows[idx]
+  if (!row.account) {
+    openSearch(idx)
+  } else {
+    expenseAmountRefs.value[idx]?.focus()
   }
 }
 
-async function fetchMopBalance(idx) {
-  const row = form.mop_rows[idx]
+function handleSelect(item) {
+  showSearchModal.value = false
+  const row = form.rows[currentIdx.value]
+  row.account = item.name
+  row.account_name = item.label || item.account_name || item.name
+  row.query = row.account_name
+  fetchRowBalance(currentIdx.value)
+  
+  nextTick(() => {
+    setTimeout(() => {
+      expenseAmountRefs.value[currentIdx.value]?.focus()
+      expenseAmountRefs.value[currentIdx.value]?.select()
+    }, 50)
+  })
+}
+
+async function fetchRowBalance(idx) {
+  const row = form.rows[idx]
   if (!row.account) return
   try {
     const res = await frappeGet('ssplbilling.api.expense_api.get_ledger', {
@@ -579,240 +322,71 @@ async function fetchMopBalance(idx) {
       row.balance = res.closing_balance
     }
   } catch (e) {
-    console.error('Failed to fetch MOP balance:', e)
+    console.error('Row balance fetch failed:', e)
   }
 }
 
-function updateAllocations(allocations) {
-  form.mop_rows[currentMopRowIdx.value].allocations = allocations
-  nextTick(() => {
-    continueAfterMop(currentMopRowIdx.value)
-  })
-}
-
-function removeAllocation(idx) {
-  const flat = allocationRefs.value[idx]
-  if (flat) {
-    const row = form.mop_rows[flat.mop_idx]
-    if (row) {
-      row.allocations = row.allocations.filter(a => a.reference_name !== flat.reference_name)
-    }
-  }
-}
-
-function focusNextAllocation(event) {
-  const inputs = Array.from(document.querySelectorAll('.allocation-ref-input'))
-  const idx = inputs.indexOf(event.target)
-  if (idx >= 0 && idx < inputs.length - 1) {
-    inputs[idx + 1].focus()
-    inputs[idx + 1].select()
-  } else {
-    remarksInput.value?.focus()
-  }
-}
-
-function handleMopAmountEnter(idx) {
-  currentMopRowIdx.value = idx
-  const row = form.mop_rows[idx]
-  if (row.amount > 0 && form.party) {
-    fetchInvoices(true)
-  }
-}
-
-function continueAfterMop(idx) {
-  const diff = form.amount - totalMopAmount.value
-  if (diff > 0.01) {
-    const lastIdx = form.mop_rows.length - 1
-    const lastRow = form.mop_rows[lastIdx]
-    let nextIdx
-    
-    if (lastRow && !lastRow.account) {
-      nextIdx = lastIdx
+function handleAmountEnter(idx) {
+  const row = form.rows[idx]
+  if (row.amount > 0 && row.account) {
+    if (idx === form.rows.length - 1) {
+      form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null })
+      nextTick(() => {
+        setTimeout(() => {
+          expenseSearchRefs.value[idx + 1]?.focus()
+        }, 50)
+      })
     } else {
-      addMopRow()
-      nextIdx = form.mop_rows.length - 1
+      expenseSearchRefs.value[idx + 1]?.focus()
     }
-    
-    currentMopRowIdx.value = nextIdx
-    form.mop_rows[nextIdx].amount = parseFloat(diff.toFixed(2))
-    // Wait for modal to close and new row to render
-    setTimeout(() => {
-      openSearch(activeTab.value === 'Expense Entry' ? 'paid_from' : 'mop', nextIdx)
-    }, 100)
-  } else {
-    // Wait for modal to close
-    setTimeout(() => {
-      remarksInput.value?.focus()
-    }, 100)
   }
-}
-
-function handleAmountEnter() {
-  if (form.amount > 0 && form.party) {
-    if (form.mop_rows.length === 0) {
-      addMopRow()
-    }
-    const firstMopRow = form.mop_rows[0]
-    if (firstMopRow.amount === null || firstMopRow.amount === 0) {
-      firstMopRow.amount = form.amount
-    }
-    // Chain to first MOP selection instead of opening invoices
-    nextTick(() => {
-      openSearch(activeTab.value === 'Expense Entry' ? 'paid_from' : 'mop', 0)
-    })
-  }
-}
-
-async function fetchInvoices(autoShowOnlyIfItems = false) {
-  if (!form.party) return
-  
-  loadingInvoices.value = true
-  try {
-    const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
-      party_type: form.party_type,
-      party: form.party,
-    })
-    
-    const targetDir = activeTab.value === 'Receipt' ? 'Dr' : 'Cr'
-    const hasInvoices = (res.invoices || []).some(i => i.direction === targetDir)
-    const hasPayments = (res.payment_entries || []).some(p => p.direction === targetDir)
-    const hasJournals = (res.journal_entries || []).some(j => j.direction === targetDir)
-    
-    if (hasInvoices || hasPayments || hasJournals) {
-      showInvoicesModal.value = true
-    } else {
-      if (!autoShowOnlyIfItems) {
-        console.log('No outstanding items found for direction:', targetDir)
-      }
-      // Move to next MOP or remarks
-      continueAfterMop(currentMopRowIdx.value)
-    }
-  } catch (e) {
-    console.error('Failed to fetch outstanding items:', e)
-    continueAfterMop(currentMopRowIdx.value)
-  } finally {
-    loadingInvoices.value = false
-  }
-}
-
-async function fetchOutstanding() {
-  if (!form.party) return
-  try {
-    const res = await frappeGet('ssplbilling.api.expense_api.get_ledger', {
-      ledger_name: form.party,
-      ledger_type: activeTab.value === 'Internal Transfer' ? 'Account' : form.party_type,
-    })
-    if (res && res.closing_balance !== undefined) {
-      outstandingBalance.value = res.closing_balance
-    }
-  } catch (e) {
-    console.error('Failed to fetch outstanding:', e)
-  }
-}
-
-function clearModalAmounts() {
-  Object.keys(modalAmounts).forEach(k => delete modalAmounts[k])
-}
-
-function handlePartyTypeChange() {
-  form.party = ''
-  form.party_name = ''
-  partyQuery.value = ''
-  outstandingBalance.value = null
-  form.mop_rows = []
-  addMopRow()
-  invoices.value = []
-  unlinkedPayments.value = []
-  unlinkedJournals.value = []
-  clearModalAmounts()
-  
-  if (form.party_type === 'Customer') {
-    form.account = 'Debtors - SSPL'
-    accountQuery.value = 'Debtors'
-  } else {
-    form.account = 'Creditors - SSPL'
-    accountQuery.value = 'Creditors'
-  }
-}
-
-function resetForm() {
-  postingDate.value = new Date().toISOString().split('T')[0]
-  form.party = ''
-  form.party_name = ''
-  partyQuery.value = ''
-  form.amount = null
-  form.remarks = ''
-  outstandingBalance.value = null
-  fetchCashAccountDetails()
-  
-  form.reference_no = ''
-  form.reference_date = new Date().toISOString().split('T')[0]
 }
 
 async function handleSubmit() {
   if (!isFormValid.value) return
   submitting.value = true
-  
+  const results = []
   try {
-    const payload = {
-      payment_type: 'Internal Transfer',
-      party_type: '',
-      party: cashAccount.value.account,
-      amount: form.amount,
-      mode_of_payment: 'Cash',
-      account: form.party,
-      posting_date: postingDate.value,
-      reference_no: form.reference_no,
-      reference_date: form.reference_date,
-      cost_center: localStorage.getItem('wb-cost-center') || null,
-      remarks: form.remarks,
-      "Custom Remarks": 1,
-      references: [],
+    const validRows = form.rows.filter(r => r.account && r.amount > 0)
+    for (const row of validRows) {
+      const payload = {
+        payment_type: 'Internal Transfer',
+        party: cashAccount.value.account,
+        amount: row.amount,
+        mode_of_payment: 'Cash',
+        account: row.account,
+        posting_date: postingDate.value,
+        reference_no: form.reference_no,
+        reference_date: form.reference_date,
+        cost_center: localStorage.getItem('wb-cost-center'),
+        remarks: form.remarks,
+        "Custom Remarks": 1
+      }
+      const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
+        data: JSON.stringify(payload)
+      })
+      if (res && res.payment_entry) results.push(res.payment_entry)
     }
-    
-    const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
-      data: JSON.stringify(payload)
-    })
-    
-    if (res && res.payment_entry) {
-      successDocName.value = res.payment_entry
+    if (results.length > 0) {
+      successDocName.value = results.join(', ')
       showSuccess.value = true
-      setTimeout(() => {
-        showSuccess.value = false
-        window.location.reload()
-      }, 1500)
+      setTimeout(() => window.location.reload(), 1500)
     }
-    
   } catch (e) {
-    console.error('Submission failed:', e)
-    alert('Failed to create expense entry: ' + (e.message || e))
+    alert('Posting failed: ' + (e.message || e))
   } finally {
     submitting.value = false
   }
 }
 
-// --- Lifecycle ---
 onMounted(() => {
-  updateTime()
-  setInterval(updateTime, 1000)
   fetchCashAccountDetails()
-  setTimeout(() => {
-    openSearch('party')
-  }, 300)
-})
-
-watch(activeTab, () => {
-  resetForm()
+  setTimeout(() => expenseSearchRefs.value[0]?.focus(), 300)
 })
 </script>
 
 <style scoped>
 input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  -moz-appearance: textfield;
-}
+input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
 </style>
