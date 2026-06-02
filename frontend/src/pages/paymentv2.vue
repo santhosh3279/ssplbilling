@@ -137,6 +137,7 @@
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
+                      ref="partyInputRef"
                       v-model="partyQuery"
                       @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
                       @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
@@ -477,6 +478,7 @@ const router = useRouter()
 const activeTab = ref('Payment')
 const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
+const partyInputRef = ref(null)
 const mopAmountRefs = ref([])
 const remarksInput = ref(null)
 const refNoInput = ref(null)
@@ -527,9 +529,9 @@ function selectEntryType(type) {
   // Add initial MOP row
   form.mop_rows = []
   addMopRow()
-  setTimeout(() => {
-    openSearch('party')
-  }, 100)
+  nextTick(() => {
+    partyInputRef.value?.focus()
+  })
 }
 
 watch(showInitialSelection, (val) => {
@@ -1031,6 +1033,9 @@ onMounted(() => {
 
 watch(activeTab, () => {
   resetForm()
+  nextTick(() => {
+    partyInputRef.value?.focus()
+  })
 })
 </script>
 
