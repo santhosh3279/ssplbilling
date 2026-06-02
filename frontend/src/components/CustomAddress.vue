@@ -60,7 +60,7 @@
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Address Line 2</label>
+          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Address Line 2/remark</label>
           <input
             ref="line2Input"
             v-model="form.address_line_2"
