@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen bg-[var(--color-bg)]">
+  <div class="flex h-full overflow-hidden bg-[var(--color-bg)]">
 
     <!-- ===================== SIDEBAR ===================== -->
     <aside class="flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -124,7 +124,7 @@
     </aside>
 
     <!-- ===================== MAIN CONTENT ===================== -->
-    <main class="flex-1">
+    <main class="flex-1 overflow-y-auto">
       <!-- Top Bar -->
       <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
         <div class="flex items-center justify-between">
