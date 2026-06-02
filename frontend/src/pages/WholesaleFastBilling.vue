@@ -553,8 +553,8 @@ function focusDisc(idx) {
 
 // ─── Barcode Enter handler ────────────────────────────────────────────────────
 async function onBarcodeEnterKey(idx) {
-  // If barcode is empty and it's the second row (idx 1), open customer search
-  if (idx === 1 && !rows.value[idx].barcode.trim()) {
+  // If barcode is empty, open customer search
+  if (!rows.value[idx].barcode.trim()) {
     openCustomerSearch();
     return;
   }
