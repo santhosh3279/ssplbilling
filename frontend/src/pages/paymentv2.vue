@@ -140,7 +140,7 @@
                       ref="partyInputRef"
                       v-model="partyQuery"
                       @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
-                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
+                      @keydown.enter.prevent="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       :placeholder="activeTab === 'Internal Transfer' ? 'Select Internal Transfer/Asset (Debit)...' : 'Search Party...'"
@@ -215,7 +215,7 @@
                     <input
                       v-model="row.query"
                       @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
-                      @keydown.enter="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
+                      @keydown.enter.prevent="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       :placeholder="activeTab === 'Internal Transfer' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
