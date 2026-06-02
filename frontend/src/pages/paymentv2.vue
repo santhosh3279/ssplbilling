@@ -23,7 +23,7 @@
         <button
           v-for="t in ['Payment', 'Receipt', 'Internal Transfer']"
           :key="t"
-          @click="activeTab = t"
+          @click="onTabClick(t)"
           class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
           :class="activeTab === t
             ? 'bg-[var(--color-highlight)] text-white shadow-sm'
@@ -525,12 +525,16 @@ function onSelectionKeydown(e) {
   }
 }
 
+function onTabClick(t) {
+  if (activeTab.value === t) return
+  activeTab.value = t
+  resetForm()
+}
+
 function selectEntryType(type) {
   activeTab.value = type
   showInitialSelection.value = false
-  // Add initial MOP row
-  form.mop_rows = []
-  addMopRow()
+  resetForm()
   nextTick(() => {
     partyInputRef.value?.focus()
   })
