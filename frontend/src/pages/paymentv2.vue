@@ -504,9 +504,11 @@ function addMopRow() {
 }
 
 function cycleTab() {
-  if (activeTab.value === 'Payment') activeTab.value = 'Receipt'
-  else if (activeTab.value === 'Receipt') activeTab.value = 'Internal Transfer'
-  else activeTab.value = 'Payment'
+  let nextTab = 'Payment'
+  if (activeTab.value === 'Payment') nextTab = 'Receipt'
+  else if (activeTab.value === 'Receipt') nextTab = 'Internal Transfer'
+  else nextTab = 'Payment'
+  onTabClick(nextTab)
 }
 
 function onSelectionKeydown(e) {
@@ -528,7 +530,20 @@ function onSelectionKeydown(e) {
 function onTabClick(t) {
   if (activeTab.value === t) return
   activeTab.value = t
+  
+  // Set default party type based on tab
+  if (t === 'Payment') {
+    form.party_type = 'Supplier'
+  } else if (t === 'Receipt') {
+    form.party_type = 'Customer'
+  } else {
+    form.party_type = '' // Internal Transfer
+  }
+
   resetForm()
+  nextTick(() => {
+    partyInputRef.value?.focus()
+  })
 }
 
 function selectEntryType(type) {
@@ -959,7 +974,6 @@ function resetForm() {
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
-  clearModalAmounts()
 
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
