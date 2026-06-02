@@ -213,6 +213,7 @@
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
+                      :ref="el => { if (el) mopAccountRefs[idx] = el }"
                       v-model="row.query"
                       @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
                       @keydown.enter.prevent="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
@@ -479,6 +480,7 @@ const activeTab = ref('Payment')
 const showInitialSelection = ref(true)
 const amountInputRef = ref(null)
 const partyInputRef = ref(null)
+const mopAccountRefs = ref([])
 const mopAmountRefs = ref([])
 const remarksInput = ref(null)
 const refNoInput = ref(null)
@@ -842,7 +844,7 @@ function continueAfterMop(idx) {
     form.mop_rows[nextIdx].amount = parseFloat(diff.toFixed(2))
     // Wait for modal to close and new row to render
     setTimeout(() => {
-      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', nextIdx)
+      mopAccountRefs.value[nextIdx]?.focus()
     }, 150)
   } else {
     // Wait for modal to close
@@ -861,9 +863,9 @@ function handleAmountEnter() {
     if (firstMopRow.amount === null || firstMopRow.amount === 0) {
       firstMopRow.amount = form.amount
     }
-    // Chain to first MOP selection instead of opening invoices
+    // Move focus to first MOP account cell
     nextTick(() => {
-      openSearch(activeTab.value === 'Internal Transfer' ? 'paid_from' : 'mop', 0)
+      mopAccountRefs.value[0]?.focus()
     })
   }
 }
