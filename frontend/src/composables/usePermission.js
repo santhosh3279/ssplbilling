@@ -134,6 +134,7 @@ const TILE_ROUTE_MAP = {
   'gst-ledger':        'GstLedger',
   'daily-report':      'DailyReport',
   'stock-ledger':      'StockLedger',
+  'payment-reconciliation': 'Payment',
   'store-transfer':    'StoreTransfer',
   'single-entry':      'SingleEntry',
   'party-link':        'PartyLink',
