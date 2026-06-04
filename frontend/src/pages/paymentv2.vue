@@ -116,11 +116,11 @@
     </div>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-hidden p-4">
-      <div class="flex h-full flex-col gap-4">
+    <main class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <div class="flex flex-col gap-4">
         
         <!-- Form Row (Table Style) -->
-        <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+        <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden shrink-0">
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -278,21 +278,21 @@
         </div>
 
         <!-- Empty state placeholder -->
-        <div v-if="!allocationRefs.length" class="flex-1 flex items-center justify-center opacity-10">
+        <div v-if="!allocationRefs.length" class="py-24 flex items-center justify-center opacity-10">
            <svg class="w-32 h-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
            </svg>
         </div>
 
         <!-- Payment References (Excel-style) -->
-        <div v-if="allocationRefs.length" class="mt-auto border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+        <div v-if="allocationRefs.length" class="border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg mb-8">
           <div class="flex items-center gap-2 bg-[var(--color-surface-raised)] px-4 py-1.5 border-b border-[var(--color-border)]">
             <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Payment References / Allocations</span>
             <div class="h-px flex-1 bg-[var(--color-border)]/50"></div>
           </div>
-          <div class="max-h-[25vh] overflow-y-auto overflow-x-hidden">
+          <div class="overflow-x-hidden">
             <table class="w-full border-collapse text-left">
-              <thead class="sticky top-0 z-10 bg-[var(--color-surface-raised)] shadow-sm">
+              <thead class="bg-[var(--color-surface-raised)] shadow-sm">
                 <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                   <th class="px-4 py-2">MOP Account</th>
                   <th class="px-4 py-2">Voucher No</th>
@@ -303,14 +303,14 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
-                <tr v-for="(ref, idx) in allocationRefs" :key="ref.reference_name + ref.mop_idx" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-                  <td class="px-4 py-1.5 text-xl font-black text-[var(--color-highlight)]">{{ ref.mop_name }}</td>
-                  <td class="px-4 py-1.5 font-mono text-xl font-bold">{{ ref.reference_name }}</td>
-                  <td class="px-4 py-1.5 text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.reference_doctype }}</td>
-                  <td class="px-4 py-1.5 text-right font-mono text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ ref.outstanding_amount.toLocaleString('en-IN') }}</td>
+                <tr v-for="(item, idx) in allocationRefs" :key="item.alloc.reference_name + item.mopIdx" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-midlight)]/30 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                  <td class="px-4 py-1.5 text-xl font-black text-[var(--color-highlight)]">{{ item.row.name || `Row ${item.mopIdx + 1}` }}</td>
+                  <td class="px-4 py-1.5 font-mono text-xl font-bold">{{ item.alloc.reference_name }}</td>
+                  <td class="px-4 py-1.5 text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ item.alloc.reference_doctype }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono text-xl text-[var(--color-text-muted)] group-focus-within:text-inherit">{{ item.alloc.outstanding_amount.toLocaleString('en-IN') }}</td>
                   <td class="px-2 py-1">
                     <input
-                      v-model.number="ref.allocated_amount"
+                      v-model.number="item.alloc.allocated_amount"
                       type="number" step="0.01" min="0"
                       class="allocation-ref-input w-full bg-transparent px-3 py-1 text-2xl font-black text-right focus:outline-none placeholder:text-inherit"
                       @keydown.enter.prevent="focusNextAllocation($event)"
@@ -611,13 +611,15 @@ const unlinkedJournals = ref([])
 const showInvoicesModal = ref(false)
 const loadingInvoices = ref(false)
 const allocationRefs = computed(() => {
-  return form.mop_rows.flatMap((row, mopIdx) => 
-    row.allocations.map(alloc => ({
-      ...alloc,
-      mop_name: row.name || `Row ${mopIdx + 1}`,
-      mop_idx: mopIdx
-    }))
-  )
+  const all = []
+  form.mop_rows.forEach((row, mopIdx) => {
+    if (row.allocations) {
+      row.allocations.forEach(alloc => {
+        all.push({ row, alloc, mopIdx })
+      })
+    }
+  })
+  return all
 })
 const modalAmounts = computed(() => {
   const row = form.mop_rows[currentMopRowIdx.value]
@@ -685,7 +687,7 @@ const invoiceDocType = computed(() =>
 )
 
 const totalAllocated = computed(() =>
-  allocationRefs.value.reduce((sum, r) => sum + (parseFloat(r.allocated_amount) || 0), 0)
+  allocationRefs.value.reduce((sum, item) => sum + (parseFloat(item.alloc.allocated_amount) || 0), 0)
 )
 
 const todayDate = computed(() => {
@@ -756,7 +758,6 @@ function handleSelect(item) {
     
     // Clear previous allocations
     form.mop_rows.forEach(r => r.allocations = [])
-    clearModalAmounts()
     
     // Automatically select party type based on selection
     if (item.type && item.type !== 'Account') {
@@ -821,19 +822,18 @@ async function fetchMopBalance(idx) {
 
 function updateAllocations(allocations) {
   showInvoicesModal.value = false
-  form.mop_rows[currentMopRowIdx.value].allocations = allocations
+  if (form.mop_rows[currentMopRowIdx.value]) {
+    form.mop_rows[currentMopRowIdx.value].allocations = allocations
+  }
   nextTick(() => {
     continueAfterMop(currentMopRowIdx.value)
   })
 }
 
 function removeAllocation(idx) {
-  const flat = allocationRefs.value[idx]
-  if (flat) {
-    const row = form.mop_rows[flat.mop_idx]
-    if (row) {
-      row.allocations = row.allocations.filter(a => a.reference_name !== flat.reference_name)
-    }
+  const item = allocationRefs.value[idx]
+  if (item) {
+    item.row.allocations = item.row.allocations.filter(a => a !== item.alloc)
   }
 }
 
@@ -937,10 +937,6 @@ async function fetchOutstanding() {
   }
 }
 
-function clearModalAmounts() {
-  Object.keys(modalAmounts).forEach(k => delete modalAmounts[k])
-}
-
 function handlePartyTypeChange() {
   form.party = ''
   form.party_name = ''
@@ -951,7 +947,6 @@ function handlePartyTypeChange() {
   invoices.value = []
   unlinkedPayments.value = []
   unlinkedJournals.value = []
-  clearModalAmounts()
   
   if (form.party_type === 'Customer') {
     form.account = 'Debtors - SSPL'
