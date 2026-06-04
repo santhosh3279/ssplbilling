@@ -401,7 +401,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { frappeGet } from '../api.js'
 
 const props = defineProps({
@@ -470,21 +470,6 @@ watch(() => props.modalAmounts, (newVal) => {
     }
   }
 }, { immediate: true, deep: true })
-
-watch(() => props.show, (val) => {
-  if (val) {
-    if (props.activeTab === 'Receipt') filterDirection.value = 'Dr'
-    else if (props.activeTab === 'Payment') filterDirection.value = 'Cr'
-    else filterDirection.value = 'All'
-    
-    if (props.party) fetchData()
-  } else {
-    lastModifiedKey.value = null
-    localInvoices.value = []
-    localPayments.value = []
-    localJournals.value = []
-  }
-}, { immediate: true })
 
 const currentInvoices = computed(() => localInvoices.value.length ? localInvoices.value : props.invoices)
 const currentPayments = computed(() => localPayments.value.length ? localPayments.value : props.unlinkedPayments)
@@ -581,8 +566,11 @@ function emitAllocations() {
 }
 
 function confirmAdjustments() {
-  emitAllocations()
-  emit('close')
+  try {
+    emitAllocations()
+  } finally {
+    emit('close')
+  }
 }
 
 function fmt(val) {
@@ -616,9 +604,41 @@ function focusNextAllocate(event) {
     inputs[idx + 1].focus()
     inputs[idx + 1].select()
   } else {
-    confirmBtn.value?.focus()
+    confirmAdjustments()
   }
 }
+
+// Add global escape key listener when show is true
+watch(() => props.show, (val) => {
+  if (val) {
+    if (props.activeTab === 'Receipt') filterDirection.value = 'Dr'
+    else if (props.activeTab === 'Payment') filterDirection.value = 'Cr'
+    else filterDirection.value = 'All'
+    
+    if (props.party) fetchData()
+    window.addEventListener('keydown', handleGlobalEsc)
+  } else {
+    lastModifiedKey.value = null
+    localInvoices.value = []
+    localPayments.value = []
+    localJournals.value = []
+    window.removeEventListener('keydown', handleGlobalEsc)
+  }
+}, { immediate: true })
+
+function handleGlobalEsc(e) {
+  if (e.key === 'Escape') {
+    if (linkedPopup.value.show) {
+      linkedPopup.value.show = false
+    } else {
+      emit('close')
+    }
+  }
+}
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalEsc)
+})
 </script>
 
 <style scoped>
