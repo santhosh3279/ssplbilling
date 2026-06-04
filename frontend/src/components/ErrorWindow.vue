@@ -9,7 +9,7 @@
         :class="type === 'success' ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]/30' : 'bg-[var(--color-danger)]/20 border-[var(--color-danger)]/30'"
       >
         <div class="flex items-center gap-3">
-          <span class="text-2xl">{{ type === 'success' ? '✅' : '⚠️' }}</span>
+          <span v-if="type === 'success'" class="text-2xl">✅</span>
           <h2 
             class="text-xl font-bold uppercase tracking-wider"
             :class="type === 'success' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
@@ -31,7 +31,7 @@
             class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-2 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all active:scale-95"
           >
             <span v-if="copied" class="text-[var(--color-success)]">Copied!</span>
-            <span v-else>Copy {{ type === 'success' ? 'Message' : 'Error' }}</span>
+            <span v-else>Copy</span>
           </button>
           <button 
             ref="dismissButton"
