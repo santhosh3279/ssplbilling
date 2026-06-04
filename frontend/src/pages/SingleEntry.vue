@@ -480,6 +480,8 @@ function updateRowAllocations(allocations) {
     })
     rows.value[idx].modalAmounts = newModalAmounts
 
+    closeModal()
+
     // Focus remarks after modal
     nextTick(() => {
       remarkInputs.value[idx]?.focus()

@@ -652,6 +652,7 @@ function handleSelect(item) {
 }
 
 function updateAllocations(allocations) {
+  showInvoicesModal.value = false
   allocationRefs.value = allocations
   nextTick(() => {
     remarksInput.value?.focus()

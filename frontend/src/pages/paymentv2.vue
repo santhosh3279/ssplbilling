@@ -820,6 +820,7 @@ async function fetchMopBalance(idx) {
 }
 
 function updateAllocations(allocations) {
+  showInvoicesModal.value = false
   form.mop_rows[currentMopRowIdx.value].allocations = allocations
   nextTick(() => {
     continueAfterMop(currentMopRowIdx.value)
