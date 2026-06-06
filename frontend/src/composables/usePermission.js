@@ -42,7 +42,6 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'CashierDesk',
   'PurchaseSubmit',
   'CustomerLedger',
-  'Payment',
   'JournalContraEntry',
   'CashierManagement',
   'DailyReport',
