@@ -178,9 +178,7 @@
                     @click="idx !== 0 && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
-                    <template v-if="idx !== 0">
-                      {{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
-                    </template>
+                    {{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
                   </td>
                 </tr>
               </template>
@@ -228,7 +226,10 @@ const props = defineProps({
   selectedPriceList: { type: String, default: '' },
   initialFactor: { type: Number, default: 1 },
   initialRate: { type: Number, default: 0 },
-  initialUom: { type: String, default: '' }
+  initialUom: { type: String, default: '' },
+  initialDiscount: { type: Number, default: 0 },
+  taxRate: { type: Number, default: 0 },
+  isInclusive: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -256,7 +257,19 @@ const calculatedRatesByUom = computed(() => {
   for (const u of uoms.value) {
     const rates = []
     // Base rate for this UOM is the first price list's rate for this UOM
-    const firstRate = prices.value[0]?.uom_rates[u.uom] || 0
+    let firstRate = prices.value[0]?.uom_rates[u.uom] || 0
+    
+    // If this is the initial UOM being entered, adjust the base rate for markups
+    // Formula: (Rate * (1 - Discount/100)) * (1 + Tax/100 if not inclusive)
+    if (u.uom === props.initialUom && props.initialRate) {
+      const netRate = props.initialRate * (1 - props.initialDiscount / 100)
+      if (!props.isInclusive) {
+        firstRate = netRate * (1 + props.taxRate / 100)
+      } else {
+        firstRate = netRate
+      }
+    }
+    
     rates.push(firstRate)
     
     for (let i = 1; i < prices.value.length; i++) {

@@ -651,6 +651,9 @@
       :selected-price-list="priceList"
       :initial-rate="priceListUpdateRate"
       :initial-uom="priceListUpdateUom"
+      :initial-discount="priceListUpdateDiscount"
+      :tax-rate="priceListUpdateTaxRate"
+      :is-inclusive="isInclusiveTax"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
     />
@@ -872,6 +875,16 @@ const priceListUpdateRate = computed(() => {
 const priceListUpdateUom = computed(() => {
   if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.uom || ''
   return pendingItem.value?.uom || ''
+})
+
+const priceListUpdateDiscount = computed(() => {
+  if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.discount || 0
+  return pendingItem.value?.discount || 0
+})
+
+const priceListUpdateTaxRate = computed(() => {
+  if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.tax_rate || 0
+  return pendingItem.value?.tax_rate || 0
 })
 
 const lastEnterTime = ref(0)
