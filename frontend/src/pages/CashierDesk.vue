@@ -446,6 +446,7 @@
                     type="number"
                     v-model="payments.cash"
                     @focus="$event.target.select()"
+                    step="0.01"
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/20 transition-all"
                   />
                 </div>
@@ -456,6 +457,7 @@
                     type="number"
                     v-model="payments.upi"
                     @focus="$event.target.select()"
+                    step="0.01"
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
                   />
                 </div>
@@ -466,6 +468,7 @@
                     type="number"
                     v-model="payments.card"
                     @focus="$event.target.select()"
+                    step="0.01"
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
                   />
                 </div>
@@ -476,6 +479,7 @@
                     type="number"
                     v-model="payments.credit"
                     @focus="$event.target.select()"
+                    step="0.01"
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-danger)] focus:ring-4 focus:ring-[var(--color-danger)]/20 transition-all"
                   />
                 </div>
@@ -486,6 +490,7 @@
                     type="number"
                     v-model="payments.discount"
                     @focus="$event.target.select()"
+                    step="0.01"
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-warning)] focus:ring-4 focus:ring-amber-500/20 transition-all"
                   />
                 </div>
@@ -793,9 +798,9 @@ const todayStr = computed(() => {
 
 const amountToCollect = computed(() => {
   if (!selectedInvoice.value) return 0
-  const gt = Math.round(Number(selectedInvoice.value.grand_total || 0))
+  const gt = Number(selectedInvoice.value.grand_total || 0)
   const os = selectedInvoice.value.outstanding_amount !== undefined && selectedInvoice.value.outstanding_amount !== null
-    ? Math.round(Number(selectedInvoice.value.outstanding_amount))
+    ? Number(selectedInvoice.value.outstanding_amount)
     : gt
     
   if (selectedInvoice.value.docstatus === 1) return os
@@ -941,9 +946,9 @@ async function fetchSeriesList() {
 }
 
 function fmt(val) {
-  return Math.round(Number(val || 0)).toLocaleString('en-IN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+  return Number(val || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   })
 }
 
