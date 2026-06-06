@@ -212,7 +212,7 @@
               :step="item.uom === 'Nos' ? '1' : '0.01'"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @input="item.uom === 'Nos' && (item.qty = Math.floor(item.qty))"
-              @keydown.enter.prevent="item.qty && openRowPriceListUpdate(index)"
+              @keydown.enter.prevent="item.qty && (getItemUoms(item.item_code).length > 1 ? focusEditField('uom', index) : focusEditField('rate', index))"
               @keydown.escape="exitEditMode(index, true)"
               @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
             />
@@ -225,7 +225,7 @@
               v-model="item.uom"
               class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @change="onUomChange(index)"
-              @keydown.enter.prevent="focusEditField('qty', index)"
+              @keydown.enter.prevent="focusEditField('rate', index)"
               @keydown.escape="exitEditMode(index, true)"
             >
               <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)] text-3xl">{{ u }}</option>
@@ -254,7 +254,7 @@
               v-model.number="item.discount"
               type="number" min="0" max="100" step="0.5"
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter.prevent="finishRowEdit(index)"
+              @keydown.enter.prevent="openRowPriceListUpdate(index)"
               @keydown.escape="exitEditMode(index, true)"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ format(item.discount) }}</span>
@@ -479,7 +479,7 @@
                 v-model="pendingItem.uom"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                 @change="onPendingUomChange"
-                @keydown.enter.prevent="openPriceListUpdate"
+                @keydown.enter.prevent="focusPendingDisc()"
                 @keydown.escape="cancelPendingItem"
               >
                 <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
@@ -1838,7 +1838,7 @@ function onPriceListUpdateSaved(data) {
         recalcAmount(idx)
       }
     }
-    focusEditField('disc', idx)
+    finishRowEdit(idx)
   } else {
     if (pendingItem.value && data.changedPrices?.length) {
       const pl = data.changedPrices.find(p => p.price_list === priceList.value)
@@ -1849,7 +1849,7 @@ function onPriceListUpdateSaved(data) {
         pendingItem.value._base_rate = newRate
       }
     }
-    focusPendingDisc()
+    confirmPendingItem()
   }
 }
 
@@ -1858,9 +1858,9 @@ function onPriceListUpdateClose() {
   if (editRowPriceUpdateIdx.value !== null) {
     const idx = editRowPriceUpdateIdx.value
     editRowPriceUpdateIdx.value = null
-    focusEditField('disc', idx)
+    finishRowEdit(idx)
   } else {
-    focusPendingDisc()
+    confirmPendingItem()
   }
 }
 
@@ -2029,7 +2029,7 @@ function handlePendingQtyKeydown(e) {
         pendingUomSelect.value?.focus()
         if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
       } else {
-        openPriceListUpdate()
+        focusPendingDisc()
       }
     }
   } else if (e.key === 'Escape') {
@@ -2043,7 +2043,7 @@ function handlePendingQtyKeydown(e) {
 function handlePendingDiscKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault()
-    confirmPendingItem()
+    openPriceListUpdate()
   } else if (e.key === 'Escape') {
     e.preventDefault()
     cancelPendingItem()
@@ -2120,7 +2120,7 @@ function onUomChange(idx) {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
-    item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+    item.rate = parseFloat((newRate || 0).toFixed(2))
     recalcAmount(idx)
   }
 }
