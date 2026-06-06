@@ -335,6 +335,7 @@
             <thead class="sticky top-0 bg-[var(--color-bg)]/95 z-10">
               <tr class="border-b border-[var(--color-border)] text-base font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-3 py-3 text-left">Bill</th>
+                <th class="px-2 py-3 text-right">Total</th>
                 <th class="px-2 py-3 text-right text-[var(--color-success)]">Cash</th>
                 <th class="px-2 py-3 text-right text-[var(--color-success)]">UPI</th>
                 <th class="px-2 py-3 text-right text-[var(--color-info)]">Card</th>
@@ -344,15 +345,18 @@
             </thead>
             <tbody class="divide-y divide-[var(--color-border)]/40">
               <tr v-if="billsLoading">
-                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">Loading…</td>
+                <td colspan="7" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">Loading…</td>
               </tr>
               <tr v-else-if="filteredBills.length === 0">
-                <td colspan="5" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">No bills today</td>
+                <td colspan="7" class="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">No bills today</td>
               </tr>
               <tr v-for="bill in filteredBills" :key="bill.name" class="hover:bg-[var(--color-surface-raised)]/20 transition">
                 <td class="px-3 py-2.5">
                   <div class="font-black text-[var(--color-text)] text-xl leading-tight">{{ bill.name }}</div>
                   <div class="text-base text-[var(--color-text-muted)] truncate max-w-[120px]">{{ bill.customer }}</div>
+                </td>
+                <td class="px-2 py-2.5 text-right font-mono text-xl font-black text-[var(--color-text)]">
+                  {{ (bill.grand_total || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
                 </td>
                 <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="getMopAmount(bill, 'cash') > 0 ? 'text-[var(--color-success)] font-black' : 'text-[var(--color-text-muted)]'">
@@ -380,6 +384,9 @@
             <tfoot v-if="filteredBills.length > 0" class="sticky bottom-0 bg-[var(--color-bg)]/95 border-t border-[var(--color-border)]">
               <tr class="text-base font-black uppercase">
                 <td class="px-3 py-2.5 text-[var(--color-text-muted)]">Total</td>
+                <td class="px-2 py-2.5 text-right font-mono text-xl text-[var(--color-text)] font-black">
+                  {{ totalSales.toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
+                </td>
                 <td class="px-2 py-2.5 text-right font-mono text-[var(--color-success)] text-xl">
                   {{ billTotals.cash > 0 ? billTotals.cash.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
