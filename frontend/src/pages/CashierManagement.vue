@@ -846,11 +846,9 @@ const totalSales = computed(() =>
 )
 
 function getMopAmount(bill, type) {
-  const pay = bill.pay || {}
-  const lower = Object.fromEntries(Object.entries(pay).map(([k, v]) => [k.toLowerCase(), v]))
-  if (type === 'cash')   return Object.entries(lower).filter(([k]) => k.includes('cash') && !k.includes('upi')).reduce((s, [, v]) => s + v, 0)
-  if (type === 'upi')    return Object.entries(lower).filter(([k]) => k.includes('upi')).reduce((s, [, v]) => s + v, 0)
-  if (type === 'card')   return Object.entries(lower).filter(([k]) => k.includes('card') || k.includes('debit')).reduce((s, [, v]) => s + v, 0)
+  if (type === 'cash')   return bill.mop_cash || 0
+  if (type === 'upi')    return bill.mop_upi || 0
+  if (type === 'card')   return bill.mop_card || 0
   if (type === 'credit') return bill.outstanding_amount > 0.01 ? bill.outstanding_amount : 0
   return 0
 }
@@ -869,9 +867,19 @@ async function fetchTodayBills() {
       if (s) seriesList = [s.split('.')[0]]  // "SSPL-SI-.YYYY.-" → "SSPL-SI-"
     }
     if (!seriesList.length) return
+
+    const cashAcc = localStorage.getItem('wb-cash') || ''
+    const upiAcc = localStorage.getItem('wb-upi') || ''
+    const cardAcc = localStorage.getItem('wb-card') || ''
+    const discAcc = localStorage.getItem('wb-discount-account') || ''
+
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_today_bills', {
       date: currentDate.value,
       series_list: JSON.stringify(seriesList),
+      cash_account: cashAcc,
+      upi_account: upiAcc,
+      card_account: cardAcc,
+      discount_account: discAcc
     })
     todayBills.value = res || []
   } catch (e) {

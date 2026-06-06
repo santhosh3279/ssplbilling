@@ -82,7 +82,7 @@ def get_upi_day_balances(account, date):
 
 
 @frappe.whitelist()
-def get_today_bills(date, series_list):
+def get_today_bills(date, series_list, cash_account=None, upi_account=None, card_account=None, discount_account=None):
 	"""Return today's submitted Sales Invoices for the given series with payment mode breakdown."""
 	import json
 
@@ -119,12 +119,12 @@ def get_today_bills(date, series_list):
 
 	payments = frappe.db.sql(
 		f"""
-		SELECT per.reference_name AS invoice, pe.mode_of_payment, SUM(per.allocated_amount) AS amount
+		SELECT per.reference_name AS invoice, pe.paid_to AS account, SUM(per.allocated_amount) AS amount
 		FROM `tabPayment Entry Reference` per
 		JOIN `tabPayment Entry` pe ON pe.name = per.parent
 		WHERE per.reference_name IN ({placeholders})
 		  AND pe.docstatus = 1
-		GROUP BY per.reference_name, pe.mode_of_payment
+		GROUP BY per.reference_name, pe.paid_to
 		""",
 		invoice_names,
 		as_dict=True,
@@ -132,9 +132,25 @@ def get_today_bills(date, series_list):
 
 	payment_map = {}
 	for p in payments:
-		payment_map.setdefault(p["invoice"], {})[p["mode_of_payment"]] = float(p["amount"] or 0)
+		inv_name = p["invoice"]
+		acc = p["account"]
+		amt = float(p["amount"] or 0)
+		if inv_name not in payment_map:
+			payment_map[inv_name] = {"cash": 0.0, "upi": 0.0, "card": 0.0}
+		if cash_account and acc == cash_account:
+			payment_map[inv_name]["cash"] += amt
+		elif upi_account and acc == upi_account:
+			payment_map[inv_name]["upi"] += amt
+		elif card_account and acc == card_account:
+			payment_map[inv_name]["card"] += amt
 
 	# 3. Journal Entry Discounts (linked to Sales Invoice)
+	je_condition = ""
+	je_params = list(invoice_names)
+	if discount_account:
+		je_condition = " AND jea.account = %s"
+		je_params.append(discount_account)
+
 	je_discounts = frappe.db.sql(
 		f"""
 		SELECT jea.reference_name AS invoice, SUM(jea.credit_in_account_currency) AS discount
@@ -144,15 +160,19 @@ def get_today_bills(date, series_list):
 		  AND jea.reference_name IN ({placeholders})
 		  AND je.docstatus = 1
 		  AND jea.credit_in_account_currency > 0
+		  {je_condition}
 		GROUP BY jea.reference_name
 		""",
-		invoice_names,
+		je_params,
 		as_dict=True,
 	)
 	je_discount_map = {d["invoice"]: float(d["discount"] or 0) for d in je_discounts}
 
 	for inv in invoices:
-		inv["pay"] = payment_map.get(inv["name"], {})
+		mops = payment_map.get(inv["name"], {"cash": 0.0, "upi": 0.0, "card": 0.0})
+		inv["mop_cash"] = mops["cash"]
+		inv["mop_upi"] = mops["upi"]
+		inv["mop_card"] = mops["card"]
 		inv["grand_total"] = float(inv["grand_total"] or 0)
 		inv["discount_amount"] = float(inv["discount_amount"] or 0) + je_discount_map.get(inv["name"], 0)
 		inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
