@@ -96,13 +96,13 @@
           <table class="w-full text-left whitespace-nowrap">
             <thead>
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
-                <th class="px-6 py-4 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-10">Store (Account)</th>
+                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-10">Store (Account)</th>
                 <!-- Dynamic Price List Columns -->
-                <th v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                <th v-for="pl in priceLists" :key="pl" class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                   {{ pl }}
                 </th>
-                <th class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Total Amount</th>
-                <th class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Contribution %</th>
+                <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Total Amount</th>
+                <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Contribution %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50">
@@ -111,21 +111,21 @@
                 :key="row.account"
                 class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
               >
-                <td class="px-6 py-4 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10">
+                <td class="px-6 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10">
                   <div class="text-lg font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.store_name }}</div>
                   <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.account }}</div>
                 </td>
                 <!-- Dynamic Price List Values -->
-                <td v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right font-mono text-xl">
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-2 text-right font-mono text-xl">
                   <span v-if="row.price_list_data[pl]" class="text-[var(--color-text)]">
                     {{ formatCurrency(row.price_list_data[pl]) }}
                   </span>
                   <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
                 </td>
-                <td class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text)]">
+                <td class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text)]">
                   {{ formatCurrency(row.total_amount) }}
                 </td>
-                <td class="px-6 py-4 text-right">
+                <td class="px-6 py-2 text-right">
                   <div class="flex items-center justify-end gap-3">
                     <div class="w-24 h-1.5 bg-[var(--color-surface-raised)] rounded-full overflow-hidden">
                       <div
