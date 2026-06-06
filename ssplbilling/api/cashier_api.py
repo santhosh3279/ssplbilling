@@ -343,15 +343,16 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			"parent",
 		) or "Cash"
 
-	def _create_pe(amount, paid_to_account, mop_name, ref_no=None):
+	def _create_pe(amount, paid_to_account, ref_no=None):
 		if amount <= 0 or not paid_to_account: return None
 		outstanding = frappe.db.get_value("Sales Invoice", si.name, "outstanding_amount") or 0
 		allocated = min(amount, outstanding)
+		mop = _mop_for_account(paid_to_account)
 		pe = frappe.new_doc("Payment Entry")
 		pe.payment_type = "Receive"
 		pe.posting_date = posting_date
 		pe.company = company
-		pe.mode_of_payment = mop_name
+		pe.mode_of_payment = mop
 		pe.party_type = "Customer"
 		pe.party = si.customer
 		pe.paid_from = si.debit_to
@@ -377,15 +378,15 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		payment_entries.append(je.name)
 
 	if cash_amount > 0.01:
-		pe_name = _create_pe(cash_amount, cash_account, "Cash")
+		pe_name = _create_pe(cash_amount, cash_account)
 		if pe_name: payment_entries.append(pe_name)
 
 	if upi_amount > 0.01:
-		pe_name = _create_pe(upi_amount, upi_account, "UPI")
+		pe_name = _create_pe(upi_amount, upi_account)
 		if pe_name: payment_entries.append(pe_name)
 
 	if card_amount > 0.01:
-		pe_name = _create_pe(card_amount, card_account, "Credit Card", ref_no=card_ref_no)
+		pe_name = _create_pe(card_amount, card_account, ref_no=card_ref_no)
 		if pe_name: payment_entries.append(pe_name)
 
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}

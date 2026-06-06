@@ -117,34 +117,22 @@ def get_today_bills(date, series_list):
 	invoice_names = [inv["name"] for inv in invoices]
 	placeholders = ", ".join(["%s"] * len(invoice_names))
 
-        # 1. Fetch from Payment Entry (standard)
-        pe_payments = frappe.db.sql(f"""
-                SELECT per.reference_name AS invoice, pe.mode_of_payment, SUM(per.allocated_amount) AS amount
-                FROM `tabPayment Entry Reference` per
-                JOIN `tabPayment Entry` pe ON pe.name = per.parent
-                WHERE per.reference_name IN ({placeholders})
-                  AND pe.docstatus = 1
-                GROUP BY per.reference_name, pe.mode_of_payment
-        """, invoice_names, as_dict=True)
+	payments = frappe.db.sql(
+		f"""
+		SELECT per.reference_name AS invoice, pe.mode_of_payment, SUM(per.allocated_amount) AS amount
+		FROM `tabPayment Entry Reference` per
+		JOIN `tabPayment Entry` pe ON pe.name = per.parent
+		WHERE per.reference_name IN ({placeholders})
+		  AND pe.docstatus = 1
+		GROUP BY per.reference_name, pe.mode_of_payment
+		""",
+		invoice_names,
+		as_dict=True,
+	)
 
-        # 2. Fetch from Journal Entry (discounts/adjustments)
-        je_payments = frappe.db.sql(f"""
-                SELECT jea.reference_name AS invoice, "Discount" AS mode_of_payment, SUM(jea.credit_in_account_currency - jea.debit_in_account_currency) AS amount
-                FROM `tabJournal Entry Account` jea
-                JOIN `tabJournal Entry` je ON je.name = jea.parent
-                WHERE jea.reference_name IN ({placeholders})
-                  AND jea.reference_type = "Sales Invoice"
-                  AND je.docstatus = 1
-                GROUP BY jea.reference_name
-        """, invoice_names, as_dict=True)
-
-        payment_map = {}
-        for p in pe_payments:
-                payment_map.setdefault(p["invoice"], {})[p["mode_of_payment"]] = float(p["amount"] or 0)
-        for p in je_payments:
-                mops = payment_map.setdefault(p["invoice"], {})
-                mops["Discount"] = mops.get("Discount", 0) + float(p["amount"] or 0)
-
+	payment_map = {}
+	for p in payments:
+		payment_map.setdefault(p["invoice"], {})[p["mode_of_payment"]] = float(p["amount"] or 0)
 
 	for inv in invoices:
 		inv["pay"] = payment_map.get(inv["name"], {})
