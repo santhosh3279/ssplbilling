@@ -96,13 +96,13 @@
           <table class="w-full text-left whitespace-nowrap">
             <thead>
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
-                <th class="px-6 py-4 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-10">Store (Account)</th>
+                <th class="px-6 py-4 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-10">Store (Account)</th>
                 <!-- Dynamic Price List Columns -->
-                <th v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                <th v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                   {{ pl }}
                 </th>
-                <th class="px-6 py-4 text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Total Amount</th>
-                <th class="px-6 py-4 text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Contribution %</th>
+                <th class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Total Amount</th>
+                <th class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Contribution %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50">
