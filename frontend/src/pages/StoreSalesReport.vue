@@ -112,17 +112,17 @@
                 class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
               >
                 <td class="px-6 py-4 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10">
-                  <div class="font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.store_name }}</div>
-                  <div class="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.account }}</div>
+                  <div class="text-lg font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.store_name }}</div>
+                  <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.account }}</div>
                 </td>
                 <!-- Dynamic Price List Values -->
-                <td v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right font-mono text-sm">
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right font-mono text-xl">
                   <span v-if="row.price_list_data[pl]" class="text-[var(--color-text)]">
                     {{ formatCurrency(row.price_list_data[pl]) }}
                   </span>
                   <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
                 </td>
-                <td class="px-6 py-4 text-right font-bold text-[var(--color-text)]">
+                <td class="px-6 py-4 text-right text-lg font-bold text-[var(--color-text)]">
                   {{ formatCurrency(row.total_amount) }}
                 </td>
                 <td class="px-6 py-4 text-right">
@@ -133,7 +133,7 @@
                         :style="{ width: `${(row.total_amount / grandTotal * 100).toFixed(1)}%` }"
                       ></div>
                     </div>
-                    <span class="text-xs font-semibold text-[var(--color-text-muted)]">
+                    <span class="text-lg font-semibold text-[var(--color-text-muted)]">
                       {{ (row.total_amount / grandTotal * 100).toFixed(1) }}%
                     </span>
                   </div>
@@ -142,15 +142,15 @@
             </tbody>
             <tfoot>
               <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
-                <td class="px-6 py-1.5 sticky left-0 bg-[var(--color-bg)] z-10">GRAND TOTAL</td>
+                <td class="px-6 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10">GRAND TOTAL</td>
                 <!-- Price List Totals -->
-                <td v-for="pl in priceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-sm text-[var(--color-text)]">
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)]">
                    {{ formatCurrency(getPriceListTotal(pl)) }}
                 </td>
-                <td class="px-6 py-1.5 text-right text-xl text-[var(--color-success)]">
+                <td class="px-6 py-1.5 text-right text-3xl text-[var(--color-success)]">
                   {{ formatCurrency(grandTotal) }}
                 </td>
-                <td class="px-6 py-1.5 text-right text-[var(--color-text-muted)] font-bold">100.0%</td>
+                <td class="px-6 py-1.5 text-right text-lg text-[var(--color-text-muted)] font-bold">100.0%</td>
               </tr>
             </tfoot>
           </table>
