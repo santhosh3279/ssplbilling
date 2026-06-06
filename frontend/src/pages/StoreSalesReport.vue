@@ -142,15 +142,15 @@
             </tbody>
             <tfoot>
               <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
-                <td class="px-6 py-5 sticky left-0 bg-[var(--color-bg)] z-10">GRAND TOTAL</td>
+                <td class="px-6 py-1.5 sticky left-0 bg-[var(--color-bg)] z-10">GRAND TOTAL</td>
                 <!-- Price List Totals -->
-                <td v-for="pl in priceLists" :key="pl" class="px-6 py-5 text-right font-mono text-sm text-[var(--color-text)]">
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-sm text-[var(--color-text)]">
                    {{ formatCurrency(getPriceListTotal(pl)) }}
                 </td>
-                <td class="px-6 py-5 text-right text-xl text-[var(--color-success)]">
+                <td class="px-6 py-1.5 text-right text-xl text-[var(--color-success)]">
                   {{ formatCurrency(grandTotal) }}
                 </td>
-                <td class="px-6 py-5 text-right text-[var(--color-text-muted)] font-bold">100.0%</td>
+                <td class="px-6 py-1.5 text-right text-[var(--color-text-muted)] font-bold">100.0%</td>
               </tr>
             </tfoot>
           </table>
