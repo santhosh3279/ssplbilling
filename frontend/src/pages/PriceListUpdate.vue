@@ -254,15 +254,22 @@ const calculatedRatesByUom = computed(() => {
   const result = {}
   if (!uoms.value.length || !prices.value.length) return result
 
+  // 1. Determine the purchase rate for the stock UOM first to use as a base
+  let stockPurchaseRate = 0
+  const initialUomData = uoms.value.find(u => u.uom === props.initialUom)
+  if (initialUomData && props.initialRate) {
+    stockPurchaseRate = props.initialRate / initialUomData.conversion_factor
+  }
+
   for (const u of uoms.value) {
     const rates = []
     // Base rate for this UOM is the first price list's rate for this UOM
     let firstRate = prices.value[0]?.uom_rates[u.uom] || 0
     
-    // If this is the initial UOM being entered, adjust the base rate for markups
-    // Formula: (Rate * (1 - Discount/100)) * (1 + Tax/100 if not inclusive)
-    if (u.uom === props.initialUom && props.initialRate) {
-      const netRate = props.initialRate * (1 - props.initialDiscount / 100)
+    // If we have an entered purchase rate, derive this UOM's landing cost
+    if (stockPurchaseRate > 0) {
+      const uomPurchaseRate = stockPurchaseRate * u.conversion_factor
+      const netRate = uomPurchaseRate * (1 - props.initialDiscount / 100)
       if (!props.isInclusive) {
         firstRate = netRate * (1 + props.taxRate / 100)
       } else {
