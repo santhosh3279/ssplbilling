@@ -137,7 +137,7 @@ def get_today_bills(date, series_list):
 	for inv in invoices:
 		inv["pay"] = payment_map.get(inv["name"], {})
 		inv["grand_total"] = float(inv["grand_total"] or 0)
-                inv["discount_amount"] = float(inv["discount_amount"] or 0)
+		inv["discount_amount"] = float(inv["discount_amount"] or 0)
 		inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
 
 	return invoices
