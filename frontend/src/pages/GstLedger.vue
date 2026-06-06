@@ -202,7 +202,7 @@
               <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">{{ selectedEntry.voucher_type }}</span>
               <span class="font-mono text-sm font-bold text-[var(--color-info)]">{{ selectedEntry.voucher_no }}</span>
             </div>
-            <button @click="selectedEntry = null" class="rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] transition">✕</button>
+            <button @click="selectedEntry = null" class="rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition">✕</button>
           </div>
 
           <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">

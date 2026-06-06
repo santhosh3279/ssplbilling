@@ -5,13 +5,13 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button
-            class="rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] transition-colors"
+            class="rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
             @click="router.push('/reports')"
           >
-            ← Back
+            &larr; Back
           </button>
           <div>
-            <h1 class="text-lg font-bold text-[var(--color-text-on-highlight)] uppercase tracking-wider">Store Sale Report</h1>
+            <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Store Sale Report</h1>
             <p class="text-xs text-[var(--color-text-muted)]">Consolidated sales by store (Direct Income)</p>
           </div>
         </div>
@@ -22,14 +22,14 @@
             <input
               v-model="fromDate"
               type="date"
-              class="bg-transparent border-none text-xs text-[var(--color-text-on-highlight)] focus:ring-0 px-2 py-1"
+              class="bg-transparent border-none text-xs text-[var(--color-text)] focus:ring-0 px-2 py-1"
               @change="fetchData"
             />
             <span class="text-[var(--color-text-muted)] text-xs">to</span>
             <input
               v-model="toDate"
               type="date"
-              class="bg-transparent border-none text-xs text-[var(--color-text-on-highlight)] focus:ring-0 px-2 py-1"
+              class="bg-transparent border-none text-xs text-[var(--color-text)] focus:ring-0 px-2 py-1"
               @change="fetchData"
             />
           </div>
@@ -83,7 +83,7 @@
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
             <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Active Stores</p>
-            <p class="text-3xl font-black text-[var(--color-text-on-highlight)]">{{ reportData.length }}</p>
+            <p class="text-3xl font-black text-[var(--color-text)]">{{ reportData.length }}</p>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
             <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Average / Store</p>
@@ -108,10 +108,10 @@
                 class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
               >
                 <td class="px-6 py-4">
-                  <div class="font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text-on-highlight)]">{{ row.store_name }}</div>
+                  <div class="font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.store_name }}</div>
                   <div class="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.cost_center }}</div>
                 </td>
-                <td class="px-6 py-4 text-right font-bold text-[var(--color-text-on-highlight)]">
+                <td class="px-6 py-4 text-right font-bold text-[var(--color-text)]">
                   {{ formatCurrency(row.total_amount) }}
                 </td>
                 <td class="px-6 py-4 text-right">

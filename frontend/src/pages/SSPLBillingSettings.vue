@@ -3,13 +3,13 @@
     <header class="shrink-0 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center gap-4">
         <button 
-          class="rounded-lg px-3 py-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-on-highlight)] transition-colors" 
+          class="rounded-lg px-3 py-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors" 
           @click="router.push('/')"
         >
           &larr; Dashboard
         </button>
         <div>
-          <h1 class="text-lg font-bold text-[var(--color-text-on-highlight)] uppercase tracking-wider">SSPL Billing Settings</h1>
+          <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">SSPL Billing Settings</h1>
           <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest font-medium">System Configuration</p>
         </div>
       </div>
@@ -117,7 +117,7 @@
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm overflow-x-auto">
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
             <h2 class="text-xl font-bold text-[var(--color-text)]">Billing Series</h2>
-            <button @click="addRow('billing_series')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text-on-highlight)]">+ Add Row</button>
+            <button @click="addRow('billing_series')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text)]">+ Add Row</button>
           </div>
           <table class="w-full text-sm text-left">
             <thead class="text-xs text-[var(--color-text-muted)] uppercase bg-[var(--color-bg)]">
@@ -152,7 +152,7 @@
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm overflow-x-auto">
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
             <h2 class="text-xl font-bold text-[var(--color-text)]">User Series & Roles</h2>
-            <button @click="addRow('user_series')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text-on-highlight)]">+ Add Row</button>
+            <button @click="addRow('user_series')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text)]">+ Add Row</button>
           </div>
           <table class="w-full text-sm text-left">
             <thead class="text-[10px] text-[var(--color-text-muted)] uppercase bg-[var(--color-bg)]">
@@ -204,7 +204,7 @@
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm overflow-x-auto">
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
             <h2 class="text-xl font-bold text-[var(--color-text)]">Printer Settings</h2>
-            <button @click="addRow('table_vycb')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text-on-highlight)]">+ Add Row</button>
+            <button @click="addRow('table_vycb')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text)]">+ Add Row</button>
           </div>
           <table class="w-full text-sm text-left">
             <thead class="text-xs text-[var(--color-text-muted)] uppercase bg-[var(--color-bg)]">
@@ -230,7 +230,7 @@
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm overflow-x-auto">
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
             <h2 class="text-xl font-bold text-[var(--color-text)]">Visible Accounts</h2>
-            <button @click="addRow('visible_accounts')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text-on-highlight)]">+ Add Row</button>
+            <button @click="addRow('visible_accounts')" class="text-sm bg-[var(--color-surface-raised)] hover:bg-[var(--color-surface-raised)] px-3 py-1 rounded text-[var(--color-text)]">+ Add Row</button>
           </div>
           <table class="w-full text-sm text-left">
             <thead class="text-xs text-[var(--color-text-muted)] uppercase bg-[var(--color-bg)]">

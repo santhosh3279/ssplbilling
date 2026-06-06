@@ -52,7 +52,7 @@
       <main class="flex-1 p-8 overflow-y-auto">
         <div class="max-w-xl mx-auto space-y-6">
           <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-2xl p-6 space-y-6">
-            <h2 class="text-lg font-bold text-[var(--color-text-on-highlight)] border-b border-[var(--color-border)] pb-3">New Entry</h2>
+            <h2 class="text-lg font-bold text-[var(--color-text)] border-b border-[var(--color-border)] pb-3">New Entry</h2>
             
             <div class="grid grid-cols-2 gap-6">
               <!-- Date -->
@@ -61,7 +61,7 @@
                 <input 
                   v-model="form.date"
                   type="date"
-                  class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2.5 font-bold text-[var(--color-text-on-highlight)] outline-none focus:border-[var(--color-info)]"
+                  class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2.5 font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                 />
               </div>
 
@@ -73,7 +73,7 @@
                   v-model="customerQuery"
                   type="text"
                   placeholder="Select Customer..."
-                  class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2.5 font-bold text-[var(--color-text-on-highlight)] outline-none focus:border-[var(--color-info)]"
+                  class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2.5 font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                   @input="onCustomerInput"
                   @keydown.down.prevent="customerHighlight = Math.min(customerHighlight + 1, customerResults.length - 1)"
                   @keydown.up.prevent="customerHighlight = Math.max(customerHighlight - 1, 0)"
@@ -125,7 +125,7 @@
 
             <div class="flex gap-4 pt-4">
               <button 
-                class="flex-1 rounded-xl bg-[var(--color-surface-raised)] py-3 font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-surface-raised)] transition active:scale-95"
+                class="flex-1 rounded-xl bg-[var(--color-surface-raised)] py-3 font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition active:scale-95"
                 @click="resetForm"
               >Clear</button>
               <button 
