@@ -166,7 +166,12 @@ def get_today_bills(date, series_list, cash_account=None, upi_account=None, card
 	je_condition = ""
 	je_params = list(invoice_names)
 	if discount_account:
-		je_condition = " AND jea.account = %s"
+		# The reference is on the Customer row (Receivable), while the discount account is on the other row.
+		# So we check if the Journal Entry contains at least one row with the discount_account.
+		je_condition = """ AND EXISTS (
+			SELECT 1 FROM `tabJournal Entry Account` jea2 
+			WHERE jea2.parent = je.name AND jea2.account = %s
+		)"""
 		je_params.append(discount_account)
 
 	je_discounts = frappe.db.sql(
