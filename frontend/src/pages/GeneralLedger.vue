@@ -115,7 +115,7 @@
           :disabled="!selectedParty || loading"
           class="rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-sm active:scale-95"
           :class="selectedParty && !loading
-            ? 'bg-[var(--color-info)] text-white hover:opacity-90 cursor-pointer'
+            ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] hover:opacity-90 cursor-pointer'
             : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] cursor-not-allowed'"
         >
           {{ loading ? 'Loading…' : 'Refresh Ledger' }}
@@ -418,7 +418,7 @@
           <button
             v-if="['Sales Invoice', 'Quotation'].includes(selectedEntry.voucher_type)"
             @click="openBillDetail"
-            class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:bg-[var(--color-success)]/90 active:scale-95"
+            class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] py-2.5 text-xs font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-success)]/90 active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             Open Bill
@@ -427,7 +427,7 @@
           <button
             v-if="['Sales Invoice', 'Purchase Invoice'].includes(selectedEntry.voucher_type)"
             @click="openVoucherPrint"
-            class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-info)] py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:bg-[var(--color-info)]/90 active:scale-95"
+            class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-info)] py-2.5 text-xs font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-info)]/90 active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             Print {{ voucherLabel(selectedEntry.voucher_type) }}

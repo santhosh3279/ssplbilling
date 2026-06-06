@@ -145,7 +145,7 @@
                     <button 
                       v-if="row.party && row.amount > 0"
                       @click="triggerModal(idx)"
-                      class="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-white transition-all"
+                      class="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-all"
                     >
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     </button>
@@ -210,7 +210,7 @@
       <button
         @click="saveAllEntries"
         :disabled="submitting || !canSave"
-        class="group flex items-center gap-4 rounded-2xl bg-[var(--color-success)] px-16 py-4 text-3xl font-black text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:grayscale"
+        class="group flex items-center gap-4 rounded-2xl bg-[var(--color-success)] px-16 py-4 text-3xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:grayscale"
       >
         <span v-if="submitting">Processing...</span>
         <span v-else class="flex items-center gap-3">
@@ -247,7 +247,7 @@
 
     <!-- Multi-Success Toast -->
     <transition name="slide-up">
-      <div v-if="saveStats" class="fixed bottom-24 right-8 z-[200] rounded-2xl bg-slate-900 p-6 text-white shadow-2xl border border-slate-700">
+      <div v-if="saveStats" class="fixed bottom-24 right-8 z-[200] rounded-2xl bg-[var(--color-surface-raised)] p-6 text-[var(--color-text)] shadow-2xl border border-[var(--color-border)]">
          <div class="flex items-center gap-4">
             <div class="h-12 w-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl">✅</div>
             <div>

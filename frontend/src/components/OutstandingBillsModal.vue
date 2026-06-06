@@ -14,7 +14,7 @@
               :key="d"
               @click="filterDirection = d"
               class="min-w-[60px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150"
-              :class="filterDirection === d ? 'bg-[var(--color-highlight)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              :class="filterDirection === d ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >{{ d }}</button>
           </div>
 
@@ -23,7 +23,7 @@
             <button
               @click="showTypeInv = !showTypeInv"
               class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
-              :class="showTypeInv ? 'bg-[var(--color-danger)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              :class="showTypeInv ? 'bg-[var(--color-danger)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >
               <span v-if="showTypeInv">●</span> Invoices
             </button>
@@ -31,14 +31,14 @@
               v-if="!disablePayments"
               @click="showTypePay = !showTypePay"
               class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
-              :class="showTypePay ? 'bg-[var(--color-success)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              :class="showTypePay ? 'bg-[var(--color-success)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >
               <span v-if="showTypePay">●</span> Payments
             </button>
             <button
               @click="showTypeJrn = !showTypeJrn"
               class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
-              :class="showTypeJrn ? 'bg-[var(--color-info)] text-white shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              :class="showTypeJrn ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >
               <span v-if="showTypeJrn">●</span> Journals
             </button>
@@ -310,7 +310,7 @@
         <button
           ref="confirmBtn"
           @click="confirmAdjustments"
-          class="rounded-2xl bg-[var(--color-highlight)] px-12 py-5 text-4xl font-black uppercase tracking-widest text-white hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--color-highlight)]/20"
+          class="rounded-2xl bg-[var(--color-highlight)] px-12 py-5 text-4xl font-black uppercase tracking-widest text-[var(--color-text-on-highlight)] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--color-highlight)]/20"
         >
           Confirm Adjustments
         </button>
