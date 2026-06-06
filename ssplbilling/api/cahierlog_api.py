@@ -134,10 +134,27 @@ def get_today_bills(date, series_list):
 	for p in payments:
 		payment_map.setdefault(p["invoice"], {})[p["mode_of_payment"]] = float(p["amount"] or 0)
 
+	# 3. Journal Entry Discounts (linked to Sales Invoice)
+	je_discounts = frappe.db.sql(
+		f"""
+		SELECT jea.reference_name AS invoice, SUM(jea.credit_in_account_currency) AS discount
+		FROM `tabJournal Entry Account` jea
+		JOIN `tabJournal Entry` je ON je.name = jea.parent
+		WHERE jea.reference_type = "Sales Invoice"
+		  AND jea.reference_name IN ({placeholders})
+		  AND je.docstatus = 1
+		  AND jea.credit_in_account_currency > 0
+		GROUP BY jea.reference_name
+		""",
+		invoice_names,
+		as_dict=True,
+	)
+	je_discount_map = {d["invoice"]: float(d["discount"] or 0) for d in je_discounts}
+
 	for inv in invoices:
 		inv["pay"] = payment_map.get(inv["name"], {})
 		inv["grand_total"] = float(inv["grand_total"] or 0)
-		inv["discount_amount"] = float(inv["discount_amount"] or 0)
+		inv["discount_amount"] = float(inv["discount_amount"] or 0) + je_discount_map.get(inv["name"], 0)
 		inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
 
 	return invoices
