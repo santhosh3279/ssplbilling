@@ -226,7 +226,9 @@ const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
   itemCode: { type: String, default: '' },
   selectedPriceList: { type: String, default: '' },
-  initialFactor: { type: Number, default: 1 }
+  initialFactor: { type: Number, default: 1 },
+  initialRate: { type: Number, default: 0 },
+  initialUom: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -311,12 +313,22 @@ async function loadPrices(code) {
         const prevRate = arr[idx - 1].rate || 1
         markup = Number(((p.rate / prevRate - 1) * 100).toFixed(2))
       }
-      return {
+      
+      const res = {
         ...p,
         markup,
         original_rate: p.rate,
         original_uom_rates: { ...(p.uom_rates || {}) },
       }
+
+      // Apply initial rate from props if provided for this price list and UOM
+      if (props.selectedPriceList && p.price_list === props.selectedPriceList && props.initialRate && props.initialUom) {
+        res.uom_rates[props.initialUom] = props.initialRate
+        if (props.initialUom === stockUom.value) {
+          res.rate = props.initialRate
+        }
+      }
+      return res
     })
 
     // Set active row to selected price list if exists

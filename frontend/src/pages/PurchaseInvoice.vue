@@ -479,14 +479,22 @@
                 v-model="pendingItem.uom"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                 @change="onPendingUomChange"
-                @keydown.enter.prevent="focusPendingDisc()"
+                @keydown.enter.prevent="focusPendingRate()"
                 @keydown.escape="cancelPendingItem"
               >
                 <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
               </select>
               <span v-else class="block px-2 py-1 text-xl text-[var(--color-text-muted)]">{{ pendingItem.uom || 'Nos' }}</span>
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ format(pendingItem.rate) }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <input
+                ref="pendingRateInput"
+                v-model.number="pendingItem.rate"
+                type="number" min="0" step="0.01"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                @keydown="handlePendingRateKeydown"
+              />
+            </td>
             <!-- disc % -->
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
@@ -641,6 +649,8 @@
       :is-sub-window="true"
       :item-code="priceListUpdateItemCode"
       :selected-price-list="priceList"
+      :initial-rate="priceListUpdateRate"
+      :initial-uom="priceListUpdateUom"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
     />
@@ -854,6 +864,16 @@ const priceListUpdateItemCode = computed(() => {
   return pendingItem.value?.item_code || ''
 })
 
+const priceListUpdateRate = computed(() => {
+  if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.rate || 0
+  return pendingItem.value?.rate || 0
+})
+
+const priceListUpdateUom = computed(() => {
+  if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.uom || ''
+  return pendingItem.value?.uom || ''
+})
+
 const lastEnterTime = ref(0)
 
 const invoiceNo = ref('NEW')
@@ -1010,6 +1030,7 @@ const itemSearchTargetRowIdx = ref(null)
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const pendingUomSelect = ref(null)
+const pendingRateInput = ref(null)
 const pendingDiscInput = ref(null)
 const selectedRowIdx = ref(-1)
 const rowRefs = ref([])
@@ -1871,6 +1892,13 @@ function focusPendingDisc() {
   })
 }
 
+function focusPendingRate() {
+  nextTick(() => {
+    pendingRateInput.value?.focus()
+    pendingRateInput.value?.select()
+  })
+}
+
 function confirmPendingItem() {
   if (!pendingItem.value || !pendingItem.value.qty) return
   const p = pendingItem.value
@@ -2029,7 +2057,7 @@ function handlePendingQtyKeydown(e) {
         pendingUomSelect.value?.focus()
         if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker()
       } else {
-        focusPendingDisc()
+        focusPendingRate()
       }
     }
   } else if (e.key === 'Escape') {
@@ -2037,6 +2065,24 @@ function handlePendingQtyKeydown(e) {
   } else if (e.key === 'Backspace' && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
     e.preventDefault()
     cancelPendingItem()
+  }
+}
+
+function handlePendingRateKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    focusPendingDisc()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    cancelPendingItem()
+  } else if (e.key === 'Backspace' && (!pendingItem.value.rate || pendingItem.value.rate === 0)) {
+    e.preventDefault()
+    if (getItemUoms(pendingItem.value.item_code).length > 1) {
+      pendingUomSelect.value?.focus()
+    } else {
+      pendingQtyInput.value?.focus()
+      pendingQtyInput.value?.select()
+    }
   }
 }
 
