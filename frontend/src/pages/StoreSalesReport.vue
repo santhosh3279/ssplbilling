@@ -12,7 +12,7 @@
           </button>
           <div>
             <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Store Sale Report</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">Consolidated sales by store (Direct Income)</p>
+            <p class="text-xs text-[var(--color-text-muted)]">Consolidated sales by Store (Income Account) & Price List</p>
           </div>
         </div>
 
@@ -74,9 +74,9 @@
         </div>
       </div>
 
-      <div v-else class="mx-auto max-w-5xl">
+      <div v-else class="w-full">
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-5xl mx-auto">
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
             <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Sales</p>
             <p class="text-3xl font-black text-[var(--color-success)]">{{ formatCurrency(grandTotal) }}</p>
@@ -92,24 +92,35 @@
         </div>
 
         <!-- Data Table -->
-        <div class="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
-          <table class="w-full text-left">
+        <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+          <table class="w-full text-left whitespace-nowrap">
             <thead>
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
-                <th class="px-6 py-4 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Store Name (Cost Center)</th>
-                <th class="px-6 py-4 text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Sale Amount</th>
+                <th class="px-6 py-4 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-10">Store (Account)</th>
+                <!-- Dynamic Price List Columns -->
+                <th v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                  {{ pl }}
+                </th>
+                <th class="px-6 py-4 text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Total Amount</th>
                 <th class="px-6 py-4 text-right text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Contribution %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50">
               <tr
                 v-for="row in reportData"
-                :key="row.cost_center"
+                :key="row.account"
                 class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
               >
-                <td class="px-6 py-4">
+                <td class="px-6 py-4 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10">
                   <div class="font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.store_name }}</div>
-                  <div class="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.cost_center }}</div>
+                  <div class="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.account }}</div>
+                </td>
+                <!-- Dynamic Price List Values -->
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-4 text-right font-mono text-sm">
+                  <span v-if="row.price_list_data[pl]" class="text-[var(--color-text)]">
+                    {{ formatCurrency(row.price_list_data[pl]) }}
+                  </span>
+                  <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
                 </td>
                 <td class="px-6 py-4 text-right font-bold text-[var(--color-text)]">
                   {{ formatCurrency(row.total_amount) }}
@@ -130,9 +141,13 @@
               </tr>
             </tbody>
             <tfoot>
-              <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)]">
-                <td class="px-6 py-5 font-black text-[var(--color-text)] uppercase tracking-wider">GRAND TOTAL</td>
-                <td class="px-6 py-5 text-right text-xl font-black text-[var(--color-success)]">
+              <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
+                <td class="px-6 py-5 sticky left-0 bg-[var(--color-bg)] z-10">GRAND TOTAL</td>
+                <!-- Price List Totals -->
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-5 text-right font-mono text-sm text-[var(--color-text)]">
+                   {{ formatCurrency(getPriceListTotal(pl)) }}
+                </td>
+                <td class="px-6 py-5 text-right text-xl text-[var(--color-success)]">
                   {{ formatCurrency(grandTotal) }}
                 </td>
                 <td class="px-6 py-5 text-right text-[var(--color-text-muted)] font-bold">100.0%</td>
@@ -156,6 +171,7 @@ const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const reportData = ref([])
+const priceLists = ref([])
 
 // Default dates: Today
 const today = new Date().toISOString().slice(0, 10)
@@ -170,8 +186,9 @@ async function fetchData() {
   loading.value = true
   error.value = ''
   try {
-    const data = await getStoreSaleReport(fromDate.value, toDate.value)
-    reportData.value = data || []
+    const res = await getStoreSaleReport(fromDate.value, toDate.value)
+    reportData.value = res.report_data || []
+    priceLists.value = res.price_lists || []
   } catch (e) {
     error.value = e.message || 'Failed to fetch store sale report'
   } finally {
@@ -181,33 +198,54 @@ async function fetchData() {
 
 function formatCurrency(val) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
     maximumFractionDigits: 0
   }).format(val || 0)
+}
+
+function getPriceListTotal(pl) {
+  return reportData.value.reduce((sum, row) => sum + (row.price_list_data[pl] || 0), 0)
 }
 
 function exportToExcel() {
   if (!reportData.value.length) return
 
-  const headers = ['Store Name', 'Cost Center', 'Sale Amount', 'Contribution %']
-  const data = reportData.value.map(r => [
-    r.store_name,
-    r.cost_center,
-    r.total_amount,
-    ((r.total_amount / grandTotal.value) * 100).toFixed(2) + '%'
-  ])
+  // Headers: Store, Price Lists..., Total, Contribution
+  const headers = ['Store Name', 'Account', ...priceLists.value, 'Total Amount', 'Contribution %']
+  
+  const data = reportData.value.map(r => {
+    const row = [
+      r.store_name,
+      r.account
+    ]
+    // Add amounts for each price list
+    priceLists.value.forEach(pl => {
+      row.push(r.price_list_data[pl] || 0)
+    })
+    // Add Total and %
+    row.push(r.total_amount)
+    row.push(((r.total_amount / grandTotal.value) * 100).toFixed(2) + '%')
+    return row
+  })
 
-  // Add total row
-  data.push(['GRAND TOTAL', '', grandTotal.value, '100%'])
+  // Add Grand Total row
+  const totalRow = ['GRAND TOTAL', '']
+  priceLists.value.forEach(pl => {
+    totalRow.push(getPriceListTotal(pl))
+  })
+  totalRow.push(grandTotal.value)
+  totalRow.push('100%')
+  data.push(totalRow)
 
   const wb = utils.book_new()
   const ws = utils.aoa_to_sheet([headers, ...data])
 
-  // Column widths
-  ws['!cols'] = [
-    { wch: 30 }, { wch: 40 }, { wch: 15 }, { wch: 15 }
+  // Column widths: Store(30), Account(40), PLs(15 each), Total(15), %(15)
+  const colWidths = [
+    { wch: 30 }, { wch: 40 }
   ]
+  priceLists.value.forEach(() => colWidths.push({ wch: 15 }))
+  colWidths.push({ wch: 15 }, { wch: 15 })
+  ws['!cols'] = colWidths
 
   utils.book_append_sheet(wb, ws, 'Store Sale Report')
   writeFile(wb, `StoreSaleReport_${fromDate.value}_to_${toDate.value}.xlsx`)
@@ -217,3 +255,21 @@ onMounted(() => {
   fetchData()
 })
 </script>
+
+<style scoped>
+/* Optional: improve scrolling for wide tables */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 20px;
+}
+</style>

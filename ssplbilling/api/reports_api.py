@@ -364,74 +364,90 @@ def get_item_summary_report(series, from_date=None, to_date=None):
 
 @frappe.whitelist()
 def get_store_sale_report(from_date=None, to_date=None):
-	"""
-	Get sale report grouped by store (cost center) from direct income accounts.
-	Preset to today if dates are not provided.
-	"""
-	if not from_date:
-		from_date = frappe.utils.today()
-	if not to_date:
-		to_date = frappe.utils.today()
+        """
+        Get sale report grouped by store (Income Account) from direct income accounts.
+        Preset to today if dates are not provided.
+        """
+        if not from_date:
+                from_date = frappe.utils.today()
+        if not to_date:
+                to_date = frappe.utils.today()
 
-	# Find accounts under 'Direct Income' group
-	# We search for accounts that have 'Direct Income' in their name and are groups
-	direct_income_groups = frappe.get_all(
-		"Account",
-		filters={"account_name": ["like", "%Direct Income%"], "is_group": 1},
-		fields=["name", "lft", "rgt"],
-	)
+        # Find accounts under 'Direct Income' group
+        direct_income_groups = frappe.get_all(
+                "Account",
+                filters={"account_name": ["like", "%Direct Income%"], "is_group": 1},
+                fields=["name", "lft", "rgt"],
+        )
 
-	if not direct_income_groups:
-		# Fallback: search by root_type
-		direct_income_groups = frappe.get_all(
-			"Account", filters={"root_type": "Income", "is_group": 1}, fields=["name", "lft", "rgt"]
-		)
+        if not direct_income_groups:
+                direct_income_groups = frappe.get_all(
+                        "Account", filters={"root_type": "Income", "is_group": 1}, fields=["name", "lft", "rgt"]
+                )
 
-	account_list = []
-	for acc in direct_income_groups:
-		children = frappe.get_all(
-			"Account",
-			filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
-			fields=["name"],
-		)
-		account_list.extend([c.name for c in children])
+        account_list = []
+        for acc in direct_income_groups:
+                children = frappe.get_all(
+                        "Account",
+                        filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
+                        fields=["name"],
+                )
+                account_list.extend([c.name for c in children])
 
-	if not account_list:
-		return []
+        if not account_list:
+                return {"report_data": [], "price_lists": []}
 
-	# Query GL Entry for the given date range and accounts
-	# Income is credit, so we use (credit - debit)
-	results = frappe.db.sql(
-		"""
-		SELECT
-			cost_center,
-			SUM(credit - debit) as total_amount
-		FROM
-			`tabGL Entry`
-		WHERE
-			posting_date BETWEEN %s AND %s
-			AND account IN %s
-			AND is_cancelled = 0
-		GROUP BY
-			cost_center
-		ORDER BY
-			total_amount DESC
-	""",
-		(from_date, to_date, tuple(account_list)),
-		as_dict=1,
-	)
+        # Query GL Entry joined with Sales Invoice to get Price List
+        # Group by account instead of cost_center
+        results = frappe.db.sql(
+                """
+                SELECT
+                        gle.account,
+                        si.selling_price_list,
+                        SUM(gle.credit - gle.debit) as total_amount
+                FROM
+                        `tabGL Entry` gle
+                LEFT JOIN
+                        `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
+                WHERE
+                        gle.posting_date BETWEEN %s AND %s
+                        AND gle.account IN %s
+                        AND gle.is_cancelled = 0
+                GROUP BY
+                        gle.account, si.selling_price_list
+                ORDER BY
+                        gle.account, total_amount DESC
+        """,
+                (from_date, to_date, tuple(account_list)),
+                as_dict=1,
+        )
 
-	# Format results for frontend
-	final_results = []
-	for r in results:
-		row = dict(r)
-		row["total_amount"] = float(row["total_amount"] or 0)
-		# Simplify cost center name if it contains " - "
-		cc = row["cost_center"] or "No Cost Center"
-		if " - " in cc:
-			row["store_name"] = cc.split(" - ")[0]
-		else:
-			row["store_name"] = cc
-		final_results.append(row)
+        # Format results for frontend: Group by Account and pivot Price Lists
+        stores = {}
+        all_price_lists = set()
+        for r in results:
+                acc_name = r["account"]
+                if acc_name not in stores:
+                        store_display_name = acc_name.split(" - ")[0] if " - " in acc_name else acc_name
+                        stores[acc_name] = {
+                                "account": acc_name,
+                                "store_name": store_display_name,
+                                "total_amount": 0.0,
+                                "price_list_data": {}
+                        }
+                
+                amount = float(r["total_amount"] or 0)
+                stores[acc_name]["total_amount"] += amount
+                
+                pl_name = r["selling_price_list"] or "Other/Direct"
+                all_price_lists.add(pl_name)
+                stores[acc_name]["price_list_data"][pl_name] = stores[acc_name]["price_list_data"].get(pl_name, 0.0) + amount
 
-	return final_results
+        # Convert to list and sort by total amount desc
+        report_data = list(stores.values())
+        report_data.sort(key=lambda x: x["total_amount"], reverse=True)
+
+        return {
+                "report_data": report_data,
+                "price_lists": sorted(list(all_price_lists))
+        }
