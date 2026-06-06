@@ -48,6 +48,8 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'DailyReport',
   'SingleEntry',
   'NamingSettings',
+  'PaymentV2',
+  'Expense',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
@@ -121,6 +123,8 @@ const TILE_ROUTE_MAP = {
   'journal-contra':    'JournalContraEntry',
   'stock-reconciliation': 'StockReconciliation',
   'payment':           'Payment',
+  'paymentv2':         'PaymentV2',
+  'expense':           'Expense',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',
   'incentive-ledger':  'IncentiveLedger',
