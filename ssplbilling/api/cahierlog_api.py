@@ -115,6 +115,24 @@ def get_today_bills(date, series_list, cash_account=None, upi_account=None, card
 		return []
 
 	invoice_names = [inv["name"] for inv in invoices]
+	# 0. Resolve accounts if company is available
+	company = frappe.db.get_value("Sales Invoice", invoices[0]["name"], "company") if invoices else None
+	
+	def _resolve(name):
+		if name in [None, "", "null", "undefined"]:
+			return None
+		if not company or " - " in name:
+			return name
+		res = frappe.db.get_value("Account", {"account_name": name, "company": company, "is_group": 0}, "name")
+		if not res:
+			res = frappe.db.get_value("Account", {"name": name, "company": company, "is_group": 0}, "name")
+		return res or name
+
+	cash_account = _resolve(cash_account)
+	upi_account = _resolve(upi_account)
+	card_account = _resolve(card_account)
+	discount_account = _resolve(discount_account)
+
 	placeholders = ", ".join(["%s"] * len(invoice_names))
 
 	payments = frappe.db.sql(
