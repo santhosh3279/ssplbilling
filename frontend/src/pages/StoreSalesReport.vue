@@ -93,39 +93,43 @@
 
         <!-- Data Table -->
         <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
-          <table class="w-full text-left whitespace-nowrap">
+          <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
             <thead>
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
-                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-10">Store (Account)</th>
+                <th class="px-4 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">S.No</th>
+                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-[60px] bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Store (Account)</th>
                 <!-- Dynamic Price List Columns -->
-                <th v-for="pl in priceLists" :key="pl" class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                <th v-for="pl in priceLists" :key="pl" class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">
                   {{ pl }}
                 </th>
-                <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Total Amount</th>
-                <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Contribution %</th>
+                <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Amount</th>
+                <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Contribution %</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50">
               <tr
-                v-for="row in reportData"
+                v-for="(row, idx) in reportData"
                 :key="row.account"
                 class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
               >
-                <td class="px-6 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10">
+                <td class="px-4 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 font-mono text-lg text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
+                  {{ idx + 1 }}
+                </td>
+                <td class="px-6 py-2 sticky left-[60px] bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 border-b border-[var(--color-border)]/50">
                   <div class="text-lg font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.store_name }}</div>
                   <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.account }}</div>
                 </td>
                 <!-- Dynamic Price List Values -->
-                <td v-for="pl in priceLists" :key="pl" class="px-6 py-2 text-right font-mono text-xl">
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50">
                   <span v-if="row.price_list_data[pl]" class="text-[var(--color-text)]">
                     {{ formatCurrency(row.price_list_data[pl]) }}
                   </span>
                   <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
                 </td>
-                <td class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text)]">
+                <td class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text)] border-b border-[var(--color-border)]/50">
                   {{ formatCurrency(row.total_amount) }}
                 </td>
-                <td class="px-6 py-2 text-right">
+                <td class="px-6 py-2 text-right border-b border-[var(--color-border)]/50">
                   <div class="flex items-center justify-end gap-3">
                     <div class="w-24 h-1.5 bg-[var(--color-surface-raised)] rounded-full overflow-hidden">
                       <div
@@ -142,15 +146,16 @@
             </tbody>
             <tfoot>
               <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
-                <td class="px-6 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10">GRAND TOTAL</td>
+                <td class="px-4 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
+                <td class="px-6 py-1.5 text-lg sticky left-[60px] bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
                 <!-- Price List Totals -->
-                <td v-for="pl in priceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)]">
+                <td v-for="pl in priceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
                    {{ formatCurrency(getPriceListTotal(pl)) }}
                 </td>
-                <td class="px-6 py-1.5 text-right text-3xl text-[var(--color-success)]">
+                <td class="px-6 py-1.5 text-right text-3xl text-[var(--color-success)] border-t border-[var(--color-border)]">
                   {{ formatCurrency(grandTotal) }}
                 </td>
-                <td class="px-6 py-1.5 text-right text-lg text-[var(--color-text-muted)] font-bold">100.0%</td>
+                <td class="px-6 py-1.5 text-right text-lg text-[var(--color-text-muted)] font-bold border-t border-[var(--color-border)]">100.0%</td>
               </tr>
             </tfoot>
           </table>
@@ -209,11 +214,12 @@ function getPriceListTotal(pl) {
 function exportToExcel() {
   if (!reportData.value.length) return
 
-  // Headers: Store, Price Lists..., Total, Contribution
-  const headers = ['Store Name', 'Account', ...priceLists.value, 'Total Amount', 'Contribution %']
+  // Headers: S.No, Store, Account, Price Lists..., Total, Contribution
+  const headers = ['S.No', 'Store Name', 'Account', ...priceLists.value, 'Total Amount', 'Contribution %']
   
-  const data = reportData.value.map(r => {
+  const data = reportData.value.map((r, idx) => {
     const row = [
+      idx + 1,
       r.store_name,
       r.account
     ]
@@ -228,7 +234,7 @@ function exportToExcel() {
   })
 
   // Add Grand Total row
-  const totalRow = ['GRAND TOTAL', '']
+  const totalRow = ['', 'GRAND TOTAL', '']
   priceLists.value.forEach(pl => {
     totalRow.push(getPriceListTotal(pl))
   })
@@ -239,9 +245,9 @@ function exportToExcel() {
   const wb = utils.book_new()
   const ws = utils.aoa_to_sheet([headers, ...data])
 
-  // Column widths: Store(30), Account(40), PLs(15 each), Total(15), %(15)
+  // Column widths: S.No(8), Store(30), Account(40), PLs(15 each), Total(15), %(15)
   const colWidths = [
-    { wch: 30 }, { wch: 40 }
+    { wch: 8 }, { wch: 30 }, { wch: 40 }
   ]
   priceLists.value.forEach(() => colWidths.push({ wch: 15 }))
   colWidths.push({ wch: 15 }, { wch: 15 })
