@@ -730,6 +730,11 @@ const invoiceDate = ref(new Date().toISOString().split('T')[0])
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
+watch(availableSeries, (newVal) => {
+  if (newVal && newVal.length > 0) {
+    sidebarSeries.value = [...newVal]
+  }
+}, { immediate: true })
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
 const isLoadingBill = ref(false)
