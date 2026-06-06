@@ -96,8 +96,8 @@
           <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
             <thead>
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
-                <th class="px-4 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">S.No</th>
-                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-[60px] bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Store (Account)</th>
+                <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)] text-center">S.No</th>
+                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-12 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Store (Account)</th>
                 <!-- Dynamic Price List Columns -->
                 <th v-for="pl in priceLists" :key="pl" class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">
                   {{ pl }}
@@ -112,10 +112,10 @@
                 :key="row.account"
                 class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
               >
-                <td class="px-4 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 font-mono text-lg text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
+                <td class="w-12 px-2 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 font-mono text-lg text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-center">
                   {{ idx + 1 }}
                 </td>
-                <td class="px-6 py-2 sticky left-[60px] bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 border-b border-[var(--color-border)]/50">
+                <td class="px-6 py-2 sticky left-12 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 border-b border-[var(--color-border)]/50">
                   <div class="text-lg font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.store_name }}</div>
                   <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.account }}</div>
                 </td>
@@ -146,8 +146,8 @@
             </tbody>
             <tfoot>
               <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
-                <td class="px-4 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
-                <td class="px-6 py-1.5 text-lg sticky left-[60px] bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
+                <td class="w-12 px-2 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
+                <td class="px-6 py-1.5 text-lg sticky left-12 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
                 <!-- Price List Totals -->
                 <td v-for="pl in priceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
                    {{ formatCurrency(getPriceListTotal(pl)) }}
