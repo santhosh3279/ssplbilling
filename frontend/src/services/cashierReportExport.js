@@ -164,6 +164,7 @@ export async function generateCashierReport(data) {
     { header: 'Cash', key: 'cash', width: 12 },
     { header: 'UPI', key: 'upi', width: 12 },
     { header: 'Card', key: 'card', width: 12 },
+    { header: 'Disc', key: 'discount', width: 12 },
     { header: 'Credit', key: 'credit', width: 12 }
   ]
 
@@ -175,18 +176,20 @@ export async function generateCashierReport(data) {
   billsSheet.getRow(1).eachCell((cell) => { cell.border = thinBorder })
 
   let totalSales = 0
-  const totalsMop = { cash: 0, upi: 0, card: 0, credit: 0 }
+  const totalsMop = { cash: 0, upi: 0, card: 0, credit: 0, discount: 0 }
 
   bills.forEach(bill => {
     const cash = getMopAmount(bill, 'cash')
     const upi = getMopAmount(bill, 'upi')
     const card = getMopAmount(bill, 'card')
     const credit = getMopAmount(bill, 'credit')
+    const discount = bill.discount_amount || 0
     totalSales += bill.grand_total
     totalsMop.cash += cash
     totalsMop.upi += upi
     totalsMop.card += card
     totalsMop.credit += credit
+    totalsMop.discount += discount
 
     const row = billsSheet.addRow({
       name: bill.name,
@@ -195,6 +198,7 @@ export async function generateCashierReport(data) {
       cash,
       upi,
       card,
+      discount,
       credit
     })
     row.eachCell((cell, colNum) => { 
@@ -210,6 +214,7 @@ export async function generateCashierReport(data) {
     cash: totalsMop.cash,
     upi: totalsMop.upi,
     card: totalsMop.card,
+    discount: totalsMop.discount,
     credit: totalsMop.credit
   })
   billsTotalRow.font = { bold: true }

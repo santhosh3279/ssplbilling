@@ -100,7 +100,7 @@ def get_today_bills(date, series_list):
 
 	invoices = frappe.db.sql(
 		f"""
-		SELECT si.name, si.customer, si.grand_total, si.outstanding_amount, si.posting_time
+		SELECT si.name, si.customer, si.grand_total, si.discount_amount, si.outstanding_amount, si.posting_time
 		FROM `tabSales Invoice` si
 		WHERE si.posting_date = %s
 		  AND si.docstatus = 1
@@ -137,6 +137,7 @@ def get_today_bills(date, series_list):
 	for inv in invoices:
 		inv["pay"] = payment_map.get(inv["name"], {})
 		inv["grand_total"] = float(inv["grand_total"] or 0)
+                inv["discount_amount"] = float(inv["discount_amount"] or 0)
 		inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
 
 	return invoices

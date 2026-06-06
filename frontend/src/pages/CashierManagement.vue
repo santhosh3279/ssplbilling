@@ -338,6 +338,7 @@
                 <th class="px-2 py-3 text-right text-[var(--color-success)]">Cash</th>
                 <th class="px-2 py-3 text-right text-[var(--color-success)]">UPI</th>
                 <th class="px-2 py-3 text-right text-[var(--color-info)]">Card</th>
+                <th class="px-2 py-3 text-right text-[var(--color-warning)]">Disc</th>
                 <th class="px-2 py-3 text-right text-[var(--color-text-muted)]">Unpaid</th>
               </tr>
             </thead>
@@ -366,6 +367,10 @@
                   {{ getMopAmount(bill, 'card') > 0 ? getMopAmount(bill, 'card').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
                 <td class="px-2 py-2.5 text-right font-mono text-xl"
+                    :class="bill.discount_amount > 0 ? 'text-[var(--color-warning)] font-black' : 'text-[var(--color-text-muted)]'">
+                  {{ bill.discount_amount > 0 ? bill.discount_amount.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
+                </td>
+                <td class="px-2 py-2.5 text-right font-mono text-xl"
                     :class="getMopAmount(bill, 'credit') > 0 ? 'text-[var(--color-text)] font-black' : 'text-[var(--color-text-muted)]'">
                   {{ getMopAmount(bill, 'credit') > 0 ? getMopAmount(bill, 'credit').toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
@@ -383,6 +388,9 @@
                 </td>
                 <td class="px-2 py-2.5 text-right font-mono text-[var(--color-info)] text-xl">
                   {{ billTotals.card > 0 ? billTotals.card.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
+                </td>
+                <td class="px-2 py-2.5 text-right font-mono text-[var(--color-warning)] text-xl">
+                  {{ billTotals.discount > 0 ? billTotals.discount.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
                 </td>
                 <td class="px-2 py-2.5 text-right font-mono text-[var(--color-text)] text-xl">
                   {{ billTotals.credit > 0 ? billTotals.credit.toLocaleString('en-IN', { minimumFractionDigits: 0 }) : '—' }}
@@ -815,12 +823,13 @@ const filteredBills = computed(() => {
 })
 
 const billTotals = computed(() => {
-  const t = { cash: 0, upi: 0, card: 0, credit: 0 }
+  const t = { cash: 0, upi: 0, card: 0, credit: 0, discount: 0 }
   for (const bill of filteredBills.value) {
     t.cash   += getMopAmount(bill, 'cash')
     t.upi    += getMopAmount(bill, 'upi')
     t.card   += getMopAmount(bill, 'card')
     t.credit += getMopAmount(bill, 'credit')
+    t.discount += bill.discount_amount || 0
   }
   return t
 })
