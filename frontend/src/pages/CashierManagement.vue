@@ -92,7 +92,7 @@
     </nav>
 
     <!-- LAYOUT: left 25% panel = BOX Cash table + UPI stacked -->
-    <div class="flex gap-4 p-4 mt-20 overflow-x-auto" style="min-height: calc(100vh - 5rem);">
+    <div class="flex gap-4 p-4 mt-20 overflow-x-auto overflow-y-hidden" style="height: calc(100vh - 5rem);">
 
       <!-- LEFT 40%: BOX Cash compact table + UPI below -->
       <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar min-w-0" style="width: 40%; flex-shrink: 0;">
