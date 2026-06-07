@@ -169,11 +169,12 @@
                       v-if="selectedRow === idx"
                       :ref="el => setRef(el, 'barcode', idx)"
                       v-model="item.barcode"
-                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                      readonly
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase cursor-default"
                       @keydown.enter.prevent="focusField('qty', idx)"
                       @keydown.tab.prevent="focusField('qty', idx)"
                     />
-                    <span v-else class="font-mono text-[var(--color-text-muted)]">{{ item.barcode || '—' }}</span>
+                    <span v-else class="font-mono text-[var(--color-text-muted)] uppercase">{{ item.barcode || '—' }}</span>
                   </td>
                   <!-- UOM -->
                   <td class="p-0 border-r border-[var(--color-border)]">
@@ -249,7 +250,8 @@
                     <input
                       ref="newBarcodeInput"
                       v-model="newPending.barcode"
-                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                      readonly
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase cursor-default"
                       placeholder="Barcode…"
                       @keydown.enter.prevent="focusNewQty"
                       @keydown.tab.prevent="focusNewQty"
@@ -389,7 +391,7 @@ const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 
 async function fetchBarcodeForItem(itemCode) {
   const cached = lookupItemInCache(itemCode)
-  if (cached && cached.barcode) return cached.barcode
+  if (cached && cached.barcode) return cached.barcode.toUpperCase()
 
   try {
     const res = await frappeGet('frappe.client.get_list', {
@@ -398,9 +400,9 @@ async function fetchBarcodeForItem(itemCode) {
       filters: { parent: itemCode },
       limit: 1
     })
-    return res.length ? res[0].barcode : itemCode
+    return res.length ? res[0].barcode.toUpperCase() : itemCode.toUpperCase()
   } catch (e) {
-    return itemCode
+    return itemCode.toUpperCase()
   }
 }
 
@@ -558,7 +560,7 @@ async function onUomChange(idx) {
     const cached = lookupItemInCache(row.item_code)
     if (cached?.barcodes_detailed) {
       const bcMatch = cached.barcodes_detailed.find(b => b.uom === row.uom)
-      if (bcMatch) row.barcode = bcMatch.barcode
+      if (bcMatch) row.barcode = bcMatch.barcode.toUpperCase()
     }
     await fetchAllRates(row)
   }
@@ -569,7 +571,7 @@ async function onNewUomChange() {
   const cached = lookupItemInCache(newPending.item_code)
   if (cached?.barcodes_detailed) {
     const bcMatch = cached.barcodes_detailed.find(b => b.uom === newPending.uom)
-    if (bcMatch) newPending.barcode = bcMatch.barcode
+    if (bcMatch) newPending.barcode = bcMatch.barcode.toUpperCase()
   }
   await fetchAllRates(newPending)
 }
@@ -786,11 +788,11 @@ async function onCodeEnter(idx) {
     row.uom = r.uom || 'Nos'
     
     if (r._matched_barcode) {
-      row.barcode = r._matched_barcode
+      row.barcode = r._matched_barcode.toUpperCase()
     } else {
-      row.barcode = r.barcode || r.item_code
+      row.barcode = (r.barcode || r.item_code).toUpperCase()
       fetchBarcodeForItem(r.item_code).then(bc => {
-        if (bc) row.barcode = bc
+        if (bc) row.barcode = bc.toUpperCase()
       })
     }
     
@@ -812,11 +814,11 @@ async function onNewCodeEnter() {
     newPending.uom = r.uom || 'Nos'
     
     if (r._matched_barcode) {
-      newPending.barcode = r._matched_barcode
+      newPending.barcode = r._matched_barcode.toUpperCase()
     } else {
-      newPending.barcode = r.barcode || r.item_code
+      newPending.barcode = (r.barcode || r.item_code).toUpperCase()
       fetchBarcodeForItem(r.item_code).then(bc => {
-        if (bc) newPending.barcode = bc
+        if (bc) newPending.barcode = bc.toUpperCase()
       })
     }
 
@@ -826,7 +828,7 @@ async function onNewCodeEnter() {
     newPending.item_code = code
     newPending.item_name = ''
     newPending.uom = 'Nos'
-    newPending.barcode = code
+    newPending.barcode = code.toUpperCase()
     newPending.rates = {}
     focusNewBarcode()
   }
@@ -931,7 +933,7 @@ onMounted(async () => {
         item_name: i.item_name,
         uom: i.uom || 'Nos',
         qty: i.qty || 1,
-        barcode: bc || i.item_code
+        barcode: (bc || i.item_code).toUpperCase()
       }
       await fetchAllRates(itm)
       return itm
@@ -948,7 +950,7 @@ onMounted(async () => {
             item_name: i.item_name,
             uom: i.uom || 'Nos',
             qty: i.qty || 1,
-            barcode: bc || i.item_code
+            barcode: (bc || i.item_code).toUpperCase()
           }
           await fetchAllRates(itm)
           return itm
