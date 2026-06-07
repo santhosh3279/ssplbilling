@@ -183,8 +183,8 @@
                       :ref="el => setRef(el, 'uom', idx)"
                       v-model="item.uom"
                       class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
-                      @keydown.enter.prevent="focusField('barcode', idx)"
-                      @keydown.tab.prevent="focusField('barcode', idx)"
+                      @keydown.enter.prevent="focusField('qty', idx)"
+                      @keydown.tab.prevent="focusField('qty', idx)"
                       @keydown.shift.tab.prevent="focusField('code', idx)"
                       @change="onUomChange(idx)"
                     >
@@ -208,7 +208,7 @@
                         class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                         @keydown.enter.prevent="moveToNextQty(idx)"
                         @keydown.tab.prevent="moveToNextQty(idx)"
-                        @keydown.shift.tab.prevent="focusField('barcode', idx)"
+                        @keydown.shift.tab.prevent="getItemUoms(item.item_code).length > 1 ? focusField('uom', idx) : focusField('code', idx)"
                         @keydown.down.prevent="moveToNextQty(idx)"
                         @keydown.up.prevent="moveToPrevQty(idx)"
                       />
@@ -264,8 +264,8 @@
                       ref="newUomSelect"
                       v-model="newPending.uom"
                       class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
-                      @keydown.enter.prevent="focusNewBarcode"
-                      @keydown.tab.prevent="focusNewBarcode"
+                      @keydown.enter.prevent="focusNewQty"
+                      @keydown.tab.prevent="focusNewQty"
                       @keydown.shift.tab.prevent="focusNewCode"
                       @change="onNewUomChange"
                     >
@@ -287,7 +287,7 @@
                       :disabled="printing"
                       class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-50"
                       @keydown.enter.prevent="addNewItem"
-                      @keydown.shift.tab.prevent="focusNewBarcode"
+                      @keydown.shift.tab.prevent="newPending.item_code && getItemUoms(newPending.item_code).length > 1 ? focusNewUom() : focusNewCode()"
                     />
                   </td>
                   <td></td>
@@ -546,11 +546,11 @@ function focusNewUom() { nextTick(() => newUomSelect.value?.focus()) }
 function focusNewBarcode() { nextTick(() => newBarcodeInput.value?.focus()) }
 function focusAfterCode(idx) {
   if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) focusField('uom', idx)
-  else focusField('barcode', idx)
+  else focusField('qty', idx)
 }
 function focusNewAfterCode() {
   if (newPending.item_code && getItemUoms(newPending.item_code).length > 1) focusNewUom()
-  else focusNewBarcode()
+  else focusNewQty()
 }
 
 async function onUomChange(idx) {
