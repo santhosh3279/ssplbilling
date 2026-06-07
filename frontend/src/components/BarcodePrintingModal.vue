@@ -238,7 +238,7 @@ async function loadResources() {
       frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
       frappeGet('frappe.client.get_list', {
         doctype: 'Print Template',
-        filters: JSON.stringify({ document_type: 'Barcode_Prinitng', format_type: 'Barcode' }),
+        filters: JSON.stringify({ document_type: 'barcode_printing', format_type: 'Barcode' }),
         fields: JSON.stringify(['name', 'template_name', 'format_type']),
         limit: 50,
       }),
@@ -314,7 +314,7 @@ async function triggerPrint() {
   statusMsg.value = ''
 
   try {
-    // Step 1 — create Barcode_Prinitng doc entry
+    // Step 1 — create barcode_printing doc entry
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
       items: JSON.stringify(itemsToPrint.value),
       bill_no: props.billNo || null,
@@ -331,7 +331,7 @@ async function triggerPrint() {
       {
         printer:        selectedPrinter.value,
         print_template: selectedTemplate.value,
-        document_type:  'Barcode_Prinitng',
+        document_type:  'barcode_printing',
         document_name:  docName,
         title:          docName,
       },
