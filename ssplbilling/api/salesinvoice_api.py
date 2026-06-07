@@ -36,6 +36,7 @@ def get_series_defaults(naming_series, doctype="Sales Invoice"):
         "print_format": row.print_format if row and row.print_format else "",
         "warehouse": (user_row.warehouse if user_row and user_row.warehouse else ""),
         "cost_center": (user_row.cost_center if user_row and user_row.cost_center else ""),
+        "income_account": (user_row.income_account if user_row and user_row.income_account else ""),
     }
     
     # Handle different field names for order/invoice number

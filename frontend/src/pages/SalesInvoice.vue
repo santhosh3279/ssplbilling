@@ -815,6 +815,8 @@ async function handleSelectSidebarItem(item) {
     isReturn.value = data.is_return === 1
     ignoreModifier.value = data.customer_rate_multiplier === 0
     if (data.cost_center) costCenter.value = data.cost_center
+    if (data.warehouse) warehouse.value = data.warehouse
+    if (data.income_account) incomeAccount.value = data.income_account
 
     // Charges
     freightEntry.value = data.freight_amount || ''
@@ -1111,6 +1113,9 @@ async function clearBill() {
       const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Invoice' })
       invoiceNo.value = next.invoice_no || 'NEW'
       defaultTemplate.value = next.print_format || ''
+      if (next.warehouse) warehouse.value = next.warehouse
+      if (next.cost_center) costCenter.value = next.cost_center
+      if (next.income_account) incomeAccount.value = next.income_account
     } catch {
       invoiceNo.value = 'NEW'
     }
@@ -2172,6 +2177,7 @@ async function handleSeriesSelected(series) {
     defaultTemplate.value = res.print_format || ''
     if (res.warehouse) warehouse.value = res.warehouse
     if (res.cost_center) costCenter.value = res.cost_center
+    if (res.income_account) incomeAccount.value = res.income_account
 
     // Update inclusive tax from billing series settings
     try {
