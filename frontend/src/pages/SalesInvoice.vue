@@ -1210,6 +1210,7 @@ async function handleSave() {
     customer: customerId.value,
     mop: mop.value,
     posting_date: invoiceDate.value,
+    update_stock: 1,
     price_list: priceList.value,
     discount_pct: discountPct.value,
     discount_amt: discountDirectAmt.value,
