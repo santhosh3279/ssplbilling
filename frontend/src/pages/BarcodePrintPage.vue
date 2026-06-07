@@ -448,7 +448,7 @@ async function loadResources() {
     // 1. Fetch all valid barcode templates
     const validTemplates = await frappeGet('frappe.client.get_list', {
       doctype: 'Print Template',
-      filters: { document_type: 'barcode_printing', format_type: 'Barcode' },
+      filters: { document_type: 'Barcode_Printing', format_type: 'Barcode' },
       fields: ['name', 'template_name'],
       limit: 100
     })
@@ -896,7 +896,7 @@ async function triggerPrint() {
       {
         printer:        selectedPrinter.value,
         print_template: selectedTemplate.value,
-        document_type:  'barcode_printing',
+        document_type:  'Barcode_Printing',
         document_name:  docName,
         title:          docName,
       },

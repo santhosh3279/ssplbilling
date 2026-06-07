@@ -251,7 +251,7 @@ def print_barcodes(items, bill_no=None):
 	if isinstance(items, str):
 		items = json.loads(items)
 
-	doc = frappe.new_doc("Barcode_Prinitng")
+	doc = frappe.new_doc("Barcode_Printing")
 	if bill_no:
 		doc.bill_no = bill_no
 

@@ -4,11 +4,11 @@ import json
 @frappe.whitelist()
 def create_barcode_print_entry(items, bill_no=None, price_lists=None):
         """
-        Create a Barcode_Prinitng document.
+        Create a Barcode_Printing document.
         Removed rate/valuation_rate as per request.
 
         Returns:
-                name of the created Barcode_Prinitng document
+                name of the created Barcode_Printing document
         """
         if isinstance(items, str):
                 items = json.loads(items)
@@ -19,7 +19,7 @@ def create_barcode_print_entry(items, bill_no=None, price_lists=None):
         if not items:
                 frappe.throw("No items provided for barcode printing")
 
-        doc = frappe.new_doc("Barcode_Prinitng")
+        doc = frappe.new_doc("Barcode_Printing")
 
         if bill_no:
                 doc.bill_no = bill_no
