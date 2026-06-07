@@ -1357,6 +1357,7 @@ async function handleSave() {
     supplier: supplierId.value,
     bill_no: supplierInvoiceNo.value,
     bill_date: supplierInvoiceDate.value,
+    update_stock: 1,
     date: invoiceDate.value,
     price_list: priceList.value,
     discount_percentage: discountPct.value,

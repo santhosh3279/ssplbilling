@@ -486,6 +486,7 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.address_display = None
 
     pi.is_return = data.get("is_return", 0)
+    pi.update_stock = 1
     pi.cost_center = data.get("cost_center")
     if data.get("set_warehouse"):
         pi.set_warehouse = data["set_warehouse"]
