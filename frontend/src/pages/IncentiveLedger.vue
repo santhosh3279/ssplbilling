@@ -173,7 +173,7 @@
             >
               <td class="px-4 py-2 font-mono text-[22px] text-[var(--color-text-muted)]">{{ row.date }}</td>
               <td class="px-4 py-2">
-                <span class="font-mono text-2xl text-[var(--color-info)]">{{ row.voucher_no }}</span>
+                <span class="font-mono text-4xl text-[var(--color-info)]">{{ row.voucher_no }}</span>
               </td>
               <td class="px-4 py-2">
                 <span
@@ -183,22 +183,22 @@
               </td>
               <td class="px-4 py-2 text-[22px] text-[var(--color-text-muted)]">{{ row.role || '—' }}</td>
               <td class="px-4 py-2 text-[22px] text-[var(--color-text-muted)] max-w-[320px] truncate" :title="row.party">{{ row.party || '—' }}</td>
-              <td class="px-4 py-2 text-right font-mono font-bold text-2xl" :class="row.earned ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
+              <td class="px-4 py-2 text-right font-mono font-bold text-4xl" :class="row.earned ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
                 {{ row.earned ? '+' + fmtPts(row.earned) : '—' }}
               </td>
-              <td class="px-4 py-2 text-right font-mono font-bold text-2xl" :class="row.redeemed ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+              <td class="px-4 py-2 text-right font-mono font-bold text-4xl" :class="row.redeemed ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
                 {{ row.redeemed ? '-' + fmtPts(row.redeemed) : '—' }}
               </td>
-              <td class="px-4 py-2 text-right font-mono font-bold text-2xl text-[var(--color-text)]">{{ fmtPts(row.balance) }}</td>
+              <td class="px-4 py-2 text-right font-mono font-bold text-4xl text-[var(--color-text)]">{{ fmtPts(row.balance) }}</td>
             </tr>
           </tbody>
           <!-- Footer totals -->
           <tfoot class="sticky bottom-0 bg-[var(--color-surface)] border-t-2 border-[var(--color-border)]">
             <tr class="text-xl font-bold">
               <td colspan="5" class="px-4 py-2 text-right text-[var(--color-text-muted)] uppercase text-[20px] tracking-wider">Totals (filtered)</td>
-              <td class="px-4 py-2 text-right font-mono text-2xl text-[var(--color-success)]">+{{ fmtPts(totalEarned) }}</td>
-              <td class="px-4 py-2 text-right font-mono text-2xl text-[var(--color-danger)]">-{{ fmtPts(totalRedeemed) }}</td>
-              <td class="px-4 py-2 text-right font-mono text-2xl text-[var(--color-info)]">{{ fmtPts(totalEarned - totalRedeemed) }}</td>
+              <td class="px-4 py-2 text-right font-mono text-4xl text-[var(--color-success)]">+{{ fmtPts(totalEarned) }}</td>
+              <td class="px-4 py-2 text-right font-mono text-4xl text-[var(--color-danger)]">-{{ fmtPts(totalRedeemed) }}</td>
+              <td class="px-4 py-2 text-right font-mono text-4xl text-[var(--color-info)]">{{ fmtPts(totalEarned - totalRedeemed) }}</td>
             </tr>
           </tfoot>
         </table>
