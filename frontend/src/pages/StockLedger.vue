@@ -170,12 +170,12 @@
             <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
               <tr class="text-left">
                 <th class="pl-6 pr-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-10">Date</th>
-                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[15ch]">Voucher No</th>
+                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[15ch] max-w-[15ch]">Voucher No</th>
                 <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
-                <th class="px-2 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-[5ch]">UOM</th>
-                <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch]">Inwards</th>
-                <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch]">Outwards</th>
-                <th class="pl-4 pr-6 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch]">Balance</th>
+                <th class="px-2 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-[5ch] max-w-[5ch]">UOM</th>
+                <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch] max-w-[10ch]">Inwards</th>
+                <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch] max-w-[10ch]">Outwards</th>
+                <th class="pl-4 pr-6 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch] max-w-[10ch]">Balance</th>
               </tr>
             </thead>
             <tbody ref="tableBodyRef">
@@ -201,7 +201,7 @@
                 }"
               >
                 <td class="pl-6 pr-2 py-1.5 font-mono whitespace-nowrap" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
-                <td class="px-2 py-1.5">
+                <td class="px-2 py-1.5 w-[15ch] max-w-[15ch] truncate">
                   <button
                     @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
                     class="font-mono hover:underline"
@@ -213,20 +213,20 @@
                 <td class="px-2 py-1.5 truncate" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                   {{ entry.warehouse }}
                 </td>
-                <td class="px-2 py-1.5 text-[var(--color-text-muted)]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
+                <td class="px-2 py-1.5 text-[var(--color-text-muted)] w-[5ch] max-w-[5ch] truncate" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
                   {{ entry.stock_uom }}
                 </td>
-                <td class="px-4 py-1.5 text-right font-mono">
+                <td class="px-4 py-1.5 text-right font-mono w-[10ch] max-w-[10ch]">
                   <span v-if="entry.actual_qty > 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">
                     {{ entry.actual_qty }}
                   </span>
                 </td>
-                <td class="px-4 py-1.5 text-right font-mono">
+                <td class="px-4 py-1.5 text-right font-mono w-[10ch] max-w-[10ch]">
                   <span v-if="entry.actual_qty < 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">
                     {{ Math.abs(entry.actual_qty) }}
                   </span>
                 </td>
-                <td class="pl-4 pr-6 py-1.5 text-right font-mono font-bold"
+                <td class="pl-4 pr-6 py-1.5 text-right font-mono font-bold w-[10ch] max-w-[10ch]"
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.balance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
                   {{ entry.balance }}
                 </td>
