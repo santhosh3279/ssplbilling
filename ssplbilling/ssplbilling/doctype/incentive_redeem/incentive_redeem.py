@@ -36,7 +36,8 @@ class IncentiveRedeem(Document):
 	def _create_payment_entry(self):
 		company_currency = frappe.db.get_value("Company", self.company, "default_currency")
 		party_account = get_party_account("Employee", self.employee, self.company)
-		amount = flt(self.redeem_points) / 4
+		conversion_factor = flt(frappe.db.get_single_value("Incentive Rule", "conversion_factor")) or 4.0
+		amount = flt(self.redeem_points) / conversion_factor
 
 		pe = frappe.get_doc(
 			{
