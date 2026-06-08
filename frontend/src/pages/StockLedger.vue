@@ -247,10 +247,10 @@
           <!-- Panel header -->
           <div class="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-raised)]">
             <div class="flex items-center gap-2">
-              <span class="rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" :class="voucherBadgeClass(selectedEntry.voucher_type)">
+              <span class="rounded px-2 py-0.5 text-[13px] font-bold uppercase tracking-wider" :class="voucherBadgeClass(selectedEntry.voucher_type)">
                 {{ voucherLabel(selectedEntry.voucher_type) }}
               </span>
-              <span class="font-mono text-sm font-bold text-[var(--color-text)]">{{ selectedEntry.voucher_no }}</span>
+              <span class="font-mono text-[18px] font-bold text-[var(--color-text)]">{{ selectedEntry.voucher_no }}</span>
             </div>
             <button @click="closeDetail" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-colors">✕</button>
           </div>
@@ -259,7 +259,7 @@
           <div v-if="voucherDetail" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
 
             <!-- Key fields Card -->
-            <div class="mb-4 space-y-2 rounded-lg bg-[var(--color-surface-raised)] p-3 text-[11px]">
+            <div class="mb-4 space-y-2 rounded-lg bg-[var(--color-surface-raised)] p-3 text-[14px]">
               <div class="flex justify-between">
                 <span class="text-[var(--color-text-muted)]">Date</span>
                 <span class="font-semibold text-[var(--color-text)]">{{ fmtDate(voucherDetail.posting_date || selectedEntry.date) }}</span>
@@ -276,20 +276,20 @@
 
             <!-- Line items -->
             <div v-if="voucherDetail.items?.length">
-              <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+              <div class="mb-2 text-[13px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
                 Items
               </div>
 
               <div class="space-y-2">
-                <div v-for="(item, i) in voucherDetail.items" :key="i" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-[11px]">
+                <div v-for="(item, i) in voucherDetail.items" :key="i" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-[14px]">
                   <div class="flex justify-between font-semibold">
                     <span :class="item.item_code === selectedItem?.item_code ? 'text-[var(--color-info)]' : 'text-[var(--color-text)]'">
                       {{ item.item_code }}
                     </span>
                     <span class="font-mono">₹{{ fmt(item.rate) }}</span>
                   </div>
-                  <div class="text-[10px] text-[var(--color-text-muted)] truncate">{{ item.item_name }}</div>
-                  <div class="mt-1 flex justify-between text-[10px] opacity-70">
+                  <div class="text-[13px] text-[var(--color-text-muted)] truncate">{{ item.item_name }}</div>
+                  <div class="mt-1 flex justify-between text-[13px] opacity-70">
                     <span>{{ item.qty }} {{ item.uom }}</span>
                     <span class="font-bold">₹{{ fmt(item.amount) }}</span>
                   </div>
@@ -298,8 +298,8 @@
             </div>
 
             <div v-if="selectedEntry.remarks" class="mt-6 border-t border-[var(--color-border)] pt-4">
-              <div class="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Remarks</div>
-              <p class="text-[11px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap">{{ selectedEntry.remarks }}</p>
+              <div class="mb-1 text-[13px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Remarks</div>
+              <p class="text-[14px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap">{{ selectedEntry.remarks }}</p>
             </div>
           </div>
 
@@ -308,7 +308,7 @@
             <button
               v-if="['Sales Invoice', 'Quotation'].includes(selectedEntry.voucher_type)"
               @click="openBillDetail(selectedEntry.voucher_type, selectedEntry.voucher_no)"
-              class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] py-2.5 text-xs font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-success)]/90 active:scale-95"
+              class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] py-2.5 text-[15px] font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-success)]/90 active:scale-95"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Open Bill
@@ -316,7 +316,7 @@
 
             <button
               @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
-              class="w-full rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] py-2 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-all"
+              class="w-full rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] py-2 text-[15px] font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-all"
             >
               Open in ERPNext ↗
             </button>
