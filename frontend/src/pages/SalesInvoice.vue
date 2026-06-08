@@ -1292,6 +1292,10 @@ function handleDiscountAmtKeydown(e) {
 }
 
 function handleModify() {
+  if (isSubmitted.value) {
+    alert('Bill is submitted. Modify is denied.')
+    return
+  }
   if (!isReadOnly.value || !isSaved.value) return
   isReadOnly.value = false
   if (items.value.length > 0) {
