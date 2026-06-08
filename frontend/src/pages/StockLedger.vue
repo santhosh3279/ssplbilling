@@ -193,7 +193,7 @@
                 :data-idx="idx"
                 @click="onRowClick(entry, idx)"
                 @mouseenter="onRowMouseEnter(entry, idx)"
-                class="cursor-pointer border-b border-[var(--color-border)] transition-all outline-none"
+                class="cursor-pointer border-b border-[var(--color-border)] transition-all outline-none text-[20px]"
                 :class="{
                   'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-inner z-10 relative': focusedIdx === idx,
                   'bg-[var(--color-info)]/10': selectedEntry === entry && focusedIdx !== idx,
