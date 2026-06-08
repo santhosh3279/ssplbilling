@@ -264,6 +264,7 @@ async function handleSave() {
     const payload = {
       doctype: 'Incentive Redeem',
       employee: doc.employee,
+      employee_name: doc.employee_name,
       posting_date: doc.posting_date,
       company: doc.company,
       redeem_points: doc.redeem_points,
