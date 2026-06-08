@@ -196,7 +196,6 @@
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Account</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
-              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Remarks</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Credit (Cr)</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
@@ -207,7 +206,7 @@
             <!-- Opening Balance -->
             <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
               <td class="px-3 py-2"></td>
-              <td colspan="6" class="px-3 py-2 text-[var(--color-text-muted)] text-[18px]">
+              <td colspan="5" class="px-3 py-2 text-[var(--color-text-muted)] text-[18px]">
                 Opening Balance
                 <span class="ml-1 opacity-60">(before {{ fmtDate(ledgerData.from_date) }})</span>
               </td>
@@ -269,10 +268,6 @@
               </td>
               <td class="px-3 py-2 max-w-[160px] truncate" :title="entry.account" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.account }}</td>
               <td class="px-3 py-2 max-w-[200px] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
-              <td class="px-3 py-2 max-w-[220px]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                <span v-if="expandedIdx === idx" class="whitespace-pre-wrap break-words">{{ entry.remarks || '—' }}</span>
-                <span v-else class="block truncate">{{ entry.remarks || '—' }}</span>
-              </td>
               <td class="px-3 py-2 text-right font-mono">
                 <span v-if="entry.debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.debit) }}</span>
                 <span v-else :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]'">—</span>
@@ -292,7 +287,7 @@
             <tr v-if="ledgerData.entries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
               <td class="px-3 py-2"></td>
               <td colspan="3" class="px-3 py-2 font-semibold text-[var(--color-text)]">Closing Balance</td>
-              <td colspan="3" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
+              <td colspan="2" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
               </td>
               <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-success)]">{{ fmt(ledgerData.total_debit) }}</td>
@@ -394,11 +389,6 @@
 
               </div>
             </div>
-          </div>
-
-          <div v-if="selectedEntry.remarks" class="mt-6 border-t border-[var(--color-border)] pt-4">
-            <div class="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Remarks</div>
-            <p class="text-[11px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap">{{ selectedEntry.remarks }}</p>
           </div>
 
         </div>
@@ -573,7 +563,6 @@ onUnmounted(() => {
 const ledgerData = ref(null)
 const loading = ref(false)
 const error = ref('')
-const expandedIdx = ref(null)
 const selectedRows = ref(new Set())
 
 const isAllSelected = computed(() => {
@@ -675,7 +664,6 @@ async function loadLedger() {
   if (!selectedParty.value || loading.value) return
   loading.value = true
   error.value = ''
-  expandedIdx.value = null
   selectedRows.value.clear()
   closeDetail()
   try {
@@ -698,8 +686,6 @@ async function loadLedger() {
 async function onRowClick(entry, idx) {
   focusedIdx.value = idx
   if (selectedEntry.value === entry) {
-    // If already open, clicking same row toggles remarks expansion
-    toggleExpand(idx)
     return
   }
   selectedEntry.value = entry
@@ -768,11 +754,6 @@ function scrollRowIntoView(idx) {
   })
 }
 
-// ── Row expand (keep as fallback for remarks) ──
-function toggleExpand(idx) {
-  expandedIdx.value = expandedIdx.value === idx ? null : idx
-}
-
 // ── Formatting ──
 function fmt(n) {
   return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -817,11 +798,11 @@ function exportExcel() {
   rows.push([])
 
   // Header
-  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Account', 'Against', 'Remarks', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
+  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Account', 'Against', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
 
   // Opening row
   rows.push([
-    `Opening (before ${fmtDate(d.from_date)})`, '', '', '', '', '',
+    `Opening (before ${fmtDate(d.from_date)})`, '', '', '', '',
     d.opening_balance > 0 ? d.opening_balance : '',
     d.opening_balance < 0 ? Math.abs(d.opening_balance) : '',
     Math.abs(d.opening_balance),
@@ -835,7 +816,6 @@ function exportExcel() {
       e.voucher_no,
       e.account,
       e.against,
-      e.remarks,
       e.debit || '',
       e.credit || '',
       Math.abs(e.balance),
@@ -845,7 +825,7 @@ function exportExcel() {
   // Closing row
   rows.push([])
   rows.push([
-    'Closing Balance', '', '', '', '', '',
+    'Closing Balance', '', '', '', '',
     d.total_debit,
     d.total_credit,
     Math.abs(d.closing_balance),
@@ -856,7 +836,7 @@ function exportExcel() {
   // Column widths
   ws['!cols'] = [
     { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 28 }, { wch: 28 },
-    { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 16 },
+    { wch: 14 }, { wch: 14 }, { wch: 16 },
   ]
 
   const wb = XLSX.utils.book_new()
