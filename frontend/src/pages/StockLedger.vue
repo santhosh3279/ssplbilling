@@ -169,9 +169,9 @@
           <table class="w-full border-collapse">
             <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
               <tr class="text-left">
-                <th class="px-4 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
-                <th class="px-4 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
-                <th class="px-4 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
+                <th class="pl-6 pr-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
+                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
+                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Inwards</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Outwards</th>
                 <th class="px-4 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-20">UOM</th>
@@ -200,8 +200,8 @@
                   'hover:bg-[var(--color-surface-raised)]/60': focusedIdx !== idx
                 }"
               >
-                <td class="px-4 py-1.5 font-mono whitespace-nowrap" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
-                <td class="px-4 py-1.5">
+                <td class="pl-6 pr-2 py-1.5 font-mono whitespace-nowrap" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
+                <td class="px-2 py-1.5">
                   <button
                     @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
                     class="font-mono hover:underline"
@@ -210,7 +210,7 @@
                     {{ entry.voucher_no }}
                   </button>
                 </td>
-                <td class="px-4 py-1.5 truncate max-w-[150px]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                <td class="px-2 py-1.5 truncate" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                   {{ entry.warehouse }}
                 </td>
                 <td class="px-4 py-1.5 text-right font-mono">
