@@ -9,6 +9,10 @@ from erpnext.accounts.party import get_party_account
 
 
 class IncentiveRedeem(Document):
+        def before_insert(self):
+                if not self.incentive_ledger:
+                        self.incentive_ledger = frappe.db.get_single_value("Incentive Rule", "incentive_ledger")
+
 	def validate(self):
 		balance = flt(frappe.db.get_value("Employee", self.employee, "balance_incentive"))
 		self.balance_points = balance

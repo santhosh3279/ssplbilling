@@ -11,6 +11,7 @@
   "purchase",
   "store_transfer",
   "conversion_factor",
+  "incentive_ledger",
   "column_break_fpju",
   "wholesale_pricelist_1",
   "wholesale_pricelist_2",
@@ -69,6 +70,12 @@
    "fieldname": "conversion_factor",
    "fieldtype": "Float",
    "label": "Conversion Factor"
+  },
+  {
+   "fieldname": "incentive_ledger",
+   "fieldtype": "Link",
+   "label": "Incentive Ledger",
+   "options": "Account"
   }
  ],
  "grid_page_length": 50,

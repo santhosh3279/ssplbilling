@@ -73,7 +73,6 @@
    "label": "Accounts"
   },
   {
-   "default": "Employee Incentive - SSPL",
    "fieldname": "incentive_ledger",
    "fieldtype": "Link",
    "label": "Incentive Ledger",
