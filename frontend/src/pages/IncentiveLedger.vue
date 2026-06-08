@@ -104,41 +104,27 @@
         >
           Clear
         </button>
+
+        <!-- Horizontal Summary Stats -->
+        <div v-if="ledgerData" class="ml-auto flex items-center gap-8">
+          <div class="flex flex-col items-end">
+            <span class="text-[14px] font-bold uppercase tracking-wider text-[var(--color-success)]">Earned</span>
+            <span class="text-3xl font-bold text-[var(--color-success)] font-mono">{{ fmtPts(ledgerData.summary.total_incentive) }}</span>
+          </div>
+          <div class="flex flex-col items-end border-l border-[var(--color-border)] pl-8">
+            <span class="text-[14px] font-bold uppercase tracking-wider text-[var(--color-danger)]">Redeemed</span>
+            <span class="text-3xl font-bold text-[var(--color-danger)] font-mono">{{ fmtPts(ledgerData.summary.redeemed_incentive) }}</span>
+          </div>
+          <div class="flex flex-col items-end border-l border-[var(--color-border)] pl-8">
+            <span class="text-[14px] font-bold uppercase tracking-wider text-[var(--color-info)]">Balance</span>
+            <span class="text-4xl font-bold text-[var(--color-info)] font-mono">{{ fmtPts(ledgerData.summary.balance_incentive) }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- ═══════ BODY ═══════ -->
     <div class="flex flex-1 overflow-hidden">
-
-      <!-- ── Summary panel ── -->
-      <div v-if="ledgerData" class="w-80 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col p-4 gap-4">
-        <!-- Employee card -->
-        <div class="rounded-lg bg-[var(--color-surface-raised)]/50 border border-[var(--color-border)] p-3">
-          <div class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Employee</div>
-          <div class="text-xl font-bold text-[var(--color-text)]">{{ ledgerData.summary.employee_name }}</div>
-          <div class="text-[20px] text-[var(--color-text-muted)] mt-0.5">{{ ledgerData.summary.employee }}</div>
-          <div v-if="ledgerData.summary.designation" class="mt-1 text-[20px] text-[var(--color-text-muted)] italic">{{ ledgerData.summary.designation }}</div>
-        </div>
-
-        <!-- Stat cards -->
-        <div class="rounded-lg bg-[var(--color-success)]/20 border border-[var(--color-success)] p-3">
-          <div class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-success)]">Total Earned</div>
-          <div class="mt-1 text-4xl font-bold text-[var(--color-success)] font-mono">{{ fmtPts(ledgerData.summary.total_incentive) }}</div>
-          <div class="text-[20px] text-[var(--color-success)]">points</div>
-        </div>
-
-        <div class="rounded-lg bg-[var(--color-danger)]/20 border border-[var(--color-danger)] p-3">
-          <div class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-danger)]">Total Redeemed</div>
-          <div class="mt-1 text-4xl font-bold text-[var(--color-danger)] font-mono">{{ fmtPts(ledgerData.summary.redeemed_incentive) }}</div>
-          <div class="text-[20px] text-[var(--color-danger)]">points</div>
-        </div>
-
-        <div class="rounded-lg bg-[var(--color-info)]/20 border border-[var(--color-info)] p-3">
-          <div class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-info)]">Balance</div>
-          <div class="mt-1 text-5xl font-bold text-[var(--color-info)] font-mono">{{ fmtPts(ledgerData.summary.balance_incentive) }}</div>
-          <div class="text-[20px] text-[var(--color-info)]">points</div>
-        </div>
-      </div>
 
       <!-- ── Ledger table ── -->
       <div class="flex-1 overflow-auto">
