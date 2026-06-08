@@ -35,16 +35,6 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- Zoom Controls -->
-          <div class="flex items-center rounded border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-            <button @click="zoomPercent = Math.max(60, zoomPercent - 10)" class="flex h-7 w-7 items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&minus;</button>
-            <div class="flex flex-col items-center justify-center border-x border-[var(--color-border)] px-2 min-w-[44px]">
-              <span class="text-[9px] uppercase tracking-tight text-[var(--color-text-muted)] leading-none">Zoom</span>
-              <span class="text-[11px] font-semibold text-[var(--color-text)] leading-tight">{{ zoomPercent }}%</span>
-            </div>
-            <button @click="zoomPercent = Math.min(200, zoomPercent + 10)" class="flex h-7 w-7 items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&plus;</button>
-          </div>
-
           <!-- Close button for sub-window -->
           <button
             v-if="isSubWindow"
@@ -176,7 +166,7 @@
         </div>
 
         <template v-else-if="ledgerData">
-          <table class="w-full border-collapse" :style="{ fontSize: dynamicRowStyle.fontSize }">
+          <table class="w-full border-collapse">
             <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
               <tr class="text-left">
                 <th class="px-4 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
@@ -210,8 +200,8 @@
                   'hover:bg-[var(--color-surface-raised)]/60': focusedIdx !== idx
                 }"
               >
-                <td class="px-4 font-mono whitespace-nowrap" :style="dynamicRowStyle" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
-                <td class="px-4 whitespace-nowrap" :style="dynamicRowStyle">
+                <td class="px-4 py-1.5 font-mono whitespace-nowrap" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
+                <td class="px-4 py-1.5">
                   <button
                     @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
                     class="font-mono hover:underline"
@@ -220,24 +210,23 @@
                     {{ entry.voucher_no }}
                   </button>
                 </td>
-                <td class="px-4 truncate max-w-[150px]" :style="dynamicRowStyle" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                <td class="px-4 py-1.5 truncate max-w-[150px]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                   {{ entry.warehouse }}
                 </td>
-                <td class="px-4 text-right font-mono" :style="dynamicRowStyle">
+                <td class="px-4 py-1.5 text-right font-mono">
                   <span v-if="entry.actual_qty > 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">
                     {{ entry.actual_qty }}
                   </span>
                 </td>
-                <td class="px-4 text-right font-mono" :style="dynamicRowStyle">
+                <td class="px-4 py-1.5 text-right font-mono">
                   <span v-if="entry.actual_qty < 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">
                     {{ Math.abs(entry.actual_qty) }}
                   </span>
                 </td>
-                <td class="px-4 text-[var(--color-text-muted)]" :style="dynamicRowStyle" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
+                <td class="px-4 py-1.5 text-[var(--color-text-muted)]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
                   {{ entry.stock_uom }}
                 </td>
-                <td class="px-4 text-right font-mono font-bold"
-                  :style="dynamicRowStyle"
+                <td class="px-4 py-1.5 text-right font-mono font-bold"
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.balance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
                   {{ entry.balance }}
                 </td>
@@ -453,18 +442,6 @@ function clearItem() {
   ledgerData.value = null
   error.value = ''
 }
-
-// ─── Zoom ─────────────────────────────────────────────────────────────────────
-const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 100)
-const dynamicRowStyle = computed(() => ({
-  fontSize: `${(13 * zoomPercent.value) / 100}px`,
-  paddingTop: `${(3 * zoomPercent.value) / 100}px`,
-  paddingBottom: `${(3 * zoomPercent.value) / 100}px`
-}))
-
-watch(zoomPercent, (newZoom) => {
-  localStorage.setItem('wb-zoom', newZoom.toString())
-})
 
 function getTodayIST() {
   const date = new Date()
