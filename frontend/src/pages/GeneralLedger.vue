@@ -760,9 +760,20 @@ function onGlobalKeydown(e) {
     const prevIdx = Math.max(focusedIdx.value - 1, 0)
     onRowClick(ledgerData.value.entries[prevIdx], prevIdx)
     scrollRowIntoView(prevIdx)
-  } else if (e.key === 'F4' || e.key === 'Enter') {
+  } else if (e.key === 'F4') {
     e.preventDefault()
     showDateModal.value = true
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (focusedIdx.value !== -1 && selectedEntry.value) {
+      if (['Sales Invoice', 'Quotation'].includes(selectedEntry.value.voucher_type)) {
+        openBillDetail()
+      } else {
+        openInErpNext(selectedEntry.value.voucher_type, selectedEntry.value.voucher_no)
+      }
+    } else {
+      showDateModal.value = true
+    }
   } else if (e.key === ' ') {
     if (focusedIdx.value !== -1) {
       e.preventDefault()
