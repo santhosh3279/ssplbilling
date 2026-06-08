@@ -180,7 +180,7 @@
 
       <!-- Table -->
       <template v-else-if="ledgerData">
-        <table class="w-full border-collapse">
+        <table class="w-full border-collapse text-[19.5px]">
           <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
               <th class="w-10 px-3 py-2 text-center">
@@ -191,15 +191,15 @@
                   class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-info)]"
                 />
               </th>
-              <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
-              <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
-              <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
-              <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Account</th>
-              <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
-              <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Remarks</th>
-              <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
-              <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Credit (Cr)</th>
-              <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Account</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Remarks</th>
+              <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
+              <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Credit (Cr)</th>
+              <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
             </tr>
           </thead>
           <tbody ref="tableBodyRef">
@@ -207,7 +207,7 @@
             <!-- Opening Balance -->
             <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
               <td class="px-3 py-2"></td>
-              <td colspan="6" class="px-3 py-2 text-[var(--color-text-muted)] text-xs">
+              <td colspan="6" class="px-3 py-2 text-[var(--color-text-muted)] text-[18px]">
                 Opening Balance
                 <span class="ml-1 opacity-60">(before {{ fmtDate(ledgerData.from_date) }})</span>
               </td>
@@ -220,7 +220,7 @@
               <td class="px-3 py-2 text-right font-mono font-semibold"
                 :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ fmt(Math.abs(ledgerData.opening_balance)) }}
-                <span class="ml-0.5 text-[10px] font-normal text-[var(--color-text-muted)]">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
+                <span class="ml-0.5 text-[15px] font-normal text-[var(--color-text-muted)]">{{ ledgerData.opening_balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
             </tr>
 
@@ -256,7 +256,7 @@
               <td class="px-3 py-2 whitespace-nowrap font-mono" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
               <td class="px-3 py-2 whitespace-nowrap">
                 <span
-                  class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                  class="rounded px-1.5 py-0.5 text-[15px] font-semibold uppercase tracking-wide"
                   :class="voucherBadge(entry.voucher_type)"
                 >{{ voucherLabel(entry.voucher_type) }}</span>
               </td>
@@ -284,7 +284,7 @@
               <td class="px-3 py-2 text-right font-mono font-semibold"
                 :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">
                 {{ fmt(Math.abs(entry.balance)) }}
-                <span class="ml-0.5 text-[10px] font-normal" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
+                <span class="ml-0.5 text-[15px] font-normal" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
             </tr>
 
@@ -292,7 +292,7 @@
             <tr v-if="ledgerData.entries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
               <td class="px-3 py-2"></td>
               <td colspan="3" class="px-3 py-2 font-semibold text-[var(--color-text)]">Closing Balance</td>
-              <td colspan="3" class="px-3 py-2 text-xs text-[var(--color-text-muted)]">
+              <td colspan="3" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
               </td>
               <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-success)]">{{ fmt(ledgerData.total_debit) }}</td>
@@ -300,7 +300,7 @@
               <td class="px-3 py-2 text-right font-mono font-bold"
                 :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ fmt(Math.abs(ledgerData.closing_balance)) }}
-                <span class="ml-0.5 text-[10px] font-normal text-[var(--color-text-muted)]">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
+                <span class="ml-0.5 text-[15px] font-normal text-[var(--color-text-muted)]">{{ ledgerData.closing_balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
             </tr>
 
