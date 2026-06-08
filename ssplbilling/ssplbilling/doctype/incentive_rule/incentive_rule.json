@@ -10,6 +10,7 @@
   "wholesale",
   "purchase",
   "store_transfer",
+  "conversion_factor",
   "column_break_fpju",
   "wholesale_pricelist_1",
   "wholesale_pricelist_2",
@@ -62,6 +63,12 @@
    "fieldtype": "Link",
    "label": "Wholesale pricelist 3",
    "options": "Price List"
+  },
+  {
+   "default": "1.0",
+   "fieldname": "conversion_factor",
+   "fieldtype": "Float",
+   "label": "Conversion Factor"
   }
  ],
  "grid_page_length": 50,
