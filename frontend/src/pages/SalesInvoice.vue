@@ -540,7 +540,7 @@
       title="Exit Page"
       message="Are you sure you want to exit? Unsaved changes will be lost."
       @close="showExitWarning = false"
-      @confirm="router.push('/')"
+      @confirm="goBack()"
     />
 
     <ShortcutPage
@@ -611,7 +611,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -1347,11 +1347,11 @@ function handleCancel() {
   const hasParty = customerId.value;
   const hasItems = activeItems.value.length > 0;
 
-  if (!isReadOnly.value && (hasParty || hasItems)) {
+  if (!isReadOnly.value && (hasParty || hasItems) && !props.isSubwindow) {
     showExitWarning.value = true;
   } else {
-    if (activeItems.value.length === 0 || isReadOnly.value) {
-      router.push('/');
+    if (activeItems.value.length === 0 || isReadOnly.value || props.isSubwindow) {
+      goBack();
     } else {
       focusBarcodeInput();
     }
@@ -1651,8 +1651,8 @@ function handleRowKeydown(e, idx) {
   else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
-    if (activeItems.value.length === 0) {
-      router.push('/')
+    if (activeItems.value.length === 0 || props.isSubwindow) {
+      goBack()
     } else {
       clearItem(idx)
       focusBarcodeInput()
@@ -2222,7 +2222,27 @@ useShortcuts(salesInvoiceShortcuts({
   },
 }), props.isSubwindow ? 'subwindow' : 'local')
 
+function handleGlobalEscape(e) {
+  if (e.key === 'Escape') {
+    const modalOpen = showSeriesModal.value || showCustomerModal.value || 
+                      showItemSearch.value || showPriceDetectModal.value || 
+                      showPrintModal.value || showJumpModal.value || 
+                      showIncentiveModal.value || showCustomAddressModal.value || 
+                      showClearWarning.value || showExitWarning.value || 
+                      showShortcutPage.value || showHistoryModal.value ||
+                      quickSearchResults.value.length > 0 ||
+                      pendingItem.value || editingRowIdx.value !== -1;
+
+    if (!modalOpen) {
+      goBack();
+    }
+  }
+}
+
 onMounted(() => {
+  if (props.isSubwindow) {
+    window.addEventListener('keydown', handleGlobalEscape)
+  }
   if (props.isSubwindow && props.invoiceName) {
     handleSelectSidebarItem({ name: props.invoiceName })
   } else {
@@ -2234,6 +2254,10 @@ onMounted(() => {
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalEscape)
 })
 </script>
 

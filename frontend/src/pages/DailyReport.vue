@@ -169,8 +169,8 @@
 
       <!-- Inline Detail View -->
       <div v-else class="h-full">
-        <SalesInvoice v-if="modalType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" />
-        <Quotation v-else-if="modalType === 'Quotation'" :is-subwindow="true" :quotation-name="selectedDoc" />
+        <SalesInvoice v-if="modalType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" @close="backToReport" />
+        <Quotation v-else-if="modalType === 'Quotation'" :is-subwindow="true" :quotation-name="selectedDoc" @close="backToReport" />
       </div>
     </div>
   </div>
