@@ -220,11 +220,13 @@
                   <span v-if="entry.actual_qty > 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">
                     {{ entry.actual_qty }}
                   </span>
+                  <span v-else class="opacity-20 text-[var(--color-text-muted)]">-</span>
                 </td>
                 <td class="px-4 py-1.5 text-right font-mono w-[10ch] max-w-[10ch]">
                   <span v-if="entry.actual_qty < 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">
                     {{ Math.abs(entry.actual_qty) }}
                   </span>
+                  <span v-else class="opacity-20 text-[var(--color-text-muted)]">-</span>
                 </td>
                 <td class="pl-4 pr-6 py-1.5 text-right font-mono font-bold w-[10ch] max-w-[10ch]"
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.balance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
