@@ -180,7 +180,6 @@
             <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
               <tr class="text-left">
                 <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
-                <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
                 <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
                 <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
                 <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Inwards</th>
@@ -192,7 +191,7 @@
             <tbody ref="tableBodyRef">
               <!-- No entries message -->
               <tr v-if="!ledgerData.entries.length">
-                <td colspan="8" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
+                <td colspan="7" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
                   No stock transactions found for the selected period.
                 </td>
               </tr>
@@ -212,14 +211,6 @@
                 }"
               >
                 <td class="px-4 font-mono whitespace-nowrap" :style="dynamicRowStyle" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
-                <td class="px-4" :style="dynamicRowStyle">
-                  <span
-                    class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                    :class="voucherBadgeClass(entry.voucher_type)"
-                  >
-                    {{ voucherLabel(entry.voucher_type) }}
-                  </span>
-                </td>
                 <td class="px-4 whitespace-nowrap" :style="dynamicRowStyle">
                   <button
                     @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
