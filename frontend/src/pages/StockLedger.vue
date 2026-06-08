@@ -170,11 +170,11 @@
             <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
               <tr class="text-left">
                 <th class="pl-6 pr-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-10">Date</th>
-                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-10">Voucher No</th>
+                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[15ch]">Voucher No</th>
                 <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-10">Warehouse</th>
+                <th class="px-2 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-[5ch]">UOM</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Inwards</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Outwards</th>
-                <th class="px-4 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-20">UOM</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
               </tr>
             </thead>
@@ -213,6 +213,9 @@
                 <td class="px-2 py-1.5 truncate" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                   {{ entry.warehouse }}
                 </td>
+                <td class="px-2 py-1.5 text-[var(--color-text-muted)]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
+                  {{ entry.stock_uom }}
+                </td>
                 <td class="px-4 py-1.5 text-right font-mono">
                   <span v-if="entry.actual_qty > 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">
                     {{ entry.actual_qty }}
@@ -222,9 +225,6 @@
                   <span v-if="entry.actual_qty < 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">
                     {{ Math.abs(entry.actual_qty) }}
                   </span>
-                </td>
-                <td class="px-4 py-1.5 text-[var(--color-text-muted)]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
-                  {{ entry.stock_uom }}
                 </td>
                 <td class="px-4 py-1.5 text-right font-mono font-bold"
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.balance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
