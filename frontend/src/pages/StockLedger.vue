@@ -179,13 +179,13 @@
           <table class="w-full border-collapse" :style="{ fontSize: dynamicRowStyle.fontSize }">
             <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
               <tr class="text-left">
-                <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
-                <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
-                <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
-                <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Inwards</th>
-                <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Outwards</th>
-                <th class="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-20">UOM</th>
-                <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
+                <th class="px-4 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
+                <th class="px-4 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
+                <th class="px-4 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
+                <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Inwards</th>
+                <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Outwards</th>
+                <th class="px-4 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-20">UOM</th>
+                <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
               </tr>
             </thead>
             <tbody ref="tableBodyRef">
