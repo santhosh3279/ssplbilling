@@ -183,7 +183,8 @@
                 <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
                 <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
                 <th class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
-                <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Qty</th>
+                <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Inwards</th>
+                <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Outwards</th>
                 <th class="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-20">UOM</th>
                 <th class="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
               </tr>
@@ -191,7 +192,7 @@
             <tbody ref="tableBodyRef">
               <!-- No entries message -->
               <tr v-if="!ledgerData.entries.length">
-                <td colspan="7" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
+                <td colspan="8" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
                   No stock transactions found for the selected period.
                 </td>
               </tr>
@@ -232,8 +233,13 @@
                   {{ entry.warehouse }}
                 </td>
                 <td class="px-4 text-right font-mono" :style="dynamicRowStyle">
-                  <span :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.actual_qty > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
-                    {{ entry.actual_qty > 0 ? '+' : '' }}{{ entry.actual_qty }}
+                  <span v-if="entry.actual_qty > 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">
+                    {{ entry.actual_qty }}
+                  </span>
+                </td>
+                <td class="px-4 text-right font-mono" :style="dynamicRowStyle">
+                  <span v-if="entry.actual_qty < 0" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">
+                    {{ Math.abs(entry.actual_qty) }}
                   </span>
                 </td>
                 <td class="px-4 text-[var(--color-text-muted)]" :style="dynamicRowStyle" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
