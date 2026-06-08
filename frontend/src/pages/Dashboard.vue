@@ -404,7 +404,8 @@ const allTiles = [
   { id: 'stock-ledger',       bucket: 'ledger',   name: 'Stock',                 desc: 'View stock movement by item',              icon: '📦', shortcut: ''    },
   { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'Shift+F6'  },
   { id: 'gst-ledger',         bucket: 'ledger',   name: 'GST Ledger',            desc: 'View GST Quotation ledger',                icon: '📜', shortcut: ''    },
-  { id: 'incentive-ledger',   bucket: 'ledger',   name: 'Incentive Ledger',      desc: 'Employee incentives',                      icon: '🏆', shortcut: ''    },
+  { id: 'incentive-ledger',   bucket: 'ledger',   name: 'Incentive Ledger',      desc: 'View employee incentives',                 icon: '🏆', shortcut: ''    },
+  { id: 'incentive-redeem',   bucket: 'accounts', name: 'Incentive Redeem',      desc: 'Redeem points for cash',                   icon: '🎁', shortcut: ''    },
   { id: 'general-ledger',    bucket: 'ledger',   name: 'General Ledger',        desc: 'GL ledger via ERPNext report engine',       icon: '📒', shortcut: ''    },
   // ── SSPL Special ──
   { id: 'loading-receipt',    bucket: 'sspl',     name: 'Loading Receipt',       desc: 'Generate loading receipts',                icon: '🚚', shortcut: ''    },
@@ -452,6 +453,7 @@ const routeAliases = {
   'pricing-rules': '/pricing-rules',
   'barcode-print': '/barcode-print',
   'incentive-ledger': '/incentive-ledger',
+  'incentive-redeem': '/incentive-redeem',
   'loading-receipt': '/loading-receipt',
   'daily-report': '/daily-report',
   'parcel-address': '/parcel-address',

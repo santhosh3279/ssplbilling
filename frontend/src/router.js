@@ -20,6 +20,7 @@ import PurchaseOrder from './pages/PurchaseOrder.vue'
 import SalesOrderEntry from './pages/SalesOrderEntry.vue'
 import SalesOrder from './pages/SalesOrder.vue'
 import IncentiveLedger from './pages/IncentiveLedger.vue'
+import IncentiveRedeem from './pages/IncentiveRedeem.vue'
 import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
@@ -204,6 +205,12 @@ const routes = [
     name: 'IncentiveLedger',
     component: IncentiveLedger,
     meta: { title: 'Incentives' },
+  },
+  {
+    path: '/incentive-redeem',
+    name: 'IncentiveRedeem',
+    component: IncentiveRedeem,
+    meta: { title: 'Incentive Redeem' },
   },
   {
     path: '/reports',
