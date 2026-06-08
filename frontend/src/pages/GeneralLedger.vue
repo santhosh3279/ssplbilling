@@ -183,14 +183,6 @@
         <table class="w-full border-collapse text-[19.5px]">
           <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
-              <th class="w-10 px-3 py-2 text-center">
-                <input
-                  type="checkbox"
-                  :checked="isAllSelected"
-                  @change="toggleSelectAll"
-                  class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-info)]"
-                />
-              </th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
@@ -205,7 +197,6 @@
 
             <!-- Opening Balance -->
             <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
-              <td class="px-3 py-2"></td>
               <td colspan="5" class="px-3 py-2 text-[var(--color-text-muted)] text-[18px]">
                 Opening Balance
                 <span class="ml-1 opacity-60">(before {{ fmtDate(ledgerData.from_date) }})</span>
@@ -240,18 +231,9 @@
               class="cursor-pointer border-b border-[var(--color-border)] transition-all outline-none"
               :class="{
                 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-inner z-10 relative': focusedIdx === idx,
-                'bg-[var(--color-info)]/10': selectedRows.has(idx) && focusedIdx !== idx,
                 'hover:bg-[var(--color-surface-raised)]/60': focusedIdx !== idx
               }"
             >
-              <td class="px-3 py-2 text-center" @click.stop>
-                <input
-                  type="checkbox"
-                  :checked="selectedRows.has(idx)"
-                  @change="toggleSelectRow(idx)"
-                  class="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-info)]"
-                />
-              </td>
               <td class="px-3 py-2 whitespace-nowrap font-mono" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
               <td class="px-3 py-2 whitespace-nowrap">
                 <span
@@ -288,7 +270,6 @@
 
             <!-- Closing row -->
             <tr v-if="ledgerData.entries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
-              <td class="px-3 py-2"></td>
               <td colspan="3" class="px-3 py-2 font-semibold text-[var(--color-text)]">Closing Balance</td>
               <td colspan="2" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
@@ -572,30 +553,6 @@ const ledgerData = ref(null)
 const loading = ref(false)
 const error = ref('')
 const expandedIdx = ref(null)
-const selectedRows = ref(new Set())
-
-const isAllSelected = computed(() => {
-  const entries = ledgerData.value?.entries || []
-  return entries.length > 0 && selectedRows.value.size === entries.length
-})
-
-function toggleSelectAll() {
-  const entries = ledgerData.value?.entries || []
-  if (isAllSelected.value) {
-    selectedRows.value.clear()
-  } else {
-    entries.forEach((_, idx) => selectedRows.value.add(idx))
-  }
-}
-
-function toggleSelectRow(idx, event) {
-  if (event) event.stopPropagation()
-  if (selectedRows.value.has(idx)) {
-    selectedRows.value.delete(idx)
-  } else {
-    selectedRows.value.add(idx)
-  }
-}
 
 // ── Detail panel state ──
 const selectedEntry = ref(null)
@@ -664,7 +621,6 @@ function clearSelection() {
   selectedParty.value = null
   ledgerData.value = null
   error.value = ''
-  selectedRows.value.clear()
   closeDetail()
 }
 
@@ -674,7 +630,6 @@ async function loadLedger() {
   loading.value = true
   error.value = ''
   expandedIdx.value = null
-  selectedRows.value.clear()
   closeDetail()
   try {
     const data = await frappeGet('ssplbilling.api.ledger_api.get_general_ledger', {
@@ -747,11 +702,6 @@ function onGlobalKeydown(e) {
       }
     } else {
       showDateModal.value = true
-    }
-  } else if (e.key === ' ') {
-    if (focusedIdx.value !== -1) {
-      e.preventDefault()
-      toggleSelectRow(focusedIdx.value)
     }
   } else if (e.key === 'Escape' && selectedEntry.value) {
     e.preventDefault()
