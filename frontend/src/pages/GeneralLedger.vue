@@ -59,16 +59,6 @@
             Excel
           </button>
 
-          <!-- Zoom -->
-          <div class="flex items-center rounded border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-            <button @click="zoom = Math.max(60, zoom - 10)" class="flex h-7 w-7 items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&minus;</button>
-            <div class="flex flex-col items-center justify-center border-x border-[var(--color-border)] px-2 min-w-[44px]">
-              <span class="text-[9px] uppercase tracking-tight text-[var(--color-text-muted)] leading-none">Zoom</span>
-              <span class="text-[11px] font-semibold text-[var(--color-text)] leading-tight">{{ zoom }}%</span>
-            </div>
-            <button @click="zoom = Math.min(200, zoom + 10)" class="flex h-7 w-7 items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&plus;</button>
-          </div>
-
           <!-- Close -->
           <button
             v-if="isSubWindow"
@@ -190,7 +180,7 @@
 
       <!-- Table -->
       <template v-else-if="ledgerData">
-        <table class="w-full border-collapse" :style="{ fontSize: `${(13 * zoom) / 100}px` }">
+        <table class="w-full border-collapse">
           <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
               <th class="w-10 px-3 py-2 text-center">
@@ -542,7 +532,6 @@ const toDate = ref(new Date().toISOString().split('T')[0])
 
 onMounted(async () => {
   window.addEventListener('keydown', onGlobalKeydown)
-  window.addEventListener('storage', onStorage)
   if (props.initialFromDate) fromDate.value = props.initialFromDate
   if (props.initialToDate) toDate.value = props.initialToDate
 
@@ -578,7 +567,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
-  window.removeEventListener('storage', onStorage)
 })
 
 // ── Data state ──
@@ -626,7 +614,6 @@ function handleDateConfirm(dates) {
 }
 
 // ── UI ──
-const zoom = ref(parseInt(localStorage.getItem('wb-zoom')) || 100)
 const printModalVisible = ref(false)
 const printModalInvoiceName = ref('')
 const printModalDoctype = ref('')
@@ -642,17 +629,6 @@ function openBillDetail() {
   billName.value = selectedEntry.value.voucher_no
   billType.value = selectedEntry.value.voucher_type
   showBillDetail.value = true
-}
-
-watch(zoom, (newV) => {
-  localStorage.setItem('wb-zoom', String(newV))
-})
-
-// ── Storage Sync ──
-function onStorage(e) {
-  if (e.key === 'wb-zoom') {
-    zoom.value = parseInt(e.newValue) || 100
-  }
 }
 
 // ── Print Logic ──
