@@ -169,9 +169,9 @@
           <table class="w-full border-collapse">
             <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
               <tr class="text-left">
-                <th class="pl-6 pr-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
-                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
-                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
+                <th class="pl-6 pr-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-10">Date</th>
+                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-10">Voucher No</th>
+                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-10">Warehouse</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Inwards</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Outwards</th>
                 <th class="px-4 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-20">UOM</th>
