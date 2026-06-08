@@ -9,10 +9,10 @@ from erpnext.accounts.party import get_party_account
 
 
 class IncentiveRedeem(Document):
-        def before_insert(self):
-                if not self.incentive_ledger:
-                        ledger = frappe.db.get_single_value("Incentive Rule", "incentive_ledger")
-                        self.incentive_ledger = ledger or "Employee Incentive - SSPL"
+	def before_insert(self):
+		if not self.incentive_ledger:
+			ledger = frappe.db.get_single_value("Incentive Rule", "incentive_ledger")
+			self.incentive_ledger = ledger or "Employee Incentive - SSPL"
 
 	def validate(self):
 		balance = flt(frappe.db.get_value("Employee", self.employee, "balance_incentive"))
@@ -42,7 +42,8 @@ class IncentiveRedeem(Document):
 		company_currency = frappe.db.get_value("Company", self.company, "default_currency")
 		party_account = get_party_account("Employee", self.employee, self.company)
 		conversion_factor = flt(frappe.db.get_single_value("Incentive Rule", "conversion_factor")) or 4.0
-                if conversion_factor == 0: conversion_factor = 4.0
+		if conversion_factor == 0:
+			conversion_factor = 4.0
 		amount = flt(self.redeem_points) / conversion_factor
 
 		pe = frappe.get_doc(
