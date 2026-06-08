@@ -194,7 +194,7 @@
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
-              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Account</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Party</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Credit (Cr)</th>
@@ -266,7 +266,7 @@
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-info)]'"
                 >{{ entry.voucher_no }}</button>
               </td>
-              <td class="px-3 py-2 max-w-[160px] truncate" :title="entry.account" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.account }}</td>
+              <td class="px-3 py-2 max-w-[160px] truncate" :title="entry.party_name || entry.party" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.party_name || entry.party || '—' }}</td>
               <td class="px-3 py-2 max-w-[200px] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
               <td class="px-3 py-2 text-right font-mono">
                 <span v-if="entry.debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.debit) }}</span>
@@ -798,7 +798,7 @@ function exportExcel() {
   rows.push([])
 
   // Header
-  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Account', 'Against', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
+  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Party', 'Against', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
 
   // Opening row
   rows.push([
@@ -814,7 +814,7 @@ function exportExcel() {
       fmtDate(e.date),
       e.voucher_type,
       e.voucher_no,
-      e.account,
+      e.party_name || e.party,
       e.against,
       e.debit || '',
       e.credit || '',
