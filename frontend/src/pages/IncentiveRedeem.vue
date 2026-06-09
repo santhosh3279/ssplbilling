@@ -86,28 +86,20 @@
                       class="w-full bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       @input="onEmpInput"
                       @focus="showEmpDrop = true"
-                      @blur="setTimeout(() => showEmpDrop = false, 200)"
+                      @keydown="quickLedgerSearchRef?.handleKeydown($event)"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Click to Search</div>
                     
-                    <!-- Dropdown -->
-                    <div v-if="showEmpDrop && empOptions.length" class="absolute left-0 right-0 top-full z-50 mt-4 max-h-96 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
-                      <button
-                        v-for="emp in empOptions"
-                        :key="emp.name"
-                        @mousedown.prevent="pickEmployee(emp)"
-                        class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-[var(--color-info)]/10 transition-colors border-b border-[var(--color-border)] last:border-0"
-                      >
-                        <div>
-                          <div class="text-2xl font-bold text-[var(--color-text)]">{{ emp.employee_name }}</div>
-                          <div class="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">{{ emp.name }} · {{ emp.designation || 'Staff' }}</div>
-                        </div>
-                        <div class="text-right">
-                          <div class="text-2xl font-mono font-black text-[var(--color-success)]">{{ fmtPts(emp.balance_incentive) }}</div>
-                          <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Available</div>
-                        </div>
-                      </button>
-                    </div>
+                    <!-- Quick Ledger Search -->
+                    <QuickLedgerSearch
+                      ref="quickLedgerSearchRef"
+                      :results="empOptions"
+                      :query="empSearch"
+                      :anchorEl="$refs.empInput"
+                      v-if="showEmpDrop && empOptions.length"
+                      @select="pickEmployee"
+                      @close="showEmpDrop = false"
+                    />
                   </div>
                 </td>
 
@@ -230,11 +222,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
+import { useLedgerCache } from '../services/ledgerCache'
 
 const router = useRouter()
+const { searchLedgersInCache } = useLedgerCache()
 
 // ── State ──────────────────────────────────────────────────────────────────
 const isSaving = ref(false)
@@ -244,6 +239,7 @@ const conversionFactor = ref(4.0)
 const empSearch = ref('')
 const empOptions = ref([])
 const showEmpDrop = ref(false)
+const quickLedgerSearchRef = ref(null)
 
 const companies = ref([])
 const showCostCenterDrop = ref(false)
@@ -297,26 +293,44 @@ onMounted(async () => {
 })
 
 // ── Employee Search ────────────────────────────────────────────────────────
-let empTimer = null
 function onEmpInput(e) {
   const q = e.target.value
   doc.employee = ''
   doc.balance_points = 0
-  clearTimeout(empTimer)
-  if (!q.trim()) { empOptions.value = []; return }
-  empTimer = setTimeout(async () => {
-    try {
-      empOptions.value = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q })
-    } catch { empOptions.value = [] }
-  }, 250)
+  
+  if (!q.trim()) {
+    empOptions.value = []
+    return
+  }
+  
+  // Instant local search
+  empOptions.value = searchLedgersInCache(q, 'Employee')
 }
 
 function pickEmployee(emp) {
   doc.employee = emp.name
-  doc.employee_name = emp.employee_name
-  doc.balance_points = emp.balance_incentive
-  empSearch.value = emp.employee_name
+  doc.employee_name = emp.label || emp.employee_name
+  // We might need to fetch the latest balance_incentive remotely as GL balance might differ
+  fetchEmployeeIncentiveBalance(emp.name)
+  
+  empSearch.value = doc.employee_name
   showEmpDrop.value = false
+  
+  // Focus points input after selection
+  nextTick(() => {
+    document.querySelector('input[type="number"]')?.focus()
+  })
+}
+
+async function fetchEmployeeIncentiveBalance(empId) {
+  try {
+    const res = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: empId, limit: 1 })
+    if (res && res.length) {
+      doc.balance_points = res[0].balance_incentive
+    }
+  } catch (e) {
+    console.error('Failed to fetch incentive balance:', e)
+  }
 }
 
 // ── Validation ─────────────────────────────────────────────────────────────

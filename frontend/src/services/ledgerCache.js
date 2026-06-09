@@ -94,6 +94,28 @@ export function useLedgerCache() {
     partyLinks,
     lastSync,
     syncLoading,
-    refreshLedgerCache
+    refreshLedgerCache,
+    searchLedgersInCache
   }
+}
+
+/**
+ * Perform a fast local search across cached ledgers.
+ */
+export function searchLedgersInCache(query, typeFilter = null) {
+  if (!query || query.length < 1) return []
+  
+  const q = query.toLowerCase()
+  return ledgers.value
+    .filter(l => {
+      if (typeFilter && l.type !== typeFilter) return false
+      
+      return (
+        l.name.toLowerCase().includes(q) ||
+        l.label.toLowerCase().includes(q) ||
+        (l.mobile_no && l.mobile_no.includes(q)) ||
+        (l.gstin && l.gstin.toLowerCase().includes(q))
+      )
+    })
+    .slice(0, 50) // Limit for performance
 }
