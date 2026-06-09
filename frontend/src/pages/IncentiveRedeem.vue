@@ -2,16 +2,31 @@
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- ═══════ HEADER ═══════ -->
     <header class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 bg-[var(--color-surface)] shadow-sm">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
         <button
           @click="router.push('/')"
-          class="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-[var(--color-midlight)] transition-colors"
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:bg-[var(--color-midlight)] transition-colors"
         >
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h1 class="text-4xl uppercase tracking-tight font-normal">Incentive Redemption</h1>
+        <div>
+          <h1 class="text-4xl uppercase tracking-tight font-normal">Incentive Redemption</h1>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-highlight)]">New Redemption Entry</span>
+            <span class="h-1 w-1 rounded-full bg-[var(--color-border)]"></span>
+            <span class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest">Points to Cash Conversion</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Conversion Info -->
+      <div class="hidden lg:flex items-center gap-4 rounded-xl bg-[var(--color-surface-raised)] px-6 py-2 border border-[var(--color-border)]">
+        <div class="flex flex-col items-center">
+          <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Conversion Rate</span>
+          <div class="text-2xl font-mono font-black text-[var(--color-info)]">1 pt = ₹ {{ (1/conversionFactor).toFixed(2) }}</div>
+        </div>
       </div>
 
       <!-- Right: Posting Date with arrow nav -->
@@ -44,18 +59,7 @@
         
         <!-- Form Section -->
         <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
-          <div class="bg-[var(--color-surface-raised)] px-8 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-            <div>
-              <h2 class="text-xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">New Redemption Entry</h2>
-              <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest mt-0.5">Points to Cash Conversion</p>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Conversion Factor</span>
-              <div class="text-xl font-mono font-bold text-[var(--color-info)]">1 pt = ₹ {{ (1/conversionFactor).toFixed(2) }}</div>
-            </div>
-          </div>
-
-          <div class="p-8 space-y-8">
+          <div class="p-10 space-y-8">
             <!-- Row 1: Employee Selection -->
             <div class="relative group">
               <label class="mb-2 block text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-focus-within:text-[var(--color-highlight)] transition-colors">Select Employee</label>
