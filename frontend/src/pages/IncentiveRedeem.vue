@@ -11,7 +11,7 @@
             ← Dashboard
           </button>
           <span class="text-3xl text-[var(--color-text-muted)]">|</span>
-          <h1 class="text-4xl font-bold text-[var(--color-text)]">Incentive Redemption</h1>
+          <h1 class="text-4xl text-[var(--color-text)]">Incentive Redemption</h1>
         </div>
         <div class="flex items-center gap-2">
           <button
