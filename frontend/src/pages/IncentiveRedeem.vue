@@ -163,7 +163,7 @@
         
         <div class="flex items-center gap-8 flex-1">
           <!-- Company & Cost Center -->
-          <div class="flex items-center gap-6 border-r border-[var(--color-border)] pr-8">
+          <div class="flex items-center gap-6">
             <div class="flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Company</label>
               <select
@@ -182,17 +182,6 @@
                 class="w-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-lg font-bold focus:bg-black/5 focus:outline-none transition-all placeholder:text-inherit"
               />
             </div>
-          </div>
-
-          <!-- Remarks -->
-          <div class="flex-1 flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Redemption Remarks</label>
-            <textarea
-              v-model="doc.remarks"
-              rows="1"
-              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-lg font-bold focus:bg-black/5 focus:outline-none transition-all resize-none placeholder:text-inherit"
-              placeholder="Internal notes..."
-            ></textarea>
           </div>
         </div>
 
@@ -267,8 +256,7 @@ const doc = reactive({
   balance_points: 0,
   redeem_points: 0,
   cost_center: '',
-  incentive_ledger: '',
-  remarks: ''
+  incentive_ledger: ''
 })
 
 // ── Date Navigation ────────────────────────────────────────────────────────
@@ -353,8 +341,7 @@ async function handleSave() {
       company: doc.company,
       redeem_points: doc.redeem_points,
       cost_center: doc.cost_center,
-      incentive_ledger: doc.incentive_ledger,
-      remarks: doc.remarks
+      incentive_ledger: doc.incentive_ledger
     }
     const res = await frappePost('frappe.client.insert', { doc: payload })
     
@@ -375,7 +362,6 @@ function resetForm() {
   doc.employee_name = ''
   doc.balance_points = 0
   doc.redeem_points = 0
-  doc.remarks = ''
   empSearch.value = ''
 }
 
