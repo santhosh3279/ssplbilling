@@ -71,7 +71,7 @@ def get_all_ledgers():
     employees = frappe.get_all(
         "Employee",
         filters={"status": "Active"},
-        fields=["name", "employee_name as label", "cell_number as mobile_no", "personal_email as email", "department as group"],
+        fields=["name", "employee_name as label", "cell_number as mobile_no", "balance_incentive", "personal_email as email", "department as group"],
         limit=0,
     )
     for e in employees:
