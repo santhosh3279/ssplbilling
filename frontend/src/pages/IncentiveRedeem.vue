@@ -121,7 +121,7 @@
                     step="0.01"
                     placeholder="0.00"
                     class="w-full bg-transparent text-5xl font-mono font-black text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
-                    @keydown.enter="submitBtn?.focus()"
+                    @keydown.enter.prevent="submitBtn?.focus()"
                   />
                 </td>
 
