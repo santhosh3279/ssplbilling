@@ -96,6 +96,8 @@
                       :results="empOptions"
                       :query="empSearch"
                       :anchorEl="$refs.empInput"
+                      balanceLabel="Incentive Points"
+                      :isPoints="true"
                       v-if="showEmpDrop && empOptions.length"
                       @select="pickEmployee"
                       @close="showEmpDrop = false"
@@ -304,7 +306,11 @@ function onEmpInput(e) {
   }
   
   // Instant local search
-  empOptions.value = searchLedgersInCache(q, 'Employee')
+  const raw = searchLedgersInCache(q, 'Employee')
+  empOptions.value = raw.map(l => ({
+    ...l,
+    balance: l.balance_incentive // Use incentive balance instead of ledger balance
+  }))
 }
 
 function pickEmployee(emp) {

@@ -61,10 +61,10 @@
               class="text-3xl font-mono font-black" 
               :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : (ledger.balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')"
             >
-              {{ fmtBalance(ledger.balance) }}
+              {{ isPoints ? fmtPts(ledger.balance) : fmtBalance(ledger.balance) }}
             </div>
             <div class="text-[10px] font-bold uppercase tracking-widest opacity-40" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : ''">
-              Closing Balance
+              {{ balanceLabel }}
             </div>
           </div>
         </div>
@@ -86,7 +86,9 @@ import { useLedgerCache } from '../services/ledgerCache'
 const props = defineProps({
   results: { type: Array, default: () => [] },
   query: { type: String, default: '' },
-  anchorEl: { type: Object, default: null }
+  anchorEl: { type: Object, default: null },
+  balanceLabel: { type: String, default: 'Closing Balance' },
+  isPoints: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['select', 'close', 'refresh'])
@@ -168,6 +170,10 @@ function fmtBalance(val) {
   const abs = Math.abs(b).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const suffix = b > 0 ? 'Dr' : b < 0 ? 'Cr' : ''
   return `₹ ${abs} ${suffix}`
+}
+
+function fmtPts(val) {
+  return Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' pts'
 }
 
 function handleKeydown(e) {
