@@ -115,11 +115,13 @@
                 <!-- Redeem Points Input Column -->
                 <td class="px-6 py-3 transition-colors bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]">
                   <input
+                    ref="pointsInput"
                     v-model.number="doc.redeem_points"
                     type="number"
                     step="0.01"
                     placeholder="0.00"
                     class="w-full bg-transparent text-5xl font-mono font-black text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    @keydown.enter="submitBtn?.focus()"
                   />
                 </td>
 
@@ -174,9 +176,10 @@
         <!-- Save Button -->
         <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
           <button
+            ref="submitBtn"
             @click="handleSave"
             :disabled="isSaving || !isValid"
-            class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-12 py-5 text-3xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale focus:outline-none focus:ring-8 focus:ring-[var(--color-success)]/30"
+            class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-12 py-5 text-3xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] focus:scale-[1.05] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale focus:outline-none focus:ring-8 focus:ring-[var(--color-success)]/30"
           >
             <span v-if="isSaving" class="flex items-center gap-3">
               <svg class="h-8 w-8 animate-spin" viewBox="0 0 24 24">
@@ -234,6 +237,8 @@ const empSearch = ref('')
 const empOptions = ref([])
 const showEmpDrop = ref(false)
 const quickLedgerSearchRef = ref(null)
+const submitBtn = ref(null)
+const pointsInput = ref(null)
 
 const doc = reactive({
   employee: '',
@@ -328,7 +333,7 @@ function pickEmployee(emp) {
   
   // Focus points input after selection
   nextTick(() => {
-    document.querySelector('input[type="number"]')?.focus()
+    pointsInput.value?.focus()
   })
 }
 
