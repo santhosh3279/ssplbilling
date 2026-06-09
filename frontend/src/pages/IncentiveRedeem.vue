@@ -158,13 +158,14 @@
         <div class="flex items-center gap-8 flex-1">
           <!-- Cost Center -->
           <div class="flex items-center gap-6">
-            <div class="flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
-              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Cost Center</label>
+            <div class="flex flex-col gap-1.5 p-1.5 -m-1.5 rounded-xl">
+              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1">Cost Center</label>
               <input
                 v-model="doc.cost_center"
                 type="text"
-                placeholder="Cost Center..."
-                class="w-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-lg font-bold focus:bg-black/5 focus:outline-none transition-all placeholder:text-inherit"
+                readonly
+                placeholder="No Cost Center..."
+                class="w-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-lg font-bold text-[var(--color-text-muted)] cursor-not-allowed outline-none placeholder:text-inherit"
               />
             </div>
           </div>
@@ -233,8 +234,6 @@ const empSearch = ref('')
 const empOptions = ref([])
 const showEmpDrop = ref(false)
 const quickLedgerSearchRef = ref(null)
-
-const showCostCenterDrop = ref(false)
 
 const doc = reactive({
   employee: '',
