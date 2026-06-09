@@ -231,7 +231,7 @@ import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { useLedgerCache } from '../services/ledgerCache'
 
 const router = useRouter()
-const { searchLedgersInCache } = useLedgerCache()
+const { searchLedgersInCache, refreshLedgerCache } = useLedgerCache()
 
 // ── State ──────────────────────────────────────────────────────────────────
 const isSaving = ref(false)
@@ -277,6 +277,9 @@ function adjustDate(days) {
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
+    // Refresh ledger cache to ensure balance_incentive is synced
+    refreshLedgerCache(true).catch(e => console.error('Cache sync failed', e))
+
     // Load rules
     const rule = await frappeGet('frappe.client.get', { doctype: 'Incentive Rule', name: 'Incentive Rule' })
     conversionFactor.value = Number(rule.conversion_factor || 4.0)
@@ -295,28 +298,41 @@ onMounted(async () => {
 })
 
 // ── Employee Search ────────────────────────────────────────────────────────
+let empTimer = null
 function onEmpInput(e) {
   const q = e.target.value
   doc.employee = ''
   doc.balance_points = 0
   
+  clearTimeout(empTimer)
   if (!q.trim()) {
     empOptions.value = []
     return
   }
   
-  // Instant local search
-  const raw = searchLedgersInCache(q, 'Employee')
-  empOptions.value = raw.map(l => ({
-    ...l,
-    balance: l.balance_incentive // Use incentive balance instead of ledger balance
-  }))
+  // Use remote search to ensure latest points are fetched
+  empTimer = setTimeout(async () => {
+    try {
+      const raw = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q })
+      empOptions.value = raw.map(e => ({
+        ...e,
+        label: e.employee_name,
+        balance: e.balance_incentive,
+        type: 'Employee',
+        group: e.designation
+      }))
+    } catch { empOptions.value = [] }
+  }, 250)
 }
 
 function pickEmployee(emp) {
   doc.employee = emp.name
   doc.employee_name = emp.label || emp.employee_name
-  // We might need to fetch the latest balance_incentive remotely as GL balance might differ
+  
+  // Set initial balance from search result immediately
+  doc.balance_points = emp.balance || emp.balance_incentive || 0
+  
+  // Precise lookup for absolute certainty
   fetchEmployeeIncentiveBalance(emp.name)
   
   empSearch.value = doc.employee_name
@@ -330,9 +346,20 @@ function pickEmployee(emp) {
 
 async function fetchEmployeeIncentiveBalance(empId) {
   try {
-    const res = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: empId, limit: 1 })
-    if (res && res.length) {
-      doc.balance_points = res[0].balance_incentive
+    // Precise lookup using get_value
+    const res = await frappeGet('frappe.client.get_value', { 
+      doctype: 'Employee', 
+      filters: { name: empId }, 
+      fieldname: 'balance_incentive' 
+    })
+    
+    // Handle both {balance_incentive: X} and direct value X
+    if (res !== null && res !== undefined) {
+      if (typeof res === 'object' && res.balance_incentive !== undefined) {
+        doc.balance_points = res.balance_incentive
+      } else if (typeof res === 'number' || typeof res === 'string') {
+        doc.balance_points = parseFloat(res)
+      }
     }
   } catch (e) {
     console.error('Failed to fetch incentive balance:', e)
