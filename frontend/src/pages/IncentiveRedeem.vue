@@ -200,18 +200,25 @@
       </div>
     </footer>
 
-    <!-- ═══════ STATUS MODAL ═══════ -->
-    <div v-if="successDoc" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div class="w-full max-w-lg rounded-[2.5rem] bg-[var(--color-surface)] p-12 text-center shadow-2xl border border-[var(--color-border)] animate-in zoom-in duration-300">
-        <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[var(--color-success)]/20 text-6xl">✅</div>
-        <h3 class="text-4xl font-black text-[var(--color-text)] uppercase tracking-tight">Redemption Successful</h3>
-        <p class="mt-4 text-xl text-[var(--color-text-muted)]">Points have been redeemed and entry created.</p>
-        <div class="mt-8 inline-block rounded-xl bg-[var(--color-surface-raised)] px-6 py-3 font-mono text-xl font-bold text-[var(--color-info)] uppercase tracking-widest border border-[var(--color-border)]">{{ successDoc }}</div>
+    <!-- ═══════ SUCCESS OVERLAY ═══════ -->
+    <div 
+      v-if="successDoc" 
+      class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-lg animate-in fade-in slide-in-from-top-4 duration-300"
+    >
+      <div class="rounded-3xl bg-[var(--color-surface)] p-8 shadow-2xl border-2 border-[var(--color-success)] flex items-center gap-8">
+        <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)]/20 text-5xl">
+          ✅
+        </div>
+        <div class="flex-1 min-w-0">
+          <h2 class="text-3xl font-black truncate uppercase tracking-tight">Redemption Successful!</h2>
+          <p class="text-xl text-[var(--color-text-muted)] font-mono truncate mt-1">{{ successDoc }}</p>
+        </div>
         <button
           @click="resetForm"
-          class="mt-12 w-full rounded-2xl bg-[var(--color-highlight)] py-6 text-3xl font-black text-[var(--color-text-on-highlight)] hover:brightness-110 transition-all shadow-lg active:scale-95"
+          class="h-12 w-12 shrink-0 rounded-full hover:bg-[var(--color-midlight)] transition-colors flex items-center justify-center text-2xl"
+          title="Create New Entry"
         >
-          Create New Entry
+          ✕
         </button>
       </div>
     </div>
