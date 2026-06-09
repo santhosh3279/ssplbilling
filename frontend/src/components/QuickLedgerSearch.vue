@@ -36,9 +36,6 @@
               >
                 {{ ledger.type }}
               </span>
-              <div v-if="ledger.mobile_no" class="text-xs font-mono text-[var(--color-text-muted)]" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)] opacity-80' : ''">
-                {{ ledger.mobile_no }}
-              </div>
             </div>
             <div class="text-3xl font-normal truncate" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
               {{ ledger.label }}
@@ -50,6 +47,9 @@
           </div>
           
           <div class="flex flex-col items-end shrink-0">
+            <div v-if="ledger.mobile_no" class="text-xs font-mono mb-1" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)] opacity-80' : 'text-[var(--color-text-muted)]'">
+              {{ ledger.mobile_no }}
+            </div>
             <div 
               class="text-3xl font-mono font-black" 
               :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : (ledger.balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')"
@@ -150,7 +150,7 @@ function getTypeClass(type) {
   switch (type) {
     case 'Customer': return 'bg-[var(--color-customer)]/20 text-[var(--color-customer)]'
     case 'Supplier': return 'bg-[var(--color-supplier)]/20 text-[var(--color-supplier)]'
-    case 'Employee': return 'bg-[var(--color-employee)]/20 text-[var(--color-employee)]'
+    case 'Employee': return 'bg-black text-white'
     case 'Account': return 'bg-[var(--color-text-muted)]/20 text-[var(--color-text-muted)]'
     default: return 'bg-gray-500/10 text-gray-500'
   }
