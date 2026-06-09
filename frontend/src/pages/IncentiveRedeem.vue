@@ -21,11 +21,15 @@
         </div>
       </div>
 
-      <!-- Center: Conversion Info -->
-      <div class="hidden lg:flex items-center gap-4 rounded-xl bg-[var(--color-surface-raised)] px-6 py-2 border border-[var(--color-border)]">
-        <div class="flex flex-col items-center">
+      <!-- Center: Rule Info -->
+      <div class="hidden lg:flex items-center divide-x divide-[var(--color-border)] rounded-2xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] overflow-hidden shadow-sm">
+        <div class="px-6 py-2 flex flex-col items-center min-w-[140px]">
           <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Conversion Rate</span>
           <div class="text-2xl font-mono font-black text-[var(--color-info)]">1 pt = ₹ {{ (1/conversionFactor).toFixed(2) }}</div>
+        </div>
+        <div class="px-6 py-2 flex flex-col items-center min-w-[200px]">
+          <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Incentive Ledger</span>
+          <div class="text-lg font-bold text-[var(--color-text)] truncate max-w-[300px]">{{ doc.incentive_ledger || '—' }}</div>
         </div>
       </div>
 
@@ -156,12 +160,6 @@
                     @blur="setTimeout(() => showCostCenterDrop = false, 200)"
                   />
                 </div>
-              </div>
-              
-              <div class="mt-8 rounded-xl bg-[var(--color-surface-raised)] p-4 border border-[var(--color-border)]">
-                 <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Incentive Ledger</label>
-                 <div class="text-lg font-bold text-[var(--color-text)]">{{ doc.incentive_ledger || 'Not Selected' }}</div>
-                 <p class="text-[9px] text-[var(--color-text-muted)] italic mt-1">Automatically determined by Incentive Rule settings.</p>
               </div>
             </div>
           </div>
