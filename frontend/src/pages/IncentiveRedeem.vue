@@ -59,146 +59,160 @@
 
     <!-- ═══════ MAIN CONTENT ═══════ -->
     <main class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-      <div class="mx-auto max-w-4xl flex flex-col gap-6">
+      <div class="flex flex-col gap-4">
         
-        <!-- Form Section -->
-        <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
-          <div class="p-10 space-y-8">
-            <!-- Row 1: Employee Selection -->
-            <div class="relative group">
-              <label class="mb-2 block text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-focus-within:text-[var(--color-highlight)] transition-colors">Select Employee</label>
-              <div class="relative">
-                <input
-                  ref="empInput"
-                  v-model="empSearch"
-                  type="text"
-                  placeholder="Search by name or ID..."
-                  class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-5 text-4xl font-normal text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:bg-[var(--color-surface)] transition-all shadow-sm"
-                  :class="doc.employee ? 'border-[var(--color-success)] ring-2 ring-[var(--color-success)]/10' : ''"
-                  @input="onEmpInput"
-                  @focus="showEmpDrop = true"
-                  @blur="setTimeout(() => showEmpDrop = false, 200)"
-                />
-                <div v-if="showEmpDrop && empOptions.length" class="absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
-                  <button
-                    v-for="emp in empOptions"
-                    :key="emp.name"
-                    @mousedown.prevent="pickEmployee(emp)"
-                    class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-[var(--color-info)]/10 transition-colors border-b border-[var(--color-border)] last:border-0"
-                  >
-                    <div>
-                      <div class="text-2xl font-bold text-[var(--color-text)]">{{ emp.employee_name }}</div>
-                      <div class="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">{{ emp.name }} · {{ emp.designation || 'Staff' }}</div>
+        <!-- Excel-Style Form Table -->
+        <div class="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden shrink-0">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+              <tr class="text-2xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-6 py-4 w-1/3">Employee / Staff</th>
+                <th class="px-6 py-4 text-right w-64">Available Points</th>
+                <th class="px-6 py-4 text-right w-64 text-[var(--color-danger)]">Redeem Points</th>
+                <th class="px-6 py-4 text-right w-64 text-[var(--color-success)]">Balance Points</th>
+                <th class="px-6 py-4 text-right w-80">Redeem Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
+                <!-- Employee Search Column -->
+                <td class="px-4 py-3 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                  <div class="relative">
+                    <input
+                      ref="empInput"
+                      v-model="empSearch"
+                      type="text"
+                      placeholder="Search Employee..."
+                      class="w-full bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
+                      @input="onEmpInput"
+                      @focus="showEmpDrop = true"
+                      @blur="setTimeout(() => showEmpDrop = false, 200)"
+                    />
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Click to Search</div>
+                    
+                    <!-- Dropdown -->
+                    <div v-if="showEmpDrop && empOptions.length" class="absolute left-0 right-0 top-full z-50 mt-4 max-h-96 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+                      <button
+                        v-for="emp in empOptions"
+                        :key="emp.name"
+                        @mousedown.prevent="pickEmployee(emp)"
+                        class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-[var(--color-info)]/10 transition-colors border-b border-[var(--color-border)] last:border-0"
+                      >
+                        <div>
+                          <div class="text-2xl font-bold text-[var(--color-text)]">{{ emp.employee_name }}</div>
+                          <div class="text-xs text-[var(--color-text-muted)] uppercase tracking-wide">{{ emp.name }} · {{ emp.designation || 'Staff' }}</div>
+                        </div>
+                        <div class="text-right">
+                          <div class="text-2xl font-mono font-black text-[var(--color-success)]">{{ fmtPts(emp.balance_incentive) }}</div>
+                          <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Available</div>
+                        </div>
+                      </button>
                     </div>
-                    <div class="text-right">
-                      <div class="text-2xl font-mono font-black text-[var(--color-success)]">
-                        {{ fmtPts(emp.balance_incentive) }}
-                      </div>
-                      <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Available Points</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
+                  </div>
+                </td>
 
-            <!-- Row 2: Points Display & Entry -->
-            <div class="grid grid-cols-2 gap-8 items-stretch">
-              <div class="rounded-2xl bg-[var(--color-info)]/5 border border-[var(--color-info)]/20 p-6 flex flex-col justify-center">
-                <div class="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-info)] mb-3">Available Balance</div>
-                <div class="flex items-baseline gap-3">
-                  <span class="text-6xl font-mono font-black text-[var(--color-info)]">{{ fmtPts(doc.balance_points) }}</span>
-                  <span class="text-xl font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Points</span>
-                </div>
-              </div>
+                <!-- Available Balance Column -->
+                <td class="px-6 py-3 bg-[var(--color-surface-raised)] text-right">
+                  <div class="text-4xl font-mono font-black text-[var(--color-info)]">
+                    {{ fmtPts(doc.balance_points) }}
+                  </div>
+                </td>
 
-              <div class="relative group">
-                <label class="mb-2 block text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-focus-within:text-[var(--color-danger)] transition-colors">Redeem Points</label>
-                <div class="relative">
+                <!-- Redeem Points Input Column -->
+                <td class="px-6 py-3 transition-colors bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]">
                   <input
                     v-model.number="doc.redeem_points"
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-5 text-5xl font-mono font-black text-[var(--color-danger)] outline-none focus:border-[var(--color-danger)] focus:bg-[var(--color-surface)] transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    class="w-full bg-transparent text-5xl font-mono font-black text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
                   />
-                  <div class="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest opacity-40">Points</div>
-                </div>
-              </div>
-            </div>
+                </td>
 
-            <!-- Conversion Preview -->
-            <div v-if="doc.redeem_points > 0" class="rounded-2xl border-2 border-dashed border-[var(--color-success)]/30 bg-[var(--color-success)]/5 p-8 text-center animate-in zoom-in duration-300">
-              <div class="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-success)] mb-3">Conversion Preview</div>
-              <div class="flex items-center justify-center gap-8">
-                <div class="text-3xl font-mono text-[var(--color-text)]">{{ doc.redeem_points }} pts</div>
-                <div class="text-4xl text-[var(--color-success)] opacity-50">➔</div>
-                <div class="text-6xl font-mono font-black text-[var(--color-success)]">₹ {{ fmtPts(doc.redeem_points / conversionFactor) }}</div>
-              </div>
-              <div class="mt-4 text-xs text-[var(--color-text-muted)] italic">Based on conversion factor of {{ conversionFactor }} points per ₹ 1.00</div>
-            </div>
+                <!-- Balance Points Result Column -->
+                <td class="px-6 py-3 bg-[var(--color-surface-raised)] text-right">
+                  <div class="text-4xl font-mono font-black" :class="doc.balance_points - (doc.redeem_points || 0) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                    {{ fmtPts(doc.balance_points - (doc.redeem_points || 0)) }}
+                  </div>
+                </td>
 
-            <!-- Settings Section -->
-            <div class="border-t border-[var(--color-border)] pt-8">
-              <div class="grid grid-cols-2 gap-8">
-                <div class="group">
-                  <label class="mb-2 block text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">Company</label>
-                  <select
-                    v-model="doc.company"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-                  >
-                    <option v-for="c in companies" :key="c" :value="c">{{ c }}</option>
-                  </select>
-                </div>
-                <div class="group">
-                  <label class="mb-2 block text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cost Center</label>
-                  <input
-                    v-model="doc.cost_center"
-                    type="text"
-                    placeholder="Search cost center..."
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-                    @focus="showCostCenterDrop = true"
-                    @blur="setTimeout(() => showCostCenterDrop = false, 200)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+                <!-- Redeem Amount Column -->
+                <td class="px-6 py-3 bg-[var(--color-success)]/5 text-right">
+                  <div class="text-5xl font-mono font-black text-[var(--color-success)]">
+                    ₹ {{ fmtPts((doc.redeem_points || 0) / conversionFactor) }}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Visual Spacer / Empty State Placeholder -->
+        <div v-if="!doc.employee" class="py-32 flex flex-col items-center justify-center opacity-10 gap-6">
+           <svg class="w-48 h-48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+           </svg>
+           <div class="text-4xl font-black uppercase tracking-[0.2em]">Select Employee to Begin</div>
         </div>
       </div>
     </main>
 
     <!-- ═══════ BOTTOM ACTION BAR ═══════ -->
-    <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-      <div class="mx-auto max-w-6xl flex items-center justify-between gap-12">
+    <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+      <div class="flex items-center justify-between gap-8">
         
-        <!-- Left: Remarks/Notes (Simulating paymentv2 remarks style) -->
-        <div class="flex-1 flex flex-col gap-2 group">
-          <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] group-focus-within:text-[var(--color-highlight)] transition-colors">Redemption Remarks</label>
-          <textarea
-            v-model="doc.remarks"
-            rows="2"
-            class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-4 text-xl font-bold focus:bg-[var(--color-surface)] focus:border-[var(--color-highlight)] focus:outline-none transition-all resize-none shadow-sm"
-            placeholder="Add internal notes about this redemption..."
-          ></textarea>
+        <div class="flex items-center gap-8 flex-1">
+          <!-- Company & Cost Center -->
+          <div class="flex items-center gap-6 border-r border-[var(--color-border)] pr-8">
+            <div class="flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
+              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Company</label>
+              <select
+                v-model="doc.company"
+                class="w-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-lg font-bold focus:bg-black/5 focus:outline-none transition-all"
+              >
+                <option v-for="c in companies" :key="c" :value="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
+              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Cost Center</label>
+              <input
+                v-model="doc.cost_center"
+                type="text"
+                placeholder="Cost Center..."
+                class="w-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-lg font-bold focus:bg-black/5 focus:outline-none transition-all placeholder:text-inherit"
+              />
+            </div>
+          </div>
+
+          <!-- Remarks -->
+          <div class="flex-1 flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Redemption Remarks</label>
+            <textarea
+              v-model="doc.remarks"
+              rows="1"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-lg font-bold focus:bg-black/5 focus:outline-none transition-all resize-none placeholder:text-inherit"
+              placeholder="Internal notes..."
+            ></textarea>
+          </div>
         </div>
 
-        <!-- Right: Submit Button -->
-        <div class="shrink-0">
+        <!-- Save Button -->
+        <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
           <button
             @click="handleSave"
             :disabled="isSaving || !isValid"
-            class="group relative flex items-center gap-6 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-8 text-5xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale focus:outline-none focus:ring-8 focus:ring-[var(--color-success)]/30"
+            class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-12 py-5 text-3xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale focus:outline-none focus:ring-8 focus:ring-[var(--color-success)]/30"
           >
-            <span v-if="isSaving" class="flex items-center gap-4">
-              <svg class="h-10 w-10 animate-spin" viewBox="0 0 24 24">
+            <span v-if="isSaving" class="flex items-center gap-3">
+              <svg class="h-8 w-8 animate-spin" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Submitting...
+              Saving...
             </span>
-            <span v-else class="flex items-center gap-6">
-              Submit Redemption
-              <svg class="h-12 w-12 transition-transform group-hover:translate-x-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <span v-else class="flex items-center gap-4">
+              Submit
+              <svg class="h-8 w-8 transition-transform group-hover:translate-x-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </span>
