@@ -1,23 +1,23 @@
 <template>
   <div class="flex min-h-screen flex-col bg-[var(--color-bg)]">
     <!-- ═══════ HEADER ═══════ -->
-    <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
+    <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button
             @click="router.push('/')"
-            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
+            class="flex items-center gap-1 rounded px-2 py-1 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
           >
             ← Dashboard
           </button>
-          <span class="text-[var(--color-text-muted)]">|</span>
-          <h1 class="text-sm font-bold text-[var(--color-text)]">Incentive Redemption</h1>
+          <span class="text-3xl text-[var(--color-text-muted)]">|</span>
+          <h1 class="text-4xl font-bold text-[var(--color-text)]">Incentive Redemption</h1>
         </div>
         <div class="flex items-center gap-2">
           <button
             @click="handleSave"
             :disabled="isSaving || !isValid"
-            class="rounded bg-[var(--color-success)] px-4 py-1.5 text-xs font-bold text-[var(--color-text-on-highlight)] hover:brightness-110 disabled:opacity-50 transition-all"
+            class="rounded bg-[var(--color-success)] px-4 py-1.5 text-3xl font-bold text-[var(--color-text-on-highlight)] hover:brightness-110 disabled:opacity-50 transition-all"
           >
             {{ isSaving ? 'Submitting...' : 'Submit Redemption' }}
           </button>
