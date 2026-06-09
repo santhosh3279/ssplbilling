@@ -7,7 +7,8 @@ def search_employees(query="", limit=20):
 	"""Search active employees by name."""
 	return frappe.get_all(
 		"Employee",
-		filters=[["employee_name", "like", f"%{query}%"], ["status", "=", "Active"]],
+                or_filters=[["name", "like", f"%{query}%"], ["employee_name", "like", f"%{query}%"]],
+                filters=[["status", "=", "Active"]],
 		fields=["name", "employee_name", "designation", "balance_incentive"],
 		order_by="employee_name asc",
 		limit_page_length=int(limit),
