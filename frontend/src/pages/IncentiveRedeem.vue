@@ -156,17 +156,8 @@
       <div class="flex items-center justify-between gap-8">
         
         <div class="flex items-center gap-8 flex-1">
-          <!-- Company & Cost Center -->
+          <!-- Cost Center -->
           <div class="flex items-center gap-6">
-            <div class="flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
-              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Company</label>
-              <select
-                v-model="doc.company"
-                class="w-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-lg font-bold focus:bg-black/5 focus:outline-none transition-all"
-              >
-                <option v-for="c in companies" :key="c" :value="c">{{ c }}</option>
-              </select>
-            </div>
             <div class="flex flex-col gap-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] p-1.5 -m-1.5 rounded-xl">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] ml-1 transition-colors">Cost Center</label>
               <input
@@ -243,7 +234,6 @@ const empOptions = ref([])
 const showEmpDrop = ref(false)
 const quickLedgerSearchRef = ref(null)
 
-const companies = ref([])
 const showCostCenterDrop = ref(false)
 
 const doc = reactive({
@@ -285,10 +275,9 @@ onMounted(async () => {
     conversionFactor.value = Number(rule.conversion_factor || 4.0)
     doc.incentive_ledger = rule.incentive_ledger || 'Employee Incentive - SSPL'
 
-    // Load companies
-    const compList = await frappeGet('frappe.client.get_list', { doctype: 'Company', fields: ['name'] })
-    companies.value = compList.map(c => c.name)
-    if (companies.value.length) doc.company = companies.value[0]
+    // Set default company
+    const compList = await frappeGet('frappe.client.get_list', { doctype: 'Company', fields: ['name'], limit_page_length: 1 })
+    if (compList.length) doc.company = compList[0].name
     
     // Default Cost Center
     doc.cost_center = localStorage.getItem('wb-cost-center') || ''
