@@ -39,7 +39,7 @@
       </div>
 
       <!-- Primary Party (Party Link) -->
-      <div v-if="!isEdit" class="flex flex-col gap-1.5">
+      <div class="flex flex-col gap-1.5">
         <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
         <div class="relative">
           <input
