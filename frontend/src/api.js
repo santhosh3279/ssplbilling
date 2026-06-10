@@ -834,12 +834,32 @@ export async function getQuotationHsnSummaryReport(series, fromDate, toDate) {
 /**
  * Fetch Item Sales Summary Report.
  */
-export async function getItemSummaryReport(series, fromDate, toDate) {
+export async function getItemSummaryReport(series, fromDate, toDate, incomeAccount) {
   return frappeGet("ssplbilling.api.reports_api.get_item_summary_report", {
     series,
     from_date: fromDate,
     to_date: toDate,
+    income_account: incomeAccount,
   });
+}
+
+/**
+ * Fetch Store Wise Item Sales Report.
+ */
+export async function getStoreWiseItemSalesReport(series, fromDate, toDate, incomeAccount) {
+  return frappeGet("ssplbilling.api.reports_api.get_store_wise_item_sales_report", {
+    series,
+    from_date: fromDate,
+    to_date: toDate,
+    income_account: incomeAccount,
+  });
+}
+
+/**
+ * Fetch list of income accounts.
+ */
+export async function getIncomeAccounts() {
+  return frappeGet("ssplbilling.api.reports_api.get_income_accounts", {});
 }
 
 /**

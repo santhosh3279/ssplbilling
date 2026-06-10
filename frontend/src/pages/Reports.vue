@@ -79,6 +79,17 @@
             </div>
           </button>
 
+          <button
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+            @click="openModal('store_summary')"
+          >
+            <span class="text-xl">🏬</span>
+            <div class="text-left">
+              <div class="text-lg font-semibold">Store Wise Item Sales</div>
+              <div class="text-base text-[var(--color-text-muted)]">Items sold by Store & Code</div>
+            </div>
+          </button>
+
           <hr class="border-[var(--color-border)] my-1" />
 
           <button
@@ -145,6 +156,20 @@
               </select>
             </div>
 
+            <!-- Income Account (Only for Item Sales Summary & Store Wise) -->
+            <div v-if="reportType === 'item_summary' || reportType === 'store_summary'">
+              <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Income Account (Optional)
+              </label>
+              <select
+                v-model="selectedIncomeAccount"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              >
+                <option value="">— All Income Accounts —</option>
+                <option v-for="acc in incomeAccountList" :key="acc" :value="acc">{{ acc }}</option>
+              </select>
+            </div>
+
             <!-- Date range -->
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -207,14 +232,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
-import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport } from '../api.js'
+import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport, getStoreWiseItemSalesReport, getIncomeAccounts } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
 
-// ── Series data ───────────────────────────────────────────────────────────────
+// ── Series & Account data ───────────────────────────────────────────────────
 const invoiceSeriesList = ref([])
 const quotationSeriesList = ref([])
+const incomeAccountList = ref([])
 
 onMounted(async () => {
   // Invoice series (from billing settings)
@@ -230,6 +256,13 @@ onMounted(async () => {
     quotationSeriesList.value = await getQuotationSeries() || []
   } catch {
     quotationSeriesList.value = []
+  }
+
+  // Income Accounts
+  try {
+    incomeAccountList.value = await getIncomeAccounts() || []
+  } catch {
+    incomeAccountList.value = []
   }
 })
 
@@ -264,6 +297,7 @@ function setLastMonth() {
 const showModal = ref(false)
 const reportType = ref('invoice') // 'invoice' | 'order' | 'quotation'
 const selectedSeries = ref('')
+const selectedIncomeAccount = ref('')
 const fromDate = ref('')
 const toDate = ref('')
 const generating = ref(false)
@@ -318,6 +352,18 @@ const modalConfig = computed(() => {
       docLabel: 'Item Code',
     }
   }
+  if (reportType.value === 'store_summary') {
+    return {
+      title: 'Store Wise Item Sales',
+      subtitle: 'Consolidated sales by Store & Item',
+      seriesLabel: 'Invoice Series',
+      btnClass: 'bg-[var(--color-warning)] hover:bg-[var(--color-warning)]',
+      sheetName: 'Store Wise Item Sales',
+      filePrefix: 'StoreWiseItemSales',
+      noDataMsg: 'No sales data found for the selected criteria.',
+      docLabel: 'Item Code',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -338,6 +384,7 @@ const currentSeriesList = computed(() => {
 function openModal(type) {
   reportType.value = type
   modalError.value = ''
+  selectedIncomeAccount.value = ''
   let list = []
   if (type === 'quotation' || type === 'quotation_hsn') list = quotationSeriesList.value
   else list = invoiceSeriesList.value
@@ -366,7 +413,9 @@ async function generateReport() {
     } else if (reportType.value === 'quotation_hsn') {
       rows = await getQuotationHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'item_summary') {
-      rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+      rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value, selectedIncomeAccount.value)
+    } else if (reportType.value === 'store_summary') {
+      rows = await getStoreWiseItemSalesReport(selectedSeries.value, fromDate.value, toDate.value, selectedIncomeAccount.value)
     } else {
       rows = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     }
@@ -380,6 +429,8 @@ async function generateReport() {
       buildHSNExcel(rows)
     } else if (reportType.value === 'item_summary') {
       buildItemSummaryExcel(rows)
+    } else if (reportType.value === 'store_summary') {
+      buildStoreWiseItemSummaryExcel(rows)
     } else {
       buildExcel(rows)
     }
@@ -394,6 +445,42 @@ async function generateReport() {
 // ── Excel builder ─────────────────────────────────────────────────────────────
 function fmt(n) {
   return Number(Number(n || 0).toFixed(2))
+}
+
+function buildStoreWiseItemSummaryExcel(rows) {
+  const headers = [
+    'Store (Income Account)', 'Item Code', 'Item Name', 'UOM', 'Total Quantity', 'Total Taxable Value'
+  ]
+
+  const data = rows.map(r => [
+    r.income_account,
+    r.item_code,
+    r.item_name,
+    r.stock_uom,
+    fmt(r.total_qty),
+    fmt(r.total_taxable_value),
+  ])
+
+  const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
+  const totals = [
+    'TOTAL', '', '', '',
+    fmt(sum('total_qty')),
+    fmt(sum('total_taxable_value')),
+  ]
+
+  const wb = utils.book_new()
+  const ws = utils.aoa_to_sheet([headers, ...data, totals])
+  ws['!cols'] = [
+    { wch: 30 }, { wch: 20 }, { wch: 35 }, { wch: 10 }, { wch: 15 }, { wch: 20 }
+  ]
+
+  utils.book_append_sheet(wb, ws, 'Store Item Summary')
+
+  const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
+  const acc = selectedIncomeAccount.value ? '_' + selectedIncomeAccount.value.replace(/[^A-Za-z0-9]/g, '') : ''
+  const from = fromDate.value || 'all'
+  const to = toDate.value || 'all'
+  writeFile(wb, `StoreWiseItemSales_${series}${acc}_${from}_to_${to}.xlsx`)
 }
 
 function buildItemSummaryExcel(rows) {
@@ -425,9 +512,10 @@ function buildItemSummaryExcel(rows) {
   utils.book_append_sheet(wb, ws, 'Item Summary')
 
   const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
+  const acc = selectedIncomeAccount.value ? '_' + selectedIncomeAccount.value.replace(/[^A-Za-z0-9]/g, '') : ''
   const from = fromDate.value || 'all'
   const to = toDate.value || 'all'
-  writeFile(wb, `ItemSalesSummary_${series}_${from}_to_${to}.xlsx`)
+  writeFile(wb, `ItemSalesSummary_${series}${acc}_${from}_to_${to}.xlsx`)
 }
 
 function buildHSNExcel(rows) {
