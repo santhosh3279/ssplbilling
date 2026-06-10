@@ -16,6 +16,7 @@ export const dashboardShortcuts = (handlers) => ({
   'SHIFT+F10': () => handlers.openModule('quotation'),
   'CTRL+R': () => handlers.openModule('stock-reconciliation'),
   'CTRL+L': () => window.dispatchEvent(new CustomEvent('wb-global-ledger-search')),
+  'CTRL+G': () => window.dispatchEvent(new CustomEvent('wb-open-gst-validator')),
 
   'ESCAPE': handlers.handleEscape,
   });
