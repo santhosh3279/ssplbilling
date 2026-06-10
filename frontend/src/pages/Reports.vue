@@ -22,7 +22,7 @@
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar with Buttons -->
       <aside class="w-80 border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 space-y-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">Tax Register</h3>
+        <h3 class="text-lg font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">Tax Register</h3>
         <div class="flex flex-col gap-3">
           <button
             class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
@@ -30,7 +30,7 @@
           >
             <span class="text-xl">📊</span>
             <div class="text-left">
-              <div class="font-semibold">Sales Tax Register</div>
+              <div class="text-lg font-semibold">Sales Tax Register</div>
               <div class="text-xs text-[var(--color-text-muted)]">Submitted Sales Invoices</div>
             </div>
           </button>
@@ -41,7 +41,7 @@
           >
             <span class="text-xl">📄</span>
             <div class="text-left">
-              <div class="font-semibold">Quotation Register</div>
+              <div class="text-lg font-semibold">Quotation Register</div>
               <div class="text-xs text-[var(--color-text-muted)]">All Quotations</div>
             </div>
           </button>
@@ -52,7 +52,7 @@
           >
             <span class="text-xl">📋</span>
             <div class="text-left">
-              <div class="font-semibold">HSN Summary</div>
+              <div class="text-lg font-semibold">HSN Summary</div>
               <div class="text-xs text-[var(--color-text-muted)]">Sales HSN-wise summary</div>
             </div>
           </button>
@@ -63,7 +63,7 @@
           >
             <span class="text-xl">📊</span>
             <div class="text-left">
-              <div class="font-semibold">Quotation HSN Summary</div>
+              <div class="text-lg font-semibold">Quotation HSN Summary</div>
               <div class="text-xs text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
             </div>
           </button>
@@ -74,7 +74,7 @@
           >
             <span class="text-xl">📦</span>
             <div class="text-left">
-              <div class="font-semibold">Item Sales Summary</div>
+              <div class="text-lg font-semibold">Item Sales Summary</div>
               <div class="text-xs text-[var(--color-text-muted)]">Total items sold by code</div>
             </div>
           </button>
@@ -87,7 +87,7 @@
           >
             <span class="text-xl">🏪</span>
             <div class="text-left">
-              <div class="font-semibold">Store Sale Report</div>
+              <div class="text-lg font-semibold">Store Sale Report</div>
               <div class="text-xs text-[var(--color-text-muted)]">Sales by store (Direct Income)</div>
             </div>
           </button>
@@ -118,7 +118,7 @@
           <!-- Modal header -->
           <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
             <div>
-              <h2 class="text-base font-bold text-[var(--color-text)]">{{ modalConfig.title }}</h2>
+              <h2 class="text-2xl font-bold text-[var(--color-text)]">{{ modalConfig.title }}</h2>
               <p class="text-xs text-[var(--color-text-muted)] mt-0.5">{{ modalConfig.subtitle }}</p>
             </div>
             <button
