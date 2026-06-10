@@ -143,7 +143,7 @@
           <!-- Modal body -->
           <div class="px-6 py-5 space-y-4">
             <!-- Series selector -->
-            <div>
+            <div v-if="reportType !== 'store_summary'">
               <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {{ modalConfig.seriesLabel }}
               </label>
@@ -214,7 +214,7 @@
             <button
               class="flex items-center gap-2 rounded-lg px-5 py-2 text-lg font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
               :class="modalConfig.btnClass"
-              :disabled="generating || !selectedSeries"
+              :disabled="generating || (!selectedSeries && reportType !== 'store_summary')"
               @click="generateReport"
             >
               <span v-if="generating" class="animate-spin">⏳</span>
@@ -399,7 +399,7 @@ function openModal(type) {
 // ── Report generation ─────────────────────────────────────────────────────────
 async function generateReport() {
   modalError.value = ''
-  if (!selectedSeries.value) {
+  if (!selectedSeries.value && reportType.value !== 'store_summary') {
     modalError.value = 'Please select a series.'
     return
   }
@@ -415,7 +415,7 @@ async function generateReport() {
     } else if (reportType.value === 'item_summary') {
       rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'store_summary') {
-      rows = await getStoreWiseItemSalesReport(selectedSeries.value, fromDate.value, toDate.value, selectedIncomeAccount.value)
+      rows = await getStoreWiseItemSalesReport(fromDate.value, toDate.value, selectedIncomeAccount.value)
     } else {
       rows = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     }
@@ -476,11 +476,10 @@ function buildStoreWiseItemSummaryExcel(rows) {
 
   utils.book_append_sheet(wb, ws, 'Store Item Summary')
 
-  const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
   const acc = selectedIncomeAccount.value ? '_' + selectedIncomeAccount.value.replace(/[^A-Za-z0-9]/g, '') : ''
   const from = fromDate.value || 'all'
   const to = toDate.value || 'all'
-  writeFile(wb, `StoreWiseItemSales_${series}${acc}_${from}_to_${to}.xlsx`)
+  writeFile(wb, `StoreWiseItemSales${acc}_${from}_to_${to}.xlsx`)
 }
 
 function buildItemSummaryExcel(rows) {

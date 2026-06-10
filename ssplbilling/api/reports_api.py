@@ -454,11 +454,11 @@ def get_store_sale_report(from_date=None, to_date=None):
         }
 
 @frappe.whitelist()
-def get_store_wise_item_sales_report(series, from_date=None, to_date=None, income_account=None):
+def get_store_wise_item_sales_report(from_date=None, to_date=None, income_account=None):
 	"""Return Store Wise Item Sales Report.
 	Group by Income Account and Item Code.
 	"""
-	query_filters = [series]
+	query_filters = []
 	date_condition = ""
 	if from_date:
 		date_condition += " AND inv.posting_date >= %s"
@@ -485,8 +485,7 @@ def get_store_wise_item_sales_report(series, from_date=None, to_date=None, incom
 		JOIN 
 			`tabSales Invoice Item` it ON it.parent = inv.name
 		WHERE 
-			inv.naming_series = %s 
-			AND inv.docstatus = 1
+			inv.docstatus = 1
 			{date_condition}
 			{income_account_condition}
 		GROUP BY 

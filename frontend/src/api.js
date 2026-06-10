@@ -845,9 +845,8 @@ export async function getItemSummaryReport(series, fromDate, toDate) {
 /**
  * Fetch Store Wise Item Sales Report.
  */
-export async function getStoreWiseItemSalesReport(series, fromDate, toDate, incomeAccount) {
+export async function getStoreWiseItemSalesReport(fromDate, toDate, incomeAccount) {
   return frappeGet("ssplbilling.api.reports_api.get_store_wise_item_sales_report", {
-    series,
     from_date: fromDate,
     to_date: toDate,
     income_account: incomeAccount,
