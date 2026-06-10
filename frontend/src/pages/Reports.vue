@@ -31,7 +31,7 @@
             <span class="text-xl">📊</span>
             <div class="text-left">
               <div class="text-lg font-semibold">Sales Tax Register</div>
-              <div class="text-xs text-[var(--color-text-muted)]">Submitted Sales Invoices</div>
+              <div class="text-base text-[var(--color-text-muted)]">Submitted Sales Invoices</div>
             </div>
           </button>
 
@@ -42,7 +42,7 @@
             <span class="text-xl">📄</span>
             <div class="text-left">
               <div class="text-lg font-semibold">Quotation Register</div>
-              <div class="text-xs text-[var(--color-text-muted)]">All Quotations</div>
+              <div class="text-base text-[var(--color-text-muted)]">All Quotations</div>
             </div>
           </button>
 
@@ -53,7 +53,7 @@
             <span class="text-xl">📋</span>
             <div class="text-left">
               <div class="text-lg font-semibold">HSN Summary</div>
-              <div class="text-xs text-[var(--color-text-muted)]">Sales HSN-wise summary</div>
+              <div class="text-base text-[var(--color-text-muted)]">Sales HSN-wise summary</div>
             </div>
           </button>
 
@@ -64,18 +64,18 @@
             <span class="text-xl">📊</span>
             <div class="text-left">
               <div class="text-lg font-semibold">Quotation HSN Summary</div>
-              <div class="text-xs text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
+              <div class="text-base text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
             </div>
           </button>
 
           <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border-[var(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
             @click="openModal('item_summary')"
           >
             <span class="text-xl">📦</span>
             <div class="text-left">
               <div class="text-lg font-semibold">Item Sales Summary</div>
-              <div class="text-xs text-[var(--color-text-muted)]">Total items sold by code</div>
+              <div class="text-base text-[var(--color-text-muted)]">Total items sold by code</div>
             </div>
           </button>
 
@@ -88,7 +88,7 @@
             <span class="text-xl">🏪</span>
             <div class="text-left">
               <div class="text-lg font-semibold">Store Sale Report</div>
-              <div class="text-xs text-[var(--color-text-muted)]">Sales by store (Direct Income)</div>
+              <div class="text-base text-[var(--color-text-muted)]">Sales by store (Direct Income)</div>
             </div>
           </button>
         </div>
@@ -119,7 +119,7 @@
           <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
             <div>
               <h2 class="text-2xl font-bold text-[var(--color-text)]">{{ modalConfig.title }}</h2>
-              <p class="text-xs text-[var(--color-text-muted)] mt-0.5">{{ modalConfig.subtitle }}</p>
+              <p class="text-base text-[var(--color-text-muted)] mt-0.5">{{ modalConfig.subtitle }}</p>
             </div>
             <button
               class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
@@ -133,12 +133,12 @@
           <div class="px-6 py-5 space-y-4">
             <!-- Series selector -->
             <div>
-              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+              <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {{ modalConfig.seriesLabel }}
               </label>
               <select
                 v-model="selectedSeries"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               >
                 <option value="" disabled>— Select a series —</option>
                 <option v-for="s in currentSeriesList" :key="s" :value="s">{{ s }}</option>
@@ -148,26 +148,26 @@
             <!-- Date range -->
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">From Date</label>
+                <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">From Date</label>
                 <input
                   v-model="fromDate"
                   type="date"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
                 />
               </div>
               <div>
-                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">To Date</label>
+                <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">To Date</label>
                 <input
                   v-model="toDate"
                   type="date"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
                 />
               </div>
             </div>
 
             <div class="flex justify-start">
               <button
-                class="text-xs font-medium text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
+                class="text-sm font-medium text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
                 @click="setLastMonth"
               >
                 📅 Set Last Month
@@ -175,19 +175,19 @@
             </div>
 
             <!-- Error -->
-            <p v-if="modalError" class="text-xs text-[var(--color-danger)]">{{ modalError }}</p>
+            <p v-if="modalError" class="text-sm text-[var(--color-danger)]">{{ modalError }}</p>
           </div>
 
           <!-- Modal footer -->
           <div class="flex justify-end gap-2 border-t border-[var(--color-border)] px-6 py-4">
             <button
-              class="rounded-lg px-4 py-2 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
+              class="rounded-lg px-4 py-2 text-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
               @click="showModal = false"
             >
               Cancel
             </button>
             <button
-              class="flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
+              class="flex items-center gap-2 rounded-lg px-5 py-2 text-lg font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
               :class="modalConfig.btnClass"
               :disabled="generating || !selectedSeries"
               @click="generateReport"
