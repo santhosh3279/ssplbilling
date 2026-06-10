@@ -12,7 +12,7 @@
             ← Back
           </button>
           <div>
-            <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">REPORT</h1>
+            <h1 class="text-3xl font-normal text-[var(--color-text)] uppercase tracking-wider">REPORT</h1>
             <p class="text-xs text-[var(--color-text-muted)]">Business reports and analytics</p>
           </div>
         </div>
