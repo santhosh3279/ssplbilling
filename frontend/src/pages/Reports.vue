@@ -159,7 +159,7 @@
             <!-- Income Account (Only for Store Wise) -->
             <div v-if="reportType === 'store_summary'">
               <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                Income Account (Optional)
+                Income Account
               </label>
               <select
                 v-model="selectedIncomeAccount"
