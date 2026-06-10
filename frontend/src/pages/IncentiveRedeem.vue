@@ -95,7 +95,7 @@
                       ref="quickLedgerSearchRef"
                       :results="empOptions"
                       :query="empSearch"
-                      :anchorEl="$refs.empInput"
+                      :anchorEl="empInput"
                       balanceLabel="Incentive Points"
                       :isPoints="true"
                       v-if="showEmpDrop && empOptions.length"
@@ -246,6 +246,7 @@ const showEmpDrop = ref(false)
 const quickLedgerSearchRef = ref(null)
 const submitBtn = ref(null)
 const pointsInput = ref(null)
+const empInput = ref(null)
 
 const doc = reactive({
   employee: '',
@@ -292,6 +293,10 @@ onMounted(async () => {
     
     // Default Cost Center
     doc.cost_center = localStorage.getItem('wb-cost-center') || ''
+
+    nextTick(() => {
+      empInput.value?.focus()
+    })
   } catch (e) {
     console.error('Failed to init page:', e)
   }
@@ -396,6 +401,7 @@ async function handleSave() {
     await frappePost('frappe.client.submit', { doc: res })
     
     successDoc.value = res.name
+    resetForm(true)
   } catch (e) {
     // Error is handled by frappePost alert
   } finally {
@@ -403,13 +409,17 @@ async function handleSave() {
   }
 }
 
-function resetForm() {
-  successDoc.value = ''
+function resetForm(keepSuccess = false) {
+  if (!keepSuccess) successDoc.value = ''
   doc.employee = ''
   doc.employee_name = ''
   doc.balance_points = 0
   doc.redeem_points = 0
   empSearch.value = ''
+  
+  nextTick(() => {
+    empInput.value?.focus()
+  })
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
