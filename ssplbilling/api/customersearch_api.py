@@ -529,6 +529,21 @@ def update_customer_full(data):
 			cust.pricelist_multiplication_factor = 1
 			
 	cust.save(ignore_permissions=True)
+	primary_party = data.get("primary_party")
+	if primary_party:
+		exists = frappe.db.exists("Party Link", {"secondary_party": customer_id})
+		if exists:
+			pl = frappe.get_doc("Party Link", exists)
+			pl.primary_party = primary_party
+			pl.save(ignore_permissions=True)
+		else:
+			frappe.get_doc({
+				"doctype": "Party Link",
+				"primary_party": primary_party,
+				"primary_role": "Customer",
+				"secondary_party": customer_id,
+				"secondary_role": "Customer",
+			}).insert(ignore_permissions=True)
 
 	address_name = data.get("address_name") or frappe.db.get_value(
 		"Dynamic Link",
@@ -661,6 +676,21 @@ def update_customer_details(customer=None, data=None):
     if data.get("email"): cust.email_id = data["email"]
     if data.get("gstin"): cust.gstin = data["gstin"]
     cust.save(ignore_permissions=True)
+    primary_party = data.get("primary_party")
+    if primary_party:
+    	exists = frappe.db.exists("Party Link", {"secondary_party": customer_id})
+    	if exists:
+    		pl = frappe.get_doc("Party Link", exists)
+    		pl.primary_party = primary_party
+    		pl.save(ignore_permissions=True)
+    	else:
+    		frappe.get_doc({
+    			"doctype": "Party Link",
+    			"primary_party": primary_party,
+    			"primary_role": "Customer",
+    			"secondary_party": customer_id,
+    			"secondary_role": "Customer",
+    		}).insert(ignore_permissions=True)
 
     addr_name = frappe.db.get_value("Dynamic Link", 
         {"link_doctype": "Customer", "link_name": customer, "parenttype": "Address"}, 

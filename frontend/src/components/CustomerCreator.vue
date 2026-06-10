@@ -38,6 +38,36 @@
         </select>
       </div>
 
+      <!-- Primary Party (Party Link) -->
+      <div v-if="!isEdit" class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
+        <div class="relative">
+          <input
+            v-model="primaryPartyQuery"
+            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Search primary customer..."
+            @input="searchPrimaryParties"
+            @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
+            @keydown.enter.prevent="handlePrimaryPartyEnter"
+          />
+          <div v-if="primaryParties.length" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-40 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+            <div
+              v-for="p in primaryParties"
+              :key="p.name"
+              class="cursor-pointer px-3 py-2 text-sm hover:bg-[var(--color-info)] hover:text-white"
+              @click="selectPrimaryParty(p)"
+            >
+              <div class="font-bold">{{ p.name }}</div>
+              <div class="text-xs opacity-80">{{ p.customer_name }}</div>
+            </div>
+          </div>
+          <div v-if="form.primary_party" class="mt-1 flex items-center justify-between rounded-lg bg-[var(--color-info)]/10 px-3 py-1.5 text-xs font-bold text-[var(--color-info)]">
+            <span>Linked to: {{ form.primary_party }}</span>
+            <button @click="form.primary_party = ''; primaryPartyQuery = ''" class="hover:text-red-500">✕</button>
+          </div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number *</label>
@@ -151,6 +181,7 @@
 import { ref, nextTick, onMounted } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
 import { validateGstin } from '../api.js'
+import { searchCustomers } from '../customersearch.js'
 
 const props = defineProps({
   show: Boolean,
@@ -167,6 +198,9 @@ const editLoading = ref(false)
 const fetchingGst = ref(false)
 const fetchedGstData = ref(null)
 const customerGroups = ref([])
+
+const primaryPartyQuery = ref('')
+const primaryParties = ref([])
 
 const indianStates = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -186,6 +220,7 @@ const defaultForm = () => ({
   address_name: '', address_line1: '', address_line2: '',
   city: 'Palakkad', pincode: '678000', state: 'Kerala',
   pricelist_modifier: null,
+  primary_party: '',
 })
 
 const form = ref(defaultForm())
@@ -217,13 +252,19 @@ onMounted(async () => {
       pincode:        row.pincode        || '',
       state:          row.state          || '',
       pricelist_modifier: null,
+      primary_party:  '',
     }
+    primaryPartyQuery.value = ''
     editLoading.value = true
     try {
       const full = await fetchCustomerDetails(row.name)
       const merged = { ...form.value }
       for (const [k, v] of Object.entries(full)) {
         if (k === 'address_name' || v !== '') merged[k] = v
+      }
+      
+      if (merged.primary_party) {
+        primaryPartyQuery.value = merged.primary_party
       }
       
       // Reverse calculate modifier percentage
@@ -251,6 +292,31 @@ onMounted(async () => {
 
 function focusFirst() {
   nextTick(() => nameInputRef.value?.focus())
+}
+
+async function searchPrimaryParties() {
+  const q = primaryPartyQuery.value.trim()
+  if (q.length < 2) {
+    primaryParties.value = []
+    return
+  }
+  try {
+    primaryParties.value = await searchCustomers(q)
+  } catch (e) {
+    console.warn('[CustomerCreator] searchPrimaryParties failed:', e)
+  }
+}
+
+function selectPrimaryParty(p) {
+  form.value.primary_party = p.name
+  primaryPartyQuery.value = p.name
+  primaryParties.value = []
+}
+
+function handlePrimaryPartyEnter() {
+  if (primaryParties.value.length === 1) {
+    selectPrimaryParty(primaryParties.value[0])
+  }
 }
 
 async function fetchGstInfo() {

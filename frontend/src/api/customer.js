@@ -98,6 +98,20 @@ export async function fetchCustomerGroups() {
 }
 
 /**
+ * Creates a Party Link between a primary party and the newly created customer.
+ */
+async function createPartyLink(primaryParty, secondaryParty) {
+  const doc = {
+    doctype: 'Party Link',
+    primary_party: primaryParty,
+    primary_role: 'Customer', // Assuming primary is always a Customer for now
+    secondary_party: secondaryParty,
+    secondary_role: 'Customer',
+  }
+  return frappePost('frappe.client.insert', { doc })
+}
+
+/**
  * Creates a Customer with mobile_no and email_id set directly on the doc.
  */
 export async function createCustomer(data) {
@@ -110,13 +124,17 @@ export async function createCustomer(data) {
     mobile_no: data.mobile || '',
     email_id: data.email || '',
     gstin: data.gstin || '',
+    pricelist_multiplication_factor: data.pricelist_modifier != null
+      ? (1 + data.pricelist_modifier / 100)
+      : 1.0,
   }
 
   const customer = await frappePost('frappe.client.insert', { doc: customerDoc })
 
   await Promise.all([
-    data.address_line1 ? createAddress(data, customer.name) : Promise.resolve(),
+    (data.address_line1 || data.city) ? createAddress(data, customer.name) : Promise.resolve(),
     data.whatsapp ? addWhatsAppToContact(customer.name, data.whatsapp) : Promise.resolve(),
+    data.primary_party ? createPartyLink(data.primary_party, customer.name) : Promise.resolve(),
   ])
 
   return customer
@@ -201,6 +219,17 @@ export async function fetchCustomerDetails(customerId) {
       if (contact.phone_nos && contact.phone_nos.length > 1) {
         result.whatsapp = contact.phone_nos[1].phone
       }
+    }
+
+    // 4. Fetch Primary Party link
+    const links = await frappeGet('frappe.client.get_list', {
+      doctype: 'Party Link',
+      fields: ['primary_party'],
+      filters: [['secondary_party', '=', customerId]],
+      limit_page_length: 1,
+    })
+    if (links.length) {
+      result.primary_party = links[0].primary_party
     }
   } catch (e) {
     console.error('[customer] fetchCustomerDetails (standard) failed:', e.message)
