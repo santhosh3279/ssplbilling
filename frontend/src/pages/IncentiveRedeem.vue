@@ -402,6 +402,9 @@ async function handleSave() {
     
     successDoc.value = res.name
     resetForm(true)
+    setTimeout(() => {
+      successDoc.value = ''
+    }, 1000)
   } catch (e) {
     // Error is handled by frappePost alert
   } finally {
