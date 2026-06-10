@@ -60,15 +60,39 @@
             <button 
               v-if="form.gstin && form.gstin.length === 15"
               @click="fetchGstInfo"
-              class="text-[9px] bg-[var(--color-info)] text-white px-1.5 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
+              class="text-base bg-[var(--color-info)] text-white w-6 h-6 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center shadow-sm"
               :disabled="fetchingGst"
+              title="Fetch Details from GST"
             >
-              <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
-              {{ fetchingGst ? 'Fetching...' : 'Fetch Info' }}
+              <span v-if="fetchingGst" class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <span v-else>⚡</span>
             </button>
           </label>
           <input v-model="form.gstin" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
+      </div>
+
+      <!-- GST Preview Area -->
+      <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
+        <div class="flex justify-between items-start mb-2">
+          <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
+          <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
+        </div>
+        <div class="space-y-1 text-[var(--color-text)]">
+          <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
+          <div class="text-[var(--color-text-muted)]">
+            <p>{{ fetchedGstData.address_line1 }}</p>
+            <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
+            <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
+          </div>
+        </div>
+        <button 
+          @click="applyGstData" 
+          class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+        >
+          <span>Fill Form with GST Data</span>
+          <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
+        </button>
       </div>
 
       <div class="flex flex-col gap-1.5">
@@ -82,6 +106,11 @@
       <div class="flex flex-col gap-1.5">
         <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1</label>
         <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
+        <input v-model="form.address_line2" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Area / Landmark" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
       </div>
 
       <div class="grid grid-cols-3 gap-4">
@@ -136,6 +165,7 @@ const nameInputRef = ref(null)
 const saving = ref(false)
 const editLoading = ref(false)
 const fetchingGst = ref(false)
+const fetchedGstData = ref(null)
 const customerGroups = ref([])
 
 const indianStates = [
@@ -227,22 +257,18 @@ async function fetchGstInfo() {
   if (!form.value.gstin || form.value.gstin.length !== 15) return
   
   fetchingGst.value = true
+  fetchedGstData.value = null
   try {
     const info = await validateGstin(form.value.gstin)
-    if (info) {
-      if (info.business_name) form.value.customer_name = info.business_name
-      
-      if (info.permanent_address) {
-        const addr = info.permanent_address
-        form.value.address_line1 = addr.address_line1 || ''
-        form.value.address_line2 = addr.address_line2 || ''
-        form.value.city = addr.city || ''
-        form.value.pincode = addr.pincode || ''
-        
-        if (addr.state) {
-          const matchedState = indianStates.find(s => s.toLowerCase() === addr.state.toLowerCase())
-          if (matchedState) form.value.state = matchedState
-        }
+    if (info && info.business_name) {
+      const addr = info.permanent_address || {}
+      fetchedGstData.value = {
+        business_name: info.business_name,
+        address_line1: addr.address_line1 || '',
+        address_line2: addr.address_line2 || '',
+        city: addr.city || '',
+        pincode: addr.pincode || '',
+        state: addr.state || '',
       }
     }
   } catch (e) {
@@ -251,6 +277,23 @@ async function fetchGstInfo() {
   } finally {
     fetchingGst.value = false
   }
+}
+
+function applyGstData() {
+  if (!fetchedGstData.value) return
+  const d = fetchedGstData.value
+  form.value.customer_name = d.business_name
+  form.value.address_line1 = d.address_line1
+  form.value.address_line2 = d.address_line2
+  form.value.city = d.city
+  form.value.pincode = d.pincode
+  
+  if (d.state) {
+    const matchedState = indianStates.find(s => s.toLowerCase() === d.state.toLowerCase())
+    if (matchedState) form.value.state = matchedState
+  }
+  
+  fetchedGstData.value = null
 }
 
 function validate() {
@@ -262,6 +305,10 @@ function validate() {
 }
 
 function handleFormEnter(e) {
+  if (fetchedGstData.value) {
+    applyGstData()
+    return
+  }
   const container = e.target.closest('.flex-col.gap-4')
   if (!container) return
   const focusables = Array.from(container.querySelectorAll('input, select, button'))
