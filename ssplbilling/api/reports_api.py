@@ -319,7 +319,7 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 
 
 @frappe.whitelist()
-def get_item_summary_report(series, from_date=None, to_date=None, income_account=None):
+def get_item_summary_report(series, from_date=None, to_date=None):
 	"""Return Item Sales Summary Report for Sales Invoices for the given naming series and date range.
 	Group by Item Code.
 	"""
@@ -331,11 +331,6 @@ def get_item_summary_report(series, from_date=None, to_date=None, income_account
 	if to_date:
 		date_condition += " AND inv.posting_date <= %s"
 		query_filters.append(to_date)
-
-	income_account_condition = ""
-	if income_account:
-		income_account_condition = " AND it.income_account = %s"
-		query_filters.append(income_account)
 
 	rows = frappe.db.sql(f"""
 		SELECT 
@@ -352,7 +347,6 @@ def get_item_summary_report(series, from_date=None, to_date=None, income_account
 			inv.naming_series = %s 
 			AND inv.docstatus = 1
 			{date_condition}
-			{income_account_condition}
 		GROUP BY 
 			it.item_code, it.item_name, it.stock_uom
 		ORDER BY 

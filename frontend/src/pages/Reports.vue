@@ -156,8 +156,8 @@
               </select>
             </div>
 
-            <!-- Income Account (Only for Item Sales Summary & Store Wise) -->
-            <div v-if="reportType === 'item_summary' || reportType === 'store_summary'">
+            <!-- Income Account (Only for Store Wise) -->
+            <div v-if="reportType === 'store_summary'">
               <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 Income Account (Optional)
               </label>
@@ -413,7 +413,7 @@ async function generateReport() {
     } else if (reportType.value === 'quotation_hsn') {
       rows = await getQuotationHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'item_summary') {
-      rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value, selectedIncomeAccount.value)
+      rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'store_summary') {
       rows = await getStoreWiseItemSalesReport(selectedSeries.value, fromDate.value, toDate.value, selectedIncomeAccount.value)
     } else {
@@ -512,10 +512,9 @@ function buildItemSummaryExcel(rows) {
   utils.book_append_sheet(wb, ws, 'Item Summary')
 
   const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
-  const acc = selectedIncomeAccount.value ? '_' + selectedIncomeAccount.value.replace(/[^A-Za-z0-9]/g, '') : ''
   const from = fromDate.value || 'all'
   const to = toDate.value || 'all'
-  writeFile(wb, `ItemSalesSummary_${series}${acc}_${from}_to_${to}.xlsx`)
+  writeFile(wb, `ItemSalesSummary_${series}_${from}_to_${to}.xlsx`)
 }
 
 function buildHSNExcel(rows) {

@@ -834,12 +834,11 @@ export async function getQuotationHsnSummaryReport(series, fromDate, toDate) {
 /**
  * Fetch Item Sales Summary Report.
  */
-export async function getItemSummaryReport(series, fromDate, toDate, incomeAccount) {
+export async function getItemSummaryReport(series, fromDate, toDate) {
   return frappeGet("ssplbilling.api.reports_api.get_item_summary_report", {
     series,
     from_date: fromDate,
     to_date: toDate,
-    income_account: incomeAccount,
   });
 }
 
