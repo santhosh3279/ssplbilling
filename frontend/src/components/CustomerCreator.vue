@@ -55,7 +55,18 @@
           <input v-model="form.email" type="email" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="email@example.com" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">GSTIN</label>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center">
+            <span>GSTIN</span>
+            <button 
+              v-if="form.gstin && form.gstin.length === 15"
+              @click="fetchGstInfo"
+              class="text-[9px] bg-[var(--color-info)] text-white px-1.5 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
+              :disabled="fetchingGst"
+            >
+              <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
+              {{ fetchingGst ? 'Fetching...' : 'Fetch Info' }}
+            </button>
+          </label>
           <input v-model="form.gstin" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
       </div>
@@ -110,6 +121,7 @@
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
+import { validateGstin } from '../api.js'
 
 const props = defineProps({
   show: Boolean,
@@ -123,6 +135,7 @@ const emit = defineEmits(['close', 'saved'])
 const nameInputRef = ref(null)
 const saving = ref(false)
 const editLoading = ref(false)
+const fetchingGst = ref(false)
 const customerGroups = ref([])
 
 const indianStates = [
@@ -208,6 +221,36 @@ onMounted(async () => {
 
 function focusFirst() {
   nextTick(() => nameInputRef.value?.focus())
+}
+
+async function fetchGstInfo() {
+  if (!form.value.gstin || form.value.gstin.length !== 15) return
+  
+  fetchingGst.value = true
+  try {
+    const info = await validateGstin(form.value.gstin)
+    if (info) {
+      if (info.business_name) form.value.customer_name = info.business_name
+      
+      if (info.permanent_address) {
+        const addr = info.permanent_address
+        form.value.address_line1 = addr.address_line1 || ''
+        form.value.address_line2 = addr.address_line2 || ''
+        form.value.city = addr.city || ''
+        form.value.pincode = addr.pincode || ''
+        
+        if (addr.state) {
+          const matchedState = indianStates.find(s => s.toLowerCase() === addr.state.toLowerCase())
+          if (matchedState) form.value.state = matchedState
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[CustomerCreator] GST fetch failed:', e)
+    alert('Failed to fetch GST details: ' + e.message)
+  } finally {
+    fetchingGst.value = false
+  }
 }
 
 function validate() {

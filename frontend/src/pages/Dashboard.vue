@@ -97,6 +97,12 @@
 
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+          @click="showGstValidator = true"
+        >
+          🔍 GST Validation
+        </button>
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="showSystemPerformance = true"
         >
           📊 System Performance
@@ -191,6 +197,11 @@
       :show="showSystemPerformance"
       @close="showSystemPerformance = false"
     />
+
+    <!-- GST VALIDATOR -->
+    <div v-if="showGstValidator" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <GstValidator @close="showGstValidator = false" />
+    </div>
 
     <!-- INVOICE TEMPLATE FULL SCREEN MODAL -->
     <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
@@ -291,6 +302,7 @@ import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
 import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
+import GstValidator from '../components/GstValidator.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Stock_Template from '../components/Stock_Template.vue'
@@ -526,6 +538,7 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
 const showInvoiceTemplate = ref(false)
 const showStockTemplate = ref(false)
+const showGstValidator = ref(false)
 
 // ==================== SYSTEM PERFORMANCE ====================
 const showSystemPerformance = ref(false)

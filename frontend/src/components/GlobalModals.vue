@@ -50,6 +50,11 @@
       :entered-amount="0"
       @close="showOutstandingBillsModal = false"
     />
+
+    <!-- GST VALIDATOR MODAL -->
+    <div v-if="showGstValidator" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <GstValidator @close="showGstValidator = false" />
+    </div>
   </div>
 </template>
 
@@ -60,6 +65,7 @@ import ItemSearch from './ItemSearch.vue'
 import GeneralLedger from '../pages/GeneralLedger.vue'
 import StockLedger from '../pages/StockLedger.vue'
 import OutstandingBillsModal from './OutstandingBillsModal.vue'
+import GstValidator from './GstValidator.vue'
 import { frappeGet } from '../api.js'
 
 const showCustomerSearchModal = ref(false)
@@ -67,6 +73,7 @@ const showItemSearchModal = ref(false)
 const showLedgerWindow = ref(false)
 const showStockLedgerWindow = ref(false)
 const showOutstandingBillsModal = ref(false)
+const showGstValidator = ref(false)
 
 const custSearchModalRef = ref(null)
 const itemSearchModalRef = ref(null)
@@ -201,7 +208,7 @@ function handleOpenStockLedger(e) {
   showStockLedgerWindow.value = true
 }
 
-function handleGlobalLedgerToggle() {
+function handleGlobalGeneralLedgerToggle() {
   ledgerCustomerName.value = ''
   ledgerType.value = 'Customer'
   ledgerFromDate.value = ''
@@ -209,12 +216,17 @@ function handleGlobalLedgerToggle() {
   showLedgerWindow.value = !showLedgerWindow.value
 }
 
+function handleOpenGstValidator() {
+  showGstValidator.value = true
+}
+
 onMounted(() => {
   window.addEventListener('wb-global-ledger-search', handleGlobalLedgerSearch)
   window.addEventListener('wb-global-item-search', handleGlobalItemSearch)
   window.addEventListener('wb-open-general-ledger', handleOpenGeneralLedger)
   window.addEventListener('wb-open-stock-ledger', handleOpenStockLedger)
-  window.addEventListener('wb-global-general-ledger-toggle', handleGlobalLedgerToggle)
+  window.addEventListener('wb-global-general-ledger-toggle', handleGlobalGeneralLedgerToggle)
+  window.addEventListener('wb-open-gst-validator', handleOpenGstValidator)
 })
 
 onUnmounted(() => {
@@ -222,6 +234,7 @@ onUnmounted(() => {
   window.removeEventListener('wb-global-item-search', handleGlobalItemSearch)
   window.removeEventListener('wb-open-general-ledger', handleOpenGeneralLedger)
   window.removeEventListener('wb-open-stock-ledger', handleOpenStockLedger)
-  window.removeEventListener('wb-global-general-ledger-toggle', handleGlobalLedgerToggle)
+  window.removeEventListener('wb-global-general-ledger-toggle', handleGlobalGeneralLedgerToggle)
+  window.removeEventListener('wb-open-gst-validator', handleOpenGstValidator)
 })
 </script>

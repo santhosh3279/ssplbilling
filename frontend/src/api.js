@@ -774,6 +774,17 @@ export async function createBulkPaymentEntry(payload) {
   });
 }
 
+// ─── GST & India Compliance ──────────────────────────────────────────────────
+
+/**
+ * Validate a GSTIN and fetch business details using India Compliance.
+ * @param {string} gstin
+ * @returns {Promise<Object>}
+ */
+export async function validateGstin(gstin) {
+  return frappeGet("ssplbilling.api.gst_api.validate_gstin", { gstin });
+}
+
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
 /**

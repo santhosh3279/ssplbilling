@@ -71,7 +71,18 @@
       <!-- GSTIN + GST Category badge -->
       <div class="flex flex-col gap-1.5">
         <div class="flex items-center justify-between">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">GSTIN</label>
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">GSTIN</label>
+            <button 
+              v-if="form.gstin && form.gstin.length === 15"
+              @click="fetchGstInfo"
+              class="text-[9px] bg-[var(--color-info)] text-white px-1.5 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
+              :disabled="fetchingGst"
+            >
+              <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
+              {{ fetchingGst ? 'Fetching...' : 'Fetch Info' }}
+            </button>
+          </div>
           <span
             class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
             :class="gstCategory === 'Registered Regular'
@@ -225,7 +236,7 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { createSupplier, fetchSupplierDetails, updateSupplier } from '../api/supplier.js'
-import { frappeGet } from '../api.js'
+import { frappeGet, validateGstin } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 
 useSubwindow()
@@ -271,6 +282,7 @@ const form = reactive({
 
 const saving = ref(false)
 const loading = ref(false)
+const fetchingGst = ref(false)
 
 // GST category derived live from GSTIN input
 const gstCategory = computed(() =>
@@ -296,6 +308,36 @@ const fieldOrder = [typeInput, groupInput, nameInput, gstinInput, mobileInput, w
 // ─── Focus helpers ────────────────────────────────────────────────────────────
 function focusFirst() {
   nextTick(() => typeInput.value?.focus())
+}
+
+async function fetchGstInfo() {
+  if (!form.gstin || form.gstin.length !== 15) return
+  
+  fetchingGst.value = true
+  try {
+    const info = await validateGstin(form.gstin)
+    if (info) {
+      if (info.business_name) form.supplier_name = info.business_name
+      
+      if (info.permanent_address) {
+        const addr = info.permanent_address
+        form.address_line1 = addr.address_line1 || ''
+        form.address_line2 = addr.address_line2 || ''
+        form.city = addr.city || ''
+        form.pincode = addr.pincode || ''
+        
+        if (addr.state) {
+          const matchedState = indianStates.find(s => s.toLowerCase() === addr.state.toLowerCase())
+          if (matchedState) form.state = matchedState
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[SupplierCreator] GST fetch failed:', e)
+    alert('Failed to fetch GST details: ' + e.message)
+  } finally {
+    fetchingGst.value = false
+  }
 }
 
 function focusNext() {
