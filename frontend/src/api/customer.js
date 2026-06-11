@@ -100,13 +100,14 @@ export async function fetchCustomerGroups() {
 /**
  * Creates a Party Link between a primary party and the newly created customer.
  */
-async function createPartyLink(primaryParty, secondaryParty) {
+async function createPartyLink(primaryParty, primaryRole, secondaryParty) {
   const doc = {
     doctype: 'Party Link',
     primary_party: primaryParty,
-    primary_role: 'Customer', // Assuming primary is always a Customer for now
+    primary_role: primaryRole,
     secondary_party: secondaryParty,
     secondary_role: 'Customer',
+    type: 'Customer', // As requested: "type as customer"
   }
   return frappePost('frappe.client.insert', { doc })
 }
@@ -131,10 +132,14 @@ export async function createCustomer(data) {
 
   const customer = await frappePost('frappe.client.insert', { doc: customerDoc })
 
+  // After creating the party (customer), run this logic
+  if (data.primary_party) {
+    await createPartyLink(data.primary_party, data.primary_party_role, customer.name)
+  }
+
   await Promise.all([
     (data.address_line1 || data.city) ? createAddress(data, customer.name) : Promise.resolve(),
     data.whatsapp ? addWhatsAppToContact(customer.name, data.whatsapp) : Promise.resolve(),
-    data.primary_party ? createPartyLink(data.primary_party, customer.name) : Promise.resolve(),
   ])
 
   return customer
@@ -224,12 +229,13 @@ export async function fetchCustomerDetails(customerId) {
     // 4. Fetch Primary Party link
     const links = await frappeGet('frappe.client.get_list', {
       doctype: 'Party Link',
-      fields: ['primary_party'],
+      fields: ['primary_party', 'primary_role'],
       filters: [['secondary_party', '=', customerId]],
       limit_page_length: 1,
     })
     if (links.length) {
       result.primary_party = links[0].primary_party
+      result.primary_party_role = links[0].primary_role
     }
   } catch (e) {
     console.error('[customer] fetchCustomerDetails (standard) failed:', e.message)
