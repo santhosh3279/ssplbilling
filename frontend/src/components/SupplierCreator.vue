@@ -72,16 +72,19 @@
       <div class="flex flex-col gap-1.5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">GSTIN</label>
-            <button 
-              v-if="form.gstin && form.gstin.length === 15"
-              @click="fetchGstInfo"
-              class="text-[9px] bg-[var(--color-info)] text-white px-1.5 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
-              :disabled="fetchingGst"
-            >
-              <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
-              {{ fetchingGst ? 'Fetching...' : 'Fetch Info' }}
-            </button>
+            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center w-full">
+              <span>GSTIN</span>
+              <button 
+                v-if="form.gstin && form.gstin.length === 15"
+                @click="fetchGstInfo"
+                class="text-base bg-[var(--color-info)] text-white w-6 h-6 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center shadow-sm"
+                :disabled="fetchingGst"
+                title="Fetch Details from GST"
+              >
+                <span v-if="fetchingGst" class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                <span v-else>⚡</span>
+              </button>
+            </label>
           </div>
           <span
             class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
@@ -101,6 +104,29 @@
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="focusNext"
         />
+      </div>
+
+      <!-- GST Preview Area -->
+      <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
+        <div class="flex justify-between items-start mb-2">
+          <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
+          <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
+        </div>
+        <div class="space-y-1 text-[var(--color-text)]">
+          <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
+          <div class="text-[var(--color-text-muted)]">
+            <p>{{ fetchedGstData.address_line1 }}</p>
+            <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
+            <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
+          </div>
+        </div>
+        <button 
+          @click="applyGstData" 
+          class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+        >
+          <span>Fill Form with GST Data</span>
+          <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
+        </button>
       </div>
 
       <!-- Mobile / WhatsApp / Email -->
@@ -283,6 +309,7 @@ const form = reactive({
 const saving = ref(false)
 const loading = ref(false)
 const fetchingGst = ref(false)
+const fetchedGstData = ref(null)
 
 // GST category derived live from GSTIN input
 const gstCategory = computed(() =>
@@ -314,22 +341,18 @@ async function fetchGstInfo() {
   if (!form.gstin || form.gstin.length !== 15) return
   
   fetchingGst.value = true
+  fetchedGstData.value = null
   try {
     const info = await validateGstin(form.gstin)
-    if (info) {
-      if (info.business_name) form.supplier_name = info.business_name
-      
-      if (info.permanent_address) {
-        const addr = info.permanent_address
-        form.address_line1 = addr.address_line1 || ''
-        form.address_line2 = addr.address_line2 || ''
-        form.city = addr.city || ''
-        form.pincode = addr.pincode || ''
-        
-        if (addr.state) {
-          const matchedState = indianStates.find(s => s.toLowerCase() === addr.state.toLowerCase())
-          if (matchedState) form.state = matchedState
-        }
+    if (info && info.business_name) {
+      const addr = info.permanent_address || {}
+      fetchedGstData.value = {
+        business_name: info.business_name,
+        address_line1: addr.address_line1 || '',
+        address_line2: addr.address_line2 || '',
+        city: addr.city || '',
+        pincode: addr.pincode || '',
+        state: addr.state || '',
       }
     }
   } catch (e) {
@@ -340,7 +363,28 @@ async function fetchGstInfo() {
   }
 }
 
+function applyGstData() {
+  if (!fetchedGstData.value) return
+  const d = fetchedGstData.value
+  form.supplier_name = d.business_name
+  form.address_line1 = d.address_line1
+  form.address_line2 = d.address_line2
+  form.city = d.city
+  form.pincode = d.pincode
+  
+  if (d.state) {
+    const matchedState = indianStates.find(s => s.toLowerCase() === d.state.toLowerCase())
+    if (matchedState) form.state = matchedState
+  }
+  
+  fetchedGstData.value = null
+}
+
 function focusNext() {
+  if (fetchedGstData.value) {
+    applyGstData()
+    return
+  }
   const current = document.activeElement
   const inputs = fieldOrder.map(r => r.value).filter(Boolean)
   const idx = inputs.indexOf(current)
@@ -395,6 +439,7 @@ watch(() => props.show, initForm, { immediate: true })
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function resetForm() {
+  fetchedGstData.value = null
   Object.assign(form, {
     name: '',
     supplier_type: 'Individual',
