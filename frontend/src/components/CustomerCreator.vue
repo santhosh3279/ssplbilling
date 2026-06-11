@@ -46,7 +46,7 @@
             ref="primaryPartyInputRef"
             v-model="primaryPartyQuery"
             class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-            placeholder="Search primary customer..."
+            placeholder="Search Supplier or Employee..."
             @input="searchPrimaryParties"
             @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
             @keydown="handlePrimaryPartyKeydown"
@@ -181,7 +181,7 @@
 import { ref, nextTick, onMounted } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
 import { validateGstin } from '../api.js'
-import { searchCustomers } from '../customersearch.js'
+import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import QuickLedgerSearch from './QuickLedgerSearch.vue'
 
 const props = defineProps({
@@ -203,6 +203,7 @@ const fetchingGst = ref(false)
 const fetchedGstData = ref(null)
 const customerGroups = ref([])
 
+const { ledgers } = useLedgerCache()
 const primaryPartyQuery = ref('')
 const primaryParties = ref([])
 
@@ -305,13 +306,10 @@ async function searchPrimaryParties() {
     return
   }
   try {
-    const raw = await searchCustomers(q)
-    // Map to QuickLedgerSearch format
-    primaryParties.value = raw.map(p => ({
-      ...p,
-      label: p.customer_name,
-      type: 'Customer'
-    }))
+    // Search locally in cache across all ledgers
+    const results = searchLedgersInCache(q)
+    // Filter to only Suppliers and Employees
+    primaryParties.value = results.filter(l => l.type === 'Supplier' || l.type === 'Employee')
   } catch (e) {
     console.warn('[CustomerCreator] searchPrimaryParties failed:', e)
   }
