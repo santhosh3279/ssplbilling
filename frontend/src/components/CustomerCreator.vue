@@ -43,24 +43,24 @@
         <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
         <div class="relative">
           <input
+            ref="primaryPartyInputRef"
             v-model="primaryPartyQuery"
             class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="Search primary customer..."
             @input="searchPrimaryParties"
             @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
-            @keydown.enter.prevent="handlePrimaryPartyEnter"
+            @keydown="handlePrimaryPartyKeydown"
           />
-          <div v-if="primaryParties.length" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-40 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
-            <div
-              v-for="p in primaryParties"
-              :key="p.name"
-              class="cursor-pointer px-3 py-2 text-sm hover:bg-[var(--color-info)] hover:text-white"
-              @click="selectPrimaryParty(p)"
-            >
-              <div class="font-bold">{{ p.name }}</div>
-              <div class="text-xs opacity-80">{{ p.customer_name }}</div>
-            </div>
-          </div>
+
+          <QuickLedgerSearch 
+            ref="quickSearchRef"
+            :results="primaryParties"
+            :query="primaryPartyQuery"
+            :anchor-el="primaryPartyInputRef"
+            @select="selectPrimaryParty"
+            @close="primaryParties = []"
+          />
+
           <div v-if="form.primary_party" class="mt-1 flex items-center justify-between rounded-lg bg-[var(--color-info)]/10 px-3 py-1.5 text-xs font-bold text-[var(--color-info)]">
             <span>Linked to: {{ form.primary_party }}</span>
             <button @click="form.primary_party = ''; primaryPartyQuery = ''" class="hover:text-red-500">✕</button>
@@ -182,6 +182,7 @@ import { ref, nextTick, onMounted } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
 import { validateGstin } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
+import QuickLedgerSearch from './QuickLedgerSearch.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -193,6 +194,9 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const nameInputRef = ref(null)
+const primaryPartyInputRef = ref(null)
+const quickSearchRef = ref(null)
+
 const saving = ref(false)
 const editLoading = ref(false)
 const fetchingGst = ref(false)
@@ -301,7 +305,13 @@ async function searchPrimaryParties() {
     return
   }
   try {
-    primaryParties.value = await searchCustomers(q)
+    const raw = await searchCustomers(q)
+    // Map to QuickLedgerSearch format
+    primaryParties.value = raw.map(p => ({
+      ...p,
+      label: p.customer_name,
+      type: 'Customer'
+    }))
   } catch (e) {
     console.warn('[CustomerCreator] searchPrimaryParties failed:', e)
   }
@@ -316,6 +326,12 @@ function selectPrimaryParty(p) {
 function handlePrimaryPartyEnter() {
   if (primaryParties.value.length === 1) {
     selectPrimaryParty(primaryParties.value[0])
+  }
+}
+
+function handlePrimaryPartyKeydown(e) {
+  if (primaryParties.value.length > 0 && quickSearchRef.value) {
+    quickSearchRef.value.handleKeydown(e)
   }
 }
 
