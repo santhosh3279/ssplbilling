@@ -90,12 +90,12 @@
             <button 
               v-if="form.gstin && form.gstin.length === 15"
               @click="fetchGstInfo"
-              class="text-base bg-[var(--color-info)] text-white w-6 h-6 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center shadow-sm"
+              class="text-[9px] bg-[var(--color-info)] text-white px-2 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1 shadow-sm"
               :disabled="fetchingGst"
               title="Fetch Details from GST"
             >
-              <span v-if="fetchingGst" class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-              <span v-else>⚡</span>
+              <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
+              <span>{{ fetchingGst ? 'Fetching...' : 'GST Fetch' }}</span>
             </button>
           </label>
           <input v-model="form.gstin" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
