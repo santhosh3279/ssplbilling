@@ -322,6 +322,8 @@ function handlePrimaryPartyEnter() {
 async function fetchGstInfo() {
   if (!form.value.gstin || form.value.gstin.length !== 15) return
   
+  if (!confirm('This will use 0.5 API tokens. Proceed?')) return
+
   fetchingGst.value = true
   fetchedGstData.value = null
   try {

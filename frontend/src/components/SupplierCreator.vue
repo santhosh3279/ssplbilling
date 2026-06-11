@@ -340,6 +340,8 @@ function focusFirst() {
 async function fetchGstInfo() {
   if (!form.gstin || form.gstin.length !== 15) return
   
+  if (!confirm('This will use 0.5 API tokens. Proceed?')) return
+
   fetchingGst.value = true
   fetchedGstData.value = null
   try {
