@@ -27,6 +27,67 @@
     <div class="grid grid-cols-3 gap-6 px-6 py-5 max-h-[72vh] overflow-y-auto align-stretch form-fields-container">
       <!-- Column 1: Identity & Grouping -->
       <div class="flex flex-col gap-4">
+        <!-- GSTIN + GST Category badge -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center w-full">
+                <span>GSTIN</span>
+                <button 
+                  v-if="form.gstin && form.gstin.length === 15"
+                  @click="fetchGstInfo"
+                  class="text-[9px] bg-[var(--color-info)] text-white px-2 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1 shadow-sm"
+                  :disabled="fetchingGst"
+                  title="Fetch Details from GST"
+                >
+                  <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
+                  <span>{{ fetchingGst ? 'Fetching...' : 'GST Fetch' }}</span>
+                </button>
+              </label>
+            </div>
+            <span
+              class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+              :class="gstCategory === 'Registered Regular'
+                ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]'
+                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
+            >
+              {{ gstCategory }}
+            </span>
+          </div>
+          <input
+            ref="gstinInput"
+            v-model="form.gstin"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="22AAAAA0000A1Z5"
+            maxlength="15"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
+          />
+        </div>
+
+        <!-- GST Preview Area -->
+        <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
+          <div class="flex justify-between items-start mb-2">
+            <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
+            <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
+          </div>
+          <div class="space-y-1 text-[var(--color-text)]">
+            <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
+            <div class="text-[var(--color-text-muted)]">
+              <p>{{ fetchedGstData.address_line1 }}</p>
+              <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
+              <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
+            </div>
+          </div>
+          <button 
+            @click="applyGstData" 
+            class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+          >
+            <span>Fill Form with GST Data</span>
+            <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
+          </button>
+        </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Type *</label>
           <select
@@ -136,67 +197,6 @@
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
           />
-        </div>
-
-        <!-- GSTIN + GST Category badge -->
-        <div class="flex flex-col gap-1.5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center w-full">
-                <span>GSTIN</span>
-                <button 
-                  v-if="form.gstin && form.gstin.length === 15"
-                  @click="fetchGstInfo"
-                  class="text-[9px] bg-[var(--color-info)] text-white px-2 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1 shadow-sm"
-                  :disabled="fetchingGst"
-                  title="Fetch Details from GST"
-                >
-                  <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
-                  <span>{{ fetchingGst ? 'Fetching...' : 'GST Fetch' }}</span>
-                </button>
-              </label>
-            </div>
-            <span
-              class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-              :class="gstCategory === 'Registered Regular'
-                ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]'
-                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
-            >
-              {{ gstCategory }}
-            </span>
-          </div>
-          <input
-            ref="gstinInput"
-            v-model="form.gstin"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-            placeholder="22AAAAA0000A1Z5"
-            maxlength="15"
-            @keydown.esc.stop="$emit('close')"
-            @keydown.enter.prevent="focusNext"
-          />
-        </div>
-
-        <!-- GST Preview Area -->
-        <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
-          <div class="flex justify-between items-start mb-2">
-            <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
-            <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
-          </div>
-          <div class="space-y-1 text-[var(--color-text)]">
-            <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
-            <div class="text-[var(--color-text-muted)]">
-              <p>{{ fetchedGstData.address_line1 }}</p>
-              <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
-              <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
-            </div>
-          </div>
-          <button 
-            @click="applyGstData" 
-            class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-          >
-            <span>Fill Form with GST Data</span>
-            <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
-          </button>
         </div>
       </div>
 
@@ -371,6 +371,7 @@ const primaryPartyQuery = ref('')
 const primaryParties = ref([])
 
 const fieldOrder = [
+  gstinInput,
   typeInput,
   groupInput,
   nameInput,
@@ -378,7 +379,6 @@ const fieldOrder = [
   mobileInput,
   whatsappInput,
   emailInput,
-  gstinInput,
   addr1Input,
   addr2Input,
   cityInput,
@@ -388,7 +388,7 @@ const fieldOrder = [
 
 // ─── Focus helpers ────────────────────────────────────────────────────────────
 function focusFirst() {
-  nextTick(() => typeInput.value?.focus())
+  nextTick(() => gstinInput.value?.focus())
 }
 
 async function searchPrimaryParties() {
