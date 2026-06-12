@@ -45,6 +45,10 @@ def create_supplier_full(data):
 	if not supplier_name:
 		frappe.throw("Supplier Name is required")
 
+	address_line1 = (data.get("address_line1") or "").strip()
+	if not address_line1:
+		frappe.throw("Address Line 1 is required")
+
 	sup = frappe.new_doc("Supplier")
 	sup.supplier_name = supplier_name
 	sup.supplier_type = data.get("supplier_type") or "Individual"
@@ -55,18 +59,30 @@ def create_supplier_full(data):
 	sup.gst_category = _resolve_gst_category(sup.gstin)
 	sup.insert(ignore_permissions=True)
 
-	if data.get("address_line1"):
-		addr = frappe.new_doc("Address")
-		addr.address_title = supplier_name
-		addr.address_type = "Billing"
-		addr.address_line1 = data.get("address_line1") or ""
-		addr.address_line2 = data.get("address_line2") or ""
-		addr.city = data.get("city") or ""
-		addr.pincode = data.get("pincode") or ""
-		addr.state = data.get("state") or ""
-		addr.country = "India"
-		addr.append("links", {"link_doctype": "Supplier", "link_name": sup.name})
-		addr.insert(ignore_permissions=True)
+	addr = frappe.new_doc("Address")
+	addr.address_title = supplier_name
+	addr.address_type = "Billing"
+	addr.address_line1 = address_line1
+	addr.address_line2 = data.get("address_line2") or ""
+	addr.city = data.get("city") or ""
+	addr.pincode = data.get("pincode") or ""
+	addr.state = data.get("state") or ""
+	addr.country = "India"
+	addr.append("links", {"link_doctype": "Supplier", "link_name": sup.name})
+	addr.insert(ignore_permissions=True)
+
+	primary_party = (data.get("primary_party") or "").strip()
+	primary_role = (data.get("primary_party_role") or "").strip()
+	if primary_party:
+		link_doc = frappe.get_doc({
+			"doctype": "Party Link",
+			"primary_party": primary_party,
+			"primary_role": primary_role,
+			"secondary_party": sup.name,
+			"secondary_role": "Supplier",
+			"type": "Supplier",
+		})
+		link_doc.insert(ignore_permissions=True)
 
 	if data.get("whatsapp"):
 		_sync_whatsapp_to_contact(sup.name, data["whatsapp"])
@@ -95,6 +111,8 @@ def get_supplier_details(supplier):
 		"city": "",
 		"pincode": "",
 		"state": "",
+		"primary_party": "",
+		"primary_party_role": "",
 	}
 
 	# Fetch WhatsApp from Contact phone_nos row 1
@@ -128,6 +146,17 @@ def get_supplier_details(supplier):
 			"state": addr.state or "",
 		})
 
+	# Fetch Primary Party link
+	links = frappe.get_all(
+		"Party Link",
+		fields=["primary_party", "primary_role"],
+		filters={"secondary_party": supplier, "secondary_role": "Supplier"},
+		limit=1
+	)
+	if links:
+		result["primary_party"] = links[0].primary_party
+		result["primary_party_role"] = links[0].primary_role
+
 	return result
 
 
@@ -140,6 +169,10 @@ def update_supplier_full(data):
 	supplier_id = data.get("name")
 	if not supplier_id:
 		frappe.throw("Supplier name is required")
+
+	address_line1 = (data.get("address_line1") or "").strip()
+	if not address_line1:
+		frappe.throw("Address Line 1 is required")
 
 	sup = frappe.get_doc("Supplier", supplier_id)
 	sup.supplier_name = data.get("supplier_name") or sup.supplier_name
@@ -154,6 +187,37 @@ def update_supplier_full(data):
 	if "whatsapp" in data:
 		_sync_whatsapp_to_contact(supplier_id, data.get("whatsapp") or "")
 
+	# Handle Party Link modification / deletion
+	primary_party = data.get("primary_party", "").strip()
+	primary_role = data.get("primary_party_role", "").strip()
+
+	existing_link_name = frappe.db.get_value(
+		"Party Link",
+		{"secondary_party": supplier_id, "secondary_role": "Supplier"},
+		"name"
+	)
+
+	if existing_link_name:
+		if not primary_party:
+			frappe.delete_doc("Party Link", existing_link_name, ignore_permissions=True)
+		else:
+			link_doc = frappe.get_doc("Party Link", existing_link_name)
+			if link_doc.primary_party != primary_party or link_doc.primary_role != primary_role:
+				link_doc.primary_party = primary_party
+				link_doc.primary_role = primary_role
+				link_doc.save(ignore_permissions=True)
+	else:
+		if primary_party:
+			link_doc = frappe.get_doc({
+				"doctype": "Party Link",
+				"primary_party": primary_party,
+				"primary_role": primary_role,
+				"secondary_party": supplier_id,
+				"secondary_role": "Supplier",
+				"type": "Supplier",
+			})
+			link_doc.insert(ignore_permissions=True)
+
 	address_name = data.get("address_name") or frappe.db.get_value(
 		"Dynamic Link",
 		{"link_doctype": "Supplier", "link_name": supplier_id, "parenttype": "Address"},
@@ -162,17 +226,17 @@ def update_supplier_full(data):
 
 	if address_name:
 		addr = frappe.get_doc("Address", address_name)
-		addr.address_line1 = data.get("address_line1") or addr.address_line1
+		addr.address_line1 = address_line1
 		addr.address_line2 = data.get("address_line2") or ""
 		addr.city = data.get("city") or addr.city
 		addr.pincode = data.get("pincode") or ""
 		addr.state = data.get("state") or ""
 		addr.save(ignore_permissions=True)
-	elif data.get("address_line1"):
+	else:
 		addr = frappe.new_doc("Address")
 		addr.address_title = sup.supplier_name
 		addr.address_type = "Billing"
-		addr.address_line1 = data.get("address_line1") or ""
+		addr.address_line1 = address_line1
 		addr.address_line2 = data.get("address_line2") or ""
 		addr.city = data.get("city") or ""
 		addr.pincode = data.get("pincode") or ""

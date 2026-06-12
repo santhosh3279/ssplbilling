@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="show"
-    class="w-[640px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden"
+    class="w-[1000px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
     @keydown="handleKeydown"
   >
     <!-- Header -->
@@ -24,10 +24,9 @@
     </div>
 
     <!-- Form -->
-    <div class="flex flex-col gap-4 px-6 py-5 max-h-[72vh] overflow-y-auto">
-
-      <!-- Supplier Type / Supplier Group -->
-      <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-3 gap-6 px-6 py-5 max-h-[72vh] overflow-y-auto align-stretch form-fields-container">
+      <!-- Column 1: Identity & Grouping -->
+      <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Type *</label>
           <select
@@ -41,6 +40,7 @@
             <option value="Partnership">Partnership</option>
           </select>
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Group *</label>
           <select
@@ -53,84 +53,52 @@
             <option v-for="g in supplierGroups" :key="g.name" :value="g.name">{{ g.name }}</option>
           </select>
         </div>
-      </div>
 
-      <!-- Supplier Name -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Name *</label>
-        <input
-          ref="nameInput"
-          v-model="form.supplier_name"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          placeholder="Full name"
-          @keydown.esc.stop="$emit('close')"
-          @keydown.enter.prevent="focusNext"
-        />
-      </div>
-
-      <!-- GSTIN + GST Category badge -->
-      <div class="flex flex-col gap-1.5">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center w-full">
-              <span>GSTIN</span>
-              <button 
-                v-if="form.gstin && form.gstin.length === 15"
-                @click="fetchGstInfo"
-                class="text-[9px] bg-[var(--color-info)] text-white px-2 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1 shadow-sm"
-                :disabled="fetchingGst"
-                title="Fetch Details from GST"
-              >
-                <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
-                <span>{{ fetchingGst ? 'Fetching...' : 'GST Fetch' }}</span>
-              </button>
-            </label>
-          </div>
-          <span
-            class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-            :class="gstCategory === 'Registered Regular'
-              ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]'
-              : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
-          >
-            {{ gstCategory }}
-          </span>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Name *</label>
+          <input
+            ref="nameInput"
+            v-model="form.supplier_name"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Full name"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
+          />
         </div>
-        <input
-          ref="gstinInput"
-          v-model="form.gstin"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          placeholder="22AAAAA0000A1Z5"
-          maxlength="15"
-          @keydown.esc.stop="$emit('close')"
-          @keydown.enter.prevent="focusNext"
-        />
-      </div>
 
-      <!-- GST Preview Area -->
-      <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
-        <div class="flex justify-between items-start mb-2">
-          <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
-          <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
-        </div>
-        <div class="space-y-1 text-[var(--color-text)]">
-          <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
-          <div class="text-[var(--color-text-muted)]">
-            <p>{{ fetchedGstData.address_line1 }}</p>
-            <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
-            <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
+        <!-- Primary Party (Party Link) -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
+          <div class="relative">
+            <input
+              ref="primaryPartyInputRef"
+              v-model="primaryPartyQuery"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              placeholder="Search Customer..."
+              @input="searchPrimaryParties"
+              @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
+              @keydown="handlePrimaryPartyKeydown"
+            />
+
+            <QuickLedgerSearch 
+              ref="quickSearchRef"
+              :results="primaryParties"
+              :query="primaryPartyQuery"
+              :anchor-el="primaryPartyInputRef"
+              @select="selectPrimaryParty"
+              @close="primaryParties = []"
+            />
+
+            <div v-if="form.primary_party" class="mt-1 flex items-center justify-between rounded-lg bg-[var(--color-info)]/10 px-3 py-1.5 text-xs font-bold text-[var(--color-info)]">
+              <span>Linked to: {{ form.primary_party }}</span>
+              <button @click="form.primary_party = ''; form.primary_party_role = ''; primaryPartyQuery = ''" class="hover:text-red-500">✕</button>
+            </div>
           </div>
         </div>
-        <button 
-          @click="applyGstData" 
-          class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-        >
-          <span>Fill Form with GST Data</span>
-          <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
-        </button>
       </div>
 
-      <!-- Mobile / WhatsApp / Email -->
-      <div class="grid grid-cols-3 gap-4">
+      <!-- Column 2: Contact & Tax -->
+      <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number</label>
           <input
@@ -143,6 +111,7 @@
             @keydown.enter.prevent="focusNext"
           />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp</label>
           <input
@@ -155,6 +124,7 @@
             @keydown.enter.prevent="focusNext"
           />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
           <input
@@ -167,36 +137,95 @@
             @keydown.enter.prevent="focusNext"
           />
         </div>
+
+        <!-- GSTIN + GST Category badge -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center w-full">
+                <span>GSTIN</span>
+                <button 
+                  v-if="form.gstin && form.gstin.length === 15"
+                  @click="fetchGstInfo"
+                  class="text-[9px] bg-[var(--color-info)] text-white px-2 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1 shadow-sm"
+                  :disabled="fetchingGst"
+                  title="Fetch Details from GST"
+                >
+                  <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
+                  <span>{{ fetchingGst ? 'Fetching...' : 'GST Fetch' }}</span>
+                </button>
+              </label>
+            </div>
+            <span
+              class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+              :class="gstCategory === 'Registered Regular'
+                ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]'
+                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
+            >
+              {{ gstCategory }}
+            </span>
+          </div>
+          <input
+            ref="gstinInput"
+            v-model="form.gstin"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="22AAAAA0000A1Z5"
+            maxlength="15"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
+          />
+        </div>
+
+        <!-- GST Preview Area -->
+        <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
+          <div class="flex justify-between items-start mb-2">
+            <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
+            <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
+          </div>
+          <div class="space-y-1 text-[var(--color-text)]">
+            <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
+            <div class="text-[var(--color-text-muted)]">
+              <p>{{ fetchedGstData.address_line1 }}</p>
+              <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
+              <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
+            </div>
+          </div>
+          <button 
+            @click="applyGstData" 
+            class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+          >
+            <span>Fill Form with GST Data</span>
+            <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
+          </button>
+        </div>
       </div>
 
-      <!-- Address Line 1 -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1</label>
-        <input
-          ref="addr1Input"
-          v-model="form.address_line1"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          placeholder="Street / Building"
-          @keydown.esc.stop="$emit('close')"
-          @keydown.enter.prevent="focusNext"
-        />
-      </div>
+      <!-- Column 3: Address & Location -->
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
+          <input
+            ref="addr1Input"
+            v-model="form.address_line1"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Street / Building"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
+          />
+        </div>
 
-      <!-- Address Line 2 -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
-        <input
-          ref="addr2Input"
-          v-model="form.address_line2"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          placeholder="Area / Landmark (optional)"
-          @keydown.esc.stop="$emit('close')"
-          @keydown.enter.prevent="focusNext"
-        />
-      </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
+          <input
+            ref="addr2Input"
+            v-model="form.address_line2"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Area / Landmark (optional)"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
+          />
+        </div>
 
-      <!-- City / Pincode / State -->
-      <div class="grid grid-cols-3 gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
           <input
@@ -208,6 +237,7 @@
             @keydown.enter.prevent="focusNext"
           />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
           <input
@@ -220,6 +250,7 @@
             @keydown.enter.prevent="focusNext"
           />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
           <select
@@ -264,6 +295,8 @@ import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { createSupplier, fetchSupplierDetails, updateSupplier } from '../api/supplier.js'
 import { frappeGet, validateGstin } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
+import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
+import QuickLedgerSearch from './QuickLedgerSearch.vue'
 
 useSubwindow()
 
@@ -304,6 +337,8 @@ const form = reactive({
   city: 'Palakkad',
   pincode: '678000',
   state: 'Kerala',
+  primary_party: '',
+  primary_party_role: '',
 })
 
 const saving = ref(false)
@@ -317,24 +352,78 @@ const gstCategory = computed(() =>
 )
 
 // ─── Field refs (in tab order) ────────────────────────────────────────────────
-const typeInput      = ref(null)
-const groupInput     = ref(null)
-const nameInput      = ref(null)
-const gstinInput     = ref(null)
-const mobileInput    = ref(null)
-const whatsappInput  = ref(null)
-const emailInput     = ref(null)
-const addr1Input     = ref(null)
-const addr2Input     = ref(null)
-const cityInput      = ref(null)
-const pincodeInput   = ref(null)
-const stateInput     = ref(null)
+const typeInput            = ref(null)
+const groupInput           = ref(null)
+const nameInput            = ref(null)
+const primaryPartyInputRef = ref(null)
+const quickSearchRef       = ref(null)
+const mobileInput          = ref(null)
+const whatsappInput        = ref(null)
+const emailInput           = ref(null)
+const gstinInput           = ref(null)
+const addr1Input           = ref(null)
+const addr2Input           = ref(null)
+const cityInput            = ref(null)
+const pincodeInput         = ref(null)
+const stateInput           = ref(null)
 
-const fieldOrder = [typeInput, groupInput, nameInput, gstinInput, mobileInput, whatsappInput, emailInput, addr1Input, addr2Input, cityInput, pincodeInput, stateInput]
+const primaryPartyQuery = ref('')
+const primaryParties = ref([])
+
+const fieldOrder = [
+  typeInput,
+  groupInput,
+  nameInput,
+  primaryPartyInputRef,
+  mobileInput,
+  whatsappInput,
+  emailInput,
+  gstinInput,
+  addr1Input,
+  addr2Input,
+  cityInput,
+  pincodeInput,
+  stateInput
+]
 
 // ─── Focus helpers ────────────────────────────────────────────────────────────
 function focusFirst() {
   nextTick(() => typeInput.value?.focus())
+}
+
+async function searchPrimaryParties() {
+  const q = primaryPartyQuery.value.trim()
+  if (q.length < 2) {
+    primaryParties.value = []
+    return
+  }
+  try {
+    const results = searchLedgersInCache(q)
+    // Filter to only Customers
+    primaryParties.value = results.filter(l => l.type === 'Customer')
+  } catch (e) {
+    console.warn('[SupplierCreator] searchPrimaryParties failed:', e)
+  }
+}
+
+function selectPrimaryParty(p) {
+  form.primary_party = p.name
+  form.primary_party_role = p.type
+  primaryPartyQuery.value = p.name
+  primaryParties.value = []
+}
+
+function handlePrimaryPartyKeydown(e) {
+  if (e.key === 'Enter') {
+    if (primaryParties.value.length > 0 && quickSearchRef.value) {
+      quickSearchRef.value.handleKeydown(e)
+    } else {
+      e.preventDefault()
+      focusNext()
+    }
+  } else if (primaryParties.value.length > 0 && quickSearchRef.value) {
+    quickSearchRef.value.handleKeydown(e)
+  }
 }
 
 async function fetchGstInfo() {
@@ -382,6 +471,7 @@ function applyGstData() {
   fetchedGstData.value = null
 }
 
+// Custom Enter key traversal that relies on fieldOrder
 function focusNext() {
   if (fetchedGstData.value) {
     applyGstData()
@@ -420,6 +510,8 @@ async function initForm() {
       city:          props.supplierRow.city         || 'Palakkad',
       pincode:       props.supplierRow.pincode      || '678000',
       state:         props.supplierRow.state        || 'Kerala',
+      primary_party: '',
+      primary_party_role: '',
     })
     loading.value = true
     try {
@@ -427,6 +519,9 @@ async function initForm() {
       // Merge: only overwrite with non-empty values from API so ledger prefill isn't blanked
       for (const [k, v] of Object.entries(full)) {
         if (k === 'address_name' || v !== '') form[k] = v
+      }
+      if (form.primary_party) {
+        primaryPartyQuery.value = form.primary_party
       }
     } catch (e) {
       console.warn('[SupplierCreator] fetch details failed:', e)
@@ -442,6 +537,8 @@ watch(() => props.show, initForm, { immediate: true })
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function resetForm() {
   fetchedGstData.value = null
+  primaryPartyQuery.value = ''
+  primaryParties.value = []
   Object.assign(form, {
     name: '',
     supplier_type: 'Individual',
@@ -450,6 +547,8 @@ function resetForm() {
     mobile: '', whatsapp: '', email: '', gstin: '',
     address_name: '', address_line1: '', address_line2: '',
     city: 'Palakkad', pincode: '678000', state: 'Kerala',
+    primary_party: '',
+    primary_party_role: '',
   })
 }
 
@@ -462,6 +561,11 @@ function validate() {
   if (!form.supplier_group) {
     alert('Supplier Group is required')
     groupInput.value?.focus()
+    return false
+  }
+  if (!form.address_line1 || !form.address_line1.trim()) {
+    alert('Address Line 1 is required')
+    addr1Input.value?.focus()
     return false
   }
   return true
