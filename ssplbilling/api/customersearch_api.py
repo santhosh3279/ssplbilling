@@ -512,6 +512,10 @@ def update_customer_full(data):
 	if not customer_id:
 		frappe.throw("Customer name is required")
 
+	address_line1 = data.get("address_line1", "").strip()
+	if not address_line1:
+		frappe.throw("Address Line 1 is required")
+
 	cust = frappe.get_doc("Customer", customer_id)
 	cust.customer_name = data.get("customer_name") or cust.customer_name
 	cust.customer_group = data.get("customer_group") or cust.customer_group
@@ -537,19 +541,19 @@ def update_customer_full(data):
 
 	if address_name:
 		addr = frappe.get_doc("Address", address_name)
-		addr.address_line1 = data.get("address_line1") or addr.address_line1
+		addr.address_line1 = address_line1
 		addr.address_line2 = data.get("address_line2") or ""
 		addr.address_line3 = data.get("address_line3") or ""
 		addr.city = data.get("city") or addr.city
 		addr.pincode = data.get("pincode") or ""
 		addr.state = data.get("state") or ""
 		addr.save(ignore_permissions=True)
-	elif data.get("address_line1") or data.get("city"):
+	else:
 		addr = frappe.get_doc({
 			"doctype": "Address",
 			"address_title": cust.customer_name,
 			"address_type": "Billing",
-			"address_line1": data.get("address_line1") or "",
+			"address_line1": address_line1,
 			"address_line2": data.get("address_line2") or "",
 			"address_line3": data.get("address_line3") or "",
 			"city": data.get("city") or "",
@@ -601,6 +605,10 @@ def quick_create_customer(data=None, **kwargs):
     if not customer_name:
         frappe.throw("Customer name is required")
 
+    address_line1 = data.get("address_line1", "").strip()
+    if not address_line1:
+        frappe.throw("Address Line 1 is required")
+
     cust = frappe.new_doc("Customer")
     cust.customer_name = customer_name
     cust.customer_type = data.get("customer_type") or "Individual"
@@ -621,18 +629,17 @@ def quick_create_customer(data=None, **kwargs):
 
     cust.insert(ignore_permissions=True)
 
-    if data.get("address_line1") or data.get("city"):
-        addr = frappe.new_doc("Address")
-        addr.address_title = customer_name
-        addr.address_type = "Billing"
-        addr.address_line1 = data.get("address_line1", "")
-        addr.address_line2 = data.get("address_line2", "")
-        addr.city = data.get("city", "")
-        addr.state = data.get("state", "")
-        addr.pincode = data.get("pincode", "")
-        addr.country = "India"
-        addr.append("links", {"link_doctype": "Customer", "link_name": cust.name})
-        addr.insert(ignore_permissions=True)
+    addr = frappe.new_doc("Address")
+    addr.address_title = customer_name
+    addr.address_type = "Billing"
+    addr.address_line1 = address_line1
+    addr.address_line2 = data.get("address_line2", "")
+    addr.city = data.get("city", "")
+    addr.state = data.get("state", "")
+    addr.pincode = data.get("pincode", "")
+    addr.country = "India"
+    addr.append("links", {"link_doctype": "Customer", "link_name": cust.name})
+    addr.insert(ignore_permissions=True)
 
     if data.get("mobile") or data.get("email"):
         contact = frappe.new_doc("Contact")

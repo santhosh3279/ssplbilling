@@ -134,7 +134,7 @@
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1</label>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
         <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
       </div>
 
@@ -385,6 +385,9 @@ function validate() {
   if (!form.value.customer_name.trim()) { alert('Customer Name is required'); return false }
   if (!props.isEdit && (!form.value.mobile || !/^\d{10}$/.test(form.value.mobile))) {
     alert('Valid 10-digit Mobile required'); return false
+  }
+  if (!form.value.address_line1 || !form.value.address_line1.trim()) {
+    alert('Address Line 1 is required'); return false
   }
   return true
 }
