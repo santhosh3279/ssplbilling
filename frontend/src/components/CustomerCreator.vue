@@ -331,7 +331,14 @@ function handlePrimaryPartyEnter() {
 }
 
 function handlePrimaryPartyKeydown(e) {
-  if (primaryParties.value.length > 0 && quickSearchRef.value) {
+  if (e.key === 'Enter') {
+    if (primaryParties.value.length > 0 && quickSearchRef.value) {
+      quickSearchRef.value.handleKeydown(e)
+    } else {
+      e.preventDefault()
+      handleFormEnter(e)
+    }
+  } else if (primaryParties.value.length > 0 && quickSearchRef.value) {
     quickSearchRef.value.handleKeydown(e)
   }
 }
@@ -399,7 +406,7 @@ function handleFormEnter(e) {
   }
   const container = e.target.closest('.flex-col.gap-4')
   if (!container) return
-  const focusables = Array.from(container.querySelectorAll('input, select, button'))
+  const focusables = Array.from(container.querySelectorAll('input, select'))
   const idx = focusables.indexOf(e.target)
   if (idx > -1 && idx < focusables.length - 1) focusables[idx + 1].focus()
   else submit()
