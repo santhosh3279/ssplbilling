@@ -48,7 +48,7 @@
               ref="primaryPartyInputRef"
               v-model="primaryPartyQuery"
               class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-              placeholder="Search Supplier or Employee..."
+              placeholder="Search Supplier..."
               @input="searchPrimaryParties"
               @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
               @keydown="handlePrimaryPartyKeydown"
@@ -317,8 +317,8 @@ async function searchPrimaryParties() {
   try {
     // Search locally in cache across all ledgers
     const results = searchLedgersInCache(q)
-    // Filter to only Suppliers and Employees
-    primaryParties.value = results.filter(l => l.type === 'Supplier' || l.type === 'Employee')
+    // Filter to only Suppliers
+    primaryParties.value = results.filter(l => l.type === 'Supplier')
   } catch (e) {
     console.warn('[CustomerCreator] searchPrimaryParties failed:', e)
   }
