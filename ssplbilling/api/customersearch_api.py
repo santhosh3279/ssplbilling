@@ -533,6 +533,38 @@ def update_customer_full(data):
 			cust.pricelist_multiplication_factor = 1
 			
 	cust.save(ignore_permissions=True)
+
+	# Handle Party Link modification / deletion
+	primary_party = data.get("primary_party", "").strip()
+	primary_role = data.get("primary_party_role", "").strip()
+
+	existing_link_name = frappe.db.get_value(
+		"Party Link",
+		{"secondary_party": customer_id, "secondary_role": "Customer"},
+		"name"
+	)
+
+	if existing_link_name:
+		if not primary_party:
+			frappe.delete_doc("Party Link", existing_link_name, ignore_permissions=True)
+		else:
+			link_doc = frappe.get_doc("Party Link", existing_link_name)
+			if link_doc.primary_party != primary_party or link_doc.primary_role != primary_role:
+				link_doc.primary_party = primary_party
+				link_doc.primary_role = primary_role
+				link_doc.save(ignore_permissions=True)
+	else:
+		if primary_party:
+			link_doc = frappe.get_doc({
+				"doctype": "Party Link",
+				"primary_party": primary_party,
+				"primary_role": primary_role,
+				"secondary_party": customer_id,
+				"secondary_role": "Customer",
+				"type": "Customer",
+			})
+			link_doc.insert(ignore_permissions=True)
+
 	address_name = data.get("address_name") or frappe.db.get_value(
 		"Dynamic Link",
 		{"link_doctype": "Customer", "link_name": customer_id, "parenttype": "Address"},

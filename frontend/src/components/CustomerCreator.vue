@@ -65,7 +65,7 @@
 
             <div v-if="form.primary_party" class="mt-1 flex items-center justify-between rounded-lg bg-[var(--color-info)]/10 px-3 py-1.5 text-xs font-bold text-[var(--color-info)]">
               <span>Linked to: {{ form.primary_party }}</span>
-              <button @click="form.primary_party = ''; primaryPartyQuery = ''" class="hover:text-red-500">✕</button>
+              <button @click="form.primary_party = ''; form.primary_party_role = ''; primaryPartyQuery = ''" class="hover:text-red-500">✕</button>
             </div>
           </div>
         </div>
