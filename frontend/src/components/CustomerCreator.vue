@@ -226,6 +226,7 @@ const defaultForm = () => ({
   city: 'Palakkad', pincode: '678000', state: 'Kerala',
   pricelist_modifier: null,
   primary_party: '',
+  primary_party_role: '',
 })
 
 const form = ref(defaultForm())
@@ -258,6 +259,7 @@ onMounted(async () => {
       state:          row.state          || '',
       pricelist_modifier: null,
       primary_party:  '',
+      primary_party_role: '',
     }
     primaryPartyQuery.value = ''
     editLoading.value = true
@@ -317,6 +319,7 @@ async function searchPrimaryParties() {
 
 function selectPrimaryParty(p) {
   form.value.primary_party = p.name
+  form.value.primary_party_role = p.type
   primaryPartyQuery.value = p.name
   primaryParties.value = []
 }
