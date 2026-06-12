@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[600px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
+  <div class="w-[1000px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
     <div class="border-b border-[var(--color-border)] px-5 py-4 bg-[var(--color-surface)]">
       <div class="text-xl font-bold text-[var(--color-text)]">{{ isEdit ? 'Modify Customer Details' : 'New Customer' }}</div>
       <div class="text-sm text-[var(--color-text-muted)] flex items-center gap-2">
@@ -13,77 +13,89 @@
       </div>
     </div>
 
-    <div class="flex flex-col gap-4 px-6 py-5 max-h-[70vh] overflow-y-auto">
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Name *</label>
-        <input
-          ref="nameInputRef"
-          v-model="form.customer_name"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          placeholder="Full name"
-          @keydown.esc.stop="$emit('close')"
-          @keydown.enter.prevent="handleFormEnter"
-        />
-      </div>
-
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Group *</label>
-        <select
-          v-model="form.customer_group"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-          @keydown.esc.stop="$emit('close')"
-          @keydown.enter.prevent="handleFormEnter"
-        >
-          <option v-for="cg in customerGroups" :key="cg" :value="cg">{{ cg }}</option>
-        </select>
-      </div>
-
-      <!-- Primary Party (Party Link) -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
-        <div class="relative">
+    <div class="grid grid-cols-3 gap-6 px-6 py-5 max-h-[70vh] overflow-y-auto align-stretch form-fields-container">
+      <!-- Column 1: Identity & Grouping -->
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Name *</label>
           <input
-            ref="primaryPartyInputRef"
-            v-model="primaryPartyQuery"
-            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-            placeholder="Search Supplier or Employee..."
-            @input="searchPrimaryParties"
-            @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
-            @keydown="handlePrimaryPartyKeydown"
+            ref="nameInputRef"
+            v-model="form.customer_name"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Full name"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="handleFormEnter"
           />
+        </div>
 
-          <QuickLedgerSearch 
-            ref="quickSearchRef"
-            :results="primaryParties"
-            :query="primaryPartyQuery"
-            :anchor-el="primaryPartyInputRef"
-            @select="selectPrimaryParty"
-            @close="primaryParties = []"
-          />
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Group *</label>
+          <select
+            v-model="form.customer_group"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="handleFormEnter"
+          >
+            <option v-for="cg in customerGroups" :key="cg" :value="cg">{{ cg }}</option>
+          </select>
+        </div>
 
-          <div v-if="form.primary_party" class="mt-1 flex items-center justify-between rounded-lg bg-[var(--color-info)]/10 px-3 py-1.5 text-xs font-bold text-[var(--color-info)]">
-            <span>Linked to: {{ form.primary_party }}</span>
-            <button @click="form.primary_party = ''; primaryPartyQuery = ''" class="hover:text-red-500">✕</button>
+        <!-- Primary Party (Party Link) -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
+          <div class="relative">
+            <input
+              ref="primaryPartyInputRef"
+              v-model="primaryPartyQuery"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              placeholder="Search Supplier or Employee..."
+              @input="searchPrimaryParties"
+              @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
+              @keydown="handlePrimaryPartyKeydown"
+            />
+
+            <QuickLedgerSearch 
+              ref="quickSearchRef"
+              :results="primaryParties"
+              :query="primaryPartyQuery"
+              :anchor-el="primaryPartyInputRef"
+              @select="selectPrimaryParty"
+              @close="primaryParties = []"
+            />
+
+            <div v-if="form.primary_party" class="mt-1 flex items-center justify-between rounded-lg bg-[var(--color-info)]/10 px-3 py-1.5 text-xs font-bold text-[var(--color-info)]">
+              <span>Linked to: {{ form.primary_party }}</span>
+              <button @click="form.primary_party = ''; primaryPartyQuery = ''" class="hover:text-red-500">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Modifier %</label>
+          <div class="relative w-full">
+            <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)] pr-8" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
           </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
+      <!-- Column 2: Contact & Tax -->
+      <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number *</label>
           <input v-model="form.mobile" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
           <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
-      </div>
 
-      <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
           <input v-model="form.email" type="email" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="email@example.com" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center">
             <span>GSTIN</span>
@@ -100,58 +112,53 @@
           </label>
           <input v-model="form.gstin" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
-      </div>
 
-      <!-- GST Preview Area -->
-      <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
-        <div class="flex justify-between items-start mb-2">
-          <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
-          <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
-        </div>
-        <div class="space-y-1 text-[var(--color-text)]">
-          <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
-          <div class="text-[var(--color-text-muted)]">
-            <p>{{ fetchedGstData.address_line1 }}</p>
-            <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
-            <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
+        <!-- GST Preview Area -->
+        <div v-if="fetchedGstData" class="p-4 bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 rounded-xl text-xs animate-in fade-in slide-in-from-top-2">
+          <div class="flex justify-between items-start mb-2">
+            <div class="font-bold text-[var(--color-info)] uppercase tracking-wider text-[9px]">Verified Business Found</div>
+            <button @click="fetchedGstData = null" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors">✕</button>
           </div>
+          <div class="space-y-1 text-[var(--color-text)]">
+            <p class="font-bold text-sm">{{ fetchedGstData.business_name }}</p>
+            <div class="text-[var(--color-text-muted)]">
+              <p>{{ fetchedGstData.address_line1 }}</p>
+              <p v-if="fetchedGstData.address_line2">{{ fetchedGstData.address_line2 }}</p>
+              <p>{{ fetchedGstData.city }}, {{ fetchedGstData.state }} - {{ fetchedGstData.pincode }}</p>
+            </div>
+          </div>
+          <button 
+            @click="applyGstData" 
+            class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+          >
+            <span>Fill Form with GST Data</span>
+            <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
+          </button>
         </div>
-        <button 
-          @click="applyGstData" 
-          class="mt-3 w-full bg-[var(--color-info)] text-white font-bold py-2 rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-        >
-          <span>Fill Form with GST Data</span>
-          <kbd class="text-[10px] bg-white/20 px-1.5 rounded">Enter</kbd>
-        </button>
       </div>
 
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Modifier %</label>
-        <div class="relative w-full">
-          <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)] pr-8" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
+      <!-- Column 3: Address & Location -->
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
+          <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
-      </div>
 
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
-        <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
-      </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
+          <input v-model="form.address_line2" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Area / Landmark" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+        </div>
 
-      <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
-        <input v-model="form.address_line2" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Area / Landmark" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
-      </div>
-
-      <div class="grid grid-cols-3 gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
           <input v-model="form.city" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="City" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
           <input v-model="form.pincode" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="678XXX" maxlength="6" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
           <select v-model="form.state" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter">
@@ -404,7 +411,7 @@ function handleFormEnter(e) {
     applyGstData()
     return
   }
-  const container = e.target.closest('.flex-col.gap-4')
+  const container = e.target.closest('.form-fields-container')
   if (!container) return
   const focusables = Array.from(container.querySelectorAll('input, select'))
   const idx = focusables.indexOf(e.target)
