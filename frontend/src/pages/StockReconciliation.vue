@@ -109,7 +109,6 @@
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">New Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Rate</th>
-          <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">New Rate</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-20">UOM</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Diff</th>
           <th class="border-b border-[var(--color-border)] w-12"></th>
@@ -144,31 +143,14 @@
               :disabled="isReadOnly"
               step="any"
               class="w-full bg-transparent px-2 py-1 text-right text-[var(--color-text)] font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl"
-              @keydown.enter.prevent="focusField('rate', index)"
-              @keydown.tab.prevent="focusField('rate', index)"
+              @keydown.enter.prevent="moveRow(index, 1)"
+              @keydown.tab.prevent="moveRow(index, 1)"
               @keydown.down.prevent="moveRow(index, 1)"
               @keydown.up.prevent="moveRow(index, -1)"
             />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-[var(--color-text-muted)] text-4xl">
             {{ item.current_valuation_rate?.toFixed(2) }}
-          </td>
-          <td class="p-0 border-r border-[var(--color-border)] text-right font-mono">
-            <input
-              :ref="el => setRef(el, 'rate', index)"
-              type="number"
-              v-model.number="item.valuation_rate"
-              :disabled="isReadOnly"
-              step="any"
-              class="w-full px-2 py-1 text-right font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl"
-              :class="item.qty > 0 && item.current_qty === 0 && !(item.valuation_rate > 0) && !(item.current_valuation_rate > 0)
-                ? 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]'
-                : 'bg-transparent'"
-              @keydown.enter.prevent="moveRow(index, 1)"
-              @keydown.tab.prevent="moveRow(index, 1)"
-              @keydown.down.prevent="moveRow(index, 1)"
-              @keydown.up.prevent="moveRow(index, -1)"
-            />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-4xl">{{ item.uom || '--' }}</td>
           <td
@@ -203,13 +185,10 @@
             {{ newPending.current_qty }}
           </td>
           <td class="p-0 border-r border-[var(--color-border)] text-right">
-            <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-full bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl" @keydown.enter.prevent="focusNewRate" @keydown.tab.prevent="focusNewRate" />
+            <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-full bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl" @keydown.enter.prevent="addNewItem" @keydown.tab.prevent="addNewItem" />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right text-[var(--color-text-muted)] font-mono text-4xl">
             {{ newPending.valuation_rate?.toFixed(2) }}
-          </td>
-          <td class="p-0 border-r border-[var(--color-border)] text-right">
-            <input ref="newRateInput" v-model.number="newRate" type="number" step="any" class="w-full bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl" @keydown.enter.prevent="addNewItem" />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-4xl">{{ newPending.uom || '--' }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono font-bold text-4xl" :class="(newQty - newPending.current_qty) > 0 ? 'text-[var(--color-success)]' : (newQty - newPending.current_qty) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
@@ -337,7 +316,6 @@ const rowRefs = {}
 const warehouseSelect = ref(null)
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
-const newRateInput = ref(null)
 
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
@@ -348,7 +326,6 @@ function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
 function focusWarehouse() { nextTick(() => warehouseSelect.value?.focus()) }
 function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
 function focusNewQty()    { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
-function focusNewRate()   { nextTick(() => { newRateInput.value?.focus(); newRateInput.value?.select() }) }
 
 function navigateSidebarEntry(idx, dir) {
   const target = sidebarEntryRefs.get(idx + dir)
@@ -623,18 +600,6 @@ async function saveEntry() {
 
 async function submitEntry() {
   if (!entryName.value) return
-
-  const needsRate = items.value.filter(
-    i => i.qty > 0 && i.current_qty === 0 && !(i.valuation_rate > 0) && !(i.current_valuation_rate > 0)
-  )
-  if (needsRate.length) {
-    alert(
-      `Valuation Rate required for the following item(s) that have no current stock:\n\n` +
-      needsRate.map(i => `  • ${i.item_code} – ${i.item_name}`).join('\n') +
-      `\n\nPlease enter a value in the "New Rate" column before submitting.`
-    )
-    return
-  }
 
   if (!confirm('SUBMIT reconciliation? This updates stock levels immediately.')) return
 
