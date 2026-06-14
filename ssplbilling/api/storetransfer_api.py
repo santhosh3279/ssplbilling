@@ -23,8 +23,8 @@ def save_store_transfer(data):
         se = frappe.new_doc("Stock Entry")
         se.stock_entry_type = "Material Transfer"
         se.purpose = "Material Transfer"
+        se.naming_series = data.get("naming_series") or "MAT-TRA-.YYYY.-"
 
-    se.naming_series = data.get("naming_series") or "MAT-TRA-.YYYY.-"
     se.posting_date = data.get("posting_date") or frappe.utils.today()
     se.from_warehouse = data.get("from_warehouse")
     se.to_warehouse = data.get("to_warehouse")

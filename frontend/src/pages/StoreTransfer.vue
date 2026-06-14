@@ -19,6 +19,7 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
+      :selected-sidebar-item-name="transferName"
       :show-bottom-left="false"
       :show-bottom-middle="false"
       @sidebar-date-change="handleSidebarDateChange"
@@ -458,6 +459,7 @@ function resetForm() {
   transferNo.value = ''
   transferName.value = ''
   items.value = []
+  if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   isReadOnly.value = false
   isDraft.value = false
   focusBarcodeInput()
@@ -487,6 +489,7 @@ async function handleSelectSidebarItem(item) {
   transferDate.value = details.posting_date
   fromWarehouse.value = details.from_warehouse
   toWarehouse.value = details.to_warehouse
+  selectedSeries.value = details.naming_series
   items.value = details.items.map(i => ({
     item_code: i.item_code,
     item_name: i.item_name,
