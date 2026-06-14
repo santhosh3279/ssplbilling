@@ -91,7 +91,7 @@ def get_recent_transfers(date=None):
             "posting_date": date,
             "purpose": "Material Transfer"
         },
-        fields=["name", "total_amount as grand_total", "from_warehouse", "to_warehouse", "docstatus"],
+        fields=["name", "total_amount as grand_total", "from_warehouse", "to_warehouse", "docstatus", "posting_date"],
         order_by="creation desc"
     )
     

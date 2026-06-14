@@ -87,10 +87,12 @@
                   <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
                   <span class="truncate font-mono text-2xl group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
                 </div>
-                <span v-if="inv.total_qty" class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.total_qty }}</span>
+                <span v-if="inv.grand_total !== undefined || inv.total_qty !== undefined" class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
+                  {{ inv.grand_total !== undefined ? '₹' + Number(inv.grand_total).toFixed(2) : inv.total_qty }}
+                </span>
               </div>
-              <div v-if="inv.posting_date" class="truncate text-2xl group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                {{ formatDate(inv.posting_date) }}
+              <div v-if="inv.customer_name || inv.posting_date" class="truncate text-2xl group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                {{ inv.customer_name || formatDate(inv.posting_date) }}
               </div>
             </div>
           </slot>
