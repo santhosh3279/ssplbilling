@@ -10,13 +10,20 @@ def get_store_transfer_details(name):
 
 @frappe.whitelist()
 def save_store_transfer(data):
-    """Create a new Stock Entry for Store Transfer."""
+    """Create or update a Stock Entry for Store Transfer."""
     if isinstance(data, str):
         data = json.loads(data)
 
-    se = frappe.new_doc("Stock Entry")
-    se.stock_entry_type = "Material Transfer"
-    se.purpose = "Material Transfer"
+    name = data.get("name")
+    if name:
+        se = frappe.get_doc("Stock Entry", name)
+        if se.docstatus != 0:
+            frappe.throw(_("Cannot update a submitted or cancelled Stock Entry."))
+    else:
+        se = frappe.new_doc("Stock Entry")
+        se.stock_entry_type = "Material Transfer"
+        se.purpose = "Material Transfer"
+
     se.naming_series = data.get("naming_series") or "MAT-TRA-.YYYY.-"
     se.posting_date = data.get("posting_date") or frappe.utils.today()
     se.from_warehouse = data.get("from_warehouse")
@@ -25,6 +32,7 @@ def save_store_transfer(data):
     if not se.from_warehouse or not se.to_warehouse:
         frappe.throw(_("Source and Destination warehouses are required."))
 
+    se.items = []
     for row in data.get("items") or []:
         se.append("items", {
             "item_code": row.get("item_code"),
@@ -35,7 +43,11 @@ def save_store_transfer(data):
             "basic_rate": float(row.get("rate") or 0)
         })
 
-    se.insert()
+    if name:
+        se.save()
+    else:
+        se.insert()
+
     return {
         "name": se.name,
         "status": "Draft"

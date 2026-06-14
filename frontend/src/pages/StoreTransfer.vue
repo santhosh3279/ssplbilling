@@ -422,6 +422,7 @@ async function handleSave() {
   try {
     const res = await frappePost('ssplbilling.api.storetransfer_api.save_store_transfer', {
       data: {
+        name: transferName.value || undefined,
         naming_series: selectedSeries.value,
         posting_date: transferDate.value,
         from_warehouse: fromWarehouse.value,
