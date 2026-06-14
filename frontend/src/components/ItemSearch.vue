@@ -29,6 +29,14 @@
 
         <div class="flex items-center gap-3">
           <button
+            @click="preloadItems(true)"
+            :disabled="loading"
+            class="flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm transition-all hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-50"
+            title="Refresh Cache (F5)"
+          >
+            <span :class="{ 'animate-spin': loading }" class="inline-block">🔄</span>
+          </button>
+          <button
             @click="isDecrypted = !isDecrypted"
             class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all"
             :class="isDecrypted ? 'border-[var(--color-warning)] bg-[var(--color-warning)]/20 text-[var(--color-warning)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]'"
