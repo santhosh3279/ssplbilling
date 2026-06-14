@@ -166,7 +166,7 @@
       ref="quickSearchRef"
       :results="quickSearchResults"
       :query="barcodeQuery"
-      search-type="Sales"
+      search-type="Stock"
       :warehouse="fromWarehouse"
       :anchor-el="quickSearchAnchor"
       @select="onQuickSearchSelect"
@@ -244,7 +244,7 @@ const saveButtonText = computed(() => {
 onMounted(async () => {
   await fetchMetadata()
   await fetchRecentTransfers()
-  refreshItemCache('Sales')
+  refreshItemCache('Stock')
   focusBarcodeInput()
 })
 
@@ -304,7 +304,7 @@ async function handleBarcodeEnter() {
     barcodeQuery.value = ''
     quickSearchResults.value = []
   } else {
-    const res = await frappePost('ssplbilling.api.SaleEntry_api.get_item_details', { 
+    const res = await frappePost('ssplbilling.api.storetransfer_api.get_item_details', { 
       item_code: barcodeQuery.value,
       warehouse: fromWarehouse.value
     })
@@ -350,7 +350,7 @@ function setPendingItem(details) {
     item_name: details.item_name,
     qty: 0,
     uom: details.uom,
-    rate: details.rate || 0
+    rate: details.valuation_rate || details.rate || 0
   }
   nextTick(() => {
     pendingQtyInput.value?.focus()

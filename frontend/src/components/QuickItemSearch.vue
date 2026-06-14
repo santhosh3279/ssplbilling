@@ -136,6 +136,9 @@ const positionStyle = computed(() => {
 })
 
 function getItemPrice(item) {
+  if (props.searchType === 'Stock') {
+    return item.valuation_rate || item.price || 0
+  }
   if (!props.priceList) return item.price
 
   // 1. Try UOM-specific price list first

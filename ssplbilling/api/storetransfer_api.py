@@ -100,3 +100,40 @@ def get_recent_transfers(date=None):
         t["customer_name"] = f"{t.from_warehouse} -> {t.to_warehouse}"
     
     return transfers
+
+@frappe.whitelist()
+def get_item_details(item_code, warehouse=None):
+    """Look up item by code or barcode. Returns item details + stock + valuation_rate."""
+    barcode_item = frappe.db.get_value("Item Barcode", {"barcode": item_code}, "parent")
+    if barcode_item:
+        item_code = barcode_item
+
+    if not frappe.db.exists("Item", item_code):
+        canonical = frappe.db.get_value("Item", {"item_code": ["like", item_code]}, "item_code")
+        if canonical:
+            item_code = canonical
+        else:
+            return {"found": False, "item_code": item_code}
+
+    item = frappe.get_doc("Item", item_code)
+    
+    val_rate = 0.0
+    stock_qty = 0.0
+    if warehouse:
+        bin_details = frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, ["actual_qty", "valuation_rate"], as_dict=True)
+        if bin_details:
+            stock_qty = float(bin_details.actual_qty or 0)
+            val_rate = float(bin_details.valuation_rate or 0)
+            
+    if not val_rate:
+        val_rate = float(item.valuation_rate or item.standard_rate or 0)
+
+    return {
+        "found": True,
+        "item_code": item.item_code,
+        "item_name": item.item_name,
+        "uom": item.stock_uom,
+        "rate": val_rate,
+        "stock_qty": stock_qty,
+        "warehouse": warehouse
+    }
