@@ -132,7 +132,10 @@ def get_stock_reconciliations(query="", limit=20, posting_date=None, docstatus=N
         kwargs["or_filters"] = {
             "name": ["like", f"%{query}%"],
         }
-    return frappe.get_all("Stock Reconciliation", **kwargs)
+    entries = frappe.get_all("Stock Reconciliation", **kwargs)
+    for entry in entries:
+        entry["customer_name"] = entry.get("company")
+    return entries
 
 @frappe.whitelist()
 def get_stock_reconciliation(name):

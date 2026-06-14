@@ -27,7 +27,7 @@
             />
             <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
-          <div class="relative series-dropdown-container">
+          <div v-if="availableSeries && availableSeries.length" class="relative series-dropdown-container">
             <button
               @click="showSeriesDropdown = !showSeriesDropdown"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
@@ -152,16 +152,18 @@
         <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
           <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]">
             <thead>
-              <tr class="sticky top-0 z-10 bg-[var(--color-lowlight)] border-b border-[var(--color-border)]">
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Barcode</th>
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Qty</th>
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">UOM</th>
-                <th v-if="showRate" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Rate</th>
-                <th v-if="showAmount" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Value</th>
-                <th class="border-b border-[var(--color-border)] w-12"></th>
-              </tr>
+              <slot name="thead">
+                <tr class="sticky top-0 z-10 bg-[var(--color-lowlight)] border-b border-[var(--color-border)]">
+                  <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
+                  <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Barcode</th>
+                  <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
+                  <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Qty</th>
+                  <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">UOM</th>
+                  <th v-if="showRate" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Rate</th>
+                  <th v-if="showAmount" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Value</th>
+                  <th class="border-b border-[var(--color-border)] w-12"></th>
+                </tr>
+              </slot>
             </thead>
             <tbody>
               <template v-for="(item, idx) in items" :key="idx">
