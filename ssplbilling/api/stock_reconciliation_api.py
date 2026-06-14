@@ -34,6 +34,7 @@ def get_items_for_reconciliation(warehouse=None):
         item.current_qty = flt(item.current_qty)
         item.current_valuation_rate = flt(item.current_valuation_rate)
         item.qty = item.current_qty  # Default target qty to current qty
+        item.valuation_rate = item.current_valuation_rate  # Default target rate to current valuation rate
     
     return items
 
