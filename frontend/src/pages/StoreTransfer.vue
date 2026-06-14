@@ -254,9 +254,20 @@ async function fetchMetadata() {
   availableSeries.value = res.naming_series
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   
-  if (warehouses.value.length >= 2) {
+  const localWh = localStorage.getItem('wb-warehouse')
+  if (localWh && warehouses.value.some(w => w.name === localWh)) {
+    fromWarehouse.value = localWh
+  } else if (warehouses.value.length > 0) {
     fromWarehouse.value = warehouses.value[0].name
-    toWarehouse.value = warehouses.value[1].name
+  }
+
+  if (warehouses.value.length >= 2) {
+    const defaultTo = warehouses.value[1].name
+    if (fromWarehouse.value === defaultTo) {
+      toWarehouse.value = warehouses.value[0].name
+    } else {
+      toWarehouse.value = defaultTo
+    }
   }
 }
 
