@@ -527,11 +527,17 @@ watch(sidebarSearch, () => {
   searchTimeout = setTimeout(fetchSidebarEntries, 300)
 })
 
+const isInitialLoad = ref(true)
+
 watch(warehouse, (newWarehouse) => {
   if (newWarehouse) {
     refreshItemCache('Stock', null, newWarehouse)
     if (!isReadOnly.value && items.value.length === 0) {
-      fetchItems()
+      if (isInitialLoad.value) {
+        isInitialLoad.value = false
+      } else {
+        fetchItems()
+      }
     }
   }
 })
