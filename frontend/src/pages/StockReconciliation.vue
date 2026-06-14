@@ -187,7 +187,14 @@
         <tr v-if="!isReadOnly" class="border-b border-[var(--color-border)] bg-[var(--color-info)]/10" :class="{ 'bg-[var(--color-info)]/30 ring-2 ring-inset ring-[var(--color-info)]': selectedRow === -1 }" :style="{ fontSize: dynamicRowStyle.fontSize }">
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-info)] font-bold text-3xl text-center">+</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
-            <input ref="newCodeInput" v-model="newItemCode" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm text-4xl" placeholder="Item code" @keydown.enter.prevent="onNewCodeEnter" @keydown.tab.prevent="focusNewQty" />
+            <input 
+              ref="newCodeInput" 
+              v-model="newItemCode" 
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm text-4xl" 
+              placeholder="Scan Barcode or Type Item Name..." 
+              @input="onNewCodeInput"
+              @keydown="handleNewCodeKeydown"
+            />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
             <div class="text-[var(--color-text-muted)] italic truncate max-w-[200px] text-4xl">{{ newPending.item_name || 'Search...' }}</div>
@@ -237,6 +244,19 @@
     @close="showItemSearch = false; nextTick(() => focusNewCode())"
     @select="onItemSearchSelect"
   />
+
+  <!-- Quick Item Search -->
+  <QuickItemSearch
+    ref="quickSearchRef"
+    :results="quickSearchResults"
+    :query="newItemCode"
+    search-type="Stock"
+    :warehouse="warehouse"
+    :anchor-el="quickSearchAnchor"
+    @select="onQuickSearchSelect"
+    @close="quickSearchResults = []"
+    @refresh="onQuickSearchRefresh"
+  />
 </template>
 
 <script setup>
@@ -248,10 +268,13 @@ import { stockReconciliationShortcuts } from '../shortcuts/stockReconciliationSh
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import ItemSearch from '../components/ItemSearch.vue'
 import Stock_Template from '../components/Stock_Template.vue'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
+import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
 const API = 'ssplbilling.api.stock_reconciliation_api'
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
+const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
 
 const props = defineProps({
   isSubWindow: Boolean,
@@ -283,6 +306,10 @@ const newQty = ref(0)
 const newRate = ref(0)
 const newPending = ref({ item_name: '', uom: '', current_qty: 0, valuation_rate: 0 })
 const showItemSearch = ref(false)
+
+const quickSearchResults = ref([])
+const quickSearchRef = ref(null)
+const quickSearchAnchor = ref(null)
 
 // Sidebar state
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
@@ -403,35 +430,66 @@ async function lookupItem(code) {
   } catch (e) { return null }
 }
 
-let itemLookupTimeout = null
-watch(newItemCode, (val) => {
-  const code = val.trim()
-  clearTimeout(itemLookupTimeout)
-  if (code.length < 2) {
-    newPending.value = { item_name: '', uom: '', current_qty: 0, valuation_rate: 0 }
-    return
-  }
-  itemLookupTimeout = setTimeout(async () => {
+async function onNewCodeEnter() {
+  const code = newItemCode.value.trim()
+  if (!code) return
+  const match = lookupItemInCache(code)
+  if (match) {
+    onQuickSearchSelect(match)
+  } else {
     const r = await lookupItem(code)
     if (r && r.found) {
       newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate }
       newQty.value = r.stock_qty
       newRate.value = r.rate
+      quickSearchResults.value = []
+      focusNewQty()
+    } else {
+      showItemSearch.value = true
     }
-  }, 300)
-})
+  }
+}
 
-async function onNewCodeEnter() {
+function onNewCodeInput() {
   const code = newItemCode.value.trim()
-  if (!code) return
-  const r = await lookupItem(code)
-  if (r && r.found) {
-    newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate }
-    newQty.value = r.stock_qty
-    newRate.value = r.rate
-    focusNewQty()
+  if (code.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchAnchor.value = newCodeInput.value
   } else {
-    showItemSearch.value = true
+    quickSearchResults.value = []
+  }
+}
+
+function handleNewCodeKeydown(e) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === 'Escape') {
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    }
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    onNewCodeEnter()
+  }
+}
+
+function onQuickSearchSelect(item) {
+  newItemCode.value = item.item_code
+  newPending.value = {
+    item_name: item.item_name,
+    uom: item.uom,
+    current_qty: item.stock || 0,
+    valuation_rate: item.valuation_rate || 0
+  }
+  newQty.value = item.stock || 0
+  newRate.value = item.valuation_rate || 0
+  quickSearchResults.value = []
+  nextTick(() => focusNewQty())
+}
+
+function onQuickSearchRefresh() {
+  if (newItemCode.value) {
+    quickSearchResults.value = searchItemsInCache(newItemCode.value)
   }
 }
 
@@ -630,6 +688,7 @@ onMounted(() => {
   fetchAllowedSeries('Stock Reconciliation')
   fetchConfig()
   fetchSidebarEntries()
+  refreshItemCache('Stock')
   if (props.name) loadEntry(props.name)
 })
 </script>
