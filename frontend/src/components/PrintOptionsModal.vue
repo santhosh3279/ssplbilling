@@ -5,11 +5,11 @@
   >
     <div
       class="overflow-hidden rounded-2xl border border-[var(--color-border)] shadow-2xl flex transition-all duration-300 bg-[var(--color-bg)] text-[var(--color-text)]"
-      :style="previewUrl ? 'width:900px;height:88vh' : 'width:400px'"
+      style="width: 400px"
     >
 
       <!-- Left panel: controls (always visible) -->
-      <div class="flex flex-col" :style="previewUrl ? 'width:340px;min-width:340px;border-right:1px solid #334155' : 'width:100%'">
+      <div class="flex flex-col w-full">
 
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
@@ -89,34 +89,15 @@
               <button
                 @click="openPreview"
                 :disabled="previewing || !templates.length"
-                class="w-full rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                :class="previewUrl
-                  ? 'bg-[var(--color-info)]/20 text-[var(--color-info)] border-[var(--color-info)]'
-                  : 'border-[var(--color-border)] text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)]'"
+                class="w-full rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border-[var(--color-border)] text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)]"
               >
                 <span class="text-lg">📄</span>
-                {{ previewing ? 'Generating…' : previewUrl ? 'Refresh Preview' : 'Print Preview' }}
+                {{ previewing ? 'Generating…' : 'Print Preview' }}
                 <kbd v-if="!previewing" class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">P</kbd>
               </button>
             </div>
           </template>
         </div>
-      </div>
-
-      <!-- Right panel: inline PDF preview -->
-      <div v-if="previewUrl" class="flex flex-col flex-1 bg-[var(--color-surface)]">
-        <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
-          <span class="text-xs font-semibold text-[var(--color-text-muted)]">Preview — {{ selectedTemplate }}</span>
-          <button
-            @click="closePreview"
-            class="rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
-          >✕ Close Preview</button>
-        </div>
-        <iframe
-          :src="previewUrl"
-          class="flex-1 w-full border-0"
-          type="application/pdf"
-        />
       </div>
 
     </div>
@@ -147,7 +128,7 @@ const selectedPrinter  = ref('')
 const selectedTemplate = ref('')
 const printing       = ref(false)
 const previewing     = ref(false)
-const previewUrl     = ref('')
+const previewUrls    = ref([])
 const error          = ref('')
 const success        = ref('')
 
@@ -194,7 +175,6 @@ watch(selectedTemplate, () => syncPrinter())
 
 function handleKeydown(e) {
   if (e.key === 'Escape') {
-    if (previewUrl.value) { closePreview(); return }
     emit('close')
     return
   }
@@ -226,7 +206,13 @@ onMounted(() => {
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
-  if (previewUrl.value?.startsWith('blob:')) URL.revokeObjectURL(previewUrl.value)
+  previewUrls.value.forEach(url => {
+    try {
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      // ignore
+    }
+  })
 })
 
 async function loadSettings() {
@@ -324,23 +310,18 @@ async function openPreview() {
       method: 'preview_pdf',
       args: JSON.stringify({ document_name: props.invoiceName }),
     })
-    if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
     const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
     const blob = new Blob([bytes], { type: 'application/pdf' })
-    previewUrl.value = URL.createObjectURL(blob)
+    const url = URL.createObjectURL(blob)
+    previewUrls.value.push(url)
+    window.open(url, '_blank')
   } catch (e) {
     // preview_pdf failed (e.g. CUPS PDF renderer not configured for thermal templates)
-    // fall back to Frappe's built-in printview in the iframe
+    // fall back to Frappe's built-in printview in a new tab
     const fallbackUrl = `/printview?doctype=${encodeURIComponent(props.doctype)}&name=${encodeURIComponent(props.invoiceName)}&format=${encodeURIComponent(selectedTemplate.value)}&trigger_print=0`
-    if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-    previewUrl.value = fallbackUrl
+    window.open(fallbackUrl, '_blank')
   } finally {
     previewing.value = false
   }
-}
-
-function closePreview() {
-  if (previewUrl.value?.startsWith('blob:')) URL.revokeObjectURL(previewUrl.value)
-  previewUrl.value = ''
 }
 </script>
