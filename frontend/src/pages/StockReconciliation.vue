@@ -370,8 +370,13 @@ async function fetchConfig() {
       order_by: 'name asc'
     })
     availableWarehouses.value = whs.map(w => w.name)
-    if (!warehouse.value && availableWarehouses.value.length) {
-       warehouse.value = availableWarehouses.value[0]
+    const localWh = localStorage.getItem('wb-warehouse')
+    if (!warehouse.value) {
+      if (localWh && availableWarehouses.value.includes(localWh)) {
+        warehouse.value = localWh
+      } else if (availableWarehouses.value.length) {
+        warehouse.value = availableWarehouses.value[0]
+      }
     }
 
     const purposes = await frappeGet(`${API}.get_stock_reconciliation_purposes`)
