@@ -43,7 +43,6 @@
           </div>
           <button @click="zoomPercent = Math.min(500, zoomPercent + 10)" class="flex h-7 w-8 items-center justify-center font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]">&plus;</button>
         </div>
-        <span class="mr-3 text-lg"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-sm text-[var(--color-text)]">F7</kbd> Fetch</span>
         <span class="mr-3 text-lg"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-sm text-[var(--color-text)]">Ctrl+S</kbd> Save</span>
         <span class="text-lg"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-sm text-[var(--color-text)]">Esc</kbd> Back</span>
       </template>
@@ -80,13 +79,6 @@
                 </select>
               </div>
 
-              <button 
-                @click="fetchItems" 
-                :disabled="!warehouse || isReadOnly || items.length > 0"
-                class="rounded bg-[var(--color-info)] px-4 py-2 text-2xl font-bold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] transition self-end ml-4"
-              >
-                Fetch Items (F7)
-              </button>
             </div>
 
             <div class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
@@ -538,6 +530,9 @@ watch(sidebarSearch, () => {
 watch(warehouse, (newWarehouse) => {
   if (newWarehouse) {
     refreshItemCache('Stock', null, newWarehouse)
+    if (!isReadOnly.value && items.value.length === 0) {
+      fetchItems()
+    }
   }
 })
 
