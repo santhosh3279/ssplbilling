@@ -131,7 +131,7 @@
             <span class="font-mono font-semibold text-[var(--color-info)] text-4xl truncate block w-40" :title="item.item_code">{{ item.item_code }}</span>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
-            <div class="text-[var(--color-text)] text-4xl font-medium truncate max-w-[200px]" :title="item.item_name">{{ item.item_name || '--' }}</div>
+            <div class="text-[var(--color-text)] text-4xl font-medium" :title="item.item_name">{{ item.item_name || '--' }}</div>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-[var(--color-text-muted)] text-4xl">
             {{ item.current_qty }}
@@ -197,7 +197,7 @@
             />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
-            <div class="text-[var(--color-text-muted)] italic truncate max-w-[200px] text-4xl">{{ newPending.item_name || 'Search...' }}</div>
+            <div class="text-[var(--color-text-muted)] italic text-4xl">{{ newPending.item_name || 'Search...' }}</div>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right text-[var(--color-text-muted)] font-mono text-4xl">
             {{ newPending.current_qty }}
