@@ -92,7 +92,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	for i in items:
 		i["stock"] = 0.0
 		i["price"] = float(i.rate or 0)
-		i["valuation_rate"] = float(i.valuation_rate or 0)
+		i["valuation_rate"] = float(i.valuation_rate or i.rate or 0)
 		i["price_lists"] = []
 
 	# 1. Batch fetch ALL rates for active price lists (including per-UOM records)
@@ -138,7 +138,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	bins = frappe.get_all(
 		"Bin",
 		filters=stock_filters,
-		fields=["item_code", "warehouse", "actual_qty"],
+		fields=["item_code", "warehouse", "actual_qty", "valuation_rate"],
 	)
 
 	# Initialize warehouse_stock list on each item
@@ -153,6 +153,9 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 				"warehouse": b.warehouse,
 				"qty": qty,
 			})
+			bin_val_rate = float(b.get("valuation_rate") or 0)
+			if bin_val_rate > 0:
+				item_map[b.item_code]["valuation_rate"] = bin_val_rate
 
 	# 3. Batch fetch item tax rates from Item Tax Template
 	today = frappe.utils.today()

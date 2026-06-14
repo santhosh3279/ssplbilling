@@ -558,6 +558,12 @@ watch(sidebarSearch, () => {
   searchTimeout = setTimeout(fetchSidebarEntries, 300)
 })
 
+watch(warehouse, (newWarehouse) => {
+  if (newWarehouse) {
+    refreshItemCache('Stock', null, newWarehouse)
+  }
+})
+
 // ==================== ACTIONS ====================
 function removeItem(idx) {
   items.value.splice(idx, 1)
