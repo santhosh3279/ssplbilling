@@ -101,6 +101,18 @@ def update_naming_series(doctype, series_list):
     return {"status": "success"}
 
 @frappe.whitelist()
+def update_single_series_counter(prefix, current):
+    """Update a single naming series counter in tabSeries."""
+    from frappe.model.naming import NamingSeries
+    try:
+        ns = NamingSeries(prefix)
+        new_val = max(0, int(current) - 1)
+        ns.update_counter(new_val)
+        return {"status": "success"}
+    except Exception as e:
+        frappe.throw(f"Failed to update counter: {str(e)}")
+
+@frappe.whitelist()
 def get_all_users():
     """Return a list of all users from SSPL Billing Settings -> User Series."""
     settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

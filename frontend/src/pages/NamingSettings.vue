@@ -65,8 +65,16 @@
                   />
                 </div>
                 <button 
+                  @click="updateSingleCounter(s)"
+                  :disabled="updatingCounter === s.prefix || !s.prefix"
+                  class="rounded bg-[var(--color-info)] px-2.5 py-1 text-[10px] font-bold text-white hover:bg-[var(--color-info)]/90 disabled:opacity-40 transition-colors shrink-0"
+                  title="Update counter for this series"
+                >
+                  {{ updatingCounter === s.prefix ? '...' : 'Update' }}
+                </button>
+                <button 
                   @click="removeSeries(doctype, index)"
-                  class="text-red-400 hover:text-red-600 px-1 shrink-0"
+                  class="text-red-400 hover:text-red-600 px-1 shrink-0 text-sm font-bold"
                   title="Remove"
                 >
                   ✕
@@ -106,6 +114,7 @@ import { frappeGet, frappePost } from '../api'
 const namingSeries = ref({})
 const loading = ref(true)
 const saving = ref(false)
+const updatingCounter = ref(null)
 
 async function fetchNamingSeries() {
   loading.value = true
@@ -125,6 +134,27 @@ function addSeries(doctype) {
 
 function removeSeries(doctype, index) {
   namingSeries.value[doctype].splice(index, 1)
+}
+
+async function updateSingleCounter(s) {
+  if (!s.prefix || !s.prefix.trim()) {
+    alert('Series prefix is required to update counter.')
+    return
+  }
+  updatingCounter.value = s.prefix
+  try {
+    await frappePost('ssplbilling.api.dashboard_api.update_single_series_counter', {
+      prefix: s.prefix,
+      current: s.current
+    })
+    alert(`Counter for series "${s.prefix}" updated to ${s.current}!`)
+    await fetchNamingSeries()
+  } catch (err) {
+    console.error(err)
+    alert('Failed to update series counter.')
+  } finally {
+    updatingCounter.value = null
+  }
 }
 
 async function saveAll() {
