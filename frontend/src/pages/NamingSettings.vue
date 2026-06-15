@@ -41,9 +41,9 @@
           <div class="text-[var(--color-text-muted)] animate-pulse">Loading naming series...</div>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-else class="flex flex-wrap gap-4">
           <div v-for="(series, doctype) in namingSeries" :key="doctype" 
-               class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
+               class="w-full md:w-[550px] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
             <div class="mb-2 flex items-center justify-between border-b border-[var(--color-border)] pb-1">
               <h2 class="text-[24px] font-bold uppercase tracking-widest text-[var(--color-info)]">{{ doctype }}</h2>
               <span class="rounded bg-gray-100 px-1 py-[1px] text-[20px] text-gray-500">{{ series.length }} series</span>
