@@ -15,6 +15,7 @@ import PaymentV2 from './pages/paymentv2.vue'
 import JournalContraEntry from './pages/JournalContraEntry.vue'
 import CashierManagement from './pages/CashierManagement.vue'
 import PricingRuleSync from './pages/PricingRuleSync.vue'
+import DiscountRule from './pages/DiscountRule.vue'
 import PurchaseOrder from './pages/PurchaseOrder.vue'
 import SalesOrderEntry from './pages/SalesOrderEntry.vue'
 import SalesOrder from './pages/SalesOrder.vue'
@@ -183,10 +184,14 @@ const routes = [
     meta: { title: 'Cashier Mgmt' },
   },
   {
+    path: '/discount-rules',
+    name: 'DiscountRule',
+    component: DiscountRule,
+    meta: { title: 'Discount Rules' },
+  },
+  {
     path: '/pricing-rules',
-    name: 'PricingRuleSync',
-    component: PricingRuleSync,
-    meta: { title: 'Pricing Rules' },
+    redirect: '/discount-rules',
   },
   {
     path: '/purchase-order',
