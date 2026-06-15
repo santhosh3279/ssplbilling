@@ -2,8 +2,7 @@
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- Header -->
     <header 
-      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300 shrink-0"
-      :class="activeTab === 'Debit' ? 'bg-red-500/30' : 'bg-green-500/30'"
+      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm bg-[var(--color-surface)] shrink-0"
     >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
@@ -18,23 +17,8 @@
         <h1 class="text-2xl font-normal uppercase tracking-tight">WGB Payments (Dummy Ledger)</h1>
       </div>
 
-      <!-- Center: Debit / Credit tabs -->
-      <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
-        <button
-          v-for="t in ['Debit', 'Credit']"
-          :key="t"
-          @click="onTabClick(t)"
-          class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
-          :class="activeTab === t
-            ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm'
-            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
-        >
-          {{ t }}
-        </button>
-      </div>
-
       <!-- Right: Date selector -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 pr-6 py-2.5">
         <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
           <button
@@ -56,53 +40,6 @@
         </div>
       </div>
     </header>
-
-    <!-- Initial Selection Overlay -->
-    <div
-      v-if="showInitialSelection"
-      ref="selectionOverlayRef"
-      tabindex="0"
-      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md outline-none"
-      @keydown="onSelectionKeydown"
-    >
-      <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-12 text-center shadow-2xl border border-[var(--color-border)] relative">
-        <button
-          @click="router.push('/')"
-          class="absolute top-6 left-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-midlight)]/20 hover:bg-[var(--color-midlight)] transition-colors"
-        >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </button>
-
-        <h2 class="mb-10 text-5xl font-black uppercase tracking-tight">Select Entry Type</h2>
-        <div class="grid grid-cols-2 gap-8">
-          <button
-            @click="selectEntryType('Debit')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
-            :class="selectionIdx === 0
-              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
-              : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500'"
-          >
-            <span class="text-8xl">📈</span>
-            <span class="text-4xl font-black uppercase">Debit (Dr)</span>
-          </button>
-          <button
-            @click="selectEntryType('Credit')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
-            :class="selectionIdx === 1
-              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
-              : 'bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20 hover:border-green-500'"
-          >
-            <span class="text-8xl">📉</span>
-            <span class="text-4xl font-black uppercase">Credit (Cr)</span>
-          </button>
-        </div>
-        <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
-          ← → or Tab to navigate &nbsp;·&nbsp; Enter to select &nbsp;·&nbsp; Esc to go back
-        </p>
-      </div>
-    </div>
 
     <!-- Main Content Panel with Sidebar -->
     <div class="flex flex-1 overflow-hidden">
@@ -147,11 +84,11 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-6 py-4 w-1/2">Customer / Party</th>
-                <th v-if="activeTab === 'Debit'" class="px-6 py-4 text-right w-64 text-[var(--color-danger)]">Debit (Dr)</th>
-                <th v-else class="px-6 py-4 text-right w-64 text-[var(--color-success)]">Credit (Cr)</th>
-                <th class="px-8 py-4 text-right w-64">Dummy Balance</th>
-                <th class="px-8 py-4 text-right w-64">New Dummy Balance</th>
+                <th class="px-6 py-4 w-[35%]">Customer / Party</th>
+                <th class="px-6 py-4 text-right w-[20%] text-[var(--color-danger)]">Debit (Dr)</th>
+                <th class="px-6 py-4 text-right w-[20%] text-[var(--color-success)]">Credit (Cr)</th>
+                <th class="px-8 py-4 text-right w-[12.5%]">Dummy Balance</th>
+                <th class="px-8 py-4 text-right w-[12.5%]">New Dummy Balance</th>
               </tr>
             </thead>
             <tbody>
@@ -183,13 +120,27 @@
                   </div>
                 </td>
 
-                <!-- Amount Input -->
-                <td class="px-6 py-3 transition-colors" :class="activeTab === 'Debit' ? 'bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]' : 'bg-[var(--color-success)]/5 focus-within:bg-[var(--color-focus)]'">
+                <!-- Debit (Dr) Input -->
+                <td class="px-6 py-3 transition-colors bg-red-500/5 focus-within:bg-[var(--color-focus)]">
                   <input
-                    ref="amountInputRef"
-                    v-model.number="amount"
+                    ref="debitInputRef"
+                    v-model.number="form.debit"
                     type="number" step="0.01"
-                    @keydown.enter.prevent="handleAmountEnter"
+                    @input="onDebitInput"
+                    @keydown.enter.prevent="handleDebitEnter"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/40"
+                    placeholder="0.00"
+                  />
+                </td>
+
+                <!-- Credit (Cr) Input -->
+                <td class="px-6 py-3 transition-colors bg-green-500/5 focus-within:bg-[var(--color-focus)]">
+                  <input
+                    ref="creditInputRef"
+                    v-model.number="form.credit"
+                    type="number" step="0.01"
+                    @input="onCreditInput"
+                    @keydown.enter.prevent="handleCreditEnter"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/40"
                     placeholder="0.00"
                   />
@@ -236,7 +187,7 @@
           <button
             ref="saveBtnRef"
             @click="saveEntry"
-            :disabled="saving || !form.customer || amount <= 0"
+            :disabled="saving || !form.customer || (form.debit <= 0 && form.credit <= 0)"
             class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:grayscale focus:outline-none focus:ring-8 focus:ring-[var(--color-focus)]/50 focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:scale-[1.02]"
           >
             <span v-if="saving" class="flex items-center gap-3">
@@ -247,7 +198,7 @@
               Saving...
             </span>
             <span v-else class="flex items-center gap-4">
-              Save {{ activeTab }} (End)
+              Save Entry (End)
               <svg class="h-10 w-10 transition-transform group-hover:translate-x-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
@@ -294,11 +245,6 @@ const router = useRouter()
 const API = 'ssplbilling.api.gst_ledger_api'
 
 // --- State ---
-const activeTab = ref('Debit') // 'Debit' or 'Credit'
-const showInitialSelection = ref(true)
-const selectionIdx = ref(0) // 0 = Debit, 1 = Credit
-const ENTRY_TYPES = ['Debit', 'Credit']
-
 const today = new Date().toISOString().split('T')[0]
 const emptyForm = () => ({
   date: today,
@@ -309,16 +255,15 @@ const emptyForm = () => ({
 
 const form = ref(emptyForm())
 const customerQuery = ref('')
-const amount = ref(0)
 const outstandingBalance = ref(null)
 const saving = ref(false)
 const showSuccess = ref(false)
 const successDocName = ref('')
 
 const customerInputRef = ref(null)
-const amountInputRef = ref(null)
+const debitInputRef = ref(null)
+const creditInputRef = ref(null)
 const saveBtnRef = ref(null)
-const selectionOverlayRef = ref(null)
 
 // --- Customer Search (QuickLedgerSearch) ---
 const showQuickSearch = ref(false)
@@ -367,7 +312,7 @@ function handleInputKeydown(e) {
     } else {
       if (form.value.customer) {
         e.preventDefault()
-        amountInputRef.value?.focus()
+        debitInputRef.value?.focus()
       }
     }
   } else if (showQuickSearch.value && quickSearchRef.value) {
@@ -384,12 +329,9 @@ const displayDate = computed(() => {
 
 const newBalance = computed(() => {
   if (outstandingBalance.value === null) return null
-  const amt = amount.value || 0
-  if (activeTab.value === 'Debit') {
-    return outstandingBalance.value + amt
-  } else {
-    return outstandingBalance.value - amt
-  }
+  const deb = parseFloat(form.value.debit) || 0
+  const cred = parseFloat(form.value.credit) || 0
+  return outstandingBalance.value + deb - cred
 })
 
 // --- date navigators ---
@@ -413,7 +355,7 @@ async function handleSelect(item) {
   customerQuery.value = item.label || item.customer_name || item.name
   
   await fetchBalance(item.name)
-  nextTick(() => amountInputRef.value?.focus())
+  nextTick(() => debitInputRef.value?.focus())
 }
 
 async function fetchBalance(customerName) {
@@ -430,43 +372,44 @@ async function fetchBalance(customerName) {
   }
 }
 
-// --- Overlay navigation ---
-function selectEntryType(type) {
-  activeTab.value = type
-  showInitialSelection.value = false
-  nextTick(() => openSearch())
-}
-
-function onSelectionKeydown(e) {
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Tab') {
-    e.preventDefault()
-    selectionIdx.value = selectionIdx.value === 0 ? 1 : 0
-  } else if (e.key === 'Enter') {
-    e.preventDefault()
-    selectEntryType(ENTRY_TYPES[selectionIdx.value])
-  } else if (e.key === 'Escape') {
-    e.preventDefault()
-    router.push('/')
+// --- Actions ---
+function onDebitInput() {
+  if (form.value.debit > 0) {
+    form.value.credit = 0
   }
 }
 
-function onTabClick(t) {
-  activeTab.value = t
-  resetForm()
+function onCreditInput() {
+  if (form.value.credit > 0) {
+    form.value.debit = 0
+  }
 }
 
-// --- Actions ---
+function handleDebitEnter() {
+  if (form.value.debit > 0) {
+    saveBtnRef.value?.focus()
+  } else {
+    creditInputRef.value?.focus()
+  }
+}
+
+function handleCreditEnter() {
+  saveBtnRef.value?.focus()
+}
+
 async function saveEntry() {
   if (!form.value.customer) { alert('Select a customer'); return }
-  if (amount.value <= 0) { alert('Enter a valid amount'); return }
+  const deb = parseFloat(form.value.debit) || 0
+  const cred = parseFloat(form.value.credit) || 0
+  if (deb <= 0 && cred <= 0) { alert('Enter a valid Debit or Credit amount'); return }
 
   saving.value = true
   
   const payload = {
     date: form.value.date,
     customer: form.value.customer,
-    debit: activeTab.value === 'Debit' ? amount.value : 0,
-    credit: activeTab.value === 'Credit' ? amount.value : 0
+    debit: deb,
+    credit: cred
   }
 
   try {
@@ -486,13 +429,8 @@ async function saveEntry() {
 function resetForm() {
   form.value = emptyForm()
   customerQuery.value = ''
-  amount.value = 0
   outstandingBalance.value = null
   nextTick(() => openSearch())
-}
-
-function handleAmountEnter() {
-  saveBtnRef.value?.focus()
 }
 
 // --- Sidebar Entries ---
@@ -522,14 +460,8 @@ async function selectEntry(e) {
   form.value.customer = e.customer
   customerQuery.value = e.customer
   showQuickSearch.value = false
-  if (e.debit > 0) {
-    activeTab.value = 'Debit'
-    amount.value = e.debit
-  } else {
-    activeTab.value = 'Credit'
-    amount.value = e.credit
-  }
-  showInitialSelection.value = false
+  form.value.debit = parseFloat(e.debit) || 0
+  form.value.credit = parseFloat(e.credit) || 0
   await fetchBalance(e.customer)
 }
 
@@ -559,7 +491,7 @@ onMounted(() => {
   fetchEntries()
   refreshLedgerCache(false).catch(e => console.error('Cache sync failed', e))
   nextTick(() => {
-    selectionOverlayRef.value?.focus()
+    openSearch()
   })
 })
 
