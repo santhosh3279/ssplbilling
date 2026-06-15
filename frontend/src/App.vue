@@ -115,8 +115,26 @@ onMounted(() => {
   }
 
   window.alert = (msg) => {
-    errorMessage.value = String(msg ?? '')
-    showError.value = true
+    const messageStr = String(msg ?? '')
+    const lower = messageStr.toLowerCase()
+    
+    // Check if it is a success message
+    const isSuccess = (
+      lower.includes('success') ||
+      lower.includes('saved') ||
+      lower.includes('updated') ||
+      lower.includes('deleted') ||
+      lower.includes('synced') ||
+      lower.includes('created') ||
+      lower.includes('completed')
+    ) && !lower.includes('fail') && !lower.includes('error') && !lower.includes('required') && !lower.includes('invalid')
+
+    if (isSuccess) {
+      _nativeAlert(messageStr)
+    } else {
+      errorMessage.value = messageStr
+      showError.value = true
+    }
   };
 });
 
