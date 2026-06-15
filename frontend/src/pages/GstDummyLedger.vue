@@ -87,8 +87,8 @@
                 <th class="px-6 py-4 w-[35%]">Customer / Party</th>
                 <th class="px-6 py-4 text-right w-[20%] text-[var(--color-danger)]">Debit (Dr)</th>
                 <th class="px-6 py-4 text-right w-[20%] text-[var(--color-success)]">Credit (Cr)</th>
-                <th class="px-8 py-4 text-right w-[12.5%]">Dummy Balance</th>
-                <th class="px-8 py-4 text-right w-[12.5%]">New Dummy Balance</th>
+                <th class="px-8 py-4 text-right w-[12.5%]">Balance</th>
+                <th class="px-8 py-4 text-right w-[12.5%]">New Balance</th>
               </tr>
             </thead>
             <tbody>
