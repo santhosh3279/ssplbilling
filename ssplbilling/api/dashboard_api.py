@@ -6,7 +6,7 @@ import re
 @frappe.whitelist()
 def get_all_naming_series():
     """Return naming series and their current values for core DocTypes."""
-    from frappe.model.naming import parse_naming_series
+    from frappe.model.naming import NamingSeries
     
     doctypes = ["Sales Invoice", "Purchase Invoice", "Quotation", "Sales Order", "Purchase Order"]
     result = {}
@@ -37,11 +37,8 @@ def get_all_naming_series():
         for s in series_options:
             current = 0
             try:
-                # Resolve the template (e.g. SINV-.YYYY.-#### -> SINV-2026-####)
-                resolved = parse_naming_series(s)
-                # Extract the prefix before the hashes
-                prefix = re.sub(r"#+$", "", resolved)
-                current = frappe.db.get_value("Series", prefix, "current") or 0
+                ns = NamingSeries(s)
+                current = ns.get_current_value()
             except Exception:
                 pass
             
@@ -89,19 +86,14 @@ def update_naming_series(doctype, series_list):
         }).insert(ignore_permissions=True)
     
     # Also update counters if provided
-    from frappe.model.naming import parse_naming_series
+    from frappe.model.naming import NamingSeries
     for item in series_list:
         if isinstance(item, dict) and "current" in item:
             try:
-                resolved = parse_naming_series(item["prefix"])
-                prefix = re.sub(r"#+$", "", resolved)
+                ns = NamingSeries(item["prefix"])
                 # Next value from UI - 1 = current value in DB
                 new_val = max(0, int(item["current"]) - 1)
-                
-                if frappe.db.exists("Series", prefix):
-                    frappe.db.set_value("Series", prefix, "current", new_val)
-                else:
-                    frappe.db.sql("insert into tabSeries (name, current) values (%s, %s)", (prefix, new_val))
+                ns.update_counter(new_val)
             except Exception:
                 pass
 
