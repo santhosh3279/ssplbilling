@@ -35,6 +35,7 @@ export const BILLER_ROUTES = new Set([
   'StockLedger',
   'StoreTransfer',
   'PartyLink',
+  'Repack',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -142,6 +143,7 @@ const TILE_ROUTE_MAP = {
   'stock-ledger':      'StockLedger',
   'payment-reconciliation': 'Payment',
   'store-transfer':    'StoreTransfer',
+  'repack':            'Repack',
   'single-entry':      'SingleEntry',
   'party-link':        'PartyLink',
   'naming-settings':   'NamingSettings',

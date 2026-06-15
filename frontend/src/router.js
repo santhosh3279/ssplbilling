@@ -36,6 +36,7 @@ import Cancellation from './pages/Cancellation.vue'
 import PartyLink from './pages/PartyLink.vue'
 import NamingSettings from './pages/NamingSettings.vue'
 import Expense from './pages/expense.vue'
+import Repack from './pages/Repack.vue'
 
 const routes = [
   {
@@ -79,6 +80,12 @@ const routes = [
     name: 'StoreTransfer',
     component: StoreTransfer,
     meta: { title: 'Store Transfer' },
+  },
+  {
+    path: '/repack',
+    name: 'Repack',
+    component: Repack,
+    meta: { title: 'Repack' },
   },
   {
     path: '/daily-report',
