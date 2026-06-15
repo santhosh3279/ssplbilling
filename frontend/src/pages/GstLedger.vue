@@ -69,20 +69,33 @@
               <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 font-mono text-[9px] text-[var(--color-text)]">Ctrl+L</kbd> Search
             </span>
           </label>
-          <div
-            class="flex items-center justify-between rounded border px-3 py-2 text-sm cursor-pointer transition-colors"
-            :class="selectedCustomer ? 'bg-[var(--color-info)]/20 font-semibold text-[var(--color-info)] border-[var(--color-info)]' : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-info)]'"
-            @click="showCustomerSearchModal = true"
-          >
-            <div class="truncate flex items-center gap-2">
-              <span v-if="selectedCustomer">{{ selectedCustomer.customer_name || selectedCustomer.name }}</span>
-              <span v-else>Select customer...</span>
-            </div>
+          <div class="relative">
+            <input
+              ref="customerInputRef"
+              v-model="customerQuery"
+              type="text"
+              class="w-full rounded border px-3 py-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)] hover:border-[var(--color-info)] focus:border-[var(--color-info)] focus:outline-none"
+              :class="{ 'bg-[var(--color-info)]/15 border-[var(--color-info)] font-semibold text-[var(--color-info)]': selectedCustomer }"
+              placeholder="Search Customer..."
+              @input="onCustomerInput"
+              @focus="onCustomerFocus"
+              @keydown="handleInputKeydown"
+            />
             <button
               v-if="selectedCustomer"
               @click.stop="clearLedger"
-              class="ml-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] font-bold text-sm"
             >✕</button>
+            
+            <QuickLedgerSearch
+              ref="quickSearchRef"
+              :results="searchResults"
+              :query="customerQuery"
+              :anchorEl="customerInputRef"
+              v-if="showQuickSearch && searchResults.length"
+              @select="handleSelect"
+              @close="showQuickSearch = false"
+            />
           </div>
         </div>
 
@@ -256,14 +269,7 @@
       </transition>
     </div>
 
-    <!-- CUSTOMER SEARCH MODAL -->
-    <CustomerSearchModal
-      ref="custSearchRef"
-      :show="showCustomerSearchModal"
-      initial-type="Customer"
-      @close="showCustomerSearchModal = false"
-      @select="pickCustomer"
-    />
+
     <!-- PRINT MODAL -->
     <PrintOptionsModal
       v-if="showPrintModal"
@@ -278,8 +284,9 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
-import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import { utils, writeFile } from 'xlsx'
 
 const router = useRouter()
@@ -287,14 +294,71 @@ const API = 'ssplbilling.api.gst_ledger_api'
 
 // ── STATE ────────────────────────────────────────────────────────────
 const selectedCustomer = ref(null)
+const customerQuery = ref('')
 const fromDate = ref('')
 const toDate = ref(new Date().toISOString().split('T')[0])
 const loading = ref(false)
 const ledgerData = ref(null)
 const selectedEntry = ref(null)
-const showCustomerSearchModal = ref(false)
 const showPrintModal = ref(false)
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
+
+// ── CUSTOMER SEARCH STATE ─────────────────────────────────────────────
+const showQuickSearch = ref(false)
+const searchResults = ref([])
+const customerInputRef = ref(null)
+const quickSearchRef = ref(null)
+
+const { refreshLedgerCache } = useLedgerCache()
+
+function searchCustomers() {
+  const q = customerQuery.value.trim()
+  if (!q) {
+    searchResults.value = []
+    showQuickSearch.value = false
+    return
+  }
+  try {
+    searchResults.value = searchLedgersInCache(q, 'Customer')
+    showQuickSearch.value = true
+  } catch (e) {
+    console.warn('[GstLedger] searchCustomers failed:', e)
+    searchResults.value = []
+  }
+}
+
+function onCustomerInput() {
+  selectedCustomer.value = null
+  ledgerData.value = null
+  selectedEntry.value = null
+  searchCustomers()
+}
+
+function onCustomerFocus() {
+  showQuickSearch.value = true
+  searchCustomers()
+}
+
+function handleInputKeydown(e) {
+  if (e.key === 'Escape') {
+    if (showQuickSearch.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      showQuickSearch.value = false
+    }
+  } else if (e.key === 'Enter') {
+    if (showQuickSearch.value && searchResults.value.length > 0 && quickSearchRef.value) {
+      quickSearchRef.value.handleKeydown(e)
+    } else {
+      if (selectedCustomer.value) {
+        e.preventDefault()
+        loadLedger()
+      }
+    }
+  } else if (showQuickSearch.value && quickSearchRef.value) {
+    quickSearchRef.value.handleKeydown(e)
+  }
+}
 
 // ── COMPUTED ─────────────────────────────────────────────────────────
 const printKey = computed(() => {
@@ -316,12 +380,18 @@ const selectedEntryDetail = computed(() => {
 // ── ACTIONS ──────────────────────────────────────────────────────────
 function pickCustomer(c) {
   selectedCustomer.value = c
-  showCustomerSearchModal.value = false
+  customerQuery.value = c.label || c.customer_name || c.name
+  showQuickSearch.value = false
   loadLedger()
+}
+
+async function handleSelect(item) {
+  pickCustomer(item)
 }
 
 function clearLedger() {
   selectedCustomer.value = null
+  customerQuery.value = ''
   ledgerData.value = null
   selectedEntry.value = null
 }
@@ -389,9 +459,14 @@ function fmt(n) {
 }
 
 function handleKeyDown(e) {
-  if (e.ctrlKey && e.key === 'l') { e.preventDefault(); showCustomerSearchModal.value = true }
+  if (e.ctrlKey && e.key === 'l') { 
+    e.preventDefault()
+    customerInputRef.value?.focus()
+    showQuickSearch.value = true
+    searchCustomers()
+  }
   if (e.key === 'Escape') { 
-    if (showCustomerSearchModal.value) showCustomerSearchModal.value = false
+    if (showQuickSearch.value) showQuickSearch.value = false
     else if (selectedEntry.value) selectedEntry.value = null
     else router.push('/')
   }
@@ -399,6 +474,7 @@ function handleKeyDown(e) {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  refreshLedgerCache(false).catch(e => console.error('Cache sync failed', e))
   // Default from date: 90 days ago
   const d = new Date()
   d.setDate(d.getDate() - 90)
