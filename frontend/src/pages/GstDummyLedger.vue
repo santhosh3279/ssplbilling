@@ -101,7 +101,7 @@
                       v-model="customerQuery"
                       type="text"
                       class="w-full bg-transparent text-4xl font-normal focus:outline-none placeholder:text-[var(--color-text-muted)]/40"
-                      placeholder="Search Customer..."
+                      placeholder="Search Customer or Supplier..."
                       @input="onCustomerInput"
                       @focus="onCustomerFocus"
                       @keydown="handleInputKeydown"
@@ -280,7 +280,8 @@ function searchCustomers() {
     return
   }
   try {
-    searchResults.value = searchLedgersInCache(q, 'Customer')
+    const raw = searchLedgersInCache(q)
+    searchResults.value = raw.filter(l => l.type === 'Customer' || l.type === 'Supplier')
     showQuickSearch.value = true
   } catch (e) {
     console.warn('[GstDummyLedger] searchCustomers failed:', e)
