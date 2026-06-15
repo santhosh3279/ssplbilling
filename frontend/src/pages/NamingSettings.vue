@@ -36,12 +36,12 @@
 
     <!-- CONTENT -->
     <main class="flex-1 p-6">
-      <div class="mx-auto max-w-5xl">
+      <div class="mx-auto max-w-[1600px]">
         <div v-if="loading" class="flex h-64 items-center justify-center">
           <div class="text-[var(--color-text-muted)] animate-pulse">Loading naming series...</div>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div v-for="(series, doctype) in namingSeries" :key="doctype" 
                class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
             <div class="mb-4 flex items-center justify-between border-b border-[var(--color-border)] pb-2">
