@@ -121,7 +121,7 @@
               v-model.number="item.qty"
               type="number"
               class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-              @keydown.enter="focusBarcodeInput"
+              @keydown.enter.prevent="focusType(index)"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ item.qty }}</span>
           </td>
@@ -136,9 +136,11 @@
             </span>
             <select 
               v-else
+              :ref="el => setTypeRef(el, index)"
               v-model="item.type"
               class="bg-transparent border border-[var(--color-border)] rounded px-2 py-0.5 font-bold text-2xl outline-none focus:border-[var(--color-focus)]"
               :class="item.type === 'Consume' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
+              @keydown.enter.prevent="focusBarcodeInput"
             >
               <option value="Consume" class="text-[var(--color-danger)] bg-[var(--color-surface)]">Consume</option>
               <option value="Produce" class="text-[var(--color-success)] bg-[var(--color-surface)]">Produce</option>
@@ -169,9 +171,11 @@
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-center">
               <select 
+                ref="pendingTypeInput"
                 v-model="pendingItem.type"
                 class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-1 text-2xl font-bold outline-none focus:border-[var(--color-focus)]"
                 :class="pendingItem.type === 'Consume' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
+                @keydown="handlePendingTypeKeydown"
               >
                 <option value="Consume" class="text-[var(--color-danger)]">Consume</option>
                 <option value="Produce" class="text-[var(--color-success)]">Produce</option>
@@ -261,6 +265,8 @@ const quickSearchAnchor = ref(null)
 
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
+const pendingTypeInput = ref(null)
+const typeRefs = ref([])
 
 const sidebarDate = ref(new Date().toISOString().split('T')[0])
 const recentRepacks = ref([])
@@ -428,12 +434,35 @@ function confirmPendingItem() {
 function handlePendingQtyKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault()
+    pendingTypeInput.value?.focus()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    pendingItem.value = null
+    focusBarcodeInput()
+  }
+}
+
+function handlePendingTypeKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
     confirmPendingItem()
   } else if (e.key === 'Escape') {
     e.preventDefault()
     pendingItem.value = null
     focusBarcodeInput()
   }
+}
+
+function setTypeRef(el, idx) {
+  if (el) {
+    typeRefs.value[idx] = el
+  }
+}
+
+function focusType(idx) {
+  nextTick(() => {
+    typeRefs.value[idx]?.focus()
+  })
 }
 
 function removeItem(index) {
