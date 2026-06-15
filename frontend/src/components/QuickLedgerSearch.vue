@@ -158,7 +158,7 @@ const positionStyle = computed(() => {
 function getTypeClass(type) {
   switch (type) {
     case 'Customer': return 'bg-[var(--color-customer)]/20 text-[var(--color-customer)]'
-    case 'Supplier': return 'bg-[var(--color-supplier)]/20 text-[var(--color-supplier)]'
+    case 'Supplier': return 'bg-[#78350f]/20 text-[#78350f]'
     case 'Employee': return 'bg-black text-white'
     case 'Account': return 'bg-[var(--color-text-muted)]/20 text-[var(--color-text-muted)]'
     default: return 'bg-gray-500/10 text-gray-500'
