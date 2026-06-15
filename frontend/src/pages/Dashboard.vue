@@ -384,6 +384,7 @@ const todayDay = computed(() => {
 const BUCKETS = [
   { id: 'sale',     label: 'Sale' },
   { id: 'purchase', label: 'Purchase' },
+  { id: 'stock',    label: 'Stock' },
   { id: 'accounts', label: 'Accounts' },
   { id: 'ledger',   label: 'Ledger View' },
   { id: 'sspl',     label: 'SSPL Special' },
@@ -402,6 +403,9 @@ const allTiles = [
   { id: 'purchase-invoice',   bucket: 'purchase', name: 'Purchase Invoice',      desc: 'Fast purchase invoice entry',              icon: '🧾', shortcut: ''    },
   { id: 'purchase-order',     bucket: 'purchase', name: 'Purchase Order',        desc: 'Create & manage purchase orders',          icon: '📋', shortcut: 'Shift+F7'  },
   { id: 'purchase-submit',    bucket: 'purchase', name: 'Purchase Desk',         desc: 'Confirm & submit purchases',               icon: '📥', shortcut: 'Shift+F4'  },
+  // ── Stock ──
+  { id: 'stock-reconciliation', bucket: 'stock',  name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
+  { id: 'store-transfer',     bucket: 'stock',  name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'Shift+F9'  },
   // ── Accounts ──
   { id: 'single-entry',       bucket: 'accounts', name: 'Bulk Payment',          desc: 'Fast bulk payment entries',                icon: '🧾', shortcut: ''    },
   { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'Shift+F3'  },
@@ -422,8 +426,6 @@ const allTiles = [
   { id: 'parcel-address',     bucket: 'sspl',     name: 'Parcel Address',        desc: 'Manage parcel addresses',                  icon: '📦', shortcut: ''    },
   { id: 'gst-dummy-ledger',   bucket: 'sspl',     name: 'WGB PAYMENTS',          desc: 'Manage WGB payment entries',               icon: '📖', shortcut: ''    },
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Pricing Rule',          desc: 'Sync & manage pricing rules',              icon: '🏷️', shortcut: ''    },
-  { id: 'stock-reconciliation', bucket: 'sspl',   name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
-  { id: 'store-transfer',     bucket: 'sspl',   name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'Shift+F9'  },
   { id: 'party-link',         bucket: 'sspl',   name: 'Party Link',            desc: 'Link customers and suppliers',             icon: '🔗', shortcut: ''    },
   { id: 'naming-settings',    bucket: 'sspl',   name: 'Naming Settings',       desc: 'Configure document series',                icon: '🔢', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
