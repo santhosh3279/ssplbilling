@@ -162,13 +162,24 @@
                     <input
                       ref="customerInputRef"
                       v-model="customerQuery"
-                      @click="openSearch"
-                      @keydown.enter.prevent="openSearch"
-                      readonly
-                      class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-[var(--color-text-muted)]/40"
-                      placeholder="Select Customer..."
+                      type="text"
+                      class="w-full bg-transparent text-4xl font-normal focus:outline-none placeholder:text-[var(--color-text-muted)]/40"
+                      placeholder="Search Customer..."
+                      @input="onCustomerInput"
+                      @focus="onCustomerFocus"
+                      @keydown="handleInputKeydown"
                     />
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Type to Search</div>
+                    
+                    <QuickLedgerSearch
+                      ref="quickSearchRef"
+                      :results="searchResults"
+                      :query="customerQuery"
+                      :anchorEl="customerInputRef"
+                      v-if="showQuickSearch && searchResults.length"
+                      @select="handleSelect"
+                      @close="showQuickSearch = false"
+                    />
                   </div>
                 </td>
 
@@ -246,19 +257,7 @@
       </div>
     </footer>
 
-    <!-- Customer Search Modal -->
-    <CustomerSearchModal
-      ref="custSearchModalRef"
-      :show="showSearchModal"
-      title="Select Customer"
-      subtitle="Select customer for GST Dummy Ledger entry"
-      :allowedTypes="['Customer']"
-      initialType="Customer"
-      :skipDateFilter="true"
-      :hideSecondary="true"
-      @close="showSearchModal = false"
-      @select="handleSelect"
-    />
+
 
     <!-- Success Popup -->
     <div 
@@ -288,7 +287,8 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
-import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
+import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 
 const router = useRouter()
 const API = 'ssplbilling.api.gst_ledger_api'
@@ -320,6 +320,61 @@ const amountInputRef = ref(null)
 const saveBtnRef = ref(null)
 const selectionOverlayRef = ref(null)
 
+// --- Customer Search (QuickLedgerSearch) ---
+const showQuickSearch = ref(false)
+const searchResults = ref([])
+const quickSearchRef = ref(null)
+
+const { refreshLedgerCache } = useLedgerCache()
+
+function searchCustomers() {
+  const q = customerQuery.value.trim()
+  if (!q) {
+    searchResults.value = []
+    showQuickSearch.value = false
+    return
+  }
+  try {
+    searchResults.value = searchLedgersInCache(q, 'Customer')
+    showQuickSearch.value = true
+  } catch (e) {
+    console.warn('[GstDummyLedger] searchCustomers failed:', e)
+    searchResults.value = []
+  }
+}
+
+function onCustomerInput() {
+  form.value.customer = ''
+  outstandingBalance.value = null
+  searchCustomers()
+}
+
+function onCustomerFocus() {
+  showQuickSearch.value = true
+  searchCustomers()
+}
+
+function handleInputKeydown(e) {
+  if (e.key === 'Escape') {
+    if (showQuickSearch.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      showQuickSearch.value = false
+    }
+  } else if (e.key === 'Enter') {
+    if (showQuickSearch.value && searchResults.value.length > 0 && quickSearchRef.value) {
+      quickSearchRef.value.handleKeydown(e)
+    } else {
+      if (form.value.customer) {
+        e.preventDefault()
+        amountInputRef.value?.focus()
+      }
+    }
+  } else if (showQuickSearch.value && quickSearchRef.value) {
+    quickSearchRef.value.handleKeydown(e)
+  }
+}
+
 // --- computed ---
 const displayDate = computed(() => {
   if (!form.value.date) return ''
@@ -344,19 +399,16 @@ function adjustDate(dir) {
   form.value.date = d.toISOString().split('T')[0]
 }
 
-// --- Customer Search Modal ---
-const showSearchModal = ref(false)
-const custSearchModalRef = ref(null)
-
 function openSearch() {
-  showSearchModal.value = true
+  showQuickSearch.value = true
   nextTick(() => {
-    custSearchModalRef.value?.focus()
+    customerInputRef.value?.focus()
+    searchCustomers()
   })
 }
 
 async function handleSelect(item) {
-  showSearchModal.value = false
+  showQuickSearch.value = false
   form.value.customer = item.name
   customerQuery.value = item.label || item.customer_name || item.name
   
@@ -469,6 +521,7 @@ async function selectEntry(e) {
   form.value.date = e.date
   form.value.customer = e.customer
   customerQuery.value = e.customer
+  showQuickSearch.value = false
   if (e.debit > 0) {
     activeTab.value = 'Debit'
     amount.value = e.debit
@@ -492,12 +545,19 @@ function fmt(n) {
 
 function handleKeyDown(e) {
   if (e.key === 'End') { e.preventDefault(); saveEntry() }
-  if (e.key === 'Escape') { router.push('/') }
+  if (e.key === 'Escape') {
+    if (showQuickSearch.value) {
+      showQuickSearch.value = false
+      return
+    }
+    router.push('/')
+  }
 }
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   fetchEntries()
+  refreshLedgerCache(false).catch(e => console.error('Cache sync failed', e))
   nextTick(() => {
     selectionOverlayRef.value?.focus()
   })
