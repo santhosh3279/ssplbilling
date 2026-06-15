@@ -8,8 +8,11 @@
       :doc-date="repackDate"
       :items="items"
       :total-amount="totalAmount"
-      :total-label="'Total Produced Value'"
+      :total-label="'Total Produced Qty'"
+      :show-total-currency="false"
       :item-count="items.length"
+      :show-rate="false"
+      :show-amount="false"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentRepacks"
       :sidebar-search="sidebarSearch"
@@ -99,8 +102,6 @@
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">UOM</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-center text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-36">Type</th>
-          <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Rate</th>
-          <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Value</th>
           <th class="border-b border-[var(--color-border)] w-12"></th>
         </tr>
       </template>
@@ -143,8 +144,6 @@
               <option value="Produce" class="text-[var(--color-success)] bg-[var(--color-surface)]">Produce</option>
             </select>
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.rate }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ (item.qty * item.rate).toFixed(2) }}</td>
           <td class="px-2 py-1 text-center">
             <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="removeItem(index)">&times;</button>
           </td>
@@ -178,8 +177,6 @@
                 <option value="Produce" class="text-[var(--color-success)]">Produce</option>
               </select>
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ pendingItem.rate }}</td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ (pendingItem.qty * pendingItem.rate).toFixed(2) }}</td>
             <td class="px-2 py-1 text-center">
               <button class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-danger)]" @click="pendingItem = null; focusBarcodeInput()">&times;</button>
             </td>
@@ -198,7 +195,7 @@
               @keydown="handleBarcodeKeydown"
             />
           </td>
-          <td colspan="7" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to Repack</td>
+          <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to Repack</td>
         </tr>
       </template>
     </Stock_Template>
@@ -273,11 +270,10 @@ const draftOnly = ref(false)
 const sidebarLoading = ref(false)
 
 const totalAmount = computed(() => {
-  // Sum the produced items value as total repacked value
+  // Sum the produced items quantity as total repacked quantity
   return items.value
     .filter(i => i.type === 'Produce')
-    .reduce((sum, item) => sum + (item.qty * item.rate), 0)
-    .toFixed(2)
+    .reduce((sum, item) => sum + item.qty, 0)
 })
 
 const saveButtonText = computed(() => {
