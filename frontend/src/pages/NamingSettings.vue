@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px]">
+  <div class="flex h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px] overflow-hidden">
     <!-- HEADER -->
     <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center justify-between gap-4">
@@ -35,7 +35,7 @@
     </header>
 
     <!-- CONTENT -->
-    <main class="flex-1 p-6">
+    <main class="flex-1 overflow-y-auto p-6">
       <div class="mx-auto max-w-[1600px]">
         <div v-if="loading" class="flex h-64 items-center justify-center">
           <div class="text-[var(--color-text-muted)] animate-pulse">Loading naming series...</div>
