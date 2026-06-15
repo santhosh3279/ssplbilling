@@ -49,40 +49,36 @@
               <span class="rounded bg-gray-100 px-1 py-[1px] text-[20px] text-gray-500">{{ series.length }} series</span>
             </div>
 
-            <div class="space-y-2.5">
-              <div v-for="(s, index) in series" :key="index" class="flex flex-col gap-1.5 border-b border-[var(--color-border)]/50 pb-1.5 last:border-0">
-                <div class="flex items-center gap-1.5">
+            <div class="space-y-1.5">
+              <div v-for="(s, index) in series" :key="index" class="flex items-center gap-1.5 border-b border-[var(--color-border)]/50 pb-1.5 last:border-0">
+                <input 
+                  v-model="s.prefix"
+                  class="w-[15ch] shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-[6px] py-[3px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono"
+                  placeholder="e.g. SINV-.YYYY.-####"
+                />
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="text-[18px] uppercase font-bold text-[var(--color-text-muted)]">Next:</span>
                   <input 
-                    v-model="s.prefix"
-                    class="flex-1 min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-[6px] py-[3px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono"
-                    placeholder="e.g. SINV-.YYYY.-####"
+                    v-model.number="s.current"
+                    type="number"
+                    class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-[2px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono text-center"
                   />
-                  <button 
-                    @click="removeSeries(doctype, index)"
-                    class="text-red-400 hover:text-red-600 px-[2px] shrink-0 text-[28px] font-bold"
-                    title="Remove"
-                  >
-                    ✕
-                  </button>
                 </div>
-                <div class="flex items-center justify-between gap-1.5">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-[18px] uppercase font-bold text-[var(--color-text-muted)]">Next:</span>
-                    <input 
-                      v-model.number="s.current"
-                      type="number"
-                      class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-[2px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono text-center"
-                    />
-                  </div>
-                  <button 
-                    @click="updateSingleCounter(s)"
-                    :disabled="updatingCounter === s.prefix || !s.prefix"
-                    class="rounded bg-[var(--color-info)] px-[8px] py-[3px] text-[20px] font-bold text-white hover:bg-[var(--color-info)]/90 disabled:opacity-40 transition-colors shrink-0"
-                    title="Update counter for this series"
-                  >
-                    {{ updatingCounter === s.prefix ? '...' : 'Update' }}
-                  </button>
-                </div>
+                <button 
+                  @click="updateSingleCounter(s)"
+                  :disabled="updatingCounter === s.prefix || !s.prefix"
+                  class="rounded bg-[var(--color-info)] px-[8px] py-[3px] text-[20px] font-bold text-white hover:bg-[var(--color-info)]/90 disabled:opacity-40 transition-colors shrink-0"
+                  title="Update counter for this series"
+                >
+                  {{ updatingCounter === s.prefix ? '...' : 'Update' }}
+                </button>
+                <button 
+                  @click="removeSeries(doctype, index)"
+                  class="text-red-400 hover:text-red-600 px-[2px] shrink-0 text-[28px] font-bold ml-auto"
+                  title="Remove"
+                >
+                  ✕
+                </button>
               </div>
               
               <button 
