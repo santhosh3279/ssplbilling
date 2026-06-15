@@ -41,7 +41,7 @@
           <div class="text-[var(--color-text-muted)] animate-pulse">Loading naming series...</div>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="(series, doctype) in namingSeries" :key="doctype" 
                class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm">
             <div class="mb-2 flex items-center justify-between border-b border-[var(--color-border)] pb-1">
@@ -49,41 +49,45 @@
               <span class="rounded bg-gray-100 px-1 py-[1px] text-[20px] text-gray-500">{{ series.length }} series</span>
             </div>
 
-            <div class="space-y-1">
-              <div v-for="(s, index) in series" :key="index" class="flex items-center gap-1 border-b border-[var(--color-border)]/50 pb-1 last:border-0">
-                <input 
-                  v-model="s.prefix"
-                  class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-[6px] py-[3px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono"
-                  placeholder="e.g. SINV-.YYYY.-####"
-                />
-                <div class="flex items-center gap-0.5 shrink-0">
-                  <span class="text-[18px] uppercase font-bold text-[var(--color-text-muted)]">Next:</span>
+            <div class="space-y-2.5">
+              <div v-for="(s, index) in series" :key="index" class="flex flex-col gap-1.5 border-b border-[var(--color-border)]/50 pb-1.5 last:border-0">
+                <div class="flex items-center gap-1.5">
                   <input 
-                    v-model.number="s.current"
-                    type="number"
-                    class="w-32 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-[2px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono text-center"
+                    v-model="s.prefix"
+                    class="flex-1 min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-[6px] py-[3px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono"
+                    placeholder="e.g. SINV-.YYYY.-####"
                   />
+                  <button 
+                    @click="removeSeries(doctype, index)"
+                    class="text-red-400 hover:text-red-600 px-[2px] shrink-0 text-[28px] font-bold"
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button 
-                  @click="updateSingleCounter(s)"
-                  :disabled="updatingCounter === s.prefix || !s.prefix"
-                  class="rounded bg-[var(--color-info)] px-[5px] py-[2px] text-[20px] font-bold text-white hover:bg-[var(--color-info)]/90 disabled:opacity-40 transition-colors shrink-0"
-                  title="Update counter for this series"
-                >
-                  {{ updatingCounter === s.prefix ? '...' : 'Update' }}
-                </button>
-                <button 
-                  @click="removeSeries(doctype, index)"
-                  class="text-red-400 hover:text-red-600 px-[2px] shrink-0 text-[28px] font-bold"
-                  title="Remove"
-                >
-                  ✕
-                </button>
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[18px] uppercase font-bold text-[var(--color-text-muted)]">Next:</span>
+                    <input 
+                      v-model.number="s.current"
+                      type="number"
+                      class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-[2px] text-[24px] outline-none focus:border-[var(--color-info)] font-mono text-center"
+                    />
+                  </div>
+                  <button 
+                    @click="updateSingleCounter(s)"
+                    :disabled="updatingCounter === s.prefix || !s.prefix"
+                    class="rounded bg-[var(--color-info)] px-[8px] py-[3px] text-[20px] font-bold text-white hover:bg-[var(--color-info)]/90 disabled:opacity-40 transition-colors shrink-0"
+                    title="Update counter for this series"
+                  >
+                    {{ updatingCounter === s.prefix ? '...' : 'Update' }}
+                  </button>
+                </div>
               </div>
               
               <button 
                 @click="addSeries(doctype)"
-                class="mt-1 w-full rounded border border-dashed border-[var(--color-border)] py-1 text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:border-[var(--color-info)] hover:text-[var(--color-info)]"
+                class="mt-1.5 w-full rounded border border-dashed border-[var(--color-border)] py-1.5 text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:border-[var(--color-info)] hover:text-[var(--color-info)]"
               >
                 + Add New Series
               </button>
