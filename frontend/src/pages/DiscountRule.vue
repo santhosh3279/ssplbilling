@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px] overflow-hidden">
+  <div class="h-screen flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px] overflow-hidden discount-rule-page">
     <!-- HEADER -->
     <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-sm shrink-0">
       <div class="flex items-center justify-between gap-4">
@@ -832,3 +832,55 @@ onMounted(() => {
   fetchMetadata()
 })
 </script>
+
+<style scoped>
+.discount-rule-page {
+  font-size: 19.5px !important;
+}
+.discount-rule-page :deep(.text-xs),
+.discount-rule-page :deep(input.text-xs),
+.discount-rule-page :deep(select.text-xs) {
+  font-size: 18px !important;
+}
+.discount-rule-page :deep(.text-sm),
+.discount-rule-page :deep(h1.text-sm),
+.discount-rule-page :deep(h2.text-sm) {
+  font-size: 21px !important;
+}
+.discount-rule-page :deep(.text-base) {
+  font-size: 24px !important;
+}
+.discount-rule-page :deep(.text-lg) {
+  font-size: 27px !important;
+}
+.discount-rule-page :deep(.text-xl) {
+  font-size: 30px !important;
+}
+.discount-rule-page :deep(.text-2xl) {
+  font-size: 36px !important;
+}
+.discount-rule-page :deep(.text-3xl) {
+  font-size: 45px !important;
+}
+.discount-rule-page :deep(.text-\[13px\]) {
+  font-size: 19.5px !important;
+}
+.discount-rule-page :deep(.text-\[11px\]) {
+  font-size: 16.5px !important;
+}
+.discount-rule-page :deep(.text-\[10px\]) {
+  font-size: 15px !important;
+}
+.discount-rule-page :deep(.text-\[12px\]) {
+  font-size: 18px !important;
+}
+.discount-rule-page :deep(.text-\[14px\]) {
+  font-size: 21px !important;
+}
+.discount-rule-page :deep(.text-\[9px\]) {
+  font-size: 13.5px !important;
+}
+.discount-rule-page :deep(.text-5xl) {
+  font-size: 72px !important;
+}
+</style>
