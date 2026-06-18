@@ -22,7 +22,7 @@ def get_offer_details(pageaddress):
 
 	doc = frappe.get_doc("Offer-Items", offer_names[0].name)
 	
-	# Fetch all active discount rules
+	# Fetch all enabled discount rules
 	today = datetime.date.today()
 	active_rules = frappe.get_all(
 		"Discount Rule",
@@ -35,17 +35,25 @@ def get_offer_details(pageaddress):
 		ignore_permissions=True
 	)
 	
-	# Filter rules valid today
+	# Separate into currently active vs fallback (expired or future) enabled rules
 	valid_rules = []
+	fallback_rules = []
 	for rule in active_rules:
+		is_active = True
 		if rule.start_date and getdate(rule.start_date) > today:
-			continue
+			is_active = False
 		if rule.end_date and getdate(rule.end_date) < today:
-			continue
-		valid_rules.append(rule)
+			is_active = False
+			
+		if is_active:
+			valid_rules.append(rule)
+		else:
+			fallback_rules.append(rule)
+			
+	candidate_rules = valid_rules + fallback_rules
 		
-	# Pre-fetch child items linked to valid rules
-	rule_names = [r.name for r in valid_rules]
+	# Pre-fetch child items linked to enabled rules
+	rule_names = [r.name for r in candidate_rules]
 	item_rules = {}
 	if rule_names:
 		child_items = frappe.get_all(
@@ -76,14 +84,19 @@ def get_offer_details(pageaddress):
 	for item in doc.items:
 		item_code = item.itemcode
 		item_group = item_group_map.get(item_code)
-		item_image = item_image_map.get(item_code) or item.barcode # Fallback check if it was set in child table
+		
+		# Resolve item image safely
+		item_image = item_image_map.get(item_code)
 		if not item_image:
-			# Fetch direct from Item DB if not loaded
 			item_image = frappe.db.get_value("Item", item_code, "image")
 			
+		# Ensure it's a valid image path/URL, not a placeholder string
+		if item_image and not (item_image.startswith("/") or item_image.startswith("http")):
+			item_image = None
+
 		# Match discount rules
 		matched_rule = None
-		for rule in valid_rules:
+		for rule in candidate_rules:
 			# Direct item code match
 			if rule.applies_to == "Item Code" and rule.name in item_rules.get(item_code, []):
 				matched_rule = rule
@@ -107,7 +120,7 @@ def get_offer_details(pageaddress):
 				free_str = str(int(free_q)) if free_q.is_integer() else str(free_q)
 				discount_desc = f"Buy {min_str} Get {free_str} Free"
 			elif discount_type == "Custom Logic":
-				discount_desc = "Special Offer"
+				discount_desc = "Offer"
 
 		items.append({
 			"itemcode": item_code,
