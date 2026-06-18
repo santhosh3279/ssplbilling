@@ -38,6 +38,7 @@ import NamingSettings from './pages/NamingSettings.vue'
 import Expense from './pages/expense.vue'
 import Repack from './pages/Repack.vue'
 import OfferDisplay from './pages/OfferDisplay.vue'
+import OfferPage from './pages/OfferPage.vue'
 
 const routes = [
   {
@@ -259,6 +260,12 @@ const routes = [
     name: 'GstLedger',
     component: GstLedger,
     meta: { title: 'GST Ledger' },
+  },
+  {
+    path: '/:pageaddress',
+    name: 'OfferPage',
+    component: OfferPage,
+    meta: { public: true, title: 'Offers' },
   },
 ]
 
