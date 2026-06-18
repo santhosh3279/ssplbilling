@@ -87,12 +87,24 @@
                 </div>
               </div>
 
-              <!-- Barcode Badge -->
-              <div v-if="item.barcode" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between">
-                <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">Barcode</span>
-                <span class="font-mono text-xs font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all">
-                  {{ item.barcode }}
-                </span>
+              <div class="space-y-2 shrink-0">
+                <!-- Barcode Badge -->
+                <div v-if="item.barcode" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between">
+                  <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">Barcode</span>
+                  <span class="font-mono text-xs font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all">
+                    {{ item.barcode }}
+                  </span>
+                </div>
+
+                <!-- Discount Badge -->
+                <div v-if="item.discount_type" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between bg-[var(--color-warning)]/5 p-2 rounded-xl">
+                  <span class="text-[10px] uppercase font-black text-[var(--color-warning)] tracking-wider flex items-center gap-1">
+                    🏷️ Offer
+                  </span>
+                  <span class="font-bold text-xs text-[var(--color-warning)]">
+                    {{ item.discount_desc }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
