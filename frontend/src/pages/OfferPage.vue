@@ -78,7 +78,7 @@
               <!-- Bottom side for item details -->
               <div class="shrink-0 space-y-2 pt-3 border-t border-slate-800/60">
                 <h3 
-                  class="font-extrabold text-slate-100 line-clamp-2 leading-tight"
+                  class="font-normal text-slate-100 line-clamp-2 leading-tight"
                   :class="presentationCols >= 6 ? 'text-[22px]' : 'text-2xl md:text-3xl'"
                 >
                   {{ item.itemname }}
@@ -89,12 +89,12 @@
                   class="flex items-center justify-between pt-1"
                 >
                   <div class="flex flex-col">
-                    <span class="text-[18px] uppercase font-bold text-slate-500 tracking-wider">Item Code</span>
-                    <span class="font-mono text-[24px] font-bold text-slate-300 leading-normal">{{ item.itemcode }}</span>
+                    <span class="text-[18px] uppercase font-normal text-slate-500 tracking-wider">Item Code</span>
+                    <span class="font-mono text-[24px] font-normal text-slate-300 leading-normal">{{ item.itemcode }}</span>
                   </div>
                   <div v-if="item.barcode" class="flex flex-col items-end">
-                    <span class="text-[18px] uppercase font-bold text-slate-500 tracking-wider">Barcode</span>
-                    <span class="font-mono text-[24px] font-bold bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 leading-normal">
+                    <span class="text-[18px] uppercase font-normal text-slate-500 tracking-wider">Barcode</span>
+                    <span class="font-mono text-[24px] font-normal bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 leading-normal">
                       {{ item.barcode }}
                     </span>
                   </div>
