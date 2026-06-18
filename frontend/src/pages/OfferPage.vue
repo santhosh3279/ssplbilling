@@ -95,11 +95,17 @@
 
               <!-- Content details -->
               <div class="shrink-0 space-y-3">
-                <h3 class="font-extrabold text-base md:text-lg text-slate-100 line-clamp-2 leading-tight">
+                <h3 
+                  class="font-extrabold text-slate-100 line-clamp-2 leading-tight"
+                  :class="presentationCols >= 6 ? 'text-[11px]' : 'text-base md:text-lg'"
+                >
                   {{ item.itemname }}
                 </h3>
                 
-                <div class="flex items-center justify-between border-t border-slate-800/60 pt-3">
+                <div 
+                  v-if="presentationCols < 6"
+                  class="flex items-center justify-between border-t border-slate-800/60 pt-3"
+                >
                   <div class="flex flex-col">
                     <span class="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Item Code</span>
                     <span class="font-mono text-xs font-bold text-slate-300">{{ item.itemcode }}</span>
@@ -110,6 +116,9 @@
                       {{ item.barcode }}
                     </span>
                   </div>
+                </div>
+                <div v-else class="text-[9px] font-mono text-slate-400 mt-1 truncate">
+                  Code: {{ item.itemcode }}
                 </div>
               </div>
             </div>
@@ -306,19 +315,50 @@ const gridClass = computed(() => {
   return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
 })
 
+// Presentation Column Count Computes the active visible column count (safely limited by available items count)
+const presentationCols = computed(() => {
+  if (!offer.value?.items?.length) return 4
+  return Math.min(parseInt(offer.value.tile_grid) || 4, offer.value.items.length)
+})
+
 // Circular Carousel Position and Styling Calculator
 function getItemStyle(idx) {
   if (!offer.value?.items?.length) return {}
   const N = offer.value.items.length
+  const C = presentationCols.value
+  
   let diff = idx - activeIndex.value
   
   // Circular wrap around shortest path
   if (diff < -Math.floor(N / 2)) diff += N
   if (diff > Math.floor((N - 1) / 2)) diff -= N
 
-  // Only render active card and one card to its left and right for cleanliness
-  const isVisible = Math.abs(diff) <= 1 || (N === 2 && diff === -1)
+  // Determine visibility: active columns [0, C-1] plus one peeking on each side
+  const isVisible = (diff >= -1 && diff <= C) || (N === C + 1 && diff === -1)
   
+  // Choose card size and spacing based on column count
+  let cardWidthVal = 18 // in vw
+  let maxW = '250px'
+  let gapVal = 2 // in vw
+  
+  if (C === 1) {
+    cardWidthVal = 50
+    maxW = '550px'
+    gapVal = 4
+  } else if (C === 2) {
+    cardWidthVal = 35
+    maxW = '400px'
+    gapVal = 3
+  } else if (C === 6) {
+    cardWidthVal = 12
+    maxW = '180px'
+    gapVal = 1.5
+  } else if (C === 9) {
+    cardWidthVal = 8
+    maxW = '120px'
+    gapVal = 1
+  }
+
   if (!isVisible) {
     return {
       opacity: 0,
@@ -330,24 +370,25 @@ function getItemStyle(idx) {
     }
   }
 
-  const opacity = diff === 0 ? 1 : 0.5
-  const scale = diff === 0 ? 1.05 : 0.85
-  const zIndex = diff === 0 ? 20 : 10
+  const isActive = diff >= 0 && diff < C
+  const opacity = isActive ? 1 : 0.5
+  const scale = isActive ? 1.02 : 0.88
+  const zIndex = isActive ? 20 : 10
   
-  // Horizontal offset using viewport-width for responsiveness
-  const translateX = diff * 55 // 55vw offsets left and right cards
+  // Translate calculation: (diff - (C-1)/2) * (cardWidth + gap)
+  const translateX = (diff - (C - 1) / 2) * (cardWidthVal + gapVal)
 
   return {
     opacity: opacity,
     transform: `translateX(${translateX}vw) scale(${scale})`,
     zIndex: zIndex,
     position: 'absolute',
-    width: '50vw',
-    maxWidth: '550px',
+    width: `${cardWidthVal}vw`,
+    maxWidth: maxW,
     height: '50vh',
     maxHeight: '450px',
     transition: 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)',
-    pointerEvents: diff === 0 ? 'auto' : 'none'
+    pointerEvents: isActive ? 'auto' : 'none'
   }
 }
 
