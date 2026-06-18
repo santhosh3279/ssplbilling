@@ -27,54 +27,34 @@
     <!-- Main Content -->
     <template v-else>
       <!-- Presentation Mode Overlay (Fullscreen) -->
-      <div v-if="isFullscreen" class="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white font-sans overflow-hidden select-none">
+      <div v-if="isFullscreen" class="fixed inset-0 z-50 bg-slate-950 text-white font-sans overflow-hidden select-none">
         
-        <!-- Header -->
-        <header class="px-8 py-5 flex items-center justify-between border-b border-slate-900 bg-slate-950/80 backdrop-blur shrink-0">
-          <div class="flex items-center gap-3">
-            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <h1 class="text-lg font-bold tracking-tight text-slate-100">
-              {{ offer.heading }}
-            </h1>
-          </div>
-          
-          <!-- Slide Indicator -->
-          <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
-            <span class="bg-slate-900 px-3 py-1 rounded-full border border-slate-800 font-bold">
-              Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}
-            </span>
-            <span v-if="offer.timer > 0" class="text-[10px] uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full border border-indigo-500/30 font-bold">
-              Auto-play: {{ offer.timer }}s
-            </span>
-          </div>
-        </header>
-
-        <!-- Main Cards Area (Circular slider layout) -->
-        <main class="flex-1 relative w-full flex items-center justify-center overflow-hidden p-8">
-          <div class="relative w-full h-[74vh] flex items-center justify-center">
+        <!-- Main Cards Area (Circular slider layout - now fills screen height) -->
+        <main class="absolute inset-0 w-full h-screen flex items-center justify-center overflow-hidden">
+          <div class="relative w-full h-screen flex items-center justify-center">
             <div
               v-for="(item, idx) in offer.items"
               :key="item.itemcode"
               :style="getItemStyle(idx)"
-              class="absolute flex flex-col rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl hover:border-indigo-500/50 transition-all duration-300"
+              class="absolute flex flex-col bg-slate-900/90 shadow-2xl hover:border-indigo-500/50 transition-all duration-300 pt-24 pb-28 px-8 border-x border-slate-800"
             >
-              <!-- Image or Placeholder -->
-              <div class="flex-1 min-h-0 relative aspect-video w-full bg-slate-950/80 rounded-xl flex items-center justify-center p-4 border border-slate-800/50 overflow-hidden mb-4">
-                <!-- Discount Badge Overlay -->
-                <div v-if="item.discount_type && item.discount_desc" class="absolute top-3 left-3 z-10 bg-slate-950/95 border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm max-w-[85%]">
-                  <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2.5 py-1 text-center tracking-wider shrink-0">
-                    Active Offer
-                  </div>
-                  <div class="p-2 flex flex-col gap-1 font-bold text-[10px] text-amber-400 whitespace-normal break-words leading-snug">
-                    <div 
-                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-                      :key="lIdx"
-                    >
-                      {{ line }}
-                    </div>
+              <!-- Discount Badge Overlay (Move to the top of each tile) -->
+              <div v-if="item.discount_type && item.discount_desc" class="absolute top-20 left-6 z-30 bg-slate-950/95 border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm max-w-[85%]">
+                <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2.5 py-1 text-center tracking-wider shrink-0">
+                  Active Offer
+                </div>
+                <div class="p-2 flex flex-col gap-1 font-bold text-[10px] text-amber-400 whitespace-normal break-words leading-snug">
+                  <div 
+                    v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                    :key="lIdx"
+                  >
+                    {{ line }}
                   </div>
                 </div>
+              </div>
 
+              <!-- Image or Placeholder -->
+              <div class="flex-1 min-h-0 relative aspect-video w-full bg-slate-950/80 rounded-xl flex items-center justify-center p-4 border border-slate-800/50 overflow-hidden mb-4">
                 <img
                   v-if="item.image"
                   :src="item.image"
@@ -125,11 +105,31 @@
           </div>
         </main>
 
+        <!-- Header -->
+        <header class="absolute top-0 left-0 right-0 z-40 px-8 py-5 flex items-center justify-between bg-gradient-to-b from-slate-950 via-slate-950/80 to-transparent">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <h1 class="text-lg font-bold tracking-tight text-slate-100">
+              {{ offer.heading }}
+            </h1>
+          </div>
+          
+          <!-- Slide Indicator -->
+          <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
+            <span class="bg-slate-900/90 px-3 py-1 rounded-full border border-slate-800 font-bold">
+              Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}
+            </span>
+            <span v-if="offer.timer > 0" class="text-[10px] uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full border border-indigo-500/30 font-bold">
+              Auto-play: {{ offer.timer }}s
+            </span>
+          </div>
+        </header>
+
         <!-- Controls / Navigation Bar -->
-        <footer class="px-8 py-6 border-t border-slate-900 bg-slate-950/80 backdrop-blur shrink-0 flex items-center justify-between">
+        <footer class="absolute bottom-0 left-0 right-0 z-40 px-8 py-6 flex items-center justify-between bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent">
           <button
             @click="exitPresentationMode"
-            class="rounded-xl border border-slate-800 bg-slate-900/60 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-white transition active:scale-95"
+            class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-white transition active:scale-95"
           >
             ❌ Exit Play
           </button>
@@ -139,7 +139,7 @@
             <button
               @click="prevItem"
               :disabled="!offer.items || offer.items.length <= 1"
-              class="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
+              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
             >
               ◀ Previous
             </button>
@@ -147,7 +147,7 @@
             <!-- Pause / Play Toggle -->
             <button
               @click="togglePause"
-              class="rounded-xl border border-slate-800 bg-slate-900 px-6 py-2.5 text-xs font-bold transition active:scale-95 font-bold"
+              class="rounded-xl border border-slate-800 bg-slate-900/80 px-6 py-2.5 text-xs font-bold transition active:scale-95 font-bold"
               :class="isPaused ? 'text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30' : 'text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30'"
             >
               {{ isPaused ? '▶ Resume timer' : '⏸ Pause timer' }}
@@ -157,7 +157,7 @@
             <button
               @click="nextItem"
               :disabled="!offer.items || offer.items.length <= 1"
-              class="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
+              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
             >
               Next ▶
             </button>
@@ -423,6 +423,10 @@ function getItemStyle(idx) {
       pointerEvents: 'none',
       position: 'absolute',
       zIndex: 0,
+      width: `${cardWidthVal}vw`,
+      maxWidth: maxW,
+      height: '100vh',
+      maxHeight: 'none',
       transition: transitionStyle
     }
   }
@@ -442,8 +446,8 @@ function getItemStyle(idx) {
     position: 'absolute',
     width: `${cardWidthVal}vw`,
     maxWidth: maxW,
-    height: '70vh',
-    maxHeight: '900px',
+    height: '100vh',
+    maxHeight: 'none',
     transition: transitionStyle,
     pointerEvents: isActive ? 'auto' : 'none'
   }
