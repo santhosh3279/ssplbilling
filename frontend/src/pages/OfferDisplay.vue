@@ -378,6 +378,7 @@ const saving = ref(false)
 // Form structure
 const emptyForm = () => ({
   name: null,
+  modified: null,
   heading: '',
   pageaddress: '',
   tile_grid: '4',
@@ -437,6 +438,7 @@ async function selectOffer(name) {
     })
     form.value = {
       name: doc.name,
+      modified: doc.modified,
       heading: doc.heading || '',
       pageaddress: doc.pageaddress || '',
       tile_grid: doc.tile_grid || '4',
@@ -568,6 +570,7 @@ async function handleSave() {
       pageaddress: form.value.pageaddress.trim(),
       tile_grid: form.value.tile_grid,
       timer: parseInt(form.value.timer) || 0,
+      ...(form.value.modified && { modified: form.value.modified }),
       items: form.value.items.map(i => ({
         ...(i.name && { name: i.name }),
         doctype: 'Offer-Item',
