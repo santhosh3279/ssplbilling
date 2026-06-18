@@ -36,6 +36,7 @@ export const BILLER_ROUTES = new Set([
   'StoreTransfer',
   'PartyLink',
   'Repack',
+  'OfferDisplay',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -150,6 +151,7 @@ const TILE_ROUTE_MAP = {
   'invoice-template':  'Dashboard',
   'stock-template':    'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',
+  'offer-display':     'OfferDisplay',
 }
 
 export function canAccessTile(tileId) {

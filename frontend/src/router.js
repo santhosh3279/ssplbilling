@@ -37,8 +37,15 @@ import PartyLink from './pages/PartyLink.vue'
 import NamingSettings from './pages/NamingSettings.vue'
 import Expense from './pages/expense.vue'
 import Repack from './pages/Repack.vue'
+import OfferDisplay from './pages/OfferDisplay.vue'
 
 const routes = [
+  {
+    path: '/offer-display',
+    name: 'OfferDisplay',
+    component: OfferDisplay,
+    meta: { title: 'Offer Display' },
+  },
   {
     path: '/expense',
     name: 'Expense',
