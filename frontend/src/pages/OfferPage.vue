@@ -48,7 +48,7 @@
 
       <!-- Items Grid Section -->
       <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div class="grid gap-6" :class="gridClass">
           <div
             v-for="item in offer.items"
             :key="item.itemcode"
@@ -129,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 
@@ -139,6 +139,7 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const offer = ref(null)
+let refreshInterval = null
 
 const pageaddress = computedRouteParam()
 
@@ -146,14 +147,51 @@ function computedRouteParam() {
   return route.params.pageaddress
 }
 
-async function loadOffer() {
+const gridClass = computed(() => {
+  const cols = offer.value?.tile_grid || '4'
+  switch (cols) {
+    case '1':
+      return 'grid-cols-1'
+    case '2':
+      return 'grid-cols-1 sm:grid-cols-2'
+    case '4':
+      return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+    case '6':
+      return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'
+    case '9':
+      return 'grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9'
+    default:
+      return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+  }
+})
+
+function startTimer() {
+  stopTimer()
+  const sec = offer.value?.timer
+  if (sec && sec > 0) {
+    refreshInterval = setInterval(() => {
+      loadOffer(true)
+    }, sec * 1000)
+  }
+}
+
+function stopTimer() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
+}
+
+async function loadOffer(silent = false) {
   if (!pageaddress) {
     loading.value = false
     error.value = 'Invalid page address'
     return
   }
 
-  loading.value = true
+  if (!silent) {
+    loading.value = true
+  }
   error.value = null
   try {
     const res = await frappeGet('ssplbilling.api.offer_api.get_offer_details', {
@@ -163,14 +201,21 @@ async function loadOffer() {
     if (res) {
       offer.value = res
       document.title = `${res.heading} | Deals`
+      startTimer()
     } else {
-      error.value = 'Offer not found'
+      if (!silent) {
+        error.value = 'Offer not found'
+      }
     }
   } catch (err) {
     console.error(err)
-    error.value = err.message || 'Failed to load offers'
+    if (!silent) {
+      error.value = err.message || 'Failed to load offers'
+    }
   } finally {
-    loading.value = false
+    if (!silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -180,6 +225,10 @@ function goHome() {
 
 onMounted(() => {
   loadOffer()
+})
+
+onBeforeUnmount(() => {
+  stopTimer()
 })
 </script>
 

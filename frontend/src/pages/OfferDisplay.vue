@@ -158,9 +158,9 @@
                 Offer Information
               </h3>
               
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <!-- Heading -->
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5 md:col-span-2">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
                     Heading <span class="text-[var(--color-danger)]">*</span>
                   </label>
@@ -173,7 +173,7 @@
                 </div>
 
                 <!-- Page Address -->
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-1.5 md:col-span-2">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
                     Page Address <span class="text-[var(--color-danger)]">*</span>
                   </label>
@@ -186,6 +186,40 @@
                   />
                   <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5" v-if="!form.name">
                     This will be used as the unique ID for this document.
+                  </p>
+                </div>
+
+                <!-- Tile Grid -->
+                <div class="flex flex-col gap-1.5 md:col-span-2">
+                  <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
+                    Tile Grid <span class="text-[var(--color-danger)]">*</span>
+                  </label>
+                  <select
+                    v-model="form.tile_grid"
+                    class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
+                  >
+                    <option value="1">1 Column</option>
+                    <option value="2">2 Columns</option>
+                    <option value="4">4 Columns</option>
+                    <option value="6">6 Columns</option>
+                    <option value="9">9 Columns</option>
+                  </select>
+                </div>
+
+                <!-- Timer -->
+                <div class="flex flex-col gap-1.5 md:col-span-2">
+                  <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)] block">
+                    Timer (Seconds)
+                  </label>
+                  <input
+                    v-model="form.timer"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 30 (0 to disable auto-refresh)"
+                    class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
+                  />
+                  <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5">
+                    Time in seconds to auto-refresh/reload offer details (0 to disable).
                   </p>
                 </div>
               </div>
@@ -346,6 +380,8 @@ const emptyForm = () => ({
   name: null,
   heading: '',
   pageaddress: '',
+  tile_grid: '4',
+  timer: 0,
   items: []
 })
 
@@ -403,6 +439,8 @@ async function selectOffer(name) {
       name: doc.name,
       heading: doc.heading || '',
       pageaddress: doc.pageaddress || '',
+      tile_grid: doc.tile_grid || '4',
+      timer: doc.timer || 0,
       items: (doc.items || []).map(i => ({
         name: i.name,
         itemcode: i.itemcode || '',
@@ -528,6 +566,8 @@ async function handleSave() {
       doctype: 'Offer-Items',
       heading: form.value.heading.trim(),
       pageaddress: form.value.pageaddress.trim(),
+      tile_grid: form.value.tile_grid,
+      timer: parseInt(form.value.timer) || 0,
       items: form.value.items.map(i => ({
         ...(i.name && { name: i.name }),
         doctype: 'Offer-Item',

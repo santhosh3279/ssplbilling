@@ -180,5 +180,7 @@ def get_offer_details(pageaddress):
 		"name": doc.name,
 		"heading": doc.heading,
 		"pageaddress": doc.pageaddress,
+		"tile_grid": doc.tile_grid or "4",
+		"timer": doc.timer or 0,
 		"items": items
 	}

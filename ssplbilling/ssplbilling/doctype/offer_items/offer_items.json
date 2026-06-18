@@ -7,6 +7,8 @@
  "field_order": [
   "heading",
   "pageaddress",
+  "tile_grid",
+  "timer",
   "items"
  ],
  "fields": [
@@ -24,6 +26,18 @@
    "label": "Page Address",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "default": "4",
+   "fieldname": "tile_grid",
+   "fieldtype": "Select",
+   "label": "Tile Grid",
+   "options": "1\n2\n4\n6\n9"
+  },
+  {
+   "fieldname": "timer",
+   "fieldtype": "Int",
+   "label": "Timer"
   },
   {
    "fieldname": "items",
