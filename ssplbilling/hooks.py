@@ -7,6 +7,7 @@ app_license = "mit"
 
 website_route_rules = [
 	{"from_route": "/frontend/<path:path>", "to_route": "frontend"},
+	{"from_route": "/offer/<path:path>", "to_route": "frontend"},
 ]
 
 fixtures = [

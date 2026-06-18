@@ -270,7 +270,13 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.DEV ? '/' : '/frontend'),
+  history: createWebHistory(
+    import.meta.env.DEV
+      ? '/'
+      : window.location.pathname.startsWith('/offer/')
+      ? '/'
+      : '/frontend'
+  ),
   routes,
 })
 

@@ -603,7 +603,11 @@ async function loadOffer(silent = false) {
 }
 
 function goHome() {
-  router.push('/')
+  if (import.meta.env.DEV) {
+    router.push('/')
+  } else {
+    window.location.href = '/frontend/'
+  }
 }
 
 onMounted(() => {
