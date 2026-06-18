@@ -29,52 +29,55 @@
       <!-- Presentation Mode Overlay (Fullscreen) -->
       <div v-if="isFullscreen" class="fixed inset-0 z-50 bg-slate-950 text-white font-sans overflow-hidden select-none">
         
-        <!-- Main Cards Area (Circular slider layout - now fills screen height) -->
+        <!-- Main Cards Area (Circular slider layout - now stays above footer controls) -->
         <main class="absolute inset-0 w-full h-screen flex items-center justify-center overflow-hidden">
           <div class="relative w-full h-screen flex items-center justify-center">
             <div
               v-for="(item, idx) in offer.items"
               :key="item.itemcode"
               :style="getItemStyle(idx)"
-              class="absolute flex flex-col bg-slate-900/90 shadow-2xl hover:border-indigo-500/50 transition-all duration-300 pt-24 pb-28 px-8 border-x border-slate-800"
+              class="absolute flex flex-col bg-slate-900/90 shadow-2xl hover:border-indigo-500/50 transition-all duration-300 p-6 border border-slate-800/80 rounded-2xl justify-between"
             >
-              <!-- Discount Badge Overlay (Move to the top of each tile) -->
-              <div v-if="item.discount_type && item.discount_desc" class="absolute top-20 left-6 z-30 bg-slate-950/95 border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm max-w-[85%]">
-                <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2.5 py-1 text-center tracking-wider shrink-0">
-                  Active Offer
-                </div>
-                <div class="p-2 flex flex-col gap-1 font-bold text-[10px] text-amber-400 whitespace-normal break-words leading-snug">
-                  <div 
-                    v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-                    :key="lIdx"
-                  >
-                    {{ line }}
+              <!-- Top side for offer -->
+              <div class="h-14 shrink-0 flex items-start justify-start w-full">
+                <div v-if="item.discount_type && item.discount_desc" class="bg-slate-950/95 border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full">
+                  <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider">
+                    Active Offer
+                  </div>
+                  <div class="p-1.5 flex flex-col gap-0.5 font-bold text-[10px] text-amber-400 whitespace-normal break-words leading-tight">
+                    <div 
+                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                      :key="lIdx"
+                    >
+                      {{ line }}
+                    </div>
                   </div>
                 </div>
+                <div v-else class="h-full"></div>
               </div>
 
-              <!-- Image or Placeholder -->
-              <div class="flex-1 min-h-0 relative aspect-video w-full bg-slate-950/80 rounded-xl flex items-center justify-center p-4 border border-slate-800/50 overflow-hidden mb-4">
+              <!-- Middle section for image (Normal size, no stretch) -->
+              <div class="flex-1 flex items-center justify-center min-h-0 py-2">
                 <img
                   v-if="item.image"
                   :src="item.image"
                   :alt="item.itemname"
-                  class="max-w-full max-h-full object-contain"
+                  class="max-h-[35vh] max-w-full object-contain"
                 />
                 <!-- Placeholder -->
                 <div
                   v-else
-                  class="w-full h-full rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
+                  class="w-full h-full min-h-[20vh] rounded-xl bg-gradient-to-br from-slate-950 to-slate-900 flex flex-col items-center justify-center text-center p-4 select-none border border-slate-800/30"
                 >
-                  <div class="text-4xl mb-2">📦</div>
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <div class="text-3xl mb-1">📦</div>
+                  <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500">
                     No Image Available
                   </span>
                 </div>
               </div>
 
-              <!-- Content details -->
-              <div class="shrink-0 space-y-3">
+              <!-- Bottom side for item details -->
+              <div class="shrink-0 space-y-2 pt-3 border-t border-slate-800/60">
                 <h3 
                   class="font-extrabold text-slate-100 line-clamp-2 leading-tight"
                   :class="presentationCols >= 6 ? 'text-[11px]' : 'text-base md:text-lg'"
@@ -84,7 +87,7 @@
                 
                 <div 
                   v-if="presentationCols < 6"
-                  class="flex items-center justify-between border-t border-slate-800/60 pt-3"
+                  class="flex items-center justify-between"
                 >
                   <div class="flex flex-col">
                     <span class="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Item Code</span>
@@ -119,8 +122,11 @@
             <span class="bg-slate-900/90 px-3 py-1 rounded-full border border-slate-800 font-bold">
               Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}
             </span>
-            <span v-if="offer.timer > 0" class="text-[10px] uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full border border-indigo-500/30 font-bold">
-              Auto-play: {{ offer.timer }}s
+            <span v-if="offer.timer > 0" class="text-xs uppercase tracking-wider bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/30 font-bold flex items-center gap-1.5 animate-pulse">
+              <span>Next:</span>
+              <span class="font-mono text-sm font-black bg-indigo-950/80 px-2 py-0.5 rounded text-indigo-300">
+                {{ isPaused ? 'Paused' : `${slideshowTimeLeft}s` }}
+              </span>
             </span>
           </div>
         </header>
@@ -304,7 +310,8 @@ const isFullscreen = ref(false)
 const activeIndex = ref(0)
 const prevActiveIndex = ref(0)
 const isPaused = ref(false)
-let slideshowTimer = null
+const slideshowTimeLeft = ref(0)
+let slideshowInterval = null
 
 watch(activeIndex, (newVal, oldVal) => {
   prevActiveIndex.value = oldVal
@@ -425,7 +432,8 @@ function getItemStyle(idx) {
       zIndex: 0,
       width: `${cardWidthVal}vw`,
       maxWidth: maxW,
-      height: '100vh',
+      height: '76vh',
+      top: '6vh',
       maxHeight: 'none',
       transition: transitionStyle
     }
@@ -446,7 +454,8 @@ function getItemStyle(idx) {
     position: 'absolute',
     width: `${cardWidthVal}vw`,
     maxWidth: maxW,
-    height: '100vh',
+    height: '76vh',
+    top: '6vh',
     maxHeight: 'none',
     transition: transitionStyle,
     pointerEvents: isActive ? 'auto' : 'none'
@@ -475,15 +484,20 @@ function startSlideshow() {
   stopSlideshow()
   if (isPaused.value) return
   const sec = parseInt(offer.value?.timer) || 8 // Default to 8 seconds
-  slideshowTimer = setTimeout(() => {
-    nextItem()
-  }, sec * 1000)
+  slideshowTimeLeft.value = sec
+  slideshowInterval = setInterval(() => {
+    if (slideshowTimeLeft.value > 1) {
+      slideshowTimeLeft.value--
+    } else {
+      nextItem()
+    }
+  }, 1000)
 }
 
 function stopSlideshow() {
-  if (slideshowTimer) {
-    clearTimeout(slideshowTimer)
-    slideshowTimer = null
+  if (slideshowInterval) {
+    clearInterval(slideshowInterval)
+    slideshowInterval = null
   }
 }
 
