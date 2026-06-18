@@ -401,9 +401,10 @@ function getItemStyle(idx) {
   }
 
   if (!isVisible) {
+    const translateVal = diff < 0 ? -100 : 100
     return {
       opacity: 0,
-      transform: `translateX(${diff * 100}%) scale(0.7)`,
+      transform: `translateX(${translateVal}vw) scale(0.7)`,
       pointerEvents: 'none',
       position: 'absolute',
       zIndex: 0,
