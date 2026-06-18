@@ -50,7 +50,7 @@
         </header>
 
         <!-- Main Cards Area -->
-        <main class="flex-1 flex items-center justify-center p-8 overflow-hidden">
+        <main class="flex-1 overflow-y-auto p-8 flex items-start md:items-center justify-center">
           <div class="grid w-full gap-6 items-stretch" :class="presentationGridClass">
             <div
               v-for="item in currentSlideItems"
@@ -302,21 +302,7 @@ function computedRouteParam() {
 }
 
 const gridClass = computed(() => {
-  const cols = offer.value?.tile_grid || '4'
-  switch (cols) {
-    case '1':
-      return 'grid-cols-1'
-    case '2':
-      return 'grid-cols-1 sm:grid-cols-2'
-    case '4':
-      return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-    case '6':
-      return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'
-    case '9':
-      return 'grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9'
-    default:
-      return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-  }
+  return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
 })
 
 // Presentation Grid Columns Configuration
