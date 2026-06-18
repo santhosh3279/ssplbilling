@@ -367,24 +367,32 @@ const presentationCols = computed(() => {
   return Math.min(parseInt(offer.value.tile_grid) || 4, offer.value.items.length)
 })
 
+// Helper to compute circular difference centered around the active visible columns range [-1, C]
+function getCircularDiff(idx, activeIdx) {
+  if (!offer.value?.items?.length) return 0
+  const N = offer.value.items.length
+  const C = presentationCols.value
+  
+  let diff = idx - activeIdx
+  const center = (C - 1) / 2
+  const halfN = N / 2
+  
+  let targetDiff = diff - center
+  while (targetDiff < -halfN) targetDiff += N
+  while (targetDiff >= halfN) targetDiff -= N
+  return targetDiff + center
+}
+
 // Detect if an item is wrapping around the boundary of the circular list to disable slide transition.
 function isItemWrapping(idx) {
   if (!offer.value?.items?.length) return false
   const N = offer.value.items.length
   if (N <= 2) return false
 
-  // Current diff
-  let diff = idx - activeIndex.value
-  if (diff < -Math.floor(N / 2)) diff += N
-  if (diff > Math.floor((N - 1) / 2)) diff -= N
+  const diff = getCircularDiff(idx, activeIndex.value)
+  const prevDiff = getCircularDiff(idx, prevActiveIndex.value)
 
-  // Previous diff
-  let prevDiff = idx - prevActiveIndex.value
-  if (prevDiff < -Math.floor(N / 2)) prevDiff += N
-  if (prevDiff > Math.floor((N - 1) / 2)) prevDiff -= N
-
-  const diffChange = diff - prevDiff
-  return Math.abs(diffChange) > 1
+  return Math.abs(diff - prevDiff) > 1
 }
 
 // Circular Carousel Position and Styling Calculator
@@ -393,11 +401,7 @@ function getItemStyle(idx) {
   const N = offer.value.items.length
   const C = presentationCols.value
   
-  let diff = idx - activeIndex.value
-  
-  // Circular wrap around shortest path
-  if (diff < -Math.floor(N / 2)) diff += N
-  if (diff > Math.floor((N - 1) / 2)) diff -= N
+  const diff = getCircularDiff(idx, activeIndex.value)
 
   // Determine visibility: active columns [0, C-1] plus one peeking on each side
   const isVisible = (diff >= -1 && diff <= C) || (N === C + 1 && diff === -1)
