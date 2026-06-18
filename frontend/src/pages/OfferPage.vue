@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white">
+  <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white">
     <!-- Loading Screen -->
     <div v-if="loading" class="flex-1 flex flex-col items-center justify-center p-8">
       <div class="relative w-16 h-16 mb-4">
