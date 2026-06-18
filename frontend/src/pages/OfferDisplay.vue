@@ -73,9 +73,17 @@
                 </div>
               </div>
 
-              <!-- Page Address & Info -->
               <div class="text-[11px] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span>Address: <strong class="text-[var(--color-text)]">{{ offer.pageaddress }}</strong></span>
+                <span>Address: 
+                  <a 
+                    :href="`/offer/${offer.pageaddress}`" 
+                    target="_blank" 
+                    class="text-[var(--color-info)] hover:underline font-mono"
+                    @click.stop
+                  >
+                    /offer/{{ offer.pageaddress }}
+                  </a>
+                </span>
                 <span>•</span>
                 <span>ID: <span class="font-mono text-[var(--color-text-muted)]">{{ offer.name }}</span></span>
               </div>
@@ -187,6 +195,14 @@
                   <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5" v-if="!form.name">
                     This will be used as the unique ID for this document.
                   </p>
+                  <a
+                    v-if="form.name"
+                    :href="`/offer/${form.pageaddress}`"
+                    target="_blank"
+                    class="text-[10px] text-[var(--color-info)] hover:underline mt-1 font-mono inline-flex items-center gap-1 w-fit"
+                  >
+                    🔗 View Page: /offer/{{ form.pageaddress }}
+                  </a>
                 </div>
 
                 <!-- Tile Grid -->

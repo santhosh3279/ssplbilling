@@ -262,7 +262,7 @@ const routes = [
     meta: { title: 'GST Ledger' },
   },
   {
-    path: '/:pageaddress',
+    path: '/offer/:pageaddress',
     name: 'OfferPage',
     component: OfferPage,
     meta: { public: true, title: 'Offers' },
