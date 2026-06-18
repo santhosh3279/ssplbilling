@@ -51,7 +51,7 @@
 
         <!-- Main Cards Area (Circular slider layout) -->
         <main class="flex-1 relative w-full flex items-center justify-center overflow-hidden p-8">
-          <div class="relative w-full h-[60vh] flex items-center justify-center">
+          <div class="relative w-full h-[74vh] flex items-center justify-center">
             <div
               v-for="(item, idx) in offer.items"
               :key="item.itemcode"
@@ -406,28 +406,10 @@ function getItemStyle(idx) {
   // Determine visibility: active columns [0, C-1] plus one peeking on each side
   const isVisible = (diff >= -1 && diff <= C) || (N === C + 1 && diff === -1)
   
-  // Choose card size and spacing based on column count
-  let cardWidthVal = 18 // in vw
-  let maxW = '250px'
-  let gapVal = 2 // in vw
-  
-  if (C === 1) {
-    cardWidthVal = 50
-    maxW = '550px'
-    gapVal = 4
-  } else if (C === 2) {
-    cardWidthVal = 35
-    maxW = '400px'
-    gapVal = 3
-  } else if (C === 6) {
-    cardWidthVal = 12
-    maxW = '180px'
-    gapVal = 1.5
-  } else if (C === 9) {
-    cardWidthVal = 8
-    maxW = '120px'
-    gapVal = 1
-  }
+  // Choose card size and spacing by splitting the screen to C + 1 and subtracting a dynamic gap
+  const gapVal = C >= 9 ? 0.8 : (C >= 6 ? 1.0 : 1.5)
+  const cardWidthVal = (100 / (C + 1)) - gapVal
+  const maxW = '1200px'
 
   const transitionStyle = isItemWrapping(idx)
     ? 'none'
@@ -460,8 +442,8 @@ function getItemStyle(idx) {
     position: 'absolute',
     width: `${cardWidthVal}vw`,
     maxWidth: maxW,
-    height: '50vh',
-    maxHeight: '450px',
+    height: '70vh',
+    maxHeight: '900px',
     transition: transitionStyle,
     pointerEvents: isActive ? 'auto' : 'none'
   }
