@@ -40,8 +40,8 @@
           
           <!-- Slide Indicator -->
           <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
-            <span class="bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-              Page {{ currentPage + 1 }} / {{ totalPages }}
+            <span class="bg-slate-900 px-3 py-1 rounded-full border border-slate-800 font-bold">
+              Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}
             </span>
             <span v-if="offer.timer > 0" class="text-[10px] uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full border border-indigo-500/30 font-bold">
               Auto-play: {{ offer.timer }}s
@@ -49,13 +49,14 @@
           </div>
         </header>
 
-        <!-- Main Cards Area -->
-        <main class="flex-1 overflow-y-auto p-8 flex items-start md:items-center justify-center">
-          <div class="grid w-full gap-6 items-stretch" :class="presentationGridClass">
+        <!-- Main Cards Area (Circular slider layout) -->
+        <main class="flex-1 relative w-full flex items-center justify-center overflow-hidden p-8">
+          <div class="relative w-full h-[60vh] flex items-center justify-center">
             <div
-              v-for="item in currentSlideItems"
+              v-for="(item, idx) in offer.items"
               :key="item.itemcode"
-              class="relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 shadow-2xl hover:border-indigo-500/50 transition-all duration-300"
+              :style="getItemStyle(idx)"
+              class="absolute flex flex-col rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl hover:border-indigo-500/50 transition-all duration-300"
             >
               <!-- Image or Placeholder -->
               <div class="flex-1 min-h-0 relative aspect-video w-full bg-slate-950/80 rounded-xl flex items-center justify-center p-4 border border-slate-800/50 overflow-hidden mb-4">
@@ -127,8 +128,8 @@
           <div class="flex items-center gap-4">
             <!-- Previous Button -->
             <button
-              @click="prevPage"
-              :disabled="totalPages <= 1"
+              @click="prevItem"
+              :disabled="!offer.items || offer.items.length <= 1"
               class="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
             >
               ◀ Previous
@@ -145,8 +146,8 @@
 
             <!-- Next Button -->
             <button
-              @click="nextPage"
-              :disabled="totalPages <= 1"
+              @click="nextItem"
+              :disabled="!offer.items || offer.items.length <= 1"
               class="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
             >
               Next ▶
@@ -291,7 +292,7 @@ let refreshInterval = null
 
 // Presentation Mode States
 const isFullscreen = ref(false)
-const currentPage = ref(0)
+const activeIndex = ref(0)
 const isPaused = ref(false)
 let slideshowTimer = null
 
@@ -305,38 +306,50 @@ const gridClass = computed(() => {
   return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
 })
 
-// Presentation Grid Columns Configuration
-const presentationGridClass = computed(() => {
-  const cols = offer.value?.tile_grid || '4'
-  switch (cols) {
-    case '1':
-      return 'grid-cols-1 max-w-2xl mx-auto h-[60vh]'
-    case '2':
-      return 'grid-cols-1 md:grid-cols-2 h-[65vh]'
-    case '4':
-      return 'grid-cols-2 md:grid-cols-4 h-[70vh]'
-    case '6':
-      return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-[70vh]'
-    case '9':
-      return 'grid-cols-3 md:grid-cols-5 lg:grid-cols-9 h-[70vh]'
-    default:
-      return 'grid-cols-2 md:grid-cols-4 h-[70vh]'
+// Circular Carousel Position and Styling Calculator
+function getItemStyle(idx) {
+  if (!offer.value?.items?.length) return {}
+  const N = offer.value.items.length
+  let diff = idx - activeIndex.value
+  
+  // Circular wrap around shortest path
+  if (diff < -Math.floor(N / 2)) diff += N
+  if (diff > Math.floor((N - 1) / 2)) diff -= N
+
+  // Only render active card and one card to its left and right for cleanliness
+  const isVisible = Math.abs(diff) <= 1 || (N === 2 && diff === -1)
+  
+  if (!isVisible) {
+    return {
+      opacity: 0,
+      transform: `translateX(${diff * 100}%) scale(0.7)`,
+      pointerEvents: 'none',
+      position: 'absolute',
+      zIndex: 0,
+      transition: 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)'
+    }
   }
-})
 
-// Slideshow Navigation Helpers
-const totalPages = computed(() => {
-  if (!offer.value?.items) return 0
-  const size = parseInt(offer.value.tile_grid) || 4
-  return Math.ceil(offer.value.items.length / size)
-})
+  const opacity = diff === 0 ? 1 : 0.5
+  const scale = diff === 0 ? 1.05 : 0.85
+  const zIndex = diff === 0 ? 20 : 10
+  
+  // Horizontal offset using viewport-width for responsiveness
+  const translateX = diff * 55 // 55vw offsets left and right cards
 
-const currentSlideItems = computed(() => {
-  if (!offer.value?.items) return []
-  const size = parseInt(offer.value.tile_grid) || 4
-  const start = currentPage.value * size
-  return offer.value.items.slice(start, start + size)
-})
+  return {
+    opacity: opacity,
+    transform: `translateX(${translateX}vw) scale(${scale})`,
+    zIndex: zIndex,
+    position: 'absolute',
+    width: '50vw',
+    maxWidth: '550px',
+    height: '50vh',
+    maxHeight: '450px',
+    transition: 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)',
+    pointerEvents: diff === 0 ? 'auto' : 'none'
+  }
+}
 
 function startTimer() {
   stopTimer()
@@ -361,7 +374,7 @@ function startSlideshow() {
   if (isPaused.value) return
   const sec = parseInt(offer.value?.timer) || 8 // Default to 8 seconds
   slideshowTimer = setTimeout(() => {
-    nextPage()
+    nextItem()
   }, sec * 1000)
 }
 
@@ -377,15 +390,17 @@ function resetSlideshowTimer() {
   startSlideshow()
 }
 
-function nextPage() {
-  if (totalPages.value <= 1) return
-  currentPage.value = (currentPage.value + 1) % totalPages.value
+function nextItem() {
+  if (!offer.value?.items?.length) return
+  const N = offer.value.items.length
+  activeIndex.value = (activeIndex.value + 1) % N
   resetSlideshowTimer()
 }
 
-function prevPage() {
-  if (totalPages.value <= 1) return
-  currentPage.value = (currentPage.value - 1 + totalPages.value) % totalPages.value
+function prevItem() {
+  if (!offer.value?.items?.length) return
+  const N = offer.value.items.length
+  activeIndex.value = (activeIndex.value - 1 + N) % N
   resetSlideshowTimer()
 }
 
@@ -403,7 +418,7 @@ function enterPresentationMode() {
   if (docEl.requestFullscreen) {
     docEl.requestFullscreen().then(() => {
       isFullscreen.value = true
-      currentPage.value = 0
+      activeIndex.value = 0
       isPaused.value = false
       startSlideshow()
     }).catch(err => {
@@ -411,7 +426,7 @@ function enterPresentationMode() {
     })
   } else {
     isFullscreen.value = true
-    currentPage.value = 0
+    activeIndex.value = 0
     isPaused.value = false
     startSlideshow()
   }
