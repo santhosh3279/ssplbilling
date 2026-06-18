@@ -271,10 +271,10 @@
       </template>
 
       <!-- Floating Play Button (Visible in normal web view) -->
-      <div v-if="!isFullscreen && offer" class="fixed bottom-6 right-6 z-40">
+      <div v-if="!isFullscreen && offer" class="fixed bottom-10 right-10 z-40">
         <button
           @click="enterPresentationMode"
-          class="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-3 text-xs font-bold text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 border border-indigo-500"
+          class="flex items-center gap-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-10 py-5 text-2xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 border border-indigo-500"
         >
           <span>📺 Play Slideshow</span>
         </button>
