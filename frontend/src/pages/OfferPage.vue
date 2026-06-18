@@ -287,7 +287,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 
@@ -302,8 +302,13 @@ let refreshInterval = null
 // Presentation Mode States
 const isFullscreen = ref(false)
 const activeIndex = ref(0)
+const prevActiveIndex = ref(0)
 const isPaused = ref(false)
 let slideshowTimer = null
+
+watch(activeIndex, (newVal, oldVal) => {
+  prevActiveIndex.value = oldVal
+})
 
 const pageaddress = computedRouteParam()
 
@@ -362,6 +367,26 @@ const presentationCols = computed(() => {
   return Math.min(parseInt(offer.value.tile_grid) || 4, offer.value.items.length)
 })
 
+// Detect if an item is wrapping around the boundary of the circular list to disable slide transition.
+function isItemWrapping(idx) {
+  if (!offer.value?.items?.length) return false
+  const N = offer.value.items.length
+  if (N <= 2) return false
+
+  // Current diff
+  let diff = idx - activeIndex.value
+  if (diff < -Math.floor(N / 2)) diff += N
+  if (diff > Math.floor((N - 1) / 2)) diff -= N
+
+  // Previous diff
+  let prevDiff = idx - prevActiveIndex.value
+  if (prevDiff < -Math.floor(N / 2)) prevDiff += N
+  if (prevDiff > Math.floor((N - 1) / 2)) prevDiff -= N
+
+  const diffChange = diff - prevDiff
+  return Math.abs(diffChange) > 1
+}
+
 // Circular Carousel Position and Styling Calculator
 function getItemStyle(idx) {
   if (!offer.value?.items?.length) return {}
@@ -400,6 +425,10 @@ function getItemStyle(idx) {
     gapVal = 1
   }
 
+  const transitionStyle = isItemWrapping(idx)
+    ? 'none'
+    : 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)'
+
   if (!isVisible) {
     const translateVal = diff < 0 ? -100 : 100
     return {
@@ -408,7 +437,7 @@ function getItemStyle(idx) {
       pointerEvents: 'none',
       position: 'absolute',
       zIndex: 0,
-      transition: 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)'
+      transition: transitionStyle
     }
   }
 
@@ -429,7 +458,7 @@ function getItemStyle(idx) {
     maxWidth: maxW,
     height: '50vh',
     maxHeight: '450px',
-    transition: 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)',
+    transition: transitionStyle,
     pointerEvents: isActive ? 'auto' : 'none'
   }
 }
