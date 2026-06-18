@@ -39,12 +39,12 @@
               class="absolute flex flex-col bg-slate-900/90 shadow-2xl hover:border-indigo-500/50 transition-all duration-300 p-6 border border-slate-800/80 rounded-2xl justify-between"
             >
               <!-- Top side for offer -->
-              <div class="h-14 shrink-0 flex items-start justify-start w-full">
+              <div class="shrink-0 flex items-start justify-start w-full mb-2">
                 <div v-if="item.discount_type && item.discount_desc" class="bg-slate-950/95 border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full">
                   <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider">
                     Active Offer
                   </div>
-                  <div class="p-1.5 flex flex-col gap-0.5 font-bold text-[10px] text-amber-400 whitespace-normal break-words leading-tight">
+                  <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] text-amber-400 whitespace-normal break-words leading-tight">
                     <div 
                       v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
                       :key="lIdx"
@@ -53,7 +53,6 @@
                     </div>
                   </div>
                 </div>
-                <div v-else class="h-full"></div>
               </div>
 
               <!-- Middle section for image (Normal size, no stretch) -->
