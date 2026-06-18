@@ -98,8 +98,8 @@
 
                 <!-- Discount Badge -->
                 <div v-if="item.discount_type" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between bg-[var(--color-warning)]/5 p-2 rounded-xl">
-                  <span class="text-[10px] uppercase font-black text-[var(--color-warning)] tracking-wider flex items-center gap-1">
-                    🏷️ Offer
+                  <span class="text-[10px] uppercase font-black text-[var(--color-warning)] tracking-wider">
+                    Offer
                   </span>
                   <span class="font-bold text-xs text-[var(--color-warning)]">
                     {{ item.discount_desc }}
