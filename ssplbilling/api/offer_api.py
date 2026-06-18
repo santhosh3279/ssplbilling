@@ -30,7 +30,7 @@ def get_offer_details(pageaddress):
 		fields=[
 			"name", "rule_name", "discount_type", "applies_to", 
 			"product_group", "start_date", "end_date", "percentage_discount",
-			"min_quantity", "free_quantity"
+			"min_quantity", "free_quantity", "recursive", "custom_logic_type"
 		],
 		ignore_permissions=True
 	)
@@ -55,7 +55,9 @@ def get_offer_details(pageaddress):
 	# Pre-fetch child items linked to enabled rules
 	rule_names = [r.name for r in candidate_rules]
 	item_rules = {}
+	custom_logic_rows = {}
 	if rule_names:
+		# 1. Fetch child items for item scope rules
 		child_items = frappe.get_all(
 			"Discount Rule Item",
 			filters={"parent": ["in", rule_names]},
@@ -64,6 +66,17 @@ def get_offer_details(pageaddress):
 		)
 		for ci in child_items:
 			item_rules.setdefault(ci.item_code, []).append(ci.parent)
+
+		# 2. Fetch custom logic table rows for tiered rules
+		logic_rows = frappe.get_all(
+			"Discount Rule Custom Logic",
+			filters={"parent": ["in", rule_names]},
+			fields=["parent", "min_quantity", "nos", "percentage"],
+			ignore_permissions=True,
+			order_by="min_quantity asc"
+		)
+		for lr in logic_rows:
+			custom_logic_rows.setdefault(lr.parent, []).append(lr)
 
 	# Pre-fetch item group map for offer items
 	item_codes = [item.itemcode for item in doc.items]
@@ -110,17 +123,49 @@ def get_offer_details(pageaddress):
 		discount_desc = None
 		if matched_rule:
 			discount_type = matched_rule.discount_type
+			rows = custom_logic_rows.get(matched_rule.name, [])
+			
 			if discount_type == "Percentage Discount":
-				pct = matched_rule.percentage_discount
-				discount_desc = f"{int(pct)}% Off" if pct.is_integer() else f"{pct}% Off"
+				if rows:
+					desc_parts = []
+					for r in rows:
+						min_q = int(r.min_quantity) if r.min_quantity.is_integer() else r.min_quantity
+						pct_val = int(r.percentage) if r.percentage.is_integer() else r.percentage
+						desc_parts.append(f"Qty {min_q}+: {pct_val}% Off")
+					discount_desc = " | ".join(desc_parts)
+				else:
+					pct = matched_rule.percentage_discount
+					pct_str = f"{int(pct)}%" if pct.is_integer() else f"{pct}%"
+					min_q = matched_rule.min_quantity
+					if min_q and min_q > 0:
+						min_str = str(int(min_q)) if min_q.is_integer() else str(min_q)
+						discount_desc = f"{pct_str} Off (Min Qty: {min_str})"
+					else:
+						discount_desc = f"{pct_str} Off"
+						
 			elif discount_type == "Product Discount":
 				min_q = matched_rule.min_quantity
 				free_q = matched_rule.free_quantity
 				min_str = str(int(min_q)) if min_q.is_integer() else str(min_q)
 				free_str = str(int(free_q)) if free_q.is_integer() else str(free_q)
-				discount_desc = f"Buy {min_str} Get {free_str} Free"
+				recursive_str = " (Recursive)" if matched_rule.recursive else ""
+				discount_desc = f"Buy {min_str} Get {free_str} Free{recursive_str}"
+				
 			elif discount_type == "Custom Logic":
-				discount_desc = "Offer"
+				logic_type = matched_rule.custom_logic_type
+				if rows:
+					desc_parts = []
+					for r in rows:
+						min_q = int(r.min_quantity) if r.min_quantity.is_integer() else r.min_quantity
+						if logic_type == "Product":
+							nos_val = int(r.nos) if r.nos.is_integer() else r.nos
+							desc_parts.append(f"Buy {min_q} Get {nos_val} Free")
+						else:
+							pct_val = int(r.percentage) if r.percentage.is_integer() else r.percentage
+							desc_parts.append(f"Qty {min_q}+: {pct_val}% Off")
+					discount_desc = " | ".join(desc_parts)
+				else:
+					discount_desc = "Offer"
 
 		items.append({
 			"itemcode": item_code,
