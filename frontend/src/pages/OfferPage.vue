@@ -56,6 +56,20 @@
           >
             <!-- Image / Placeholder Frame -->
             <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
+              <!-- Stacked Offer Badges Overlay -->
+              <div v-if="item.discount_type && item.discount_desc" class="absolute top-3 left-3 flex flex-col gap-1 z-10 items-start pointer-events-none">
+                <span class="text-[8px] uppercase font-black bg-[var(--color-warning)] text-black px-1.5 py-0.5 rounded shadow-sm">
+                  Offer
+                </span>
+                <span 
+                  v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                  :key="lIdx"
+                  class="font-bold text-[9px] bg-slate-900/95 text-[var(--color-warning)] border border-[var(--color-warning)]/30 px-2 py-0.5 rounded shadow-md backdrop-blur-sm whitespace-nowrap"
+                >
+                  {{ line }}
+                </span>
+              </div>
+
               <img
                 v-if="item.image"
                 :src="item.image"
@@ -93,16 +107,6 @@
                   <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">Barcode</span>
                   <span class="font-mono text-xs font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all">
                     {{ item.barcode }}
-                  </span>
-                </div>
-
-                <!-- Discount Badge -->
-                <div v-if="item.discount_type" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between bg-[var(--color-warning)]/5 p-2 rounded-xl">
-                  <span class="text-[10px] uppercase font-black text-[var(--color-warning)] tracking-wider">
-                    Offer
-                  </span>
-                  <span class="font-bold text-xs text-[var(--color-warning)]">
-                    {{ item.discount_desc }}
                   </span>
                 </div>
               </div>
