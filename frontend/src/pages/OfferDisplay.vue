@@ -379,6 +379,8 @@ const saving = ref(false)
 const emptyForm = () => ({
   name: null,
   modified: null,
+  creation: null,
+  owner: null,
   heading: '',
   pageaddress: '',
   tile_grid: '4',
@@ -439,6 +441,8 @@ async function selectOffer(name) {
     form.value = {
       name: doc.name,
       modified: doc.modified,
+      creation: doc.creation,
+      owner: doc.owner,
       heading: doc.heading || '',
       pageaddress: doc.pageaddress || '',
       tile_grid: doc.tile_grid || '4',
@@ -571,6 +575,8 @@ async function handleSave() {
       tile_grid: form.value.tile_grid,
       timer: parseInt(form.value.timer) || 0,
       ...(form.value.modified && { modified: form.value.modified }),
+      ...(form.value.creation && { creation: form.value.creation }),
+      ...(form.value.owner && { owner: form.value.owner }),
       items: form.value.items.map(i => ({
         ...(i.name && { name: i.name }),
         doctype: 'Offer-Item',
