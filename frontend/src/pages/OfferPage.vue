@@ -194,7 +194,7 @@
         </header>
 
         <!-- Items Grid Section -->
-        <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
+        <main class="flex-1 w-full mx-auto px-6 py-10" :class="containerClass">
           <div class="grid gap-6" :class="gridClass">
             <div
               v-for="item in offer.items"
@@ -204,15 +204,15 @@
               <!-- Image / Placeholder Frame -->
               <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
                 <!-- Stacked Offer Badges Overlay -->
-                <div v-if="item.discount_type && item.discount_desc" class="absolute top-2.5 left-2.5 z-10 pointer-events-none flex flex-col bg-slate-900/95 border border-[var(--color-warning)]/30 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm max-w-[85%]">
-                  <div class="bg-[var(--color-warning)] text-black text-[9px] font-black uppercase px-2 py-0.5 text-center tracking-wider shrink-0">
+                <div v-if="item.discount_type && item.discount_desc" class="absolute top-2 left-2 z-10 pointer-events-none flex flex-col bg-slate-900/95 border border-[var(--color-warning)]/30 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm max-w-[90%]">
+                  <div class="bg-[var(--color-warning)] text-black text-[8px] font-black uppercase px-1.5 py-0.5 text-center tracking-wider shrink-0">
                     Offer
                   </div>
-                  <div class="p-1.5 flex flex-col gap-1 font-bold text-[10px] text-[var(--color-warning)] whitespace-normal break-words">
+                  <div class="flex flex-col whitespace-normal break-words font-bold text-[var(--color-warning)]" :class="badgeTextClass">
                     <div 
                       v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
                       :key="lIdx"
-                      class="leading-tight"
+                      class="leading-none"
                     >
                       {{ line }}
                     </div>
@@ -239,12 +239,12 @@
               </div>
 
               <!-- Card Details -->
-              <div class="flex-1 p-5 flex flex-col justify-between gap-4">
+              <div class="flex-1 flex flex-col justify-between" :class="cardPaddingClass">
                 <div class="space-y-1.5">
-                  <h3 class="font-bold text-[14px] text-[var(--color-text)] line-clamp-2 leading-snug group-hover:text-[var(--color-info)] transition-colors" :title="item.itemname">
+                  <h3 class="font-bold text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-info)] transition-colors" :class="cardTitleClass" :title="item.itemname">
                     {{ item.itemname }}
                   </h3>
-                  <div class="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)] font-mono">
+                  <div class="flex items-center gap-1.5 text-[var(--color-text-muted)] font-mono" :class="cardCodeClass">
                     <span class="bg-[var(--color-midlight)] px-1.5 py-0.5 rounded">Code</span>
                     <span>{{ item.itemcode }}</span>
                   </div>
@@ -253,8 +253,8 @@
                 <div class="space-y-2 shrink-0">
                   <!-- Barcode Badge -->
                   <div v-if="item.barcode" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between">
-                    <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">Barcode</span>
-                    <span class="font-mono text-xs font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all">
+                    <span class="uppercase font-bold text-[var(--color-text-muted)] tracking-wider" :class="cardCodeClass">Barcode</span>
+                    <span class="font-mono font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all" :class="cardCodeClass">
                       {{ item.barcode }}
                     </span>
                   </div>
@@ -312,7 +312,48 @@ function computedRouteParam() {
 }
 
 const gridClass = computed(() => {
+  const cols = parseInt(offer.value?.tile_grid) || 4
+  if (cols === 1) return 'grid-cols-1'
+  if (cols === 2) return 'grid-cols-1 sm:grid-cols-2'
+  if (cols === 4) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+  if (cols === 6) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
+  if (cols === 9) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-9'
   return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+})
+
+const containerClass = computed(() => {
+  const cols = parseInt(offer.value?.tile_grid) || 4
+  if (cols >= 9) return 'max-w-[95vw]'
+  if (cols >= 6) return 'max-w-[90vw]'
+  return 'max-w-7xl'
+})
+
+const cardPaddingClass = computed(() => {
+  const cols = parseInt(offer.value?.tile_grid) || 4
+  if (cols >= 9) return 'p-3 gap-2'
+  if (cols >= 6) return 'p-4 gap-3'
+  return 'p-5 gap-4'
+})
+
+const cardTitleClass = computed(() => {
+  const cols = parseInt(offer.value?.tile_grid) || 4
+  if (cols >= 9) return 'text-[11px] leading-tight font-extrabold'
+  if (cols >= 6) return 'text-[12px] leading-snug font-bold'
+  return 'text-[14px] leading-snug font-bold'
+})
+
+const cardCodeClass = computed(() => {
+  const cols = parseInt(offer.value?.tile_grid) || 4
+  if (cols >= 9) return 'text-[8px]'
+  if (cols >= 6) return 'text-[9px]'
+  return 'text-[11px]'
+})
+
+const badgeTextClass = computed(() => {
+  const cols = parseInt(offer.value?.tile_grid) || 4
+  if (cols >= 9) return 'text-[8px] p-1 gap-0.5'
+  if (cols >= 6) return 'text-[8px] p-1 gap-1'
+  return 'text-[10px] p-1.5 gap-1'
 })
 
 // Presentation Column Count Computes the active visible column count (safely limited by available items count)
