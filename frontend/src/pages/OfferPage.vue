@@ -26,96 +26,244 @@
 
     <!-- Main Content -->
     <template v-else>
-      <!-- Premium Hero Header -->
-      <header class="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white px-6 py-12 md:py-16 text-center border-b border-[var(--color-border)] shrink-0">
-        <!-- Abstract glowing circles -->
-        <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+      <!-- Presentation Mode Overlay (Fullscreen) -->
+      <div v-if="isFullscreen" class="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white font-sans overflow-hidden select-none">
         
-        <div class="max-w-4xl mx-auto relative z-10 space-y-4">
-          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-            Active Offers
+        <!-- Header -->
+        <header class="px-8 py-5 flex items-center justify-between border-b border-slate-900 bg-slate-950/80 backdrop-blur shrink-0">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <h1 class="text-lg font-bold tracking-tight text-slate-100">
+              {{ offer.heading }}
+            </h1>
           </div>
-          <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-emerald-200">
-            {{ offer.heading }}
-          </h1>
-          <p class="text-xs md:text-sm text-slate-400 max-w-xl mx-auto font-medium">
-            Explore our curated list of items on discount. Check out the barcodes or codes below to claim the deals.
-          </p>
-        </div>
-      </header>
+          
+          <!-- Slide Indicator -->
+          <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
+            <span class="bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
+              Page {{ currentPage + 1 }} / {{ totalPages }}
+            </span>
+            <span v-if="offer.timer > 0" class="text-[10px] uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full border border-indigo-500/30 font-bold">
+              Auto-play: {{ offer.timer }}s
+            </span>
+          </div>
+        </header>
 
-      <!-- Items Grid Section -->
-      <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
-        <div class="grid gap-6" :class="gridClass">
-          <div
-            v-for="item in offer.items"
-            :key="item.itemcode"
-            class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <!-- Image / Placeholder Frame -->
-            <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
-              <!-- Stacked Offer Badges Overlay -->
-              <div v-if="item.discount_type && item.discount_desc" class="absolute top-2.5 left-2.5 z-10 pointer-events-none flex flex-col bg-slate-900/95 border border-[var(--color-warning)]/30 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm max-w-[85%]">
-                <div class="bg-[var(--color-warning)] text-black text-[9px] font-black uppercase px-2 py-0.5 text-center tracking-wider shrink-0">
-                  Offer
-                </div>
-                <div class="p-1.5 flex flex-col gap-1 font-bold text-[10px] text-[var(--color-warning)] whitespace-normal break-words">
-                  <div 
-                    v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-                    :key="lIdx"
-                    class="leading-tight"
-                  >
-                    {{ line }}
+        <!-- Main Cards Area -->
+        <main class="flex-1 flex items-center justify-center p-8 overflow-hidden">
+          <div class="grid w-full gap-6 items-stretch" :class="presentationGridClass">
+            <div
+              v-for="item in currentSlideItems"
+              :key="item.itemcode"
+              class="relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 shadow-2xl hover:border-indigo-500/50 transition-all duration-300"
+            >
+              <!-- Image or Placeholder -->
+              <div class="flex-1 min-h-0 relative aspect-video w-full bg-slate-950/80 rounded-xl flex items-center justify-center p-4 border border-slate-800/50 overflow-hidden mb-4">
+                <!-- Discount Badge Overlay -->
+                <div v-if="item.discount_type && item.discount_desc" class="absolute top-3 left-3 z-10 bg-slate-950/95 border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm max-w-[85%]">
+                  <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2.5 py-1 text-center tracking-wider shrink-0">
+                    Active Offer
+                  </div>
+                  <div class="p-2 flex flex-col gap-1 font-bold text-[10px] text-amber-400 whitespace-normal break-words leading-snug">
+                    <div 
+                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                      :key="lIdx"
+                    >
+                      {{ line }}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <img
-                v-if="item.image"
-                :src="item.image"
-                :alt="item.itemname"
-                class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
-              <!-- Premium placeholder if no image exists -->
-              <div
-                v-else
-                class="w-full h-full rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
-              >
-                <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">📦</div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  No Image Available
-                </span>
-              </div>
-            </div>
-
-            <!-- Card Details -->
-            <div class="flex-1 p-5 flex flex-col justify-between gap-4">
-              <div class="space-y-1.5">
-                <h3 class="font-bold text-[14px] text-[var(--color-text)] line-clamp-2 leading-snug group-hover:text-[var(--color-info)] transition-colors" :title="item.itemname">
-                  {{ item.itemname }}
-                </h3>
-                <div class="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)] font-mono">
-                  <span class="bg-[var(--color-midlight)] px-1.5 py-0.5 rounded">Code</span>
-                  <span>{{ item.itemcode }}</span>
-                </div>
-              </div>
-
-              <div class="space-y-2 shrink-0">
-                <!-- Barcode Badge -->
-                <div v-if="item.barcode" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between">
-                  <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">Barcode</span>
-                  <span class="font-mono text-xs font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all">
-                    {{ item.barcode }}
+                <img
+                  v-if="item.image"
+                  :src="item.image"
+                  :alt="item.itemname"
+                  class="max-w-full max-h-full object-contain"
+                />
+                <!-- Placeholder -->
+                <div
+                  v-else
+                  class="w-full h-full rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
+                >
+                  <div class="text-4xl mb-2">📦</div>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    No Image Available
                   </span>
                 </div>
               </div>
+
+              <!-- Content details -->
+              <div class="shrink-0 space-y-3">
+                <h3 class="font-extrabold text-base md:text-lg text-slate-100 line-clamp-2 leading-tight">
+                  {{ item.itemname }}
+                </h3>
+                
+                <div class="flex items-center justify-between border-t border-slate-800/60 pt-3">
+                  <div class="flex flex-col">
+                    <span class="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Item Code</span>
+                    <span class="font-mono text-xs font-bold text-slate-300">{{ item.itemcode }}</span>
+                  </div>
+                  <div v-if="item.barcode" class="flex flex-col items-end">
+                    <span class="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Barcode</span>
+                    <span class="font-mono text-xs font-bold bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                      {{ item.barcode }}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+
+        <!-- Controls / Navigation Bar -->
+        <footer class="px-8 py-6 border-t border-slate-900 bg-slate-950/80 backdrop-blur shrink-0 flex items-center justify-between">
+          <button
+            @click="exitPresentationMode"
+            class="rounded-xl border border-slate-800 bg-slate-900/60 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-white transition active:scale-95"
+          >
+            ❌ Exit Play
+          </button>
+          
+          <div class="flex items-center gap-4">
+            <!-- Previous Button -->
+            <button
+              @click="prevPage"
+              :disabled="totalPages <= 1"
+              class="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
+            >
+              ◀ Previous
+            </button>
+
+            <!-- Pause / Play Toggle -->
+            <button
+              @click="togglePause"
+              class="rounded-xl border border-slate-800 bg-slate-900 px-6 py-2.5 text-xs font-bold transition active:scale-95 font-bold"
+              :class="isPaused ? 'text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30' : 'text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30'"
+            >
+              {{ isPaused ? '▶ Resume timer' : '⏸ Pause timer' }}
+            </button>
+
+            <!-- Next Button -->
+            <button
+              @click="nextPage"
+              :disabled="totalPages <= 1"
+              class="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
+            >
+              Next ▶
+            </button>
+          </div>
+          
+          <!-- Quick Keyboard Legend -->
+          <div class="text-[10px] text-slate-500 font-medium hidden md:block">
+            Use Esc to Exit
+          </div>
+        </footer>
+
+      </div>
+
+      <!-- Regular Web View -->
+      <template v-else>
+        <!-- Premium Hero Header -->
+        <header class="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white px-6 py-12 md:py-16 text-center border-b border-[var(--color-border)] shrink-0">
+          <!-- Abstract glowing circles -->
+          <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+          <div class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+          
+          <div class="max-w-4xl mx-auto relative z-10 space-y-4">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              Active Offers
+            </div>
+            <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-emerald-200">
+              {{ offer.heading }}
+            </h1>
+            <p class="text-xs md:text-sm text-slate-400 max-w-xl mx-auto font-medium">
+              Explore our curated list of items on discount. Check out the barcodes or codes below to claim the deals.
+            </p>
+          </div>
+        </header>
+
+        <!-- Items Grid Section -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
+          <div class="grid gap-6" :class="gridClass">
+            <div
+              v-for="item in offer.items"
+              :key="item.itemcode"
+              class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <!-- Image / Placeholder Frame -->
+              <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
+                <!-- Stacked Offer Badges Overlay -->
+                <div v-if="item.discount_type && item.discount_desc" class="absolute top-2.5 left-2.5 z-10 pointer-events-none flex flex-col bg-slate-900/95 border border-[var(--color-warning)]/30 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm max-w-[85%]">
+                  <div class="bg-[var(--color-warning)] text-black text-[9px] font-black uppercase px-2 py-0.5 text-center tracking-wider shrink-0">
+                    Offer
+                  </div>
+                  <div class="p-1.5 flex flex-col gap-1 font-bold text-[10px] text-[var(--color-warning)] whitespace-normal break-words">
+                    <div 
+                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                      :key="lIdx"
+                      class="leading-tight"
+                    >
+                      {{ line }}
+                    </div>
+                  </div>
+                </div>
+
+                <img
+                  v-if="item.image"
+                  :src="item.image"
+                  :alt="item.itemname"
+                  class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <!-- Premium placeholder if no image exists -->
+                <div
+                  v-else
+                  class="w-full h-full rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
+                >
+                  <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">📦</div>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    No Image Available
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card Details -->
+              <div class="flex-1 p-5 flex flex-col justify-between gap-4">
+                <div class="space-y-1.5">
+                  <h3 class="font-bold text-[14px] text-[var(--color-text)] line-clamp-2 leading-snug group-hover:text-[var(--color-info)] transition-colors" :title="item.itemname">
+                    {{ item.itemname }}
+                  </h3>
+                  <div class="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)] font-mono">
+                    <span class="bg-[var(--color-midlight)] px-1.5 py-0.5 rounded">Code</span>
+                    <span>{{ item.itemcode }}</span>
+                  </div>
+                </div>
+
+                <div class="space-y-2 shrink-0">
+                  <!-- Barcode Badge -->
+                  <div v-if="item.barcode" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between">
+                    <span class="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">Barcode</span>
+                    <span class="font-mono text-xs font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all">
+                      {{ item.barcode }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </template>
+
+      <!-- Floating Play Button (Visible in normal web view) -->
+      <div v-if="!isFullscreen && offer" class="fixed bottom-6 right-6 z-40">
+        <button
+          @click="enterPresentationMode"
+          class="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-3 text-xs font-bold text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 border border-indigo-500"
+        >
+          <span>📺 Play Slideshow</span>
+        </button>
+      </div>
     </template>
 
     <!-- Footer -->
@@ -141,6 +289,12 @@ const error = ref(null)
 const offer = ref(null)
 let refreshInterval = null
 
+// Presentation Mode States
+const isFullscreen = ref(false)
+const currentPage = ref(0)
+const isPaused = ref(false)
+let slideshowTimer = null
+
 const pageaddress = computedRouteParam()
 
 function computedRouteParam() {
@@ -165,6 +319,39 @@ const gridClass = computed(() => {
   }
 })
 
+// Presentation Grid Columns Configuration
+const presentationGridClass = computed(() => {
+  const cols = offer.value?.tile_grid || '4'
+  switch (cols) {
+    case '1':
+      return 'grid-cols-1 max-w-2xl mx-auto h-[60vh]'
+    case '2':
+      return 'grid-cols-1 md:grid-cols-2 h-[65vh]'
+    case '4':
+      return 'grid-cols-2 md:grid-cols-4 h-[70vh]'
+    case '6':
+      return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-[70vh]'
+    case '9':
+      return 'grid-cols-3 md:grid-cols-5 lg:grid-cols-9 h-[70vh]'
+    default:
+      return 'grid-cols-2 md:grid-cols-4 h-[70vh]'
+  }
+})
+
+// Slideshow Navigation Helpers
+const totalPages = computed(() => {
+  if (!offer.value?.items) return 0
+  const size = parseInt(offer.value.tile_grid) || 4
+  return Math.ceil(offer.value.items.length / size)
+})
+
+const currentSlideItems = computed(() => {
+  if (!offer.value?.items) return []
+  const size = parseInt(offer.value.tile_grid) || 4
+  const start = currentPage.value * size
+  return offer.value.items.slice(start, start + size)
+})
+
 function startTimer() {
   stopTimer()
   const sec = offer.value?.timer
@@ -179,6 +366,86 @@ function stopTimer() {
   if (refreshInterval) {
     clearInterval(refreshInterval)
     refreshInterval = null
+  }
+}
+
+// Presentation Actions
+function startSlideshow() {
+  stopSlideshow()
+  if (isPaused.value) return
+  const sec = parseInt(offer.value?.timer) || 8 // Default to 8 seconds
+  slideshowTimer = setTimeout(() => {
+    nextPage()
+  }, sec * 1000)
+}
+
+function stopSlideshow() {
+  if (slideshowTimer) {
+    clearTimeout(slideshowTimer)
+    slideshowTimer = null
+  }
+}
+
+function resetSlideshowTimer() {
+  stopSlideshow()
+  startSlideshow()
+}
+
+function nextPage() {
+  if (totalPages.value <= 1) return
+  currentPage.value = (currentPage.value + 1) % totalPages.value
+  resetSlideshowTimer()
+}
+
+function prevPage() {
+  if (totalPages.value <= 1) return
+  currentPage.value = (currentPage.value - 1 + totalPages.value) % totalPages.value
+  resetSlideshowTimer()
+}
+
+function togglePause() {
+  isPaused.value = !isPaused.value
+  if (isPaused.value) {
+    stopSlideshow()
+  } else {
+    startSlideshow()
+  }
+}
+
+function enterPresentationMode() {
+  const docEl = document.documentElement
+  if (docEl.requestFullscreen) {
+    docEl.requestFullscreen().then(() => {
+      isFullscreen.value = true
+      currentPage.value = 0
+      isPaused.value = false
+      startSlideshow()
+    }).catch(err => {
+      alert(`Error enabling fullscreen: ${err.message}`)
+    })
+  } else {
+    isFullscreen.value = true
+    currentPage.value = 0
+    isPaused.value = false
+    startSlideshow()
+  }
+}
+
+function exitPresentationMode() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(err => {
+      console.error(err)
+    })
+  }
+  isFullscreen.value = false
+  stopSlideshow()
+}
+
+function handleFullscreenChange() {
+  const inFullscreen = !!document.fullscreenElement
+  isFullscreen.value = inFullscreen
+  if (!inFullscreen) {
+    stopSlideshow()
   }
 }
 
@@ -225,10 +492,13 @@ function goHome() {
 
 onMounted(() => {
   loadOffer()
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
 
 onBeforeUnmount(() => {
   stopTimer()
+  stopSlideshow()
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
 })
 </script>
 
