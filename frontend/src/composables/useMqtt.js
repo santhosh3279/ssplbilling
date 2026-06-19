@@ -83,12 +83,37 @@ export function useMqtt() {
     }
   }
 
+  async function refreshConnection() {
+    isConnecting.value = true
+    try {
+      const res = await frappeGet('ssplbilling.api.mqtt_api.refresh_mqtt_connection')
+      isConnected.value = res.connected || false
+      
+      const settings = await frappeGet('frappe.client.get', {
+        doctype: 'MQTT Settings',
+        name: 'MQTT Settings'
+      })
+      if (settings) {
+        serverInfo.value = {
+          server: settings.mqtt_server || '',
+          port: settings.port || ''
+        }
+      }
+    } catch (e) {
+      console.warn('[useMqtt] failed to refresh connection:', e)
+      isConnected.value = false
+    } finally {
+      isConnecting.value = false
+    }
+  }
+
   return {
     isConnected,
     isConnecting,
     serverInfo,
     connectMqtt,
     disconnectMqtt,
-    checkStatus
+    checkStatus,
+    refreshConnection
   }
 }

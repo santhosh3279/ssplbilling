@@ -10,16 +10,17 @@
         
         <!-- MQTT Status -->
         <div 
+          v-if="mqttServerInfo && mqttServerInfo.server"
           @click="handleMqttClick"
           class="mt-3.5 flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 cursor-pointer hover:bg-[var(--color-midlight)] transition-all duration-200"
-          title="Click to view/edit QR server settings"
+          :title="mqttConnecting ? 'Refreshing connection...' : 'Click to refresh connection'"
         >
           <span class="relative flex h-2.5 w-2.5 shrink-0">
             <span :class="[mqttConnected ? 'bg-emerald-500' : 'bg-rose-500']" class="relative inline-flex rounded-full h-2.5 w-2.5"></span>
-            <span v-if="mqttConnected" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span v-if="mqttConnected || mqttConnecting" :class="[mqttConnecting ? 'bg-blue-400' : 'bg-emerald-400']" class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
           </span>
           <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)]">
-            {{ mqttConnected ? 'QR Server Connected' : 'QR Server Disconnected' }}
+            {{ mqttConnecting ? 'Refreshing...' : (mqttConnected ? 'QR Server Connected' : 'QR Server Disconnected') }}
           </span>
         </div>
       </div>
@@ -328,10 +329,17 @@ import { useMqtt } from '../composables/useMqtt'
 
 const router = useRouter()
 
-const { isConnected: mqttConnected, serverInfo: mqttServerInfo, connectMqtt } = useMqtt()
+const { 
+  isConnected: mqttConnected, 
+  serverInfo: mqttServerInfo, 
+  connectMqtt,
+  refreshConnection: refreshMqtt,
+  isConnecting: mqttConnecting
+} = useMqtt()
 
-function handleMqttClick() {
-  window.open('/app/mqtt-settings', '_blank')
+async function handleMqttClick() {
+  if (mqttConnecting.value) return
+  await refreshMqtt()
 }
 
 

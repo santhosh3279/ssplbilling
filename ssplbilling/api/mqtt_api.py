@@ -144,12 +144,27 @@ def run_mqtt_daemon(site_name=None):
 		while True:
 			if site_name:
 				frappe.init(site_name)
+			
+			if frappe.cache().get_value("mqtt_exit_daemon"):
+				frappe.cache().delete("mqtt_exit_daemon")
+				print("[MQTT Daemon] Exit requested via cache flag.")
+				break
+				
 			frappe.cache().set_value(PING_KEY, str(time.time()))
 			if client.is_connected():
 				frappe.cache().set_value(CONNECTED_KEY, 1)
 			else:
 				frappe.cache().set_value(CONNECTED_KEY, 0)
-			time.sleep(10)
+			
+			# Sleep for 10s total, checking for exit request every 1s
+			exit_requested = False
+			for _ in range(10):
+				time.sleep(1)
+				if frappe.cache().get_value("mqtt_exit_daemon"):
+					exit_requested = True
+					break
+			if exit_requested:
+				break
 	except Exception as e:
 		print(f"[MQTT Daemon] Loop error: {e}")
 	finally:
@@ -158,3 +173,21 @@ def run_mqtt_daemon(site_name=None):
 		if site_name:
 			frappe.init(site_name)
 		frappe.cache().set_value(CONNECTED_KEY, 0)
+
+
+@frappe.whitelist()
+def refresh_mqtt_connection():
+	"""Force restart the background MQTT daemon by terminating the current one and starting a new one."""
+	frappe.cache().set_value("mqtt_exit_daemon", 1)
+	frappe.cache().delete(PING_KEY)
+	frappe.cache().delete(LOCK_KEY)
+	
+	# Give the existing thread a moment to exit and release the lock/client
+	time.sleep(1.2)
+	
+	ensure_mqtt_connected()
+	
+	# Give it a moment to connect and update the status
+	time.sleep(1.0)
+	
+	return get_mqtt_status()
