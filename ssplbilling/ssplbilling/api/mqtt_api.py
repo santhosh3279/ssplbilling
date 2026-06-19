@@ -53,12 +53,24 @@ def run_mqtt_daemon(site_name=None):
 	frappe.connect()
 	try:
 		settings = frappe.get_doc("MQTT Settings")
-		if not settings.mqtt_server or not settings.port:
+		if not settings.mqtt_server:
 			frappe.cache().set_value(CONNECTED_KEY, 0)
 			return
 		
-		mqtt_server = settings.mqtt_server
-		port = int(settings.port)
+		from urllib.parse import urlparse
+		server_str = settings.mqtt_server.strip()
+		if "://" not in server_str:
+			parsed = urlparse("mqtt://" + server_str)
+		else:
+			parsed = urlparse(server_str)
+		
+		mqtt_server = parsed.hostname or parsed.path or server_str
+		
+		if parsed.port:
+			port = int(parsed.port)
+		else:
+			port = int(settings.port) if settings.port else 1883
+			
 		topics = [row.topic for row in settings.topics if row.topic]
 	except Exception as e:
 		print(f"[MQTT Daemon] Failed to load settings: {e}")
