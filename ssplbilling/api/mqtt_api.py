@@ -191,3 +191,38 @@ def refresh_mqtt_connection():
 	time.sleep(1.0)
 	
 	return get_mqtt_status()
+
+
+@frappe.whitelist()
+def publish_mqtt_message(topic, message):
+	"""Publish an MQTT message to the specified topic."""
+	try:
+		settings = frappe.get_doc("MQTT Settings")
+		if not settings.mqtt_server:
+			frappe.throw("MQTT Server is not configured in MQTT Settings.")
+			
+		from urllib.parse import urlparse
+		server_str = settings.mqtt_server.strip()
+		if "://" not in server_str:
+			parsed = urlparse("mqtt://" + server_str)
+		else:
+			parsed = urlparse(server_str)
+		
+		mqtt_server = parsed.hostname or parsed.path or server_str
+		
+		if parsed.port:
+			port = int(parsed.port)
+		else:
+			port = int(settings.port) if settings.port else 1883
+			
+		client = mqtt_client.Client(
+			callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2
+		)
+		client.connect(mqtt_server, port, keepalive=60)
+		info = client.publish(topic, message, qos=1)
+		info.wait_for_publish()
+		client.disconnect()
+		return {"status": "success", "message": "Message published successfully"}
+	except Exception as e:
+		frappe.log_error(message=frappe.get_traceback(), title="MQTT Publish Error")
+		frappe.throw(f"Failed to publish MQTT message: {str(e)}")

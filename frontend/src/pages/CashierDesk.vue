@@ -450,7 +450,7 @@
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/20 transition-all"
                   />
                 </div>
-                <div class="group relative">
+                <div class="group relative flex items-center">
                   <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</div>
                   <input
                     ref="upiInput"
@@ -458,8 +458,15 @@
                     v-model="payments.upi"
                     @focus="$event.target.select()"
                     step="0.01"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-32 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
                   />
+                  <button 
+                    @click="sendUpiMqtt"
+                    type="button"
+                    class="absolute right-2 px-3 py-2 rounded-xl bg-[var(--color-success)] text-white font-black text-[11px] uppercase tracking-wider hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-95 transition-all shadow-sm"
+                  >
+                    Send QR
+                  </button>
                 </div>
                 <div class="group relative">
                   <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
@@ -1100,6 +1107,64 @@ function toggleCredit(val) {
     nextTick(() => dueDateInput.value?.focus())
   } else {
     nextTick(() => cashInput.value?.focus())
+  }
+}
+
+async function sendUpiMqtt() {
+  errorMsg.value = ''
+  successMsg.value = ''
+  
+  const upiVal = Number(payments.value.upi) || 0
+  if (upiVal <= 0) {
+    errorMsg.value = 'Please enter a UPI amount greater than 0.'
+    return
+  }
+
+  try {
+    // 1. Fetch MQTT Settings
+    const settings = await frappeGet('frappe.client.get', {
+      doctype: 'MQTT Settings',
+      name: 'MQTT Settings'
+    })
+    
+    if (!settings || !settings.topics || !settings.topics.length) {
+      errorMsg.value = 'MQTT Settings or Topics child table is empty.'
+      return
+    }
+
+    // 2. Find row with upi_account === 'wb-upi'
+    const row = settings.topics.find(r => r.upi_account === 'wb-upi')
+    if (!row) {
+      errorMsg.value = 'No MQTT configuration found for UPI account wb-upi.'
+      return
+    }
+
+    if (!row.topic || !row.vpa) {
+      errorMsg.value = 'Topic or VPA is missing in the MQTT Settings for wb-upi.'
+      return
+    }
+
+    // 3. Format the amount to 2 decimal places
+    const formattedAmount = upiVal.toFixed(2)
+
+    // 4. Replace "amount" (literal) with the formatted amount in the vpa string
+    const formattedMessage = row.vpa.replace(/amount/g, formattedAmount)
+
+    // 5. Call backend to publish the message
+    const res = await frappePost('ssplbilling.api.mqtt_api.publish_mqtt_message', {
+      topic: row.topic,
+      message: formattedMessage
+    })
+
+    if (res && res.status === 'success') {
+      successMsg.value = 'MQTT Payment Request sent successfully!'
+      setTimeout(() => successMsg.value = '', 4000)
+    } else {
+      errorMsg.value = 'Failed to publish MQTT payment request.'
+    }
+  } catch (e) {
+    console.error('[CashierDesk] Send MQTT error:', e)
+    errorMsg.value = e.message || 'Failed to send MQTT payment request.'
   }
 }
 
