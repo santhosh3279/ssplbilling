@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[var(--color-bg)] flex overflow-hidden">
     <!-- Main App Content -->
     <div 
-      :class="[isTablet ? (isSidebarCollapsed ? 'w-[70%]' : 'w-[80%]') : 'w-full']"
+      :class="[showKeyboardPanel ? (isSidebarCollapsed ? 'w-[70%]' : 'w-[80%]') : 'w-full']"
       class="relative h-screen overflow-hidden transform-gpu flex flex-col bg-[var(--color-bg)] transition-all duration-300 ease-in-out"
     >
       <router-view class="flex-1 overflow-hidden" />
@@ -16,7 +16,7 @@
 
     <!-- Tablet Side Panel (Keyboard) -->
     <div 
-      v-if="isTablet" 
+      v-if="showKeyboardPanel" 
       :class="isSidebarCollapsed ? 'w-[30%]' : 'w-[20%]'"
       class="h-screen border-l border-[var(--color-border)] shadow-2xl z-50 overflow-hidden shrink-0 bg-[var(--color-surface)] transition-all duration-300 ease-in-out"
     >
@@ -26,7 +26,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useShortcuts } from './services/shortcutManager';
 import { globalShortcuts } from './shortcuts/globalShortcuts';
 import Calculator from './components/Calculator.vue';
@@ -47,6 +48,11 @@ const { initTheme } = useTheme();
 const { isTablet } = useDevice();
 const { isSidebarCollapsed } = useLayout();
 const { connectMqtt } = useMqtt();
+
+const route = useRoute();
+const showKeyboardPanel = computed(() => {
+  return isTablet.value && route.name !== 'OfferPage';
+});
 
 useShortcuts(globalShortcuts, 'global');
 
