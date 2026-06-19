@@ -35,11 +35,18 @@ def ensure_mqtt_connected():
 	
 	if not last_ping or (now - float(last_ping)) > 30:
 		if frappe.cache().set(LOCK_KEY, "1", ex=20, nx=True):
-			t = threading.Thread(target=run_mqtt_daemon, daemon=True)
+			site_name = frappe.local.site
+			t = threading.Thread(target=run_mqtt_daemon, args=(site_name,), daemon=True)
 			t.start()
 
-def run_mqtt_daemon():
+def run_mqtt_daemon(site_name=None):
 	"""Main daemon loop running in a background thread."""
+	if not site_name:
+		site_name = getattr(frappe.local, "site", None)
+
+	if site_name:
+		frappe.init(site_name)
+
 	frappe.cache().delete(LOCK_KEY)
 	time.sleep(1)
 	
@@ -58,14 +65,16 @@ def run_mqtt_daemon():
 		frappe.cache().set_value(CONNECTED_KEY, 0)
 		return
 	finally:
-		frappe.destroy_relations()
-		frappe.close_connection()
+		if frappe.db:
+			frappe.db.close()
 
 	client = mqtt_client.Client(
 		callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2
 	)
 	
 	def on_connect(client, userdata, flags, reason_code, properties):
+		if site_name:
+			frappe.init(site_name)
 		if reason_code == 0:
 			print("[MQTT Daemon] Connected successfully.")
 			frappe.cache().set_value(CONNECTED_KEY, 1)
@@ -77,10 +86,14 @@ def run_mqtt_daemon():
 			frappe.cache().set_value(CONNECTED_KEY, 0)
 
 	def on_disconnect(client, userdata, flags, reason_code, properties):
+		if site_name:
+			frappe.init(site_name)
 		print(f"[MQTT Daemon] Disconnected: {reason_code}")
 		frappe.cache().set_value(CONNECTED_KEY, 0)
 
 	def on_message(client, userdata, msg):
+		if site_name:
+			frappe.init(site_name)
 		try:
 			payload = msg.payload.decode("utf-8")
 			topic = msg.topic
@@ -95,8 +108,7 @@ def run_mqtt_daemon():
 					after_commit=False
 				)
 			finally:
-				frappe.destroy_relations()
-				frappe.close_connection()
+				frappe.destroy()
 		except Exception as e:
 			print(f"[MQTT Daemon] Error handling message: {e}")
 
@@ -109,6 +121,8 @@ def run_mqtt_daemon():
 		client.connect(mqtt_server, port, keepalive=60)
 	except Exception as e:
 		print(f"[MQTT Daemon] Connection error: {e}")
+		if site_name:
+			frappe.init(site_name)
 		frappe.cache().set_value(CONNECTED_KEY, 0)
 		return
 
@@ -116,6 +130,8 @@ def run_mqtt_daemon():
 	
 	try:
 		while True:
+			if site_name:
+				frappe.init(site_name)
 			frappe.cache().set_value(PING_KEY, str(time.time()))
 			if client.is_connected():
 				frappe.cache().set_value(CONNECTED_KEY, 1)
@@ -127,4 +143,6 @@ def run_mqtt_daemon():
 	finally:
 		client.loop_stop()
 		client.disconnect()
+		if site_name:
+			frappe.init(site_name)
 		frappe.cache().set_value(CONNECTED_KEY, 0)
