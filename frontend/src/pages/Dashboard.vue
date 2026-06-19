@@ -385,8 +385,11 @@ async function handleLogout() {
 }
 
 // ==================== DATE ====================
+const now = ref(new Date())
+let timeInterval = null
+
 const todayDate = computed(() => {
-  return new Date().toLocaleDateString('en-IN', {
+  return now.value.toLocaleDateString('en-IN', {
     timeZone: 'Asia/Kolkata',
     day: '2-digit',
     month: 'long',
@@ -395,7 +398,7 @@ const todayDate = computed(() => {
 })
 
 const todayDay = computed(() => {
-  return new Date().toLocaleDateString('en-IN', {
+  return now.value.toLocaleDateString('en-IN', {
     timeZone: 'Asia/Kolkata',
     weekday: 'long'
   })
@@ -593,7 +596,7 @@ async function syncSettings() {
   await fetchSettings(selectedUser.value)
 }
 
-async function fetchSettings(user = null) {
+async function fetchSettings(user = null, force = false) {
   const targetUser = user || session.user.value
   // 1. Fetch allowed series for this user
   try {
@@ -612,7 +615,7 @@ async function fetchSettings(user = null) {
     // Check cache first
     let settings = null
     const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
-    const cacheValid = cached &&
+    const cacheValid = !force && cached &&
       (Date.now() - cached.ts) < BILLING_SETTINGS_TTL &&
       cached.data?._current_user === targetUser
     if (cacheValid) {
@@ -761,13 +764,20 @@ onMounted(async () => {
     }
   }
 
-  fetchSettings(selectedUser.value)
+  fetchSettings(selectedUser.value, true)
   refreshItemCache('Sales') // Preload items for fast entry
   refreshLedgerCache()      // Preload ledgers for fast search
   connectMqtt()
+
+  timeInterval = setInterval(() => {
+    now.value = new Date()
+  }, 1000)
 })
 onUnmounted(() => {
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
+  if (timeInterval) {
+    clearInterval(timeInterval)
+  }
 })
 
 </script>
