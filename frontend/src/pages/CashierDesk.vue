@@ -1132,15 +1132,16 @@ async function sendUpiMqtt() {
       return
     }
 
-    // 2. Find row with upi_account === 'wb-upi'
-    const row = settings.topics.find(r => r.upi_account === 'wb-upi')
+    // 2. Find row with upi_account matching the selected UPI account
+    const activeUpiAccount = seriesAccounts.value.upi || localStorage.getItem('wb-upi') || 'UPI'
+    const row = settings.topics.find(r => r.upi_account === activeUpiAccount)
     if (!row) {
-      errorMsg.value = 'No MQTT configuration found for UPI account wb-upi.'
+      errorMsg.value = `No MQTT configuration found for UPI account "${activeUpiAccount}".`
       return
     }
 
     if (!row.topic || !row.vpa) {
-      errorMsg.value = 'Topic or VPA is missing in the MQTT Settings for wb-upi.'
+      errorMsg.value = `Topic or VPA is missing in the MQTT Settings for "${activeUpiAccount}".`
       return
     }
 
