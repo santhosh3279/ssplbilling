@@ -62,7 +62,8 @@
                   v-if="item.image"
                   :src="item.image"
                   :alt="item.itemname"
-                  class="max-h-[35vh] max-w-full object-contain"
+                  class="max-w-full object-contain transition-all duration-500"
+                  :class="showControls ? 'max-h-[35vh]' : 'max-h-[48vh]'"
                 />
                 <!-- Placeholder -->
                 <div
@@ -109,7 +110,10 @@
         </main>
 
         <!-- Header -->
-        <header class="absolute top-0 left-0 right-0 z-40 px-8 py-5 flex items-center justify-between bg-gradient-to-b from-slate-950 via-slate-950/80 to-transparent">
+        <header 
+          class="absolute top-0 left-0 right-0 z-40 px-8 py-5 flex items-center justify-between bg-gradient-to-b from-slate-950 via-slate-950/80 to-transparent transition-all duration-500 transform"
+          :class="showControls ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'"
+        >
           <div class="flex items-center gap-3">
             <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
             <h1 class="text-lg font-bold tracking-tight text-slate-100">
@@ -132,7 +136,10 @@
         </header>
 
         <!-- Controls / Navigation Bar -->
-        <footer class="absolute bottom-0 left-0 right-0 z-40 px-8 py-6 flex items-center justify-between bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent">
+        <footer 
+          class="absolute bottom-0 left-0 right-0 z-40 px-8 py-6 flex items-center justify-between bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent transition-all duration-500 transform"
+          :class="showControls ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'"
+        >
           <button
             @click="exitPresentationMode"
             class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-white transition active:scale-95"
@@ -317,6 +324,21 @@ let slideshowInterval = null
 const playButtonRef = ref(null)
 const goHomeButtonRef = ref(null)
 
+const showControls = ref(true)
+let controlsTimeout = null
+
+function resetControlsTimer() {
+  showControls.value = true
+  if (controlsTimeout) {
+    clearTimeout(controlsTimeout)
+  }
+  controlsTimeout = setTimeout(() => {
+    if (isFullscreen.value) {
+      showControls.value = false
+    }
+  }, 3000)
+}
+
 function focusPlayButton() {
   nextTick(() => {
     if (playButtonRef.value) {
@@ -442,6 +464,9 @@ function getItemStyle(idx) {
     ? 'none'
     : 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)'
 
+  const cardHeightVal = showControls.value ? '76vh' : '90vh'
+  const cardTopVal = showControls.value ? '6vh' : '3vh'
+
   if (!isVisible) {
     const translateVal = diff < 0 ? -100 : 100
     return {
@@ -452,8 +477,8 @@ function getItemStyle(idx) {
       zIndex: 0,
       width: `${cardWidthVal}vw`,
       maxWidth: maxW,
-      height: '76vh',
-      top: '6vh',
+      height: cardHeightVal,
+      top: cardTopVal,
       maxHeight: 'none',
       transition: transitionStyle
     }
@@ -474,8 +499,8 @@ function getItemStyle(idx) {
     position: 'absolute',
     width: `${cardWidthVal}vw`,
     maxWidth: maxW,
-    height: '76vh',
-    top: '6vh',
+    height: cardHeightVal,
+    top: cardTopVal,
     maxHeight: 'none',
     transition: transitionStyle,
     pointerEvents: isActive ? 'auto' : 'none'
@@ -638,7 +663,20 @@ function goHome() {
   }
 }
 
+watch(isFullscreen, (newVal) => {
+  if (newVal) {
+    resetControlsTimer()
+  } else {
+    showControls.value = true
+    if (controlsTimeout) {
+      clearTimeout(controlsTimeout)
+      controlsTimeout = null
+    }
+  }
+})
+
 function handleKeyDown(event) {
+  resetControlsTimer()
   const key = event.key
   const keyCode = event.keyCode
 
@@ -680,6 +718,7 @@ onMounted(() => {
   loadOffer()
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('mousemove', resetControlsTimer)
 })
 
 onBeforeUnmount(() => {
@@ -687,6 +726,10 @@ onBeforeUnmount(() => {
   stopSlideshow()
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('mousemove', resetControlsTimer)
+  if (controlsTimeout) {
+    clearTimeout(controlsTimeout)
+  }
 })
 </script>
 
