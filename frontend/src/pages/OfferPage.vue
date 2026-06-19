@@ -17,8 +17,9 @@
         We couldn't find any active offer items at this address. The link may have expired or contains a typo.
       </p>
       <button
+        ref="goHomeButtonRef"
         @click="goHome"
-        class="rounded-xl bg-[var(--color-info)] px-6 py-2.5 text-xs font-bold text-white hover:bg-[var(--color-info)]/90 transition shadow-lg active:scale-95"
+        class="rounded-xl bg-[var(--color-info)] px-6 py-2.5 text-xs font-bold text-white hover:bg-[var(--color-info)]/90 transition shadow-lg active:scale-95 focus:outline-none focus:ring-4 focus:ring-[var(--color-info)]/50 focus:scale-105"
       >
         Go to Home
       </button>
@@ -273,8 +274,9 @@
       <!-- Floating Play Button (Visible in normal web view) -->
       <div v-if="!isFullscreen && offer" class="fixed bottom-10 right-10 z-40">
         <button
+          ref="playButtonRef"
           @click="enterPresentationMode"
-          class="flex items-center gap-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-10 py-5 text-2xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 border border-indigo-500"
+          class="flex items-center gap-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-10 py-5 text-2xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-indigo-300 focus:bg-indigo-700 focus:scale-105 transition-all duration-300 border border-indigo-500"
         >
           <span>📺 Play Slideshow</span>
         </button>
@@ -292,7 +294,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 
@@ -311,6 +313,25 @@ const prevActiveIndex = ref(0)
 const isPaused = ref(false)
 const slideshowTimeLeft = ref(0)
 let slideshowInterval = null
+
+const playButtonRef = ref(null)
+const goHomeButtonRef = ref(null)
+
+function focusPlayButton() {
+  nextTick(() => {
+    if (playButtonRef.value) {
+      playButtonRef.value.focus()
+    }
+  })
+}
+
+function focusGoHomeButton() {
+  nextTick(() => {
+    if (goHomeButtonRef.value) {
+      goHomeButtonRef.value.focus()
+    }
+  })
+}
 
 watch(activeIndex, (newVal, oldVal) => {
   prevActiveIndex.value = oldVal
@@ -555,6 +576,7 @@ function exitPresentationMode() {
   }
   isFullscreen.value = false
   stopSlideshow()
+  focusPlayButton()
 }
 
 function handleFullscreenChange() {
@@ -562,6 +584,7 @@ function handleFullscreenChange() {
   isFullscreen.value = inFullscreen
   if (!inFullscreen) {
     stopSlideshow()
+    focusPlayButton()
   }
 }
 
@@ -585,15 +608,20 @@ async function loadOffer(silent = false) {
       offer.value = res
       document.title = `${res.heading} | Deals`
       startTimer()
+      if (!silent) {
+        focusPlayButton()
+      }
     } else {
       if (!silent) {
         error.value = 'Offer not found'
+        focusGoHomeButton()
       }
     }
   } catch (err) {
     console.error(err)
     if (!silent) {
       error.value = err.message || 'Failed to load offers'
+      focusGoHomeButton()
     }
   } finally {
     if (!silent) {
@@ -610,15 +638,55 @@ function goHome() {
   }
 }
 
+function handleKeyDown(event) {
+  const key = event.key
+  const keyCode = event.keyCode
+
+  if (isFullscreen.value) {
+    if (key === 'ArrowRight' || key === 'ArrowDown' || keyCode === 39 || keyCode === 40) {
+      event.preventDefault()
+      nextItem()
+    } else if (key === 'ArrowLeft' || key === 'ArrowUp' || keyCode === 37 || keyCode === 38) {
+      event.preventDefault()
+      prevItem()
+    } else if (key === ' ' || key === 'Enter' || keyCode === 13 || keyCode === 32 || key === 'MediaPlayPause' || keyCode === 179) {
+      event.preventDefault()
+      togglePause()
+    } else if (key === 'Escape' || key === 'Backspace' || keyCode === 27 || keyCode === 8 || keyCode === 10009 || keyCode === 461) {
+      event.preventDefault()
+      exitPresentationMode()
+    }
+  } else {
+    if (key === 'Enter' || keyCode === 13 || key === ' ' || keyCode === 32) {
+      const activeEl = document.activeElement
+      const isGoHomeFocused = activeEl && activeEl.textContent && activeEl.textContent.includes('Go to Home')
+      if (!isGoHomeFocused) {
+        event.preventDefault()
+        enterPresentationMode()
+      }
+    } else if (
+      key === 'ArrowRight' || key === 'ArrowLeft' || key === 'ArrowUp' || key === 'ArrowDown' ||
+      keyCode === 37 || keyCode === 38 || keyCode === 39 || keyCode === 40
+    ) {
+      if (document.activeElement !== playButtonRef.value) {
+        event.preventDefault()
+        focusPlayButton()
+      }
+    }
+  }
+}
+
 onMounted(() => {
   loadOffer()
   document.addEventListener('fullscreenchange', handleFullscreenChange)
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 onBeforeUnmount(() => {
   stopTimer()
   stopSlideshow()
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
