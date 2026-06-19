@@ -10,9 +10,9 @@
         
         <!-- MQTT Status -->
         <div 
-          @click="handleMqttReconnect"
+          @click="handleMqttClick"
           class="mt-3.5 flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 cursor-pointer hover:bg-[var(--color-midlight)] transition-all duration-200"
-          :title="mqttConnected ? `Connected to ${mqttServerInfo.server}:${mqttServerInfo.port}` : 'Click to retry connection'"
+          title="Click to view/edit QR server settings"
         >
           <span class="relative flex h-2.5 w-2.5 shrink-0">
             <span :class="[mqttConnected ? 'bg-emerald-500' : 'bg-rose-500']" class="relative inline-flex rounded-full h-2.5 w-2.5"></span>
@@ -330,8 +330,8 @@ const router = useRouter()
 
 const { isConnected: mqttConnected, serverInfo: mqttServerInfo, connectMqtt } = useMqtt()
 
-function handleMqttReconnect() {
-  connectMqtt()
+function handleMqttClick() {
+  window.open('/app/mqtt-settings', '_blank')
 }
 
 
