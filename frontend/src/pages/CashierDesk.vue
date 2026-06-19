@@ -1151,9 +1151,6 @@ async function sendUpiMqtt() {
     // 4. Replace "amount" (literal) with the formatted amount in the vpa string
     const formattedMessage = row.vpa.replace(/amount/g, formattedAmount)
 
-    // Show the message in an alert window
-    alert(formattedMessage)
-
     // 5. Call backend to publish the message
     const res = await frappePost('ssplbilling.api.mqtt_api.publish_mqtt_message', {
       topic: row.topic,
