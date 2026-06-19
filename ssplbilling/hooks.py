@@ -190,23 +190,11 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"ssplbilling.tasks.all"
-# 	],
-# 	"daily": [
-# 		"ssplbilling.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"ssplbilling.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"ssplbilling.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"ssplbilling.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"all": [
+		"ssplbilling.api.mqtt_api.ensure_mqtt_connected"
+	]
+}
 
 # Testing
 # -------
