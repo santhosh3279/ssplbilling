@@ -366,47 +366,26 @@ function computedRouteParam() {
 }
 
 const gridClass = computed(() => {
-  const cols = parseInt(offer.value?.tile_grid) || 4
-  if (cols === 1) return 'grid-cols-1'
-  if (cols === 2) return 'grid-cols-1 sm:grid-cols-2'
-  if (cols === 4) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-  if (cols === 6) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
-  if (cols === 9) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-9'
   return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
 })
 
 const containerClass = computed(() => {
-  const cols = parseInt(offer.value?.tile_grid) || 4
-  if (cols >= 9) return 'max-w-[95vw]'
-  if (cols >= 6) return 'max-w-[90vw]'
   return 'max-w-7xl'
 })
 
 const cardPaddingClass = computed(() => {
-  const cols = parseInt(offer.value?.tile_grid) || 4
-  if (cols >= 9) return 'p-3 gap-2'
-  if (cols >= 6) return 'p-4 gap-3'
   return 'p-5 gap-4'
 })
 
 const cardTitleClass = computed(() => {
-  const cols = parseInt(offer.value?.tile_grid) || 4
-  if (cols >= 9) return 'text-[11px] leading-tight font-extrabold'
-  if (cols >= 6) return 'text-[12px] leading-snug font-bold'
   return 'text-[14px] leading-snug font-bold'
 })
 
 const cardCodeClass = computed(() => {
-  const cols = parseInt(offer.value?.tile_grid) || 4
-  if (cols >= 9) return 'text-[8px]'
-  if (cols >= 6) return 'text-[9px]'
   return 'text-[11px]'
 })
 
 const badgeTextClass = computed(() => {
-  const cols = parseInt(offer.value?.tile_grid) || 4
-  if (cols >= 9) return 'text-[8px] p-1 gap-0.5'
-  if (cols >= 6) return 'text-[8px] p-1 gap-1'
   return 'text-[10px] p-1.5 gap-1'
 })
 
