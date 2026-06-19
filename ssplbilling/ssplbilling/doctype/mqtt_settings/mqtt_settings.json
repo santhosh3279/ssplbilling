@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "creation": "2026-06-19 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mqtt_server",
+  "port",
+  "topics"
+ ],
+ "fields": [
+  {
+   "fieldname": "mqtt_server",
+   "fieldtype": "Data",
+   "label": "MQTT Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "port",
+   "fieldtype": "Int",
+   "label": "Port",
+   "reqd": 1
+  },
+  {
+   "fieldname": "topics",
+   "fieldtype": "Table",
+   "label": "MQTT Topics",
+   "options": "MQTT Topic Detail"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-19 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "MQTT Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

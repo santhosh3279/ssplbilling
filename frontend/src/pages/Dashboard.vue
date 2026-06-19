@@ -7,6 +7,21 @@
       <div class="border-b border-[var(--color-border)] px-4 py-4">
         <div class="text-lg font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
         <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">Fast Billing System</div>
+        
+        <!-- MQTT Status -->
+        <div 
+          @click="handleMqttReconnect"
+          class="mt-3.5 flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 cursor-pointer hover:bg-[var(--color-midlight)] transition-all duration-200"
+          :title="mqttConnected ? `Connected to ${mqttServerInfo.server}:${mqttServerInfo.port}` : 'Click to retry connection'"
+        >
+          <span class="relative flex h-2.5 w-2.5 shrink-0">
+            <span :class="[mqttConnected ? 'bg-emerald-500' : 'bg-rose-500']" class="relative inline-flex rounded-full h-2.5 w-2.5"></span>
+            <span v-if="mqttConnected" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          </span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)]">
+            {{ mqttConnected ? 'QR Server Connected' : 'QR Server Disconnected' }}
+          </span>
+        </div>
       </div>
 
       <!-- User -->
@@ -309,8 +324,16 @@ import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
+import { useMqtt } from '../composables/useMqtt'
 
 const router = useRouter()
+
+const { isConnected: mqttConnected, serverInfo: mqttServerInfo, connectMqtt } = useMqtt()
+
+function handleMqttReconnect() {
+  connectMqtt()
+}
+
 
 const { refreshItemCache } = useItemCache()
 const { refreshLedgerCache } = useLedgerCache()
@@ -741,6 +764,7 @@ onMounted(async () => {
   fetchSettings(selectedUser.value)
   refreshItemCache('Sales') // Preload items for fast entry
   refreshLedgerCache()      // Preload ledgers for fast search
+  connectMqtt()
 })
 onUnmounted(() => {
   window.removeEventListener('wb-navigate-home', () => router.push('/'))

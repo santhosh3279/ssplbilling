@@ -37,6 +37,7 @@ import ErrorWindow from './components/ErrorWindow.vue';
 import { useTheme } from './composables/useTheme';
 import { useDevice } from './composables/useDevice';
 import { useLayout } from './composables/useLayout';
+import { useMqtt } from './composables/useMqtt';
 
 const showCalculator = ref(false);
 const showCommandLine = ref(false);
@@ -45,6 +46,7 @@ const errorMessage = ref('');
 const { initTheme } = useTheme();
 const { isTablet } = useDevice();
 const { isSidebarCollapsed } = useLayout();
+const { connectMqtt } = useMqtt();
 
 useShortcuts(globalShortcuts, 'global');
 
@@ -75,7 +77,9 @@ let observer = null;
 
 onMounted(() => {
   initTheme();
+  connectMqtt();
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
+
   window.addEventListener('wb-global-command-line-toggle', toggleCommandLine);
 
   // Initial scan and setup for tablet
