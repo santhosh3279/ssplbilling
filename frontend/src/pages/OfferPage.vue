@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white">
+  <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
     <!-- Loading Screen -->
     <div v-if="loading" class="flex-1 flex flex-col items-center justify-center p-8">
       <div class="relative w-16 h-16 mb-4">
@@ -278,12 +278,21 @@
         </main>
       </template>
 
-      <!-- Floating Play Button (Visible in normal web view) -->
-      <div v-if="!isFullscreen && offer" class="fixed bottom-10 right-10 z-40">
+      <!-- Floating Actions (Visible in normal web view) -->
+      <div v-if="!isFullscreen && offer" class="fixed bottom-10 right-10 z-40 flex flex-row items-center gap-4">
+        <!-- Export PDF Button -->
+        <button
+          @click="exportToPDF"
+          class="flex items-center gap-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-300 focus:bg-emerald-700 focus:scale-105 transition-all duration-300 border border-emerald-500"
+        >
+          <span>📄 Export PDF</span>
+        </button>
+
+        <!-- Play Slideshow Button -->
         <button
           ref="playButtonRef"
           @click="enterPresentationMode"
-          class="flex items-center gap-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-10 py-5 text-2xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-indigo-300 focus:bg-indigo-700 focus:scale-105 transition-all duration-300 border border-indigo-500"
+          class="flex items-center gap-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-indigo-300 focus:bg-indigo-700 focus:scale-105 transition-all duration-300 border border-indigo-500"
         >
           <span>📺 Play Slideshow</span>
         </button>
@@ -297,6 +306,74 @@
         <span>Keyboard Fast wholesale Billing system</span>
       </div>
     </footer>
+  </div>
+
+  <!-- Print-Only Catalog Wrapper -->
+  <div v-if="offer" class="hidden print-container w-full text-black bg-white p-8">
+    <!-- Invoice/Catalog Header -->
+    <div class="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-end">
+      <div>
+        <h1 class="text-2xl font-black uppercase tracking-tight text-slate-950">Sundaram and Sons Private Ltd.</h1>
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-1">Active Offers Catalog</p>
+      </div>
+      <div class="text-right">
+        <h2 class="text-xl font-bold text-indigo-900">{{ offer.heading }}</h2>
+        <p class="text-[10px] text-slate-400 mt-1">Generated: {{ new Date().toLocaleDateString() }}</p>
+      </div>
+    </div>
+
+    <!-- Items Table / Grid for printing -->
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-800 bg-slate-100">
+          <th class="py-3 px-4 w-16">S.No</th>
+          <th class="py-3 px-4 w-24">Image</th>
+          <th class="py-3 px-4">Item Details</th>
+          <th class="py-3 px-4 w-48">Active Offer</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr 
+          v-for="(item, index) in offer.items" 
+          :key="item.itemcode" 
+          class="border-b border-slate-200 text-sm page-break-inside-avoid"
+        >
+          <td class="py-4 px-4 font-mono font-bold text-slate-500">{{ index + 1 }}</td>
+          <td class="py-4 px-4">
+            <img 
+              v-if="item.image" 
+              :src="item.image" 
+              class="max-w-[80px] max-h-[80px] object-contain border border-slate-200 rounded p-1"
+            />
+            <div v-else class="w-[80px] h-[80px] bg-slate-100 rounded flex items-center justify-center text-xl">
+              📦
+            </div>
+          </td>
+          <td class="py-4 px-4">
+            <div class="font-bold text-slate-900 text-base">{{ item.itemname }}</div>
+            <div class="text-xs text-slate-500 mt-1 flex gap-4 font-mono">
+              <span>Code: <strong>{{ item.itemcode }}</strong></span>
+              <span v-if="item.barcode">Barcode: <strong>{{ item.barcode }}</strong></span>
+            </div>
+          </td>
+          <td class="py-4 px-4">
+            <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-2 text-xs font-bold leading-normal">
+              <div 
+                v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                :key="lIdx"
+              >
+                {{ line }}
+              </div>
+            </div>
+            <span v-else class="text-xs text-slate-400 font-medium">Standard Pricing</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="mt-8 text-center text-[10px] text-slate-400 border-t border-slate-200 pt-4">
+      Thank you for wholesale business with Sundaram and Sons Private Ltd.
+    </div>
   </div>
 </template>
 
@@ -642,6 +719,10 @@ function goHome() {
   }
 }
 
+function exportToPDF() {
+  window.print()
+}
+
 watch(isFullscreen, (newVal) => {
   if (newVal) {
     resetControlsTimer()
@@ -714,4 +795,35 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* Core stylesheet variables integrated */
+</style>
+
+<style>
+@media print {
+  /* Hide scrollable main wrapper */
+  .main-content-wrapper {
+    display: none !important;
+  }
+  
+  /* Show print container and ensure it starts clean */
+  .print-container {
+    display: block !important;
+    background: white !important;
+    color: #0f172a !important; /* text-slate-900 */
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Prevent row breaks */
+  .page-break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Force background colors and colors to render in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
 </style>
