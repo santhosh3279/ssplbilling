@@ -115,10 +115,10 @@
                           <td 
                             v-for="pl in offer.price_lists" 
                             :key="pl.price_list"
-                            class="py-2 px-2 font-mono text-right text-indigo-400 font-bold"
+                            class="py-2 px-2 font-mono text-right text-indigo-400 font-bold tracking-widest"
                           >
                             <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                              ₹{{ Number(bp.prices[pl.price_list]).toLocaleString() }}
+                              {{ encryptPrice(bp.prices[pl.price_list]) }}
                             </span>
                             <span v-else class="text-slate-600 font-normal">—</span>
                           </td>
@@ -311,10 +311,10 @@
                             <td 
                               v-for="pl in offer.price_lists" 
                               :key="pl.price_list"
-                              class="py-1.5 px-1.5 font-mono text-right text-[var(--color-info)] font-bold"
+                              class="py-1.5 px-1.5 font-mono text-right text-[var(--color-info)] font-bold tracking-widest"
                             >
                               <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                ₹{{ Number(bp.prices[pl.price_list]).toLocaleString() }}
+                                {{ encryptPrice(bp.prices[pl.price_list]) }}
                               </span>
                               <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
                             </td>
@@ -436,6 +436,7 @@
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+import { encryptPrice } from '../encryption.js'
 
 const route = useRoute()
 const router = useRouter()
