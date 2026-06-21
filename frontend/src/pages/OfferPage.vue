@@ -92,18 +92,7 @@
                 >
                   <div class="w-full max-w-xl bg-slate-950/40 rounded-xl p-3 border border-slate-800/40 shadow-inner">
                     <table class="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr class="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                          <th class="pb-1.5 pr-2 font-bold">Barcode</th>
-                          <th 
-                            v-for="pl in offer.price_lists" 
-                            :key="pl.price_list"
-                            class="pb-1.5 px-2 font-bold text-right"
-                          >
-                            {{ pl.price_list }}
-                          </th>
-                        </tr>
-                      </thead>
+
                       <tbody class="divide-y divide-slate-900/50 font-medium">
                         <tr 
                           v-for="bp in item.barcode_prices" 
@@ -287,18 +276,7 @@
                   <div v-if="item.barcode_prices && item.barcode_prices.length" class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
                     <div class="overflow-x-auto">
                       <table class="w-full text-left text-[10px] border-collapse">
-                        <thead>
-                          <tr class="border-b border-[var(--color-border)]/50 text-[var(--color-text-muted)] font-bold uppercase tracking-wider">
-                            <th class="py-1 pr-2 font-bold">Barcode</th>
-                            <th 
-                              v-for="pl in offer.price_lists" 
-                              :key="pl.price_list"
-                              class="py-1 px-1.5 font-bold text-right"
-                            >
-                              {{ pl.price_list }}
-                            </th>
-                          </tr>
-                        </thead>
+
                         <tbody class="divide-y divide-[var(--color-border)]/30 font-medium">
                           <tr 
                             v-for="bp in item.barcode_prices" 
