@@ -99,7 +99,7 @@ def get_offer_details(pageaddress):
 	barcodes = [item.barcode for item in doc.items if item.barcode]
 	if barcodes:
 		barcode_data = frappe.get_all(
-			"UOM Barcode",
+			"Item Barcode",
 			filters={"barcode": ["in", barcodes]},
 			fields=["barcode", "uom"],
 			ignore_permissions=True
