@@ -74,12 +74,12 @@
           v-for="cat in catalogues"
           :key="cat.name"
           @click="openCatalogue(cat.pageaddress)"
-          class="catalogue-card group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-md hover:shadow-2xl hover:border-[var(--color-info)]/60 cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
+          class="catalogue-card group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 shadow-md hover:shadow-2xl hover:border-[var(--color-info)]/60 cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
         >
           <!-- Accent Light Border Top Glow -->
           <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-          <div class="flex-1 space-y-4">
+          <div class="flex-1 space-y-2">
             <!-- Icon and Date -->
             <div class="flex items-center justify-between">
               <span class="card-icon text-3xl">📖</span>
@@ -96,7 +96,7 @@
             </div>
 
             <!-- Detail stats/badge -->
-            <div class="flex items-center gap-2 pt-2">
+            <div class="flex items-center gap-2 pt-1">
               <span class="card-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
                 🟢 Active
               </span>
@@ -104,7 +104,7 @@
           </div>
 
           <!-- Bottom Action indicator -->
-          <div class="card-action mt-6 pt-4 border-t border-[var(--color-border)]/40 flex items-center justify-between text-xs font-bold text-[var(--color-info)] group-hover:translate-x-1 transition-transform duration-300">
+          <div class="card-action mt-3.5 pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between text-xs font-bold text-[var(--color-info)] group-hover:translate-x-1 transition-transform duration-300">
             <span>View Catalogue</span>
             <span>→</span>
           </div>
@@ -207,6 +207,6 @@ onMounted(async () => {
   font-size: 24px !important;
 }
 .catalogue-card .card-icon {
-  font-size: 60px !important;
+  font-size: 40px !important;
 }
 </style>
