@@ -87,22 +87,44 @@
                 </h3>
                 
                 <div 
-                  v-if="presentationCols < 6 && ((item.barcodes && item.barcodes.length) || item.barcode)"
-                  class="flex items-center justify-center pt-1"
+                  v-if="presentationCols < 6 && item.barcode_prices && item.barcode_prices.length"
+                  class="flex items-center justify-center pt-2 shrink-0"
                 >
-                  <div class="flex flex-col items-center gap-1.5 w-full">
-                    <span class="text-[18px] uppercase font-normal text-slate-500 tracking-wider">
-                      {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes' : 'Barcode' }}
-                    </span>
-                    <div class="flex flex-wrap justify-center gap-2 max-w-full">
-                      <span 
-                        v-for="bc in (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode])"
-                        :key="bc"
-                        class="font-mono text-[22px] font-normal bg-indigo-500/10 text-indigo-400 px-3.5 py-1 rounded-full border border-indigo-500/20 leading-normal whitespace-nowrap"
-                      >
-                        {{ bc }}
-                      </span>
-                    </div>
+                  <div class="w-full max-w-xl bg-slate-950/40 rounded-xl p-3 border border-slate-800/40 shadow-inner">
+                    <table class="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                          <th class="pb-1.5 pr-2 font-bold">Barcode</th>
+                          <th 
+                            v-for="pl in offer.price_lists" 
+                            :key="pl.price_list"
+                            class="pb-1.5 px-2 font-bold text-right"
+                          >
+                            {{ pl.price_list }}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-900/50 font-medium">
+                        <tr 
+                          v-for="bp in item.barcode_prices" 
+                          :key="bp.barcode"
+                        >
+                          <td class="py-2 pr-2 font-mono text-slate-200 select-all font-bold">
+                            {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-[9px] font-sans">({{ bp.uom }})</span>
+                          </td>
+                          <td 
+                            v-for="pl in offer.price_lists" 
+                            :key="pl.price_list"
+                            class="py-2 px-2 font-mono text-right text-indigo-400 font-bold"
+                          >
+                            <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                              ₹{{ Number(bp.prices[pl.price_list]).toLocaleString() }}
+                            </span>
+                            <span v-else class="text-slate-600 font-normal">—</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -261,35 +283,44 @@
                 </div>
 
                 <div class="space-y-2 shrink-0">
-                  <!-- Barcode & Price Lists Row -->
-                  <div v-if="(item.barcodes && item.barcodes.length) || item.barcode || (item.prices && item.prices.length)" class="pt-2 border-t border-[var(--color-border)]/40 flex flex-col gap-1.5 shrink-0">
-                    <div class="flex items-start justify-between gap-2">
-                      <span class="uppercase font-bold text-[var(--color-text-muted)] tracking-wider mt-0.5 shrink-0" :class="cardCodeClass">
-                        {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes' : 'Barcode' }}
-                      </span>
-                      <div v-if="(item.barcodes && item.barcodes.length) || item.barcode" class="flex flex-wrap justify-end gap-1 max-w-[70%]">
-                        <span 
-                          v-for="bc in (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode])"
-                          :key="bc"
-                          class="font-mono font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all whitespace-nowrap" 
-                          :class="cardCodeClass"
-                        >
-                          {{ bc }}
-                        </span>
-                      </div>
-                      <span v-else class="text-[var(--color-text-muted)] font-bold">—</span>
-                    </div>
-                    
-                    <!-- Price Lists Rates in Ascending Order -->
-                    <div v-if="item.prices && item.prices.length" class="flex flex-wrap gap-1.5 pt-1.5 border-t border-dashed border-[var(--color-border)]/30">
-                      <span 
-                        v-for="p in item.prices" 
-                        :key="p.price_list"
-                        class="inline-flex items-center gap-1 bg-[var(--color-midlight)] text-[10px] font-bold px-1.5 py-0.5 rounded"
-                      >
-                        <span class="text-[var(--color-text-muted)] font-normal text-[9px]">{{ p.price_list }}:</span>
-                        <span class="text-[var(--color-info)] font-mono">₹{{ Number(p.rate).toLocaleString() }}</span>
-                      </span>
+                  <!-- Barcode & Prices Table -->
+                  <div v-if="item.barcode_prices && item.barcode_prices.length" class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-left text-[10px] border-collapse">
+                        <thead>
+                          <tr class="border-b border-[var(--color-border)]/50 text-[var(--color-text-muted)] font-bold uppercase tracking-wider">
+                            <th class="py-1 pr-2 font-bold">Barcode</th>
+                            <th 
+                              v-for="pl in offer.price_lists" 
+                              :key="pl.price_list"
+                              class="py-1 px-1.5 font-bold text-right"
+                            >
+                              {{ pl.price_list }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[var(--color-border)]/30 font-medium">
+                          <tr 
+                            v-for="bp in item.barcode_prices" 
+                            :key="bp.barcode"
+                            class="hover:bg-[var(--color-bg)]/50 transition-colors"
+                          >
+                            <td class="py-1.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
+                              {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-[8px] font-sans">({{ bp.uom }})</span>
+                            </td>
+                            <td 
+                              v-for="pl in offer.price_lists" 
+                              :key="pl.price_list"
+                              class="py-1.5 px-1.5 font-mono text-right text-[var(--color-info)] font-bold"
+                            >
+                              <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                                ₹{{ Number(bp.prices[pl.price_list]).toLocaleString() }}
+                              </span>
+                              <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
@@ -384,30 +415,42 @@
               <div v-else class="h-[26px]"></div>
             </div>
 
-            <!-- Barcode and Prices at the absolute bottom -->
-            <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 flex flex-col gap-1 box-border select-all">
-              <!-- Barcode Row -->
-              <div class="flex justify-between items-start w-full gap-2">
-                <span class="text-slate-500 font-bold uppercase text-[9px] shrink-0 mt-0.5">
-                  {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes:' : 'Barcode:' }}
-                </span>
-                <span v-if="(item.barcodes && item.barcodes.length) || item.barcode" class="text-slate-900 text-right break-all leading-tight">
-                  {{ (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode]).join(', ') }}
-                </span>
-                <span v-else class="text-slate-400 opacity-50">—</span>
-              </div>
-              
-              <!-- Prices Row -->
-              <div v-if="item.prices && item.prices.length" class="flex flex-wrap gap-1 mt-0.5 pt-1 border-t border-dashed border-slate-300 w-full justify-center">
-                <span 
-                  v-for="p in item.prices" 
-                  :key="p.price_list"
-                  class="inline-flex gap-1 text-[9px] bg-slate-200 px-1 py-0.5 rounded text-slate-800"
-                >
-                  <span class="text-slate-500 font-normal text-[8px]">{{ p.price_list }}:</span>
-                  <span class="font-bold">₹{{ Number(p.rate).toLocaleString() }}</span>
-                </span>
-              </div>
+            <!-- Barcode and Prices Table -->
+            <div v-if="item.barcode_prices && item.barcode_prices.length" class="text-[9px] font-medium bg-slate-50 p-1.5 rounded border border-slate-200 flex flex-col box-border shrink-0 select-all">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-300 text-slate-500 font-black uppercase text-[8px]">
+                    <th class="pb-0.5 pr-1">Barcode</th>
+                    <th 
+                      v-for="pl in offer.price_lists" 
+                      :key="pl.price_list"
+                      class="pb-0.5 px-1 text-right"
+                    >
+                      {{ pl.price_list }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 font-bold">
+                  <tr 
+                    v-for="bp in item.barcode_prices" 
+                    :key="bp.barcode"
+                  >
+                    <td class="py-1 pr-1 font-mono text-slate-900 text-[9px] truncate max-w-[80px]">
+                      {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-[7px] font-sans">({{ bp.uom }})</span>
+                    </td>
+                    <td 
+                      v-for="pl in offer.price_lists" 
+                      :key="pl.price_list"
+                      class="py-1 px-1 font-mono text-right text-slate-900 text-[9px]"
+                    >
+                      <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                        ₹{{ Number(bp.prices[pl.price_list]).toLocaleString() }}
+                      </span>
+                      <span v-else class="text-slate-400">—</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

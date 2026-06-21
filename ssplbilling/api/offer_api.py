@@ -6,6 +6,23 @@ import frappe
 from frappe.utils import getdate
 import datetime
 
+def resolve_rate(uom_rates, uom, stock_uom):
+	if not uom_rates:
+		return None
+	# 1. Try barcode UOM
+	if uom and uom in uom_rates:
+		return uom_rates[uom]
+	# 2. Try stock UOM
+	if stock_uom and stock_uom in uom_rates:
+		return uom_rates[stock_uom]
+	# 3. Try default UOM (empty string)
+	if "" in uom_rates:
+		return uom_rates[""]
+	# 4. Try any UOM if only one exists
+	if len(uom_rates) == 1:
+		return list(uom_rates.values())[0]
+	return None
+
 @frappe.whitelist(allow_guest=True)
 def get_offer_details(pageaddress):
 	if not pageaddress:
@@ -112,12 +129,15 @@ def get_offer_details(pageaddress):
 		all_barcodes_data = frappe.get_all(
 			"Item Barcode",
 			filters={"parent": ["in", item_codes]},
-			fields=["parent as item_code", "barcode"],
+			fields=["parent as item_code", "barcode", "uom"],
 			ignore_permissions=True
 		)
 		for row in all_barcodes_data:
 			if row.barcode:
-				all_item_barcodes.setdefault(row.item_code, []).append(row.barcode)
+				all_item_barcodes.setdefault(row.item_code, []).append({
+					"barcode": row.barcode,
+					"uom": row.uom
+				})
 
 	# Pre-fetch price list rates for these items and UOMs
 	price_lists = [pl.price_list for pl in doc.get("price_lists") if pl.price_list]
@@ -234,22 +254,52 @@ def get_offer_details(pageaddress):
 				else:
 					discount_desc = "Offer"
 
-		# Compile all unique barcodes for this item
-		barcodes_list = []
+		# Compile all unique barcodes and their rates for each price list
+		barcodes_with_prices = []
 		seen_barcodes = set()
-		for bc in all_item_barcodes.get(item_code, []):
+		for b_info in all_item_barcodes.get(item_code, []):
+			bc = b_info["barcode"]
+			b_uom = b_info["uom"]
 			if bc and bc not in seen_barcodes:
-				barcodes_list.append(bc)
 				seen_barcodes.add(bc)
+				rates = {}
+				for plist in price_lists:
+					uom_rates = price_map.get(item_code, {}).get(plist)
+					rates[plist] = resolve_rate(uom_rates, b_uom, stock_uom)
+				barcodes_with_prices.append({
+					"barcode": bc,
+					"uom": b_uom,
+					"prices": rates
+				})
 		if item.barcode and item.barcode not in seen_barcodes:
-			barcodes_list.append(item.barcode)
 			seen_barcodes.add(item.barcode)
+			b_uom = barcode_uom_map.get(item.barcode) or stock_uom
+			rates = {}
+			for plist in price_lists:
+				uom_rates = price_map.get(item_code, {}).get(plist)
+				rates[plist] = resolve_rate(uom_rates, b_uom, stock_uom)
+			barcodes_with_prices.append({
+				"barcode": item.barcode,
+				"uom": b_uom,
+				"prices": rates
+			})
+		if not barcodes_with_prices:
+			rates = {}
+			for plist in price_lists:
+				uom_rates = price_map.get(item_code, {}).get(plist)
+				rates[plist] = resolve_rate(uom_rates, stock_uom, stock_uom)
+			barcodes_with_prices.append({
+				"barcode": "",
+				"uom": stock_uom,
+				"prices": rates
+			})
 
 		items.append({
 			"itemcode": item_code,
 			"itemname": item.itemname,
 			"barcode": item.barcode,
-			"barcodes": barcodes_list,
+			"barcodes": [b["barcode"] for b in barcodes_with_prices if b["barcode"]],
+			"barcode_prices": barcodes_with_prices,
 			"image": item_image,
 			"discount_type": discount_type,
 			"discount_desc": discount_desc,
@@ -262,5 +312,6 @@ def get_offer_details(pageaddress):
 		"pageaddress": doc.pageaddress,
 		"tile_grid": doc.tile_grid or "4",
 		"timer": doc.timer or 0,
+		"price_lists": [{"price_list": pl.price_list} for pl in doc.get("price_lists") if pl.price_list],
 		"items": items
 	}
