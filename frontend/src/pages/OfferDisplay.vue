@@ -747,6 +747,34 @@ onMounted(() => {
 
 <style scoped>
 .offer-display-page {
-  /* Utilizing core styling variables */
+  font-size: 19.5px !important; /* 13px * 1.5 */
+}
+.offer-display-page :deep(.text-xs),
+.offer-display-page :deep(input.text-xs),
+.offer-display-page :deep(select.text-xs),
+.offer-display-page :deep(button.text-xs),
+.offer-display-page :deep(textarea.text-xs) {
+  font-size: 18px !important; /* 12px * 1.5 */
+}
+.offer-display-page :deep(.text-sm) {
+  font-size: 21px !important; /* 14px * 1.5 */
+}
+.offer-display-page :deep(.text-base) {
+  font-size: 24px !important; /* 16px * 1.5 */
+}
+.offer-display-page :deep(.text-5xl) {
+  font-size: 72px !important; /* 48px * 1.5 */
+}
+.offer-display-page :deep(.text-\[14px\]) {
+  font-size: 21px !important; /* 14px * 1.5 */
+}
+.offer-display-page :deep(.text-\[11px\]) {
+  font-size: 16.5px !important; /* 11px * 1.5 */
+}
+.offer-display-page :deep(.text-\[10px\]) {
+  font-size: 15px !important; /* 10px * 1.5 */
+}
+.offer-display-page :deep(.text-\[9px\]) {
+  font-size: 13.5px !important; /* 9px * 1.5 */
 }
 </style>
