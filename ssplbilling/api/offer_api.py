@@ -235,8 +235,7 @@ def get_offer_details(pageaddress):
 				free_q = matched_rule.free_quantity
 				min_str = str(int(min_q)) if min_q.is_integer() else str(min_q)
 				free_str = str(int(free_q)) if free_q.is_integer() else str(free_q)
-				recursive_str = " (Recursive)" if matched_rule.recursive else ""
-				discount_desc = f"Buy {min_str} Get {free_str} Free{recursive_str}"
+				discount_desc = f"Buy {min_str} Get {free_str} Free"
 				
 			elif discount_type == "Custom Logic":
 				logic_type = matched_rule.custom_logic_type
