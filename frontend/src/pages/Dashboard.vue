@@ -463,9 +463,9 @@ const allTiles = [
   { id: 'party-link',         bucket: 'sspl',   name: 'Party Link',            desc: 'Link customers and suppliers',             icon: '🔗', shortcut: ''    },
   { id: 'naming-settings',    bucket: 'sspl',   name: 'Naming Settings',       desc: 'Configure document series',                icon: '🔢', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
-  { id: 'offer-display',      bucket: 'sspl',   name: 'Offer Display',         desc: 'Manage offer items list',                  icon: '🏷️', shortcut: ''    },
   { id: 'catelogue',          bucket: 'sspl',   name: 'Catalogues',            desc: 'View published catalogues',                icon: '📖', shortcut: ''    },
   { id: 'invoice-template',   bucket: 'sspl',     name: 'Invoice Template',      desc: 'Reusable invoice UI template',             icon: '🎨', shortcut: ''    },
+
   { id: 'stock-template',     bucket: 'sspl',     name: 'Stock Template',        desc: 'Reusable stock UI template',               icon: '📦', shortcut: ''    },
   // ── Report ──
   { id: 'daily-report',       bucket: 'report',   name: 'Daily Report',          desc: 'Daily operations summary',                 icon: '📊', shortcut: ''    },
