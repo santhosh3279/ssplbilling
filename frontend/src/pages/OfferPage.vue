@@ -313,50 +313,61 @@
     <div 
       v-for="(pageItems, pIdx) in chunkedItems" 
       :key="pIdx"
-      class="print-page w-full grid grid-cols-3 grid-rows-3 gap-4 p-4 box-border"
+      class="print-page w-full flex flex-col p-4 box-border relative"
     >
-      <div 
-        v-for="item in pageItems" 
-        :key="item.itemcode"
-        class="print-card flex flex-col justify-between border border-slate-300 rounded-xl p-4 bg-white box-border overflow-hidden"
-      >
-        <!-- Name at top -->
-        <div class="text-[13px] font-black text-slate-900 line-clamp-2 leading-snug text-center tracking-tight shrink-0">
-          {{ item.itemname }}
-        </div>
+      <!-- Watermark Overlay -->
+      <div class="watermark-overlay">Sundaram and Sons Private Ltd.</div>
 
-        <!-- Image in the middle -->
-        <div class="flex-1 flex items-center justify-center min-h-0 my-3">
-          <img 
-            v-if="item.image" 
-            :src="item.image" 
-            class="max-w-full max-h-[140px] object-contain"
-          />
-          <div v-else class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-2xl select-none">
-            📦
+      <!-- Company Name Header at top of each page -->
+      <div class="text-center border-b-2 border-slate-900 pb-2 mb-4 shrink-0">
+        <h1 class="text-xl font-black uppercase tracking-widest text-slate-900">Sundaram and Sons Private Ltd.</h1>
+      </div>
+
+      <!-- 3x3 Grid of Cards -->
+      <div class="flex-1 grid grid-cols-3 grid-rows-3 gap-4">
+        <div 
+          v-for="item in pageItems" 
+          :key="item.itemcode"
+          class="print-card flex flex-col justify-between border border-slate-300 rounded-xl p-4 bg-white box-border overflow-hidden"
+        >
+          <!-- Name at top -->
+          <div class="text-[13px] font-black text-slate-900 line-clamp-2 leading-snug text-center tracking-tight shrink-0">
+            {{ item.itemname }}
           </div>
-        </div>
 
-        <!-- Locked bottom section -->
-        <div class="shrink-0 flex flex-col justify-end min-h-[64px]">
-          <!-- Offer container (Above) -->
-          <div class="mb-1">
-            <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-center leading-tight">
-              <div 
-                v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-                :key="lIdx"
-              >
-                {{ line }}
-              </div>
+          <!-- Image in the middle -->
+          <div class="flex-1 flex items-center justify-center min-h-0 my-3">
+            <img 
+              v-if="item.image" 
+              :src="item.image" 
+              class="max-w-full max-h-[140px] object-contain"
+            />
+            <div v-else class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-2xl select-none">
+              📦
             </div>
-            <!-- Blank height spacer so the offer position is locked/fixed -->
-            <div v-else class="h-[26px]"></div>
           </div>
 
-          <!-- Barcode at the absolute bottom -->
-          <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 text-center select-all">
-            <span v-if="item.barcode">{{ item.barcode }}</span>
-            <span v-else class="text-slate-400 opacity-50">—</span>
+          <!-- Locked bottom section -->
+          <div class="shrink-0 flex flex-col justify-end min-h-[64px]">
+            <!-- Offer container (Above) -->
+            <div class="mb-1">
+              <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-center leading-tight">
+                <div 
+                  v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                  :key="lIdx"
+                >
+                  {{ line }}
+                </div>
+              </div>
+              <!-- Blank height spacer so the offer position is locked/fixed -->
+              <div v-else class="h-[26px]"></div>
+            </div>
+
+            <!-- Barcode at the absolute bottom -->
+            <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 text-center select-all">
+              <span v-if="item.barcode">{{ item.barcode }}</span>
+              <span v-else class="text-slate-400 opacity-50">—</span>
+            </div>
           </div>
         </div>
       </div>
@@ -818,16 +829,30 @@ onBeforeUnmount(() => {
   }
   
   .print-page {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-    padding: 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
     width: 100% !important;
     height: 275mm !important; /* fits A4 height with margins */
     box-sizing: border-box !important;
     page-break-after: always !important;
     break-after: page !important;
+    position: relative !important;
+  }
+
+  .watermark-overlay {
+    display: block !important;
+    position: absolute !important;
+    top: 55% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) rotate(-30deg) !important;
+    font-size: 42px !important;
+    font-weight: 900 !important;
+    color: rgba(15, 23, 42, 0.05) !important; /* extremely subtle slate overlay */
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    pointer-events: none !important;
+    z-index: 100 !important;
+    white-space: nowrap !important;
   }
 
   .print-page:last-child {
