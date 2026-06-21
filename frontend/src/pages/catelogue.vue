@@ -11,6 +11,15 @@
         ← Dashboard
       </button>
 
+      <!-- Create/Manage button if logged in -->
+      <button 
+        v-if="isLoggedIn"
+        @click="goCreateOffer"
+        class="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white border border-indigo-500 transition active:scale-95 focus:outline-none"
+      >
+        ➕ Create Offer Page
+      </button>
+
       <!-- Abstract glowing circles -->
       <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
@@ -159,6 +168,10 @@ function openCatalogue(pageaddress) {
 
 function goDashboard() {
   router.push('/')
+}
+
+function goCreateOffer() {
+  router.push('/offer-display')
 }
 
 function formatDate(dateStr) {
