@@ -74,7 +74,7 @@
           v-for="cat in catalogues"
           :key="cat.name"
           @click="openCatalogue(cat.pageaddress)"
-          class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-md hover:shadow-2xl hover:border-[var(--color-info)]/60 cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
+          class="catalogue-card group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-md hover:shadow-2xl hover:border-[var(--color-info)]/60 cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
         >
           <!-- Accent Light Border Top Glow -->
           <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -82,18 +82,18 @@
           <div class="flex-1 space-y-4">
             <!-- Icon and Date -->
             <div class="flex items-center justify-between">
-              <span class="text-3xl">📖</span>
-              <span class="text-[10px] font-bold text-[var(--color-text-muted)]">
+              <span class="card-icon text-3xl">📖</span>
+              <span class="card-date text-[10px] font-bold text-[var(--color-text-muted)]">
                 {{ formatDate(cat.creation) }}
               </span>
             </div>
 
             <!-- Title -->
             <div class="space-y-1.5">
-              <h3 class="text-lg font-black text-[var(--color-text)] group-hover:text-[var(--color-info)] transition-colors line-clamp-2">
+              <h3 class="card-heading text-lg font-black text-[var(--color-text)] group-hover:text-[var(--color-info)] transition-colors line-clamp-2">
                 {{ cat.heading }}
               </h3>
-              <p class="font-mono text-[10px] text-[var(--color-text-muted)] tracking-wider">
+              <p class="card-ref font-mono text-[10px] text-[var(--color-text-muted)] tracking-wider">
                 Ref: {{ cat.pageaddress }}
               </p>
             </div>
@@ -102,18 +102,18 @@
             <div class="flex items-center gap-2 pt-2">
               <span 
                 v-if="cat.timer > 0" 
-                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20"
+                class="card-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20"
               >
                 ⏱️ Slideshow: {{ cat.timer }}s
               </span>
-              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
+              <span class="card-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
                 🟢 Active
               </span>
             </div>
           </div>
 
           <!-- Bottom Action indicator -->
-          <div class="mt-6 pt-4 border-t border-[var(--color-border)]/40 flex items-center justify-between text-xs font-bold text-[var(--color-info)] group-hover:translate-x-1 transition-transform duration-300">
+          <div class="card-action mt-6 pt-4 border-t border-[var(--color-border)]/40 flex items-center justify-between text-xs font-bold text-[var(--color-info)] group-hover:translate-x-1 transition-transform duration-300">
             <span>View Catalogue</span>
             <span>→</span>
           </div>
@@ -200,5 +200,23 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Scoped styles */
+.catalogue-card {
+  font-size: 26px !important;
+}
+.catalogue-card .card-date,
+.catalogue-card .card-ref {
+  font-size: 20px !important;
+}
+.catalogue-card .card-heading {
+  font-size: 36px !important;
+}
+.catalogue-card .card-badge {
+  font-size: 18px !important;
+}
+.catalogue-card .card-action {
+  font-size: 24px !important;
+}
+.catalogue-card .card-icon {
+  font-size: 60px !important;
+}
 </style>
