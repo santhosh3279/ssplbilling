@@ -8,21 +8,7 @@
         <div class="text-lg font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
         <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">Fast Billing System</div>
         
-        <!-- MQTT Status -->
-        <div 
-          v-if="mqttServerInfo && mqttServerInfo.server"
-          @click="handleMqttClick"
-          class="mt-3.5 flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 cursor-pointer hover:bg-[var(--color-midlight)] transition-all duration-200"
-          :title="mqttConnecting ? 'Refreshing connection...' : 'Click to refresh connection'"
-        >
-          <span class="relative flex h-2.5 w-2.5 shrink-0">
-            <span :class="[mqttConnected ? 'bg-emerald-500' : 'bg-rose-500']" class="relative inline-flex rounded-full h-2.5 w-2.5"></span>
-            <span v-if="mqttConnected || mqttConnecting" :class="[mqttConnecting ? 'bg-blue-400' : 'bg-emerald-400']" class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
-          </span>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text)]">
-            {{ mqttConnecting ? 'Refreshing...' : (mqttConnected ? 'QR Server Connected' : 'QR Server Disconnected') }}
-          </span>
-        </div>
+
       </div>
 
       <!-- User -->
@@ -325,22 +311,10 @@ import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
-import { useMqtt } from '../composables/useMqtt'
 
 const router = useRouter()
 
-const { 
-  isConnected: mqttConnected, 
-  serverInfo: mqttServerInfo, 
-  connectMqtt,
-  refreshConnection: refreshMqtt,
-  isConnecting: mqttConnecting
-} = useMqtt()
 
-async function handleMqttClick() {
-  if (mqttConnecting.value) return
-  await refreshMqtt()
-}
 
 
 const { refreshItemCache } = useItemCache()
@@ -777,7 +751,6 @@ onMounted(async () => {
   fetchSettings(selectedUser.value, true)
   refreshItemCache('Sales') // Preload items for fast entry
   refreshLedgerCache()      // Preload ledgers for fast search
-  connectMqtt()
 
   timeInterval = setInterval(() => {
     now.value = new Date()
