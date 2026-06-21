@@ -253,12 +253,27 @@
                 </div>
 
                 <div class="space-y-2 shrink-0">
-                  <!-- Barcode Badge -->
-                  <div v-if="item.barcode" class="pt-2 border-t border-[var(--color-border)]/40 flex items-center justify-between">
-                    <span class="uppercase font-bold text-[var(--color-text-muted)] tracking-wider" :class="cardCodeClass">Barcode</span>
-                    <span class="font-mono font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all" :class="cardCodeClass">
-                      {{ item.barcode }}
-                    </span>
+                  <!-- Barcode & Price Lists Row -->
+                  <div v-if="item.barcode || (item.prices && item.prices.length)" class="pt-2 border-t border-[var(--color-border)]/40 flex flex-col gap-1.5 shrink-0">
+                    <div class="flex items-center justify-between">
+                      <span class="uppercase font-bold text-[var(--color-text-muted)] tracking-wider" :class="cardCodeClass">Barcode</span>
+                      <span v-if="item.barcode" class="font-mono font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all" :class="cardCodeClass">
+                        {{ item.barcode }}
+                      </span>
+                      <span v-else class="text-[var(--color-text-muted)] font-bold">—</span>
+                    </div>
+                    
+                    <!-- Price Lists Rates in Ascending Order -->
+                    <div v-if="item.prices && item.prices.length" class="flex flex-wrap gap-1.5 pt-1.5 border-t border-dashed border-[var(--color-border)]/30">
+                      <span 
+                        v-for="p in item.prices" 
+                        :key="p.price_list"
+                        class="inline-flex items-center gap-1 bg-[var(--color-midlight)] text-[10px] font-bold px-1.5 py-0.5 rounded"
+                      >
+                        <span class="text-[var(--color-text-muted)] font-normal text-[9px]">{{ p.price_list }}:</span>
+                        <span class="text-[var(--color-info)] font-mono">₹{{ Number(p.rate).toLocaleString() }}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -337,7 +352,7 @@
           </div>
 
           <!-- Locked bottom section -->
-          <div class="shrink-0 flex flex-col justify-end min-h-[64px]">
+          <div class="shrink-0 flex flex-col justify-end min-h-[72px]">
             <!-- Offer container (Above) -->
             <div class="mb-1">
               <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-center leading-tight">
@@ -352,10 +367,26 @@
               <div v-else class="h-[26px]"></div>
             </div>
 
-            <!-- Barcode at the absolute bottom -->
-            <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 text-center select-all">
-              <span v-if="item.barcode">{{ item.barcode }}</span>
-              <span v-else class="text-slate-400 opacity-50">—</span>
+            <!-- Barcode and Prices at the absolute bottom -->
+            <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 flex flex-col gap-1 box-border select-all">
+              <!-- Barcode Row -->
+              <div class="flex justify-between items-center w-full">
+                <span class="text-slate-500 font-bold uppercase text-[9px]">Barcode:</span>
+                <span v-if="item.barcode" class="text-slate-900">{{ item.barcode }}</span>
+                <span v-else class="text-slate-400 opacity-50">—</span>
+              </div>
+              
+              <!-- Prices Row -->
+              <div v-if="item.prices && item.prices.length" class="flex flex-wrap gap-1 mt-0.5 pt-1 border-t border-dashed border-slate-300 w-full justify-center">
+                <span 
+                  v-for="p in item.prices" 
+                  :key="p.price_list"
+                  class="inline-flex gap-1 text-[9px] bg-slate-200 px-1 py-0.5 rounded text-slate-800"
+                >
+                  <span class="text-slate-500 font-normal text-[8px]">{{ p.price_list }}:</span>
+                  <span class="font-bold">₹{{ Number(p.rate).toLocaleString() }}</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>

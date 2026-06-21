@@ -93,6 +93,28 @@ def get_offer_details(pageaddress):
 	else:
 		item_image_map = {}
 
+	# Pre-fetch price list rates for these items
+	price_lists = [pl.price_list for pl in doc.get("price_lists") if pl.price_list]
+	item_prices = {}
+	if price_lists and item_codes:
+		prices_data = frappe.get_all(
+			"Item Price",
+			filters={
+				"item_code": ["in", item_codes],
+				"price_list": ["in", price_lists]
+			},
+			fields=["item_code", "price_list", "price_list_rate"],
+			ignore_permissions=True
+		)
+		for p in prices_data:
+			item_prices.setdefault(p.item_code, []).append({
+				"price_list": p.price_list,
+				"rate": p.price_list_rate
+			})
+		# Sort rates in ascending order of rate
+		for code in item_prices:
+			item_prices[code].sort(key=lambda x: x["rate"])
+
 	items = []
 	for item in doc.items:
 		item_code = item.itemcode
@@ -173,7 +195,8 @@ def get_offer_details(pageaddress):
 			"barcode": item.barcode,
 			"image": item_image,
 			"discount_type": discount_type,
-			"discount_desc": discount_desc
+			"discount_desc": discount_desc,
+			"prices": item_prices.get(item_code, [])
 		})
 		
 	return {
