@@ -93,19 +93,10 @@
               <h3 class="card-heading text-lg font-black text-[var(--color-text)] group-hover:text-[var(--color-info)] transition-colors line-clamp-2">
                 {{ cat.heading }}
               </h3>
-              <p class="card-ref font-mono text-[10px] text-[var(--color-text-muted)] tracking-wider">
-                Ref: {{ cat.pageaddress }}
-              </p>
             </div>
 
             <!-- Detail stats/badge -->
             <div class="flex items-center gap-2 pt-2">
-              <span 
-                v-if="cat.timer > 0" 
-                class="card-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20"
-              >
-                ⏱️ Slideshow: {{ cat.timer }}s
-              </span>
               <span class="card-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
                 🟢 Active
               </span>
@@ -203,8 +194,7 @@ onMounted(async () => {
 .catalogue-card {
   font-size: 26px !important;
 }
-.catalogue-card .card-date,
-.catalogue-card .card-ref {
+.catalogue-card .card-date {
   font-size: 20px !important;
 }
 .catalogue-card .card-heading {
