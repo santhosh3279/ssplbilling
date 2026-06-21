@@ -337,20 +337,26 @@
           </div>
         </div>
 
-        <!-- Barcode and Offers at the bottom -->
-        <div class="shrink-0 space-y-1">
-          <!-- Barcode if any -->
-          <div v-if="item.barcode" class="text-[10px] font-mono font-bold text-center bg-slate-100 py-0.5 rounded border border-slate-200">
-            {{ item.barcode }}
-          </div>
-          <!-- Offer if any -->
-          <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-center leading-tight">
-            <div 
-              v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-              :key="lIdx"
-            >
-              {{ line }}
+        <!-- Locked bottom section -->
+        <div class="shrink-0 flex flex-col justify-end min-h-[64px]">
+          <!-- Offer container (Above) -->
+          <div class="mb-1">
+            <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-center leading-tight">
+              <div 
+                v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                :key="lIdx"
+              >
+                {{ line }}
+              </div>
             </div>
+            <!-- Blank height spacer so the offer position is locked/fixed -->
+            <div v-else class="h-[26px]"></div>
+          </div>
+
+          <!-- Code and Barcode at the absolute bottom -->
+          <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 flex justify-between items-center select-all">
+            <span>Code: {{ item.itemcode }}</span>
+            <span v-if="item.barcode">BC: {{ item.barcode }}</span>
           </div>
         </div>
       </div>
