@@ -275,7 +275,7 @@
                   <!-- Barcode & Prices Table -->
                   <div v-if="item.barcode_prices && item.barcode_prices.length" class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
                     <div class="overflow-x-auto">
-                      <table class="w-full text-left text-[10px] border-collapse">
+                      <table class="w-full text-left text-xl border-collapse">
 
                         <tbody class="divide-y divide-[var(--color-border)]/30 font-medium">
                           <tr 
@@ -283,13 +283,13 @@
                             :key="bp.barcode"
                             class="hover:bg-[var(--color-bg)]/50 transition-colors"
                           >
-                            <td class="py-1.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
-                              {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-[8px] font-sans">({{ bp.uom }})</span>
+                            <td class="py-0.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
+                              {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
                             </td>
                             <td 
                               v-for="pl in offer.price_lists" 
                               :key="pl.price_list"
-                              class="py-1.5 px-1.5 font-mono text-right text-[var(--color-info)] font-bold tracking-widest"
+                              class="py-0.5 px-0.5 font-mono text-right text-[var(--color-info)] font-bold tracking-widest"
                             >
                               <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
                                 {{ encryptPrice(bp.prices[pl.price_list]) }}
