@@ -282,9 +282,15 @@ def publish_mqtt_message(topic, message):
 			callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2
 		)
 		client.connect(mqtt_server, port, keepalive=60)
-		info = client.publish(topic, message, qos=1)
-		info.wait_for_publish()
-		client.disconnect()
+		client.loop_start()
+		try:
+			info = client.publish(topic, message, qos=1)
+			info.wait_for_publish(timeout=10)
+			if not info.is_published():
+				raise RuntimeError("Publish timeout: Message was not published within 10 seconds.")
+		finally:
+			client.loop_stop()
+			client.disconnect()
 		return {"status": "success", "message": "Message published successfully"}
 	except Exception as e:
 		frappe.log_error(message=frappe.get_traceback(), title="MQTT Publish Error")
