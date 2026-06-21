@@ -200,6 +200,14 @@
       <template v-else>
         <!-- Premium Hero Header -->
         <header class="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white px-6 py-12 md:py-16 text-center border-b border-[var(--color-border)] shrink-0">
+          <!-- Back to Catalogue Button -->
+          <button 
+            @click="goBackToCatalogue"
+            class="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus:outline-none"
+          >
+            ← Back to Catalogue
+          </button>
+          
           <!-- Abstract glowing circles -->
           <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
           <div class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
@@ -842,6 +850,10 @@ function goHome() {
   } else {
     window.location.href = '/frontend/'
   }
+}
+
+function goBackToCatalogue() {
+  router.push('/catelogue')
 }
 
 const showExportModal = ref(false)

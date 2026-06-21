@@ -314,3 +314,12 @@ def get_offer_details(pageaddress):
 		"price_lists": [{"price_list": pl.price_list} for pl in doc.get("price_lists") if pl.price_list],
 		"items": items
 	}
+
+@frappe.whitelist(allow_guest=True)
+def get_offer_list():
+	return frappe.get_all(
+		"Offer-Items",
+		fields=["name", "heading", "pageaddress", "timer", "creation"],
+		order_by="creation desc"
+	)
+

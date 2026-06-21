@@ -39,6 +39,7 @@ import Expense from './pages/expense.vue'
 import Repack from './pages/Repack.vue'
 import OfferDisplay from './pages/OfferDisplay.vue'
 import OfferPage from './pages/OfferPage.vue'
+import Catelogue from './pages/catelogue.vue'
 
 const routes = [
   {
@@ -267,13 +268,19 @@ const routes = [
     component: OfferPage,
     meta: { public: true, title: 'Offers' },
   },
+  {
+    path: '/catelogue',
+    name: 'Catelogue',
+    component: Catelogue,
+    meta: { public: true, title: 'Catalogue' },
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(
     import.meta.env.DEV
       ? '/'
-      : window.location.pathname.startsWith('/offer/')
+      : window.location.pathname.startsWith('/offer/') || window.location.pathname.startsWith('/catelogue')
       ? '/'
       : '/frontend'
   ),
