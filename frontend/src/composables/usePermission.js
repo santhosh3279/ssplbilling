@@ -100,7 +100,7 @@ export function getUserRole() {
  * Dashboard and Login are always accessible.
  */
 export function canAccessRoute(routeName) {
-  if (!routeName || routeName === 'Dashboard' || routeName === 'Login' || routeName === 'DailyReport') return true
+  if (!routeName || ['Dashboard', 'Login', 'DailyReport', 'Catelogue'].includes(routeName)) return true
   const role = getUserRole()
   if (role === 'admin') return true
   if (role === 'accounts') return ACCOUNTS_ROUTES.has(routeName)
@@ -152,6 +152,7 @@ const TILE_ROUTE_MAP = {
   'stock-template':    'Dashboard',
   'ssplbillingsettings': 'SSPLBillingSettings',
   'offer-display':     'OfferDisplay',
+  'catelogue':         'Catelogue',
 }
 
 export function canAccessTile(tileId) {
