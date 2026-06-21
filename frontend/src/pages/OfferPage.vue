@@ -346,12 +346,12 @@
       class="print-page w-full flex flex-col p-4 box-border relative"
     >
       <!-- Company Name Header at top of each page -->
-      <div class="text-center border-b-2 border-slate-900 pb-2 mb-4 shrink-0">
+      <div class="text-center border-b-2 border-slate-900 pb-2 mb-2 shrink-0">
         <h1 class="text-xl font-black uppercase tracking-widest text-slate-900">Sundaram and Sons Private Ltd.</h1>
       </div>
 
       <!-- 3x3 Grid of Cards -->
-      <div class="flex-1 grid grid-cols-3 grid-rows-3 gap-4">
+      <div class="flex-1 grid grid-cols-3 grid-rows-3 gap-3">
         <div 
           v-for="item in pageItems" 
           :key="item.itemcode"
@@ -365,13 +365,13 @@
           </div>
 
           <!-- Image in the middle -->
-          <div class="flex-1 flex items-center justify-center min-h-0 my-3">
+          <div class="flex-1 flex items-center justify-center min-h-0 my-2">
             <img 
               v-if="item.image" 
               :src="item.image" 
-              class="max-w-full max-h-[140px] object-contain"
+              class="max-w-full max-h-[125px] object-contain"
             />
-            <div v-else class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-2xl select-none">
+            <div v-else class="w-14 h-14 bg-slate-100 rounded-lg flex items-center justify-center text-2xl select-none">
               📦
             </div>
           </div>
@@ -971,7 +971,7 @@ onBeforeUnmount(() => {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    height: 275mm !important; /* fits A4 height with margins */
+    height: 265mm !important; /* fits A4 height with margins and leaves safety gap for footer */
     box-sizing: border-box !important;
     page-break-after: always !important;
     break-after: page !important;
