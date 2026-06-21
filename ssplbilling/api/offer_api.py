@@ -81,21 +81,34 @@ def get_offer_details(pageaddress):
 	# Pre-fetch item group map for offer items
 	item_codes = [item.itemcode for item in doc.items]
 	item_group_map = {}
+	item_image_map = {}
+	item_stock_uom_map = {}
 	if item_codes:
 		item_details = frappe.get_all(
 			"Item",
 			filters={"item_code": ["in", item_codes]},
-			fields=["item_code", "item_group", "image"],
+			fields=["item_code", "item_group", "image", "stock_uom"],
 			ignore_permissions=True
 		)
 		item_group_map = {i.item_code: i.item_group for i in item_details}
 		item_image_map = {i.item_code: i.image for i in item_details}
-	else:
-		item_image_map = {}
+		item_stock_uom_map = {i.item_code: i.stock_uom for i in item_details}
 
-	# Pre-fetch price list rates for these items
+	# Map barcodes to UOMs
+	barcode_uom_map = {}
+	barcodes = [item.barcode for item in doc.items if item.barcode]
+	if barcodes:
+		barcode_data = frappe.get_all(
+			"UOM Barcode",
+			filters={"barcode": ["in", barcodes]},
+			fields=["barcode", "uom"],
+			ignore_permissions=True
+		)
+		barcode_uom_map = {b.barcode: b.uom for b in barcode_data}
+
+	# Pre-fetch price list rates for these items and UOMs
 	price_lists = [pl.price_list for pl in doc.get("price_lists") if pl.price_list]
-	item_prices = {}
+	price_map = {}
 	if price_lists and item_codes:
 		prices_data = frappe.get_all(
 			"Item Price",
@@ -103,22 +116,41 @@ def get_offer_details(pageaddress):
 				"item_code": ["in", item_codes],
 				"price_list": ["in", price_lists]
 			},
-			fields=["item_code", "price_list", "price_list_rate"],
+			fields=["item_code", "price_list", "price_list_rate", "uom"],
 			ignore_permissions=True
 		)
 		for p in prices_data:
-			item_prices.setdefault(p.item_code, []).append({
-				"price_list": p.price_list,
-				"rate": p.price_list_rate
-			})
-		# Sort rates in ascending order of rate
-		for code in item_prices:
-			item_prices[code].sort(key=lambda x: x["rate"])
+			uom_pl = price_map.setdefault(p.item_code, {}).setdefault(p.price_list, {})
+			uom_pl[p.uom or ""] = p.price_list_rate
 
 	items = []
 	for item in doc.items:
 		item_code = item.itemcode
 		item_group = item_group_map.get(item_code)
+		stock_uom = item_stock_uom_map.get(item_code)
+		barcode_uom = barcode_uom_map.get(item.barcode) if item.barcode else None
+
+		# Compile rates list barcode-wise with fallbacks
+		item_rates = []
+		for plist in price_lists:
+			rate = None
+			uom_rates = price_map.get(item_code, {}).get(plist)
+			if uom_rates:
+				if barcode_uom and barcode_uom in uom_rates:
+					rate = uom_rates[barcode_uom]
+				elif stock_uom and stock_uom in uom_rates:
+					rate = uom_rates[stock_uom]
+				elif "" in uom_rates:
+					rate = uom_rates[""]
+				elif uom_rates:
+					rate = list(uom_rates.values())[0]
+			if rate is not None:
+				item_rates.append({
+					"price_list": plist,
+					"rate": rate
+				})
+		# Sort rates in ascending order of rate
+		item_rates.sort(key=lambda x: x["rate"])
 		
 		# Resolve item image safely
 		item_image = item_image_map.get(item_code)
@@ -196,7 +228,7 @@ def get_offer_details(pageaddress):
 			"image": item_image,
 			"discount_type": discount_type,
 			"discount_desc": discount_desc,
-			"prices": item_prices.get(item_code, [])
+			"prices": item_rates
 		})
 		
 	return {
