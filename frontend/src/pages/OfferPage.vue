@@ -91,20 +91,20 @@
                   class="flex items-center justify-center pt-2 shrink-0"
                 >
                   <div class="w-full max-w-xl bg-slate-950/40 rounded-xl p-3 border border-slate-800/40 shadow-inner">
-                    <table class="w-full text-left text-xs border-collapse">
+                    <table class="w-full text-left text-2xl border-collapse">
 
                       <tbody class="divide-y divide-slate-900/50 font-medium">
                         <tr 
                           v-for="bp in item.barcode_prices" 
                           :key="bp.barcode"
                         >
-                          <td class="py-2 pr-2 font-mono text-slate-200 select-all font-bold">
-                            {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-[9px] font-sans">({{ bp.uom }})</span>
+                          <td class="py-0.5 pr-2 font-mono text-slate-200 select-all font-bold">
+                            {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-lg font-sans">({{ bp.uom }})</span>
                           </td>
                           <td 
                             v-for="pl in offer.price_lists" 
                             :key="pl.price_list"
-                            class="py-2 px-2 font-mono text-right text-indigo-400 font-bold tracking-widest"
+                            class="py-0.5 px-0.5 font-mono text-right text-indigo-400 font-bold tracking-widest"
                           >
                             <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
                               {{ encryptPrice(bp.prices[pl.price_list]) }}
