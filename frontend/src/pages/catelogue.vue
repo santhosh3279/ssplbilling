@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased">
     <!-- Premium Hero Header -->
-    <header class="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white px-6 py-12 md:py-16 text-center border-b border-[var(--color-border)] shrink-0">
+    <header class="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white px-6 text-center border-b border-[var(--color-border)] shrink-0 h-[20vh] min-h-[140px] flex items-center justify-center">
       <!-- Back to Dashboard / Home if logged in -->
       <button 
         v-if="isLoggedIn"
@@ -24,14 +24,14 @@
       <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
 
-      <div class="max-w-4xl mx-auto relative z-10 space-y-4">
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+      <div class="max-w-4xl mx-auto relative z-10 space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
           📦 Catalogues
         </div>
-        <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-emerald-200">
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-emerald-200">
           Sundaram and Sons Catalogues
         </h1>
-        <p class="text-xs md:text-sm text-slate-400 max-w-xl mx-auto font-medium">
+        <p class="text-[10px] md:text-xs text-slate-400 max-w-xl mx-auto font-medium">
           Select a catalogue below to view items on discount, barcodes, prices, and play slideshow presentations.
         </p>
       </div>
