@@ -168,7 +168,7 @@
               
               <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <!-- Heading -->
-                <div class="flex flex-col gap-1.5 md:col-span-2">
+                <div class="flex flex-col gap-1.5 md:col-span-1">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
                     Heading <span class="text-[var(--color-danger)]">*</span>
                   </label>
@@ -181,7 +181,7 @@
                 </div>
 
                 <!-- Page Address -->
-                <div class="flex flex-col gap-1.5 md:col-span-2">
+                <div class="flex flex-col gap-1.5 md:col-span-1">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
                     Page Address <span class="text-[var(--color-danger)]">*</span>
                   </label>
@@ -206,7 +206,7 @@
                 </div>
 
                 <!-- Tile Grid -->
-                <div class="flex flex-col gap-1.5 md:col-span-2">
+                <div class="flex flex-col gap-1.5 md:col-span-1">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
                     Tile Grid <span class="text-[var(--color-danger)]">*</span>
                   </label>
@@ -223,7 +223,7 @@
                 </div>
 
                 <!-- Timer -->
-                <div class="flex flex-col gap-1.5 md:col-span-2">
+                <div class="flex flex-col gap-1.5 md:col-span-1">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)] block">
                     Timer (Seconds)
                   </label>
