@@ -28,7 +28,7 @@
         <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
           📦 Catalogues
         </div>
-        <h1 class="text-2xl md:text-3xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-emerald-200">
+        <h1 class="text-xl md:text-3xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-emerald-200">
           Sundaram and Sons Catalogues
         </h1>
         <p class="text-[10px] md:text-xs text-slate-400 max-w-xl mx-auto font-medium">
@@ -198,7 +198,7 @@ onMounted(async () => {
   font-size: 20px !important;
 }
 .catalogue-card .card-heading {
-  font-size: 36px !important;
+  font-size: 27px !important;
 }
 .catalogue-card .card-badge {
   font-size: 18px !important;
