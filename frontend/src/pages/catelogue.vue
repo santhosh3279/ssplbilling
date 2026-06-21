@@ -94,13 +94,6 @@
                 {{ cat.heading }}
               </h3>
             </div>
-
-            <!-- Detail stats/badge -->
-            <div class="flex items-center gap-2 pt-1">
-              <span class="card-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20">
-                🟢 Active
-              </span>
-            </div>
           </div>
 
           <!-- Bottom Action indicator -->
