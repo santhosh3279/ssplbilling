@@ -309,70 +309,51 @@
   </div>
 
   <!-- Print-Only Catalog Wrapper -->
-  <div v-if="offer" class="hidden print-container w-full text-black bg-white p-8">
-    <!-- Invoice/Catalog Header -->
-    <div class="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-end">
-      <div>
-        <h1 class="text-2xl font-black uppercase tracking-tight text-slate-950">Sundaram and Sons Private Ltd.</h1>
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-1">Active Offers Catalog</p>
-      </div>
-      <div class="text-right">
-        <h2 class="text-xl font-bold text-indigo-900">{{ offer.heading }}</h2>
-        <p class="text-[10px] text-slate-400 mt-1">Generated: {{ new Date().toLocaleDateString() }}</p>
-      </div>
-    </div>
+  <div v-if="offer" class="hidden print-container text-black bg-white">
+    <div 
+      v-for="(pageItems, pIdx) in chunkedItems" 
+      :key="pIdx"
+      class="print-page w-full grid grid-cols-3 grid-rows-3 gap-4 p-4 box-border"
+    >
+      <div 
+        v-for="item in pageItems" 
+        :key="item.itemcode"
+        class="print-card flex flex-col justify-between border border-slate-300 rounded-xl p-4 bg-white box-border overflow-hidden"
+      >
+        <!-- Name at top -->
+        <div class="text-[13px] font-black text-slate-900 line-clamp-2 leading-snug text-center tracking-tight shrink-0">
+          {{ item.itemname }}
+        </div>
 
-    <!-- Items Table / Grid for printing -->
-    <table class="w-full text-left border-collapse">
-      <thead>
-        <tr class="border-b border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-800 bg-slate-100">
-          <th class="py-3 px-4 w-16">S.No</th>
-          <th class="py-3 px-4 w-24">Image</th>
-          <th class="py-3 px-4">Item Details</th>
-          <th class="py-3 px-4 w-48">Active Offer</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr 
-          v-for="(item, index) in offer.items" 
-          :key="item.itemcode" 
-          class="border-b border-slate-200 text-sm page-break-inside-avoid"
-        >
-          <td class="py-4 px-4 font-mono font-bold text-slate-500">{{ index + 1 }}</td>
-          <td class="py-4 px-4">
-            <img 
-              v-if="item.image" 
-              :src="item.image" 
-              class="max-w-[80px] max-h-[80px] object-contain border border-slate-200 rounded p-1"
-            />
-            <div v-else class="w-[80px] h-[80px] bg-slate-100 rounded flex items-center justify-center text-xl">
-              📦
+        <!-- Image in the middle -->
+        <div class="flex-1 flex items-center justify-center min-h-0 my-3">
+          <img 
+            v-if="item.image" 
+            :src="item.image" 
+            class="max-w-full max-h-[140px] object-contain"
+          />
+          <div v-else class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-2xl select-none">
+            📦
+          </div>
+        </div>
+
+        <!-- Barcode and Offers at the bottom -->
+        <div class="shrink-0 space-y-1">
+          <!-- Barcode if any -->
+          <div v-if="item.barcode" class="text-[10px] font-mono font-bold text-center bg-slate-100 py-0.5 rounded border border-slate-200">
+            {{ item.barcode }}
+          </div>
+          <!-- Offer if any -->
+          <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-center leading-tight">
+            <div 
+              v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+              :key="lIdx"
+            >
+              {{ line }}
             </div>
-          </td>
-          <td class="py-4 px-4">
-            <div class="font-bold text-slate-900 text-base">{{ item.itemname }}</div>
-            <div class="text-xs text-slate-500 mt-1 flex gap-4 font-mono">
-              <span>Code: <strong>{{ item.itemcode }}</strong></span>
-              <span v-if="item.barcode">Barcode: <strong>{{ item.barcode }}</strong></span>
-            </div>
-          </td>
-          <td class="py-4 px-4">
-            <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-2 text-xs font-bold leading-normal">
-              <div 
-                v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-                :key="lIdx"
-              >
-                {{ line }}
-              </div>
-            </div>
-            <span v-else class="text-xs text-slate-400 font-medium">Standard Pricing</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <div class="mt-8 text-center text-[10px] text-slate-400 border-t border-slate-200 pt-4">
-      Thank you for wholesale business with Sundaram and Sons Private Ltd.
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -464,6 +445,15 @@ const cardCodeClass = computed(() => {
 
 const badgeTextClass = computed(() => {
   return 'text-[10px] p-1.5 gap-1'
+})
+
+const chunkedItems = computed(() => {
+  if (!offer.value?.items?.length) return []
+  const chunks = []
+  for (let i = 0; i < offer.value.items.length; i += 9) {
+    chunks.push(offer.value.items.slice(i, i + 9))
+  }
+  return chunks
 })
 
 // Presentation Column Count Computes the active visible column count (safely limited by available items count)
@@ -799,6 +789,11 @@ onBeforeUnmount(() => {
 
 <style>
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
   /* Hide scrollable main wrapper */
   .main-content-wrapper {
     display: none !important;
@@ -812,10 +807,29 @@ onBeforeUnmount(() => {
     width: 100% !important;
     height: auto !important;
     overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
-  /* Prevent row breaks */
-  .page-break-inside-avoid {
+  .print-page {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    padding: 4px !important;
+    width: 100% !important;
+    height: 275mm !important; /* fits A4 height with margins */
+    box-sizing: border-box !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .print-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .print-card {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
