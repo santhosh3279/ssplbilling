@@ -37,8 +37,8 @@
     <!-- ── MAIN BODY: SPLIT VIEW ─────────────────────────────────── -->
     <div class="flex flex-1 overflow-hidden">
       
-      <!-- ── LEFT COLUMN: OFFERS LIST (35%) ── -->
-      <aside class="w-[35%] flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+      <!-- ── LEFT COLUMN: OFFERS LIST (17.5%) ── -->
+      <aside class="w-[17.5%] flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
         <!-- Search bar -->
         <div class="p-3 border-b border-[var(--color-border)] shrink-0 bg-[var(--color-surface)]/50">
           <input
@@ -97,8 +97,8 @@
         </div>
       </aside>
 
-      <!-- ── RIGHT COLUMN: FORM / DETAILS (65%) ── -->
-      <main class="w-[65%] flex flex-col bg-[var(--color-bg)] overflow-hidden">
+      <!-- ── RIGHT COLUMN: FORM / DETAILS (82.5%) ── -->
+      <main class="w-[82.5%] flex flex-col bg-[var(--color-bg)] overflow-hidden">
         <!-- Loading overlay for details -->
         <div v-if="detailLoading" class="flex-1 flex items-center justify-center">
           <div class="text-center">
