@@ -353,10 +353,10 @@
             <div v-else class="h-[26px]"></div>
           </div>
 
-          <!-- Code and Barcode at the absolute bottom -->
-          <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 flex justify-between items-center select-all">
-            <span>Code: {{ item.itemcode }}</span>
-            <span v-if="item.barcode">BC: {{ item.barcode }}</span>
+          <!-- Barcode at the absolute bottom -->
+          <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 text-center select-all">
+            <span v-if="item.barcode">{{ item.barcode }}</span>
+            <span v-else class="text-slate-400 opacity-50">—</span>
           </div>
         </div>
       </div>
