@@ -430,14 +430,14 @@
   </div>
 
   <!-- Export Options Modal -->
-  <div v-if="showExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-opacity duration-300">
-    <div class="relative w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 text-slate-100 animate-in fade-in zoom-in duration-200">
+  <div v-if="showExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+    <div class="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl space-y-6 text-[var(--color-text)] animate-in fade-in zoom-in duration-200">
       <!-- Title -->
       <div>
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <h3 class="text-lg font-bold text-[var(--color-text)] flex items-center gap-2">
           📄 Export PDF Options
         </h3>
-        <p class="text-xs text-slate-400 mt-1">
+        <p class="text-xs text-[var(--color-text-muted)] mt-1">
           Configure the layout options for the generated catalog PDF.
         </p>
       </div>
@@ -445,29 +445,29 @@
       <!-- Form controls -->
       <div class="space-y-4">
         <!-- Include Prices Checkbox -->
-        <label class="flex items-center gap-3 cursor-pointer group bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/60 hover:border-indigo-500/40 transition">
+        <label class="flex items-center gap-3 cursor-pointer group bg-[var(--color-bg)]/50 p-3.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-info)]/60 transition">
           <input 
             v-model="includePricesInPrint" 
             type="checkbox"
-            class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:ring-2 cursor-pointer"
+            class="w-4 h-4 rounded border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-info)] focus:ring-[var(--color-info)] focus:ring-offset-[var(--color-surface)] focus:ring-2 cursor-pointer"
           />
           <div class="flex flex-col">
-            <span class="text-sm font-bold text-slate-200 group-hover:text-white transition">Include Prices</span>
-            <span class="text-[10px] text-slate-400">Show price list rates under each item in catalog.</span>
+            <span class="text-sm font-bold text-[var(--color-text)] group-hover:text-[var(--color-info)] transition">Include Prices</span>
+            <span class="text-[10px] text-[var(--color-text-muted)]">Show price list rates under each item in catalog.</span>
           </div>
         </label>
 
         <!-- Encrypt Prices Checkbox (Conditional) -->
         <div v-if="includePricesInPrint" class="animate-in slide-in-from-top-2 duration-200">
-          <label class="flex items-center gap-3 cursor-pointer group bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/60 hover:border-indigo-500/40 transition">
+          <label class="flex items-center gap-3 cursor-pointer group bg-[var(--color-bg)]/50 p-3.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-info)]/60 transition">
             <input 
               v-model="encryptPricesInPrint" 
               type="checkbox"
-              class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:ring-2 cursor-pointer"
+              class="w-4 h-4 rounded border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-info)] focus:ring-[var(--color-info)] focus:ring-offset-[var(--color-surface)] focus:ring-2 cursor-pointer"
             />
             <div class="flex flex-col">
-              <span class="text-sm font-bold text-slate-200 group-hover:text-white transition">Encrypt Prices?</span>
-              <span class="text-[10px] text-slate-400">Obfuscate price digits to cipher letters.</span>
+              <span class="text-sm font-bold text-[var(--color-text)] group-hover:text-[var(--color-info)] transition">Encrypt Prices?</span>
+              <span class="text-[10px] text-[var(--color-text-muted)]">Obfuscate price digits to cipher letters.</span>
             </div>
           </label>
         </div>
@@ -477,13 +477,13 @@
       <div class="flex items-center justify-end gap-3 pt-2">
         <button 
           @click="closeExportModal"
-          class="rounded-xl border border-slate-800 bg-slate-900/60 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95"
+          class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]/60 px-5 py-2.5 text-xs font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] transition active:scale-95"
         >
           Cancel
         </button>
         <button 
           @click="triggerPrint"
-          class="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-2.5 text-xs font-bold text-white transition active:scale-95 shadow-lg shadow-indigo-600/20"
+          class="rounded-xl bg-[var(--color-info)] hover:bg-[var(--color-info)]/90 px-6 py-2.5 text-xs font-bold text-white transition active:scale-95 shadow-lg shadow-[var(--color-info)]/20"
         >
           Print Catalog
         </button>
