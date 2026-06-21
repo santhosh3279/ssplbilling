@@ -38,7 +38,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 w-full max-w-6xl mx-auto px-6 py-12">
+    <main class="flex-1 w-full px-6 py-12">
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-16">
         <div class="relative w-16 h-16 mb-4">
@@ -69,7 +69,7 @@
       </div>
 
       <!-- Catalogues Grid -->
-      <div v-else class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <div
           v-for="cat in catalogues"
           :key="cat.name"
