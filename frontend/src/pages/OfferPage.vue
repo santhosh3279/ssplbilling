@@ -392,39 +392,36 @@
               <div v-else class="h-[26px]"></div>
             </div>
 
-            <!-- Barcode Display for Print View -->
-            <div v-if="(item.barcodes && item.barcodes.length) || item.barcode" class="text-[10px] font-mono font-bold bg-slate-100 py-1.5 px-2.5 rounded border border-slate-200 flex flex-col gap-1 box-border select-all shrink-0">
-              <!-- Barcode Row -->
-              <div class="flex justify-between items-start w-full gap-2" :class="{ 'border-b border-dashed border-slate-300 pb-1 mb-1': includePricesInPrint && item.barcode_prices && item.barcode_prices.length }">
-                <span class="text-slate-500 font-bold uppercase text-[9px] shrink-0 mt-0.5">
-                  {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes:' : 'Barcode:' }}
-                </span>
-                <span class="text-slate-900 text-right break-all leading-tight">
-                  {{ (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode]).join(', ') }}
-                </span>
-              </div>
-              
-              <!-- Conditional Prices List (Rendered dynamically depending on options) -->
-              <div v-if="includePricesInPrint && item.barcode_prices && item.barcode_prices.length" class="flex flex-col gap-1 mt-0.5">
-                <div 
-                  v-for="bp in item.barcode_prices" 
-                  :key="bp.barcode"
-                  class="flex flex-wrap gap-1.5 w-full justify-center animate-in fade-in duration-200"
-                >
-                  <span v-if="bp.barcode && item.barcode_prices.length > 1" class="text-[8px] text-slate-400 font-mono self-center">{{ bp.barcode }}:</span>
-                  <span 
-                    v-for="pl in offer.price_lists" 
-                    :key="pl.price_list"
-                    class="inline-flex gap-1 text-[8px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-bold"
-                    :class="{ 'tracking-widest': encryptPricesInPrint }"
+            <!-- Barcode & Prices Table for Print View -->
+            <div v-if="item.barcode_prices && item.barcode_prices.length" class="text-[9px] font-medium bg-slate-50 p-1.5 rounded border border-slate-200 flex flex-col box-border shrink-0 select-all">
+              <table class="w-full text-left border-collapse">
+                <tbody class="divide-y divide-slate-200 font-bold">
+                  <tr 
+                    v-for="bp in item.barcode_prices" 
+                    :key="bp.barcode"
                   >
-                    <span class="text-slate-500 font-normal text-[7px]">{{ pl.price_list }}:</span>
-                    <span>
-                      {{ encryptPricesInPrint ? encryptPrice(bp.prices[pl.price_list]) : `₹${Number(bp.prices[pl.price_list] || 0).toLocaleString()}` }}
-                    </span>
-                  </span>
-                </div>
-              </div>
+                    <!-- Barcode column -->
+                    <td class="py-1 pr-1 font-mono text-slate-900 text-[9px] truncate max-w-[80px]">
+                      {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-[7px] font-sans">({{ bp.uom }})</span>
+                    </td>
+                    
+                    <!-- Conditional Price List columns -->
+                    <template v-if="includePricesInPrint">
+                      <td 
+                        v-for="pl in offer.price_lists" 
+                        :key="pl.price_list"
+                        class="py-1 px-1 font-mono text-right text-slate-900 text-[9px]"
+                        :class="{ 'tracking-widest': encryptPricesInPrint }"
+                      >
+                        <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                          {{ encryptPricesInPrint ? encryptPrice(bp.prices[pl.price_list]) : `₹${Number(bp.prices[pl.price_list]).toLocaleString()}` }}
+                        </span>
+                        <span v-else class="text-slate-400">—</span>
+                      </td>
+                    </template>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
