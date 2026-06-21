@@ -87,14 +87,22 @@
                 </h3>
                 
                 <div 
-                  v-if="presentationCols < 6 && item.barcode"
+                  v-if="presentationCols < 6 && ((item.barcodes && item.barcodes.length) || item.barcode)"
                   class="flex items-center justify-center pt-1"
                 >
-                  <div class="flex flex-col items-center">
-                    <span class="text-[18px] uppercase font-normal text-slate-500 tracking-wider">Barcode</span>
-                    <span class="font-mono text-[24px] font-normal bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 leading-normal">
-                      {{ item.barcode }}
+                  <div class="flex flex-col items-center gap-1.5 w-full">
+                    <span class="text-[18px] uppercase font-normal text-slate-500 tracking-wider">
+                      {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes' : 'Barcode' }}
                     </span>
+                    <div class="flex flex-wrap justify-center gap-2 max-w-full">
+                      <span 
+                        v-for="bc in (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode])"
+                        :key="bc"
+                        class="font-mono text-[22px] font-normal bg-indigo-500/10 text-indigo-400 px-3.5 py-1 rounded-full border border-indigo-500/20 leading-normal whitespace-nowrap"
+                      >
+                        {{ bc }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -254,12 +262,21 @@
 
                 <div class="space-y-2 shrink-0">
                   <!-- Barcode & Price Lists Row -->
-                  <div v-if="item.barcode || (item.prices && item.prices.length)" class="pt-2 border-t border-[var(--color-border)]/40 flex flex-col gap-1.5 shrink-0">
-                    <div class="flex items-center justify-between">
-                      <span class="uppercase font-bold text-[var(--color-text-muted)] tracking-wider" :class="cardCodeClass">Barcode</span>
-                      <span v-if="item.barcode" class="font-mono font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all" :class="cardCodeClass">
-                        {{ item.barcode }}
+                  <div v-if="(item.barcodes && item.barcodes.length) || item.barcode || (item.prices && item.prices.length)" class="pt-2 border-t border-[var(--color-border)]/40 flex flex-col gap-1.5 shrink-0">
+                    <div class="flex items-start justify-between gap-2">
+                      <span class="uppercase font-bold text-[var(--color-text-muted)] tracking-wider mt-0.5 shrink-0" :class="cardCodeClass">
+                        {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes' : 'Barcode' }}
                       </span>
+                      <div v-if="(item.barcodes && item.barcodes.length) || item.barcode" class="flex flex-wrap justify-end gap-1 max-w-[70%]">
+                        <span 
+                          v-for="bc in (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode])"
+                          :key="bc"
+                          class="font-mono font-bold bg-[var(--color-info)]/10 text-[var(--color-info)] px-2 py-0.5 rounded-full select-all whitespace-nowrap" 
+                          :class="cardCodeClass"
+                        >
+                          {{ bc }}
+                        </span>
+                      </div>
                       <span v-else class="text-[var(--color-text-muted)] font-bold">—</span>
                     </div>
                     
@@ -370,9 +387,13 @@
             <!-- Barcode and Prices at the absolute bottom -->
             <div class="text-[10px] font-mono font-bold bg-slate-100 py-1 px-2 rounded border border-slate-200 flex flex-col gap-1 box-border select-all">
               <!-- Barcode Row -->
-              <div class="flex justify-between items-center w-full">
-                <span class="text-slate-500 font-bold uppercase text-[9px]">Barcode:</span>
-                <span v-if="item.barcode" class="text-slate-900">{{ item.barcode }}</span>
+              <div class="flex justify-between items-start w-full gap-2">
+                <span class="text-slate-500 font-bold uppercase text-[9px] shrink-0 mt-0.5">
+                  {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes:' : 'Barcode:' }}
+                </span>
+                <span v-if="(item.barcodes && item.barcodes.length) || item.barcode" class="text-slate-900 text-right break-all leading-tight">
+                  {{ (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode]).join(', ') }}
+                </span>
                 <span v-else class="text-slate-400 opacity-50">—</span>
               </div>
               

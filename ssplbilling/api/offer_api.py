@@ -106,6 +106,19 @@ def get_offer_details(pageaddress):
 		)
 		barcode_uom_map = {b.barcode: b.uom for b in barcode_data}
 
+	# Pre-fetch all barcodes for all items in this offer list
+	all_item_barcodes = {}
+	if item_codes:
+		all_barcodes_data = frappe.get_all(
+			"Item Barcode",
+			filters={"parent": ["in", item_codes]},
+			fields=["parent as item_code", "barcode"],
+			ignore_permissions=True
+		)
+		for row in all_barcodes_data:
+			if row.barcode:
+				all_item_barcodes.setdefault(row.item_code, []).append(row.barcode)
+
 	# Pre-fetch price list rates for these items and UOMs
 	price_lists = [pl.price_list for pl in doc.get("price_lists") if pl.price_list]
 	price_map = {}
@@ -221,10 +234,22 @@ def get_offer_details(pageaddress):
 				else:
 					discount_desc = "Offer"
 
+		# Compile all unique barcodes for this item
+		barcodes_list = []
+		seen_barcodes = set()
+		for bc in all_item_barcodes.get(item_code, []):
+			if bc and bc not in seen_barcodes:
+				barcodes_list.append(bc)
+				seen_barcodes.add(bc)
+		if item.barcode and item.barcode not in seen_barcodes:
+			barcodes_list.append(item.barcode)
+			seen_barcodes.add(item.barcode)
+
 		items.append({
 			"itemcode": item_code,
 			"itemname": item.itemname,
 			"barcode": item.barcode,
+			"barcodes": barcodes_list,
 			"image": item_image,
 			"discount_type": discount_type,
 			"discount_desc": discount_desc,
