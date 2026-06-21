@@ -367,9 +367,6 @@
       :key="pIdx"
       class="print-page w-full flex flex-col p-4 box-border relative"
     >
-      <!-- Watermark Overlay -->
-      <div class="watermark-overlay">Sundaram and Sons Private Ltd.</div>
-
       <!-- Company Name Header at top of each page -->
       <div class="text-center border-b-2 border-slate-900 pb-2 mb-4 shrink-0">
         <h1 class="text-xl font-black uppercase tracking-widest text-slate-900">Sundaram and Sons Private Ltd.</h1>
@@ -380,8 +377,10 @@
         <div 
           v-for="item in pageItems" 
           :key="item.itemcode"
-          class="print-card flex flex-col justify-between border border-slate-300 rounded-xl p-4 bg-white box-border overflow-hidden"
+          class="print-card flex flex-col justify-between border border-slate-300 rounded-xl p-4 bg-white box-border overflow-hidden relative"
         >
+          <!-- Watermark Overlay on Card -->
+          <div class="watermark-card-overlay">Sundaram and Sons Private Ltd.</div>
           <!-- Name at top -->
           <div class="text-[13px] font-black text-slate-900 line-clamp-2 leading-snug text-center tracking-tight shrink-0">
             {{ item.itemname }}
@@ -897,19 +896,19 @@ onBeforeUnmount(() => {
     position: relative !important;
   }
 
-  .watermark-overlay {
+  .watermark-card-overlay {
     display: block !important;
     position: absolute !important;
-    top: 55% !important;
+    top: 50% !important;
     left: 50% !important;
-    transform: translate(-50%, -50%) rotate(-30deg) !important;
-    font-size: 42px !important;
+    transform: translate(-50%, -50%) rotate(-25deg) !important;
+    font-size: 11px !important;
     font-weight: 900 !important;
-    color: rgba(15, 23, 42, 0.05) !important; /* extremely subtle slate overlay */
+    color: rgba(15, 23, 42, 0.05) !important; /* subtle overlay */
     text-transform: uppercase !important;
-    letter-spacing: 0.1em !important;
+    letter-spacing: 0.05em !important;
     pointer-events: none !important;
-    z-index: 100 !important;
+    z-index: 10 !important;
     white-space: nowrap !important;
   }
 
