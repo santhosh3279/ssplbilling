@@ -415,42 +415,16 @@
               <div v-else class="h-[26px]"></div>
             </div>
 
-            <!-- Barcode and Prices Table -->
-            <div v-if="item.barcode_prices && item.barcode_prices.length" class="text-[9px] font-medium bg-slate-50 p-1.5 rounded border border-slate-200 flex flex-col box-border shrink-0 select-all">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="border-b border-slate-300 text-slate-500 font-black uppercase text-[8px]">
-                    <th class="pb-0.5 pr-1">Barcode</th>
-                    <th 
-                      v-for="pl in offer.price_lists" 
-                      :key="pl.price_list"
-                      class="pb-0.5 px-1 text-right"
-                    >
-                      {{ pl.price_list }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 font-bold">
-                  <tr 
-                    v-for="bp in item.barcode_prices" 
-                    :key="bp.barcode"
-                  >
-                    <td class="py-1 pr-1 font-mono text-slate-900 text-[9px] truncate max-w-[80px]">
-                      {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-[7px] font-sans">({{ bp.uom }})</span>
-                    </td>
-                    <td 
-                      v-for="pl in offer.price_lists" 
-                      :key="pl.price_list"
-                      class="py-1 px-1 font-mono text-right text-slate-900 text-[9px]"
-                    >
-                      <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                        ₹{{ Number(bp.prices[pl.price_list]).toLocaleString() }}
-                      </span>
-                      <span v-else class="text-slate-400">—</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <!-- Barcode-Only Display for Print View -->
+            <div v-if="(item.barcodes && item.barcodes.length) || item.barcode" class="text-[10px] font-mono font-bold bg-slate-100 py-1.5 px-2.5 rounded border border-slate-200 flex flex-col gap-1 box-border select-all shrink-0">
+              <div class="flex justify-between items-start w-full gap-2">
+                <span class="text-slate-500 font-bold uppercase text-[9px] shrink-0 mt-0.5">
+                  {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes:' : 'Barcode:' }}
+                </span>
+                <span class="text-slate-900 text-right break-all leading-tight">
+                  {{ (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode]).join(', ') }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
