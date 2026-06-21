@@ -235,7 +235,7 @@
             <div
               v-for="item in offer.items"
               :key="item.itemcode"
-              class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
               <!-- Image / Placeholder Frame -->
               <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
@@ -920,6 +920,7 @@ onBeforeUnmount(() => {
   .print-card {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
   }
 
   /* Force background colors and colors to render in print */
