@@ -87,22 +87,15 @@
                 </h3>
                 
                 <div 
-                  v-if="presentationCols < 6"
-                  class="flex items-center justify-between pt-1"
+                  v-if="presentationCols < 6 && item.barcode"
+                  class="flex items-center justify-center pt-1"
                 >
-                  <div class="flex flex-col">
-                    <span class="text-[18px] uppercase font-normal text-slate-500 tracking-wider">Item Code</span>
-                    <span class="font-mono text-[24px] font-normal text-slate-300 leading-normal">{{ item.itemcode }}</span>
-                  </div>
-                  <div v-if="item.barcode" class="flex flex-col items-end">
+                  <div class="flex flex-col items-center">
                     <span class="text-[18px] uppercase font-normal text-slate-500 tracking-wider">Barcode</span>
                     <span class="font-mono text-[24px] font-normal bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 leading-normal">
                       {{ item.barcode }}
                     </span>
                   </div>
-                </div>
-                <div v-else class="text-[18px] font-mono text-slate-400 mt-1 truncate">
-                  Code: {{ item.itemcode }}
                 </div>
               </div>
             </div>
@@ -257,10 +250,6 @@
                   <h3 class="font-bold text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-info)] transition-colors" :class="cardTitleClass" :title="item.itemname">
                     {{ item.itemname }}
                   </h3>
-                  <div class="flex items-center gap-1.5 text-[var(--color-text-muted)] font-mono" :class="cardCodeClass">
-                    <span class="bg-[var(--color-midlight)] px-1.5 py-0.5 rounded">Code</span>
-                    <span>{{ item.itemcode }}</span>
-                  </div>
                 </div>
 
                 <div class="space-y-2 shrink-0">
