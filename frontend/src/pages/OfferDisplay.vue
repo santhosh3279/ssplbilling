@@ -241,6 +241,61 @@
               </div>
             </div>
 
+            <!-- Price Lists Card -->
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
+              <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-1.5">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  Applies to Price Lists ({{ form.price_lists?.length || 0 }})
+                </h3>
+                <button
+                  @click="addPriceListRow"
+                  type="button"
+                  class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[10px] font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/80 transition"
+                >
+                  + Add Price List
+                </button>
+              </div>
+
+              <!-- Price Lists Table/List -->
+              <div v-if="form.price_lists && form.price_lists.length" class="space-y-2">
+                <div 
+                  v-for="(pl, idx) in form.price_lists" 
+                  :key="idx" 
+                  class="flex items-center gap-3"
+                >
+                  <span class="text-xs text-[var(--color-text-muted)] font-mono w-6 text-center">
+                    {{ idx + 1 }}
+                  </span>
+                  
+                  <select
+                    v-model="pl.price_list"
+                    class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-info)] transition"
+                  >
+                    <option value="" disabled>Select Price List...</option>
+                    <option 
+                      v-for="list in priceLists" 
+                      :key="list.name" 
+                      :value="list.name"
+                    >
+                      {{ list.name }}
+                    </option>
+                  </select>
+
+                  <button
+                    @click="removePriceListRow(idx)"
+                    type="button"
+                    class="text-red-500 hover:text-red-700 font-bold px-2 py-1 text-sm transition"
+                    title="Remove price list"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div v-else class="text-xs text-[var(--color-text-muted)] italic text-center py-2">
+                No price lists configured. This offer applies to all price lists by default.
+              </div>
+            </div>
+
             <!-- Items Table Card -->
             <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
               <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-1.5">
@@ -390,6 +445,7 @@ const searchQuery = ref('')
 const selectedName = ref(null)
 const detailLoading = ref(false)
 const saving = ref(false)
+const priceLists = ref([])
 
 // Form structure
 const emptyForm = () => ({
@@ -401,6 +457,7 @@ const emptyForm = () => ({
   pageaddress: '',
   tile_grid: '4',
   timer: 0,
+  price_lists: [],
   items: []
 })
 
@@ -463,6 +520,10 @@ async function selectOffer(name) {
       pageaddress: doc.pageaddress || '',
       tile_grid: doc.tile_grid || '4',
       timer: doc.timer || 0,
+      price_lists: (doc.price_lists || []).map(p => ({
+        name: p.name,
+        price_list: p.price_list || ''
+      })),
       items: (doc.items || []).map(i => ({
         name: i.name,
         itemcode: i.itemcode || '',
@@ -593,6 +654,11 @@ async function handleSave() {
       ...(form.value.modified && { modified: form.value.modified }),
       ...(form.value.creation && { creation: form.value.creation }),
       ...(form.value.owner && { owner: form.value.owner }),
+      price_lists: (form.value.price_lists || []).filter(p => p.price_list && p.price_list.trim()).map(p => ({
+        ...(p.name && { name: p.name }),
+        doctype: 'Offer-Pricelist',
+        price_list: p.price_list.trim()
+      })),
       items: form.value.items.map(i => ({
         ...(i.name && { name: i.name }),
         doctype: 'Offer-Item',
@@ -646,8 +712,36 @@ async function handleDeleteOffer() {
   }
 }
 
+function addPriceListRow() {
+  if (!form.value.price_lists) {
+    form.value.price_lists = []
+  }
+  form.value.price_lists.push({
+    price_list: ''
+  })
+}
+
+function removePriceListRow(idx) {
+  form.value.price_lists.splice(idx, 1)
+}
+
+async function fetchPriceLists() {
+  try {
+    const data = await frappeGet('frappe.client.get_list', {
+      doctype: 'Price List',
+      fields: ['name'],
+      order_by: 'name asc',
+      limit_page_length: 200
+    })
+    priceLists.value = data || []
+  } catch (e) {
+    console.error('Failed to fetch price lists:', e)
+  }
+}
+
 onMounted(() => {
   fetchOffers()
+  fetchPriceLists()
 })
 </script>
 
