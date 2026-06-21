@@ -9,6 +9,7 @@
   "pageaddress",
   "tile_grid",
   "timer",
+  "price_lists",
   "items"
  ],
  "fields": [
@@ -38,6 +39,12 @@
    "fieldname": "timer",
    "fieldtype": "Int",
    "label": "Timer"
+  },
+  {
+   "fieldname": "price_lists",
+   "fieldtype": "Table",
+   "label": "Price Lists",
+   "options": "Offer-Pricelist"
   },
   {
    "fieldname": "items",
