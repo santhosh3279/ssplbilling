@@ -380,7 +380,7 @@
           <div class="shrink-0 flex flex-col justify-end min-h-[72px]">
             <!-- Offer container (Above) -->
             <div class="mb-1">
-              <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-center leading-tight">
+              <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-left px-1.5 leading-tight">
                 <div 
                   v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
                   :key="lIdx"
