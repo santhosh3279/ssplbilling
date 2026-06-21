@@ -392,9 +392,10 @@
               <div v-else class="h-[26px]"></div>
             </div>
 
-            <!-- Barcode-Only Display for Print View -->
+            <!-- Barcode Display for Print View -->
             <div v-if="(item.barcodes && item.barcodes.length) || item.barcode" class="text-[10px] font-mono font-bold bg-slate-100 py-1.5 px-2.5 rounded border border-slate-200 flex flex-col gap-1 box-border select-all shrink-0">
-              <div class="flex justify-between items-start w-full gap-2">
+              <!-- Barcode Row -->
+              <div class="flex justify-between items-start w-full gap-2" :class="{ 'border-b border-dashed border-slate-300 pb-1 mb-1': includePricesInPrint && item.barcode_prices && item.barcode_prices.length }">
                 <span class="text-slate-500 font-bold uppercase text-[9px] shrink-0 mt-0.5">
                   {{ (item.barcodes && item.barcodes.length > 1) ? 'Barcodes:' : 'Barcode:' }}
                 </span>
@@ -402,9 +403,93 @@
                   {{ (item.barcodes && item.barcodes.length ? item.barcodes : [item.barcode]).join(', ') }}
                 </span>
               </div>
+              
+              <!-- Conditional Prices List (Rendered dynamically depending on options) -->
+              <div v-if="includePricesInPrint && item.barcode_prices && item.barcode_prices.length" class="flex flex-col gap-1 mt-0.5">
+                <div 
+                  v-for="bp in item.barcode_prices" 
+                  :key="bp.barcode"
+                  class="flex flex-wrap gap-1.5 w-full justify-center animate-in fade-in duration-200"
+                >
+                  <span v-if="bp.barcode && item.barcode_prices.length > 1" class="text-[8px] text-slate-400 font-mono self-center">{{ bp.barcode }}:</span>
+                  <span 
+                    v-for="pl in offer.price_lists" 
+                    :key="pl.price_list"
+                    class="inline-flex gap-1 text-[8px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-bold"
+                    :class="{ 'tracking-widest': encryptPricesInPrint }"
+                  >
+                    <span class="text-slate-500 font-normal text-[7px]">{{ pl.price_list }}:</span>
+                    <span>
+                      {{ encryptPricesInPrint ? encryptPrice(bp.prices[pl.price_list]) : `₹${Number(bp.prices[pl.price_list] || 0).toLocaleString()}` }}
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Options Modal -->
+  <div v-if="showExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-opacity duration-300">
+    <div class="relative w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 text-slate-100 animate-in fade-in zoom-in duration-200">
+      <!-- Title -->
+      <div>
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          📄 Export PDF Options
+        </h3>
+        <p class="text-xs text-slate-400 mt-1">
+          Configure the layout options for the generated catalog PDF.
+        </p>
+      </div>
+
+      <!-- Form controls -->
+      <div class="space-y-4">
+        <!-- Include Prices Checkbox -->
+        <label class="flex items-center gap-3 cursor-pointer group bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/60 hover:border-indigo-500/40 transition">
+          <input 
+            v-model="includePricesInPrint" 
+            type="checkbox"
+            class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:ring-2 cursor-pointer"
+          />
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-slate-200 group-hover:text-white transition">Include Prices</span>
+            <span class="text-[10px] text-slate-400">Show price list rates under each item in catalog.</span>
+          </div>
+        </label>
+
+        <!-- Encrypt Prices Checkbox (Conditional) -->
+        <div v-if="includePricesInPrint" class="animate-in slide-in-from-top-2 duration-200">
+          <label class="flex items-center gap-3 cursor-pointer group bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/60 hover:border-indigo-500/40 transition">
+            <input 
+              v-model="encryptPricesInPrint" 
+              type="checkbox"
+              class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:ring-2 cursor-pointer"
+            />
+            <div class="flex flex-col">
+              <span class="text-sm font-bold text-slate-200 group-hover:text-white transition">Encrypt Prices?</span>
+              <span class="text-[10px] text-slate-400">Obfuscate price digits to cipher letters.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button 
+          @click="closeExportModal"
+          class="rounded-xl border border-slate-800 bg-slate-900/60 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95"
+        >
+          Cancel
+        </button>
+        <button 
+          @click="triggerPrint"
+          class="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-2.5 text-xs font-bold text-white transition active:scale-95 shadow-lg shadow-indigo-600/20"
+        >
+          Print Catalog
+        </button>
       </div>
     </div>
   </div>
@@ -762,8 +847,29 @@ function goHome() {
   }
 }
 
+const showExportModal = ref(false)
+const includePricesInPrint = ref(false)
+const encryptPricesInPrint = ref(false)
+
+watch(includePricesInPrint, (newVal) => {
+  if (!newVal) {
+    encryptPricesInPrint.value = false
+  }
+})
+
 function exportToPDF() {
-  window.print()
+  showExportModal.value = true
+}
+
+function closeExportModal() {
+  showExportModal.value = false
+}
+
+function triggerPrint() {
+  showExportModal.value = false
+  nextTick(() => {
+    window.print()
+  })
 }
 
 watch(isFullscreen, (newVal) => {
