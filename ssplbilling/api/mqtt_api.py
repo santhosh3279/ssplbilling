@@ -27,26 +27,74 @@ def get_mqtt_status():
 		"last_ping": last_ping
 	}
 
+ACTIVE_DAEMON_KEY = "mqtt_active_daemon_id"
+
 @frappe.whitelist()
 def ensure_mqtt_connected():
-	"""Check if the background MQTT client thread is running. If not, start it."""
+	"""Check if the background MQTT client daemon process is running. If not, start it."""
 	last_ping = frappe.cache().get_value(PING_KEY)
 	now = time.time()
 	
 	if not last_ping or (now - float(last_ping)) > 30:
 		if frappe.cache().set(LOCK_KEY, "1", ex=20, nx=True):
-			site_name = frappe.local.site
-			t = threading.Thread(target=run_mqtt_daemon, args=(site_name,), daemon=True)
-			t.start()
+			site_name = getattr(frappe.local, "site", None)
+			if site_name:
+				import os
+				import sys
+				import subprocess
+				import uuid
+				
+				bench_path = frappe.utils.get_bench_path()
+				sites_path = os.path.join(bench_path, "sites")
+				log_path = os.path.join(bench_path, "logs", "mqtt_daemon.log")
+				
+				# Generate a new unique daemon ID and set it as active BEFORE spawning.
+				daemon_id = str(uuid.uuid4())
+				frappe.cache().set_value(ACTIVE_DAEMON_KEY, daemon_id)
+				frappe.cache().delete("mqtt_exit_daemon")
+				
+				cmd = [
+					sys.executable,
+					"-m", "frappe.utils.bench_helper",
+					"frappe",
+					"--site", site_name,
+					"execute",
+					"ssplbilling.api.mqtt_api.run_mqtt_daemon"
+				]
+				
+				try:
+					log_file = open(log_path, "a", encoding="utf-8")
+					subprocess.Popen(
+						cmd,
+						cwd=sites_path,
+						stdout=log_file,
+						stderr=log_file,
+						start_new_session=True,
+						env=dict(os.environ, MQTT_DAEMON_ID=daemon_id)
+					)
+					log_file.close()
+				except Exception as e:
+					t = threading.Thread(target=run_mqtt_daemon, args=(site_name, daemon_id), daemon=True)
+					t.start()
 
-def run_mqtt_daemon(site_name=None):
-	"""Main daemon loop running in a background thread."""
+def run_mqtt_daemon(site_name=None, daemon_id=None):
+	"""Main daemon loop running in a background thread or detached process."""
+	import os
+	import uuid
+	
+	if not daemon_id:
+		daemon_id = os.environ.get("MQTT_DAEMON_ID") or str(uuid.uuid4())
+		
 	if not site_name:
 		site_name = getattr(frappe.local, "site", None)
 
 	if site_name:
 		frappe.init(site_name)
 
+	print(f"[MQTT Daemon] Starting daemon process. ID: {daemon_id}")
+
+	# Set the ping immediately so ensure_mqtt_connected knows we are running
+	frappe.cache().set_value(PING_KEY, str(time.time()))
 	frappe.cache().delete(LOCK_KEY)
 	time.sleep(1)
 	
@@ -145,6 +193,12 @@ def run_mqtt_daemon(site_name=None):
 			if site_name:
 				frappe.init(site_name)
 			
+			# Exit if this daemon has been superseded by a newer one
+			active_id = frappe.cache().get_value(ACTIVE_DAEMON_KEY)
+			if active_id and active_id != daemon_id:
+				print(f"[MQTT Daemon] Superseded by newer daemon (Active: {active_id}, Current: {daemon_id}). Exiting.")
+				break
+				
 			if frappe.cache().get_value("mqtt_exit_daemon"):
 				frappe.cache().delete("mqtt_exit_daemon")
 				print("[MQTT Daemon] Exit requested via cache flag.")
@@ -156,10 +210,15 @@ def run_mqtt_daemon(site_name=None):
 			else:
 				frappe.cache().set_value(CONNECTED_KEY, 0)
 			
-			# Sleep for 10s total, checking for exit request every 1s
+			# Sleep for 10s total, checking every 1s
 			exit_requested = False
 			for _ in range(10):
 				time.sleep(1)
+				active_id = frappe.cache().get_value(ACTIVE_DAEMON_KEY)
+				if active_id and active_id != daemon_id:
+					exit_requested = True
+					print(f"[MQTT Daemon] Superseded by newer daemon (Active: {active_id}, Current: {daemon_id}). Exiting.")
+					break
 				if frappe.cache().get_value("mqtt_exit_daemon"):
 					exit_requested = True
 					break
@@ -172,23 +231,27 @@ def run_mqtt_daemon(site_name=None):
 		client.disconnect()
 		if site_name:
 			frappe.init(site_name)
-		frappe.cache().set_value(CONNECTED_KEY, 0)
-
+		# Only clear connection status if we are still the active daemon
+		active_id = frappe.cache().get_value(ACTIVE_DAEMON_KEY)
+		if not active_id or active_id == daemon_id:
+			frappe.cache().set_value(CONNECTED_KEY, 0)
 
 @frappe.whitelist()
 def refresh_mqtt_connection():
 	"""Force restart the background MQTT daemon by terminating the current one and starting a new one."""
+	# Invalidate the active daemon ID to force any running daemon to exit
+	frappe.cache().set_value(ACTIVE_DAEMON_KEY, "restart")
 	frappe.cache().set_value("mqtt_exit_daemon", 1)
 	frappe.cache().delete(PING_KEY)
 	frappe.cache().delete(LOCK_KEY)
 	
-	# Give the existing thread a moment to exit and release the lock/client
-	time.sleep(1.2)
+	# Give the existing thread/process a moment to exit
+	time.sleep(0.5)
 	
 	ensure_mqtt_connected()
 	
-	# Give it a moment to connect and update the status
-	time.sleep(1.0)
+	# Give the new subprocess a brief moment to boot and connect
+	time.sleep(2.0)
 	
 	return get_mqtt_status()
 
