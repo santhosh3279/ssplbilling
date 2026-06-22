@@ -73,6 +73,9 @@
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
         <div class="flex items-center gap-4">
+          <div v-if="ewaybill" class="flex items-center gap-2 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-xl px-4 py-1.5 font-mono text-2xl shrink-0 font-bold">
+            E-Way Bill: {{ ewaybill }} ({{ ewaybillStatus }})
+          </div>
           <button
             v-if="customerId"
             @click="showHistoryModal = true"
@@ -380,7 +383,8 @@
           </div>
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
-            <button @click="handleIncentive" :disabled="isSubmitted" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isSubmitted ? 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/20 text-[var(--color-text-muted)] cursor-not-allowed' : 'border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]'">Incentive</button>
+            <button v-if="!isSubmitted" @click="handleIncentive" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]">Incentive</button>
+            <button v-else @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
           </div>
         </div>
       </template>
@@ -527,6 +531,13 @@
       @close="showCustomAddressModal = false"
     />
 
+    <EWayBillModal
+      v-if="showEWayBillModal"
+      :loading="ewaybillLoading"
+      @close="showEWayBillModal = false"
+      @submit="handleEWayBillSubmit"
+    />
+
     <Warning
       :show="showClearWarning"
       title="Clear Bill"
@@ -626,6 +637,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import IncentiveEntry from '../components/IncentiveEntry.vue'
 import CustomAddress from '../components/CustomAddress.vue'
 import Warning from '../components/Warning.vue'
+import EWayBillModal from '../components/EWayBillModal.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -742,6 +754,10 @@ const isLoadingBill = ref(false)
 const isReadOnly = ref(false)
 const isSaved = ref(false)
 const isSubmitted = ref(false)
+const ewaybill = ref('')
+const ewaybillStatus = ref('')
+const showEWayBillModal = ref(false)
+const ewaybillLoading = ref(false)
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
   if (isSubmitted.value) return 'Submitted'
@@ -838,6 +854,9 @@ async function handleSelectSidebarItem(item) {
 
     // Incentive rows
     incentiveRows.value = data.incentive_system || []
+
+    ewaybill.value = data.ewaybill || ''
+    ewaybillStatus.value = data.e_waybill_status || ''
 
     // Items — reverse-calc pre-discount rate from stored effective rate + discount%
     items.value = (data.items || []).map(i => {
@@ -1107,6 +1126,8 @@ async function clearBill() {
   isSaved.value = false
   isSubmitted.value = false
   mop.value = 'Cash'
+  ewaybill.value = ''
+  ewaybillStatus.value = ''
 
   if (selectedSeries.value) {
     try {
@@ -1311,6 +1332,28 @@ function handlePrint() {
     return
   }
   showPrintModal.value = true
+}
+
+async function handleEWayBillSubmit(fields) {
+  if (ewaybillLoading.value) return
+  ewaybillLoading.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.salesinvoice_api.generate_eway_bill_for_sales_invoice', {
+      invoice_name: invoiceNo.value,
+      ...fields
+    })
+    if (res.ewaybill) {
+      ewaybill.value = res.ewaybill
+      ewaybillStatus.value = res.e_waybill_status
+      alert('E-Way Bill generated successfully: ' + res.ewaybill)
+      showEWayBillModal.value = false
+    }
+  } catch (err) {
+    console.error(err)
+    alert(err.message || 'Failed to generate E-Way Bill')
+  } finally {
+    ewaybillLoading.value = false
+  }
 }
 
 async function closePrintModal() {

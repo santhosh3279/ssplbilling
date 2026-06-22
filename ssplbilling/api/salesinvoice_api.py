@@ -48,3 +48,124 @@ def get_series_defaults(naming_series, doctype="Sales Invoice"):
         res["quotation_no"] = next_no
         
     return res
+
+@frappe.whitelist()
+def generate_eway_bill_for_sales_invoice(
+	invoice_name,
+	mode_of_transport="Road",
+	gst_transporter_id=None,
+	transporter_name=None,
+	vehicle_no=None,
+	gst_vehicle_type="Regular",
+	lr_no=None,
+	lr_date=None,
+	distance=None,
+):
+	"""
+	Generate E-Way Bill for a submitted Sales Invoice:
+	1. Load existing submitted Sales Invoice document.
+	2. Update transport fields directly via db_set.
+	3. Build E-Way Bill JSON payload entirely in-memory.
+	4. Call GSP API to generate E-Way Bill.
+	5. Save result directly on the Sales Invoice and create standard log.
+	"""
+	si = frappe.get_doc("Sales Invoice", invoice_name)
+	if si.docstatus != 1:
+		frappe.throw(_("Sales Invoice must be submitted to generate E-Way Bill."))
+
+	try:
+		# In sandbox mode, override real transporter ID with sandbox transporter GSTIN to pass NIC sandbox validation
+		sandbox_mode = frappe.get_cached_value("GST Settings", "GST Settings", "sandbox_mode")
+		mapped_transporter_id = "05AAACG2115R1ZN" if (gst_transporter_id and sandbox_mode) else gst_transporter_id
+
+		# Update database fields on the submitted invoice
+		update_data = {
+			"mode_of_transport": mode_of_transport,
+			"gst_transporter_id": mapped_transporter_id,
+			"transporter_name": transporter_name,
+			"vehicle_no": vehicle_no,
+			"gst_vehicle_type": gst_vehicle_type,
+			"lr_no": lr_no,
+			"lr_date": lr_date,
+		}
+		if distance:
+			update_data["distance"] = float(distance)
+		
+		# Also update in-memory object attributes so EWaybillData reads them
+		si.db_set(update_data)
+		for k, v in update_data.items():
+			setattr(si, k, v)
+
+		from india_compliance.gst_india.utils.e_waybill import (
+			EWaybillData,
+			EWaybillAPI,
+			log_and_process_e_waybill,
+		)
+		from india_compliance.gst_india.utils import parse_datetime
+
+		# Build JSON payload entirely in-memory
+		data = EWaybillData(si).get_data(with_irn=False)
+
+		# Force distance to be integer (GST GSP API expects int, not float)
+		if data.get("transDistance"):
+			data["transDistance"] = int(data["transDistance"])
+
+		# In sandbox mode, override state codes and pincodes to match the sandbox GSTIN (Uttarakhand - 05)
+		# to prevent state-pincode mismatch validation errors from the government sandbox API
+		if sandbox_mode:
+			data["fromStateCode"] = 5
+			data["actFromStateCode"] = 5
+			data["fromPincode"] = 248001
+
+			data["toStateCode"] = 5
+			data["actToStateCode"] = 5
+			data["toPincode"] = 248001
+
+		# Instantiate API and generate e-Waybill
+		api = EWaybillAPI.create(si)
+		result = api.generate_e_waybill(data)
+
+		eway_bill_no = str(result.get("ewayBillNo"))
+		eway_bill_status = result.get("e_waybill_status") or "Generated"
+
+		if not e_waybill_no:
+			frappe.throw(_("E-Way Bill generation failed: No e-Waybill number returned from the server."))
+
+		# Update Sales Invoice with generated info
+		si.db_set({
+			"ewaybill": eway_bill_no,
+			"e_waybill_status": eway_bill_status
+		})
+
+		# Create log
+		fetch_data = frappe.get_cached_value("GST Settings", "GST Settings", "fetch_e_waybill_data")
+		log_data = {
+			"e_waybill_number": eway_bill_no,
+			"created_on": frappe.utils.now_datetime(),
+			"valid_upto": None,
+			"reference_doctype": si.doctype,
+			"reference_name": si.name,
+			"is_generated_in_sandbox_mode": sandbox_mode,
+			"is_cancelled": 0,
+		}
+
+		if result.get("ewayBillDate"):
+			log_data["created_on"] = parse_datetime(result.get("ewayBillDate"), day_first=True)
+		if result.get("validUpto"):
+			log_data["valid_upto"] = parse_datetime(result.get("validUpto"), day_first=True)
+
+		log_and_process_e_waybill(
+			si,
+			log_data,
+			fetch=fetch_data and eway_bill_status != "Manually Generated",
+		)
+
+		return {
+			"ewaybill": eway_bill_no,
+			"e_waybill_status": eway_bill_status,
+			"message": "E-Way Bill generated successfully for Sales Invoice."
+		}
+
+	except Exception:
+		frappe.log_error(message=frappe.get_traceback(), title="Sales Invoice E-Way Bill Generation Failed")
+		raise
