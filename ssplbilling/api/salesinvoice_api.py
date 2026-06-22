@@ -128,7 +128,7 @@ def generate_eway_bill_for_sales_invoice(
 		eway_bill_no = str(result.get("ewayBillNo"))
 		eway_bill_status = result.get("e_waybill_status") or "Generated"
 
-		if not e_waybill_no:
+		if not eway_bill_no:
 			frappe.throw(_("E-Way Bill generation failed: No e-Waybill number returned from the server."))
 
 		# Update Sales Invoice with generated info
