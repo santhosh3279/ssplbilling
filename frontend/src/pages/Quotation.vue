@@ -68,7 +68,12 @@
       @party-click="customerInitialQuery = ''; showCustomerModal = true"
     >
       <template #header-right>
-        <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">Quotation Mode</span>
+        <div class="flex items-center gap-4">
+          <div v-if="ewaybill" class="flex items-center gap-2 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-xl px-4 py-1.5 font-mono text-2xl shrink-0 font-bold">
+            E-Way Bill: {{ ewaybill }} ({{ ewaybillStatus }})
+          </div>
+          <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">Quotation Mode</span>
+        </div>
       </template>
 
       <template #row="{ item, index, formatQty }">
@@ -358,6 +363,7 @@
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
             <button v-if="isReadOnly && !isSubmitted" @click="handleSubmit" class="flex-1 rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition-all uppercase active:scale-95">Submit</button>
+            <button v-else-if="isSubmitted" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
           </div>
         </div>
       </template>
@@ -511,6 +517,13 @@
       @close="showCustomAddressModal = false"
     />
 
+    <EWayBillModal
+      v-if="showEWayBillModal"
+      :loading="ewaybillLoading"
+      @close="showEWayBillModal = false"
+      @submit="handleEWayBillSubmit"
+    />
+
     <ShortcutPage
       :show="showShortcutPage"
       extra-title="Quotation"
@@ -546,6 +559,7 @@ import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
 import CustomAddress from '../components/CustomAddress.vue'
+import EWayBillModal from '../components/EWayBillModal.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -646,6 +660,10 @@ const sidebarLoading = ref(false)
 const isReadOnly = ref(false)
 const isSaved = ref(false)
 const isSubmitted = ref(false)
+const ewaybill = ref('')
+const ewaybillStatus = ref('')
+const showEWayBillModal = ref(false)
+const ewaybillLoading = ref(false)
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
   if (isSubmitted.value) return 'Submitted'
@@ -730,6 +748,8 @@ async function handleSelectSidebarItem(item) {
       address_line_1: data.custom_address_line1 || '',
       address_line_2: data.custom_address_line2 || '',
     }
+    ewaybill.value = data.ewaybill || ''
+    ewaybillStatus.value = data.e_waybill_status || ''
 
     // Items — reverse-calc pre-discount rate from stored effective rate + discount%
     items.value = (data.items || []).map(i => {
@@ -978,6 +998,8 @@ async function clearBill() {
   isReadOnly.value = false
   isSaved.value = false
   isSubmitted.value = false
+  ewaybill.value = ''
+  ewaybillStatus.value = ''
 
   if (selectedSeries.value) {
     try {
@@ -1211,6 +1233,31 @@ async function handleSubmit() {
     }
   } catch (e) {
     alert('Failed to submit quotation: ' + e.message)
+  }
+}
+
+async function handleEWayBillSubmit(transportData) {
+  if (ewaybillLoading.value) return
+  ewaybillLoading.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.quotation_api.generate_eway_bill_for_quotation', {
+      quotation_name: invoiceNo.value,
+      ...transportData
+    })
+    
+    if (res.ewaybill) {
+      ewaybill.value = res.ewaybill
+      ewaybillStatus.value = res.e_waybill_status
+      alert('E-Way Bill generated successfully: ' + res.ewaybill)
+      showEWayBillModal.value = false
+      fetchRecentQuotations()
+    } else {
+      alert('Failed to generate E-Way Bill: No number returned.')
+    }
+  } catch (e) {
+    alert(e.message || 'Error generating E-Way Bill.')
+  } finally {
+    ewaybillLoading.value = false
   }
 }
 

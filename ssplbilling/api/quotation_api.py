@@ -343,6 +343,8 @@ def get_quotation(quotation_name):
 		"custom_address_line2": qt.custom_address_line2 or "",
 		"custom_mobile_number": qt.custom_mobile_number or "",
 		"custom_half_tax_discount": qt.custom_half_tax_discount or 0,
+		"ewaybill": qt.get("ewaybill") or "",
+		"e_waybill_status": qt.get("e_waybill_status") or "",
 		"items": items,
 	}
 
@@ -516,3 +518,118 @@ def delete_quotation(quotation_name):
 	"""Delete a Draft Quotation."""
 	frappe.delete_doc("Quotation", quotation_name)
 	return {"status": "Deleted"}
+
+
+def ensure_custom_fields_exist():
+	"""Ensure that ewaybill and e_waybill_status custom fields exist on the Quotation doctype."""
+	if not frappe.db.exists("Custom Field", {"dt": "Quotation", "fieldname": "ewaybill"}):
+		from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+		create_custom_fields({
+			"Quotation": [
+				{
+					"fieldname": "ewaybill",
+					"label": "e-Waybill No.",
+					"fieldtype": "Data",
+					"insert_after": "customer",
+					"allow_on_submit": 1,
+					"read_only": 1
+				},
+				{
+					"fieldname": "e_waybill_status",
+					"label": "e-Waybill Status",
+					"fieldtype": "Select",
+					"insert_after": "ewaybill",
+					"options": "\nPending\nGenerated\nCancelled\nFailed\nNot Applicable",
+					"allow_on_submit": 1,
+					"read_only": 1
+				}
+			]
+		})
+		frappe.db.commit()
+
+
+@frappe.whitelist()
+def generate_eway_bill_for_quotation(
+	quotation_name,
+	mode_of_transport="Road",
+	gst_transporter_id=None,
+	transporter_name=None,
+	vehicle_no=None,
+	gst_vehicle_type="Regular",
+	lr_no=None,
+	lr_date=None,
+	distance=None,
+):
+	"""
+	Generate E-Way Bill for a submitted Quotation by:
+	1. Mocking a Sales Invoice document.
+	2. Submitting it in a database transaction.
+	3. Requesting generation using India Compliance standard utility.
+	4. Extracting results and rolling back transaction.
+	5. Saving generated E-Way Bill info directly on the Quotation.
+	"""
+	ensure_custom_fields_exist()
+
+	q = frappe.get_doc("Quotation", quotation_name)
+	if q.docstatus != 1:
+		frappe.throw("Quotation must be submitted to generate E-Way Bill.")
+
+	frappe.db.begin()
+
+	try:
+		from erpnext.selling.doctype.quotation.quotation import make_sales_invoice
+		si = make_sales_invoice(quotation_name)
+
+		si.mode_of_transport = mode_of_transport
+		si.gst_transporter_id = gst_transporter_id
+		si.transporter_name = transporter_name
+		si.vehicle_no = vehicle_no
+		si.gst_vehicle_type = gst_vehicle_type
+		si.lr_no = lr_no
+		si.lr_date = lr_date
+		if distance:
+			si.distance = float(distance)
+		si.e_waybill_status = "Pending"
+
+		if not si.debit_to:
+			from erpnext.accounts.party import get_party_account
+			si.debit_to = get_party_account("Customer", si.customer, si.company)
+
+		# Insert and submit to satisfy backend E-Way Bill docstatus checks
+		si.insert(ignore_permissions=True)
+		si.submit()
+
+		frappe.flags.in_test = True
+		from india_compliance.gst_india.utils.e_waybill import generate_e_waybill
+		try:
+			generate_e_waybill(doctype="Sales Invoice", docname=si.name, force=True)
+			si.reload()
+
+			eway_bill_no = si.ewaybill
+			eway_bill_status = si.e_waybill_status
+
+			if not eway_bill_no:
+				frappe.throw("E-Way Bill generation failed: No e-Waybill number returned from the server.")
+		finally:
+			frappe.flags.in_test = False
+
+		# Rollback transaction to ensure mock Sales Invoice and ledgers are completely erased
+		frappe.db.rollback()
+
+		# Save generated e-way bill number and status on Quotation
+		q.db_set({
+			"ewaybill": eway_bill_no,
+			"e_waybill_status": eway_bill_status
+		})
+
+		return {
+			"ewaybill": eway_bill_no,
+			"e_waybill_status": eway_bill_status,
+			"message": "E-Way Bill generated successfully for Quotation."
+		}
+
+	except Exception as e:
+		frappe.db.rollback()
+		frappe.log_error(message=frappe.get_traceback(), title="Quotation E-Way Bill Generation Failed")
+		frappe.throw(str(e))
+
