@@ -366,7 +366,7 @@
       </template>
 
       <template #actions>
-        <div class="flex flex-col gap-2 h-full py-2">
+        <div class="flex flex-col gap-2 h-full py-2 overflow-y-auto">
           <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
             <div class="flex justify-between items-start mb-1">
               <div class="text-lg font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
