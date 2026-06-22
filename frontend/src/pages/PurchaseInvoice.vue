@@ -1678,6 +1678,11 @@ function onQuickSearchSelect(item) {
     supplierInvoiceNoRef.value?.focus()
     return
   }
+  if (!isExempted.value && supplierId.value && !supplierGstin.value.trim()) {
+    alert("Add party Gstin or change the tax template to exempted")
+    quickSearchResults.value = []
+    return
+  }
   
   // Capture the query used to find this item
   const currentQuery = editQuickSearchRowIdx.value !== null 
@@ -1729,6 +1734,10 @@ function applyItemToRow(rowIdx, item) {
 }
 
 function openItemSearch(query, targetRowIdx = null) {
+  if (targetRowIdx === null && !isExempted.value && supplierId.value && !supplierGstin.value.trim()) {
+    alert("Add party Gstin or change the tax template to exempted")
+    return
+  }
   quickSearchResults.value = []
   editQuickSearchRowIdx.value = null
   itemSearchTargetRowIdx.value = targetRowIdx
@@ -1752,6 +1761,10 @@ function onItemSearchSelect(item) {
   if (!supplierInvoiceNo.value.trim()) {
     alert('Supplier Invoice No is mandatory.')
     supplierInvoiceNoRef.value?.focus()
+    return
+  }
+  if (itemSearchTargetRowIdx.value === null && !isExempted.value && supplierId.value && !supplierGstin.value.trim()) {
+    alert("Add party Gstin or change the tax template to exempted")
     return
   }
   showItemSearch.value = false
@@ -1915,6 +1928,10 @@ function focusPendingRate() {
 
 function confirmPendingItem() {
   if (!pendingItem.value || !pendingItem.value.qty) return
+  if (!isExempted.value && supplierId.value && !supplierGstin.value.trim()) {
+    alert("Add party Gstin or change the tax template to exempted")
+    return
+  }
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
   const newItem = {
@@ -1992,6 +2009,10 @@ function handleItemEntry() {
   if (!supplierInvoiceNo.value.trim()) {
     alert('Supplier Invoice No is mandatory.')
     supplierInvoiceNoRef.value?.focus()
+    return
+  }
+  if (!isExempted.value && supplierId.value && !supplierGstin.value.trim()) {
+    alert("Add party Gstin or change the tax template to exempted")
     return
   }
   if (!newItemCode.value) return
