@@ -12,6 +12,13 @@
             ← Dashboard
           </button>
           <span class="text-[var(--color-text-muted)]">|</span>
+          <button
+            @click="router.push('/catelogue')"
+            class="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition"
+          >
+            ← Catalogue
+          </button>
+          <span class="text-[var(--color-text-muted)]">|</span>
           <h1 class="text-sm font-semibold text-[var(--color-text)]">
             Offer Items Management
           </h1>
