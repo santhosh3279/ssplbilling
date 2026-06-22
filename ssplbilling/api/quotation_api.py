@@ -612,6 +612,21 @@ def generate_eway_bill_for_quotation(
 		# Build JSON payload entirely in-memory
 		data = EWaybillData(si).get_data(with_irn=False)
 
+		# Force distance to be integer (GST GSP API expects int, not float)
+		if data.get("transDistance"):
+			data["transDistance"] = int(data["transDistance"])
+
+		# In sandbox mode, override state codes and pincodes to match the sandbox GSTIN (Uttarakhand - 05)
+		# to prevent state-pincode mismatch validation errors from the government sandbox API
+		if sandbox_mode:
+			data["fromStateCode"] = 5
+			data["actFromStateCode"] = 5
+			data["fromPincode"] = 248001
+
+			data["toStateCode"] = 5
+			data["actToStateCode"] = 5
+			data["toPincode"] = 248001
+
 		# Instantiate API and generate e-Waybill without DB persistence
 		api = EWaybillAPI.create(si)
 		result = api.generate_e_waybill(data)
