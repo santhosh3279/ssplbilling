@@ -561,12 +561,11 @@ def generate_eway_bill_for_quotation(
 	distance=None,
 ):
 	"""
-	Generate E-Way Bill for a submitted Quotation by:
-	1. Mocking a Sales Invoice document.
-	2. Submitting it in a database transaction.
-	3. Requesting generation using India Compliance standard utility.
-	4. Extracting results and rolling back transaction.
-	5. Saving generated E-Way Bill info directly on the Quotation.
+	Generate E-Way Bill for a submitted Quotation entirely in memory:
+	1. Mock an in-memory Sales Invoice document.
+	2. Build E-Way Bill JSON payload directly from the in-memory document.
+	3. Call India Compliance GSP API endpoint.
+	4. Save results directly on the Quotation and log in standard e-Waybill Log.
 	"""
 	ensure_custom_fields_exist()
 
@@ -574,12 +573,13 @@ def generate_eway_bill_for_quotation(
 	if q.docstatus != 1:
 		frappe.throw("Quotation must be submitted to generate E-Way Bill.")
 
-	frappe.db.begin()
-
 	try:
 		from erpnext.selling.doctype.quotation.quotation import make_sales_invoice
 		si = make_sales_invoice(quotation_name)
 
+		# Set required transport details
+		si.name = "MOCK-QTN-INV"  # Must match GST_INVOICE_NUMBER_FORMAT (<= 16 chars)
+		si.posting_date = frappe.utils.today()
 		si.mode_of_transport = mode_of_transport
 		si.gst_transporter_id = gst_transporter_id
 		si.transporter_name = transporter_name
@@ -595,32 +595,57 @@ def generate_eway_bill_for_quotation(
 			from erpnext.accounts.party import get_party_account
 			si.debit_to = get_party_account("Customer", si.customer, si.company)
 
-		# Insert and submit to satisfy backend E-Way Bill docstatus checks
-		si.insert(ignore_permissions=True)
-		si.submit()
+		from india_compliance.gst_india.utils.e_waybill import (
+			EWaybillData,
+			EWaybillAPI,
+			log_and_process_e_waybill,
+		)
+		from india_compliance.gst_india.utils import parse_datetime
 
-		frappe.flags.in_test = True
-		from india_compliance.gst_india.utils.e_waybill import generate_e_waybill
-		try:
-			generate_e_waybill(doctype="Sales Invoice", docname=si.name, force=True)
-			si.reload()
+		# Build JSON payload entirely in-memory
+		data = EWaybillData(si).get_data(with_irn=False)
 
-			eway_bill_no = si.ewaybill
-			eway_bill_status = si.e_waybill_status
+		# Instantiate API and generate e-Waybill without DB persistence
+		api = EWaybillAPI.create(si)
+		result = api.generate_e_waybill(data)
 
-			if not eway_bill_no:
-				frappe.throw("E-Way Bill generation failed: No e-Waybill number returned from the server.")
-		finally:
-			frappe.flags.in_test = False
+		eway_bill_no = str(result.get("ewayBillNo"))
+		eway_bill_status = result.get("e_waybill_status") or "Generated"
 
-		# Rollback transaction to ensure mock Sales Invoice and ledgers are completely erased
-		frappe.db.rollback()
+		if not eway_bill_no:
+			frappe.throw("E-Way Bill generation failed: No e-Waybill number returned from the server.")
 
-		# Save generated e-way bill number and status on Quotation
+		# Update Quotation directly in DB
 		q.db_set({
 			"ewaybill": eway_bill_no,
 			"e_waybill_status": eway_bill_status
 		})
+
+		# Create the e-Waybill Log referencing the Quotation so tracking and PDF attachments work
+		sandbox_mode, fetch_data = frappe.get_cached_value(
+			"GST Settings", "GST Settings", ["sandbox_mode", "fetch_e_waybill_data"]
+		)
+
+		log_data = {
+			"e_waybill_number": eway_bill_no,
+			"created_on": frappe.utils.now_datetime(),
+			"valid_upto": None,
+			"reference_doctype": q.doctype,
+			"reference_name": q.name,
+			"is_generated_in_sandbox_mode": sandbox_mode,
+			"is_cancelled": 0,
+		}
+
+		if result.get("ewayBillDate"):
+			log_data["created_on"] = parse_datetime(result.get("ewayBillDate"), day_first=True)
+		if result.get("validUpto"):
+			log_data["valid_upto"] = parse_datetime(result.get("validUpto"), day_first=True)
+
+		log_and_process_e_waybill(
+			q,
+			log_data,
+			fetch=fetch_data and eway_bill_status != "Manually Generated",
+		)
 
 		return {
 			"ewaybill": eway_bill_no,
@@ -629,7 +654,6 @@ def generate_eway_bill_for_quotation(
 		}
 
 	except Exception as e:
-		frappe.db.rollback()
 		frappe.log_error(message=frappe.get_traceback(), title="Quotation E-Way Bill Generation Failed")
 		frappe.throw(str(e))
 
