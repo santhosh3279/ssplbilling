@@ -581,7 +581,14 @@ def generate_eway_bill_for_quotation(
 		si.name = "MOCK-QTN-INV"  # Must match GST_INVOICE_NUMBER_FORMAT (<= 16 chars)
 		si.posting_date = frappe.utils.today()
 		si.mode_of_transport = mode_of_transport
-		si.gst_transporter_id = gst_transporter_id
+
+		# In sandbox mode, override real transporter ID with sandbox transporter GSTIN to pass NIC sandbox validation
+		sandbox_mode = frappe.get_cached_value("GST Settings", "GST Settings", "sandbox_mode")
+		if gst_transporter_id and sandbox_mode:
+			si.gst_transporter_id = "05AAACG2115R1ZN"
+		else:
+			si.gst_transporter_id = gst_transporter_id
+
 		si.transporter_name = transporter_name
 		si.vehicle_no = vehicle_no
 		si.gst_vehicle_type = gst_vehicle_type
@@ -653,7 +660,7 @@ def generate_eway_bill_for_quotation(
 			"message": "E-Way Bill generated successfully for Quotation."
 		}
 
-	except Exception as e:
+	except Exception:
 		frappe.log_error(message=frappe.get_traceback(), title="Quotation E-Way Bill Generation Failed")
-		frappe.throw(str(e))
+		raise
 
