@@ -378,9 +378,9 @@
       class="print-page w-full flex flex-col p-4 box-border relative"
     >
       <!-- Company Name Header at top of each page -->
-      <div class="text-center border-b-2 border-slate-900 pb-2 mb-2 shrink-0">
-        <h1 class="text-xl font-black uppercase tracking-widest text-slate-900">Sundaram and Sons Private Ltd.</h1>
-        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 mt-1">{{ offer.heading }}</h2>
+      <div class="flex justify-between items-baseline border-b-2 border-slate-900 pb-1 mb-2 shrink-0">
+        <h1 class="text-[15px] font-black uppercase tracking-widest text-slate-900">Sundaram and Sons Private Ltd.</h1>
+        <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-700">{{ offer.heading }}</h2>
       </div>
 
       <!-- 3x3 Grid of Cards -->
