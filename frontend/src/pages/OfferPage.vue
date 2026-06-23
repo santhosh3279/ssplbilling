@@ -458,6 +458,12 @@
           </div>
         </div>
       </div>
+
+      <!-- Page Footer -->
+      <div class="mt-3 pt-1.5 border-t border-slate-300 flex justify-between items-center text-[9px] text-slate-500 font-bold tracking-wide shrink-0">
+        <span class="uppercase">Sundaram and Sons Private Ltd.</span>
+        <span>Page {{ pIdx + 1 }} of {{ chunkedItems.length }}</span>
+      </div>
     </div>
   </div>
 
