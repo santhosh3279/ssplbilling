@@ -997,7 +997,10 @@ onBeforeUnmount(() => {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm;
+    margin-top: 15mm;
+    margin-bottom: 17mm;
+    margin-left: 8mm;
+    margin-right: 8mm;
   }
 
   /* Reset height/overflow on all parent elements to allow multi-page printing */
