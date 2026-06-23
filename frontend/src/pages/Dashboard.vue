@@ -135,6 +135,15 @@
             <h1 class="text-lg font-bold text-[var(--color-text)]">Dashboard</h1>
             <p class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
           </div>
+          
+          <!-- Fullscreen button -->
+          <button
+            @click="toggleFullscreen"
+            class="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition shadow-sm active:scale-95 focus:outline-none"
+            title="Toggle Fullscreen"
+          >
+            <span>{{ isFullscreen ? '📴 Exit Fullscreen' : '📺 Fullscreen' }}</span>
+          </button>
         </div>
       </header>
 
@@ -354,6 +363,27 @@ const { isConnected, isConnecting, serverInfo, refreshConnection, checkStatus } 
 
 async function handleMqttRefresh() {
   await refreshConnection()
+}
+
+const isFullscreen = ref(false)
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen()
+      .then(() => {
+        isFullscreen.value = true
+      })
+      .catch((err) => {
+        console.error(`Error enabling fullscreen: ${err.message}`)
+      })
+  } else {
+    document.exitFullscreen()
+    isFullscreen.value = false
+  }
+}
+
+function handleFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement
 }
 
 
@@ -781,6 +811,7 @@ function cleanupOldKeys() {
 onMounted(async () => {
   cleanupOldKeys()
   window.addEventListener('wb-navigate-home', () => router.push('/'))
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
   
   if (isActualAdmin.value) {
     try {
@@ -801,6 +832,7 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
   if (timeInterval) {
     clearInterval(timeInterval)
   }
