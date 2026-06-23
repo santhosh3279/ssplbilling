@@ -58,9 +58,11 @@ export function useMqtt() {
   }
 
   function startStatusPolling() {
-    if (statusInterval) return
     checkStatus()
-    statusInterval = setInterval(checkStatus, 20000)
+    // Automatic 20-second polling disabled as per user request to use manual refresh instead
+    // if (statusInterval) return
+    // checkStatus()
+    // statusInterval = setInterval(checkStatus, 20000)
   }
 
   function stopStatusPolling() {

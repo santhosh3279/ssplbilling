@@ -175,11 +175,51 @@
           </template>
         </div>
 
-        <!-- Right: Clock (unchanged) -->
-        <div class="flex-shrink-0 flex flex-col items-center gap-1 pt-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] backdrop-blur-sm shadow-xl">
-          <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{{ todayDate }}</div>
-          <div class="text-lg font-black text-[var(--color-text)] uppercase tracking-wider mb-2 drop-shadow-sm">{{ todayDay }}</div>
-          <AnalogueClock />
+        <!-- Right Column: Clock & MQTT Widgets -->
+        <div class="flex-shrink-0 flex flex-col gap-4 w-[280px]">
+          <!-- Clock -->
+          <div class="flex flex-col items-center gap-1 pt-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] backdrop-blur-sm shadow-xl">
+            <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{{ todayDate }}</div>
+            <div class="text-lg font-black text-[var(--color-text)] uppercase tracking-wider mb-2 drop-shadow-sm">{{ todayDay }}</div>
+            <AnalogueClock />
+          </div>
+
+          <!-- MQTT Server Status -->
+          <div class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
+              <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">MQTT Server</span>
+              <span class="flex items-center gap-1.5 text-xs font-bold">
+                <span 
+                  class="h-2.5 w-2.5 rounded-full" 
+                  :class="isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-rose-500'"
+                ></span>
+                <span :class="isConnected ? 'text-emerald-500' : 'text-rose-500'">
+                  {{ isConnected ? 'Connected' : 'Disconnected' }}
+                </span>
+              </span>
+            </div>
+
+            <div class="text-xs space-y-1">
+              <div class="flex justify-between">
+                <span class="text-[var(--color-text-muted)]">Broker:</span>
+                <span class="font-mono font-bold text-[var(--color-text)] truncate max-w-[160px] text-right" :title="serverInfo.server">{{ serverInfo.server || 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--color-text-muted)]">Port:</span>
+                <span class="font-mono font-bold text-[var(--color-text)]">{{ serverInfo.port || 'N/A' }}</span>
+              </div>
+            </div>
+
+            <!-- Manual reconnect button -->
+            <button
+              v-if="!isConnected"
+              @click="handleMqttRefresh"
+              :disabled="isConnecting"
+              class="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-4 py-2.5 text-xs font-bold text-white transition active:scale-95 border border-amber-500 shadow-md focus:outline-none"
+            >
+              <span>{{ isConnecting ? '⏳ Connecting...' : '🔄 Reconnect MQTT' }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -311,8 +351,15 @@ import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
+import { useMqtt } from '../composables/useMqtt'
 
 const router = useRouter()
+
+const { isConnected, isConnecting, serverInfo, refreshConnection, checkStatus } = useMqtt()
+
+async function handleMqttRefresh() {
+  await refreshConnection()
+}
 
 
 
@@ -751,6 +798,7 @@ onMounted(async () => {
   fetchSettings(selectedUser.value, true)
   refreshItemCache('Sales') // Preload items for fast entry
   refreshLedgerCache()      // Preload ledgers for fast search
+  checkStatus()             // Retrieve MQTT server status once on load
 
   timeInterval = setInterval(() => {
     now.value = new Date()
