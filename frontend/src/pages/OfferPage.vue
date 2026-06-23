@@ -152,12 +152,20 @@
           class="absolute bottom-0 left-0 right-0 z-40 px-8 py-6 flex items-center justify-between bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent transition-all duration-500 transform"
           :class="showControls ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'"
         >
-          <button
-            @click="exitPresentationMode"
-            class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-white transition active:scale-95"
-          >
-            ❌ Exit Play
-          </button>
+          <div class="flex items-center gap-3">
+            <button
+              @click="exitPresentationMode"
+              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-white transition active:scale-95"
+            >
+              ❌ Exit Play
+            </button>
+            <button
+              @click="loadOffer(true)"
+              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30 transition active:scale-95"
+            >
+              🔄 Refresh (R)
+            </button>
+          </div>
           
           <div class="flex items-center gap-4">
             <!-- Previous Button -->
@@ -206,6 +214,14 @@
             class="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus:outline-none"
           >
             ← Back to Catalogue
+          </button>
+          
+          <!-- Refresh Button -->
+          <button 
+            @click="loadOffer(false)"
+            class="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus:outline-none"
+          >
+            🔄 Refresh (R)
           </button>
           
           <!-- Abstract glowing circles -->
@@ -324,6 +340,14 @@
           class="flex items-center gap-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-emerald-300 focus:bg-emerald-700 focus:scale-105 transition-all duration-300 border border-emerald-500"
         >
           <span>📄 Export PDF</span>
+        </button>
+
+        <!-- Refresh Button -->
+        <button
+          @click="loadOffer(false)"
+          class="flex items-center gap-3 rounded-2xl bg-amber-600 hover:bg-amber-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-amber-300 focus:bg-amber-700 focus:scale-105 transition-all duration-300 border border-amber-500"
+        >
+          <span>🔄 Refresh (R)</span>
         </button>
 
         <!-- Play Slideshow Button -->
@@ -697,13 +721,14 @@ function getItemStyle(idx) {
 }
 
 function startTimer() {
-  stopTimer()
-  const sec = offer.value?.timer
-  if (sec && sec > 0) {
-    refreshInterval = setInterval(() => {
-      loadOffer(true)
-    }, sec * 1000)
-  }
+  // Disabled automatic polling to keep data in local memory and not ask server repeatedly.
+  // stopTimer()
+  // const sec = offer.value?.timer
+  // if (sec && sec > 0) {
+  //   refreshInterval = setInterval(() => {
+  //     loadOffer(true)
+  //   }, sec * 1000)
+  // }
 }
 
 function stopTimer() {
@@ -911,6 +936,9 @@ function handleKeyDown(event) {
     } else if (key === 'Escape' || key === 'Backspace' || keyCode === 27 || keyCode === 8 || keyCode === 10009 || keyCode === 461) {
       event.preventDefault()
       exitPresentationMode()
+    } else if (key === 'r' || key === 'R') {
+      event.preventDefault()
+      loadOffer(true)
     }
   } else {
     if (key === 'Enter' || keyCode === 13 || key === ' ' || keyCode === 32) {
@@ -928,6 +956,9 @@ function handleKeyDown(event) {
         event.preventDefault()
         focusPlayButton()
       }
+    } else if (key === 'r' || key === 'R') {
+      event.preventDefault()
+      loadOffer(false)
     }
   }
 }
