@@ -997,10 +997,7 @@ onBeforeUnmount(() => {
 @media print {
   @page {
     size: A4 portrait;
-    margin-top: 15mm;
-    margin-bottom: 17mm;
-    margin-left: 8mm;
-    margin-right: 8mm;
+    margin: 0;
   }
 
   /* Reset height/overflow on all parent elements to allow multi-page printing */
@@ -1010,6 +1007,8 @@ onBeforeUnmount(() => {
     overflow: visible !important;
     position: static !important;
     display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* Hide scrollable main wrapper */
@@ -1032,8 +1031,12 @@ onBeforeUnmount(() => {
   .print-page {
     display: flex !important;
     flex-direction: column !important;
-    width: 100% !important;
+    width: 194mm !important; /* 210mm A4 width - 8mm left - 8mm right margin */
     height: 265mm !important; /* fits A4 height with margins and leaves safety gap for footer */
+    margin-top: 15mm !important;
+    margin-bottom: 17mm !important;
+    margin-left: 8mm !important;
+    margin-right: 8mm !important;
     box-sizing: border-box !important;
     page-break-after: always !important;
     break-after: page !important;
