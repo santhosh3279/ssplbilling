@@ -640,6 +640,7 @@ async function handleFullSync() {
     if (generalSettingsRef.value?.loadSettings) {
       await generalSettingsRef.value.loadSettings()
     }
+    window.location.reload()
   } finally {
     isSyncing.value = false
   }
