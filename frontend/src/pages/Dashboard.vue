@@ -430,6 +430,7 @@ async function handleUserChange() {
   }
   await syncSettings()
   permissionTrigger.value++
+  window.location.reload()
 }
 
 async function handleLogout() {
