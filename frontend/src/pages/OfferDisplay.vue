@@ -436,7 +436,7 @@ import { frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
-const { searchItemsInCache } = useItemCache()
+const { items: cachedItems, refreshItemCache, searchItemsInCache } = useItemCache()
 
 // State
 const offers = ref([])
@@ -742,6 +742,9 @@ async function fetchPriceLists() {
 onMounted(() => {
   fetchOffers()
   fetchPriceLists()
+  if (!cachedItems.value.length) {
+    refreshItemCache('Sales')
+  }
 })
 </script>
 
