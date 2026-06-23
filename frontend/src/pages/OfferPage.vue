@@ -378,7 +378,7 @@
       class="print-page w-full flex flex-col p-4 box-border relative"
     >
       <!-- Company Name Header at top of each page -->
-      <div class="flex justify-between items-baseline border-b-2 border-slate-900 pb-1 mb-2 shrink-0">
+      <div class="flex justify-between items-end border-b-2 border-slate-900 pb-1 mb-2 shrink-0" style="height: 10mm; box-sizing: border-box;">
         <h1 class="text-[15px] font-black uppercase tracking-widest text-slate-900">Sundaram and Sons Private Ltd.</h1>
         <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-700">{{ offer.heading }}</h2>
       </div>
