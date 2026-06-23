@@ -57,7 +57,7 @@
               <span class="text-3xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
                 <span v-if="results[selectedIdx].redis_stock" class="text-xl font-normal text-[var(--color-text-muted)] ml-2">
-                  (redis stock: {{ results[selectedIdx].redis_stock }})
+                  ({{ results[selectedIdx].redis_stock }})
                 </span>
               </span>
             </div>
@@ -120,7 +120,7 @@
                   {{ item.stock || 0 }}
                 </span>
                 <span v-if="item.redis_stock" class="text-2xl ml-2 font-normal" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]/80' : 'text-[var(--color-text-muted)]'">
-                  (redis stock: {{ item.redis_stock }})
+                  ({{ item.redis_stock }})
                 </span>
               </td>
             </tr>
