@@ -92,6 +92,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	# Initialize fields
 	for i in items:
 		i["stock"] = 0.0
+		i["redis_stock"] = 0.0
 		i["price"] = float(i.rate or 0)
 		i["valuation_rate"] = float(i.valuation_rate or i.rate or 0)
 		i["price_lists"] = []
@@ -161,6 +162,11 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 			bin_val_rate = float(b.get("valuation_rate") or 0)
 			if bin_val_rate > 0:
 				item_map[b.item_code]["valuation_rate"] = bin_val_rate
+
+	# Populate redis stock from cached draft invoice quantities
+	for (item_code, wh), draft_qty in draft_qtys.items():
+		if item_code in item_map:
+			item_map[item_code]["redis_stock"] += draft_qty
 
 	# 3. Batch fetch item tax rates from Item Tax Template
 	today = frappe.utils.today()

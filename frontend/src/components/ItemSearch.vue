@@ -56,6 +56,9 @@
               <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Current Stock</span>
               <span class="text-3xl font-bold" :class="results[selectedIdx].stock <= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ results[selectedIdx].stock || 0 }} {{ results[selectedIdx].uom || 'Nos' }}
+                <span v-if="results[selectedIdx].redis_stock" class="text-xl font-normal text-[var(--color-text-muted)] ml-2">
+                  (redis stock: {{ results[selectedIdx].redis_stock }})
+                </span>
               </span>
             </div>
             <div v-if="warehouse" class="flex flex-col min-w-[150px] max-w-[250px]">
@@ -112,9 +115,12 @@
               <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-warning)]'">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
-              <td class="p-[5px] text-right">
+              <td class="p-[5px] text-right whitespace-nowrap">
                 <span :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : (item.stock <= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]')">
                   {{ item.stock || 0 }}
+                </span>
+                <span v-if="item.redis_stock" class="text-2xl ml-2 font-normal" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]/80' : 'text-[var(--color-text-muted)]'">
+                  (redis stock: {{ item.redis_stock }})
                 </span>
               </td>
             </tr>

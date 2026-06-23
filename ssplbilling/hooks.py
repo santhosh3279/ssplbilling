@@ -175,8 +175,16 @@ doc_events = {
 	"Sales Invoice": {
 		"before_insert": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"before_save": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
-		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
-		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
+		"after_save": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+		"on_submit": [
+			"ssplbilling.incentive_utils.calculate_incentive_points",
+			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache"
+		],
+		"on_cancel": [
+			"ssplbilling.incentive_utils.reverse_incentive_points",
+			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache"
+		],
+		"on_trash": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 	},
 	"Purchase Invoice": {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
