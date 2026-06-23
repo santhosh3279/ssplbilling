@@ -993,6 +993,15 @@ onBeforeUnmount(() => {
     margin: 8mm;
   }
 
+  /* Reset height/overflow on all parent elements to allow multi-page printing */
+  html, body, #app, #app > div, #app > div > div {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+    display: block !important;
+  }
+
   /* Hide scrollable main wrapper */
   .main-content-wrapper {
     display: none !important;
