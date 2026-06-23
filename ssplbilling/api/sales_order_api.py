@@ -1,6 +1,7 @@
 import json
 import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+from ssplbilling.api.stock_utils import get_draft_invoice_qty
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
 	stock_qty = 0
 	if wh:
 		stock_qty = frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": wh}, "actual_qty") or 0
+		stock_qty = float(stock_qty) - get_draft_invoice_qty(item_code, wh)
 
 	return {
 		"found": True,
@@ -109,7 +111,7 @@ def get_item_insight(item_code, price_list="Standard Selling", warehouse=None):
 
 	return {
 		"item_code": item_code,
-		"stock": [{"warehouse": b.warehouse, "actual_qty": float(b.actual_qty or 0)} for b in bins],
+		"stock": [{"warehouse": b.warehouse, "actual_qty": float(b.actual_qty or 0) - get_draft_invoice_qty(item_code, b.warehouse)} for b in bins],
 		"priceLists": [{"name": p.price_list, "rate": float(p.rate or 0)} for p in prices],
 		"previousPurchases": [
 			{

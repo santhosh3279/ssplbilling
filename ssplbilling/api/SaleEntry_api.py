@@ -2,6 +2,7 @@ import json
 import frappe
 from frappe import _
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+from ssplbilling.api.stock_utils import get_draft_invoice_qty
 
 
 def _apply_tax_template(doc, template_name, doctype, cost_center="", is_inclusive=0):
@@ -81,6 +82,7 @@ def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
             frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": wh}, "actual_qty")
             or 0
         )
+        stock_qty = float(stock_qty) - get_draft_invoice_qty(item_code, wh)
 
     return {
         "found": True,
@@ -127,9 +129,11 @@ def search_items(query, price_list="Standard Selling"):
             or item.get("standard_rate")
             or 0
         )
-        item["stock_qty"] = float(
-            frappe.db.get_value("Bin", {"item_code": item["item_code"], "warehouse": wh}, "actual_qty")
-            or 0
+        item["stock_qty"] = (
+            float(
+                frappe.db.get_value("Bin", {"item_code": item["item_code"], "warehouse": wh}, "actual_qty")
+                or 0
+            ) - get_draft_invoice_qty(item["item_code"], wh)
         ) if wh else 0
         item["warehouse"] = wh
         item["found"] = True
@@ -150,7 +154,7 @@ def get_item_insight(item_code, customer=None, warehouse=None, price_list=None):
         fields=["warehouse", "actual_qty", "reserved_qty", "projected_qty"],
     )
     for s in stock:
-        s["actual_qty"] = float(s["actual_qty"] or 0)
+        s["actual_qty"] = float(s["actual_qty"] or 0) - get_draft_invoice_qty(item_code, s.warehouse)
         s["reserved_qty"] = float(s["reserved_qty"] or 0)
 
     previous_purchases = []

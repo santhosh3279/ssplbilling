@@ -1,4 +1,5 @@
 import frappe
+from ssplbilling.api.stock_utils import get_draft_invoice_qtys_batch
 
 
 @frappe.whitelist()
@@ -145,9 +146,13 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	for i in items:
 		i["warehouse_stock"] = []
 
+	# Get draft invoice quantities for subtraction
+	draft_qtys = get_draft_invoice_qtys_batch(warehouse)
+
 	for b in bins:
 		if b.item_code in item_map:
-			qty = float(b.actual_qty or 0)
+			draft_qty = draft_qtys.get((b.item_code, b.warehouse), 0.0)
+			qty = float(b.actual_qty or 0) - draft_qty
 			item_map[b.item_code]["stock"] += qty
 			item_map[b.item_code]["warehouse_stock"].append({
 				"warehouse": b.warehouse,
