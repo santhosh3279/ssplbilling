@@ -755,6 +755,22 @@ const ewaybill = ref('')
 const ewaybillStatus = ref('')
 const showEWayBillModal = ref(false)
 const ewaybillLoading = ref(false)
+
+const hasLock = ref(false)
+
+async function releaseLock() {
+  if (!hasLock.value || !invoiceNo.value || invoiceNo.value === 'NEW') return
+  try {
+    await frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', {
+      bill_no: invoiceNo.value
+    })
+  } catch (err) {
+    console.error('Failed to release lock:', err)
+  } finally {
+    hasLock.value = false
+  }
+}
+
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
   if (isSubmitted.value) return 'Submitted'
@@ -804,6 +820,7 @@ watch(sidebarSearch, () => {
 })
 
 async function handleSelectSidebarItem(item) {
+  await releaseLock()
   try {
     isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: item.name })
@@ -1101,6 +1118,7 @@ function format(val) {
 }
 
 async function clearBill() {
+  await releaseLock()
   items.value = []
   pendingItem.value = null
   newItemCode.value = ''
@@ -1186,12 +1204,7 @@ function handlePageUp() {
 async function handleSave() {
   if (isSubmitted.value || submitting.value) return
   if (isReadOnly.value && isSaved.value) {
-    isReadOnly.value = false
-    if (items.value.length > 0) {
-      focusRow(0)
-    } else {
-      focusBarcodeInput()
-    }
+    await handleModify()
     return
   }
 
@@ -1276,6 +1289,7 @@ async function handleSave() {
 
     if (res.status === 'success') {
       if (isUpdate) {
+        await releaseLock()
         if (props.isSubwindow) {
           emit('close')
           return
@@ -1309,12 +1323,28 @@ function handleDiscountAmtKeydown(e) {
   if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
 }
 
-function handleModify() {
+async function handleModify() {
   if (isSubmitted.value) {
     alert('Bill is submitted. Modify is denied.')
     return
   }
   if (!isReadOnly.value || !isSaved.value) return
+
+  try {
+    const res = await frappePost('ssplbilling.api.salesinvoice_api.record_bill_edit', {
+      bill_no: invoiceNo.value
+    })
+    if (res && res.status === 'conflict') {
+      alert(`the bill is in editing by the user: ${res.user}`)
+      return
+    }
+    hasLock.value = true
+  } catch (err) {
+    console.error(err)
+    alert(err.message || 'Failed to check bill editing status.')
+    return
+  }
+
   isReadOnly.value = false
   if (items.value.length > 0) {
     focusRow(0)
@@ -2473,6 +2503,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalEscape)
+  releaseLock()
 })
 </script>
 

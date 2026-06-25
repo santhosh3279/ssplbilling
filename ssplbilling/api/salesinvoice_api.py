@@ -169,3 +169,33 @@ def generate_eway_bill_for_sales_invoice(
 	except Exception:
 		frappe.log_error(message=frappe.get_traceback(), title="Sales Invoice E-Way Bill Generation Failed")
 		raise
+
+
+@frappe.whitelist()
+def record_bill_edit(bill_no):
+	"""Record the bill no and username in Redis cache.
+	Check if it is already being edited by another user."""
+	if not bill_no:
+		return {"status": "error", "message": "Bill number is required"}
+
+	cache_key = f"ssplbilling:editing_bill:{bill_no}"
+	current_editor = frappe.cache().get_value(cache_key)
+
+	if current_editor and current_editor != frappe.session.user:
+		user_info = frappe.db.get_value("User", current_editor, "full_name") or current_editor
+		return {"status": "conflict", "user": user_info}
+
+	frappe.cache().set_value(cache_key, frappe.session.user, expires_in_sec=7200)
+	return {"status": "success"}
+
+
+@frappe.whitelist()
+def release_bill_edit(bill_no):
+	"""Remove the bill no and username from Redis cache."""
+	if not bill_no:
+		return {"status": "error", "message": "Bill number is required"}
+
+	cache_key = f"ssplbilling:editing_bill:{bill_no}"
+	frappe.cache().delete_value(cache_key)
+	return {"status": "success"}
+
