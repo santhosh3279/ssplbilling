@@ -199,3 +199,32 @@ def release_bill_edit(bill_no):
 	frappe.cache().delete_value(cache_key)
 	return {"status": "success"}
 
+
+@frappe.whitelist()
+def get_locked_bills():
+	"""Get all currently locked bills from Redis."""
+	prefix = "ssplbilling:editing_bill:"
+	raw_keys = frappe.cache().get_keys(prefix)
+
+	locked_bills = []
+	db_prefix = f"{frappe.local.conf.get('db_name')}|"
+
+	for key in raw_keys:
+		key_str = key.decode("utf-8") if isinstance(key, bytes) else str(key)
+		if key_str.startswith(db_prefix):
+			key_str = key_str[len(db_prefix):]
+
+		if key_str.startswith(prefix):
+			bill_no = key_str[len(prefix):]
+			editor = frappe.cache().get_value(key_str)
+			if editor:
+				user_info = frappe.db.get_value("User", editor, "full_name") or editor
+				locked_bills.append({
+					"bill_no": bill_no,
+					"username": editor,
+					"fullname": user_info
+				})
+
+	return locked_bills
+
+

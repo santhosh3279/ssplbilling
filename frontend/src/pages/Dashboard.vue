@@ -73,9 +73,18 @@
 
         <div class="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Menu</div>
         <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg bg-[var(--color-highlight)] px-3 py-2 text-left text-base font-semibold text-[var(--color-text-on-highlight)]"
+          @click="currentTab = 'dashboard'"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base font-semibold transition-colors"
+          :class="currentTab === 'dashboard' ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-midlight)]'"
         >
           🏠 Dashboard
+        </button>
+        <button
+          @click="currentTab = 'locked-bills'"
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base font-semibold transition-colors"
+          :class="currentTab === 'locked-bills' ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-midlight)]'"
+        >
+          🔐 Locked Bills
         </button>
       </nav>
 
@@ -140,7 +149,7 @@
       <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-lg font-bold text-[var(--color-text)]">Dashboard</h1>
+            <h1 class="text-lg font-bold text-[var(--color-text)]">{{ currentTab === 'dashboard' ? 'Dashboard' : 'Locked Bills' }}</h1>
             <p class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
           </div>
           
@@ -155,7 +164,7 @@
         </div>
       </header>
 
-      <div class="flex flex-row items-start justify-between gap-8 px-10 py-10">
+      <div v-if="currentTab === 'dashboard'" class="flex flex-row items-start justify-between gap-8 px-10 py-10">
         <!-- Left: Bucketed Tiles -->
         <div class="flex-shrink-0 space-y-4">
           <template v-for="bucket in BUCKETS" :key="bucket.id">
@@ -231,6 +240,77 @@
             >
               <span>{{ isConnecting ? '⏳ Connecting...' : '🔄 Reconnect MQTT' }}</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentTab === 'locked-bills'" class="px-10 py-8">
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold text-[var(--color-text)]">Locked Bills</h2>
+            <p class="text-xs text-[var(--color-text-muted)]">Manage sales invoices currently being edited by users</p>
+          </div>
+          <button
+            @click="fetchLockedBills"
+            :disabled="isLoadingLocked"
+            class="flex items-center gap-2 rounded-xl bg-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/90 px-4 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] transition active:scale-95 shadow-md disabled:opacity-50"
+          >
+            <span :class="{'animate-spin inline-block': isLoadingLocked}">🔄</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <!-- Table Card -->
+        <div class="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+          <div v-if="isLoadingLocked" class="flex flex-col items-center justify-center py-16 gap-3">
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-highlight)] border-t-transparent"></div>
+            <div class="text-sm text-[var(--color-text-muted)] font-medium">Fetching locked bills...</div>
+          </div>
+          
+          <div v-else-if="lockedBills.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+            <div class="text-5xl mb-4">🔓</div>
+            <h3 class="text-lg font-bold text-[var(--color-text)]">No Locked Bills</h3>
+            <p class="mt-1 text-sm text-[var(--color-text-muted)] max-w-sm">There are no invoices currently locked for editing by any user.</p>
+          </div>
+
+          <div v-else class="overflow-x-auto">
+            <table class="w-full border-collapse text-left text-sm text-[var(--color-text)]">
+              <thead>
+                <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <th class="px-6 py-4">Bill No</th>
+                  <th class="px-6 py-4">Username</th>
+                  <th class="px-6 py-4">Full Name</th>
+                  <th class="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[var(--color-border)]">
+                <tr
+                  v-for="bill in lockedBills"
+                  :key="bill.bill_no"
+                  class="hover:bg-[var(--color-midlight)]/40 transition-colors"
+                >
+                  <td class="whitespace-nowrap px-6 py-4 font-mono font-bold text-[var(--color-highlight)] text-base">
+                    {{ bill.bill_no }}
+                  </td>
+                  <td class="whitespace-nowrap px-6 py-4">
+                    <span class="rounded bg-[var(--color-surface-raised)] px-2.5 py-1 text-xs font-mono text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                      {{ bill.username }}
+                    </span>
+                  </td>
+                  <td class="whitespace-nowrap px-6 py-4 font-medium text-[var(--color-text)]">
+                    {{ bill.fullname }}
+                  </td>
+                  <td class="whitespace-nowrap px-6 py-4 text-right">
+                    <button
+                      @click="handleForceUnlock(bill.bill_no)"
+                      class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/10 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white transition active:scale-95 shadow-sm"
+                    >
+                      🔓 Force Unlock
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -354,7 +434,7 @@ import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Stock_Template from '../components/Stock_Template.vue'
-import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet } from '../api.js'
+import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet, frappePost } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
@@ -639,6 +719,41 @@ const showSystemPerformance = ref(false)
 const showGeneralSettings = ref(false)
 const generalSettingsRef = ref(null)
 const isSyncing = ref(false)
+
+// ==================== LOCKED BILLS MANAGEMENT ====================
+const currentTab = ref('dashboard')
+const lockedBills = ref([])
+const isLoadingLocked = ref(false)
+
+async function fetchLockedBills() {
+  isLoadingLocked.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_locked_bills')
+    lockedBills.value = res || []
+  } catch (err) {
+    console.error('Failed to fetch locked bills:', err)
+  } finally {
+    isLoadingLocked.value = false
+  }
+}
+
+async function handleForceUnlock(billNo) {
+  if (!confirm(`Are you sure you want to force unlock bill ${billNo}?`)) return
+  try {
+    await frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', { bill_no: billNo })
+    await fetchLockedBills()
+  } catch (err) {
+    console.error('Failed to release lock:', err)
+    alert('Failed to release lock.')
+  }
+}
+
+watch(currentTab, (newTab) => {
+  if (newTab === 'locked-bills') {
+    fetchLockedBills()
+  }
+})
+
 
 // ==================== REDIS CACHE MANAGEMENT ====================
 const isClearingRedis = ref(false)
