@@ -549,7 +549,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -665,6 +665,28 @@ const sidebarLoading = ref(false)
 const isReadOnly = ref(false)
 const isSaved = ref(false)
 const isSubmitted = ref(false)
+let tabId = sessionStorage.getItem('wb_tab_id')
+if (!tabId) {
+  tabId = Math.random().toString(36).substring(2, 15)
+  sessionStorage.setItem('wb_tab_id', tabId)
+}
+
+const hasLock = ref(false)
+
+async function releaseLock() {
+  if (!hasLock.value || !invoiceNo.value || invoiceNo.value === 'NEW') return
+  try {
+    await frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', {
+      bill_no: invoiceNo.value,
+      tab_id: tabId
+    })
+  } catch (err) {
+    console.error('Failed to release lock:', err)
+  } finally {
+    hasLock.value = false
+  }
+}
+
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
   if (isSubmitted.value) return 'Submitted'
@@ -710,6 +732,7 @@ watch(sidebarSearch, () => {
 })
 
 async function handleSelectSidebarItem(item) {
+  await releaseLock()
   try {
     const data = await frappeGet('ssplbilling.api.sales_order_api.get_sales_order', { order_name: item.name })
 
@@ -976,6 +999,7 @@ function format(val) {
 }
 
 async function clearBill() {
+  await releaseLock()
   items.value = []
   pendingItem.value = null
   newItemCode.value = ''
@@ -1055,12 +1079,7 @@ function handlePageUp() {
 async function handleSave() {
   if (isSubmitted.value || submitting.value) return
   if (isReadOnly.value && isSaved.value) {
-    isReadOnly.value = false
-    if (items.value.length > 0) {
-      focusRow(0)
-    } else {
-      focusBarcodeInput()
-    }
+    await handleModify()
     return
   }
 
@@ -1126,6 +1145,9 @@ async function handleSave() {
     }
 
     if (res.order_name) {
+      if (isUpdate) {
+        await releaseLock()
+      }
       invoiceNo.value = res.order_name
       isReadOnly.value = true
       isSaved.value = true
@@ -1152,8 +1174,33 @@ function handleDiscountAmtKeydown(e) {
   if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
 }
 
-function handleModify() {
+async function handleModify() {
+  if (isSubmitted.value) {
+    alert('Bill is submitted. Modify is denied.')
+    return
+  }
   if (!isReadOnly.value || !isSaved.value) return
+
+  try {
+    const res = await frappePost('ssplbilling.api.salesinvoice_api.record_bill_edit', {
+      bill_no: invoiceNo.value,
+      tab_id: tabId
+    })
+    if (res && res.status === 'conflict') {
+      if (res.reason === 'same_user_other_tab') {
+        alert('this bill is already editing by you in another browser tab')
+      } else {
+        alert(`the bill is in editing by the user: ${res.user}`)
+      }
+      return
+    }
+    hasLock.value = true
+  } catch (err) {
+    console.error(err)
+    alert(err.message || 'Failed to check bill editing status.')
+    return
+  }
+
   isReadOnly.value = false
   if (items.value.length > 0) {
     focusRow(0)
@@ -2206,13 +2253,23 @@ useShortcuts(salesInvoiceShortcuts({
   },
 }))
 
+function handleBeforeUnload() {
+  releaseLock()
+}
+
 onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
   fetchRecentInvoices()
   fetchAllowedSeries('Sales Order')
   showSeriesModal.value = true
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  releaseLock()
 })
 </script>
 

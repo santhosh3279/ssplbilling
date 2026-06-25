@@ -502,7 +502,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -598,6 +598,28 @@ const sidebarLoading = ref(false)
 const isReadOnly = ref(false)
 const isSaved = ref(false)
 const isSubmitted = ref(false)
+let tabId = sessionStorage.getItem('wb_tab_id')
+if (!tabId) {
+  tabId = Math.random().toString(36).substring(2, 15)
+  sessionStorage.setItem('wb_tab_id', tabId)
+}
+
+const hasLock = ref(false)
+
+async function releaseLock() {
+  if (!hasLock.value || !orderNo.value || orderNo.value === 'NEW') return
+  try {
+    await frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', {
+      bill_no: orderNo.value,
+      tab_id: tabId
+    })
+  } catch (err) {
+    console.error('Failed to release lock:', err)
+  } finally {
+    hasLock.value = false
+  }
+}
+
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
   if (isSubmitted.value) return 'Submitted'
@@ -643,6 +665,7 @@ watch(sidebarSearch, () => {
 })
 
 async function handleSelectSidebarItem(item) {
+  await releaseLock()
   try {
     const data = await frappeGet('ssplbilling.api.purchase_order_api.get_purchase_order', { order_name: item.name })
 
@@ -883,6 +906,7 @@ function format(val) {
 }
 
 async function clearBill() {
+  await releaseLock()
   items.value = []
   pendingItem.value = null
   newItemCode.value = ''
@@ -940,9 +964,7 @@ function handlePageUp() {
 async function handleSave() {
   if (isSubmitted.value || submitting.value) return
   if (isReadOnly.value && isSaved.value) {
-    isReadOnly.value = false
-    if (items.value.length > 0) focusRow(0)
-    else focusBarcodeInput()
+    await handleModify()
     return
   }
 
@@ -1001,6 +1023,7 @@ async function handleSave() {
       payload.order_name = orderNo.value
       res = await frappePost('ssplbilling.api.purchase_order_api.update_purchase_order', { data: JSON.stringify(payload) })
       if (res.order_name || res.grand_total !== undefined) {
+        await releaseLock()
         isReadOnly.value = true; isSaved.value = true; fetchRecentOrders()
         pendingClearAfterPrint.value = false; showPrintModal.value = true
       }
@@ -1026,6 +1049,41 @@ function handleDiscountPctKeydown(e) {
 
 function handleDiscountAmtKeydown(e) {
   if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
+}
+
+async function handleModify() {
+  if (isSubmitted.value) {
+    alert('Bill is submitted. Modify is denied.')
+    return
+  }
+  if (!isReadOnly.value || !isSaved.value) return
+
+  try {
+    const res = await frappePost('ssplbilling.api.salesinvoice_api.record_bill_edit', {
+      bill_no: orderNo.value,
+      tab_id: tabId
+    })
+    if (res && res.status === 'conflict') {
+      if (res.reason === 'same_user_other_tab') {
+        alert('this bill is already editing by you in another browser tab')
+      } else {
+        alert(`the bill is in editing by the user: ${res.user}`)
+      }
+      return
+    }
+    hasLock.value = true
+  } catch (err) {
+    console.error(err)
+    alert(err.message || 'Failed to check bill editing status.')
+    return
+  }
+
+  isReadOnly.value = false
+  if (items.value.length > 0) {
+    focusRow(0)
+  } else {
+    focusBarcodeInput()
+  }
 }
 
 function handlePrint() {
@@ -1688,7 +1746,7 @@ useShortcuts(purchaseOrderShortcuts({
   clearBill:        () => handleF2(),
   focusModifyPanel: () => handleF3(),
   openSeries:       () => { showSeriesModal.value = true },
-  modify:           () => { if (isReadOnly.value && isSaved.value) { isReadOnly.value = false; if (items.value.length) focusRow(0); else focusBarcodeInput() } },
+  modify:           () => handleModify(),
   print:            () => handlePrint(),
   save:             () => handleSave(),
   cancel:           () => handleCancel(),
@@ -1696,11 +1754,21 @@ useShortcuts(purchaseOrderShortcuts({
   deleteRow:        () => { if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) deleteItem(selectedRowIdx.value) },
 }))
 
+function handleBeforeUnload() {
+  releaseLock()
+}
+
 onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
   fetchRecentOrders()
   fetchAllowedSeries('Purchase Order')
   showSeriesModal.value = true
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) refreshItemCache('Purchase', priceList.value, warehouse.value)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  releaseLock()
 })
 </script>
 
