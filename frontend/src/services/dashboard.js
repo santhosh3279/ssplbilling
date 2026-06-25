@@ -72,6 +72,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Clear draft invoice Redis cache and rebuild it.
+   */
+  clearDraftInvoiceCache: () => {
+    return frappePost(`${API_BASE}.clear_and_rebuild_draft_invoice_cache`)
+  },
+
+  /**
    * Run the site backup script and return its output.
    */
   runManualBackup: () => {

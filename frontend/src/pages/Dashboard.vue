@@ -111,6 +111,14 @@
           ⚙️ General
         </button>
         <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)] disabled:opacity-50 transition-colors"
+          @click="handleClearRedisCache"
+          :disabled="isClearingRedis"
+        >
+          <span :class="{'animate-spin inline-block': isClearingRedis}">🧹</span>
+          <span>{{ isClearingRedis ? 'Clearing Cache...' : 'Clear Redis Cache' }}</span>
+        </button>
+        <button
           v-if="userRole === 'admin'"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/ssplbillingsettings')"
@@ -631,6 +639,28 @@ const showSystemPerformance = ref(false)
 const showGeneralSettings = ref(false)
 const generalSettingsRef = ref(null)
 const isSyncing = ref(false)
+
+// ==================== REDIS CACHE MANAGEMENT ====================
+const isClearingRedis = ref(false)
+
+async function handleClearRedisCache() {
+  if (isClearingRedis.value) return
+  isClearingRedis.value = true
+  try {
+    const res = await dashboardApi.clearDraftInvoiceCache()
+    if (res?.status === 'success') {
+      alert(`Success: Redis stock cache cleared & rebuilt successfully (${res.count} items cached).`)
+      await refreshItemCache('Sales')
+    } else {
+      alert('Failed to clear Redis cache: ' + (res?.message || 'Unknown error'))
+    }
+  } catch (e) {
+    console.error('[Dashboard] clearDraftInvoiceCache failed:', e)
+    alert('Failed to clear Redis cache: ' + e.message)
+  } finally {
+    isClearingRedis.value = false
+  }
+}
 
 async function handleFullSync() {
   if (isSyncing.value) return
