@@ -756,13 +756,20 @@ const ewaybillStatus = ref('')
 const showEWayBillModal = ref(false)
 const ewaybillLoading = ref(false)
 
+let tabId = sessionStorage.getItem('wb_tab_id')
+if (!tabId) {
+  tabId = Math.random().toString(36).substring(2, 15)
+  sessionStorage.setItem('wb_tab_id', tabId)
+}
+
 const hasLock = ref(false)
 
 async function releaseLock() {
   if (!hasLock.value || !invoiceNo.value || invoiceNo.value === 'NEW') return
   try {
     await frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', {
-      bill_no: invoiceNo.value
+      bill_no: invoiceNo.value,
+      tab_id: tabId
     })
   } catch (err) {
     console.error('Failed to release lock:', err)
@@ -1332,10 +1339,15 @@ async function handleModify() {
 
   try {
     const res = await frappePost('ssplbilling.api.salesinvoice_api.record_bill_edit', {
-      bill_no: invoiceNo.value
+      bill_no: invoiceNo.value,
+      tab_id: tabId
     })
     if (res && res.status === 'conflict') {
-      alert(`the bill is in editing by the user: ${res.user}`)
+      if (res.reason === 'same_user_other_tab') {
+        alert('this bill is already editing by you in another browser tab')
+      } else {
+        alert(`the bill is in editing by the user: ${res.user}`)
+      }
       return
     }
     hasLock.value = true

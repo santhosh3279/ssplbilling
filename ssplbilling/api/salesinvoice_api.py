@@ -172,31 +172,52 @@ def generate_eway_bill_for_sales_invoice(
 
 
 @frappe.whitelist()
-def record_bill_edit(bill_no):
+def record_bill_edit(bill_no, tab_id=None):
 	"""Record the bill no and username in Redis cache.
-	Check if it is already being edited by another user."""
+	Check if it is already being edited by another user or session."""
 	if not bill_no:
 		return {"status": "error", "message": "Bill number is required"}
 
 	cache_key = f"ssplbilling:editing_bill:{bill_no}"
-	current_editor = frappe.cache().get_value(cache_key)
+	current_val = frappe.cache().get_value(cache_key)
 
-	if current_editor and current_editor != frappe.session.user:
-		user_info = frappe.db.get_value("User", current_editor, "full_name") or current_editor
-		return {"status": "conflict", "user": user_info}
+	if current_val:
+		parts = current_val.split("|")
+		if len(parts) == 2:
+			stored_user, stored_tab_id = parts
+		else:
+			stored_user = current_val
+			stored_tab_id = None
 
-	frappe.cache().set_value(cache_key, frappe.session.user, expires_in_sec=7200)
+		if stored_user != frappe.session.user:
+			user_info = frappe.db.get_value("User", stored_user, "full_name") or stored_user
+			return {"status": "conflict", "reason": "other_user", "user": user_info}
+		elif tab_id and stored_tab_id and stored_tab_id != tab_id:
+			return {"status": "conflict", "reason": "same_user_other_tab"}
+
+	val_to_store = f"{frappe.session.user}|{tab_id or ''}"
+	frappe.cache().set_value(cache_key, val_to_store, expires_in_sec=7200)
 	return {"status": "success"}
 
 
 @frappe.whitelist()
-def release_bill_edit(bill_no):
-	"""Remove the bill no and username from Redis cache."""
+def release_bill_edit(bill_no, tab_id=None):
+	"""Remove the bill no and username from Redis cache if lock matches the session."""
 	if not bill_no:
 		return {"status": "error", "message": "Bill number is required"}
 
 	cache_key = f"ssplbilling:editing_bill:{bill_no}"
-	frappe.cache().delete_value(cache_key)
+	current_val = frappe.cache().get_value(cache_key)
+
+	if current_val:
+		parts = current_val.split("|")
+		if len(parts) == 2:
+			stored_user, stored_tab_id = parts
+			if not tab_id or stored_tab_id == tab_id:
+				frappe.cache().delete_value(cache_key)
+		else:
+			frappe.cache().delete_value(cache_key)
+
 	return {"status": "success"}
 
 
@@ -216,8 +237,11 @@ def get_locked_bills():
 
 		if key_str.startswith(prefix):
 			bill_no = key_str[len(prefix):]
-			editor = frappe.cache().get_value(key_str)
-			if editor:
+			editor_val = frappe.cache().get_value(key_str)
+			if editor_val:
+				editor = editor_val
+				if "|" in editor_val:
+					editor = editor_val.split("|")[0]
 				user_info = frappe.db.get_value("User", editor, "full_name") or editor
 				locked_bills.append({
 					"bill_no": bill_no,
