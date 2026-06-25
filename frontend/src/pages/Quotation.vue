@@ -123,9 +123,7 @@
               :step="item.uom === 'Nos' ? '1' : '0.01'"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @input="item.uom === 'Nos' && (item.qty = Math.floor(item.qty))"
-              @keydown.enter.prevent="item.qty > 0 && focusEditField('rate', index)"
-              @keydown.escape="exitEditMode(index, true)"
-              @keydown.backspace="(!item.qty || item.qty === 0) && (focusEditField('code', index), $event.preventDefault())"
+              @keydown="onEditQtyKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty, item.uom) }}</span>
           </td>
@@ -136,8 +134,7 @@
               v-model="item.uom"
               class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @change="onUomChange(index)"
-              @keydown.enter.prevent="focusEditField('qty', index)"
-              @keydown.escape="exitEditMode(index, true)"
+              @keydown="onEditUomKeydown($event, index)"
             >
               <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)] text-3xl">{{ u }}</option>
               <option v-if="!getItemUoms(item.item_code).length" :value="item.uom" class="bg-[var(--color-bg)] text-3xl">{{ item.uom }}</option>
@@ -152,8 +149,7 @@
               v-model.number="item.rate"
               type="number" min="0" step="0.01"
               class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter.prevent="focusEditField('disc', index)"
-              @keydown.escape="exitEditMode(index, true)"
+              @keydown="onEditRateKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.rate) }}</span>
           </td>
@@ -165,8 +161,7 @@
               v-model.number="item.discount"
               type="number" min="0" max="100" step="0.5"
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @keydown.enter.prevent="finishRowEdit(index)"
-              @keydown.escape="exitEditMode(index, true)"
+              @keydown="onEditDiscKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ format(item.discount) }}</span>
           </td>
@@ -1902,6 +1897,9 @@ function onEditCodeKeydown(e, rowIdx) {
     } else if (e.key === 'Escape') {
       e.preventDefault(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return
     }
+  }
+
+  if (handleCellNavigation(e, rowIdx, 'code')) {
     return
   }
 
@@ -1925,6 +1923,166 @@ function onEditCodeKeydown(e, rowIdx) {
     editQuickSearchRowIdx.value = null
     exitEditMode(rowIdx, true)
   }
+}
+
+function onEditQtyKeydown(e, idx) {
+  if (handleCellNavigation(e, idx, 'qty')) {
+    return
+  }
+  
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    const item = items.value[idx]
+    if (item && item.qty > 0) {
+      focusEditField('rate', idx)
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  } else if (e.key === 'Backspace') {
+    const item = items.value[idx]
+    if (item && (!item.qty || item.qty === 0)) {
+      e.preventDefault()
+      focusEditField('code', idx)
+    }
+  }
+}
+
+function onEditUomKeydown(e, idx) {
+  if (handleCellNavigation(e, idx, 'uom')) {
+    return
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    focusEditField('qty', idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  }
+}
+
+function onEditRateKeydown(e, idx) {
+  if (handleCellNavigation(e, idx, 'rate')) {
+    return
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    focusEditField('disc', idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  }
+}
+
+function onEditDiscKeydown(e, idx) {
+  if (handleCellNavigation(e, idx, 'disc')) {
+    return
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    finishRowEdit(idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  }
+}
+
+function getNextField(currentField, itemCode) {
+  const fields = ['code', 'qty', 'uom', 'rate', 'disc']
+  const idx = fields.indexOf(currentField)
+  if (idx === -1 || idx === fields.length - 1) return null
+  const next = fields[idx + 1]
+  if (next === 'uom' && getItemUoms(itemCode).length <= 1) {
+    return getNextField('uom', itemCode)
+  }
+  return next
+}
+
+function getPrevField(currentField, itemCode) {
+  const fields = ['code', 'qty', 'uom', 'rate', 'disc']
+  const idx = fields.indexOf(currentField)
+  if (idx === -1 || idx === 0) return null
+  const prev = fields[idx - 1]
+  if (prev === 'uom' && getItemUoms(itemCode).length <= 1) {
+    return getPrevField('uom', itemCode)
+  }
+  return prev
+}
+
+function handleCellNavigation(e, idx, field) {
+  const item = items.value[idx]
+  if (!item) return false
+
+  let isAtStart = true
+  let isAtEnd = true
+
+  if (e.target && e.target.tagName === 'INPUT' && (e.target.type === 'text' || !e.target.type)) {
+    try {
+      isAtStart = e.target.selectionStart === 0
+      isAtEnd = e.target.selectionStart === null || e.target.selectionStart === e.target.value?.length
+    } catch (err) {
+      isAtStart = true
+      isAtEnd = true
+    }
+  }
+
+  if (e.key === 'ArrowLeft') {
+    if (isAtStart) {
+      const prev = getPrevField(field, item.item_code)
+      if (prev) {
+        e.preventDefault()
+        focusEditField(prev, idx)
+        return true
+      } else if (idx > 0) {
+        e.preventDefault()
+        recalcAmount(idx)
+        focusEditField('disc', idx - 1)
+        return true
+      }
+    }
+  } else if (e.key === 'ArrowRight') {
+    if (isAtEnd) {
+      const next = getNextField(field, item.item_code)
+      if (next) {
+        e.preventDefault()
+        focusEditField(next, idx)
+        return true
+      } else if (idx < items.value.length - 1) {
+        e.preventDefault()
+        recalcAmount(idx)
+        focusEditField('code', idx + 1)
+        return true
+      }
+    }
+  } else if (e.key === 'ArrowUp') {
+    if (field !== 'uom' && idx > 0) {
+      e.preventDefault()
+      recalcAmount(idx)
+      const targetItem = items.value[idx - 1]
+      let targetField = field
+      if (targetField === 'uom' && getItemUoms(targetItem.item_code).length <= 1) {
+        targetField = 'rate'
+      }
+      focusEditField(targetField, idx - 1)
+      return true
+    }
+  } else if (e.key === 'ArrowDown') {
+    if (field !== 'uom' && idx < items.value.length - 1) {
+      e.preventDefault()
+      recalcAmount(idx)
+      const targetItem = items.value[idx + 1]
+      let targetField = field
+      if (targetField === 'uom' && getItemUoms(targetItem.item_code).length <= 1) {
+        targetField = 'rate'
+      }
+      focusEditField(targetField, idx + 1)
+      return true
+    }
+  }
+  return false
 }
 
 function setPendingItem(item) {
