@@ -192,7 +192,7 @@ def record_bill_edit(bill_no, tab_id=None):
 		if stored_user != frappe.session.user:
 			user_info = frappe.db.get_value("User", stored_user, "full_name") or stored_user
 			return {"status": "conflict", "reason": "other_user", "user": user_info}
-		elif tab_id and stored_tab_id and stored_tab_id != tab_id:
+		else:
 			return {"status": "conflict", "reason": "same_user_other_tab"}
 
 	val_to_store = f"{frappe.session.user}|{tab_id or ''}"

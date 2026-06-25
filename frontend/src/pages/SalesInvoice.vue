@@ -2496,7 +2496,12 @@ function handleGlobalEscape(e) {
   }
 }
 
+function handleBeforeUnload() {
+  releaseLock()
+}
+
 onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
   if (props.isSubwindow) {
     window.addEventListener('keydown', handleGlobalEscape)
   }
@@ -2515,6 +2520,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalEscape)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   releaseLock()
 })
 </script>
