@@ -192,12 +192,12 @@
                   </span>
                 </div>
 
-                <div v-if="postingTime" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
+                <div v-if="postingTime && showMop" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
                   <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Time</span>
                   <span class="text-3xl font-bold font-mono text-[var(--color-text)]">{{ formatTime(postingTime) }}</span>
                 </div>
 
-                <div v-if="showMop" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0" :class="{'ml-auto': !postingTime}">
+                <div v-if="showMop" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0" :class="{'ml-auto': !(postingTime && showMop)}">
                   <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">MOP</span>
                   <select
                     ref="mopSelectRef"

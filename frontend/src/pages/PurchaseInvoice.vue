@@ -155,12 +155,17 @@
             </div>
 
             <!-- Bill Date (Original) -->
-            <div v-if="invoiceDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6">
-              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
-              <div class="flex items-center gap-1">
-                <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
-                <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
-                <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+            <div v-if="invoiceDate" class="flex flex-col gap-1 border-l border-[var(--color-border)] pl-6 justify-center">
+              <div v-if="postingTime" class="text-xl font-bold text-[var(--color-text-muted)] text-right font-mono tabular-nums leading-none">
+                {{ formatTime(postingTime) }}
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
+                <div class="flex items-center gap-1">
+                  <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                  <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
+                  <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1244,6 +1249,16 @@ function formatDateShort(dateStr) {
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const year = String(d.getFullYear()).slice(-2)
   return `${day}-${month}-${year}`
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const parts = timeStr.split('.')
+  let mainTime = parts[0].trim()
+  if (/^\d:\d{2}:\d{2}$/.test(mainTime)) {
+    mainTime = '0' + mainTime
+  }
+  return mainTime
 }
 
 function format(val) {
