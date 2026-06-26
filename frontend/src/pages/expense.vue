@@ -2,7 +2,8 @@
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- Header -->
     <header 
-      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300 bg-blue-500/30"
+      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
+      :class="activeTab === 'Payment' ? 'bg-red-500/30' : activeTab === 'Receipt' ? 'bg-green-500/30' : 'bg-blue-500/30'"
     >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
@@ -17,15 +18,26 @@
         <h1 class="text-2xl font-normal uppercase tracking-tight">
           Expense Entry
           <span v-if="cashAccount.name" class="ml-4 text-2xl font-normal text-black bg-black/5 px-4 py-1.5 rounded-full border border-black/10 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500">
-            <span class="opacity-60 font-normal">PAY FROM:</span> {{ cashAccount.name }}
+            <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> {{ cashAccount.name }}
           </span>
         </h1>
       </div>
 
-      <!-- Center: Status -->
-      <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
-        <div class="px-4 py-1 text-2xl font-black uppercase tracking-wide text-[var(--color-highlight)]">
-          CASH EXPENSE
+      <!-- Center: Tabs -->
+      <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5 items-center">
+        <button
+          v-for="t in ['Expense', 'Payment', 'Receipt']"
+          :key="t"
+          @click="onTabClick(t)"
+          class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
+          :class="activeTab === t
+            ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm'
+            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
+        >
+          {{ t }}
+        </button>
+        <div class="flex items-center ml-4 px-3 border-l border-[var(--color-border)]">
+          <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-bold text-[var(--color-text-muted)] shadow-sm">F7 to Cycle</kbd>
         </div>
       </div>
 
@@ -51,8 +63,15 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-4 py-2 w-1/3">Expense Account</th>
-                <th class="px-4 py-2 text-right w-48 text-[var(--color-danger)]">Debit (Dr)</th>
+                <th class="px-4 py-2 w-1/3">
+                  {{ activeTab === 'Expense' ? 'Expense Account' : 'Party' }}
+                </th>
+                <th 
+                  class="px-4 py-2 text-right w-48"
+                  :class="activeTab === 'Receipt' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
+                >
+                  {{ activeTab === 'Receipt' ? 'Credit (Cr)' : 'Debit (Dr)' }}
+                </th>
                 <th class="px-4 py-2 w-1/4">Remarks</th>
                 <th class="px-6 py-2 text-right w-64">Balance</th>
                 <th class="px-6 py-2 text-right w-64">New Balance</th>
@@ -70,13 +89,16 @@
                       @keydown.end.prevent="focusReferenceNo"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      placeholder="Select Account..."
+                      :placeholder="activeTab === 'Expense' ? 'Select Account...' : 'Select Party...'"
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Search (Enter)</div>
                   </div>
                 </td>
 
-                <td class="px-4 py-1.5 transition-colors bg-[var(--color-danger)]/5 focus-within:bg-[var(--color-focus)]">
+                <td 
+                  class="px-4 py-1.5 transition-colors focus-within:bg-[var(--color-focus)]"
+                  :class="activeTab === 'Receipt' ? 'bg-[var(--color-success)]/5' : 'bg-[var(--color-danger)]/5'"
+                >
                   <input
                     :ref="el => { if (el) expenseAmountRefs[idx] = el }"
                     v-model.number="row.amount"
@@ -184,10 +206,10 @@
     <CustomerSearchModal
       ref="custSearchModalRef"
       :show="showSearchModal"
-      title="Expense Account"
-      subtitle="Select Expense/Asset Ledger to Debit"
-      :allowedTypes="['Account']"
-      initialType="Account"
+      :title="modalTitle"
+      :subtitle="modalSubtitle"
+      :allowedTypes="allowedTypes"
+      :initialType="initialSearchType"
       :skipDateFilter="true"
       :hideSecondary="true"
       @close="showSearchModal = false"
@@ -213,10 +235,12 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { useShortcuts } from '../services/shortcutManager'
 
 const router = useRouter()
 
 // --- State ---
+const activeTab = ref('Expense') // 'Expense', 'Payment', 'Receipt'
 const postingDate = ref(new Date().toISOString().split('T')[0])
 const cashAccount = ref({
   account: localStorage.getItem('wb-cash') || '',
@@ -226,7 +250,7 @@ const cashAccount = ref({
 
 const form = reactive({
   rows: [
-    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '' }
+    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '' }
   ],
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0]
@@ -260,9 +284,34 @@ const isFormValid = computed(() => {
 
 const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
 
+const modalTitle = computed(() => {
+  if (activeTab.value === 'Expense') return 'Expense Account'
+  return 'Select Party'
+})
+
+const modalSubtitle = computed(() => {
+  if (activeTab.value === 'Expense') return 'Select Expense/Asset Ledger to Debit'
+  if (activeTab.value === 'Payment') return 'Select Party to Pay (Debit)'
+  if (activeTab.value === 'Receipt') return 'Select Party to Receive From (Credit)'
+  return ''
+})
+
+const allowedTypes = computed(() => {
+  if (activeTab.value === 'Expense') return ['Account']
+  return ['Customer', 'Supplier', 'Employee']
+})
+
+const initialSearchType = computed(() => {
+  if (activeTab.value === 'Expense') return 'Account'
+  return 'All'
+})
+
 function getNewBalance(row) {
   if (row.balance === null) return 0
   const amt = parseFloat(row.amount) || 0
+  if (activeTab.value === 'Receipt') {
+    return row.balance - amt
+  }
   return row.balance + amt
 }
 
@@ -325,6 +374,7 @@ function handleSelect(item) {
   row.account = item.name
   row.account_name = item.label || item.account_name || item.name
   row.query = row.account_name
+  row.party_type = item.type || ''
   fetchRowBalance(currentIdx.value)
   
   nextTick(() => {
@@ -341,7 +391,7 @@ async function fetchRowBalance(idx) {
   try {
     const res = await frappeGet('ssplbilling.api.expense_api.get_ledger', {
       ledger_name: row.account,
-      ledger_type: 'Account',
+      ledger_type: activeTab.value === 'Expense' ? 'Account' : (row.party_type || 'Customer'),
     })
     if (res && res.closing_balance !== undefined) {
       row.balance = res.closing_balance
@@ -364,7 +414,7 @@ function handleAmountEnter(idx) {
 
 function handleRowRemarksEnter(idx) {
   if (idx === form.rows.length - 1) {
-    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '' })
+    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '' })
     nextTick(() => {
       setTimeout(() => {
         expenseSearchRefs.value[idx + 1]?.focus()
@@ -375,6 +425,25 @@ function handleRowRemarksEnter(idx) {
   }
 }
 
+function onTabClick(t) {
+  if (activeTab.value === t) return
+  activeTab.value = t
+  form.rows = [
+    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '' }
+  ]
+  nextTick(() => {
+    setTimeout(() => {
+      expenseSearchRefs.value[0]?.focus()
+    }, 50)
+  })
+}
+
+function cycleTab() {
+  const tabs = ['Expense', 'Payment', 'Receipt']
+  const nextIdx = (tabs.indexOf(activeTab.value) + 1) % tabs.length
+  onTabClick(tabs[nextIdx])
+}
+
 async function handleSubmit() {
   if (!isFormValid.value) return
   submitting.value = true
@@ -383,11 +452,12 @@ async function handleSubmit() {
     const validRows = form.rows.filter(r => r.account && r.amount > 0)
     for (const row of validRows) {
       const payload = {
-        payment_type: 'Internal Transfer',
-        party: cashAccount.value.account,
+        payment_type: activeTab.value === 'Expense' ? 'Internal Transfer' : (activeTab.value === 'Payment' ? 'Pay' : 'Receive'),
+        party: activeTab.value === 'Expense' ? cashAccount.value.account : row.account,
+        party_type: activeTab.value === 'Expense' ? '' : row.party_type,
         amount: row.amount,
         mode_of_payment: 'Cash',
-        account: row.account,
+        account: activeTab.value === 'Expense' ? row.account : cashAccount.value.account,
         posting_date: postingDate.value,
         reference_no: form.reference_no,
         reference_date: form.reference_date,
@@ -414,6 +484,9 @@ async function handleSubmit() {
 
 onMounted(() => {
   fetchCashAccountDetails()
+  useShortcuts({
+    'F7': cycleTab,
+  })
   setTimeout(() => expenseSearchRefs.value[0]?.focus(), 300)
 })
 </script>
