@@ -464,6 +464,14 @@
       @selected="handleSeriesSelected"
     />
 
+    <Gstbillcreator
+      v-if="showGstBillCreator"
+      :show="showGstBillCreator"
+      :invoice-name="invoiceNo"
+      doctype="Sales Invoice"
+      @close="showGstBillCreator = false"
+    />
+
     <CustomerPrice
       v-if="showPriceDetectModal"
       :data="priceDetectData"
@@ -546,6 +554,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
+import Gstbillcreator from '../components/Gstbillcreator.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import ItemSearch from '../components/ItemSearch.vue'
@@ -639,6 +648,7 @@ const pendingClearAfterPrint = ref(false)
 const lastEnterTime = ref(0)
 const showPriceDetectModal = ref(false)
 const showJumpModal = ref(false)
+const showGstBillCreator = ref(false)
 const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null)
 
@@ -2239,7 +2249,16 @@ useShortcuts(quotationShortcuts({
       deleteItem(selectedRowIdx.value)
     }
   },
+  openGstBillCreator: () => handleOpenGstBillCreator(),
 }))
+
+function handleOpenGstBillCreator() {
+  if (!invoiceNo.value || invoiceNo.value === 'NEW' || !isSaved.value) {
+    alert('Please save the quotation first.')
+    return
+  }
+  showGstBillCreator.value = true
+}
 
 function handleBeforeUnload() {
   releaseLock()

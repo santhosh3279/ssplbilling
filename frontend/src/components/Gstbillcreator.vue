@@ -3,19 +3,23 @@
     <div class="w-[500px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 shadow-2xl">
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <h2 class="text-2xl font-bold text-[var(--color-text)]">Create GST Bill (Quotation)</h2>
-          <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wider text-left">Select naming series to create Quotation from this Sales Invoice</p>
+          <h2 class="text-2xl font-bold text-[var(--color-text)]">
+            {{ doctype === 'Sales Invoice' ? 'Create Sales Invoice' : 'Create GST Bill (Quotation)' }}
+          </h2>
+          <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wider text-left">
+            Select naming series to create {{ doctype }} from this {{ doctype === 'Sales Invoice' ? 'Quotation' : 'Sales Invoice' }}
+          </p>
         </div>
       </div>
 
       <div v-if="loading" class="flex flex-col items-center justify-center py-12">
         <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-highlight)] border-t-transparent"></div>
-        <p class="mt-4 text-sm text-[var(--color-text-muted)] font-medium">Fetching allowed quotation series...</p>
+        <p class="mt-4 text-sm text-[var(--color-text-muted)] font-medium">Fetching allowed naming series...</p>
       </div>
 
       <div v-else-if="creating" class="flex flex-col items-center justify-center py-12">
         <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-success)] border-t-transparent"></div>
-        <p class="mt-4 text-sm text-[var(--color-text-muted)] font-medium">Creating quotation...</p>
+        <p class="mt-4 text-sm text-[var(--color-text-muted)] font-medium">Creating {{ doctype }}...</p>
       </div>
 
       <div v-else class="flex flex-col gap-3">
@@ -45,7 +49,7 @@
         </div>
 
         <div v-if="!allowedSeries.length" class="py-12 text-center text-[var(--color-text-muted)] italic">
-          No allowed quotation series found for your user profile.
+          No allowed naming series found for your user profile.
         </div>
       </div>
     </div>
@@ -60,7 +64,8 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps({
   show: Boolean,
-  invoiceName: { type: String, required: true }
+  invoiceName: { type: String, required: true },
+  doctype: { type: String, default: 'Quotation' }
 })
 
 const emit = defineEmits(['close', 'created'])
@@ -79,7 +84,7 @@ async function fetchAllowedSeries() {
   loading.value = true
   try {
     const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', {
-      doctype: 'Quotation'
+      doctype: props.doctype
     })
     allowedSeries.value = d.allowed_series || []
   } catch (e) {
@@ -92,20 +97,30 @@ async function fetchAllowedSeries() {
 async function selectSeries(s) {
   creating.value = true
   try {
-    const res = await frappePost('ssplbilling.api.quotation_api.create_quotation_from_sales_invoice', {
-      sales_invoice_name: props.invoiceName,
-      naming_series: s
-    })
-    if (res && res.quotation_name) {
-      alert(`Quotation ${res.quotation_name} created successfully!`)
-      emit('created', res.quotation_name)
+    let res
+    if (props.doctype === 'Quotation') {
+      res = await frappePost('ssplbilling.api.quotation_api.create_quotation_from_sales_invoice', {
+        sales_invoice_name: props.invoiceName,
+        naming_series: s
+      })
+    } else {
+      res = await frappePost('ssplbilling.api.quotation_api.create_sales_invoice_from_quotation', {
+        quotation_name: props.invoiceName,
+        naming_series: s
+      })
+    }
+
+    const createdName = res.quotation_name || res.invoice_name
+    if (res && createdName) {
+      alert(`${props.doctype} ${createdName} created successfully!`)
+      emit('created', createdName)
       emit('close')
     } else {
-      alert('Failed to create Quotation.')
+      alert(`Failed to create ${props.doctype}.`)
     }
   } catch (e) {
     console.error('[Gstbillcreator] Conversion failed:', e)
-    alert(e.message || 'Failed to create Quotation from Sales Invoice.')
+    alert(e.message || `Failed to create ${props.doctype} from source document.`)
   } finally {
     creating.value = false
   }

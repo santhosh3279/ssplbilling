@@ -741,3 +741,35 @@ def create_quotation_from_sales_invoice(sales_invoice_name, naming_series):
 
 	return {"status": "success", "quotation_name": qt.name}
 
+
+@frappe.whitelist()
+def create_sales_invoice_from_quotation(quotation_name, naming_series):
+	"""Create a Sales Invoice from a saved Quotation."""
+	from erpnext.selling.doctype.quotation.quotation import make_sales_invoice
+	si = make_sales_invoice(quotation_name)
+	si.naming_series = naming_series
+
+	# Fetch series-specific defaults from SSPL Billing Settings
+	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+	row = next((r for r in settings.billing_series if r.series == naming_series), None)
+
+	tax_template = row.tax_template if row and row.tax_template else ""
+	is_inclusive = frappe.utils.cint(row.tax_type_incl) if row else 0
+
+	si.selling_price_list = (row.price_list if row and row.price_list else si.selling_price_list) or "Standard Selling"
+
+	if tax_template:
+		si.taxes_and_charges = tax_template
+		si.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", tax_template) or [])
+		if is_inclusive:
+			for tax in si.taxes:
+				if tax.account_head and "GST" in tax.account_head.upper():
+					tax.included_in_print_rate = 1
+
+	si.update_stock = 1
+
+	si.flags.ignore_permissions = True
+	si.save()
+
+	return {"status": "success", "invoice_name": si.name}
+

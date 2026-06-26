@@ -17,4 +17,5 @@ export const quotationShortcuts = (handlers) => ({
   'PAGEUP':  handlers.pageUp           || (() => {}),
   'ESCAPE':  handlers.cancel           || (() => {}),
   'DELETE':  handlers.deleteRow        || (() => {}),
+  'CTRL+O':  handlers.openGstBillCreator|| (() => {}),
 })
