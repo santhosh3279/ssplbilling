@@ -7,7 +7,7 @@
       <!-- History and Suggestions -->
       <div v-if="history.length || suggestions.length" 
            ref="scrollContainer"
-           class="mb-2 max-h-[140px] overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)]"
+           class="mb-2 max-h-[140px] overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)] flex flex-col-reverse"
       >
         <div v-for="(item, i) in history" :key="'h-'+i" 
              class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-surface-raised)]"
@@ -180,12 +180,13 @@ function handleKeydown(e) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (suggestions.value.length > 0) {
-      activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
+      // Move down visually = decrement index (toward 0/bottom)
+      activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
       syncScroll()
     } else if (historyIndex.value !== -1) {
-      // Move towards newer (bottom of list)
-      if (historyIndex.value < history.value.length - 1) {
-        historyIndex.value++
+      // Move down visually = decrement index (toward 0/bottom)
+      if (historyIndex.value > 0) {
+        historyIndex.value--
         syncScroll()
       } else {
         historyIndex.value = -1
@@ -194,14 +195,15 @@ function handleKeydown(e) {
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     if (suggestions.value.length > 0) {
-      activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + suggestions.value.length) % suggestions.value.length
+      // Move up visually = increment index (toward top)
+      activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
       syncScroll()
     } else if (history.value.length > 0) {
-      // Move towards older (top of list)
+      // Move up visually = increment index (starting at 0/bottom)
       if (historyIndex.value === -1) {
-        historyIndex.value = history.value.length - 1
-      } else if (historyIndex.value > 0) {
-        historyIndex.value--
+        historyIndex.value = 0
+      } else if (historyIndex.value < history.value.length - 1) {
+        historyIndex.value++
       }
       syncScroll()
     }
