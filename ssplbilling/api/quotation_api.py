@@ -745,9 +745,16 @@ def create_quotation_from_sales_invoice(sales_invoice_name, naming_series):
 @frappe.whitelist()
 def create_sales_invoice_from_quotation(quotation_name, naming_series):
 	"""Create a Sales Invoice from a saved Quotation."""
-	from erpnext.selling.doctype.quotation.quotation import make_sales_invoice
-	si = make_sales_invoice(quotation_name)
+	qt = frappe.get_doc("Quotation", quotation_name)
+
+	si = frappe.new_doc("Sales Invoice")
 	si.naming_series = naming_series
+	si.customer = qt.party_name
+	if qt.customer_address:
+		si.customer_address = qt.customer_address
+	si.posting_date = frappe.utils.today()
+	si.posting_time = frappe.utils.nowtime()
+	si.set_posting_time = 1
 
 	# Fetch series-specific defaults from SSPL Billing Settings
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
@@ -756,7 +763,7 @@ def create_sales_invoice_from_quotation(quotation_name, naming_series):
 	tax_template = row.tax_template if row and row.tax_template else ""
 	is_inclusive = frappe.utils.cint(row.tax_type_incl) if row else 0
 
-	si.selling_price_list = (row.price_list if row and row.price_list else si.selling_price_list) or "Standard Selling"
+	si.selling_price_list = (row.price_list if row and row.price_list else qt.selling_price_list) or "Standard Selling"
 
 	if tax_template:
 		si.taxes_and_charges = tax_template
@@ -765,6 +772,26 @@ def create_sales_invoice_from_quotation(quotation_name, naming_series):
 			for tax in si.taxes:
 				if tax.account_head and "GST" in tax.account_head.upper():
 					tax.included_in_print_rate = 1
+
+	si.additional_discount_percentage = qt.additional_discount_percentage
+	si.discount_amount = qt.discount_amount
+
+	for item in qt.items:
+		row_item = {
+			"item_code": item.item_code,
+			"qty": item.qty,
+			"rate": item.rate,
+			"price_list_rate": item.price_list_rate or item.rate,
+			"discount_percentage": item.discount_percentage,
+			"uom": item.uom or "Nos",
+			"warehouse": item.warehouse
+		}
+		si.append("items", row_item)
+
+	si.custom_customer_name = qt.get("custom_customer_name") or ""
+	si.custom_address_line1 = qt.get("custom_address_line1") or ""
+	si.custom_address_line2 = qt.get("custom_address_line2") or ""
+	si.custom_mobile_number = qt.get("custom_mobile_number") or ""
 
 	si.update_stock = 1
 
