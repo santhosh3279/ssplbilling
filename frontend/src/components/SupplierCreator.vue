@@ -57,7 +57,8 @@
           <input
             ref="gstinInput"
             v-model="form.gstin"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-mono uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="22AAAAA0000A1Z5"
             maxlength="15"
             @keydown.esc.stop="$emit('close')"
@@ -93,7 +94,8 @@
           <select
             ref="typeInput"
             v-model="form.supplier_type"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
           >
             <option value="Company">Company</option>
@@ -107,7 +109,8 @@
           <select
             ref="groupInput"
             v-model="form.supplier_group"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
           >
             <option value="">— Select Group —</option>
@@ -120,7 +123,8 @@
           <input
             ref="nameInput"
             v-model="form.supplier_name"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Full name"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -134,7 +138,8 @@
             <input
               ref="primaryPartyInputRef"
               v-model="primaryPartyQuery"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              style="font-size: 1.5rem; padding: 0.2em;"
               placeholder="Search Customer..."
               @input="searchPrimaryParties"
               @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
@@ -165,7 +170,8 @@
           <input
             ref="mobileInput"
             v-model="form.mobile"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="10-digit mobile"
             maxlength="10"
             @keydown.esc.stop="$emit('close')"
@@ -178,7 +184,8 @@
           <input
             ref="whatsappInput"
             v-model="form.whatsapp"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="10-digit whatsapp"
             maxlength="10"
             @keydown.esc.stop="$emit('close')"
@@ -192,7 +199,8 @@
             ref="emailInput"
             v-model="form.email"
             type="email"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="email@example.com"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -207,7 +215,8 @@
           <input
             ref="addr1Input"
             v-model="form.address_line1"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Street / Building"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -219,7 +228,8 @@
           <input
             ref="addr2Input"
             v-model="form.address_line2"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Area / Landmark (optional)"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -231,7 +241,8 @@
           <input
             ref="cityInput"
             v-model="form.city"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="City"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -243,7 +254,8 @@
           <input
             ref="pincodeInput"
             v-model="form.pincode"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="678XXX"
             maxlength="6"
             @keydown.esc.stop="$emit('close')"
@@ -256,7 +268,8 @@
           <select
             ref="stateInput"
             v-model="form.state"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
           >
             <option value="">Select State</option>
