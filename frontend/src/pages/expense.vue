@@ -3,7 +3,7 @@
     <!-- Header -->
     <header 
       class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
-      :class="activeTab === 'Payment' ? 'bg-red-500/30' : activeTab === 'Receipt' ? 'bg-green-500/30' : 'bg-blue-500/30'"
+      :class="activeTab === 'Payment' ? 'bg-red-500/30' : 'bg-green-500/30'"
     >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
@@ -26,7 +26,7 @@
       <!-- Center: Tabs -->
       <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5 items-center">
         <button
-          v-for="t in ['Expense', 'Payment', 'Receipt']"
+          v-for="t in ['Payment', 'Receipt']"
           :key="t"
           @click="onTabClick(t)"
           class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
@@ -63,9 +63,7 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-4 py-2 w-1/3">
-                  {{ activeTab === 'Expense' ? 'Expense Account' : 'Party' }}
-                </th>
+                <th class="px-4 py-2 w-1/3">Party</th>
                 <th 
                   class="px-4 py-2 text-right w-48"
                   :class="activeTab === 'Receipt' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
@@ -89,7 +87,7 @@
                       @keydown.end.prevent="focusReferenceNo"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Expense' ? 'Select Account...' : 'Select Party...'"
+                      placeholder="Select Party..."
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Search (Enter)</div>
                   </div>
@@ -240,7 +238,7 @@ import { useShortcuts } from '../services/shortcutManager'
 const router = useRouter()
 
 // --- State ---
-const activeTab = ref('Expense') // 'Expense', 'Payment', 'Receipt'
+const activeTab = ref('Payment') // 'Payment', 'Receipt'
 const postingDate = ref(new Date().toISOString().split('T')[0])
 const cashAccount = ref({
   account: localStorage.getItem('wb-cash') || '',
@@ -285,24 +283,20 @@ const isFormValid = computed(() => {
 const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
 
 const modalTitle = computed(() => {
-  if (activeTab.value === 'Expense') return 'Expense Account'
   return 'Select Party'
 })
 
 const modalSubtitle = computed(() => {
-  if (activeTab.value === 'Expense') return 'Select Expense/Asset Ledger to Debit'
   if (activeTab.value === 'Payment') return 'Select Party to Pay (Debit)'
   if (activeTab.value === 'Receipt') return 'Select Party to Receive From (Credit)'
   return ''
 })
 
 const allowedTypes = computed(() => {
-  if (activeTab.value === 'Expense') return ['Account']
   return ['Customer', 'Supplier', 'Employee', 'Account']
 })
 
 const initialSearchType = computed(() => {
-  if (activeTab.value === 'Expense') return 'Account'
   return 'All'
 })
 
@@ -391,7 +385,7 @@ async function fetchRowBalance(idx) {
   try {
     const res = await frappeGet('ssplbilling.api.expense_api.get_ledger', {
       ledger_name: row.account,
-      ledger_type: activeTab.value === 'Expense' ? 'Account' : (row.party_type || 'Customer'),
+      ledger_type: row.party_type || 'Customer',
     })
     if (res && res.closing_balance !== undefined) {
       row.balance = res.closing_balance
@@ -439,7 +433,7 @@ function onTabClick(t) {
 }
 
 function cycleTab() {
-  const tabs = ['Expense', 'Payment', 'Receipt']
+  const tabs = ['Payment', 'Receipt']
   const nextIdx = (tabs.indexOf(activeTab.value) + 1) % tabs.length
   onTabClick(tabs[nextIdx])
 }
@@ -456,28 +450,21 @@ async function handleSubmit() {
       let partyType = ''
       let account = ''
 
-      if (activeTab.value === 'Expense') {
+      if (row.party_type === 'Account') {
         paymentType = 'Internal Transfer'
-        party = cashAccount.value.account
-        partyType = ''
-        account = row.account
-      } else {
-        if (row.party_type === 'Account') {
-          paymentType = 'Internal Transfer'
-          if (activeTab.value === 'Payment') {
-            party = cashAccount.value.account
-            account = row.account
-          } else {
-            party = row.account
-            account = cashAccount.value.account
-          }
-          partyType = ''
+        if (activeTab.value === 'Payment') {
+          party = cashAccount.value.account
+          account = row.account
         } else {
-          paymentType = activeTab.value === 'Payment' ? 'Pay' : 'Receive'
           party = row.account
-          partyType = row.party_type
           account = cashAccount.value.account
         }
+        partyType = ''
+      } else {
+        paymentType = activeTab.value === 'Payment' ? 'Pay' : 'Receive'
+        party = row.account
+        partyType = row.party_type
+        account = cashAccount.value.account
       }
 
       const payload = {
