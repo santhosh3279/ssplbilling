@@ -80,6 +80,7 @@
           🏠 Dashboard
         </button>
         <button
+          v-if="userRole === 'admin'"
           @click="currentTab = 'locked-bills'"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base font-semibold transition-colors"
           :class="currentTab === 'locked-bills' ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-midlight)]'"
@@ -149,7 +150,7 @@
       <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-lg font-bold text-[var(--color-text)]">{{ currentTab === 'dashboard' ? 'Dashboard' : 'Locked Bills' }}</h1>
+            <h1 class="text-lg font-bold text-[var(--color-text)]">{{ (currentTab === 'locked-bills' && userRole === 'admin') ? 'Locked Bills' : 'Dashboard' }}</h1>
             <p class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
           </div>
           
@@ -244,7 +245,7 @@
         </div>
       </div>
 
-      <div v-else-if="currentTab === 'locked-bills'" class="px-10 py-8">
+      <div v-else-if="currentTab === 'locked-bills' && userRole === 'admin'" class="px-10 py-8">
         <div class="mb-6 flex items-center justify-between">
           <div>
             <h2 class="text-2xl font-bold text-[var(--color-text)]">Locked Bills</h2>
