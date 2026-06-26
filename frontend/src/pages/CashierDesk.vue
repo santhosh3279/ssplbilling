@@ -454,22 +454,24 @@
                   />
                 </div>
                 <div class="group relative flex items-center">
-                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</div>
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-10">
+                    <span class="text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</span>
+                    <button 
+                      @click="sendUpiMqtt"
+                      type="button"
+                      class="px-2 py-1 rounded-lg bg-[var(--color-success)] text-white font-black text-[10px] uppercase tracking-wider hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-95 transition-all shadow-sm"
+                    >
+                      Send QR
+                    </button>
+                  </div>
                   <input
                     ref="upiInput"
                     type="number"
                     v-model="payments.upi"
                     @focus="$event.target.select()"
                     step="0.01"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-32 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-40 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
                   />
-                  <button 
-                    @click="sendUpiMqtt"
-                    type="button"
-                    class="absolute right-2 px-3 py-2 rounded-xl bg-[var(--color-success)] text-white font-black text-[11px] uppercase tracking-wider hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-95 transition-all shadow-sm"
-                  >
-                    Send QR
-                  </button>
                 </div>
                 <div class="group relative">
                   <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
