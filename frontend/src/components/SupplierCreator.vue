@@ -31,7 +31,7 @@
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center w-full">
+              <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center w-full">
                 <span>GSTIN</span>
                 <button 
                   v-if="form.gstin && form.gstin.length === 15"
@@ -90,7 +90,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Type *</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Type *</label>
           <select
             ref="typeInput"
             v-model="form.supplier_type"
@@ -105,7 +105,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Group *</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Group *</label>
           <select
             ref="groupInput"
             v-model="form.supplier_group"
@@ -119,7 +119,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Name *</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Name *</label>
           <input
             ref="nameInput"
             v-model="form.supplier_name"
@@ -133,7 +133,7 @@
 
         <!-- Primary Party (Party Link) -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
           <div class="relative">
             <input
               ref="primaryPartyInputRef"
@@ -166,7 +166,7 @@
       <!-- Column 2: Contact & Tax -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number</label>
           <input
             ref="mobileInput"
             v-model="form.mobile"
@@ -180,7 +180,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp</label>
           <input
             ref="whatsappInput"
             v-model="form.whatsapp"
@@ -194,7 +194,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
           <input
             ref="emailInput"
             v-model="form.email"
@@ -211,7 +211,7 @@
       <!-- Column 3: Address & Location -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
           <input
             ref="addr1Input"
             v-model="form.address_line1"
@@ -224,7 +224,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
           <input
             ref="addr2Input"
             v-model="form.address_line2"
@@ -237,7 +237,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
           <input
             ref="cityInput"
             v-model="form.city"
@@ -250,7 +250,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
           <input
             ref="pincodeInput"
             v-model="form.pincode"
@@ -264,7 +264,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
           <select
             ref="stateInput"
             v-model="form.state"
