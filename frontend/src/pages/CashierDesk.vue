@@ -635,7 +635,6 @@
 
     <!-- GST BILL WARNING MODAL -->
     <Warning
-      v-if="showGstWarning"
       :show="showGstWarning"
       title="Create GST Bill"
       :message="`create a gst bill for salesinvoice no: ${processedInvoiceName}`"
