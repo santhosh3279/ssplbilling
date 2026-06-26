@@ -17,7 +17,7 @@
       <!-- Column 1: Identity & Grouping -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center">
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center">
             <span>GSTIN</span>
             <button 
               v-if="form.gstin && form.gstin.length === 15"
@@ -57,7 +57,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Name *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Name *</label>
           <input
             ref="nameInputRef"
             v-model="form.customer_name"
@@ -70,7 +70,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Group *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Group *</label>
           <select
             v-model="form.customer_group"
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
@@ -84,7 +84,7 @@
 
         <!-- Primary Party (Party Link) -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
           <div class="relative">
             <input
               ref="primaryPartyInputRef"
@@ -114,7 +114,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Modifier %</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Modifier %</label>
           <div class="relative w-full">
             <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em 1.2em 0.2em 0.2em;" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
@@ -125,17 +125,17 @@
       <!-- Column 2: Contact & Tax -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number *</label>
           <input v-model="form.mobile" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
           <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
           <input v-model="form.email" type="email" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="email@example.com" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
       </div>
@@ -143,27 +143,27 @@
       <!-- Column 3: Address & Location -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
           <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
           <input v-model="form.address_line2" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="Area / Landmark" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
           <input v-model="form.city" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="City" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
           <input v-model="form.pincode" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="678XXX" maxlength="6" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
           <select v-model="form.state" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter">
             <option value="">Select State</option>
             <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
