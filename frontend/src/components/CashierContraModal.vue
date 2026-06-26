@@ -9,7 +9,7 @@
           class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-bold text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          Back to Cahier
+          Back to Cahier <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">Esc</kbd>
         </button>
         <div class="h-5 w-px bg-[var(--color-surface-raised)]"></div>
         <div>
@@ -136,9 +136,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
-import { useSubwindow } from '../services/shortcutManager'
-
-useSubwindow()
+import { useShortcuts } from '../services/shortcutManager'
 
 const props = defineProps({
   cashAccount: { type: String, required: true },
@@ -147,6 +145,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'saved'])
+
+useShortcuts({
+  'ESCAPE': () => emit('close')
+}, 'subwindow')
 
 const postingDate = new Date().toLocaleDateString('en-CA')
 const loading  = ref(true)

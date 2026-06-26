@@ -10,7 +10,7 @@
           @click="router.push('/')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          Dashboard
+          Dashboard <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">Esc</kbd>
         </button>
 
         <div class="h-8 w-px bg-[var(--color-surface)]"></div>
@@ -618,6 +618,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useShortcuts } from '../services/shortcutManager'
 import { frappeGet } from '../api.js'
 import { session } from '../session.js'
 import BoxCashSubwindow from '../components/CashierEntry.vue'
@@ -629,6 +630,17 @@ const router = useRouter()
 const localStorage = window.localStorage
 const showBoxCash = ref(false)
 const modalTitle = ref('Cashier Opening')
+
+// --- SHORTCUTS ---
+useShortcuts({
+  'ESCAPE': () => {
+    if (showBoxCash.value) {
+      showBoxCash.value = false
+    } else {
+      router.push('/')
+    }
+  }
+})
 
 // ── Date navigation ───────────────────────────────────────────────────────────
 const currentDate = ref(new Date().toLocaleDateString('en-CA'))
