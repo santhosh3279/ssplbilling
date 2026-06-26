@@ -1,5 +1,10 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+  <div 
+    v-if="show" 
+    ref="modalRef"
+    tabindex="-1"
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
+  >
     <div class="w-[500px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 shadow-2xl">
       <div class="mb-6 flex items-center justify-between">
         <div>
@@ -76,6 +81,7 @@ useSubwindowWatcher(computed(() => props.show), {
   ESCAPE: () => emit('close')
 })
 
+const modalRef = ref(null)
 const allowedSeries = ref([])
 const loading = ref(false)
 const creating = ref(false)
@@ -132,7 +138,9 @@ async function selectSeries(s) {
 function handleKeydown(e) {
   if (!props.show || loading.value || creating.value) return
 
-  if (e.key === 'ArrowDown') {
+  if (e.key === 'Tab') {
+    e.preventDefault()
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault()
     focusedIndex.value = (focusedIndex.value + 1) % allowedSeries.value.length
   } else if (e.key === 'ArrowUp') {
@@ -156,6 +164,9 @@ watch(() => props.show, (newVal) => {
     focusedIndex.value = 0
     fetchAllowedSeries()
     window.addEventListener('keydown', handleKeydown)
+    nextTick(() => {
+      modalRef.value?.focus()
+    })
   } else {
     window.removeEventListener('keydown', handleKeydown)
   }
@@ -165,6 +176,9 @@ onMounted(() => {
   if (props.show) {
     fetchAllowedSeries()
     window.addEventListener('keydown', handleKeydown)
+    nextTick(() => {
+      modalRef.value?.focus()
+    })
   }
 })
 

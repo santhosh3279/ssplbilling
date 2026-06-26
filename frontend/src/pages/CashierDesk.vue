@@ -683,7 +683,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { session } from '../session'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
-import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
+import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 import { useLedgerCache } from '../services/ledgerCache'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
@@ -1540,6 +1540,7 @@ function getIsoDueDate() {
 }
 
 function handleKeydown(e) {
+  if (isSubwindowActive()) return
   if (e.key === 'F9') {
     e.preventDefault()
     processPayment()
