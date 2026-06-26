@@ -61,6 +61,7 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { frappeGet, frappePost } from '../api'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useRouter } from 'vue-router'
+import { session } from '../session'
 
 const props = defineProps({
   show: Boolean,
@@ -83,8 +84,10 @@ const focusedIndex = ref(0)
 async function fetchAllowedSeries() {
   loading.value = true
   try {
+    const targetUser = localStorage.getItem('wb-inherited-user') || session.user.value
     const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', {
-      doctype: props.doctype
+      doctype: props.doctype,
+      user: targetUser
     })
     allowedSeries.value = d.allowed_series || []
   } catch (e) {
