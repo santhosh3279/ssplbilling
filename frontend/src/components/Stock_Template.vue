@@ -109,7 +109,7 @@
         :class="!titleBarColor ? 'bg-[var(--color-surface-raised)]/60' : ''"
       >
         <div class="flex items-center gap-3">
-          <button v-if="showBackButton" class="rounded px-2 py-1 text-2xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back</button>
+          <button v-if="showBackButton" class="rounded px-2 py-1 text-2xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="$emit('back')">&larr; Back <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">Esc</kbd></button>
           <span v-if="showBackButton" class="text-[var(--color-border)] text-2xl">|</span>
           <span class="text-2xl font-semibold text-[var(--color-text)]">{{ title }}</span>
         </div>

@@ -231,6 +231,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useShortcuts } from '../services/shortcutManager'
 import Stock_Template from '../components/Stock_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
@@ -238,6 +239,19 @@ import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
+
+useShortcuts({
+  'ESCAPE': () => {
+    if (quickSearchResults.value.length > 0) {
+      quickSearchResults.value = []
+    } else if (pendingItem.value) {
+      pendingItem.value = null
+      focusBarcodeInput()
+    } else {
+      goBack()
+    }
+  }
+})
 const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
 
 const repackNo = ref('')
