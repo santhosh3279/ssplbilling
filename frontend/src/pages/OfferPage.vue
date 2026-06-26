@@ -950,8 +950,15 @@ function handleKeyDown(event) {
   } else {
     if (key === 'Enter' || keyCode === 13 || key === ' ' || keyCode === 32) {
       const activeEl = document.activeElement
-      const isGoHomeFocused = activeEl && activeEl.textContent && activeEl.textContent.includes('Go to Home')
-      if (!isGoHomeFocused) {
+      const isInteractive = activeEl && (
+        activeEl.tagName === 'BUTTON' ||
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'A' ||
+        activeEl.getAttribute('role') === 'button'
+      )
+      if (!isInteractive) {
         event.preventDefault()
         enterPresentationMode()
       }
@@ -959,7 +966,7 @@ function handleKeyDown(event) {
       key === 'ArrowRight' || key === 'ArrowLeft' || key === 'ArrowUp' || key === 'ArrowDown' ||
       keyCode === 37 || keyCode === 38 || keyCode === 39 || keyCode === 40
     ) {
-      if (document.activeElement !== playButtonRef.value) {
+      if (!document.activeElement || document.activeElement === document.body) {
         event.preventDefault()
         focusPlayButton()
       }
