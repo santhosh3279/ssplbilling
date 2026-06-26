@@ -30,7 +30,7 @@
               <span>{{ fetchingGst ? 'Fetching...' : 'GST Fetch' }}</span>
             </button>
           </label>
-          <input ref="gstinInputRef" v-model="form.gstin" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-base uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input ref="gstinInputRef" v-model="form.gstin" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-mono uppercase text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="22AAAAA0000A1Z5" maxlength="15" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <!-- GST Preview Area -->
@@ -61,7 +61,8 @@
           <input
             ref="nameInputRef"
             v-model="form.customer_name"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Full name"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="handleFormEnter"
@@ -72,7 +73,8 @@
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Group *</label>
           <select
             v-model="form.customer_group"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="handleFormEnter"
           >
@@ -87,7 +89,8 @@
             <input
               ref="primaryPartyInputRef"
               v-model="primaryPartyQuery"
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              style="font-size: 1.5rem; padding: 0.2em;"
               placeholder="Search Supplier..."
               @input="searchPrimaryParties"
               @keydown.esc.stop="primaryPartyQuery = ''; primaryParties = []"
@@ -113,7 +116,7 @@
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Modifier %</label>
           <div class="relative w-full">
-            <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)] pr-8" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+            <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em 1.2em 0.2em 0.2em;" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
           </div>
         </div>
@@ -123,17 +126,17 @@
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number *</label>
-          <input v-model="form.mobile" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input v-model="form.mobile" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="10-digit mobile" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
-          <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
-          <input v-model="form.email" type="email" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="email@example.com" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input v-model="form.email" type="email" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="email@example.com" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
       </div>
 
@@ -141,27 +144,27 @@
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
-          <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 2</label>
-          <input v-model="form.address_line2" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="Area / Landmark" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input v-model="form.address_line2" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="Area / Landmark" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">City</label>
-          <input v-model="form.city" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="City" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input v-model="form.city" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="City" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pincode</label>
-          <input v-model="form.pincode" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" placeholder="678XXX" maxlength="6" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <input v-model="form.pincode" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="678XXX" maxlength="6" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">State</label>
-          <select v-model="form.state" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter">
+          <select v-model="form.state" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter">
             <option value="">Select State</option>
             <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
           </select>
