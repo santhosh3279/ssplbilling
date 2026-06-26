@@ -851,6 +851,9 @@ async function loadOffer(silent = false) {
     })
     
     if (res) {
+      if (res.cipher_map) {
+        localStorage.setItem('wb-cipher', res.cipher_map)
+      }
       offer.value = res
       document.title = `${res.heading} | Deals`
       startTimer()

@@ -305,6 +305,9 @@ def get_offer_details(pageaddress):
 			"prices": item_rates
 		})
 		
+	settings = frappe.get_single("SSPL Billing Settings")
+	cipher_map = settings.cipher_map or ""
+
 	return {
 		"name": doc.name,
 		"heading": doc.heading,
@@ -312,7 +315,8 @@ def get_offer_details(pageaddress):
 		"tile_grid": doc.tile_grid or "4",
 		"timer": doc.timer or 0,
 		"price_lists": [{"price_list": pl.price_list} for pl in doc.get("price_lists") if pl.price_list],
-		"items": items
+		"items": items,
+		"cipher_map": cipher_map
 	}
 
 @frappe.whitelist(allow_guest=True)
