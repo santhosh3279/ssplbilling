@@ -300,6 +300,10 @@ const initialSearchType = computed(() => {
   return 'All'
 })
 
+const hasUnsavedItems = computed(() => {
+  return form.rows.some(r => r.account || r.amount > 0 || r.remarks) || form.reference_no !== ''
+})
+
 function getNewBalance(row) {
   if (row.balance === null) return 0
   const amt = parseFloat(row.amount) || 0
@@ -438,6 +442,12 @@ function cycleTab() {
   onTabClick(tabs[nextIdx])
 }
 
+function handleEscape() {
+  if (!hasUnsavedItems.value) {
+    router.push('/')
+  }
+}
+
 async function handleSubmit() {
   if (!isFormValid.value) return
   submitting.value = true
@@ -502,6 +512,7 @@ onMounted(() => {
   fetchCashAccountDetails()
   useShortcuts({
     'F7': cycleTab,
+    'ESCAPE': handleEscape,
   })
   setTimeout(() => expenseSearchRefs.value[0]?.focus(), 300)
 })
