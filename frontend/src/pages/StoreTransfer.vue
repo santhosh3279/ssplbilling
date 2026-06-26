@@ -200,14 +200,7 @@ const router = useRouter()
 
 useShortcuts({
   'ESCAPE': () => {
-    if (quickSearchResults.value.length > 0) {
-      quickSearchResults.value = []
-    } else if (pendingItem.value) {
-      pendingItem.value = null
-      focusBarcodeInput()
-    } else {
-      goBack()
-    }
+    goBack()
   }
 })
 const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
