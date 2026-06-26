@@ -28,7 +28,7 @@
       @update:sidebarSeries="sidebarSeries = $event"
       @toggle-draft-only="draftOnly = !draftOnly"
       @select-sidebar-item="handleSelectSidebarItem"
-      @back="goBack"
+      @back="handleBack"
       @save="handleSave"
       @submit="handleSubmit"
       @print="handlePrint"
@@ -183,6 +183,15 @@
       @close="showItemSearch = false"
       @select="handleItemSelect"
     />
+
+    <!-- Exit Warning Modal -->
+    <Warning
+      :show="showExitWarning"
+      title="Exit Page"
+      message="Are you sure you want to exit? Unsaved changes will be lost."
+      @close="showExitWarning = false"
+      @confirm="showExitWarning = false; goBack()"
+    />
   </div>
 </template>
 
@@ -193,14 +202,17 @@ import { useShortcuts } from '../services/shortcutManager'
 import Stock_Template from '../components/Stock_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
+import Warning from '../components/Warning.vue'
 import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
 
+const showExitWarning = ref(false)
+
 useShortcuts({
   'ESCAPE': () => {
-    goBack()
+    handleBack()
   }
 })
 const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
@@ -301,6 +313,9 @@ function onBarcodeInput() {
 function handleBarcodeKeydown(e) {
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === 'Escape') {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+      }
       quickSearchRef.value.handleQuickSearchKeydown(e)
       return
     }
@@ -403,6 +418,7 @@ function handlePendingQtyKeydown(e) {
     confirmPendingItem()
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     pendingItem.value = null
     focusBarcodeInput()
   }
@@ -485,6 +501,14 @@ function resetForm() {
 
 function goBack() {
   router.push('/')
+}
+
+function handleBack() {
+  if (!isReadOnly.value && items.value.length > 0) {
+    showExitWarning.value = true
+  } else {
+    goBack()
+  }
 }
 
 function handleSidebarDateChange(dir) {

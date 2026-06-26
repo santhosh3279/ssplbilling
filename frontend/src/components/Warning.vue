@@ -2,7 +2,7 @@
   <div
     v-if="show"
     class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-    @keydown.esc="$emit('close')"
+    @keydown.esc.stop="$emit('close')"
     @keydown.left.prevent="focusBtn('no')"
     @keydown.right.prevent="focusBtn('yes')"
   >
