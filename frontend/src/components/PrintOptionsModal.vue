@@ -292,6 +292,7 @@ async function sendPrint() {
       },
     )
     success.value = `Sent to printer — Job ${res.cups_job_id}`
+    emit('close')
   } catch (e) {
     error.value = e.message
   } finally {
