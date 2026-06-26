@@ -8,7 +8,7 @@
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
         <button
-          @click="router.push('/')"
+          @click="handleBack"
           class="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-[var(--color-midlight)] transition-colors"
         >
           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,6 +214,15 @@
       @select="handleSelect"
     />
 
+    <!-- Warning Modal -->
+    <Warning
+      :show="showExitWarning"
+      title="Discard Changes?"
+      message="You have unsaved changes. Are you sure you want to discard them and exit?"
+      @close="showExitWarning = false"
+      @confirm="showExitWarning = false; router.push('/')"
+    />
+
     <!-- Success Popup -->
     <div v-if="showSuccess" class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
       <div class="rounded-3xl bg-[var(--color-surface)] p-6 shadow-2xl border-2 border-[var(--color-success)] flex items-center gap-6">
@@ -233,12 +242,18 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import { useShortcuts } from '../services/shortcutManager'
+import Warning from '../components/Warning.vue'
+import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 
 const router = useRouter()
 
 // --- State ---
 const activeTab = ref('Payment') // 'Payment', 'Receipt'
+const showExitWarning = ref(false)
+
+useSubwindowWatcher(showExitWarning, {
+  'ESCAPE': () => { showExitWarning.value = false }
+})
 const postingDate = ref(new Date().toISOString().split('T')[0])
 const cashAccount = ref({
   account: localStorage.getItem('wb-cash') || '',
@@ -442,10 +457,16 @@ function cycleTab() {
   onTabClick(tabs[nextIdx])
 }
 
-function handleEscape() {
+function handleBack() {
   if (!hasUnsavedItems.value) {
     router.push('/')
+  } else {
+    showExitWarning.value = true
   }
+}
+
+function handleEscape() {
+  handleBack()
 }
 
 async function handleSubmit() {
