@@ -5,12 +5,12 @@
   >
     <div class="max-w-4xl mx-auto">
       <!-- History and Suggestions -->
-      <div v-if="(history.length && !query.trim()) || suggestions.length" 
+      <div v-if="(displayedHistory.length && !query.trim()) || suggestions.length" 
            ref="scrollContainer"
            class="mb-2 max-h-[140px] overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)] flex flex-col-reverse"
       >
         <template v-if="!query.trim()">
-          <div v-for="(item, i) in history" :key="'h-'+i" 
+          <div v-for="(item, i) in displayedHistory" :key="'h-'+i" 
                class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-surface-raised)]"
                :class="{ 'bg-[var(--color-surface-raised)] !text-[var(--color-text)]': i === historyIndex }"
                @click="selectHistory(i)"
@@ -69,6 +69,7 @@ const inputRef = ref(null)
 const scrollContainer = ref(null)
 const query = ref('')
 const history = ref(JSON.parse(localStorage.getItem('command_line_history') || '[]'))
+const displayedHistory = computed(() => history.value.slice(-2).reverse())
 const suggestions = ref([])
 const activeSuggestionIndex = ref(0)
 const historyIndex = ref(-1)
@@ -200,11 +201,11 @@ function handleKeydown(e) {
       // Move up visually = increment index (toward top)
       activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestions.value.length
       syncScroll()
-    } else if (history.value.length > 0) {
+    } else if (displayedHistory.value.length > 0) {
       // Move up visually = increment index (starting at 0/bottom)
       if (historyIndex.value === -1) {
         historyIndex.value = 0
-      } else if (historyIndex.value < history.value.length - 1) {
+      } else if (historyIndex.value < displayedHistory.value.length - 1) {
         historyIndex.value++
       }
       syncScroll()
@@ -246,7 +247,7 @@ function updateSuggestions() {
   }
 
   // Reset history index if user types something manually
-  const isFromHistory = historyIndex.value !== -1 && history.value[historyIndex.value]?.input === query.value
+  const isFromHistory = historyIndex.value !== -1 && displayedHistory.value[historyIndex.value]?.input === query.value
   if (!isFromHistory) {
     historyIndex.value = -1
   }
