@@ -35,6 +35,7 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
+      :posting-time="postingTime"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -886,6 +887,7 @@ const priceListUpdateTaxRate = computed(() => {
 const lastEnterTime = ref(0)
 
 const invoiceNo = ref('NEW')
+const postingTime = ref('')
 const selectedSeries = ref('')
 const defaultTemplate = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
@@ -970,6 +972,7 @@ async function handleSelectSidebarItem(item) {
     const data = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoice', { invoice_name: item.name })
 
     invoiceNo.value = data.name
+    postingTime.value = data.posting_time || ''
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.posting_date || invoiceDate.value
     supplierInvoiceNo.value = data.bill_no || ''
@@ -1269,6 +1272,7 @@ async function clearBill() {
   incentiveRows.value = []
   clearHistory()
   invoiceNo.value = 'NEW'
+  postingTime.value = ''
   isReturn.value = false
   isReadOnly.value = false
   isSaved.value = false

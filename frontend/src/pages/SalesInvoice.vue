@@ -40,6 +40,7 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
+      :posting-time="postingTime"
       show-mop
       v-model:mop="mop"
       @mop-enter="focusBarcodeInput"
@@ -741,6 +742,7 @@ const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
 const invoiceNo = ref('NEW')
+const postingTime = ref('')
 const selectedSeries = ref('')
 const defaultTemplate = ref('')
 const invoiceDate = ref(new Date().toISOString().split('T')[0])
@@ -842,6 +844,7 @@ async function handleSelectSidebarItem(item) {
 
     // Header
     invoiceNo.value = data.name
+    postingTime.value = data.posting_time || ''
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.posting_date || invoiceDate.value
 
@@ -1151,6 +1154,7 @@ async function clearBill() {
   customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
+  postingTime.value = ''
   isReturn.value = false
   isReadOnly.value = false
   isSaved.value = false

@@ -192,7 +192,12 @@
                   </span>
                 </div>
 
-                <div v-if="showMop" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
+                <div v-if="postingTime" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
+                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Time</span>
+                  <span class="text-3xl font-bold font-mono text-[var(--color-text)]">{{ formatTime(postingTime) }}</span>
+                </div>
+
+                <div v-if="showMop" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0" :class="{'ml-auto': !postingTime}">
                   <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">MOP</span>
                   <select
                     ref="mopSelectRef"
@@ -553,6 +558,7 @@ const props = defineProps({
   partyBalance: { type: [Number, String], default: null },
   mop: { type: String, default: 'Cash' },
   showMop: { type: Boolean, default: false },
+  postingTime: { type: String, default: '' },
   partyLastInvDate: { type: String, default: '' },
   partyModifier: { type: [Number, String], default: null },
   ignoreModifier: { type: Boolean, default: false },
@@ -723,6 +729,16 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   onUnmounted(() => window.removeEventListener('keydown', handleKeyDown))
 })
+
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const parts = timeStr.split('.')
+  let mainTime = parts[0].trim()
+  if (/^\d:\d{2}:\d{2}$/.test(mainTime)) {
+    mainTime = '0' + mainTime
+  }
+  return mainTime
+}
 
 function formatDate(dateString) {
   if (!dateString) return 'Select Date'

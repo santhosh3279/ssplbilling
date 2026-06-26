@@ -429,6 +429,7 @@ def get_purchase_invoice(invoice_name):
         "bill_date": str(pi.bill_date) if pi.bill_date else "",
         "state": party_state,
         "posting_date": str(pi.posting_date),
+        "posting_time": str(pi.posting_time) if pi.posting_time else "",
         "naming_series": pi.naming_series or "",
         "is_return": pi.is_return,
         "discount_percentage": float(pi.additional_discount_percentage or 0),

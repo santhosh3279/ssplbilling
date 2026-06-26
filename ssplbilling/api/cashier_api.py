@@ -140,6 +140,7 @@ def get_sales_invoice(invoice_name):
         "customer_name": si.customer_name,
         "state": party_state,
         "posting_date": str(si.posting_date),
+        "posting_time": str(si.posting_time) if si.posting_time else "",
         "naming_series": si.naming_series or "",
         "payment_mode": payment_mode,
         "discount_percentage": float(si.additional_discount_percentage or 0),
