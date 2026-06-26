@@ -5,22 +5,24 @@
   >
     <div class="max-w-4xl mx-auto">
       <!-- History and Suggestions -->
-      <div v-if="history.length || suggestions.length" 
+      <div v-if="(history.length && !query.trim()) || suggestions.length" 
            ref="scrollContainer"
            class="mb-2 max-h-[140px] overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)] flex flex-col-reverse"
       >
-        <div v-for="(item, i) in history" :key="'h-'+i" 
-             class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-surface-raised)]"
-             :class="{ 'bg-[var(--color-surface-raised)] !text-[var(--color-text)]': i === historyIndex }"
-             @click="selectHistory(i)"
-         >
-          <template v-if="item.result !== undefined">
-            <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
-          </template>
-          <template v-else>
-            {{ item.input }}
-          </template>
-        </div>
+        <template v-if="!query.trim()">
+          <div v-for="(item, i) in history" :key="'h-'+i" 
+               class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-surface-raised)]"
+               :class="{ 'bg-[var(--color-surface-raised)] !text-[var(--color-text)]': i === historyIndex }"
+               @click="selectHistory(i)"
+           >
+            <template v-if="item.result !== undefined">
+              <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
+            </template>
+            <template v-else>
+              {{ item.input }}
+            </template>
+          </div>
+        </template>
         <div v-for="(route, i) in suggestions" :key="'r-'+i" 
              class="text-3xl px-2 cursor-pointer hover:bg-[var(--color-surface-raised)] rounded flex justify-between items-center"
              :class="{ 'bg-[var(--color-surface-raised)]': i === activeSuggestionIndex }"
@@ -215,8 +217,9 @@ function syncScroll() {
     if (scrollContainer.value) {
       let el
       if (suggestions.value.length > 0) {
-        // Find element index: history list comes first, then suggestions
-        const suggestionElIndex = history.value.length + activeSuggestionIndex.value
+        // When searching (query is not empty), history is hidden and not in DOM
+        const hasHistoryInDOM = !query.value.trim() && history.value.length > 0
+        const suggestionElIndex = (hasHistoryInDOM ? history.value.length : 0) + activeSuggestionIndex.value
         el = scrollContainer.value.children[suggestionElIndex]
       } else if (historyIndex.value !== -1) {
         el = scrollContainer.value.children[historyIndex.value]
