@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="show"
-    class="fixed bottom-0 left-0 right-0 z-[1000] bg-[var(--color-surface)] border-t border-[var(--color-border)] shadow-2xl p-1 animate-in slide-in-from-bottom duration-200"
+    class="fixed bottom-0 left-0 right-0 z-[1000] bg-[var(--color-highlight)] border-t border-[var(--color-border)] shadow-2xl p-1 animate-in slide-in-from-bottom duration-200"
   >
     <div class="max-w-4xl mx-auto">
       <!-- History and Suggestions -->
@@ -13,7 +13,7 @@
              class="text-3xl text-[var(--color-text-muted)] font-mono px-2 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-surface-raised)]"
              :class="{ 'bg-[var(--color-surface-raised)] !text-[var(--color-text)]': i === historyIndex }"
              @click="selectHistory(i)"
-        >
+         >
           <template v-if="item.result !== undefined">
             <span class="text-[var(--color-info)]">calc:</span> {{ item.input }} = <span class="text-[var(--color-text)] font-bold">{{ item.result }}</span>
           </template>
@@ -33,19 +33,19 @@
 
       <!-- Input Line -->
       <div class="flex items-center gap-2">
-        <div class="text-[var(--color-info)] font-mono font-bold text-3xl">></div>
+        <div class="text-[var(--color-text-on-highlight)] font-mono font-bold text-3xl">></div>
         <input
           ref="inputRef"
           v-model="query"
           type="text"
-          class="flex-1 bg-transparent border-none outline-none text-[var(--color-text)] font-mono text-3xl placeholder:text-[var(--color-text-muted)]/50"
+          class="flex-1 bg-transparent border-none outline-none text-[var(--color-text-on-highlight)] font-mono text-3xl placeholder:text-[var(--color-text-on-highlight)]/50"
           placeholder="Calculate or search page..."
           @keydown="handleKeydown"
           @input="updateSuggestions"
         />
-        <div class="flex items-center gap-2 text-[var(--color-text-muted)] text-[10px] uppercase font-bold tracking-tighter">
-          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)]">ENTER</span>
-          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)]">ESC</span>
+        <div class="flex items-center gap-2 text-[var(--color-text-on-highlight)]/70 text-[10px] uppercase font-bold tracking-tighter">
+          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)]">ENTER</span>
+          <span class="px-1 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)]">ESC</span>
         </div>
       </div>
     </div>
