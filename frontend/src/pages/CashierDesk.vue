@@ -624,6 +624,15 @@
       @close="showPrintModal = false"
     />
 
+    <!-- GST BILL CREATOR MODAL -->
+    <Gstbillcreator
+      v-if="showGstBillCreator"
+      :show="showGstBillCreator"
+      :invoice-name="processedInvoiceName"
+      doctype="Quotation"
+      @close="showGstBillCreator = false"
+    />
+
     <!-- CASHIER ENTRY MODAL -->
     <CashierEntry
       v-if="showCashierEntry"
@@ -672,6 +681,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
 import CashierEntry from '../components/CashierEntry.vue'
 import SalesInvoice from './SalesInvoice.vue'
+import Gstbillcreator from '../components/Gstbillcreator.vue'
 
 /**
  * HELPER: getTodayIST
@@ -727,6 +737,7 @@ const showPrintModal = ref(false)
 const showModifyModal = ref(false)
 const showReconcileModal = ref(false)
 const showSuccessModal = ref(false)
+const showGstBillCreator = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
 const showCashierEntry = ref(false)
@@ -737,6 +748,7 @@ useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
 useSubwindowWatcher(showCashierEntry)
+useSubwindowWatcher(showGstBillCreator)
 
 const invoices = ref([])
 const selectedInvoice = ref(null)
@@ -1242,12 +1254,16 @@ async function processPayment() {
       discount_account: seriesAccounts.value.discount
     }
     
+    const wasUpi = upi > 0.01
+    const wasExempted = selectedInvoice.value?.tax_template?.toLowerCase().includes('exempt')
+    const invoiceName = selectedInvoice.value?.name
+
     await submitInvoiceWithPayment(payload)
     
-    processedInvoiceName.value = selectedInvoice.value.name
+    processedInvoiceName.value = invoiceName
     showSuccessModal.value = true
     
-    const nameToRemove = selectedInvoice.value.name
+    const nameToRemove = invoiceName
     
     // Clear state immediately for next transaction
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
@@ -1262,6 +1278,14 @@ async function processPayment() {
     setTimeout(() => {
       showSuccessModal.value = false
     }, 1500)
+
+    if (wasUpi && wasExempted) {
+      nextTick(() => {
+        if (confirm("create GST bill for this sales invoice?")) {
+          showGstBillCreator.value = true
+        }
+      })
+    }
     
   } catch (e) {
     errorMsg.value = e.message
