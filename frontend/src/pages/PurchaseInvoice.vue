@@ -1362,10 +1362,7 @@ async function handleSave() {
     const acct = localStorage.getItem('wb-other-charges')
     if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: other, description: 'Other Charges' })
   }
-  if (parseFloat(roundOff.value) !== 0) {
-    const acct = localStorage.getItem('wb-round-off')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: parseFloat(roundOff.value), description: 'Round Off' })
-  }
+
 
   const payload = {
     naming_series: selectedSeries.value,
