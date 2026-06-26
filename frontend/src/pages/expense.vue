@@ -298,7 +298,7 @@ const modalSubtitle = computed(() => {
 
 const allowedTypes = computed(() => {
   if (activeTab.value === 'Expense') return ['Account']
-  return ['Customer', 'Supplier', 'Employee']
+  return ['Customer', 'Supplier', 'Employee', 'Account']
 })
 
 const initialSearchType = computed(() => {
@@ -451,13 +451,42 @@ async function handleSubmit() {
   try {
     const validRows = form.rows.filter(r => r.account && r.amount > 0)
     for (const row of validRows) {
+      let paymentType = ''
+      let party = ''
+      let partyType = ''
+      let account = ''
+
+      if (activeTab.value === 'Expense') {
+        paymentType = 'Internal Transfer'
+        party = cashAccount.value.account
+        partyType = ''
+        account = row.account
+      } else {
+        if (row.party_type === 'Account') {
+          paymentType = 'Internal Transfer'
+          if (activeTab.value === 'Payment') {
+            party = cashAccount.value.account
+            account = row.account
+          } else {
+            party = row.account
+            account = cashAccount.value.account
+          }
+          partyType = ''
+        } else {
+          paymentType = activeTab.value === 'Payment' ? 'Pay' : 'Receive'
+          party = row.account
+          partyType = row.party_type
+          account = cashAccount.value.account
+        }
+      }
+
       const payload = {
-        payment_type: activeTab.value === 'Expense' ? 'Internal Transfer' : (activeTab.value === 'Payment' ? 'Pay' : 'Receive'),
-        party: activeTab.value === 'Expense' ? cashAccount.value.account : row.account,
-        party_type: activeTab.value === 'Expense' ? '' : row.party_type,
+        payment_type: paymentType,
+        party: party,
+        party_type: partyType,
         amount: row.amount,
         mode_of_payment: 'Cash',
-        account: activeTab.value === 'Expense' ? row.account : cashAccount.value.account,
+        account: account,
         posting_date: postingDate.value,
         reference_no: form.reference_no,
         reference_date: form.reference_date,
