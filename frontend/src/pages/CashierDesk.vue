@@ -633,6 +633,16 @@
       @close="showGstBillCreator = false"
     />
 
+    <!-- GST BILL WARNING MODAL -->
+    <Warning
+      v-if="showGstWarning"
+      :show="showGstWarning"
+      title="Create GST Bill"
+      :message="`create a gst bill for salesinvoice no: ${processedInvoiceName}`"
+      @close="showGstWarning = false"
+      @confirm="handleGstConfirm"
+    />
+
     <!-- CASHIER ENTRY MODAL -->
     <CashierEntry
       v-if="showCashierEntry"
@@ -682,6 +692,7 @@ import Unallocated from '../components/Unallocated.vue'
 import CashierEntry from '../components/CashierEntry.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import Gstbillcreator from '../components/Gstbillcreator.vue'
+import Warning from '../components/Warning.vue'
 
 /**
  * HELPER: getTodayIST
@@ -738,6 +749,7 @@ const showModifyModal = ref(false)
 const showReconcileModal = ref(false)
 const showSuccessModal = ref(false)
 const showGstBillCreator = ref(false)
+const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
 const showCashierEntry = ref(false)
@@ -749,6 +761,7 @@ useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
 useSubwindowWatcher(showCashierEntry)
 useSubwindowWatcher(showGstBillCreator)
+useSubwindowWatcher(showGstWarning)
 
 const invoices = ref([])
 const selectedInvoice = ref(null)
@@ -1281,9 +1294,7 @@ async function processPayment() {
 
     if (wasUpi && wasExempted) {
       nextTick(() => {
-        if (confirm("create GST bill for this sales invoice?")) {
-          showGstBillCreator.value = true
-        }
+        showGstWarning.value = true
       })
     }
     
@@ -1292,6 +1303,11 @@ async function processPayment() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+function handleGstConfirm() {
+  showGstWarning.value = false
+  showGstBillCreator.value = true
 }
 
 async function confirmCardRef() {
