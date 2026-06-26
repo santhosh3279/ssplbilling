@@ -459,7 +459,7 @@
                     <button 
                       @click="sendUpiMqtt"
                       type="button"
-                      class="px-2 py-1 rounded-lg bg-[var(--color-success)] text-white font-black text-[10px] uppercase tracking-wider hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-95 transition-all shadow-sm"
+                      class="px-2 py-1 rounded-lg bg-[var(--color-success)] text-white font-black text-[15px] uppercase tracking-wider hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-95 transition-all shadow-sm"
                     >
                       Send QR
                     </button>
@@ -470,7 +470,7 @@
                     v-model="payments.upi"
                     @focus="$event.target.select()"
                     step="0.01"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-40 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-44 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
