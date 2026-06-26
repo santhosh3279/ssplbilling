@@ -55,7 +55,10 @@
       <div class="flex items-center justify-end px-6 border-l border-[var(--color-border)] h-full gap-4 bg-[var(--color-surface)]/50">
         <div class="flex items-center gap-2">
           <div class="text-right hidden xl:block">
-            <div class="text-xs font-bold text-[var(--color-text)]">{{ session.fullName.value }}</div>
+            <div class="text-xs font-bold text-[var(--color-text)]">
+              {{ session.fullName.value }}
+              <span v-if="inheritedUser" class="font-normal text-[var(--color-text-muted)]"> ({{ inheritedUser }})</span>
+            </div>
             <div class="truncate text-[10px] text-[var(--color-text-muted)]">{{ session.user.value }}</div>
           </div>
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--color-surface-raised)] to-[var(--color-border)] text-xs font-black text-[var(--color-text)] border border-[var(--color-border)]">
@@ -678,6 +681,11 @@ function getTodayIST() {
   const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
   return formatter.format(date)
 }
+
+const inheritedUser = computed(() => {
+  const inherited = localStorage.getItem('wb-inherited-user')
+  return inherited && inherited !== session.user.value ? inherited : null
+})
 
 // ==================== STATE (REFS) ====================
 // Define all refs first to avoid ReferenceErrors in functions or watchers

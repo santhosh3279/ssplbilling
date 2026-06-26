@@ -26,6 +26,7 @@
         <div class="flex items-center gap-1.5 font-bold text-[var(--color-info)]">
           <span class="text-[10px] text-[var(--color-text-muted)] font-medium">HI</span>
           <span class="truncate max-w-[120px] uppercase tracking-wide">{{ (session.fullName.value || 'User').split('@')[0] }}</span>
+          <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-xs"> ({{ inheritedUser }})</span>
         </div>
       </div>
     </header>
@@ -683,6 +684,12 @@ import { salesOrderShortcuts } from '../shortcuts/salesOrderShortcuts'
 import * as XLSX from 'xlsx'
 
 const router = useRouter()
+
+const inheritedUser = computed(() => {
+  const inherited = localStorage.getItem('wb-inherited-user')
+  return inherited && inherited !== session.user.value ? inherited : null
+})
+
 const API_BASE = 'ssplbilling.api.sales_order_api'
 
 const { items: cachedItems, refreshItemCache, lookupItemInCache, lastSync } = useItemCache()

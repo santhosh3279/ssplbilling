@@ -70,7 +70,10 @@
     >
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
-        <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">{{ session.fullName.value || session.user.value }}</span>
+        <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">
+          {{ session.fullName.value || session.user.value }}
+          <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-sm"> ({{ inheritedUser }})</span>
+        </span>
       </template>
 
       <template #row="{ item, index, formatQty }">
@@ -575,6 +578,11 @@ import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 
 const router = useRouter()
+
+const inheritedUser = computed(() => {
+  const inherited = localStorage.getItem('wb-inherited-user')
+  return inherited && inherited !== session.user.value ? inherited : null
+})
 
 // --- Data Fetching & State Management ---
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()

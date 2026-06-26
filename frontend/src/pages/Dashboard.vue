@@ -18,7 +18,10 @@
             {{ userInitials }}
           </div>
           <div class="min-w-0 flex-1">
-            <div class="truncate text-base font-semibold text-[var(--color-text)]">{{ session.fullName.value || 'User' }}</div>
+            <div class="truncate text-base font-semibold text-[var(--color-text)]">
+              {{ session.fullName.value || 'User' }}
+              <span v-if="selectedUser !== session.user.value" class="text-xs font-normal text-[var(--color-text-muted)]"> ({{ selectedUser }})</span>
+            </div>
             <div class="flex items-center gap-1.5">
               <span class="truncate text-xs text-[var(--color-text-muted)]">{{ session.user.value }}</span>
               <span class="shrink-0 rounded px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider"

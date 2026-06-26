@@ -83,7 +83,10 @@
           >
             <span>📜</span> History
           </button>
-          <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">{{ session.fullName.value || session.user.value }}</span>
+          <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">
+            {{ session.fullName.value || session.user.value }}
+            <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-sm"> ({{ inheritedUser }})</span>
+          </span>
         </div>
       </template>
 
@@ -653,6 +656,11 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const router = useRouter()
+
+const inheritedUser = computed(() => {
+  const inherited = localStorage.getItem('wb-inherited-user')
+  return inherited && inherited !== session.user.value ? inherited : null
+})
 
 // --- Data Fetching & State Management ---
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
