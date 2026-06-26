@@ -521,7 +521,7 @@
                       @input="handleDueDateInput"
                       @keydown.backspace="handleDueDateKeyDown"
                       placeholder="DDMM or DD/MM/YYYY"
-                      class="w-full rounded-2xl border border-[var(--color-danger)]/50 bg-[var(--color-bg)] py-5 pl-12 pr-4 text-center font-mono font-black text-[30px] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-danger)] focus:ring-8 focus:ring-[var(--color-danger)]/10 transition-all outline-none"
+                      class="w-full rounded-2xl border border-[var(--color-danger)]/50 bg-[var(--color-bg)] py-5 pl-12 pr-4 text-center font-mono font-black text-[22.5px] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-danger)] focus:ring-8 focus:ring-[var(--color-danger)]/10 transition-all outline-none"
                     />
                   </div>
                   <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)]/80 bg-[var(--color-danger)]/30 rounded-lg p-2 border border-[var(--color-danger)]/40">
