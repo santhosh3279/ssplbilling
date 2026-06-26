@@ -29,22 +29,24 @@
       <!-- First Name / Last Name -->
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">First Name *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">First Name *</label>
           <input
             ref="firstNameInput"
             v-model="form.first_name"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="First name"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Last Name</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Last Name</label>
           <input
             ref="lastNameInput"
             v-model="form.last_name"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Last name"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -55,7 +57,7 @@
       <!-- Gender / Date of Joining -->
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Gender *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Gender *</label>
           <div class="flex rounded border border-[var(--color-border)] overflow-hidden">
             <button
               v-for="g in ['Male', 'Female']"
@@ -70,12 +72,13 @@
           </div>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date of Joining *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date of Joining *</label>
           <input
             ref="dojInput"
             v-model="form.date_of_joining"
             type="date"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
           />
@@ -84,12 +87,13 @@
 
       <!-- Date of Birth -->
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date of Birth</label>
+        <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date of Birth</label>
         <input
           ref="dobInput"
           v-model="form.date_of_birth"
           type="date"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+          style="font-size: 1.5rem; padding: 0.2em;"
           @keydown.esc.stop="$emit('close')"
           @keydown.enter.prevent="focusNext"
         />
@@ -98,11 +102,12 @@
       <!-- Mobile / Email -->
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Mobile Number</label>
           <input
             ref="mobileInput"
             v-model="form.mobile"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="10-digit mobile"
             maxlength="10"
             @keydown.esc.stop="$emit('close')"
@@ -110,12 +115,13 @@
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Email</label>
           <input
             ref="emailInput"
             v-model="form.email"
             type="email"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="email@example.com"
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="focusNext"
@@ -125,12 +131,13 @@
 
       <!-- Current Address -->
       <div class="flex flex-col gap-1.5">
-        <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Current Address</label>
+        <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Current Address</label>
         <textarea
           ref="addressInput"
           v-model="form.current_address"
           rows="3"
-          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-base text-[var(--color-text)] outline-none focus:border-[var(--color-info)] resize-none"
+          class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] resize-none"
+          style="font-size: 1.5rem; padding: 0.2em;"
           placeholder="Street, Area, City, Pincode"
           @keydown.esc.stop="$emit('close')"
         ></textarea>
