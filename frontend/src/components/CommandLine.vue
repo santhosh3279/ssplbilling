@@ -7,7 +7,7 @@
       <!-- History and Suggestions -->
       <div v-if="(displayedHistory.length && !query.trim()) || suggestions.length" 
            ref="scrollContainer"
-           class="mb-2 max-h-[140px] overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)] flex flex-col-reverse"
+           class="mb-2 max-h-[76px] overflow-y-auto bg-[var(--color-bg)] rounded border border-[var(--color-border)] flex flex-col-reverse"
       >
         <template v-if="!query.trim()">
           <div v-for="(item, i) in displayedHistory" :key="'h-'+i" 
@@ -69,7 +69,7 @@ const inputRef = ref(null)
 const scrollContainer = ref(null)
 const query = ref('')
 const history = ref(JSON.parse(localStorage.getItem('command_line_history') || '[]'))
-const displayedHistory = computed(() => history.value.slice(-2).reverse())
+const displayedHistory = computed(() => history.value.slice().reverse())
 const suggestions = ref([])
 const activeSuggestionIndex = ref(0)
 const historyIndex = ref(-1)
