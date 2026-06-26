@@ -1504,6 +1504,11 @@ function handleKeydown(e) {
   if (e.key === 'F9') {
     e.preventDefault()
     processPayment()
+  } else if (e.key === 'End') {
+    if (canSubmit.value) {
+      e.preventDefault()
+      postButton.value?.focus()
+    }
   }
 }
 
