@@ -36,11 +36,11 @@
                 <button 
                   v-if="form.gstin && form.gstin.length === 15"
                   @click="fetchGstInfo"
-                  class="text-[9px] bg-[var(--color-info)] text-white px-2 py-0.5 rounded hover:opacity-80 transition-opacity flex items-center gap-1 shadow-sm"
+                  class="text-[18px] bg-[var(--color-info)] text-white px-4 py-1 rounded hover:opacity-80 transition-opacity flex items-center gap-2 shadow-sm"
                   :disabled="fetchingGst"
                   title="Fetch Details from GST"
                 >
-                  <span v-if="fetchingGst" class="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent"></span>
+                  <span v-if="fetchingGst" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                   <span>{{ fetchingGst ? 'Fetching...' : 'GST Fetch' }}</span>
                 </button>
               </label>
