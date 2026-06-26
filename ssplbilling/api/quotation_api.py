@@ -683,3 +683,57 @@ def generate_eway_bill_for_quotation(
 		frappe.log_error(message=frappe.get_traceback(), title="Quotation E-Way Bill Generation Failed")
 		raise
 
+
+@frappe.whitelist()
+def create_quotation_from_sales_invoice(sales_invoice_name, naming_series):
+	"""Create a Quotation from a saved Sales Invoice."""
+	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
+
+	qt = frappe.new_doc("Quotation")
+	qt.naming_series = naming_series
+	qt.quotation_to = "Customer"
+	qt.party_name = si.customer
+	if si.customer_address:
+		qt.customer_address = si.customer_address
+	qt.transaction_date = frappe.utils.today()
+
+	qt.selling_price_list = si.selling_price_list
+	qt.taxes_and_charges = si.taxes_and_charges
+
+	for t in si.taxes:
+		qt.append("taxes", {
+			"charge_type": t.charge_type,
+			"account_head": t.account_head,
+			"description": t.description,
+			"tax_amount": t.tax_amount,
+			"included_in_print_rate": t.included_in_print_rate,
+			"rate": t.rate
+		})
+
+	qt.additional_discount_percentage = si.additional_discount_percentage
+	qt.discount_amount = si.discount_amount
+
+	for item in si.items:
+		row = {
+			"item_code": item.item_code,
+			"qty": item.qty,
+			"rate": item.rate,
+			"price_list_rate": item.price_list_rate or item.rate,
+			"discount_percentage": item.discount_percentage,
+			"uom": item.uom or item.stock_uom or "Nos",
+			"warehouse": item.warehouse
+		}
+		if frappe.get_meta("Quotation Item").has_field("allow_zero_valuation_rate"):
+			row["allow_zero_valuation_rate"] = 1
+		qt.append("items", row)
+
+	qt.custom_customer_name = si.get("custom_customer_name") or ""
+	qt.custom_address_line1 = si.get("custom_address_line1") or ""
+	qt.custom_address_line2 = si.get("custom_address_line2") or ""
+	qt.custom_mobile_number = si.get("custom_mobile_number") or ""
+
+	qt.flags.ignore_permissions = True
+	qt.save()
+
+	return {"status": "success", "quotation_name": qt.name}
+
