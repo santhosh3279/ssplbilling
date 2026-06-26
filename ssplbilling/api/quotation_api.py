@@ -697,18 +697,22 @@ def create_quotation_from_sales_invoice(sales_invoice_name, naming_series):
 		qt.customer_address = si.customer_address
 	qt.transaction_date = frappe.utils.today()
 
-	qt.selling_price_list = si.selling_price_list
-	qt.taxes_and_charges = si.taxes_and_charges
+	# Fetch series-specific defaults from SSPL Billing Settings
+	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+	row = next((r for r in settings.billing_series if r.series == naming_series), None)
 
-	for t in si.taxes:
-		qt.append("taxes", {
-			"charge_type": t.charge_type,
-			"account_head": t.account_head,
-			"description": t.description,
-			"tax_amount": t.tax_amount,
-			"included_in_print_rate": t.included_in_print_rate,
-			"rate": t.rate
-		})
+	tax_template = row.tax_template if row and row.tax_template else ""
+	is_inclusive = frappe.utils.cint(row.tax_type_incl) if row else 0
+
+	qt.selling_price_list = (row.price_list if row and row.price_list else si.selling_price_list) or "Standard Selling"
+
+	if tax_template:
+		qt.taxes_and_charges = tax_template
+		qt.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", tax_template) or [])
+		if is_inclusive:
+			for tax in qt.taxes:
+				if tax.account_head and "GST" in tax.account_head.upper():
+					tax.included_in_print_rate = 1
 
 	qt.additional_discount_percentage = si.additional_discount_percentage
 	qt.discount_amount = si.discount_amount
