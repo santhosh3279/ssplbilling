@@ -878,6 +878,7 @@ const priceListUpdateDiscount = computed(() => {
 })
 
 const priceListUpdateTaxRate = computed(() => {
+  if (isExempted.value) return 0
   if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.tax_rate || 0
   return pendingItem.value?.tax_rate || 0
 })
