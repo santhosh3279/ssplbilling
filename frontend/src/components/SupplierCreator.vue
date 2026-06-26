@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="show"
-    class="w-[1000px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+    class="w-[90vw] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
     @keydown="handleKeydown"
   >
     <!-- Header -->
