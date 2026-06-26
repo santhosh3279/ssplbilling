@@ -22,9 +22,9 @@
 
       <!-- Form Content -->
       <div class="flex-1 overflow-y-auto px-[20px] py-[12px]">
-        <div class="flex flex-col md:flex-row gap-[24px]">
-          <!-- Left Section: Primary Identification & Mapping -->
-          <div class="flex-1 space-y-[16px]">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+          <!-- Column 1: Names & Barcodes -->
+          <div class="space-y-[16px]">
             <div class="space-y-[4px]">
               <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Name *</label>
               <input
@@ -34,6 +34,18 @@
                 class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
                 placeholder="Enter full item name..."
                 @keydown.enter.prevent="itemPrintNameInput?.focus()"
+              />
+            </div>
+
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Print Name</label>
+              <input
+                ref="itemPrintNameInput"
+                v-model="form.item_print_name"
+                type="text"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+                placeholder="Print name..."
+                @keydown.enter.prevent="itemGroupInput?.focus()"
               />
             </div>
 
@@ -54,100 +66,6 @@
                   <span class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent inline-block"></span>
                 </div>
               </div>
-            </div>
-
-            <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Group *</label>
-              <select
-                ref="itemGroupInput"
-                v-model="form.item_group"
-                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
-                @keydown.enter.prevent="hsnInput?.focus()"
-              >
-                <option value="">Select Group...</option>
-                <option v-for="g in metadata.item_groups" :key="g.name" :value="g.name">{{ g.name }}</option>
-              </select>
-            </div>
-
-            <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Default UOM *</label>
-              <select
-                ref="uomInput"
-                v-model="form.stock_uom"
-                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
-                @keydown.enter.prevent="taxTemplateInput?.focus()"
-              >
-                <option v-for="u in metadata.uoms" :key="u.name" :value="u.name">{{ u.name }}</option>
-              </select>
-            </div>
-
-            <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Tax Template</label>
-              <select
-                ref="taxTemplateInput"
-                v-model="form.item_tax_template"
-                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
-                @keydown.enter.prevent="rateInput?.focus()"
-              >
-                <option value="">No Tax / Exempt</option>
-                <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
-              </select>
-            </div>
-
-            <div class="space-y-[4px] relative">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Supplier</label>
-              <div class="relative">
-                <input
-                  ref="supplierInput"
-                  :value="supplierSearch"
-                  type="text"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-                  :class="form.supplier ? 'border-[var(--color-success)]' : ''"
-                  placeholder="Search supplier..."
-                  autocomplete="off"
-                  @input="onSupplierInput"
-                  @focus="showSupplierDropdown = true"
-                  @blur="setTimeout(() => { showSupplierDropdown = false }, 200)"
-                  @keydown.enter.prevent="onSupplierEnter"
-                  @keydown.escape="clearSupplier"
-                />
-                <button
-                  v-if="form.supplier"
-                  class="absolute right-[8px] top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl"
-                  @click.prevent="clearSupplier"
-                  tabindex="-1"
-                >&times;</button>
-                <div
-                  v-if="showSupplierDropdown && supplierOptions.length"
-                  class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[20px] py-[12px] shadow-xl"
-                >
-                  <button
-                    v-for="opt in supplierOptions"
-                    :key="opt.name"
-                    class="w-full rounded-lg px-[20px] py-[12px] text-left hover:bg-[var(--color-info)]/20 transition-colors flex flex-col gap-2"
-                    @mousedown.prevent="selectSupplier(opt)"
-                  >
-                    <span class="text-2xl font-bold text-[var(--color-text)]">{{ opt.label }}</span>
-                    <span class="text-base text-[var(--color-text-muted)]">{{ opt.name }}</span>
-                  </button>
-                </div>
-              </div>
-              <p v-if="form.supplier" class="text-lg text-[var(--color-success)] px-[20px]">Mapped: {{ form.supplier }}</p>
-            </div>
-          </div>
-
-          <!-- Right Section: Secondary Details -->
-          <div class="flex-1 space-y-[16px]">
-            <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Print Name</label>
-              <input
-                ref="itemPrintNameInput"
-                v-model="form.item_print_name"
-                type="text"
-                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-                placeholder="Print name..."
-                @keydown.enter.prevent="itemGroupInput?.focus()"
-              />
             </div>
 
             <!-- Extra Barcodes -->
@@ -173,6 +91,22 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Classification & Taxes -->
+          <div class="space-y-[16px]">
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Group *</label>
+              <select
+                ref="itemGroupInput"
+                v-model="form.item_group"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
+                @keydown.enter.prevent="hsnInput?.focus()"
+              >
+                <option value="">Select Group...</option>
+                <option v-for="g in metadata.item_groups" :key="g.name" :value="g.name">{{ g.name }}</option>
+              </select>
             </div>
 
             <div class="space-y-[4px] relative">
@@ -203,6 +137,34 @@
               </div>
             </div>
 
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Default UOM *</label>
+              <select
+                ref="uomInput"
+                v-model="form.stock_uom"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
+                @keydown.enter.prevent="taxTemplateInput?.focus()"
+              >
+                <option v-for="u in metadata.uoms" :key="u.name" :value="u.name">{{ u.name }}</option>
+              </select>
+            </div>
+
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Tax Template</label>
+              <select
+                ref="taxTemplateInput"
+                v-model="form.item_tax_template"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
+                @keydown.enter.prevent="rateInput?.focus()"
+              >
+                <option value="">No Tax / Exempt</option>
+                <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Column 3: Conversions, Rates & Supplier -->
+          <div class="space-y-[16px]">
             <!-- UOM Conversions -->
             <div class="space-y-[4px]">
               <div class="flex items-center justify-between px-[20px]">
@@ -249,6 +211,47 @@
                 <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Safety Stock</label>
                 <input ref="safetyStockInput" v-model.number="form.safety_stock" type="number" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-right font-mono text-4xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all placeholder:text-[var(--color-text-muted)]" placeholder="0" @keydown.enter.prevent="supplierInput?.focus()" />
               </div>
+            </div>
+
+            <div class="space-y-[4px] relative">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Supplier</label>
+              <div class="relative">
+                <input
+                  ref="supplierInput"
+                  :value="supplierSearch"
+                  type="text"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+                  :class="form.supplier ? 'border-[var(--color-success)]' : ''"
+                  placeholder="Search supplier..."
+                  autocomplete="off"
+                  @input="onSupplierInput"
+                  @focus="showSupplierDropdown = true"
+                  @blur="setTimeout(() => { showSupplierDropdown = false }, 200)"
+                  @keydown.enter.prevent="onSupplierEnter"
+                  @keydown.escape="clearSupplier"
+                />
+                <button
+                  v-if="form.supplier"
+                  class="absolute right-[8px] top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl"
+                  @click.prevent="clearSupplier"
+                  tabindex="-1"
+                >&times;</button>
+                <div
+                  v-if="showSupplierDropdown && supplierOptions.length"
+                  class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[20px] py-[12px] shadow-xl"
+                >
+                  <button
+                    v-for="opt in supplierOptions"
+                    :key="opt.name"
+                    class="w-full rounded-lg px-[20px] py-[12px] text-left hover:bg-[var(--color-info)]/20 transition-colors flex flex-col gap-2"
+                    @mousedown.prevent="selectSupplier(opt)"
+                  >
+                    <span class="text-2xl font-bold text-[var(--color-text)]">{{ opt.label }}</span>
+                    <span class="text-base text-[var(--color-text-muted)]">{{ opt.name }}</span>
+                  </button>
+                </div>
+              </div>
+              <p v-if="form.supplier" class="text-lg text-[var(--color-success)] px-[20px]">Mapped: {{ form.supplier }}</p>
             </div>
 
             <div class="space-y-[4px]">
