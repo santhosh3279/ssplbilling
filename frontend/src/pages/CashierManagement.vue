@@ -139,12 +139,7 @@
                     :class="(openingTotal-openingLedger)===0 ? 'text-[var(--color-text-muted)]' : (openingTotal-openingLedger)>0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                   {{ (openingTotal-openingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
-                <td class="px-2 py-3 text-center">
-                  <button v-if="(openingTotal-openingLedger)!==0" @click="openContra('Opening', openingTotal-openingLedger)"
-                    class="rounded bg-[var(--color-warning)]/20 border border-[var(--color-warning)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-warning)] hover:bg-[var(--color-warning)]/30 transition whitespace-nowrap">
-                    Contra
-                  </button>
-                </td>
+                <td class="px-2 py-3 text-center text-[var(--color-text-muted)]">—</td>
               </tr>
 
               <!-- Mid-Day-1 row -->
