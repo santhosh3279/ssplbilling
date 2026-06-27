@@ -721,3 +721,68 @@ def update_customer_details(customer=None, data=None):
 
     return {"name": cust.name, "customer_name": cust.customer_name}
 
+
+@frappe.whitelist()
+def get_customer_billing_details(customer):
+	"""Return mobile number, pricelist multiplication factor, ledger balance, last inv date, and GST ledger balance."""
+	if not customer:
+		return {}
+
+	# Use get_value to avoid loading full doc
+	cust_data = frappe.db.get_value(
+		"Customer",
+		customer,
+		["mobile_no", "pricelist_multiplication_factor"],
+		as_dict=True
+	)
+
+	balance_row = frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(debit) - SUM(credit), 0) AS balance
+		FROM `tabGL Entry`
+		WHERE party_type = 'Customer' AND party = %s AND is_cancelled = 0
+		""",
+		(customer,),
+		as_dict=True
+	)
+
+	# Calculate closing GST balance (from Quotations and GST Dummy Ledger)
+	q_total = frappe.db.sql(
+		"""
+		SELECT SUM(grand_total) FROM `tabQuotation`
+		WHERE quotation_to = 'Customer' AND party_name = %s AND docstatus < 2
+		""",
+		(customer,)
+	)[0][0] or 0.0
+
+	d_total = frappe.db.sql(
+		"""
+		SELECT SUM(debit - credit) FROM `tabGst Dummy Ledger`
+		WHERE customer = %s
+		""",
+		(customer,)
+	)[0][0] or 0.0
+	
+	gst_balance = float(q_total) + float(d_total)
+
+	last_inv = frappe.db.sql(
+		"""
+		SELECT posting_date
+		FROM `tabSales Invoice`
+		WHERE customer = %s AND docstatus = 1
+		ORDER BY posting_date DESC
+		LIMIT 1
+		""",
+		(customer,),
+		as_dict=True
+	)
+
+	return {
+		"mobile_no": (cust_data.mobile_no or "") if cust_data else "",
+		"pricelist_multiplication_factor": float(cust_data.pricelist_multiplication_factor or 1.0) if cust_data else 1.0,
+		"balance": float(balance_row[0].balance or 0) if balance_row else 0.0,
+		"gst_balance": gst_balance,
+		"last_invoice_date": str(last_inv[0].posting_date) if last_inv else None
+	}
+
+

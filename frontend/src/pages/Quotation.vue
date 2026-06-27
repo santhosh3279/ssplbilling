@@ -750,6 +750,24 @@ async function handleSelectSidebarItem(item) {
     customerName.value = data.customer_name || 'Select Customer...'
     customerState.value = data.state || ''
 
+    if (data.customer) {
+      try {
+        const custDetails = await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
+        customerMobile.value = custDetails.mobile_no || ''
+        customerDetails.value = custDetails.mobile_no || ''
+        customerBalance.value = custDetails.gst_balance ?? 0
+        customerModifier.value = custDetails.pricelist_multiplication_factor ?? null
+        if (custDetails.last_invoice_date) {
+          const d = new Date(custDetails.last_invoice_date)
+          customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+        } else {
+          customerLastInvDate.value = 'None'
+        }
+      } catch (err) {
+        console.error('Failed to load customer details:', err)
+      }
+    }
+
     // Settings
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
