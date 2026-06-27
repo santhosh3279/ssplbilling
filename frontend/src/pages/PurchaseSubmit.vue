@@ -127,9 +127,16 @@
         <template v-else>
           <!-- PREVIEW HEADER -->
           <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-sm z-10">
-            <div>
-              <h2 class="text-xl font-bold text-[var(--color-text)] leading-none mb-1">{{ selectedInvoice.name }}</h2>
-              <p class="text-sm font-medium text-[var(--color-text-muted)]">{{ selectedInvoice.supplier_name }}</p>
+            <div class="flex items-center gap-4">
+              <div>
+                <h2 class="text-xl font-bold text-[var(--color-text)] leading-none mb-1">{{ selectedInvoice.name }}</h2>
+                <p class="text-sm font-medium text-[var(--color-text-muted)]">{{ selectedInvoice.supplier_name }}</p>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] px-2.5 py-1 rounded-md border border-[var(--color-border)]">
+                <span>Date: <span class="font-bold text-[var(--color-text)]">{{ formatDate(selectedInvoice.posting_date) }}</span></span>
+                <span class="h-3 w-px bg-[var(--color-border)]"></span>
+                <span class="font-bold uppercase tracking-wider text-[var(--color-warning)] text-[10px]">DRAFT</span>
+              </div>
             </div>
             <div class="flex gap-3">
               <!-- BARCODE PRINT BUTTON -->
@@ -154,22 +161,6 @@
           <!-- PREVIEW CONTENT -->
           <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
             <div class="mx-auto max-w-3xl rounded-2xl bg-[var(--color-surface)] p-8 shadow-md border border-[var(--color-border)]">
-              <div class="flex justify-between mb-8 border-b border-[var(--color-border)] pb-8">
-                <div>
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Supplier</div>
-                  <div class="text-lg font-bold text-[var(--color-text)] leading-none mb-1">{{ selectedInvoice.supplier_name }}</div>
-                  <div class="text-sm font-medium text-[var(--color-text-muted)] font-mono">{{ selectedInvoice.supplier }}</div>
-                </div>
-                <div class="text-right">
-                  <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Purchase Details</div>
-                  <div class="text-sm text-[var(--color-text-muted)] mb-1">Date: <span class="font-bold text-[var(--color-text)]">{{ formatDate(selectedInvoice.posting_date) }}</span></div>
-                  <div class="flex justify-end">
-                    <span class="rounded px-2 py-0.5 text-[10px] uppercase font-bold border bg-[var(--color-surface-raised)] text-[var(--color-text)] border-[var(--color-border)]">
-                      DRAFT
-                    </span>
-                  </div>
-                </div>
-              </div>
 
               <table class="w-full text-left">
                 <thead>
