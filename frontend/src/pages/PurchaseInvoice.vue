@@ -1,6 +1,8 @@
 <template>
   <div class="h-screen bg-[var(--color-bg)] overflow-hidden">
     <Item_Invoice_Template
+      :show-sidebar="!isSubwindow"
+      :show-back-button="!isSubwindow"
       ref="invoiceTemplateRef"
       title="Purchase Invoice"
       :doc-number="invoiceNo"
@@ -697,6 +699,13 @@ import BarcodePrintPage from './BarcodePrintPage.vue'
 
 const router = useRouter()
 
+const props = defineProps({
+  isSubwindow: Boolean,
+  invoiceName: String
+})
+
+const emit = defineEmits(['close'])
+
 // --- Data Fetching & State Management ---
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
@@ -1241,7 +1250,13 @@ watch(warehouse, (newVal) => {
 
 // --- Methods ---
 
-function goBack() { router.push('/') }
+function goBack() {
+  if (props.isSubwindow) {
+    emit('close')
+  } else {
+    router.push('/')
+  }
+}
 
 function formatDateShort(dateStr) {
   if (!dateStr) return '-'
@@ -1421,6 +1436,10 @@ async function handleSave() {
       })
       if (res.invoice_name || res.grand_total !== undefined) {
         await releaseLock()
+        if (props.isSubwindow) {
+          emit('close')
+          return
+        }
         isReadOnly.value = true
         isSaved.value = true
         fetchRecentInvoices()
@@ -1547,11 +1566,11 @@ function handleCancel() {
   const hasParty = supplierId.value;
   const hasItems = items.value.length > 0;
 
-  if (!isReadOnly.value && (hasParty || hasItems)) {
+  if (!isReadOnly.value && (hasParty || hasItems) && !props.isSubwindow) {
     showExitWarning.value = true;
   } else {
-    if (items.value.length === 0 || isReadOnly.value) {
-      router.push('/');
+    if (items.value.length === 0 || isReadOnly.value || props.isSubwindow) {
+      goBack();
     } else {
       selectedRowIdx.value = -1
       editingRowIdx.value = -1
@@ -2372,7 +2391,7 @@ function handleRowKeydown(e, idx) {
     else focusRow(items.value.length - 1, 'down')
   }
   else if (e.key === 'Home') { e.preventDefault(); focusRow(0, 'up') }
-  else if (e.key === 'Escape') { e.preventDefault(); if (!items.value.length) router.push('/'); else focusBarcodeInput() }
+  else if (e.key === 'Escape') { e.preventDefault(); if (!items.value.length) goBack(); else focusBarcodeInput() }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteItem(idx) }
 }
 
@@ -2462,23 +2481,48 @@ useShortcuts(salesInvoiceShortcuts({
       deleteItem(selectedRowIdx.value)
     }
   },
-}))
+}), props.isSubwindow ? 'subwindow' : 'local')
 
 function handleBeforeUnload() {
   releaseLock()
 }
 
+function handleGlobalEscape(e) {
+  if (e.key === 'Escape') {
+    const modalOpen = showSeriesModal.value || showSupplierModal.value || 
+                      showItemSearch.value || showPrintModal.value || 
+                      showJumpModal.value || showIncentiveModal.value || 
+                      showClearWarning.value || showExitWarning.value || 
+                      showShortcutPage.value || showPriceListUpdate.value || 
+                      showBarcodeModal.value ||
+                      quickSearchResults.value.length > 0 ||
+                      pendingItem.value || editingRowIdx.value !== -1;
+
+    if (!modalOpen) {
+      goBack();
+    }
+  }
+}
+
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
-  fetchRecentInvoices()
-  fetchAllowedSeries('Purchase Invoice')
-  showSeriesModal.value = true
+  if (props.isSubwindow) {
+    window.addEventListener('keydown', handleGlobalEscape)
+  }
+  if (props.isSubwindow && props.invoiceName) {
+    handleSelectSidebarItem({ name: props.invoiceName })
+  } else {
+    fetchRecentInvoices()
+    fetchAllowedSeries('Purchase Invoice')
+    showSeriesModal.value = true
+  }
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Purchase', priceList.value, warehouse.value)
   }
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalEscape)
   window.removeEventListener('beforeunload', handleBeforeUnload)
   releaseLock()
 })

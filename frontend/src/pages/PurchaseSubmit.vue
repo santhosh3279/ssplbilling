@@ -139,6 +139,14 @@
               </div>
             </div>
             <div class="flex gap-3">
+              <!-- MODIFY BUTTON -->
+              <button
+                class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
+                @click="showModifyModal = true"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+                <span>Modify</span>
+              </button>
               <!-- BARCODE PRINT BUTTON -->
               <button
                 class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
@@ -268,6 +276,15 @@
       :items="previewItems"
       @close="showBarcodeModal = false"
     />
+
+    <!-- MODIFY BILL SUBWINDOW -->
+    <div v-if="showModifyModal" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
+      <PurchaseInvoice 
+        is-subwindow 
+        :invoice-name="selectedInvoice?.name" 
+        @close="handleModifyClose" 
+      />
+    </div>
   </div>
 </template>
 
@@ -275,9 +292,10 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice } from '../api.js'
-import { useShortcuts, useSubwindow } from '../services/shortcutManager'
+import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
+import PurchaseInvoice from './PurchaseInvoice.vue'
 
 const router = useRouter()
 function getTodayIST() {
@@ -297,6 +315,11 @@ const errorMsg = ref('')
 const successMsg = ref('')
 const showPrintModal = ref(false)
 const showBarcodeModal = ref(false)
+const showModifyModal = ref(false)
+
+useSubwindowWatcher(showPrintModal)
+useSubwindowWatcher(showBarcodeModal)
+useSubwindowWatcher(showModifyModal)
 
 const searchQuery = ref('')
 const filterDate = ref(getTodayIST())
@@ -314,7 +337,8 @@ useShortcuts({
   'F5':        () => loadInvoices(),
   'F9':        () => { if (selectedInvoice.value && !isSubmitting.value) confirmSubmission() },
   'F10':       () => { if (selectedInvoice.value) handleBarcodePrint() },
-  'F11':       () => { if (selectedInvoice.value) handleBillPrint() }
+  'F11':       () => { if (selectedInvoice.value) handleBillPrint() },
+  'CTRL+M':    () => { if (selectedInvoice.value) showModifyModal.value = true }
 }, props.isSubWindow ? 'subwindow' : 'local')
 
 function navigateBills(dir) {
@@ -406,6 +430,20 @@ function handleBarcodePrint() {
 
 function handleBillPrint() {
   showPrintModal.value = true
+}
+
+async function handleModifyClose() {
+  showModifyModal.value = false
+  if (selectedInvoice.value) {
+    const currentName = selectedInvoice.value.name
+    await loadInvoices()
+    const inv = invoices.value.find(i => i.name === currentName)
+    if (inv) {
+      selectedInvoice.value = null
+      await nextTick()
+      await selectInvoice(inv)
+    }
+  }
 }
 
 async function confirmSubmission() {
