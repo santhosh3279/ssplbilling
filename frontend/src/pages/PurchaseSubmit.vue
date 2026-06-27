@@ -98,7 +98,7 @@
                   {{ inv.name }}
                 </span>
                 <span class="text-[18px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-success)]'">
-                  ₹{{ fmt(inv.grand_total) }}
+                  {{ fmt(inv.grand_total) }}
                 </span>
               </div>
               <div class="truncate text-[21px] font-semibold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'">
@@ -179,8 +179,8 @@
                       <div class="font-bold text-[var(--color-text)]">{{ item.item_name }}</div>
                     </td>
                     <td class="py-2 px-2 text-right text-[var(--color-text)] font-medium">{{ item.qty }} {{ item.uom }}</td>
-                    <td class="py-2 px-2 text-right text-[var(--color-text)] font-mono">₹{{ fmt(item.rate) }}</td>
-                    <td class="py-2 px-2 text-right font-bold text-[var(--color-text)] font-mono">₹{{ fmt(item.qty * item.rate) }}</td>
+                    <td class="py-2 px-2 text-right text-[var(--color-text)] font-mono">{{ fmt(item.rate) }}</td>
+                    <td class="py-2 px-2 text-right font-bold text-[var(--color-text)] font-mono">{{ fmt(item.qty * item.rate) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -189,7 +189,7 @@
                 <div class="w-64 space-y-3">
                   <div class="flex justify-between border-t border-[var(--color-border)] pt-3 text-lg font-bold text-[var(--color-text)]">
                     <span>Grand Total</span>
-                    <span class="font-mono text-[var(--color-warning)]">₹{{ fmt(selectedInvoice.grand_total) }}</span>
+                    <span class="font-mono text-[var(--color-warning)]">{{ fmt(selectedInvoice.grand_total) }}</span>
                   </div>
                 </div>
               </div>
@@ -212,7 +212,7 @@
               <div class="absolute top-0 left-0 w-full h-1 bg-[var(--color-warning)]"></div>
               <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-warning)] mb-2">Total Payable to Supplier</div>
               <div class="text-4xl font-black tracking-tight text-[var(--color-text)] font-mono">
-                ₹{{ fmt(selectedInvoice.grand_total) }}
+                {{ fmt(selectedInvoice.grand_total) }}
               </div>
               <div class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-surface-raised)] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text)]">
                 Credit Purchase
