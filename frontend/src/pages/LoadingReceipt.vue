@@ -123,9 +123,16 @@
           </div>
         </div>
 
-        <!-- Sidebar footer: count -->
-        <div class="shrink-0 border-t border-[var(--color-border)] px-2 py-3 text-center">
-          <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ sidebarReceipts.length }} receipt{{ sidebarReceipts.length !== 1 ? 's' : '' }}</span>
+        <!-- Sidebar footer: count & total -->
+        <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-3 py-3 flex flex-col gap-1">
+          <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+            <span>Count</span>
+            <span>Day Total</span>
+          </div>
+          <div class="flex items-baseline justify-between font-bold">
+            <span class="text-sm text-[var(--color-text)]">{{ sidebarReceipts.length }} receipt{{ sidebarReceipts.length !== 1 ? 's' : '' }}</span>
+            <span class="font-mono text-lg text-[var(--color-success)]">&#8377;{{ sidebarTotal.toFixed(2) }}</span>
+          </div>
         </div>
       </aside>
 
@@ -506,6 +513,7 @@ watch(sidebarDate, fetchSidebarReceipts)
 
 // ── COMPUTED ─────────────────────────────────────────────────────────
 const grandTotal = computed(() => rows.value.reduce((s, r) => s + (r.amount || 0), 0))
+const sidebarTotal = computed(() => sidebarReceipts.value.reduce((s, r) => s + (r.total || 0), 0))
 
 // ── REF HELPERS ──────────────────────────────────────────────────────
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
