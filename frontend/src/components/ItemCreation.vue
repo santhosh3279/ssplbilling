@@ -213,50 +213,63 @@
               </div>
             </div>
 
-            <div class="space-y-[4px] relative">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Supplier</label>
-              <div class="relative">
-                <input
-                  ref="supplierInput"
-                  :value="supplierSearch"
-                  type="text"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-                  :class="form.supplier ? 'border-[var(--color-success)]' : ''"
-                  placeholder="Search supplier..."
-                  autocomplete="off"
-                  @input="onSupplierInput"
-                  @focus="showSupplierDropdown = true"
-                  @blur="setTimeout(() => { showSupplierDropdown = false }, 200)"
-                  @keydown.enter.prevent="onSupplierEnter"
-                  @keydown.escape="clearSupplier"
-                />
-                <button
-                  v-if="form.supplier"
-                  class="absolute right-[8px] top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl"
-                  @click.prevent="clearSupplier"
-                  tabindex="-1"
-                >&times;</button>
-                <div
-                  v-if="showSupplierDropdown && supplierOptions.length"
-                  class="absolute left-0 right-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[20px] py-[12px] shadow-xl"
-                >
-                  <button
-                    v-for="opt in supplierOptions"
-                    :key="opt.name"
-                    class="w-full rounded-lg px-[20px] py-[12px] text-left hover:bg-[var(--color-info)]/20 transition-colors flex flex-col gap-2"
-                    @mousedown.prevent="selectSupplier(opt)"
-                  >
-                    <span class="text-2xl font-bold text-[var(--color-text)]">{{ opt.label }}</span>
-                    <span class="text-base text-[var(--color-text-muted)]">{{ opt.name }}</span>
-                  </button>
+            <!-- Suppliers Mapping -->
+            <div class="space-y-[4px]">
+              <div class="flex items-center justify-between px-[20px]">
+                <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Suppliers Mapping</label>
+                <button type="button" @click="addSupplierRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add Supplier</button>
+              </div>
+              
+              <div class="space-y-[12px] max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                <div v-for="(row, idx) in form.suppliers" :key="idx" class="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-3 relative">
+                  <!-- Remove button -->
+                  <button type="button" @click="removeSupplierRow(idx)" class="absolute right-[8px] top-[4px] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-3xl font-bold leading-none">&times;</button>
+                  
+                  <!-- Supplier Search Box -->
+                  <div class="space-y-[4px] relative">
+                    <label class="text-xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Supplier #{{ idx + 1 }}</label>
+                    <div class="relative">
+                      <input
+                        type="text"
+                        class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[16px] py-[8px] text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+                        :class="row.supplier ? 'border-[var(--color-success)]' : ''"
+                        placeholder="Search supplier..."
+                        autocomplete="off"
+                        :value="row.supplier_label || ''"
+                        @input="e => onSupplierRowInput(idx, e.target.value)"
+                        @focus="activeSupplierRowIdx = idx"
+                        @blur="onSupplierRowBlur"
+                      />
+                      <div
+                        v-if="activeSupplierRowIdx === idx && supplierOptions.length"
+                        class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[16px] py-[8px] shadow-xl"
+                      >
+                        <button
+                          v-for="opt in supplierOptions"
+                          :key="opt.name"
+                          type="button"
+                          class="w-full rounded-lg px-[16px] py-[8px] text-left hover:bg-[var(--color-info)]/20 transition-colors flex flex-col gap-1"
+                          @mousedown.prevent="selectSupplierForRow(idx, opt)"
+                        >
+                          <span class="text-xl font-bold text-[var(--color-text)]">{{ opt.label }}</span>
+                          <span class="text-sm text-[var(--color-text-muted)]">{{ opt.name }}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <p v-if="row.supplier" class="text-base text-[var(--color-success)]">Mapped: {{ row.supplier }}</p>
+                  </div>
+
+                  <!-- Supplier Part No Box -->
+                  <div class="space-y-[4px]">
+                    <label class="text-xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Supplier Part No / SKU</label>
+                    <input v-model="row.supplier_part_no" type="text" :disabled="!row.supplier" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[16px] py-[8px] font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all disabled:opacity-40 disabled:cursor-not-allowed" placeholder="SKU..." />
+                  </div>
+                </div>
+                
+                <div v-if="form.suppliers.length === 0" class="rounded-xl border border-dashed border-[var(--color-border)] p-8 text-center text-2xl text-[var(--color-text-muted)]">
+                  No suppliers mapped. Click "+ Add Supplier" to link one.
                 </div>
               </div>
-              <p v-if="form.supplier" class="text-lg text-[var(--color-success)] px-[20px]">Mapped: {{ form.supplier }}</p>
-            </div>
-
-            <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Supplier Part No</label>
-              <input ref="supplierPartNoInput" v-model="form.supplier_part_no" type="text" :disabled="!form.supplier" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] font-mono text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all disabled:opacity-40 disabled:cursor-not-allowed" placeholder="SKU..." @keydown.enter.prevent="handleSubmit" />
             </div>
           </div>
         </div>
@@ -314,8 +327,7 @@ function saveCache() {
     hsn_sac:           form.value.hsn_sac,
     stock_uom:         form.value.stock_uom,
     item_tax_template: form.value.item_tax_template,
-    supplier:          form.value.supplier,
-    supplier_label:    supplierSearch.value,
+    suppliers:         form.value.suppliers,
   }
   localStorage.setItem(CACHE_KEY, JSON.stringify(c))
 }
@@ -331,12 +343,13 @@ async function loadForEdit(itemCode) {
     form.value.stock_uom         = data.stock_uom         || 'Nos'
     form.value.standard_rate     = data.standard_rate     || 0
     form.value.safety_stock      = data.safety_stock      || 0
-    form.value.item_tax_template = data.item_tax_template || ''
-    form.value.supplier          = data.supplier          || ''
-    form.value.supplier_part_no  = data.supplier_part_no  || ''
+    form.value.suppliers         = (data.suppliers || []).map(s => ({
+      supplier: s.supplier,
+      supplier_part_no: s.supplier_part_no || '',
+      supplier_label: s.supplier,
+    }))
     form.value.uom_conversions   = data.uom_conversions   || []
     form.value.extra_barcodes    = data.extra_barcodes    || []
-    supplierSearch.value = data.supplier || ''
     autoBarcode.value = ''
     isBarcodeManual.value = true
   } catch (e) {
@@ -374,8 +387,7 @@ const form = ref({
   standard_rate: 0,
   safety_stock: 0,
   item_tax_template: '',
-  supplier: '',
-  supplier_part_no: '',
+  suppliers: [],
   uom_conversions: [],
   extra_barcodes: [],
 })
@@ -397,15 +409,22 @@ function removeUomRow(idx) {
 }
 
 // ── Supplier search state ──────────────────────────────────────────────────
-const supplierSearch = ref('')          // display label
 const supplierOptions = ref([])
-const showSupplierDropdown = ref(false)
+const activeSupplierRowIdx = ref(-1)
 let supplierSearchTimeout = null
 
-async function onSupplierInput(e) {
-  const q = e.target.value
-  supplierSearch.value = q
-  form.value.supplier = ''             // clear until a match is selected
+function addSupplierRow() {
+  form.value.suppliers.push({ supplier: '', supplier_part_no: '', supplier_label: '' })
+}
+
+function removeSupplierRow(idx) {
+  form.value.suppliers.splice(idx, 1)
+}
+
+async function onSupplierRowInput(idx, q) {
+  const row = form.value.suppliers[idx]
+  row.supplier_label = q
+  row.supplier = ''             // clear until a match is selected
   clearTimeout(supplierSearchTimeout)
   if (!q.trim()) { supplierOptions.value = []; return }
   supplierSearchTimeout = setTimeout(async () => {
@@ -415,29 +434,18 @@ async function onSupplierInput(e) {
   }, 250)
 }
 
-function selectSupplier(opt) {
-  form.value.supplier = opt.name
-  supplierSearch.value = opt.label
+function selectSupplierForRow(idx, opt) {
+  const row = form.value.suppliers[idx]
+  row.supplier = opt.name
+  row.supplier_label = opt.label
   supplierOptions.value = []
-  showSupplierDropdown.value = false
-  nextTick(() => supplierPartNoInput.value?.focus())
+  activeSupplierRowIdx.value = -1
 }
 
-function clearSupplier() {
-  form.value.supplier = ''
-  supplierSearch.value = ''
-  supplierOptions.value = []
-}
-
-function onSupplierEnter() {
-  if (showSupplierDropdown.value && supplierOptions.value.length > 0) {
-    selectSupplier(supplierOptions.value[0])
-  } else if (form.value.supplier) {
-    supplierPartNoInput.value?.focus()
-  } else {
-    // If no supplier selected and no options found, submit the form
-    handleSubmit()
-  }
+function onSupplierRowBlur() {
+  setTimeout(() => {
+    activeSupplierRowIdx.value = -1
+  }, 200)
 }
 
 // Sync Item Print Name from Item Name by default (only if empty or matching)
@@ -564,8 +572,6 @@ async function handleSubmit() {
       const res = await updateItem({
         ...form.value,
         item_code: props.editItemCode,
-        supplier: form.value.supplier || '',
-        supplier_part_no: form.value.supplier_part_no || '',
       })
       saveCache()
       alert(`Item ${res.item_code} updated successfully!`)
@@ -581,8 +587,6 @@ async function handleSubmit() {
         ...form.value,
         is_manual_barcode: isBarcodeManual.value,
         naming_series: selectedSeries.value,
-        supplier: form.value.supplier || '',
-        supplier_part_no: form.value.supplier_part_no || '',
       })
       saveCache()
       alert(`Item ${res.name} created successfully!`)
@@ -614,12 +618,10 @@ function resetForm() {
     item_tax_template: cache.item_tax_template || '',
     standard_rate: 0,
     safety_stock: 0,
-    supplier:          cache.supplier          || '',
-    supplier_part_no: '',
+    suppliers:         cache.suppliers         || [],
     uom_conversions: [],
     extra_barcodes: [],
   }
-  supplierSearch.value  = cache.supplier_label || ''
   supplierOptions.value = []
   isBarcodeManual.value = false
   autoBarcode.value = ''

@@ -90,8 +90,16 @@ def create_item(data):
 	if data.get("item_tax_template"):
 		item.set("taxes", [{"item_tax_template": data["item_tax_template"]}])
 
-	# Add supplier mapping
-	if data.get("supplier"):
+	# Add supplier mapping (multiple support)
+	if data.get("suppliers"):
+		for row in data["suppliers"]:
+			sup = row.get("supplier")
+			if sup:
+				item.append("supplier_items", {
+					"supplier": sup,
+					"supplier_part_no": row.get("supplier_part_no") or "",
+				})
+	elif data.get("supplier"):
 		item.append("supplier_items", {
 			"supplier": data["supplier"],
 			"supplier_part_no": data.get("supplier_part_no") or "",
@@ -132,12 +140,13 @@ def get_item_for_edit(item_code):
 	if item.barcodes:
 		barcode = item.barcodes[0].barcode or item_code
 
-	# Supplier mapping (first entry)
-	supplier = ""
-	supplier_part_no = ""
-	if item.supplier_items:
-		supplier = item.supplier_items[0].supplier or ""
-		supplier_part_no = item.supplier_items[0].supplier_part_no or ""
+	# Supplier mapping (all entries)
+	suppliers = [
+		{"supplier": row.supplier, "supplier_part_no": row.supplier_part_no or ""}
+		for row in item.supplier_items
+	]
+	supplier = suppliers[0]["supplier"] if suppliers else ""
+	supplier_part_no = suppliers[0]["supplier_part_no"] if suppliers else ""
 
 	# Extra barcodes (all except the primary/item_code barcode)
 	extra_barcodes = [
@@ -166,6 +175,7 @@ def get_item_for_edit(item_code):
 		"item_tax_template": item_tax_template,
 		"supplier": supplier,
 		"supplier_part_no": supplier_part_no,
+		"suppliers": suppliers,
 		"uom_conversions": uom_conversions,
 		"extra_barcodes": extra_barcodes,
 	}
@@ -216,9 +226,17 @@ def update_item(data):
 	else:
 		item.set("taxes", [])
 
-	# Update supplier items (replace first entry)
+	# Update supplier items (multiple support)
 	item.supplier_items = []
-	if data.get("supplier"):
+	if data.get("suppliers"):
+		for row in data["suppliers"]:
+			sup = row.get("supplier")
+			if sup:
+				item.append("supplier_items", {
+					"supplier": sup,
+					"supplier_part_no": row.get("supplier_part_no") or "",
+				})
+	elif data.get("supplier"):
 		item.append("supplier_items", {
 			"supplier": data["supplier"],
 			"supplier_part_no": data.get("supplier_part_no") or "",
