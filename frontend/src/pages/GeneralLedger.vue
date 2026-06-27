@@ -292,7 +292,7 @@
     <transition name="slide">
       <div
         v-if="selectedEntry"
-        class="flex w-96 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl"
+        class="detail-panel flex w-96 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl"
       >
         <!-- Panel header -->
         <div class="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-raised)]">
@@ -827,4 +827,91 @@ function openInErpNext(voucherType, voucherNo) {
 
 <style scoped>
 * { font-weight: 400; }
+
+.detail-panel {
+  font-size: 19.5px !important;
+}
+.detail-panel .text-sm {
+  font-size: 21px !important;
+}
+.detail-panel .text-xs {
+  font-size: 18px !important;
+}
+.detail-panel .text-\[11px\] {
+  font-size: 16.5px !important;
+}
+.detail-panel .text-\[10px\] {
+  font-size: 15px !important;
+}
+.detail-panel svg {
+  width: 21px !important;
+  height: 21px !important;
+}
+
+/* Padding overrides (decreased to 0.25x) */
+.detail-panel .p-4 {
+  padding: 4px !important;
+}
+.detail-panel .p-3 {
+  padding: 3px !important;
+}
+.detail-panel .p-2 {
+  padding: 2px !important;
+}
+.detail-panel .p-1 {
+  padding: 1px !important;
+}
+.detail-panel .px-4 {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
+.detail-panel .py-3 {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+.detail-panel .px-2 {
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+.detail-panel .py-0\.5 {
+  padding-top: 0.5px !important;
+  padding-bottom: 0.5px !important;
+}
+.detail-panel .pt-4 {
+  padding-top: 4px !important;
+}
+.detail-panel .pt-2 {
+  padding-top: 2px !important;
+}
+.detail-panel .py-2 {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+.detail-panel .py-2\.5 {
+  padding-top: 2.5px !important;
+  padding-bottom: 2.5px !important;
+}
+
+/* Margin and spacing overrides (decreased to 0.25x) */
+.detail-panel .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 2px !important;
+}
+.detail-panel .mb-4 {
+  margin-bottom: 4px !important;
+}
+.detail-panel .mb-2 {
+  margin-bottom: 2px !important;
+}
+.detail-panel .mb-1 {
+  margin-bottom: 1px !important;
+}
+.detail-panel .mt-6 {
+  margin-top: 6px !important;
+}
+.detail-panel .mt-2 {
+  margin-top: 2px !important;
+}
+.detail-panel .mt-1 {
+  margin-top: 1px !important;
+}
 </style>
