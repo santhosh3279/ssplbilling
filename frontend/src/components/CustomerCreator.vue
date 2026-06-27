@@ -78,6 +78,7 @@
             @keydown.esc.stop="$emit('close')"
             @keydown.enter.prevent="handleFormEnter"
           >
+            <option value="">Select Group</option>
             <option v-for="cg in customerGroups" :key="cg" :value="cg">{{ cg }}</option>
           </select>
         </div>
@@ -231,7 +232,7 @@ const indianStates = [
 ]
 
 const defaultForm = () => ({
-  customer_name: '', customer_group: 'All Customer Groups',
+  customer_name: '', customer_group: '',
   mobile: '', whatsapp: '', email: '', gstin: '',
   address_name: '', address_line1: '', address_line2: '',
   city: 'Palakkad', pincode: '678000', state: 'Kerala',
@@ -401,6 +402,7 @@ function applyGstData() {
 
 function validate() {
   if (!form.value.customer_name.trim()) { alert('Customer Name is required'); return false }
+  if (!form.value.customer_group) { alert('Customer Group is required'); return false }
   if (!props.isEdit && (!form.value.mobile || !/^\d{10}$/.test(form.value.mobile))) {
     alert('Valid 10-digit Mobile required'); return false
   }
