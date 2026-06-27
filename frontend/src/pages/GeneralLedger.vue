@@ -362,7 +362,7 @@
                         class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
                         title="Open Invoice"
                       >
-                        O
+                        open
                       </button>
                     </div>
                     <span class="text-[var(--color-success)]">₹{{ fmt(it.allocated_amount) }}</span>
@@ -388,7 +388,7 @@
                         class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
                         title="Open Invoice"
                       >
-                        O
+                        open
                       </button>
                     </div>
                   </div>
@@ -950,12 +950,11 @@ function openInErpNext(voucherType, voucherNo) {
 .detail-panel .ref-open-btn {
   font-size: 11px !important;
   font-weight: bold !important;
-  width: 16px !important;
   height: 16px !important;
+  padding: 0 4px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   line-height: 1 !important;
-  padding: 0 !important;
 }
 </style>
