@@ -58,7 +58,18 @@
         </div>
         <div class="flex flex-col items-center justify-center py-4 gap-1">
           <span class="text-[18px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Entered Amount</span>
-          <span class="text-5xl font-black font-mono text-[var(--color-text)]">₹{{ fmt(enteredAmount) }}</span>
+          <div class="flex items-center gap-3">
+            <span class="text-5xl font-black font-mono text-[var(--color-text)]">₹{{ fmt(enteredAmount) }}</span>
+            <button
+              v-if="enteredAmount > 0"
+              type="button"
+              @click="autoFillAllocations(true)"
+              class="text-sm font-black uppercase bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 px-3 py-1 rounded-lg transition-all"
+              title="Auto-allocate entered amount"
+            >
+              Auto-Fill
+            </button>
+          </div>
         </div>
         <div class="flex flex-col items-center justify-center py-4 gap-1">
           <span class="text-[18px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] opacity-70">Total Allocated</span>
@@ -414,6 +425,7 @@ const props = defineProps({
   modalAmounts: { type: Object, default: () => ({}) },
   otherAllocations: { type: Array, default: () => [] },
   disablePayments: { type: Boolean, default: false },
+  autoFill: { type: Boolean, default: false },
   // Backward-compat props (used when data is passed in from parent)
   invoices: { type: Array, default: () => [] },
   unlinkedPayments: { type: Array, default: () => [] },
@@ -457,8 +469,60 @@ async function fetchData() {
     console.error('[OutstandingBillsModal] fetch failed:', e)
   } finally {
     localLoading.value = false
-    nextTick(focusFirstAllocate)
+    nextTick(() => {
+      autoFillAllocations()
+      focusFirstAllocate()
+    })
   }
+}
+
+function autoFillAllocations(force = false) {
+  if (props.enteredAmount <= 0) return
+
+  const currentlyAllocated = Object.values(localAmounts.value).reduce((s, v) => s + (parseFloat(v) || 0), 0)
+  if (!force && Math.abs(currentlyAllocated - props.enteredAmount) < 0.005) {
+    return
+  }
+
+  const newAmounts = {}
+  let remaining = props.enteredAmount
+
+  // Gather all items
+  const items = []
+  if (filteredInvoices.value) {
+    filteredInvoices.value.forEach(i => {
+      items.push({ key: i.name, posting_date: i.posting_date, item: i })
+    })
+  }
+  if (filteredPayments.value) {
+    filteredPayments.value.forEach(p => {
+      items.push({ key: p.name, posting_date: p.posting_date, item: p })
+    })
+  }
+  if (filteredJournals.value) {
+    filteredJournals.value.forEach(j => {
+      items.push({ key: j.reference_row, posting_date: j.posting_date, item: j })
+    })
+  }
+
+  // Sort oldest first
+  items.sort((a, b) => {
+    const da = a.posting_date ? new Date(a.posting_date) : new Date(0)
+    const db = b.posting_date ? new Date(b.posting_date) : new Date(0)
+    return da - db
+  })
+
+  for (const entry of items) {
+    if (remaining <= 0.005) break
+    const maxVal = getAdjustedOutstanding(entry.item)
+    if (maxVal <= 0.005) continue
+
+    const toAllocate = parseFloat(Math.min(remaining, maxVal).toFixed(2))
+    newAmounts[entry.key] = toAllocate
+    remaining = parseFloat((remaining - toAllocate).toFixed(2))
+  }
+
+  localAmounts.value = newAmounts
 }
 
 watch(() => props.modalAmounts, (newVal) => {
