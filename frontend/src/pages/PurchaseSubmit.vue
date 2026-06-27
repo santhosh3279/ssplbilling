@@ -97,11 +97,11 @@
                 <span class="font-mono text-[11px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-warning)]'">
                   {{ inv.name }}
                 </span>
-                <span class="text-xs font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-success)]'">
+                <span class="text-[18px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-success)]'">
                   ₹{{ fmt(inv.grand_total) }}
                 </span>
               </div>
-              <div class="truncate text-sm font-semibold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'">
+              <div class="truncate text-[21px] font-semibold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'">
                 {{ inv.supplier_name }}
               </div>
               <div class="flex items-center justify-between mt-1">
