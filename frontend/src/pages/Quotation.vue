@@ -1274,7 +1274,7 @@ async function handleSubmit() {
     const res = await frappePost('ssplbilling.api.quotation_api.submit_quotation', {
       quotation_name: invoiceNo.value
     })
-    if (res.status === 'Submitted') {
+    if (res.quotation_name) {
       isSubmitted.value = true
       isReadOnly.value = true
       fetchRecentQuotations()
