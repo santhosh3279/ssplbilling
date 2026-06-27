@@ -160,6 +160,76 @@
         </tr>
       </template>
 
+      <template #calculation-rows>
+        <div class="flex flex-1 items-stretch p-4 gap-6">
+          <!-- Summary Card -->
+          <div class="flex-[3] flex flex-col justify-center gap-4">
+            <div class="rounded-2xl border-2 border-[var(--color-highlight)]/30 bg-[var(--color-highlight)]/5 p-6 shadow-xl flex justify-between items-baseline">
+              <div class="text-2xl font-black uppercase tracking-[0.2em] text-[var(--color-highlight)]">Total Transfer Value</div>
+              <div class="flex items-baseline gap-3 font-bold text-[var(--color-success)]">
+                <span class="text-4xl font-black">₹</span>
+                <span class="font-mono text-7xl font-black leading-none tabular-nums">{{ totalAmount }}</span>
+              </div>
+            </div>
+            <div class="text-2xl font-bold text-[var(--color-text-muted)] px-2">
+              Total {{ items.length }} items
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex-[2] flex flex-col justify-center gap-3">
+            <!-- Row 1: Save or (New + Print) / (Edit + Print) -->
+            <div v-if="isReadOnly" class="flex gap-3">
+              <button 
+                ref="saveBtnRef" 
+                @click="handleSave" 
+                class="flex-1 rounded-xl py-5 text-center text-4xl font-bold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-all uppercase shadow-lg active:scale-[0.98] focus:ring-4 focus:ring-[var(--color-focus)]/50"
+              >
+                {{ saveButtonText }}
+              </button>
+              <button 
+                @click="handlePrint" 
+                class="flex-1 rounded-xl border-2 border-[var(--color-highlight)] bg-[var(--color-highlight)]/10 py-5 text-center text-4xl font-bold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-all uppercase shadow-lg active:scale-[0.98] focus:ring-4 focus:ring-[var(--color-highlight)]/30"
+              >
+                Print
+              </button>
+            </div>
+            <button 
+              v-else
+              ref="saveBtnRef" 
+              @click="handleSave" 
+              class="w-full rounded-xl py-5 text-center text-4xl font-bold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-all uppercase shadow-lg active:scale-[0.98] focus:ring-4 focus:ring-[var(--color-focus)]/50"
+            >
+              {{ saveButtonText }}
+            </button>
+
+            <!-- Row 2: Cancel / Submit / Print placeholder -->
+            <div class="flex gap-3">
+              <button 
+                @click="handleCancel" 
+                class="flex-1 rounded-xl border-2 border-[#C2A96E] bg-[#D4B896] py-4 text-center text-3xl font-bold text-[#4A3520] hover:brightness-105 transition-all shadow-lg active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                v-if="isDraft && isReadOnly" 
+                @click="handleSubmit" 
+                class="flex-1 rounded-xl border-2 border-[var(--color-success)] bg-[var(--color-success)]/10 py-4 text-center text-3xl font-bold text-[var(--color-success)] hover:bg-[var(--color-success)]/20 transition-all uppercase shadow-lg active:scale-[0.98]"
+              >
+                Submit
+              </button>
+              <button 
+                v-else
+                disabled
+                class="flex-1 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] py-4 text-center text-3xl font-bold text-[var(--color-text-muted)] opacity-30 cursor-not-allowed shadow-lg"
+              >
+                Print
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+
     </Stock_Template>
 
     <QuickItemSearch
@@ -192,6 +262,15 @@
       @close="showExitWarning = false"
       @confirm="showExitWarning = false; goBack()"
     />
+
+    <!-- Print Options Modal -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="transferNo"
+      doctype="Stock Entry"
+      :initial-template="defaultTemplate"
+      @close="closePrintModal"
+    />
   </div>
 </template>
 
@@ -203,8 +282,13 @@ import Stock_Template from '../components/Stock_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import Warning from '../components/Warning.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
+
+const showPrintModal = ref(false)
+const defaultTemplate = ref('')
+const saveBtnRef = ref(null)
 
 const router = useRouter()
 
@@ -550,7 +634,15 @@ function formatDate(dateString) {
 }
 
 function handlePrint() {
-  // Print logic if needed
+  if (!transferNo.value) {
+    alert('Please save the transfer first.')
+    return
+  }
+  showPrintModal.value = true
+}
+
+function closePrintModal() {
+  showPrintModal.value = false
 }
 
 function handleCancel() {
