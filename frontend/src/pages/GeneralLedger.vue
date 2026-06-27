@@ -693,15 +693,13 @@ function onGlobalKeydown(e) {
     e.preventDefault()
     showDateModal.value = true
   } else if (e.key === 'Enter') {
-    e.preventDefault()
     if (focusedIdx.value !== -1 && selectedEntry.value) {
+      e.preventDefault()
       if (['Sales Invoice', 'Quotation'].includes(selectedEntry.value.voucher_type)) {
         openBillDetail()
       } else {
         openInErpNext(selectedEntry.value.voucher_type, selectedEntry.value.voucher_no)
       }
-    } else {
-      showDateModal.value = true
     }
   } else if (e.key === 'Escape' && selectedEntry.value) {
     e.preventDefault()
