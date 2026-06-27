@@ -107,6 +107,7 @@
                 <th class="px-4 py-3 text-left">Item Code</th>
                 <th class="px-4 py-3 text-left">Item Name</th>
                 <th class="px-4 py-3 text-left w-24">UOM</th>
+                <th class="px-4 py-3 text-right w-24">Rate</th>
                 <th class="px-4 py-3 text-right w-32">Quantity</th>
                 <th class="px-4 py-3 text-center w-16">Action</th>
               </tr>
@@ -116,6 +117,7 @@
                 <td class="px-4 py-3 font-mono text-sm text-[var(--color-info)]">{{ item.item_code }}</td>
                 <td class="px-4 py-3 text-sm text-[var(--color-text)]">{{ item.item_name }}</td>
                 <td class="px-4 py-3 text-sm text-[var(--color-text-muted)] font-mono">{{ item.uom || 'Nos' }}</td>
+                <td class="px-4 py-3 text-right font-mono text-sm text-[var(--color-text)]">₹{{ fmt(item.rate) }}</td>
                 <td class="px-4 py-3 text-right">
                   <div class="flex items-center justify-end gap-2">
                     <button :disabled="printing" @click="item.qty = Math.max(1, item.qty - 1)" class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] disabled:opacity-40">&minus;</button>
@@ -134,7 +136,7 @@
                 </td>
               </tr>
               <tr v-if="!itemsToPrint.length">
-                <td colspan="5" class="px-4 py-12 text-center text-[var(--color-text-muted)] italic">
+                <td colspan="6" class="px-4 py-12 text-center text-[var(--color-text-muted)] italic">
                   No items added yet. Search and select items to print.
                 </td>
               </tr>
@@ -282,7 +284,7 @@ watch(query, (val) => {
   selectedIdx.value = 0
 })
 
-watch(() => props.show, (val) => {
+watch(() => props.show, async (val) => {
   if (val) {
     query.value = ''
     statusMsg.value = ''
@@ -290,6 +292,16 @@ watch(() => props.show, (val) => {
     syncInitialItems()
     loadResources()
     nextTick(() => itemInput.value?.focus())
+
+    // Automatically refresh cache on opening to get latest rates
+    await handleRefreshCache()
+    // Update rates of all currently listed items
+    itemsToPrint.value.forEach(item => {
+      const cached = lookupItemInCache(item.item_code)
+      if (cached) {
+        item.rate = cached.rate || 0
+      }
+    })
   }
 })
 
@@ -349,14 +361,23 @@ async function triggerPrint() {
   }
 }
 
+function fmt(val) {
+  return Number(val || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  })
+}
+
 function selectItem(item) {
-  const uom = item.uom || lookupItemInCache(item.item_code)?.uom || 'Nos'
+  const cached = lookupItemInCache(item.item_code)
+  const uom = item.uom || cached?.uom || 'Nos'
+  const rate = cached?.rate || item.rate || 0
   const existing = itemsToPrint.value.find(i => i.item_code === item.item_code)
   if (existing) {
     existing.qty++
     existing.uom = uom
+    existing.rate = rate
   } else {
-    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, uom, qty: 1 })
+    itemsToPrint.value.push({ item_code: item.item_code, item_name: item.item_name, uom, qty: 1, rate })
   }
   query.value = ''
   showResults.value = false
@@ -368,11 +389,15 @@ function removeItem(idx) {
 }
 
 function syncInitialItems() {
-  itemsToPrint.value = (props.initialItems || []).map(i => ({
-    item_code: i.item_code,
-    item_name: i.item_name,
-    uom: i.uom || lookupItemInCache(i.item_code)?.uom || 'Nos',
-    qty: i.qty || 1
-  }))
+  itemsToPrint.value = (props.initialItems || []).map(i => {
+    const cached = lookupItemInCache(i.item_code)
+    return {
+      item_code: i.item_code,
+      item_name: i.item_name,
+      uom: i.uom || cached?.uom || 'Nos',
+      qty: i.qty || 1,
+      rate: cached?.rate || i.rate || 0
+    }
+  })
 }
 </script>
