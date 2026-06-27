@@ -68,6 +68,7 @@ def create_supplier_full(data):
 	addr.pincode = data.get("pincode") or ""
 	addr.state = data.get("state") or ""
 	addr.country = "India"
+	addr.gstin = data.get("gstin") or ""
 	addr.append("links", {"link_doctype": "Supplier", "link_name": sup.name})
 	addr.insert(ignore_permissions=True)
 
@@ -231,6 +232,7 @@ def update_supplier_full(data):
 		addr.city = data.get("city") or addr.city
 		addr.pincode = data.get("pincode") or ""
 		addr.state = data.get("state") or ""
+		addr.gstin = data.get("gstin") or ""
 		addr.save(ignore_permissions=True)
 	else:
 		addr = frappe.new_doc("Address")
@@ -241,6 +243,7 @@ def update_supplier_full(data):
 		addr.city = data.get("city") or ""
 		addr.pincode = data.get("pincode") or ""
 		addr.state = data.get("state") or ""
+		addr.gstin = data.get("gstin") or ""
 		addr.country = "India"
 		addr.append("links", {"link_doctype": "Supplier", "link_name": supplier_id})
 		addr.insert(ignore_permissions=True)
