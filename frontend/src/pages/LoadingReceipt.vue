@@ -115,10 +115,10 @@
             >
               <div class="flex items-center justify-between gap-1">
                 <div class="truncate font-mono text-sm font-bold" :class="docName === r.name ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">{{ r.name }}</div>
-                <div class="shrink-0 font-mono text-base font-bold" :class="docName === r.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">&#8377;{{ (r.total || 0).toFixed(2) }}</div>
+                <div class="shrink-0 font-mono text-2xl font-black" :class="docName === r.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">&#8377;{{ (r.total || 0).toFixed(2) }}</div>
               </div>
-              <div class="truncate text-lg font-medium text-[var(--color-text)] mt-1">{{ r.customer_name || r.customer }}</div>
-              <div v-if="r.bill_no" class="truncate text-sm text-[var(--color-text-muted)]">{{ r.bill_no }}</div>
+              <div class="truncate text-2xl font-bold text-[var(--color-text)] mt-1">{{ r.customer_name || r.customer }}</div>
+              <div v-if="r.bill_no" class="truncate text-lg font-bold text-[var(--color-text-muted)]">{{ r.bill_no }}</div>
             </button>
           </div>
         </div>
