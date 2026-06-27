@@ -124,14 +124,14 @@
         </div>
 
         <!-- Sidebar footer: count & total -->
-        <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-3 py-3 flex flex-col gap-1">
-          <div class="flex items-center justify-between text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+        <div class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-3 py-4 flex flex-col gap-2">
+          <div class="flex items-center justify-between text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             <span>Count</span>
             <span>Day Total</span>
           </div>
           <div class="flex items-baseline justify-between font-bold">
-            <span class="text-xl text-[var(--color-text)]">{{ sidebarReceipts.length }} receipt{{ sidebarReceipts.length !== 1 ? 's' : '' }}</span>
-            <span class="font-mono text-2xl text-[var(--color-success)]">&#8377;{{ sidebarTotal.toFixed(2) }}</span>
+            <span class="text-3xl text-[var(--color-text)]">{{ sidebarReceipts.length }} receipt{{ sidebarReceipts.length !== 1 ? 's' : '' }}</span>
+            <span class="font-mono text-4xl text-[var(--color-success)]">&#8377;{{ sidebarTotal.toFixed(2) }}</span>
           </div>
         </div>
       </aside>
