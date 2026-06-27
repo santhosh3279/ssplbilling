@@ -358,7 +358,7 @@
                       <span class="text-[var(--color-info)]">{{ it.reference_name }}</span>
                       <button 
                         v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_doctype)"
-                        @click="openInErpNext(it.reference_doctype, it.reference_name)"
+                        @click="openInvoiceDetail(it.reference_doctype, it.reference_name)"
                         class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
                         title="Open Invoice"
                       >
@@ -384,7 +384,7 @@
                       <span class="font-mono">{{ it.reference_name }}</span>
                       <button 
                         v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_type)"
-                        @click="openInErpNext(it.reference_type, it.reference_name)"
+                        @click="openInvoiceDetail(it.reference_type, it.reference_name)"
                         class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
                         title="Open Invoice"
                       >
@@ -607,6 +607,16 @@ function openBillDetail() {
   billName.value = selectedEntry.value.voucher_no
   billType.value = selectedEntry.value.voucher_type
   showBillDetail.value = true
+}
+
+function openInvoiceDetail(voucherType, voucherNo) {
+  if (voucherType === 'Sales Invoice') {
+    billName.value = voucherNo
+    billType.value = voucherType
+    showBillDetail.value = true
+  } else {
+    openInErpNext(voucherType, voucherNo)
+  }
 }
 
 // ── Print Logic ──
