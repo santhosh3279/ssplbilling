@@ -8,11 +8,6 @@
         <span class="text-sm text-[var(--color-text-muted)]">|</span>
         <span class="text-sm font-bold text-[var(--color-text)] uppercase tracking-tight">Loading Receipt</span>
         <span v-if="docName" class="rounded bg-[var(--color-surface-raised)] px-2 py-0.5 font-mono text-xs text-[var(--color-info)]">{{ docName }}</span>
-        <span class="text-sm text-[var(--color-text-muted)]">|</span>
-        <div class="flex items-center gap-2">
-          <span class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Today</span>
-          <span class="font-mono text-2xl font-black text-[var(--color-success)]">&#8377;{{ todayTotal.toFixed(2) }}</span>
-        </div>
       </div>
       <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Tab</kbd> Next field</span>
@@ -65,6 +60,12 @@
             @keydown.enter.prevent="showCustomerModal = true"
             @keydown.space.prevent="showCustomerModal = true"
           />
+        </div>
+
+        <!-- Today Total -->
+        <div class="ml-auto flex flex-col gap-1.5 items-end">
+          <span class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Today</span>
+          <span class="font-mono text-4xl font-black text-[var(--color-success)] leading-none mb-1">&#8377;{{ todayTotal.toFixed(2) }}</span>
         </div>
 
       </div>
