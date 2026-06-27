@@ -402,6 +402,7 @@ def create_quotation(data):
 		row = {
 			"item_code": i["item_code"],
 			"qty": i["qty"],
+			"uom": i.get("uom"),
 			"rate": i.get("rate", 0),
 			"price_list_rate": i.get("price_list_rate", i.get("rate", 0)),
 			"discount_percentage": i.get("discount_percentage", 0),
@@ -483,6 +484,7 @@ def update_quotation(data):
 		row = {
 			"item_code": i["item_code"],
 			"qty": i["qty"],
+			"uom": i.get("uom"),
 			"rate": i.get("rate", 0),
 			"price_list_rate": i.get("price_list_rate", i.get("rate", 0)),
 			"discount_percentage": i.get("discount_percentage", 0),

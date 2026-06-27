@@ -1281,6 +1281,7 @@ async function saveOrder() {
     items: activeItems.value.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
+      uom: i.uom || 'Nos',
       price_list_rate: i.rate,
       rate: i.rate * (1 - (i.discount || 0) / 100),
       discount_percentage: i.discount || 0,

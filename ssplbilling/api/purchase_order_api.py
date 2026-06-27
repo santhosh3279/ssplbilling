@@ -228,6 +228,7 @@ def create_purchase_order(data=None, **kwargs):
         row = {
             "item_code": item["item_code"],
             "qty": qty,
+            "uom": item.get("uom"),
             "price_list_rate": price_list_rate,
             "discount_percentage": disc,
             "rate": rate,
@@ -456,6 +457,7 @@ def update_purchase_order(data=None, **kwargs):
         row = {
             "item_code": item["item_code"],
             "qty": float(item["qty"]),
+            "uom": item.get("uom"),
             "price_list_rate": price_list_rate,
             "discount_percentage": disc,
             "rate": rate,
