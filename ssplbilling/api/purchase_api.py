@@ -584,3 +584,45 @@ def delete_purchase_invoice(invoice_name):
     """Delete a Draft Purchase Invoice."""
     frappe.delete_doc("Purchase Invoice", invoice_name)
     return {"status": "Deleted"}
+
+
+@frappe.whitelist()
+def link_supplier_to_items(supplier, items):
+    """
+    Link a supplier to multiple items in the Item Master (Item Supplier table).
+    `items` can be a JSON string or list of item codes.
+    """
+    if isinstance(items, str):
+        items = json.loads(items)
+
+    if not supplier or not items:
+        return {"status": "error", "message": "Supplier and items are required"}
+
+    if not frappe.db.exists("Supplier", supplier):
+        return {"status": "error", "message": f"Supplier {supplier} not found"}
+
+    linked_count = 0
+    for item_code in items:
+        if not frappe.db.exists("Item", item_code):
+            continue
+
+        item = frappe.get_doc("Item", item_code)
+        
+        # Check if supplier is already linked
+        already_linked = False
+        for s_item in item.get("supplier_items", []):
+            if s_item.supplier == supplier:
+                already_linked = True
+                break
+
+        if not already_linked:
+            item.append("supplier_items", {
+                "supplier": supplier,
+                "supplier_part_no": "",
+            })
+            item.flags.ignore_permissions = True
+            item.save()
+            linked_count += 1
+
+    return {"status": "success", "linked_count": linked_count}
+

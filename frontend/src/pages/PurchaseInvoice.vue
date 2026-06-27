@@ -457,6 +457,13 @@
             <button @click="handleIncentive" :disabled="isSubmitted" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isSubmitted ? 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/20 text-[var(--color-text-muted)] cursor-not-allowed' : 'border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]'">Incentive</button>
           </div>
           <button @click="handleBarcodePrint" @keydown.alt.p.prevent="handleBarcodePrint" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print Barcode</button>
+          <button 
+            @click="linkSupplierToAllItems" 
+            :disabled="!supplierId || !items.some(i => !i.deleted) || linkingSupplier" 
+            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ linkingSupplier ? 'Mapping Supplier...' : 'Map Supplier to Item Master' }}
+          </button>
         </div>
       </template>
 
@@ -677,7 +684,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { frappeGet, frappePost } from '../api'
+import { frappeGet, frappePost, linkSupplierToItems } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
@@ -2501,6 +2508,36 @@ function handleGlobalEscape(e) {
     if (!modalOpen) {
       goBack();
     }
+  }
+}
+const linkingSupplier = ref(false)
+
+async function linkSupplierToAllItems() {
+  if (!supplierId.value) {
+    alert('Please select a supplier first.')
+    return
+  }
+  const itemCodes = items.value.filter(i => !i.deleted && i.item_code).map(i => i.item_code)
+  if (!itemCodes.length) {
+    alert('No items found in the invoice.')
+    return
+  }
+  if (!confirm(`Are you sure you want to add supplier "${supplierName.value}" to all ${itemCodes.length} items in the Item Master?`)) {
+    return
+  }
+  linkingSupplier.value = true
+  try {
+    const res = await linkSupplierToItems(supplierId.value, itemCodes)
+    if (res.status === 'success') {
+      alert(`Successfully linked supplier to ${res.linked_count} item(s) in the Item Master!`)
+    } else {
+      alert('Failed: ' + res.message)
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Error linking supplier to items: ' + e.message)
+  } finally {
+    linkingSupplier.value = false
   }
 }
 

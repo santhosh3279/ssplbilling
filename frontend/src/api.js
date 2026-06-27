@@ -655,6 +655,17 @@ export async function submitPurchaseInvoice(invoiceName) {
   });
 }
 
+/**
+ * Link a supplier to multiple items in the Item Master.
+ */
+export async function linkSupplierToItems(supplier, items) {
+  return frappePost("ssplbilling.api.purchase_api.link_supplier_to_items", {
+    supplier,
+    items: JSON.stringify(items),
+  });
+}
+
+
 // ─── Item Creation Helpers ─────────────────────────────────────────
 
 /**
