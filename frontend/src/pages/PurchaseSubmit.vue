@@ -88,7 +88,7 @@
               :key="inv.name"
               :data-inv-name="inv.name"
               @click="selectInvoice(inv)"
-              class="mb-2 flex w-full flex-col gap-1.5 rounded-xl p-4 text-left transition-all outline-none group border shadow-sm"
+              class="mb-2 flex w-full flex-col gap-1 rounded-xl py-2.5 px-4 text-left transition-all outline-none group border shadow-sm"
               :class="selectedInvoice?.name === inv.name
                 ? 'bg-[var(--color-warning)] border-[var(--color-warning)] ring-2 ring-amber-500/30'
                 : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border-[var(--color-border)]'"
