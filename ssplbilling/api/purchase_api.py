@@ -359,7 +359,7 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
             "Purchase Invoice",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -367,13 +367,14 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
         invoices = frappe.get_all(
             "Purchase Invoice",
             filters=filters,
-            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "status", "modified", "docstatus"],
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus"],
             limit=int(limit),
             order_by="name desc",
         )
 
     for inv in invoices:
         inv["grand_total"] = float(inv["grand_total"] or 0)
+        inv["rounded_total"] = float(inv.get("rounded_total") or inv.get("grand_total") or 0)
         inv["customer_name"] = inv.get("supplier_name", "")
     return invoices
 

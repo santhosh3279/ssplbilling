@@ -356,8 +356,8 @@
         :available-series="['ALL', 'RETL', 'WHSL']"
         :draft-only="true"
         :sidebar-items="[
-          { name: 'INV-TEMP-001', grand_total: '2250', customer_name: 'Sample Customer', docstatus: 0 },
-          { name: 'INV-TEMP-002', grand_total: '1500', customer_name: 'John Doe', docstatus: 1 }
+          { name: 'INV-TEMP-001', grand_total: '2250', rounded_total: '2250', customer_name: 'Sample Customer', docstatus: 0 },
+          { name: 'INV-TEMP-002', grand_total: '1500', rounded_total: '1500', customer_name: 'John Doe', docstatus: 1 }
         ]"
         selected-sidebar-item-name="INV-TEMP-001"
         :items="[

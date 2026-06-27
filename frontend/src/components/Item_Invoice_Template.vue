@@ -96,7 +96,7 @@
                     {{ inv.mop }}
                   </span>
                 </div>
-                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.grand_total }}</span>
+                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.rounded_total ?? inv.grand_total }}</span>
               </div>
               <div class="truncate text-2xl group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer_name }}

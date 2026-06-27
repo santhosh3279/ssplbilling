@@ -330,7 +330,7 @@ def get_purchase_orders(query="", limit=20, posting_date=None, naming_series=Non
             "Purchase Order",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "supplier", "supplier_name", "transaction_date as posting_date", "grand_total", "status", "modified", "docstatus"],
+            fields=["name", "supplier", "supplier_name", "transaction_date as posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -338,13 +338,14 @@ def get_purchase_orders(query="", limit=20, posting_date=None, naming_series=Non
         orders = frappe.get_all(
             "Purchase Order",
             filters=filters,
-            fields=["name", "supplier", "supplier_name", "transaction_date as posting_date", "grand_total", "status", "modified", "docstatus"],
+            fields=["name", "supplier", "supplier_name", "transaction_date as posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus"],
             limit=int(limit),
             order_by="name desc",
         )
 
     for ord in orders:
         ord["grand_total"] = float(ord["grand_total"] or 0)
+        ord["rounded_total"] = float(ord.get("rounded_total") or ord.get("grand_total") or 0)
         ord["customer_name"] = ord.get("supplier_name", "")
     return orders
 

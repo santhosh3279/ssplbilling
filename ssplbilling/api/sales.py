@@ -36,13 +36,14 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
         "Sales Invoice",
         filters=filters,
         or_filters=or_filters,
-        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
+        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "rounded_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
         limit=int(limit),
         order_by="name desc",
     )
 
     for inv in invoices:
         inv["grand_total"] = float(inv["grand_total"] or 0)
+        inv["rounded_total"] = float(inv.get("rounded_total") or inv.get("grand_total") or 0)
         inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
 
     return invoices

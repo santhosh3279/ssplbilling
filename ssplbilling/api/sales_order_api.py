@@ -192,7 +192,7 @@ def get_sales_orders(query="", limit=50, transaction_date=None, show_submitted=F
 		"Sales Order",
 		filters=filters,
 		or_filters=or_filters,
-		fields=["name", "customer", "customer_name", "grand_total", "status", "docstatus", "transaction_date"],
+		fields=["name", "customer", "customer_name", "grand_total", "rounded_total", "status", "docstatus", "transaction_date"],
 		order_by="modified desc",
 		limit_page_length=int(limit),
 	)
@@ -203,6 +203,7 @@ def get_sales_orders(query="", limit=50, transaction_date=None, show_submitted=F
 			"customer": o.customer,
 			"customer_name": o.customer_name or o.customer,
 			"grand_total": float(o.grand_total or 0),
+			"rounded_total": float(o.rounded_total or o.grand_total or 0),
 			"status": o.status or ("Draft" if o.docstatus == 0 else "Submitted"),
 			"docstatus": o.docstatus,
 		}
