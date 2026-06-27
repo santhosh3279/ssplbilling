@@ -353,8 +353,18 @@
 
                 <!-- For Payment Entry References -->
                 <template v-else-if="it.reference_name">
-                  <div class="flex justify-between font-semibold">
-                    <span class="text-[var(--color-info)]">{{ it.reference_name }}</span>
+                  <div class="flex justify-between font-semibold items-center">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-[var(--color-info)]">{{ it.reference_name }}</span>
+                      <button 
+                        v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_doctype)"
+                        @click="openInErpNext(it.reference_doctype, it.reference_name)"
+                        class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
+                        title="Open Invoice"
+                      >
+                        O
+                      </button>
+                    </div>
                     <span class="text-[var(--color-success)]">₹{{ fmt(it.allocated_amount) }}</span>
                   </div>
                   <div class="text-[10px] text-[var(--color-text-muted)]">{{ it.reference_doctype }}</div>
@@ -362,13 +372,26 @@
 
                 <!-- For Journal Entry Accounts -->
                 <template v-else-if="it.account">
-                  <div class="flex justify-between font-semibold">
+                  <div class="flex justify-between font-semibold items-center">
                     <span class="truncate pr-2">{{ it.account }}</span>
                     <span :class="it.debit ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                       ₹{{ fmt(it.debit || it.credit) }} {{ it.debit ? 'Dr' : 'Cr' }}
                     </span>
                   </div>
-                  <div v-if="it.party" class="text-[10px] text-[var(--color-text-muted)]">Party: {{ it.party }}</div>
+                  <div class="flex items-center justify-between text-[10px] text-[var(--color-text-muted)] mt-0.5 w-full">
+                    <span v-if="it.party">Party: {{ it.party }}</span>
+                    <div v-if="it.reference_name" class="flex items-center gap-1">
+                      <span class="font-mono">{{ it.reference_name }}</span>
+                      <button 
+                        v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_type)"
+                        @click="openInErpNext(it.reference_type, it.reference_name)"
+                        class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
+                        title="Open Invoice"
+                      >
+                        O
+                      </button>
+                    </div>
+                  </div>
                 </template>
 
               </div>
@@ -913,5 +936,16 @@ function openInErpNext(voucherType, voucherNo) {
 }
 .detail-panel .mt-1 {
   margin-top: 1px !important;
+}
+.detail-panel .ref-open-btn {
+  font-size: 11px !important;
+  font-weight: bold !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding: 0 !important;
 }
 </style>
