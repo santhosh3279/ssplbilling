@@ -1292,6 +1292,7 @@ async function handleSave() {
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
+      uom: i.uom || 'Nos',
       rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount: i.discount || 0,

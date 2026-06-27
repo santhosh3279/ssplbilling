@@ -104,6 +104,7 @@ def _apply_payload_to_doc(doc, payload):
         item_row = {
             "item_code": item.get("item_code"),
             "qty": item.get("qty"),
+            "uom": item.get("uom"),
             "rate": rate,
             "price_list_rate": price_list_rate,
             "discount_percentage": frappe.utils.flt(item.get("discount")),
