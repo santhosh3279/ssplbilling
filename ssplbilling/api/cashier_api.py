@@ -83,7 +83,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
             "Sales Invoice",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "customer", "customer_name", "posting_date", "posting_time", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
+            fields=["name", "customer", "customer_name", "posting_date", "posting_time", "grand_total", "rounded_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -91,7 +91,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
         invoices = frappe.get_all(
             "Sales Invoice",
             filters=filters,
-            fields=["name", "customer", "customer_name", "posting_date", "posting_time", "grand_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
+            fields=["name", "customer", "customer_name", "posting_date", "posting_time", "grand_total", "rounded_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -99,6 +99,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
     result = []
     for inv in invoices:
         inv["grand_total"] = float(inv["grand_total"] or 0)
+        inv["rounded_total"] = float(inv.get("rounded_total") or inv["grand_total"] or 0)
         inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
         # Add item count
         inv["items_count"] = frappe.db.count("Sales Invoice Item", {"parent": inv["name"]})
@@ -150,6 +151,7 @@ def get_sales_invoice(invoice_name):
         "loading_amount": loading_amount,
         "other_charges_amount": other_charges_amount,
         "grand_total": float(si.grand_total or 0),
+        "rounded_total": float(si.rounded_total or si.grand_total or 0),
         "outstanding_amount": float(si.outstanding_amount or 0),
         "tax_template": si.taxes_and_charges or "",
         "is_inclusive": is_inclusive,
@@ -226,7 +228,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	card_ref_no = data.get("card_ref_no")
 
 	si = frappe.get_doc("Sales Invoice", invoice_name)
-	grand_total = float(si.grand_total)
+	grand_total = float(si.rounded_total or si.grand_total or 0)
 	company = si.company
 
 	if not is_credit:

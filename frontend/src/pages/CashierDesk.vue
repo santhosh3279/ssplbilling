@@ -205,7 +205,7 @@
               </div>
               <div class="flex items-center justify-between mb-0.5">
                 <div class="text-[17.5px] font-bold leading-tight" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-                <div class="font-mono text-[27px] font-bold shrink-0" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : (inv.grand_total < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.grand_total) }}</div>
+                <div class="font-mono text-[27px] font-bold shrink-0" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : (((inv.rounded_total || inv.grand_total) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.rounded_total || inv.grand_total) }}</div>
               </div>
               <div class="truncate text-[16.5px] mt-0.5" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
                 {{ inv.customer }}
@@ -281,7 +281,7 @@
               </div>
               <div class="flex items-center gap-3">
                 <!-- Compact Reconcile Alert -->
-                <button v-if="unallocatedPayments.length > 0 && (selectedInvoice.grand_total || 0) > 0" 
+                <button v-if="unallocatedPayments.length > 0 && (selectedInvoice.rounded_total || selectedInvoice.grand_total || 0) > 0" 
                   @click="showReconcileModal = true"
                   class="bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 rounded-2xl px-10 py-3 flex items-center gap-5 hover:bg-[var(--color-warning)]/20 transition-all group shadow-md min-w-[240px]"
                   title="Unallocated cash available to adjust"
@@ -318,7 +318,7 @@
 
                 <div class="flex items-center gap-4 bg-[var(--color-info)]/10 px-4 py-2 rounded-xl border border-[var(--color-info)]/20 shadow-sm">
                   <div class="text-[15px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
-                  <div class="text-[36px] font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.grand_total) }}</div>
+                  <div class="text-[36px] font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.rounded_total || selectedInvoice.grand_total) }}</div>
                 </div>
               </div>
             </div>
@@ -839,7 +839,7 @@ const todayStr = computed(() => {
 
 const amountToCollect = computed(() => {
   if (!selectedInvoice.value) return 0
-  const gt = Number(selectedInvoice.value.grand_total || 0)
+  const gt = Number(selectedInvoice.value.rounded_total || selectedInvoice.value.grand_total || 0)
   const os = selectedInvoice.value.outstanding_amount !== undefined && selectedInvoice.value.outstanding_amount !== null
     ? Number(selectedInvoice.value.outstanding_amount)
     : gt
@@ -1056,7 +1056,7 @@ async function selectInvoice(inv) {
       invoice_name: details.name
     })
     
-    let remaining = details.outstanding_amount || details.grand_total
+    let remaining = details.outstanding_amount || details.rounded_total || details.grand_total
     unallocatedPayments.value = (unallocated || []).map(pe => {
       const alloc = Math.min(Number(pe.unallocated_amount), remaining)
       remaining -= alloc
@@ -1458,7 +1458,7 @@ function handleEnter(e) {
     }
 
     // If already selected, proceed to next step
-    if (unallocatedPayments.value.length > 0 && (selectedInvoice.value.grand_total || 0) > 0) {
+    if (unallocatedPayments.value.length > 0 && (selectedInvoice.value.rounded_total || selectedInvoice.value.grand_total || 0) > 0) {
       showReconcileModal.value = true
     } else if (isCredit.value) {
       dueDateInput.value?.focus()
