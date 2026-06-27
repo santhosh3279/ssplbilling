@@ -124,7 +124,7 @@ def get_party_outstanding(party_type, party):
 					CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END AS name,
 					account,
 					SUM(ABS(amount_in_account_currency)) AS linked_amount
-				FROM `tabPayment Ledger`
+				FROM `tabPayment Ledger Entry`
 				WHERE (voucher_no IN %s OR against_voucher_no IN %s)
 				  AND against_voucher_no != voucher_no
 				  AND party = %s AND delinked = 0
@@ -135,7 +135,7 @@ def get_party_outstanding(party_type, party):
 			)
 			pl_links_map = {r["name"]: float(r["linked_amount"]) for r in pl_links}
 		except Exception:
-			pass  # tabPayment Ledger absent on this install
+			pass  # tabPayment Ledger Entry absent on this install
 
 		# Method 2: Payment Entry References pointing at these JEs (submitted PEs only)
 		per_map = {}

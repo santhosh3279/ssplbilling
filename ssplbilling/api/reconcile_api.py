@@ -83,7 +83,7 @@ def get_unlinked_entries(party_type, party):
 				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END as name,
 				account,
 				SUM(ABS(amount_in_account_currency)) as linked_amount
-			FROM `tabPayment Ledger`
+			FROM `tabPayment Ledger Entry`
 			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
 			  AND against_voucher_no != voucher_no
 			  AND party = %s AND delinked = 0
