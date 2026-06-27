@@ -537,32 +537,53 @@ function getAdjustedOutstanding(item) {
 
 function onAllocationChange(key) {
   lastModifiedKey.value = key
+  const item = currentInvoices.value.find(i => i.name === key) ||
+               currentPayments.value.find(p => p.name === key) ||
+               currentJournals.value.find(j => j.reference_row === key)
+  if (item) {
+    const maxVal = getAdjustedOutstanding(item)
+    const val = parseFloat(localAmounts.value[key]) || 0
+    if (val > maxVal) {
+      localAmounts.value[key] = maxVal
+    }
+  }
 }
 
 function emitAllocations() {
-  const allInvoices = currentInvoices.value.map(i => ({
-    reference_doctype: i.doctype,
-    reference_name: i.name,
-    total_amount: i.grand_total,
-    outstanding_amount: Math.abs(i.outstanding_amount),
-    allocated_amount: parseFloat(localAmounts.value[i.name]) || 0,
-  }))
-  const allJournals = currentJournals.value.map(j => ({
-    reference_doctype: 'Journal Entry',
-    reference_name: j.name,
-    total_amount: j.total_amount || j.unallocated_amount,
-    outstanding_amount: Math.abs(j.unallocated_amount),
-    allocated_amount: parseFloat(localAmounts.value[j.reference_row]) || 0,
-    _row: j.reference_row,
-  }))
-  const allPayments = currentPayments.value.map(p => ({
-    reference_doctype: 'Payment Entry',
-    reference_name: p.name,
-    total_amount: p.paid_amount,
-    outstanding_amount: Math.abs(p.unallocated_amount),
-    allocated_amount: parseFloat(localAmounts.value[p.name]) || 0,
-  }))
-  emit('update-allocations', [...allInvoices, ...allJournals, ...allPayments].filter(a => a.allocated_amount > 0))
+  const clamp = (val, maxVal) => Math.min(Math.max(0, parseFloat(val) || 0), maxVal)
+
+  const allInvoices = currentInvoices.value.map(i => {
+    const maxVal = getAdjustedOutstanding(i)
+    return {
+      reference_doctype: i.doctype,
+      reference_name: i.name,
+      total_amount: i.grand_total,
+      outstanding_amount: Math.abs(i.outstanding_amount),
+      allocated_amount: clamp(localAmounts.value[i.name], maxVal),
+    }
+  })
+  const allJournals = currentJournals.value.map(j => {
+    const maxVal = getAdjustedOutstanding(j)
+    return {
+      reference_doctype: 'Journal Entry',
+      reference_name: j.name,
+      total_amount: j.total_amount || j.unallocated_amount,
+      outstanding_amount: Math.abs(j.unallocated_amount),
+      allocated_amount: clamp(localAmounts.value[j.reference_row], maxVal),
+      _row: j.reference_row,
+    }
+  })
+  const allPayments = currentPayments.value.map(p => {
+    const maxVal = getAdjustedOutstanding(p)
+    return {
+      reference_doctype: 'Payment Entry',
+      reference_name: p.name,
+      total_amount: p.paid_amount,
+      outstanding_amount: Math.abs(p.unallocated_amount),
+      allocated_amount: clamp(localAmounts.value[p.name], maxVal),
+    }
+  })
+  emit('update-allocations', [...allInvoices, ...allJournals, ...allPayments].filter(a => a.allocated_amount > 0.005))
 }
 
 function confirmAdjustments() {
