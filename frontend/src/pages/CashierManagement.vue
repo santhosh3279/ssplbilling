@@ -122,7 +122,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text)] leading-tight">Opening</div>
+                      <div @click="openModal('Cashier Opening')" class="font-black text-[var(--color-text)] leading-tight cursor-pointer hover:text-[var(--color-info)] transition-colors">Opening</div>
                       <button @click="openModal('Cashier Opening')"
                         class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
@@ -153,7 +153,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text)] leading-tight">Mid-Day-1</div>
+                      <div @click="openModal('Mid-Day-1')" class="font-black text-[var(--color-text)] leading-tight cursor-pointer hover:text-[var(--color-info)] transition-colors">Mid-Day-1</div>
                       <button @click="openModal('Mid-Day-1')"
                         class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
@@ -179,7 +179,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-info)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text)] leading-tight">Mid-Day-2</div>
+                      <div @click="openModal('Mid-Day-2')" class="font-black text-[var(--color-text)] leading-tight cursor-pointer hover:text-[var(--color-info)] transition-colors">Mid-Day-2</div>
                       <button @click="openModal('Mid-Day-2')"
                         class="text-xs text-[var(--color-info)] hover:text-[var(--color-info)] font-bold">+ Record</button>
                     </div>
@@ -205,7 +205,7 @@
                   <div class="flex items-center gap-2">
                     <span class="h-3 w-3 rounded-full bg-[var(--color-danger)] flex-shrink-0"></span>
                     <div>
-                      <div class="font-black text-[var(--color-text)] leading-tight">Closing</div>
+                      <div @click="openModal('Closing')" class="font-black text-[var(--color-text)] leading-tight cursor-pointer hover:text-[var(--color-danger)] transition-colors">Closing</div>
                       <button @click="openModal('Closing')"
                         class="text-xs text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold">+ Record</button>
                     </div>
