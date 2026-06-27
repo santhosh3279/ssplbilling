@@ -175,11 +175,11 @@
           </button>
           <button
             @click="triggerPrint"
-            :disabled="!canPrint || printing"
+            :disabled="!canPrint || printing || refreshingCache"
             class="min-w-[160px] rounded-xl bg-[var(--color-supplier)] px-8 py-2.5 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-supplier)] disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <span v-if="printing" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            {{ printing ? 'Sending to Printer…' : 'Print Barcodes' }}
+            <span v-if="printing || refreshingCache" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+            {{ printing ? 'Sending to Printer…' : (refreshingCache ? 'Loading rates...' : 'Print Barcodes') }}
           </button>
         </div>
       </div>
