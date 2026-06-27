@@ -498,7 +498,7 @@
           </div>
 
           <!-- Right Side: Actions / Total Amount (Fixed) -->
-          <div class="flex-[51] bg-[var(--color-bg)] overflow-hidden px-2">
+          <div class="flex-[51] bg-[var(--color-bg)] overflow-y-auto custom-scrollbar px-2">
             <slot name="actions">
               <div class="flex flex-col gap-2 h-full py-2">
                 <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
@@ -774,4 +774,8 @@ function formatQty(val, uom) {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--color-highlight); }
 </style>
