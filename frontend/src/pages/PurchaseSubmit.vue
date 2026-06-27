@@ -174,6 +174,7 @@
               <table class="w-full text-left">
                 <thead>
                   <tr class="border-b border-[var(--color-border)] text-[16.5px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    <th class="py-1.5 px-2">Code</th>
                     <th class="py-1.5 px-2">Item</th>
                     <th class="py-1.5 px-2 text-right">Qty</th>
                     <th class="py-1.5 px-2 text-right">Rate</th>
@@ -182,9 +183,9 @@
                 </thead>
                 <tbody class="text-[21px]">
                   <tr v-for="item in previewItems" :key="item.item_code" class="border-b border-[var(--color-border)]">
+                    <td class="py-2 px-2 text-[16.5px] text-[var(--color-text-muted)] font-mono">{{ item.item_code }}</td>
                     <td class="py-2 px-2">
                       <div class="font-bold text-[var(--color-text)]">{{ item.item_name }}</div>
-                      <div class="text-[16.5px] text-[var(--color-text-muted)] font-mono">{{ item.item_code }}</div>
                     </td>
                     <td class="py-2 px-2 text-right text-[var(--color-text)] font-medium">{{ item.qty }} {{ item.uom }}</td>
                     <td class="py-2 px-2 text-right text-[var(--color-text)] font-mono">₹{{ fmt(item.rate) }}</td>
