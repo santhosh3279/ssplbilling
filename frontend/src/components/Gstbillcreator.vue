@@ -6,8 +6,8 @@
     class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
   >
     <div class="w-[500px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 shadow-2xl">
-      <div class="mb-6 flex items-center justify-between">
-        <div>
+      <div class="mb-6 flex items-start justify-between">
+        <div class="flex-1 mr-4">
           <h2 class="text-2xl font-bold text-[var(--color-text)]">
             {{ doctype === 'Sales Invoice' ? 'Create Sales Invoice' : 'Create GST Bill (Quotation)' }}
           </h2>
@@ -15,6 +15,13 @@
             Select naming series to create {{ doctype }} from this {{ doctype === 'Sales Invoice' ? 'Quotation' : 'Sales Invoice' }}
           </p>
         </div>
+        <button 
+          @click="$emit('close')" 
+          class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus:outline-none transition-colors"
+          aria-label="Close"
+        >
+          ✕
+        </button>
       </div>
 
       <div v-if="loading" class="flex flex-col items-center justify-center py-12">
@@ -62,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { frappeGet, frappePost } from '../api'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useRouter } from 'vue-router'
@@ -151,6 +158,9 @@ function handleKeydown(e) {
     if (allowedSeries.value[focusedIndex.value]) {
       selectSeries(allowedSeries.value[focusedIndex.value])
     }
+  } else if (e.key === 'Escape' || e.key === 'Esc') {
+    e.preventDefault()
+    emit('close')
   } else if (e.key >= '1' && e.key <= '9') {
     const idx = parseInt(e.key) - 1
     if (allowedSeries.value[idx]) {
