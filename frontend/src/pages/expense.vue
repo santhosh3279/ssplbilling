@@ -223,6 +223,15 @@
       @confirm="showExitWarning = false; router.push('/')"
     />
 
+    <!-- Unallocated Cash Modal -->
+    <Unallocated
+      :show="showUnallocatedModal"
+      :invoice="unallocatedInvoice"
+      :unallocated="unallocatedList"
+      @close="showUnallocatedModal = false"
+      @success="onReconcileSuccess"
+    />
+
     <!-- Success Popup -->
     <div v-if="showSuccess" class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
       <div class="rounded-3xl bg-[var(--color-surface)] p-6 shadow-2xl border-2 border-[var(--color-success)] flex items-center gap-6">
@@ -243,6 +252,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import Warning from '../components/Warning.vue'
+import Unallocated from '../components/Unallocated.vue'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 
 const router = useRouter()
@@ -381,6 +391,73 @@ function handleAccountEnter(idx) {
   }
 }
 
+const showUnallocatedModal = ref(false)
+const unallocatedInvoice = ref(null)
+const unallocatedList = ref([])
+
+async function checkUnallocatedForParty(idx) {
+  const row = form.rows[idx]
+  if (!row.account || (row.party_type !== 'Customer' && row.party_type !== 'Supplier')) return
+
+  try {
+    const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+      party_type: row.party_type,
+      party: row.account
+    })
+
+    const unallocated = []
+    if (res.payment_entries) {
+      res.payment_entries.forEach(pe => {
+        if (Number(pe.unallocated_amount) > 0.005) {
+          unallocated.push({
+            name: pe.name,
+            unallocated_amount: Number(pe.unallocated_amount),
+            posting_date: pe.posting_date,
+            mode_of_payment: pe.mode_of_payment || 'Cash',
+            reference_no: pe.reference_no,
+            reference_type: 'Payment Entry',
+            remarks: pe.remarks || '',
+          })
+        }
+      })
+    }
+    if (res.journal_entries) {
+      res.journal_entries.forEach(je => {
+        if (Number(je.unallocated_amount) > 0.005) {
+          unallocated.push({
+            name: je.name,
+            unallocated_amount: Number(je.unallocated_amount),
+            posting_date: je.posting_date,
+            mode_of_payment: 'Journal Entry',
+            reference_no: je.reference_no || je.name,
+            reference_type: 'Journal Entry',
+            remarks: je.remarks || '',
+          })
+        }
+      })
+    }
+
+    if (unallocated.length > 0 && res.invoices && res.invoices.length > 0) {
+      const inv = res.invoices[0]
+      unallocatedInvoice.value = {
+        name: inv.name,
+        customer_name: inv.party_name || row.account_name,
+        outstanding_amount: Number(inv.outstanding_amount),
+        advances: []
+      }
+      unallocatedList.value = unallocated
+      showUnallocatedModal.value = true
+    }
+  } catch (e) {
+    console.error('Failed to check unallocated payments:', e)
+  }
+}
+
+function onReconcileSuccess() {
+  showUnallocatedModal.value = false
+  fetchRowBalance(currentIdx.value)
+}
+
 function handleSelect(item) {
   showSearchModal.value = false
   const row = form.rows[currentIdx.value]
@@ -389,6 +466,7 @@ function handleSelect(item) {
   row.query = row.account_name
   row.party_type = item.type || ''
   fetchRowBalance(currentIdx.value)
+  checkUnallocatedForParty(currentIdx.value)
   
   nextTick(() => {
     setTimeout(() => {
