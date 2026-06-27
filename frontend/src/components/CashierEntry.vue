@@ -59,10 +59,22 @@
         <div class="grid grid-cols-2 gap-2">
           <div class="flex items-center justify-between gap-2">
             <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Balance</label>
-            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1 py-0.5 text-2xl font-mono text-right"
+            <div class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-1.5 py-0.5 text-2xl font-mono text-right flex items-center justify-end gap-1.5"
                  :class="loadingBalance ? 'text-[var(--color-text-muted)] italic' : (ledgerBalance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
-              {{ loadingBalance ? 'Fetching…' : Math.abs(ledgerBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-              <span v-if="!loadingBalance" class="text-[20px] ml-1">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
+              <span v-if="loadingBalance">Fetching…</span>
+              <template v-else>
+                <span>{{ Math.abs(ledgerBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+                <span class="text-[20px] ml-0.5">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
+              </template>
+              <button 
+                type="button"
+                @click.stop="fetchLedgerBalanceManual(form.cash)"
+                :disabled="loadingBalance || !form.cash"
+                class="ml-1 px-1.5 py-0.5 rounded text-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-midlight)]/40 transition active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center cursor-pointer"
+                title="Refresh Ledger Balance"
+              >
+                🔄
+              </button>
             </div>
           </div>
           <div class="flex items-center justify-between gap-2">
