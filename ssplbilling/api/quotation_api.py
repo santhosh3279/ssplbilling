@@ -746,7 +746,9 @@ def create_quotation_from_sales_invoice(sales_invoice_name, naming_series):
 
 
 @frappe.whitelist()
-def create_sales_invoice_from_quotation(quotation_name, naming_series):
+def create_sales_invoice_from_quotation(
+	quotation_name, naming_series, warehouse=None, income_account=None, cost_center=None
+):
 	"""Create a Sales Invoice from a saved Quotation."""
 	qt = frappe.get_doc("Quotation", quotation_name)
 
@@ -776,6 +778,12 @@ def create_sales_invoice_from_quotation(quotation_name, naming_series):
 				if tax.account_head and "GST" in tax.account_head.upper():
 					tax.included_in_print_rate = 1
 
+	if cost_center:
+		si.cost_center = cost_center
+		for tax in si.get("taxes", []):
+			if not tax.cost_center:
+				tax.cost_center = cost_center
+
 	si.additional_discount_percentage = qt.additional_discount_percentage
 	si.discount_amount = qt.discount_amount
 
@@ -787,9 +795,17 @@ def create_sales_invoice_from_quotation(quotation_name, naming_series):
 			"price_list_rate": item.price_list_rate or item.rate,
 			"discount_percentage": item.discount_percentage,
 			"uom": item.uom or "Nos",
-			"warehouse": item.warehouse
+			"warehouse": warehouse or item.warehouse
 		}
+		if income_account:
+			row_item["income_account"] = income_account
+		if cost_center:
+			row_item["cost_center"] = cost_center
 		si.append("items", row_item)
+
+	if warehouse:
+		for row_i in si.items:
+			row_i.warehouse = warehouse
 
 	si.custom_customer_name = qt.get("custom_customer_name") or ""
 	si.custom_address_line1 = qt.get("custom_address_line1") or ""

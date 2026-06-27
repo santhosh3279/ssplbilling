@@ -122,7 +122,10 @@ async function selectSeries(s) {
     } else {
       res = await frappePost('ssplbilling.api.quotation_api.create_sales_invoice_from_quotation', {
         quotation_name: props.invoiceName,
-        naming_series: s
+        naming_series: s,
+        warehouse: localStorage.getItem('wb-warehouse') || undefined,
+        income_account: localStorage.getItem('wb-income-account') || undefined,
+        cost_center: localStorage.getItem('wb-cost-center') || undefined
       })
     }
 
