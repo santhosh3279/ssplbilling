@@ -259,11 +259,7 @@
                     <p v-if="row.supplier" class="text-base text-[var(--color-success)]">Mapped: {{ row.supplier }}</p>
                   </div>
 
-                  <!-- Supplier Part No Box -->
-                  <div class="space-y-[4px]">
-                    <label class="text-xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Supplier Part No / SKU</label>
-                    <input v-model="row.supplier_part_no" type="text" :disabled="!row.supplier" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[16px] py-[8px] font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all disabled:opacity-40 disabled:cursor-not-allowed" placeholder="SKU..." />
-                  </div>
+
                 </div>
                 
                 <div v-if="form.suppliers.length === 0" class="rounded-xl border border-dashed border-[var(--color-border)] p-8 text-center text-2xl text-[var(--color-text-muted)]">
@@ -366,8 +362,6 @@ const uomInput = ref(null)
 const rateInput = ref(null)
 const safetyStockInput = ref(null)
 const taxTemplateInput = ref(null)
-const supplierInput = ref(null)
-const supplierPartNoInput = ref(null)
 
 const isSubmitting = ref(false)
 const isFetchingBarcode = ref(false)
