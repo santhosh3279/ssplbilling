@@ -83,7 +83,8 @@
         <input
           ref="searchInput"
           v-model="query"
-          class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
+          class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
+          style="font-size: 27px; padding: 2.4px 3.2px;"
           placeholder="Search by Name, Mobile, WhatsApp, GST, City..."
           @keydown.esc.stop="handleEsc"
         />
