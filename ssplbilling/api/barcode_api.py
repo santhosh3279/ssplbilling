@@ -38,7 +38,7 @@ def create_barcode_print_entry(items, bill_no=None, price_lists=None):
                         "item_code": item_code,
                         "item_name": item.get("item_name") or "",
                         "uom": item.get("uom") or "Nos",
-                        "qty": int(item.get("qty") or 1),
+                        "qty": int(item.get("qty") if item.get("qty") is not None and item.get("qty") != "" else 1),
                         "barcode": item.get("barcode") or "",
                         "rate_1": float(item.get("rate_1") or 0),
                         "rate_2": float(item.get("rate_2") or 0),

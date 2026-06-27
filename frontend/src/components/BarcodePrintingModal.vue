@@ -275,7 +275,7 @@ const results = computed(() => {
 })
 
 const canPrint = computed(() =>
-  itemsToPrint.value.length > 0 && !!selectedPrinter.value && !!selectedTemplate.value
+  itemsToPrint.value.some(i => i.qty > 0) && !!selectedPrinter.value && !!selectedTemplate.value
 )
 
 // ── watchers ─────────────────────────────────────────────────────────────────
@@ -327,8 +327,9 @@ async function triggerPrint() {
 
   try {
     // Step 1 — create Barcode_Printing doc entry
+    const itemsToSend = itemsToPrint.value.filter(i => i.qty > 0)
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
-      items: JSON.stringify(itemsToPrint.value),
+      items: JSON.stringify(itemsToSend),
       bill_no: props.billNo || null,
     })
 
