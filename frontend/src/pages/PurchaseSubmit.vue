@@ -456,15 +456,11 @@ async function confirmSubmission() {
   try {
     await submitPurchaseInvoice(selectedInvoice.value.name)
     
-    successMsg.value = `Purchase Invoice ${selectedInvoice.value.name} submitted successfully!`
-    
     const nameToRemove = selectedInvoice.value.name
-    setTimeout(() => {
-      invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
-      selectedInvoice.value = null
-      previewItems.value = []
-      successMsg.value = ''
-    }, 2000)
+    invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
+    selectedInvoice.value = null
+    previewItems.value = []
+    successMsg.value = ''
     
   } catch (e) {
     errorMsg.value = e.message
