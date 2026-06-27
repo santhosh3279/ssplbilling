@@ -94,7 +94,7 @@
                 : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border-[var(--color-border)]'"
             >
               <div class="flex items-start justify-between">
-                <span class="font-mono text-[11px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-warning)]'">
+                <span class="font-mono text-[16.5px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-warning)]'">
                   {{ inv.name }}
                 </span>
                 <span class="text-[18px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-success)]'">
