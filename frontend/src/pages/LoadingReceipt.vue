@@ -9,9 +9,9 @@
         <span class="text-sm font-bold text-[var(--color-text)] uppercase tracking-tight">Loading Receipt</span>
         <span v-if="docName" class="rounded bg-[var(--color-surface-raised)] px-2 py-0.5 font-mono text-xs text-[var(--color-info)]">{{ docName }}</span>
         <span class="text-sm text-[var(--color-text-muted)]">|</span>
-        <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Today</span>
-          <span class="font-mono text-sm font-black text-[var(--color-success)]">&#8377;{{ todayTotal.toFixed(2) }}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Today</span>
+          <span class="font-mono text-2xl font-black text-[var(--color-success)]">&#8377;{{ todayTotal.toFixed(2) }}</span>
         </div>
       </div>
       <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
