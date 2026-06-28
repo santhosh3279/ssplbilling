@@ -514,12 +514,8 @@ function handleDateConfirm(dates) {
 }
 
 function handleItemCreated(item) {
-  showCreationModal.value = false
-  // Refresh cache to include new item
-  preloadItems(true).then(() => {
-    // Select the new item after refresh
-    emit('select', item)
-  })
+  // Refresh cache to include new item in background
+  preloadItems(true)
 }
 
 function focus() {

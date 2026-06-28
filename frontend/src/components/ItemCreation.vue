@@ -592,6 +592,9 @@ async function handleSubmit() {
         tax_rate: 0
       })
       resetForm()
+      nextTick(() => {
+        itemNameInput.value?.focus()
+      })
     }
   } catch (e) {
     alert(`Failed to ${isEditMode.value ? 'update' : 'create'} item: ` + e.message)
