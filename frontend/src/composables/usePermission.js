@@ -46,6 +46,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'JournalContraEntry',
   'CashierManagement',
   'DailyReport',
+  'SingleEntry',
   'NamingSettings',
   'Payment',
   'Expense',
@@ -61,6 +62,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'JournalContraEntry',
   'Reports',
   'DailyReport',
+  'SingleEntry',
   'IncentiveRedeem',
   'Unreconciled',
 ])
@@ -153,6 +155,7 @@ const TILE_ROUTE_MAP = {
   'payment-reconciliation': 'Payment',
   'store-transfer':    'StoreTransfer',
   'repack':            'Repack',
+  'single-entry':      'SingleEntry',
   'naming-settings':   'NamingSettings',
   'invoice-template':  'Dashboard',
   'stock-template':    'Dashboard',
