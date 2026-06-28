@@ -168,11 +168,11 @@
 
           <!-- PREVIEW CONTENT -->
           <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-            <div class="mx-auto max-w-3xl rounded-2xl bg-[var(--color-surface)] p-8 shadow-md border border-[var(--color-border)]">
+            <div class="mx-auto max-w-4xl rounded-2xl bg-[var(--color-surface)] p-8 shadow-md border border-[var(--color-border)]">
 
               <table class="w-full text-left">
                 <thead>
-                  <tr class="border-b border-[var(--color-border)] text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <tr class="border-b border-[var(--color-border)] text-[16.5px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                     <th class="py-1.5 px-2">Code</th>
                     <th class="py-1.5 px-2">Item</th>
                     <th class="py-1.5 px-2 text-right">Qty</th>
@@ -180,9 +180,9 @@
                     <th class="py-1.5 px-2 text-right">Total</th>
                   </tr>
                 </thead>
-                <tbody class="text-sm">
+                <tbody class="text-[21px]">
                   <tr v-for="item in previewItems" :key="item.item_code" class="border-b border-[var(--color-border)]">
-                    <td class="py-2 px-2 text-[11px] text-[var(--color-text-muted)] font-mono">{{ item.item_code }}</td>
+                    <td class="py-2 px-2 text-[16.5px] text-[var(--color-text-muted)] font-mono">{{ item.item_code }}</td>
                     <td class="py-2 px-2">
                       <div class="font-bold text-[var(--color-text)]">{{ item.item_name }}</div>
                     </td>
@@ -194,8 +194,8 @@
               </table>
 
               <div class="mt-8 flex justify-end">
-                <div class="w-64 space-y-3">
-                  <div class="flex justify-between border-t border-[var(--color-border)] pt-3 text-lg font-bold text-[var(--color-text)]">
+                <div class="w-80 space-y-3">
+                  <div class="flex justify-between border-t border-[var(--color-border)] pt-3 text-[27px] font-bold text-[var(--color-text)]">
                     <span>Grand Total</span>
                     <span class="font-mono text-[var(--color-warning)]">{{ fmt(selectedInvoice.grand_total) }}</span>
                   </div>
