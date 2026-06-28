@@ -774,7 +774,7 @@ const showIncentiveModal = ref(false)
 const incentiveRows = ref([])
 const showCustomAddressModal = ref(false)
 const showHistoryModal = ref(false)
-const historyViewMode = ref('invoice') // 'invoice' or 'item'
+const historyViewMode = ref('item') // 'invoice' or 'item'
 const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
 
 const customerHistoryItemWise = computed(() => {
