@@ -16,6 +16,7 @@ async function createAddress(data, customerName) {
     pincode: data.pincode || '',
     state: data.state || '',
     country: 'India',
+    gstin: data.gstin || '',
     links: [{ link_doctype: 'Customer', link_name: customerName }],
   }
   return frappePost('frappe.client.insert', { doc })
@@ -125,6 +126,7 @@ export async function createCustomer(data) {
     mobile_no: data.mobile || '',
     email_id: data.email || '',
     gstin: data.gstin || '',
+    gst_category: data.gstin ? 'Registered Regular' : 'Unregistered',
     pricelist_multiplication_factor: data.pricelist_modifier != null
       ? (1 + data.pricelist_modifier / 100)
       : 1.0,

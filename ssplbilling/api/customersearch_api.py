@@ -522,6 +522,7 @@ def update_customer_full(data):
 	cust.mobile_no = data.get("mobile") or ""
 	cust.email_id = data.get("email") or ""
 	cust.gstin = data.get("gstin") or ""
+	cust.gst_category = "Registered Regular" if cust.gstin else "Unregistered"
 	
 	if "pricelist_modifier" in data:
 		mod = float(data.get("pricelist_modifier") or 0)
@@ -579,6 +580,7 @@ def update_customer_full(data):
 		addr.city = data.get("city") or addr.city
 		addr.pincode = data.get("pincode") or ""
 		addr.state = data.get("state") or ""
+		addr.gstin = data.get("gstin") or ""
 		addr.save(ignore_permissions=True)
 	else:
 		addr = frappe.get_doc({
@@ -591,6 +593,7 @@ def update_customer_full(data):
 			"city": data.get("city") or "",
 			"pincode": data.get("pincode") or "",
 			"state": data.get("state") or "",
+			"gstin": data.get("gstin") or "",
 			"country": "India",
 			"links": [{"link_doctype": "Customer", "link_name": customer_id}],
 		})
@@ -649,6 +652,7 @@ def quick_create_customer(data=None, **kwargs):
     cust.mobile_no = data.get("mobile", "")
     cust.email_id = data.get("email", "")
     cust.gstin = data.get("gstin", "")
+    cust.gst_category = "Registered Regular" if cust.gstin else "Unregistered"
 
     if "pricelist_modifier" in data:
         mod = float(data.get("pricelist_modifier") or 0)
@@ -669,6 +673,7 @@ def quick_create_customer(data=None, **kwargs):
     addr.city = data.get("city", "")
     addr.state = data.get("state", "")
     addr.pincode = data.get("pincode", "")
+    addr.gstin = data.get("gstin", "")
     addr.country = "India"
     addr.append("links", {"link_doctype": "Customer", "link_name": cust.name})
     addr.insert(ignore_permissions=True)
@@ -697,7 +702,9 @@ def update_customer_details(customer=None, data=None):
     if data.get("customer_name"): cust.customer_name = data["customer_name"]
     if data.get("mobile"): cust.mobile_no = data["mobile"]
     if data.get("email"): cust.email_id = data["email"]
-    if data.get("gstin"): cust.gstin = data["gstin"]
+    if data.get("gstin") is not None:
+        cust.gstin = data["gstin"]
+        cust.gst_category = "Registered Regular" if cust.gstin else "Unregistered"
     cust.save(ignore_permissions=True)
     addr_name = frappe.db.get_value("Dynamic Link", 
         {"link_doctype": "Customer", "link_name": customer, "parenttype": "Address"}, 
@@ -717,6 +724,7 @@ def update_customer_details(customer=None, data=None):
     if data.get("city") is not None: addr.city = data["city"]
     if data.get("state") is not None: addr.state = data["state"]
     if data.get("pincode") is not None: addr.pincode = data["pincode"]
+    if data.get("gstin") is not None: addr.gstin = data["gstin"]
     addr.save(ignore_permissions=True)
 
     return {"name": cust.name, "customer_name": cust.customer_name}
