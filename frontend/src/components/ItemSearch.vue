@@ -90,6 +90,7 @@
             <tr class="text-2xl uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
               <th class="p-[5px] text-left w-1/4">Item Code</th>
               <th class="p-[5px] text-left">Item Name</th>
+              <th class="p-[5px] text-left w-32">HSN</th>
               <th class="p-[5px] text-right">{{ priceList || 'Rate' }}</th>
               <th class="p-[5px] text-right">Stock</th>
             </tr>
@@ -112,6 +113,9 @@
               <td class="p-[5px]">
                 <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
               </td>
+              <td class="p-[5px]">
+                <div class="font-mono text-3xl" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text-muted)]'">{{ item.hsn_sac || '--' }}</div>
+              </td>
               <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-warning)]'">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
@@ -125,7 +129,7 @@
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
-              <td colspan="4" class="px-5 py-12 text-center text-[var(--color-text-muted)] text-xl italic">
+              <td colspan="5" class="px-5 py-12 text-center text-[var(--color-text-muted)] text-xl italic">
                 No items found matching "{{ query }}"
               </td>
             </tr>
