@@ -81,7 +81,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	items = frappe.get_all(
 		"Item",
 		filters=filters,
-		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac"],
+		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock"],
 		limit=0,
 		order_by="item_name asc",
 	)

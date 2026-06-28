@@ -129,6 +129,16 @@
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty, item.uom) }}</span>
           </td>
 
+          <!-- current stock (read-only) -->
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+            {{ getCachedStock(item.item_code) }}
+          </td>
+
+          <!-- safety stock (read-only) -->
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+            {{ getSafetyStock(item.item_code) }}
+          </td>
+
           <td class="p-0 border-r border-[var(--color-border)]">
             <select v-if="editingRowIdx === index && editingField === 'uom'"
               ref="editUomSelect"
@@ -1801,6 +1811,9 @@ function exitEditMode(idx, cancel = false) {
 function clearItem(idx) { if (idx !== -1 && items.value[idx]) { items.value.splice(idx, 1); if (editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null } } }
 
 function getItemUoms(itemCode) { const cached = lookupItemInCache(itemCode); return (cached && cached.uoms) ? cached.uoms.map(u => u.uom) : [] }
+
+function getCachedStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.stock ?? 0) : 0 }
+function getSafetyStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.safety_stock ?? 0) : 0 }
 
 function onUomChange(idx) {
   const item = items.value[idx]; if (!item) return
