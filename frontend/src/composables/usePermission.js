@@ -65,11 +65,8 @@ export const ACCOUNTS_ROUTES = new Set([
   'IncentiveRedeem',
 ])
 
-// Route names accessible by admin (excluding sale, purchase, accounts, ledger, and sspl special sections)
+// Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
 export const ADMIN_ROUTES = new Set([
-  'StockReconciliation',
-  'StoreTransfer',
-  'Repack',
   'Reports',
   'DailyReport',
   'SSPLBillingSettings',
