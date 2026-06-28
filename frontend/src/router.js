@@ -33,7 +33,6 @@ import DailyReport from './pages/DailyReport.vue'
 import StoreTransfer from './pages/StoreTransfer.vue'
 import SingleEntry from './pages/SingleEntry.vue'
 import Cancellation from './pages/Cancellation.vue'
-import PartyLink from './pages/PartyLink.vue'
 import NamingSettings from './pages/NamingSettings.vue'
 import Expense from './pages/expense.vue'
 import Repack from './pages/Repack.vue'
@@ -65,12 +64,6 @@ const routes = [
     name: 'NamingSettings',
     component: NamingSettings,
     meta: { title: 'Naming Settings' },
-  },
-  {
-    path: '/party-link',
-    name: 'PartyLink',
-    component: PartyLink,
-    meta: { title: 'Party Link' },
   },
   {
     path: '/cancellation',

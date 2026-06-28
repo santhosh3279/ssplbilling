@@ -34,7 +34,6 @@ export const BILLER_ROUTES = new Set([
   'DailyReport',
   'StockLedger',
   'StoreTransfer',
-  'PartyLink',
   'Repack',
   'OfferDisplay',
 ])
@@ -146,7 +145,6 @@ const TILE_ROUTE_MAP = {
   'store-transfer':    'StoreTransfer',
   'repack':            'Repack',
   'single-entry':      'SingleEntry',
-  'party-link':        'PartyLink',
   'naming-settings':   'NamingSettings',
   'invoice-template':  'Dashboard',
   'stock-template':    'Dashboard',
