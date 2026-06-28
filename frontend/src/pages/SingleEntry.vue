@@ -17,8 +17,16 @@
         </button>
         <h1 class="text-2xl font-normal uppercase tracking-tight">
           Single Entry
-          <span v-if="cashAccount.name" class="ml-4 text-2xl font-normal text-black bg-black/5 px-4 py-1.5 rounded-full border border-black/10 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500">
-            <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> {{ cashAccount.name }}
+          <span 
+            v-if="cashAccount.name" 
+            @click="openSearchAccount"
+            class="ml-4 text-2xl font-normal text-black bg-black/5 hover:bg-black/10 cursor-pointer px-4 py-1.5 rounded-full border border-black/10 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500 inline-flex items-center gap-2"
+          >
+            <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> 
+            <span>{{ cashAccount.name }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 opacity-55" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
           </span>
         </h1>
       </div>
@@ -316,6 +324,7 @@ const cashAccount = ref({
 
 const showModal = ref(false)
 const modalRowIdx = ref(null)
+const searchTarget = ref('row') // 'row' or 'cash_account'
 
 const form = reactive({
   rows: [
@@ -354,20 +363,24 @@ const isFormValid = computed(() => {
 const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
 
 const modalTitle = computed(() => {
+  if (searchTarget.value === 'cash_account') return 'Select Cash / Bank Account'
   return 'Select Party'
 })
 
 const modalSubtitle = computed(() => {
+  if (searchTarget.value === 'cash_account') return 'Choose payment source or destination account'
   if (activeTab.value === 'Payment') return 'Select Party to Pay (Debit)'
   if (activeTab.value === 'Receipt') return 'Select Party to Receive From (Credit)'
   return ''
 })
 
 const allowedTypes = computed(() => {
+  if (searchTarget.value === 'cash_account') return ['Account']
   return ['Customer', 'Supplier', 'Employee', 'Account']
 })
 
 const initialSearchType = computed(() => {
+  if (searchTarget.value === 'cash_account') return 'Account'
   return 'All'
 })
 
@@ -420,7 +433,17 @@ async function fetchCashAccountDetails() {
 }
 
 function openSearch(idx) {
+  searchTarget.value = 'row'
   currentIdx.value = idx
+  showSearchModal.value = true
+  nextTick(() => {
+    custSearchModalRef.value?.closeSubForm()
+    custSearchModalRef.value?.focus()
+  })
+}
+
+function openSearchAccount() {
+  searchTarget.value = 'cash_account'
   showSearchModal.value = true
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
@@ -439,19 +462,29 @@ function handleAccountEnter(idx) {
 
 
 
-function handleSelect(item) {
+async function handleSelect(item) {
   showSearchModal.value = false
-  const row = form.rows[currentIdx.value]
+  
+  if (searchTarget.value === 'cash_account') {
+    cashAccount.value.account = item.name
+    cashAccount.value.name = item.label || item.account_name || item.name
+    localStorage.setItem('wb-cash', item.name)
+    await fetchCashAccountDetails()
+    return
+  }
+
+  const idx = currentIdx.value
+  const row = form.rows[idx]
   row.account = item.name
   row.account_name = item.label || item.account_name || item.name
   row.query = row.account_name
   row.party_type = item.type || ''
-  fetchRowBalance(currentIdx.value)
+  await fetchRowBalance(idx)
   
   nextTick(() => {
     setTimeout(() => {
-      expenseAmountRefs.value[currentIdx.value]?.focus()
-      expenseAmountRefs.value[currentIdx.value]?.select()
+      expenseAmountRefs.value[idx]?.focus()
+      expenseAmountRefs.value[idx]?.select()
     }, 50)
   })
 }
