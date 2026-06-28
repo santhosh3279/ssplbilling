@@ -75,6 +75,7 @@ export const ADMIN_ROUTES = new Set([
   'DailyReport',
   'SSPLBillingSettings',
   'StoreSalesReport',
+  'CostCenterSalesReport',
 ])
 
 /**
@@ -144,6 +145,7 @@ const TILE_ROUTE_MAP = {
   'incentive-redeem':  'IncentiveRedeem',
   'reports':           'Reports',
   'store-sale-report': 'StoreSalesReport',
+  'cost-center-sale-report': 'CostCenterSalesReport',
   'Cashier-Management':'CashierManagement',
   'cancellation':      'Cancellation',
   'pricing-rules':     'DiscountRule',
