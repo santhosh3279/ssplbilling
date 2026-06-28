@@ -399,13 +399,13 @@
               <div class="flex gap-2">
                 <button
                   @click="toggleCredit(false)"
-                  :disabled="isSecondaryParty"
+                  :disabled="isSecondaryParty || selectedInvoice?.is_return"
                   class="flex-1 flex items-center justify-center gap-2 rounded-xl py-1.25 text-[17.5px] font-black uppercase tracking-widest transition-all border"
                   :class="[
                     !isCredit ? 'bg-[var(--color-success)]/30 border-[var(--color-success)] text-[var(--color-success)] shadow-lg' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]',
-                    isSecondaryParty ? 'opacity-30 cursor-not-allowed' : ''
+                    (isSecondaryParty || selectedInvoice?.is_return) ? 'opacity-30 cursor-not-allowed' : ''
                   ]"
-                  :title="isSecondaryParty ? 'Secondary parties can only process Credit Sales' : ''"
+                  :title="isSecondaryParty ? 'Secondary parties can only process Credit Sales' : (selectedInvoice?.is_return ? 'Sales returns can only be processed as Credit' : '')"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                   Cash Bill
@@ -874,6 +874,7 @@ const changeAmount = computed(() => {
 const canSubmit = computed(() => {
   if (!selectedInvoice.value || isSubmitting.value) return false
   if (selectedInvoice.value.docstatus === 1 && (selectedInvoice.value.outstanding_amount || 0) <= 0.01) return false
+  if (selectedInvoice.value.is_return && !isCredit.value) return false
   if (isCredit.value) return true
   // Force cashier to account for the full bill (using Cash/UPI/Card/Disc OR the Credit box)
   return balance.value <= 0.01
@@ -1065,7 +1066,9 @@ async function selectInvoice(inv) {
     
     unallocatedAmountTotal.value = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
 
-    if (isSecondaryParty.value) {
+    if (details.is_return) {
+      toggleCredit(true)
+    } else if (isSecondaryParty.value) {
       toggleCredit(true)
     } else if (details.mop) {
       toggleCredit(details.mop === 'Credit')
@@ -1132,6 +1135,11 @@ function toggleCredit(val) {
   
   if (!targetVal && isSecondaryParty.value) {
     errorMsg.value = "Secondary parties can only process Credit Sales."
+    return
+  }
+
+  if (!targetVal && selectedInvoice.value?.is_return) {
+    errorMsg.value = "Sales returns can only be processed as Credit."
     return
   }
 
@@ -1222,6 +1230,11 @@ async function processPayment() {
   if (Number(payments.value.card) > 0.01 && !cardRefNo.value) {
     showCardRefModal.value = true
     nextTick(() => cardRefInput.value?.focus())
+    return
+  }
+
+  if (!isCredit.value && selectedInvoice.value?.is_return) {
+    errorMsg.value = "Sales returns can only be processed as Credit."
     return
   }
 
