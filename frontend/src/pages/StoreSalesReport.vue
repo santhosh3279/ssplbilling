@@ -15,8 +15,35 @@
             <p class="text-xs text-[var(--color-text-muted)]">Consolidated sales by Store (Income Account) & Price List</p>
           </div>
         </div>
-
         <div class="flex items-center gap-4">
+          <!-- Date Presets -->
+          <div class="flex items-center gap-2">
+            <button
+              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-border)] transition-all active:scale-95 uppercase tracking-wider"
+              @click="setDateRange('yesterday')"
+            >
+              Yesterday
+            </button>
+            <button
+              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-border)] transition-all active:scale-95 uppercase tracking-wider"
+              @click="setDateRange('current-month')"
+            >
+              Current Month
+            </button>
+            <button
+              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-border)] transition-all active:scale-95 uppercase tracking-wider"
+              @click="setDateRange('last-month')"
+            >
+              Last Month
+            </button>
+            <button
+              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-border)] transition-all active:scale-95 uppercase tracking-wider"
+              @click="setDateRange('fy')"
+            >
+              FY
+            </button>
+          </div>
+
           <!-- Date Filter -->
           <div class="flex items-center gap-2 bg-[var(--color-bg)]/50 rounded-xl border border-[var(--color-border)] p-1">
             <input
@@ -200,6 +227,53 @@ async function fetchData() {
     error.value = e.message || 'Failed to fetch store sale report'
   } finally {
     loading.value = false
+  }
+}
+
+function formatDateIso(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function setDateRange(preset) {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+
+  let from = ''
+  let to = ''
+
+  if (preset === 'yesterday') {
+    const yesterday = new Date()
+    yesterday.setDate(now.getDate() - 1)
+    from = formatDateIso(yesterday)
+    to = formatDateIso(yesterday)
+  } else if (preset === 'current-month') {
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    from = formatDateIso(firstDay)
+    to = formatDateIso(lastDay)
+  } else if (preset === 'last-month') {
+    const firstDay = new Date(year, month - 1, 1)
+    const lastDay = new Date(year, month, 0)
+    from = formatDateIso(firstDay)
+    to = formatDateIso(lastDay)
+  } else if (preset === 'fy') {
+    let startYear = year
+    if (month < 3) {
+      startYear = year - 1
+    }
+    const endYear = startYear + 1
+    from = `${startYear}-04-01`
+    to = `${endYear}-03-31`
+  }
+
+  if (from && to) {
+    fromDate.value = from
+    toDate.value = to
+    fetchData()
   }
 }
 
