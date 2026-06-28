@@ -952,7 +952,9 @@ async function handleSelectSidebarItem(item) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
   } finally {
-    isLoadingBill.value = false
+    nextTick(() => {
+      isLoadingBill.value = false
+    })
   }
 }
 
