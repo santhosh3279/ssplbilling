@@ -891,3 +891,13 @@ export async function getStoreSaleReport(fromDate, toDate) {
     to_date: toDate,
   });
 }
+
+/**
+ * Fetch Cost Center Sale Report (Sales by Cost Center from Direct Income).
+ */
+export async function getCostCenterSaleReport(fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_cost_center_sale_report", {
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}

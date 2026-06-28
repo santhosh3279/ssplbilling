@@ -544,3 +544,128 @@ def get_income_accounts():
         pluck="name",
         order_by="name asc"
     )
+
+
+@frappe.whitelist()
+def get_cost_center_sale_report(from_date=None, to_date=None):
+        """
+        Get sale report grouped by cost center from direct income accounts.
+        Preset to today if dates are not provided.
+        """
+        if not from_date:
+                from_date = frappe.utils.today()
+        if not to_date:
+                to_date = frappe.utils.today()
+
+        # Find accounts under 'Direct Income' group
+        direct_income_groups = frappe.get_all(
+                "Account",
+                filters={"account_name": ["like", "%Direct Income%"], "is_group": 1},
+                fields=["name", "lft", "rgt"],
+        )
+
+        if not direct_income_groups:
+                direct_income_groups = frappe.get_all(
+                        "Account", filters={"root_type": "Income", "is_group": 1}, fields=["name", "lft", "rgt"]
+                )
+
+        account_list = []
+        for acc in direct_income_groups:
+                children = frappe.get_all(
+                        "Account",
+                        filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
+                        fields=["name"],
+                )
+                account_list.extend([c.name for c in children])
+
+        if not account_list:
+                return {"report_data": [], "price_lists": [], "bills_data": []}
+
+        # Query GL Entry joined with Sales Invoice to get Price List
+        # Group by cost_center instead of account
+        results = frappe.db.sql(
+                """
+                SELECT
+                        gle.cost_center,
+                        si.selling_price_list,
+                        SUM(gle.credit - gle.debit) as total_amount
+                FROM
+                        `tabGL Entry` gle
+                LEFT JOIN
+                        `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
+                WHERE
+                        gle.posting_date BETWEEN %s AND %s
+                        AND gle.account IN %s
+                        AND gle.is_cancelled = 0
+                GROUP BY
+                        gle.cost_center, si.selling_price_list
+                ORDER BY
+                        gle.cost_center, total_amount DESC
+        """,
+                (from_date, to_date, tuple(account_list)),
+                as_dict=1,
+        )
+
+        # Format results for frontend: Group by Cost Center and pivot Price Lists
+        cost_centers = {}
+        all_price_lists = set()
+        for r in results:
+                cc_name = r["cost_center"] or "No Cost Center"
+                if cc_name not in cost_centers:
+                        cc_display_name = cc_name.split(" - ")[0] if " - " in cc_name else cc_name
+                        cost_centers[cc_name] = {
+                                "cost_center": cc_name,
+                                "cost_center_name": cc_display_name,
+                                "total_amount": 0.0,
+                                "price_list_data": {}
+                        }
+                
+                amount = float(r["total_amount"] or 0)
+                cost_centers[cc_name]["total_amount"] += amount
+                
+                pl_name = r["selling_price_list"] or "Other/Direct"
+                all_price_lists.add(pl_name)
+                cost_centers[cc_name]["price_list_data"][pl_name] = cost_centers[cc_name]["price_list_data"].get(pl_name, 0.0) + amount
+
+        # Convert to list and sort by total amount desc
+        report_data = list(cost_centers.values())
+        report_data.sort(key=lambda x: x["total_amount"], reverse=True)
+
+        bills_results = frappe.db.sql(
+                """
+                SELECT
+                        gle.cost_center,
+                        gle.voucher_no as bill_no,
+                        gle.posting_date,
+                        si.customer,
+                        si.customer_name,
+                        si.selling_price_list,
+                        SUM(gle.credit - gle.debit) as bill_amount
+                FROM
+                        `tabGL Entry` gle
+                LEFT JOIN
+                        `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
+                WHERE
+                        gle.posting_date BETWEEN %s AND %s
+                        AND gle.account IN %s
+                        AND gle.is_cancelled = 0
+                GROUP BY
+                        gle.cost_center, gle.voucher_no
+                ORDER BY
+                        gle.cost_center, gle.voucher_no
+        """,
+                (from_date, to_date, tuple(account_list)),
+                as_dict=1,
+        )
+
+        for b in bills_results:
+                if b.get("posting_date"):
+                        b["posting_date"] = str(b["posting_date"])
+                if not b.get("cost_center"):
+                        b["cost_center"] = "No Cost Center"
+
+        return {
+                "report_data": report_data,
+                "price_lists": sorted(list(all_price_lists)),
+                "bills_data": bills_results
+        }

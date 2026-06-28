@@ -23,6 +23,7 @@ import IncentiveLedger from './pages/IncentiveLedger.vue'
 import IncentiveRedeem from './pages/IncentiveRedeem.vue'
 import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
+import CostCenterSalesReport from './pages/CostCenterSalesReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
 import StockReconciliation from './pages/StockReconciliation.vue'
@@ -231,6 +232,12 @@ const routes = [
     name: 'StoreSalesReport',
     component: StoreSalesReport,
     meta: { title: 'Store Sales' },
+  },
+  {
+    path: '/cost-center-sale-report',
+    name: 'CostCenterSalesReport',
+    component: CostCenterSalesReport,
+    meta: { title: 'Cost Center Sales' },
   },
   {
     path: '/loading-receipt',
