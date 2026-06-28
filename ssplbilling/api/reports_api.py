@@ -396,7 +396,7 @@ def get_store_sale_report(from_date=None, to_date=None):
                 account_list.extend([c.name for c in children])
 
         if not account_list:
-                return {"report_data": [], "price_lists": []}
+                return {"report_data": [], "price_lists": [], "bills_data": []}
 
         # Query GL Entry joined with Sales Invoice to get Price List
         # Group by account instead of cost_center
@@ -448,9 +448,41 @@ def get_store_sale_report(from_date=None, to_date=None):
         report_data = list(stores.values())
         report_data.sort(key=lambda x: x["total_amount"], reverse=True)
 
+        bills_results = frappe.db.sql(
+                """
+                SELECT
+                        gle.account,
+                        gle.voucher_no as bill_no,
+                        gle.posting_date,
+                        si.customer,
+                        si.customer_name,
+                        si.selling_price_list,
+                        SUM(gle.credit - gle.debit) as bill_amount
+                FROM
+                        `tabGL Entry` gle
+                LEFT JOIN
+                        `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
+                WHERE
+                        gle.posting_date BETWEEN %s AND %s
+                        AND gle.account IN %s
+                        AND gle.is_cancelled = 0
+                GROUP BY
+                        gle.account, gle.voucher_no
+                ORDER BY
+                        gle.account, gle.voucher_no
+        """,
+                (from_date, to_date, tuple(account_list)),
+                as_dict=1,
+        )
+
+        for b in bills_results:
+                if b.get("posting_date"):
+                        b["posting_date"] = str(b["posting_date"])
+
         return {
                 "report_data": report_data,
-                "price_lists": sorted(list(all_price_lists))
+                "price_lists": sorted(list(all_price_lists)),
+                "bills_data": bills_results
         }
 
 @frappe.whitelist()

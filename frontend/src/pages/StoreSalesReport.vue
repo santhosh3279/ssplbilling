@@ -177,6 +177,7 @@ const loading = ref(false)
 const error = ref('')
 const reportData = ref([])
 const priceLists = ref([])
+const billsData = ref([])
 
 // Default dates: Today
 const today = new Date().toISOString().slice(0, 10)
@@ -194,6 +195,7 @@ async function fetchData() {
     const res = await getStoreSaleReport(fromDate.value, toDate.value)
     reportData.value = res.report_data || []
     priceLists.value = res.price_lists || []
+    billsData.value = res.bills_data || []
   } catch (e) {
     error.value = e.message || 'Failed to fetch store sale report'
   } finally {
@@ -254,6 +256,54 @@ function exportToExcel() {
   ws['!cols'] = colWidths
 
   utils.book_append_sheet(wb, ws, 'Store Sale Report')
+
+  // Group bills by account
+  const billsByAccount = {}
+  billsData.value.forEach(b => {
+    if (!billsByAccount[b.account]) {
+      billsByAccount[b.account] = []
+    }
+    billsByAccount[b.account].push(b)
+  })
+
+  // Add sheet for each account
+  reportData.value.forEach(r => {
+    const accBills = billsByAccount[r.account] || []
+    
+    const sheetHeaders = ['S.No', 'Bill No', 'Date', 'Customer ID', 'Customer Name', 'Price List', 'Bill Amount']
+    
+    const sheetRows = accBills.map((b, idx) => [
+      idx + 1,
+      b.bill_no,
+      b.posting_date,
+      b.customer,
+      b.customer_name,
+      b.selling_price_list || 'Other/Direct',
+      b.bill_amount
+    ])
+    
+    const totalBillAmt = accBills.reduce((sum, b) => sum + (b.bill_amount || 0), 0)
+    sheetRows.push(['', 'TOTAL', '', '', '', '', totalBillAmt])
+    
+    const rawName = r.store_name || r.account
+    let cleanName = rawName.replace(/[:\\/?*\[\]]/g, '').substring(0, 31).trim()
+    if (!cleanName) cleanName = 'Sheet'
+    
+    let finalSheetName = cleanName
+    let counter = 1
+    while (wb.SheetNames.includes(finalSheetName)) {
+      finalSheetName = `${cleanName.substring(0, 27)}_${counter++}`
+    }
+    
+    const wsAcc = utils.aoa_to_sheet([sheetHeaders, ...sheetRows])
+    
+    wsAcc['!cols'] = [
+      { wch: 8 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 15 }
+    ]
+    
+    utils.book_append_sheet(wb, wsAcc, finalSheetName)
+  })
+
   writeFile(wb, `StoreSaleReport_${fromDate.value}_to_${toDate.value}.xlsx`)
 }
 
