@@ -34,7 +34,13 @@
             >
               <span v-if="showTypePay">●</span> Payments
             </button>
-
+            <button
+              @click="showTypeJrn = !showTypeJrn"
+              class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
+              :class="showTypeJrn ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            >
+              <span v-if="showTypeJrn">●</span> Journals
+            </button>
           </div>
         </div>
         <button @click="$emit('close')" class="h-11 w-11 rounded-full hover:bg-[var(--color-midlight)] flex items-center justify-center text-2xl transition-colors">✕</button>
@@ -434,7 +440,7 @@ const localJournals = ref([])
 const filterDirection = ref('All')
 const showTypeInv = ref(true)
 const showTypePay = ref(true)
-const showTypeJrn = ref(false)
+const showTypeJrn = ref(true)
 const localAmounts = ref({})
 const lastModifiedKey = ref(null)
 const confirmBtn = ref(null)
