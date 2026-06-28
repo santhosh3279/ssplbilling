@@ -594,6 +594,7 @@ const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
+const isLoadingBill = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
@@ -667,6 +668,7 @@ watch(sidebarSearch, () => {
 async function handleSelectSidebarItem(item) {
   await releaseLock()
   try {
+    isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.purchase_order_api.get_purchase_order', { order_name: item.name })
 
     orderNo.value = data.name
@@ -723,6 +725,10 @@ async function handleSelectSidebarItem(item) {
     isSubmitted.value = data.docstatus === 1
   } catch (e) {
     alert('Failed to load order: ' + item.name)
+  } finally {
+    nextTick(() => {
+      isLoadingBill.value = false
+    })
   }
 }
 
@@ -886,7 +892,7 @@ watch(taxTemplate, (val) => {
 })
 
 watch(priceList, (newList) => {
-  if (!newList) return
+  if (!newList || isLoadingBill.value) return
   updateTableRates()
   refreshItemCache('Purchase', newList, warehouse.value).then(() => updateTableRates())
 })

@@ -669,6 +669,7 @@ const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
+const isLoadingBill = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
@@ -742,6 +743,7 @@ watch(sidebarSearch, () => {
 async function handleSelectSidebarItem(item) {
   await releaseLock()
   try {
+    isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.sales_order_api.get_sales_order', { order_name: item.name })
 
     // Header
@@ -823,6 +825,10 @@ async function handleSelectSidebarItem(item) {
   } catch (e) {
     console.error('Failed to load sales order:', e)
     alert('Failed to load sales order: ' + item.name)
+  } finally {
+    nextTick(() => {
+      isLoadingBill.value = false
+    })
   }
 }
 
@@ -1750,7 +1756,7 @@ watch(isReturn, (val) => {
 
 // Reprice all rows when price list is changed in settings panel
 watch(priceList, (newList) => {
-  if (!newList) return
+  if (!newList || isLoadingBill.value) return
   localStorage.setItem('wb-pricelist-selected', newList) // Persist selection
   
   // 1. Update UI INSTANTLY using whatever is already in the local cache

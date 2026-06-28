@@ -918,6 +918,7 @@ const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
+const isLoadingBill = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
@@ -991,6 +992,7 @@ watch(sidebarSearch, () => {
 async function handleSelectSidebarItem(item) {
   await releaseLock()
   try {
+    isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.purchase_api.get_purchase_invoice', { invoice_name: item.name })
 
     invoiceNo.value = data.name
@@ -1055,6 +1057,10 @@ async function handleSelectSidebarItem(item) {
   } catch (e) {
     console.error('Failed to load invoice:', e)
     alert('Failed to load invoice: ' + item.name)
+  } finally {
+    nextTick(() => {
+      isLoadingBill.value = false
+    })
   }
 }
 
@@ -1241,7 +1247,7 @@ watch(isReturn, (val) => {
 })
 
 watch(priceList, (newList) => {
-  if (!newList) return
+  if (!newList || isLoadingBill.value) return
   updateTableRates()
   refreshItemCache('Purchase', newList, warehouse.value)
     .then(() => updateTableRates())
@@ -1249,7 +1255,7 @@ watch(priceList, (newList) => {
 })
 
 watch(warehouse, (newVal) => {
-  if (!newVal) return
+  if (!newVal || isLoadingBill.value) return
   refreshItemCache('Purchase', priceList.value, newVal)
     .then(() => updateTableRates())
     .catch(e => console.warn('[PurchaseInvoice] Background price refresh failed:', e))

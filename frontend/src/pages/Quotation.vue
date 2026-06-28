@@ -661,6 +661,7 @@ const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
+const isLoadingBill = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
@@ -738,6 +739,7 @@ watch(sidebarSearch, () => {
 async function handleSelectSidebarItem(item) {
   await releaseLock()
   try {
+    isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.quotation_api.get_quotation', { quotation_name: item.name })
 
     // Header
@@ -830,6 +832,10 @@ async function handleSelectSidebarItem(item) {
   } catch (e) {
     console.error('Failed to load quotation:', e)
     alert('Failed to load quotation: ' + item.name)
+  } finally {
+    nextTick(() => {
+      isLoadingBill.value = false
+    })
   }
 }
 
@@ -1761,7 +1767,7 @@ function updateTableRates() {
 }
 
 watch(priceList, (newList) => {
-  if (!newList) return
+  if (!newList || isLoadingBill.value) return
   localStorage.setItem('wb-pricelist-selected', newList)
   updateTableRates()
   refreshItemCache('Sales', newList, warehouse.value)
