@@ -109,10 +109,25 @@
             </div>
           </div>
 
-          <!-- Posting Time (Right Aligned on Supplier Name row, above Bill Date) -->
-          <div v-if="postingTime" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
-            <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Time</span>
-            <span class="text-3xl font-bold font-mono text-[var(--color-text)]">{{ formatTime(postingTime) }}</span>
+          <!-- Time & Discount % (Right Aligned on Supplier Name row) -->
+          <div class="flex items-center gap-6 ml-auto whitespace-nowrap shrink-0">
+            <div v-if="postingTime" @click.stop class="flex items-center gap-2 border-[var(--color-border)]">
+              <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Time</span>
+              <span class="text-3xl font-bold font-mono text-[var(--color-text)]">{{ formatTime(postingTime) }}</span>
+            </div>
+            <div v-if="!isSaved" class="flex items-center gap-2" :class="postingTime ? 'border-l border-[var(--color-border)] pl-6' : ''">
+              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Discount %</label>
+              <input
+                v-model.number="globalDiscountPct"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="0.00"
+                :disabled="isReadOnly"
+                class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-24 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
           </div>
         </div>
 
@@ -175,29 +190,12 @@
             </div>
 
             <!-- Bill Date (Original) -->
-            <div v-if="invoiceDate" class="flex flex-col items-end gap-1 border-l border-[var(--color-border)] pl-6">
-              <!-- Discount percentage field above -->
-              <div v-if="!isSaved" class="flex items-center gap-2">
-                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Discount %</label>
-                <input
-                  v-model.number="globalDiscountPct"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  placeholder="0.00"
-                  :disabled="isReadOnly"
-                  class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-24 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-              </div>
-              <!-- Bill Date itself -->
-              <div class="flex items-center gap-3 mt-1">
-                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
-                <div class="flex items-center gap-1">
-                  <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
-                  <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
-                  <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
-                </div>
+            <div v-if="invoiceDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6">
+              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
+              <div class="flex items-center gap-1">
+                <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
+                <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
               </div>
             </div>
           </div>
