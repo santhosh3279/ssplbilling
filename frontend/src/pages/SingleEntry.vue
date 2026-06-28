@@ -158,6 +158,14 @@
                       >
                         <span class="text-[var(--color-text-muted)]">{{ alloc.reference_name }}</span>
                         <span class="text-[var(--color-success)]">₹{{ alloc.allocated_amount.toLocaleString('en-IN') }}</span>
+                        <button
+                          type="button"
+                          @click.stop="unlinkReference(idx, alloc)"
+                          class="ml-1 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] font-bold text-xs"
+                          title="Unlink"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                     <div v-else class="text-[10px] text-[var(--color-text-muted)] italic ml-2">No invoices linked</div>
@@ -493,6 +501,16 @@ function updateRowAllocations(allocations) {
 function closeModal() {
   showModal.value = false
   modalRowIdx.value = null
+}
+
+function unlinkReference(idx, alloc) {
+  const row = rows.value[idx]
+  if (!row) return
+  row.allocations = (row.allocations || []).filter(a => a.reference_name !== alloc.reference_name)
+  if (row.modalAmounts) {
+    const targetKey = alloc._row || alloc.reference_name
+    delete row.modalAmounts[targetKey]
+  }
 }
 
 // --- Save Methods ---

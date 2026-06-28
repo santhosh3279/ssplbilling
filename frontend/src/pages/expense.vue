@@ -141,6 +141,14 @@
                       >
                         <span class="text-[var(--color-text-muted)]">{{ alloc.reference_name }}</span>
                         <span class="text-[var(--color-success)]">₹{{ fmt(alloc.allocated_amount) }}</span>
+                        <button
+                          type="button"
+                          @click.stop="unlinkReference(idx, alloc)"
+                          class="ml-1 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] font-bold text-xs"
+                          title="Unlink"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                     <div v-else-if="row.account && row.party_type !== 'Account'" class="text-[10px] text-[var(--color-text-muted)] italic ml-2">No invoices linked</div>
@@ -650,6 +658,16 @@ function updateRowAllocations(allocations) {
 
 function fmt(val) {
   return Math.round(Number(val || 0)).toLocaleString('en-IN')
+}
+
+function unlinkReference(idx, alloc) {
+  const row = form.rows[idx]
+  if (!row) return
+  row.allocations = (row.allocations || []).filter(a => a.reference_name !== alloc.reference_name)
+  if (row.modalAmounts) {
+    const targetKey = alloc._row || alloc.reference_name
+    delete row.modalAmounts[targetKey]
+  }
 }
 
 onMounted(() => {
