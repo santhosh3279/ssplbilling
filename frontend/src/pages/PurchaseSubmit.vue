@@ -277,6 +277,18 @@
       @close="showBarcodeModal = false"
     />
 
+    <!-- Outstanding Bills Modal -->
+    <OutstandingBillsModal
+      v-if="showOutstandingModal"
+      :show="showOutstandingModal"
+      partyType="Supplier"
+      :party="modalParty"
+      :enteredAmount="modalAmount"
+      activeTab="Receipt"
+      @close="closeOutstandingModal"
+      @update-allocations="handleAllocations"
+    />
+
     <!-- MODIFY BILL SUBWINDOW -->
     <div v-if="showModifyModal" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
       <PurchaseInvoice 
@@ -291,11 +303,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice } from '../api.js'
+import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
 import PurchaseInvoice from './PurchaseInvoice.vue'
+import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 
 const router = useRouter()
 function getTodayIST() {
@@ -316,8 +329,13 @@ const successMsg = ref('')
 const showPrintModal = ref(false)
 const showBarcodeModal = ref(false)
 const showModifyModal = ref(false)
+const showOutstandingModal = ref(false)
+const modalParty = ref('')
+const modalAmount = ref(0)
+const submittedInvoiceName = ref('')
 
 useSubwindowWatcher(showPrintModal)
+useSubwindowWatcher(showOutstandingModal)
 useSubwindowWatcher(showBarcodeModal)
 useSubwindowWatcher(showModifyModal)
 
@@ -454,19 +472,84 @@ async function confirmSubmission() {
   successMsg.value = ''
   
   try {
-    await submitPurchaseInvoice(selectedInvoice.value.name)
+    const invName = selectedInvoice.value.name
+    const supplier = selectedInvoice.value.supplier
+    const grandTotal = selectedInvoice.value.grand_total
+
+    await submitPurchaseInvoice(invName)
     
+    // Check if there are any outstanding advance payments/journals for the supplier
+    let hasAdvances = false
+    try {
+      const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+        party_type: 'Supplier',
+        party: supplier
+      })
+      const payments = (res.payment_entries || []).filter(p => p.direction === 'Dr')
+      const journals = (res.journal_entries || []).filter(j => j.direction === 'Dr')
+      if (payments.length > 0 || journals.length > 0) {
+        hasAdvances = true
+      }
+    } catch (err) {
+      console.warn('Failed to check outstanding for supplier:', err)
+    }
+
     const nameToRemove = selectedInvoice.value.name
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
     selectedInvoice.value = null
     previewItems.value = []
     successMsg.value = ''
+
+    if (hasAdvances) {
+      modalParty.value = supplier
+      modalAmount.value = grandTotal
+      submittedInvoiceName.value = invName
+      showOutstandingModal.value = true
+    } else {
+      loadInvoices()
+    }
     
   } catch (e) {
     errorMsg.value = e.message
   } finally {
     isSubmitting.value = false
   }
+}
+
+function closeOutstandingModal() {
+  showOutstandingModal.value = false
+  modalParty.value = ''
+  modalAmount.value = 0
+  submittedInvoiceName.value = ''
+  loadInvoices()
+}
+
+async function handleAllocations(allocations) {
+  if (!submittedInvoiceName.value) return
+  
+  const crossAllocations = allocations.map(a => ({
+    payment_type: a.reference_doctype,
+    payment_name: a.reference_name,
+    reference_row: a._row || null,
+    invoice_type: 'Purchase Invoice',
+    invoice_name: submittedInvoiceName.value,
+    amount: a.allocated_amount,
+    unreconciled_amount: a.outstanding_amount
+  }))
+
+  if (crossAllocations.length > 0) {
+    try {
+      await frappePost('ssplbilling.api.reconcile_api.post_reconciliation', {
+        party_type: 'Supplier',
+        party: modalParty.value,
+        allocations: JSON.stringify(crossAllocations)
+      })
+    } catch (err) {
+      alert('Reconciliation failed: ' + (err.message || err))
+    }
+  }
+  
+  closeOutstandingModal()
 }
 
 onMounted(() => {
