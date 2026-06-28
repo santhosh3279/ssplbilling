@@ -177,7 +177,7 @@
             <!-- Bill Date (Original) -->
             <div v-if="invoiceDate" class="flex flex-col items-end gap-1 border-l border-[var(--color-border)] pl-6">
               <!-- Discount percentage field above -->
-              <div class="flex items-center gap-2">
+              <div v-if="!isSaved" class="flex items-center gap-2">
                 <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Discount %</label>
                 <input
                   v-model.number="globalDiscountPct"
