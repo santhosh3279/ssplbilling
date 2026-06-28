@@ -342,93 +342,7 @@
       @close="showSystemPerformance = false"
     />
 
-    <!-- INVOICE TEMPLATE FULL SCREEN MODAL -->
-    <div v-if="showInvoiceTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
-      <Item_Invoice_Template
-        title="Template Preview"
-        doc-number="INV-TEMP-001"
-        party-name="Sample Customer"
-        party-details="123 Main Street, Sample City"
-        party-address="123 Main Street, Sample City"
-        party-mobile="9876543210"
-        party-gstin="22AAAAA0000A1Z5"
-        :party-balance="1250.50"
-        party-last-inv-date="05-Apr-26"
-        doc-date="06-Apr-2026"
-        sidebar-date="06-04-2026"
-        sidebar-search=""
-        doctype="Sales Invoice"
-        :sidebar-series="['ALL']"
-        :available-series="['ALL', 'RETL', 'WHSL']"
-        :draft-only="true"
-        :sidebar-items="[
-          { name: 'INV-TEMP-001', grand_total: '2250', rounded_total: '2250', customer_name: 'Sample Customer', docstatus: 0 },
-          { name: 'INV-TEMP-002', grand_total: '1500', rounded_total: '1500', customer_name: 'John Doe', docstatus: 1 }
-        ]"
-        selected-sidebar-item-name="INV-TEMP-001"
-        :items="[
-          { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 100, uom: 'Nos', rate: 10, amount: 1000 },
-          { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 50.5, uom: 'Kg', rate: 25, amount: 1262.5 }
-        ]"
-        subtotal="2250.00"
-        total-tax="0.00"
-        total-amount="2250.00"
-        price-list="Standard Selling"
-        tax-template="GST 18% (Inclusive)"
-        :is-inclusive-tax="true"
-        :ignore-discount-rule="false"
-        :is-return="false"
-        warehouse="Main Warehouse"
-        cost-center="Main Cost Center"
-        @back="showInvoiceTemplate = false"
-        @save="showInvoiceTemplate = false"
-        @print="showInvoiceTemplate = false"
-      >
-        <template #header-right>
-          <span>Sample Header Extra Info</span>
-        </template>
-        <template #bottom-left>
-          <div class="p-4 text-[var(--color-text-muted)]">Sample Insights Content</div>
-        </template>
-        <template #bottom-middle>
-          <div class="p-4 text-[var(--color-text-muted)]">Sample Settings Content</div>
-        </template>
-      </Item_Invoice_Template>
-    </div>
 
-    <!-- STOCK TEMPLATE FULL SCREEN MODAL -->
-    <div v-if="showStockTemplate" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
-      <Stock_Template
-        title="Stock Template Preview"
-        doc-number="ST-TEMP-001"
-        party-name="Main Warehouse -> Store"
-        doc-date="06-Apr-2026"
-        sidebar-date="06-04-2026"
-        sidebar-search=""
-        :sidebar-series="['ST']"
-        :available-series="['ST', 'MAT']"
-        :draft-only="true"
-        :sidebar-items="[
-          { name: 'ST-TEMP-001', total_qty: '150', posting_date: '2026-04-06', docstatus: 0 },
-          { name: 'ST-TEMP-002', total_qty: '45', posting_date: '2026-04-05', docstatus: 1 }
-        ]"
-        selected-sidebar-item-name="ST-TEMP-001"
-        :items="[
-          { item_code: 'ITEM001', item_name: 'Sample Item 1', qty: 100, uom: 'Nos', rate: 10 },
-          { item_code: 'ITEM002', item_name: 'Sample Item 2', qty: 50, uom: 'Kg', rate: 25 }
-        ]"
-        total-amount="2250.00"
-        total-label="Total Value"
-        item-count="2"
-        warehouse="Main Warehouse"
-        save-button-text="Save"
-        :is-read-only="false"
-        :is-draft="true"
-        @back="showStockTemplate = false"
-        @save="showStockTemplate = false"
-        @cancel="showStockTemplate = false"
-      />
-    </div>
 
     <!-- SUCCESS POPUP -->
   </div>
@@ -442,8 +356,7 @@ import { dashboardApi } from '../services/dashboard'
 import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
-import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
-import Stock_Template from '../components/Stock_Template.vue'
+
 import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet, frappePost } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
@@ -608,9 +521,7 @@ const allTiles = [
   { id: 'naming-settings',    bucket: 'sspl',   name: 'Naming Settings',       desc: 'Configure document series',                icon: '🔢', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
   { id: 'catelogue',          bucket: 'sspl',   name: 'Catalogues',            desc: 'View published catalogues',                icon: '📖', shortcut: ''    },
-  { id: 'invoice-template',   bucket: 'sspl',     name: 'Invoice Template',      desc: 'Reusable invoice UI template',             icon: '🎨', shortcut: ''    },
 
-  { id: 'stock-template',     bucket: 'sspl',     name: 'Stock Template',        desc: 'Reusable stock UI template',               icon: '📦', shortcut: ''    },
   // ── Report ──
   { id: 'daily-report',       bucket: 'report',   name: 'Daily Report',          desc: 'Daily operations summary',                 icon: '📊', shortcut: ''    },
   { id: 'reports',            bucket: 'report',   name: 'Reports',               desc: 'Business reports and analytics',           icon: '📈', shortcut: ''    },
@@ -659,14 +570,7 @@ const routeAliases = {
 }
 
 function openModule(id) {
-  if (id === 'invoice-template') {
-    showInvoiceTemplate.value = true
-    return
-  }
-  if (id === 'stock-template') {
-    showStockTemplate.value = true
-    return
-  }
+
   if (id === 'payment-reconciliation') {
     window.open('/app/payment-reconciliation', '_blank')
     return
@@ -705,8 +609,7 @@ useShortcuts(dashboardShortcuts({
   openModule,
   handleEscape: () => {
     if (showGeneralSettings.value) { showGeneralSettings.value = false; return }
-    if (showInvoiceTemplate.value) { showInvoiceTemplate.value = false; return }
-    if (showStockTemplate.value) { showStockTemplate.value = false; return }
+
   }
 }))
 
@@ -717,8 +620,7 @@ const systemSettings = ref(null)
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 
-const showInvoiceTemplate = ref(false)
-const showStockTemplate = ref(false)
+
 
 // ==================== SYSTEM PERFORMANCE ====================
 const showSystemPerformance = ref(false)
