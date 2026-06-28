@@ -36,6 +36,7 @@ export const BILLER_ROUTES = new Set([
   'StoreTransfer',
   'Repack',
   'OfferDisplay',
+  'PurchaseOrder',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -65,6 +66,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'SingleEntry',
   'IncentiveRedeem',
   'Unreconciled',
+  'PurchaseOrder',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
