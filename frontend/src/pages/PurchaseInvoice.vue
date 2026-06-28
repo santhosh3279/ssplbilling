@@ -301,33 +301,72 @@
             <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-[var(--color-text-muted)] italic">
               Scan an item or select a row to see history.
             </div>
-            <div v-else-if="historyLoading" class="text-sm text-[var(--color-info)] animate-pulse">
-              Fetching history...
-            </div>
-            <div v-else-if="!selectedItemHistory.length" class="text-sm text-[var(--color-text-muted)] italic">
-              No previous history found for this supplier.
-            </div>
-            <div v-else class="max-h-[110px] overflow-y-auto mb-4 custom-scrollbar">
-              <table class="w-full text-left text-lg border-collapse">
-                <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
-                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
-                    <th class="py-0.5 pr-1 font-bold">Bill</th>
-                    <th class="py-0.5 px-1 font-bold">Date</th>
-                    <th class="py-0.5 px-1 text-right font-bold">Qty</th>
-                    <th class="py-0.5 px-1 text-right font-bold">Rate</th>
-                    <th class="py-0.5 pl-1 text-right font-bold">Disc%</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-[var(--color-border)]/30">
-                  <tr v-for="(h, i) in selectedItemHistory.slice(0, 10)" :key="i" class="text-[var(--color-text)]">
-                    <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
-                    <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
-                    <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
-                    <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
-                    <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div v-else class="space-y-4">
+              <!-- Current Supplier History -->
+              <div>
+                <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Purchase History (This Supplier):</div>
+                <div v-if="historyLoading" class="text-sm text-[var(--color-info)] animate-pulse">
+                  Fetching history...
+                </div>
+                <div v-else-if="!selectedItemHistory.length" class="text-sm text-[var(--color-text-muted)] italic">
+                  No previous history found for this supplier.
+                </div>
+                <div v-else class="max-h-[110px] overflow-y-auto custom-scrollbar">
+                  <table class="w-full text-left text-lg border-collapse">
+                    <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
+                      <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
+                        <th class="py-0.5 pr-1 font-bold">Bill</th>
+                        <th class="py-0.5 px-1 font-bold">Date</th>
+                        <th class="py-0.5 px-1 text-right font-bold">Qty</th>
+                        <th class="py-0.5 px-1 text-right font-bold">Rate</th>
+                        <th class="py-0.5 pl-1 text-right font-bold">Disc%</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--color-border)]/30">
+                      <tr v-for="(h, i) in selectedItemHistory.slice(0, 10)" :key="i" class="text-[var(--color-text)]">
+                        <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
+                        <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
+                        <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
+                        <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
+                        <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Different Suppliers History -->
+              <div class="border-t border-[var(--color-border)] pt-2">
+                <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Purchase History (Different Suppliers):</div>
+                <div v-if="otherSuppliersHistoryLoading" class="text-sm text-[var(--color-info)] animate-pulse">
+                  Fetching history...
+                </div>
+                <div v-else-if="!otherSuppliersItemHistory.length" class="text-sm text-[var(--color-text-muted)] italic">
+                  No previous history found from other suppliers.
+                </div>
+                <div v-else class="max-h-[110px] overflow-y-auto custom-scrollbar">
+                  <table class="w-full text-left text-lg border-collapse">
+                    <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
+                      <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
+                        <th class="py-0.5 pr-1 font-bold">Supplier</th>
+                        <th class="py-0.5 px-1 font-bold">Bill</th>
+                        <th class="py-0.5 px-1 font-bold">Date</th>
+                        <th class="py-0.5 px-1 text-right font-bold">Qty</th>
+                        <th class="py-0.5 px-1 text-right font-bold">Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--color-border)]/30">
+                      <tr v-for="(h, i) in otherSuppliersItemHistory.slice(0, 10)" :key="i" class="text-[var(--color-text)]">
+                        <td class="py-1 pr-1 font-semibold truncate max-w-[120px]" :title="h.supplier_name || h.supplier">{{ h.supplier_name || h.supplier }}</td>
+                        <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
+                        <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
+                        <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
+                        <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             <!-- Warehouse Stock -->
@@ -822,7 +861,8 @@ const {
   fetchSupplierPurchaseHistory, clearHistory, hasSupplierHistory, getSupplierItemHistoryFromCache, historyLoading,
   supplierPurchaseHistory,
   fetchItemStock, itemStock, stockLoading,
-  fetchItemPrices, itemPrices, pricesLoading
+  fetchItemPrices, itemPrices, pricesLoading,
+  otherSuppliersItemHistory, otherSuppliersHistoryLoading, fetchOtherSuppliersItemHistory
 } = useCustomerHistory()
 
 // --- Primary Collections ---
@@ -1344,14 +1384,13 @@ watch(items, (newItems) => {
   newItems.forEach((_, idx) => recalcAmount(idx))
 }, { deep: true })
 
-watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
-  let code = null
-  if (pending) code = pending.item_code
-  else if (rowIdx !== -1) code = items.value[rowIdx]?.item_code
-
+watch([activeItemCode, supplierId], ([code, suppId]) => {
   if (code) {
     fetchItemStock(code)
     fetchItemPrices(code)
+    fetchOtherSuppliersItemHistory(code, suppId)
+  } else {
+    fetchOtherSuppliersItemHistory(null)
   }
 })
 

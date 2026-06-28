@@ -12,6 +12,9 @@ export function useCustomerHistory() {
   const currentSupplierForHistory = ref(null)
   const historyLoading = ref(false)
   
+  const otherSuppliersItemHistory = ref([])
+  const otherSuppliersHistoryLoading = ref(false)
+  
   const itemStock = ref([])
   const stockLoading = ref(false)
   const stockCache = new Map()
@@ -149,11 +152,33 @@ export function useCustomerHistory() {
     return supplierPurchaseHistory.value.filter(h => h.item_code === itemCode)
   }
 
+  async function fetchOtherSuppliersItemHistory(itemCode, currentSupplier) {
+    if (!itemCode) {
+      otherSuppliersItemHistory.value = []
+      return
+    }
+    otherSuppliersHistoryLoading.value = true
+    try {
+      const data = await frappeGet('ssplbilling.api.itemsearch_api.get_item_purchase_history', {
+        item_code: itemCode,
+        current_supplier: currentSupplier || ''
+      })
+      otherSuppliersItemHistory.value = data || []
+    } catch (e) {
+      console.warn('[customerHistory] Other suppliers history fetch failed:', e.message)
+      otherSuppliersItemHistory.value = []
+    } finally {
+      otherSuppliersHistoryLoading.value = false
+    }
+  }
+
   /**
    * Clear item-specific insights (stock and prices).
    * Keeps customerSalesHistory intact.
    */
   function clearItemInsights() {
+    otherSuppliersItemHistory.value = []
+    otherSuppliersHistoryLoading.value = false
     itemStock.value = []
     stockLoading.value = false
     itemPrices.value = []
@@ -195,6 +220,10 @@ export function useCustomerHistory() {
     // Price lists
     itemPrices,
     pricesLoading,
-    fetchItemPrices
+    fetchItemPrices,
+    // Other suppliers history
+    otherSuppliersItemHistory,
+    otherSuppliersHistoryLoading,
+    fetchOtherSuppliersItemHistory
   }
 }

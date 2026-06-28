@@ -340,3 +340,40 @@ def get_supplier_purchase_history(supplier):
 
 	return history
 
+
+@frappe.whitelist()
+def get_item_purchase_history(item_code, current_supplier=None):
+	"""Fetch previous purchase history for a specific item from all/other suppliers."""
+	if not item_code:
+		return []
+
+	query = """
+		SELECT
+			pi.supplier,
+			pi.supplier_name,
+			pi.name,
+			pi.posting_date as date,
+			pii.rate,
+			pii.qty
+		FROM `tabPurchase Invoice Item` pii
+		JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+		WHERE pii.item_code = %s AND pi.docstatus = 1
+	"""
+	params = [item_code]
+
+	if current_supplier:
+		query += " AND pi.supplier != %s"
+		params.append(current_supplier)
+
+	query += " ORDER BY pi.posting_date DESC, pi.creation DESC LIMIT 10"
+
+	history = frappe.db.sql(query, tuple(params), as_dict=True)
+
+	for row in history:
+		row["date"] = str(row["date"])
+		row["rate"] = float(row.rate or 0)
+		row["qty"] = float(row.qty or 0)
+
+	return history
+
+
