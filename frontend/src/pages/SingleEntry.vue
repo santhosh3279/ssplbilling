@@ -469,11 +469,17 @@ async function triggerModal(idx) {
       showModal.value = true
     } else {
       console.log('No outstanding items found for direction:', targetDir)
-      nextRowAndSearch(idx)
+      nextTick(() => {
+        remarkInputs.value[idx]?.focus()
+        remarkInputs.value[idx]?.select()
+      })
     }
   } catch (e) {
     console.error('Failed to fetch outstanding items:', e)
-    nextRowAndSearch(idx)
+    nextTick(() => {
+      remarkInputs.value[idx]?.focus()
+      remarkInputs.value[idx]?.select()
+    })
   }
 }
 

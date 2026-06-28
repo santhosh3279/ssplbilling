@@ -475,6 +475,25 @@ async function fetchRowBalance(idx) {
 async function handleAmountEnter(idx) {
   const row = form.rows[idx]
   if (row.amount > 0 && row.account) {
+    if (row.party_type && row.party_type !== 'Account') {
+      try {
+        const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+          party_type: row.party_type,
+          party: row.account
+        })
+        const invoices = res.invoices || []
+        const payments = res.payment_entries || []
+        const journals = res.journal_entries || []
+
+        if (invoices.length > 0 || payments.length > 0 || journals.length > 0) {
+          openAllocationModal(idx)
+          return
+        }
+      } catch (err) {
+        console.error('Failed to check outstanding on amount enter:', err)
+      }
+    }
+
     nextTick(() => {
       setTimeout(() => {
         rowRemarksRefs.value[idx]?.focus()
@@ -653,6 +672,13 @@ function updateRowAllocations(allocations) {
     form.rows[idx].modalAmounts = newModalAmounts
     
     closeModal()
+    
+    // Focus remarks after modal
+    nextTick(() => {
+      setTimeout(() => {
+        rowRemarksRefs.value[idx]?.focus()
+      }, 50)
+    })
   }
 }
 
