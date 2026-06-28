@@ -19,8 +19,11 @@
           Single Entry
           <span 
             v-if="cashAccount.name" 
+            ref="cashAccountBtnRef"
+            tabindex="0"
             @click="openSearchAccount"
-            class="ml-4 text-2xl font-normal text-black bg-black/5 hover:bg-black/10 cursor-pointer px-4 py-1.5 rounded-full border border-black/10 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500 inline-flex items-center gap-2"
+            @keydown.enter.prevent="openSearchAccount"
+            class="ml-4 text-2xl font-normal text-black bg-black/5 hover:bg-black/10 focus:bg-black/10 focus:ring-2 focus:ring-black/20 focus:outline-none cursor-pointer px-4 py-1.5 rounded-full border border-black/10 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500 inline-flex items-center gap-2"
           >
             <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> 
             <span>{{ cashAccount.name }}</span>
@@ -331,6 +334,7 @@ const form = reactive({
   reference_date: new Date().toISOString().split('T')[0]
 })
 
+const cashAccountBtnRef = ref(null)
 const expenseSearchRefs = ref([])
 const expenseAmountRefs = ref([])
 const rowRemarksRefs = ref([])
@@ -467,6 +471,13 @@ async function handleSelect(item) {
     cashAccount.value.name = item.label || item.account_name || item.name
     localStorage.setItem('wb-cash', item.name)
     await fetchCashAccountDetails()
+    
+    // Upon selection, focus to party selection of first row
+    nextTick(() => {
+      setTimeout(() => {
+        expenseSearchRefs.value[0]?.focus()
+      }, 50)
+    })
     return
   }
 
@@ -730,7 +741,7 @@ onMounted(() => {
     'F7': cycleTab,
     'ESCAPE': handleEscape,
   })
-  setTimeout(() => expenseSearchRefs.value[0]?.focus(), 300)
+  setTimeout(() => cashAccountBtnRef.value?.focus(), 300)
 })
 </script>
 
