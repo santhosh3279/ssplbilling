@@ -403,21 +403,28 @@ def get_store_sale_report(from_date=None, to_date=None):
         results = frappe.db.sql(
                 """
                 SELECT
-                        gle.account,
-                        si.selling_price_list,
-                        SUM(gle.credit - gle.debit) as total_amount
-                FROM
-                        `tabGL Entry` gle
-                LEFT JOIN
-                        `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
-                WHERE
-                        gle.posting_date BETWEEN %s AND %s
-                        AND gle.account IN %s
-                        AND gle.is_cancelled = 0
+                        account,
+                        selling_price_list,
+                        SUM(grand_total) as total_amount
+                FROM (
+                        SELECT DISTINCT
+                                gle.account,
+                                gle.voucher_no,
+                                si.selling_price_list,
+                                si.grand_total
+                        FROM
+                                `tabGL Entry` gle
+                        LEFT JOIN
+                                `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
+                        WHERE
+                                gle.posting_date BETWEEN %s AND %s
+                                AND gle.account IN %s
+                                AND gle.is_cancelled = 0
+                ) t
                 GROUP BY
-                        gle.account, si.selling_price_list
+                        account, selling_price_list
                 ORDER BY
-                        gle.account, total_amount DESC
+                        account, total_amount DESC
         """,
                 (from_date, to_date, tuple(account_list)),
                 as_dict=1,
@@ -457,7 +464,7 @@ def get_store_sale_report(from_date=None, to_date=None):
                         si.customer,
                         si.customer_name,
                         si.selling_price_list,
-                        SUM(gle.credit - gle.debit) as bill_amount
+                        MAX(si.grand_total) as bill_amount
                 FROM
                         `tabGL Entry` gle
                 LEFT JOIN
@@ -586,21 +593,28 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
         results = frappe.db.sql(
                 """
                 SELECT
-                        gle.cost_center,
-                        si.selling_price_list,
-                        SUM(gle.credit - gle.debit) as total_amount
-                FROM
-                        `tabGL Entry` gle
-                LEFT JOIN
-                        `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
-                WHERE
-                        gle.posting_date BETWEEN %s AND %s
-                        AND gle.account IN %s
-                        AND gle.is_cancelled = 0
+                        cost_center,
+                        selling_price_list,
+                        SUM(grand_total) as total_amount
+                FROM (
+                        SELECT DISTINCT
+                                gle.cost_center,
+                                gle.voucher_no,
+                                si.selling_price_list,
+                                si.grand_total
+                        FROM
+                                `tabGL Entry` gle
+                        LEFT JOIN
+                                `tabSales Invoice` si ON si.name = gle.voucher_no AND gle.voucher_type = 'Sales Invoice'
+                        WHERE
+                                gle.posting_date BETWEEN %s AND %s
+                                AND gle.account IN %s
+                                AND gle.is_cancelled = 0
+                ) t
                 GROUP BY
-                        gle.cost_center, si.selling_price_list
+                        cost_center, selling_price_list
                 ORDER BY
-                        gle.cost_center, total_amount DESC
+                        cost_center, total_amount DESC
         """,
                 (from_date, to_date, tuple(account_list)),
                 as_dict=1,
@@ -640,7 +654,7 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                         si.customer,
                         si.customer_name,
                         si.selling_price_list,
-                        SUM(gle.credit - gle.debit) as bill_amount
+                        MAX(si.grand_total) as bill_amount
                 FROM
                         `tabGL Entry` gle
                 LEFT JOIN
