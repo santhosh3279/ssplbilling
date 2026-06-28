@@ -297,3 +297,46 @@ def get_customer_sales_history(customer):
 		row["barcodes"] = ",".join(item_barcodes_map.get(row.item_code, []))
 
 	return history
+
+
+@frappe.whitelist()
+def get_supplier_purchase_history(supplier):
+	"""Fetch all previous purchase history for a supplier in bulk with item details."""
+	if not supplier:
+		return []
+
+	history = frappe.db.sql(
+		"""
+		SELECT pii.item_code, i.item_name, pi.name, pi.posting_date as date, pii.rate, pii.qty
+		FROM `tabPurchase Invoice Item` pii
+		JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+		JOIN `tabItem` i ON i.name = pii.item_code
+		WHERE pi.supplier = %s AND pi.docstatus = 1
+		ORDER BY pi.posting_date DESC, pi.creation DESC
+		LIMIT 15000
+		""",
+		(supplier,),
+		as_dict=True,
+	)
+
+	item_codes = list(set(row.item_code for row in history))
+	if not item_codes:
+		return []
+
+	all_barcodes = frappe.get_all(
+		"Item Barcode",
+		filters={"parent": ["in", item_codes]},
+		fields=["parent as item_code", "barcode"],
+	)
+	item_barcodes_map = {}
+	for row in all_barcodes:
+		item_barcodes_map.setdefault(row.item_code, []).append(row.barcode)
+
+	for row in history:
+		row["date"] = str(row["date"])
+		row["rate"] = float(row.rate or 0)
+		row["qty"] = float(row.qty or 0)
+		row["barcodes"] = ",".join(item_barcodes_map.get(row.item_code, []))
+
+	return history
+

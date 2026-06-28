@@ -8,6 +8,8 @@ import { frappeGet } from '../api.js'
 export function useCustomerHistory() {
   const customerSalesHistory = ref([])
   const currentCustomerForHistory = ref(null)
+  const supplierPurchaseHistory = ref([])
+  const currentSupplierForHistory = ref(null)
   const historyLoading = ref(false)
   
   const itemStock = ref([])
@@ -39,6 +41,29 @@ export function useCustomerHistory() {
     } catch (e) {
       console.warn('[customerHistory] History fetch failed:', e.message)
       customerSalesHistory.value = []
+    } finally {
+      historyLoading.value = false
+    }
+  }
+
+  async function fetchSupplierPurchaseHistory(supplier) {
+    if (!supplier) {
+      clearHistory()
+      return
+    }
+
+    if (currentSupplierForHistory.value === supplier) return
+
+    historyLoading.value = true
+    try {
+      const data = await frappeGet('ssplbilling.api.itemsearch_api.get_supplier_purchase_history', {
+        supplier: supplier
+      })
+      supplierPurchaseHistory.value = data || []
+      currentSupplierForHistory.value = supplier
+    } catch (e) {
+      console.warn('[customerHistory] Supplier history fetch failed:', e.message)
+      supplierPurchaseHistory.value = []
     } finally {
       historyLoading.value = false
     }
@@ -114,6 +139,16 @@ export function useCustomerHistory() {
     return customerSalesHistory.value.filter(h => h.item_code === itemCode)
   }
 
+  function hasSupplierHistory(itemCode) {
+    if (!itemCode || !supplierPurchaseHistory.value.length) return false
+    return supplierPurchaseHistory.value.some(h => h.item_code === itemCode)
+  }
+
+  function getSupplierItemHistoryFromCache(itemCode) {
+    if (!itemCode) return []
+    return supplierPurchaseHistory.value.filter(h => h.item_code === itemCode)
+  }
+
   /**
    * Clear item-specific insights (stock and prices).
    * Keeps customerSalesHistory intact.
@@ -133,6 +168,8 @@ export function useCustomerHistory() {
   function clearHistory() {
     customerSalesHistory.value = []
     currentCustomerForHistory.value = null
+    supplierPurchaseHistory.value = []
+    currentSupplierForHistory.value = null
     historyLoading.value = false
     clearItemInsights()
   }
@@ -140,10 +177,15 @@ export function useCustomerHistory() {
   return {
     customerSalesHistory,
     currentCustomerForHistory,
+    supplierPurchaseHistory,
+    currentSupplierForHistory,
     historyLoading,
     fetchCustomerSalesHistory,
+    fetchSupplierPurchaseHistory,
     hasHistory,
     getItemHistoryFromCache,
+    hasSupplierHistory,
+    getSupplierItemHistoryFromCache,
     clearHistory,
     clearItemInsights,
     // Stock levels
