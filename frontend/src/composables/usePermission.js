@@ -65,6 +65,17 @@ export const ACCOUNTS_ROUTES = new Set([
   'IncentiveRedeem',
 ])
 
+// Route names accessible by admin (excluding sale, purchase, accounts, ledger, and sspl special sections)
+export const ADMIN_ROUTES = new Set([
+  'StockReconciliation',
+  'StoreTransfer',
+  'Repack',
+  'Reports',
+  'DailyReport',
+  'SSPLBillingSettings',
+  'StoreSalesReport',
+])
+
 /**
  * Returns the effective role for the current user.
  * Priority: admin > cashier > biller > admin (fallback if nothing set).
@@ -101,7 +112,7 @@ export function getUserRole() {
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login', 'DailyReport', 'Catelogue'].includes(routeName)) return true
   const role = getUserRole()
-  if (role === 'admin') return true
+  if (role === 'admin') return ADMIN_ROUTES.has(routeName)
   if (role === 'accounts') return ACCOUNTS_ROUTES.has(routeName)
   if (role === 'cashier') return CASHIER_ROUTES.has(routeName)
   if (role === 'biller') return BILLER_ROUTES.has(routeName)
@@ -133,6 +144,7 @@ const TILE_ROUTE_MAP = {
   'reports':           'Reports',
   'store-sale-report': 'StoreSalesReport',
   'Cashier-Management':'CashierManagement',
+  'cancellation':      'Cancellation',
   'pricing-rules':     'DiscountRule',
   'discount-rules':    'DiscountRule',
   'loading-receipt':   'LoadingReceipt',
