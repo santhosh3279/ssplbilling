@@ -2305,6 +2305,10 @@ function onPendingUomChange() {
 
 function setPendingItem(item) {
   item._base_rate = item.rate || 0
+  const globalPct = parseFloat(globalDiscountPct.value)
+  if (!isNaN(globalPct)) {
+    item.discount = globalPct
+  }
   pendingItem.value = item
   nextTick(() => {
     pendingQtyInput.value?.focus()
@@ -2387,8 +2391,7 @@ function confirmPendingItem() {
   }
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
-  const globalPct = parseFloat(globalDiscountPct.value)
-  const itemDiscount = !isNaN(globalPct) ? globalPct : (p.discount || 0)
+  const itemDiscount = p.discount || 0
   const netRate = parseFloat(((p.rate || 0) * (1 - itemDiscount / 100)).toFixed(2))
   const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty, uom: p.uom || 'Nos',
