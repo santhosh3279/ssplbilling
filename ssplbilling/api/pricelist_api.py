@@ -54,7 +54,20 @@ def get_item_prices(item_code):
 			"item_price_name": base.get("name") if isinstance(base, dict) else None,
 		})
 
-	return {"prices": results, "uoms": uoms, "stock_uom": stock_uom, "item_name": item.item_name}
+	pricelist_percentages = []
+	if item.get("custom_pricelist_percentages"):
+		pricelist_percentages = [
+			{"pricelist": row.pricelist, "percentage": row.percentage}
+			for row in item.custom_pricelist_percentages
+		]
+
+	return {
+		"prices": results,
+		"uoms": uoms,
+		"stock_uom": stock_uom,
+		"item_name": item.item_name,
+		"pricelist_percentages": pricelist_percentages
+	}
 
 @frappe.whitelist()
 def update_item_price(item_code, price_list, rate, uom=""):

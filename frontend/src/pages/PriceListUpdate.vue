@@ -85,7 +85,10 @@
               <tr>
                 <th class="px-2 py-1.5 text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">
                   <div class="flex flex-col gap-1 items-start">
-                    <span>Calc</span>
+                    <div class="flex items-center gap-1.5">
+                      <span>Calc</span>
+                      <span v-if="hasFetchedPercentages" class="text-[9px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
+                    </div>
                     <button
                       type="button"
                       @click="savePercentageToItemMaster"
@@ -260,6 +263,7 @@ const factor = ref(props.initialFactor)
 const loading = ref(false)
 const saving = ref(false)
 const savingPercentage = ref(false)
+const hasFetchedPercentages = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
@@ -335,15 +339,24 @@ async function loadPrices(code) {
     uoms.value = data.uoms || []
     stockUom.value = data.stock_uom || ''
 
+    hasFetchedPercentages.value = !!(data.pricelist_percentages && data.pricelist_percentages.length > 0)
+
     const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
 
     prices.value = (data.prices || []).map((p, idx, arr) => {
       let markup = 0
-      // Prioritize saved markup from local storage if it exists
-      if (savedMarkups[p.price_list] !== undefined) {
+      
+      // 1. Prioritize fetched markup from child table in item master
+      const fetched = (data.pricelist_percentages || []).find(fp => fp.pricelist === p.price_list)
+      if (fetched) {
+        markup = parseFloat(fetched.percentage) || 0
+      }
+      // 2. Fallback to saved markup from local storage if it exists
+      else if (savedMarkups[p.price_list] !== undefined) {
         markup = savedMarkups[p.price_list]
-      } else if (idx > 0) {
-        // Fallback to calculating markup from existing rates
+      }
+      // 3. Fallback to calculating markup from existing rates
+      else if (idx > 0) {
         const prevRate = arr[idx - 1].rate || 1
         markup = Number(((p.rate / prevRate - 1) * 100).toFixed(2))
       }
