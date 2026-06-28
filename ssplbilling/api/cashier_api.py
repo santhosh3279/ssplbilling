@@ -122,7 +122,7 @@ def get_sales_invoice(invoice_name):
 
     freight_amount = _actual_charge("freight")
     packing_amount = _actual_charge("packing")
-    loading_amount = _actual_charge("loading")
+    loading_amount = _actual_charge("loading") or _actual_charge("tax collected")
     other_charges_amount = _actual_charge("other")
 
     is_inclusive = 0
