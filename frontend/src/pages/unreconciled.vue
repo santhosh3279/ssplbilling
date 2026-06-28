@@ -60,11 +60,17 @@
         <div class="grid grid-cols-3 gap-6 shrink-0">
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
             <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Unlinked Payments</span>
-            <span class="text-3xl font-mono font-black text-[var(--color-warning)] mt-1">₹{{ fmt(totalUnlinkedAmount) }}</span>
+            <div class="flex items-baseline justify-between mt-1">
+              <span class="text-3xl font-mono font-black text-[var(--color-warning)]">₹{{ fmt(totalUnlinkedAmount) }}</span>
+              <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ payments.length }}</span>
+            </div>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
             <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Outstanding Invoices</span>
-            <span class="text-3xl font-mono font-black text-[var(--color-danger)] mt-1">₹{{ fmt(totalOutstandingAmount) }}</span>
+            <div class="flex items-baseline justify-between mt-1">
+              <span class="text-3xl font-mono font-black text-[var(--color-danger)]">₹{{ fmt(totalOutstandingAmount) }}</span>
+              <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ invoices.length }}</span>
+            </div>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
             <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allocations Ready</span>
@@ -75,8 +81,9 @@
         <div class="flex-1 min-h-0 flex gap-6 overflow-hidden">
           <!-- Left Column: Unlinked Payments -->
           <div class="flex-1 flex flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-            <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+            <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 flex justify-between items-center">
               <h3 class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">Unlinked Payments</h3>
+              <span class="px-2.5 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-[10px] font-black uppercase tracking-wider">{{ payments.length }}</span>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               <div v-if="payments.length === 0" class="text-center py-12 text-xs italic text-[var(--color-text-muted)]">
@@ -165,8 +172,9 @@
 
           <!-- Right Column: Outstanding Invoices -->
           <div class="flex-1 flex flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-            <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+            <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 flex justify-between items-center">
               <h3 class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">Outstanding Invoices</h3>
+              <span class="px-2.5 py-0.5 rounded-full bg-[var(--color-danger)]/10 text-[var(--color-danger)] text-[10px] font-black uppercase tracking-wider">{{ invoices.length }}</span>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               <div v-if="invoices.length === 0" class="text-center py-12 text-xs italic text-[var(--color-text-muted)]">
