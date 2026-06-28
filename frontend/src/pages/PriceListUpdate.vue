@@ -84,7 +84,7 @@
               <!-- Row 3: Calc Row (Input for Base Rate) -->
               <tr>
                 <th class="px-2 py-1.5 text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">
-                  <div class="flex flex-col gap-1 items-start">
+                  <div class="flex flex-col gap-1.5 items-start w-full">
                     <div class="flex items-center gap-1.5">
                       <span>Calc</span>
                       <span v-if="hasFetchedPercentages" class="text-[9px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
@@ -93,10 +93,10 @@
                       type="button"
                       @click="savePercentageToItemMaster"
                       :disabled="savingPercentage || !(itemCode || manualItemCode)"
-                      class="text-[9px] bg-[var(--color-info)] text-white px-1.5 py-0.5 rounded hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-black uppercase tracking-wider leading-tight shadow-sm whitespace-normal text-left"
+                      class="w-full rounded bg-[var(--color-info)] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[var(--color-info)]/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-center"
                       title="Save all markup percentages to the Item Master child table"
                     >
-                      {{ savingPercentage ? 'Saving...' : 'Save % to Item Master' }}
+                      {{ savingPercentage ? 'Saving...' : 'Save %' }}
                     </button>
                   </div>
                 </th>
