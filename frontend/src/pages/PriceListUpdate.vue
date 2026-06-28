@@ -87,7 +87,7 @@
                   <div class="flex flex-col gap-1.5 items-start w-full">
                     <div class="flex items-center gap-1.5">
                       <span>Calc</span>
-                      <span v-if="hasFetchedPercentages" class="text-[9px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
+                      <span v-if="hasFetchedPercentages" class="text-[18px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
                     </div>
                   </div>
                 </th>
