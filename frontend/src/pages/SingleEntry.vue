@@ -24,9 +24,6 @@
           >
             <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> 
             <span>{{ cashAccount.name }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 opacity-55" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
           </span>
         </h1>
       </div>
