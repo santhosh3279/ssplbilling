@@ -123,7 +123,7 @@
                       type="button"
                       @click="savePercentageToItemMaster"
                       :disabled="savingPercentage || !(itemCode || manualItemCode)"
-                      class="w-full rounded bg-[var(--color-info)] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[var(--color-info)]/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-center whitespace-nowrap"
+                      class="w-full rounded bg-[var(--color-info)] px-2 py-1 text-[15px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[var(--color-info)]/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-center whitespace-nowrap"
                       title="Save all markup percentages to the Item Master child table"
                     >
                       {{ savingPercentage ? 'Saving...' : 'Save % to Item Master' }}
