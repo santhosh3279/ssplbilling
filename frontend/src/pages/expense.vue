@@ -16,7 +16,7 @@
           </svg>
         </button>
         <h1 class="text-2xl font-normal uppercase tracking-tight">
-          Expense Entry
+          BOX Cash Entry
           <span v-if="cashAccount.name" class="ml-4 text-2xl font-normal text-black bg-black/5 px-4 py-1.5 rounded-full border border-black/10 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500">
             <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> {{ cashAccount.name }}
           </span>
