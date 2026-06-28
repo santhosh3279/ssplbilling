@@ -83,7 +83,20 @@
               </tr>
               <!-- Row 3: Calc Row (Input for Base Rate) -->
               <tr>
-                <th class="px-2 py-1.5 text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">Calc</th>
+                <th class="px-2 py-1.5 text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky left-0 top-[84px] bg-[var(--color-surface)] z-30 border-r border-b border-[var(--color-border)] w-40">
+                  <div class="flex flex-col gap-1 items-start">
+                    <span>Calc</span>
+                    <button
+                      type="button"
+                      @click="savePercentageToItemMaster"
+                      :disabled="savingPercentage || !(itemCode || manualItemCode)"
+                      class="text-[9px] bg-[var(--color-info)] text-white px-1.5 py-0.5 rounded hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-black uppercase tracking-wider leading-tight shadow-sm whitespace-normal text-left"
+                      title="Save all markup percentages to the Item Master child table"
+                    >
+                      {{ savingPercentage ? 'Saving...' : 'Save % to Item Master' }}
+                    </button>
+                  </div>
+                </th>
                 <th
                   v-for="(p, idx) in prices"
                   :key="`calc-row-${p.price_list}`"
@@ -246,6 +259,7 @@ const stockUom = ref('')
 const factor = ref(props.initialFactor)
 const loading = ref(false)
 const saving = ref(false)
+const savingPercentage = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
@@ -418,6 +432,33 @@ async function saveAll() {
     alert('Update failed: ' + e.message)
   } finally {
     saving.value = false
+  }
+}
+
+async function savePercentageToItemMaster() {
+  const code = props.itemCode || manualItemCode.value
+  if (!code) {
+    alert('Item code is required.')
+    return
+  }
+
+  const percentages = prices.value.map(p => ({
+    pricelist: p.price_list,
+    percentage: p.markup !== undefined && p.markup !== null ? String(p.markup) : '0'
+  }))
+
+  savingPercentage.value = true
+  try {
+    await frappePost('ssplbilling.api.pricelist_api.save_item_pricelist_percentages', {
+      item_code: code,
+      percentages: JSON.stringify(percentages)
+    })
+    alert('Percentages saved to Item Master successfully.')
+  } catch (e) {
+    console.error('Failed to save percentages:', e)
+    alert('Failed to save percentages: ' + (e.message || e))
+  } finally {
+    savingPercentage.value = false
   }
 }
 

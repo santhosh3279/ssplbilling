@@ -102,3 +102,27 @@ def update_multiple_prices(item_code, prices):
 				updated.append(name)
 
 	return updated
+
+
+@frappe.whitelist()
+def save_item_pricelist_percentages(item_code, percentages):
+	"""Save price list markup percentages to the Item's custom percentages child table."""
+	if isinstance(percentages, str):
+		percentages = json.loads(percentages)
+
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+
+	item = frappe.get_doc("Item", item_code)
+	item.set("custom_pricelist_percentages", [])
+
+	for p in percentages:
+		if p.get("pricelist") and p.get("percentage") is not None:
+			item.append("custom_pricelist_percentages", {
+				"pricelist": p["pricelist"],
+				"percentage": str(p["percentage"])
+			})
+
+	item.flags.ignore_permissions = True
+	item.save()
+	return {"status": "success"}
