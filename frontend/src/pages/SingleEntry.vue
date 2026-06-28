@@ -240,7 +240,6 @@
       :enteredAmount="rowAmount(rows[modalRowIdx])"
       :activeTab="rowActiveTab"
       :modalAmounts="rows[modalRowIdx].modalAmounts"
-      :disablePayments="true"
       @close="closeModal"
       @update-allocations="updateRowAllocations"
     />

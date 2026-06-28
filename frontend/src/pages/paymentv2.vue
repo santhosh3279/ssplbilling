@@ -457,7 +457,6 @@
       :activeTab="activeTab"
       :modalAmounts="modalAmounts"
       :otherAllocations="otherAllocations"
-      :disablePayments="true"
       @close="showInvoicesModal = false"
       @update-allocations="updateAllocations"
     />

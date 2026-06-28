@@ -255,7 +255,6 @@
       :invoices="form.rows[modalRowIdx].invoices"
       :unlinkedPayments="form.rows[modalRowIdx].unlinkedPayments"
       :unlinkedJournals="form.rows[modalRowIdx].unlinkedJournals"
-      :disablePayments="true"
       :autoFill="true"
       @close="closeOutstandingModal"
       @update-allocations="updateRowAllocations"

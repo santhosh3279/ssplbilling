@@ -28,7 +28,6 @@
               <span v-if="showTypeInv">●</span> Invoices
             </button>
             <button
-              v-if="!disablePayments"
               @click="showTypePay = !showTypePay"
               class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
               :class="showTypePay ? 'bg-[var(--color-success)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
@@ -424,7 +423,6 @@ const props = defineProps({
   activeTab: String,
   modalAmounts: { type: Object, default: () => ({}) },
   otherAllocations: { type: Array, default: () => [] },
-  disablePayments: { type: Boolean, default: false },
   autoFill: { type: Boolean, default: false },
   // Backward-compat props (used when data is passed in from parent)
   invoices: { type: Array, default: () => [] },
@@ -440,13 +438,8 @@ const localPayments = ref([])
 const localJournals = ref([])
 const filterDirection = ref('All')
 const showTypeInv = ref(true)
-const showTypePay = ref(!props.disablePayments)
+const showTypePay = ref(true)
 const showTypeJrn = ref(true)
-
-watch(() => props.disablePayments, (val) => {
-  if (val) showTypePay.value = false
-  else showTypePay.value = true
-})
 const localAmounts = ref({})
 const lastModifiedKey = ref(null)
 const confirmBtn = ref(null)
