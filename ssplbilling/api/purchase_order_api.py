@@ -491,3 +491,18 @@ def delete_purchase_order(order_name):
     """Delete a Draft Purchase Order."""
     frappe.delete_doc("Purchase Order", order_name)
     return {"status": "Deleted"}
+
+
+@frappe.whitelist()
+def get_supplier_items(supplier):
+    """Get all item codes linked to the selected supplier."""
+    if not supplier:
+        return []
+
+    items = frappe.get_all(
+        "Item Supplier",
+        filters={"supplier": supplier},
+        fields=["parent as item_code"]
+    )
+    return list(set([d.item_code for d in items if d.item_code]))
+

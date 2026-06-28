@@ -65,6 +65,19 @@
       @incentive="handleIncentive"
       @party-click="supplierInitialQuery = ''; showSupplierModal = true"
     >
+      <template #header-right>
+        <div class="flex items-center gap-4">
+          <button
+            v-if="supplierId && !isReadOnly && !isSubmitted"
+            @click="fetchSupplierItems"
+            :disabled="fetchingSupplierItems"
+            class="flex items-center gap-2 rounded bg-[var(--color-info)] px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-[var(--color-info)]/80 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span>📥</span> {{ fetchingSupplierItems ? 'Fetching...' : 'Fetch Items' }}
+          </button>
+        </div>
+      </template>
+
       <template #row="{ item, index, formatQty }">
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
@@ -741,6 +754,7 @@ const supplierGstin = ref('')
 const supplierLastInvDate = ref('')
 const supplierState = ref('')
 const submitting = ref(false)
+const fetchingSupplierItems = ref(false)
 
 const newItemCode = ref('')
 const newCodeInput = ref(null)
@@ -1607,6 +1621,57 @@ function handleSupplierSelected(party) {
     supplierLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
   } else supplierLastInvDate.value = 'None'
   fetchCustomerSalesHistory(party.name); showSupplierModal.value = false; nextTick(() => { newCodeInput.value?.focus() })
+}
+
+async function fetchSupplierItems() {
+  if (!supplierId.value) {
+    alert('Please select a supplier first.')
+    return
+  }
+  fetchingSupplierItems.value = true
+  try {
+    const itemCodes = await frappeGet('ssplbilling.api.purchase_order_api.get_supplier_items', {
+      supplier: supplierId.value
+    })
+    if (!itemCodes || !itemCodes.length) {
+      alert('No items found linked to this supplier.')
+      return
+    }
+    let addedCount = 0
+    for (const code of itemCodes) {
+      const exists = items.value.some(item => !item.deleted && item.item_code === code)
+      if (exists) continue
+
+      const match = lookupItemInCache(code)
+      if (match) {
+        const rate = getItemRateForPriceList(match, match.uom || 'Nos')
+        const newItem = {
+          item_code: match.item_code,
+          item_name: match.item_name,
+          qty: 1,
+          uom: match.uom || 'Nos',
+          rate: rate,
+          _base_rate: rate,
+          discount: 0,
+          tax_rate: match.tax_rate || 0,
+          amount: rate,
+          deleted: false
+        }
+        items.value.push(newItem)
+        addedCount++
+      }
+    }
+    if (addedCount > 0) {
+      nextTick(() => { focusRow(items.value.length - 1) })
+    } else {
+      alert('All items linked to this supplier are already in the order.')
+    }
+  } catch (err) {
+    console.error('Failed to fetch supplier items:', err)
+    alert('Error fetching supplier items: ' + (err.message || err))
+  } finally {
+    fetchingSupplierItems.value = false
+  }
 }
 
 async function handleSeriesSelected(series) {
