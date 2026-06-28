@@ -301,10 +301,10 @@ function exportToExcel() {
     ]
     // Add amounts for each price list
     priceLists.value.forEach(pl => {
-      row.push(r.price_list_data[pl] || 0)
+      row.push(Math.round(r.price_list_data[pl] || 0))
     })
     // Add Total and %
-    row.push(r.total_amount)
+    row.push(Math.round(r.total_amount || 0))
     row.push(((r.total_amount / grandTotal.value) * 100).toFixed(2) + '%')
     return row
   })
@@ -312,9 +312,9 @@ function exportToExcel() {
   // Add Grand Total row
   const totalRow = ['', 'GRAND TOTAL', '']
   priceLists.value.forEach(pl => {
-    totalRow.push(getPriceListTotal(pl))
+    totalRow.push(Math.round(getPriceListTotal(pl) || 0))
   })
-  totalRow.push(grandTotal.value)
+  totalRow.push(Math.round(grandTotal.value || 0))
   totalRow.push('100%')
   data.push(totalRow)
 
@@ -354,11 +354,11 @@ function exportToExcel() {
       b.customer,
       b.customer_name,
       b.selling_price_list || 'Other/Direct',
-      b.bill_amount
+      Math.round(b.bill_amount || 0)
     ])
     
     const totalBillAmt = ccBills.reduce((sum, b) => sum + (b.bill_amount || 0), 0)
-    sheetRows.push(['', 'TOTAL', '', '', '', '', totalBillAmt])
+    sheetRows.push(['', 'TOTAL', '', '', '', '', Math.round(totalBillAmt || 0)])
     
     const rawName = r.cost_center_name || r.cost_center
     let cleanName = rawName.replace(/[:\\/?*\[\]]/g, '').substring(0, 31).trim()
