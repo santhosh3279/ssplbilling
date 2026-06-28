@@ -63,7 +63,7 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                <th class="px-4 py-2 w-1/3">Party</th>
+                <th class="px-4 py-2 w-1/4">Party</th>
                 <th 
                   class="px-4 py-2 text-right w-48"
                   :class="activeTab === 'Receipt' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
@@ -71,8 +71,9 @@
                   {{ activeTab === 'Receipt' ? 'Credit (Cr)' : 'Debit (Dr)' }}
                 </th>
                 <th class="px-4 py-2 w-1/4">Remarks</th>
-                <th class="px-6 py-2 text-right w-64">Balance</th>
-                <th class="px-6 py-2 text-right w-64">New Balance</th>
+                <th class="px-4 py-2 w-[350px]">Links</th>
+                <th class="px-6 py-2 text-right w-48">Balance</th>
+                <th class="px-6 py-2 text-right w-48">New Balance</th>
               </tr>
             </thead>
             <tbody>
@@ -118,6 +119,32 @@
                     class="w-full bg-transparent text-2xl font-bold focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] placeholder:text-inherit placeholder:opacity-30"
                     placeholder="Row notes..."
                   />
+                </td>
+
+                <!-- Links (Reference allocations) -->
+                <td class="px-4 py-1.5 transition-colors focus-within:bg-[var(--color-focus)]">
+                  <div class="flex items-center gap-2">
+                    <button 
+                      v-if="row.account && row.party_type !== 'Account'"
+                      @click="openAllocationModal(idx)"
+                      class="flex h-7 w-7 items-center justify-center rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-highlight)] hover:bg-[var(--color-border)] active:scale-95 transition-all shadow-sm"
+                      title="Link Invoices/Payments"
+                    >
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    </button>
+                    
+                    <div v-if="row.allocations && row.allocations.length" class="flex items-center gap-1.5 overflow-x-auto max-w-[280px] scrollbar-none">
+                      <div 
+                        v-for="alloc in row.allocations" 
+                        :key="alloc.reference_name"
+                        class="shrink-0 flex items-center gap-1.5 rounded-md bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2 py-0.5 text-[10px] font-bold shadow-sm"
+                      >
+                        <span class="text-[var(--color-text-muted)]">{{ alloc.reference_name }}</span>
+                        <span class="text-[var(--color-success)]">₹{{ fmt(alloc.allocated_amount) }}</span>
+                      </div>
+                    </div>
+                    <div v-else-if="row.account && row.party_type !== 'Account'" class="text-[10px] text-[var(--color-text-muted)] italic ml-2">No invoices linked</div>
+                  </div>
                 </td>
 
                 <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
@@ -237,6 +264,19 @@
         <button @click="showSuccess = false" class="h-10 w-10 shrink-0 rounded-full hover:bg-[var(--color-midlight)] transition-colors text-xl">✕</button>
       </div>
     </div>
+    <!-- Outstanding Bills Modal -->
+    <OutstandingBillsModal
+      v-if="modalRowIdx !== null"
+      :show="showModal"
+      :partyType="form.rows[modalRowIdx].party_type"
+      :party="form.rows[modalRowIdx].account"
+      :enteredAmount="form.rows[modalRowIdx].amount || 0"
+      :activeTab="activeTab"
+      :modalAmounts="form.rows[modalRowIdx].modalAmounts"
+      :mop="'Cash'"
+      @close="closeModal"
+      @update-allocations="updateRowAllocations"
+    />
   </div>
 </template>
 
@@ -245,6 +285,7 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import Warning from '../components/Warning.vue'
 
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
@@ -265,9 +306,12 @@ const cashAccount = ref({
   balance: null
 })
 
+const showModal = ref(false)
+const modalRowIdx = ref(null)
+
 const form = reactive({
   rows: [
-    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '' }
+    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
   ],
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0]
@@ -433,7 +477,7 @@ async function handleAmountEnter(idx) {
 
 function handleRowRemarksEnter(idx) {
   if (idx === form.rows.length - 1) {
-    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '' })
+    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} })
     nextTick(() => {
       setTimeout(() => {
         expenseSearchRefs.value[idx + 1]?.focus()
@@ -448,7 +492,7 @@ function onTabClick(t) {
   if (activeTab.value === t) return
   activeTab.value = t
   form.rows = [
-    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {}, invoices: [], unlinkedPayments: [], unlinkedJournals: [], hasUnallocated: false }
+    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
   ]
   nextTick(() => {
     setTimeout(() => {
@@ -517,7 +561,13 @@ async function handleSubmit() {
         cost_center: localStorage.getItem('wb-cost-center'),
         remarks: row.remarks || '',
         "Custom Remarks": 1,
-        references: []
+        references: (row.allocations || []).map(a => ({
+          reference_doctype: a.reference_doctype,
+          reference_name: a.reference_name,
+          total_amount: a.total_amount,
+          outstanding_amount: a.outstanding_amount,
+          allocated_amount: a.allocated_amount
+        }))
       }
       const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
         data: JSON.stringify(payload)
@@ -534,6 +584,36 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+function openAllocationModal(idx) {
+  modalRowIdx.value = idx
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+  modalRowIdx.value = null
+}
+
+function updateRowAllocations(allocations) {
+  if (modalRowIdx.value !== null) {
+    const idx = modalRowIdx.value
+    form.rows[idx].allocations = allocations
+    
+    // Re-sync modalAmounts to ensure state persistence
+    const newModalAmounts = {}
+    allocations.forEach(a => {
+      newModalAmounts[a._row || a.reference_name] = a.allocated_amount
+    })
+    form.rows[idx].modalAmounts = newModalAmounts
+    
+    closeModal()
+  }
+}
+
+function fmt(val) {
+  return Math.round(Number(val || 0)).toLocaleString('en-IN')
 }
 
 onMounted(() => {
