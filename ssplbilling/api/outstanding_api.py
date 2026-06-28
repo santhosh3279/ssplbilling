@@ -17,43 +17,39 @@ def get_party_outstanding(party_type, party):
 	# ── 1. Outstanding Invoices ──────────────────────────────────────────────────────────────────
 	invoices = []
 
-	if party_type != "Supplier":
-		rows = frappe.db.sql(
-			"""
-			SELECT name, posting_date, grand_total, outstanding_amount,
-			       customer_name AS party_name, is_return,
-			       'Sales Invoice' AS doctype
-			FROM `tabSales Invoice`
-			WHERE docstatus = 1 AND customer = %s
-			      AND ABS(outstanding_amount) > 0.005
-			      AND company = %s
-			ORDER BY posting_date ASC
-			""",
-			(party, company),
-			as_dict=True,
-		)
-		for d in rows:
-			d["direction"] = "Cr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Dr"
-			invoices.append(dict(d))
+	from erpnext.accounts.party import get_party_account
+	from erpnext.accounts.doctype.payment_entry.payment_entry import get_outstanding_reference_documents
 
-	if party_type != "Customer":
-		rows = frappe.db.sql(
-			"""
-			SELECT name, posting_date, grand_total, outstanding_amount,
-			       supplier_name AS party_name, is_return,
-			       'Purchase Invoice' AS doctype
-			FROM `tabPurchase Invoice`
-			WHERE docstatus = 1 AND supplier = %s
-			      AND ABS(outstanding_amount) > 0.005
-			      AND company = %s
-			ORDER BY posting_date ASC
-			""",
-			(party, company),
-			as_dict=True,
-		)
-		for d in rows:
-			d["direction"] = "Dr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Cr"
-			invoices.append(dict(d))
+	party_account = get_party_account(party_type, party, company)
+
+	if party_account:
+		args = {
+			"party_type": party_type,
+			"party": party,
+			"party_account": party_account,
+			"company": company,
+			"get_outstanding_invoices": True,
+			"get_orders_to_be_billed": False,
+		}
+		ref_docs = get_outstanding_reference_documents(args, validate=True) or []
+		for d in ref_docs:
+			if d.voucher_type in ("Sales Invoice", "Purchase Invoice"):
+				is_return = frappe.db.get_value(d.voucher_type, d.voucher_no, "is_return") or 0
+				direction = "Dr"
+				if d.voucher_type == "Sales Invoice":
+					direction = "Cr" if is_return or d.outstanding_amount < 0 else "Dr"
+				elif d.voucher_type == "Purchase Invoice":
+					direction = "Dr" if is_return or d.outstanding_amount < 0 else "Cr"
+
+				invoices.append({
+					"name": d.voucher_no,
+					"posting_date": str(d.posting_date),
+					"grand_total": float(d.invoice_amount or 0),
+					"outstanding_amount": float(d.outstanding_amount or 0),
+					"is_return": int(is_return or 0),
+					"direction": direction,
+					"doctype": d.voucher_type
+				})
 
 	# ── 2. Unlinked Payment Entries ──────────────────────────────────────────────────────────────
 	payment_entries = frappe.db.sql(
