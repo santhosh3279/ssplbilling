@@ -3,6 +3,15 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 CUSTOM_FIELDS = {
+	"Item": [
+		{
+			"fieldname": "custom_pricelist_percentages",
+			"label": "Pricelist Percentages",
+			"fieldtype": "Table",
+			"options": "Item Price List Percentage",
+			"insert_after": "safety_stock",
+		}
+	],
 	"Customer": [
 		{
 			"fieldname": "customer_print_name",
