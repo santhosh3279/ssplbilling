@@ -228,6 +228,16 @@
           </div>
         </div>
       </footer>
+    <!-- Ephemeral Toast Message -->
+    <div
+      v-if="toast"
+      class="fixed bottom-6 right-6 z-[250] flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg transition-all duration-300 font-medium text-sm text-white"
+      :class="toast.type === 'error' ? 'bg-[var(--color-error)] border border-red-500/30' : 'bg-[var(--color-success)] border border-green-500/30'"
+    >
+      <span class="text-base font-bold">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
+      <span>{{ toast.message }}</span>
+      <button @click="toast = null" class="ml-2 hover:opacity-85 text-xs font-black">✕</button>
+    </div>
     </div>
   </div>
 </template>
@@ -269,6 +279,17 @@ const hasFetchedPercentages = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
+
+const toast = ref(null)
+
+function showToast(message, type = 'success') {
+  toast.value = { message, type }
+  setTimeout(() => {
+    if (toast.value && toast.value.message === message) {
+      toast.value = null
+    }
+  }, 3000)
+}
 
 const calculatedRatesByUom = computed(() => {
   const result = {}
@@ -393,7 +414,7 @@ async function loadPrices(code) {
       focusInput('rate-0-0')
     })
   } catch (e) {
-    alert('Failed to load prices: ' + e.message)
+    showToast('Failed to load prices: ' + e.message, 'error')
   } finally {
     loading.value = false
   }
@@ -442,9 +463,9 @@ async function saveAll() {
     })
 
     if (props.isSubWindow) emit('close')
-    else alert('Prices updated successfully')
+    else showToast('Prices updated successfully', 'success')
   } catch (e) {
-    alert('Update failed: ' + e.message)
+    showToast('Update failed: ' + e.message, 'error')
   } finally {
     saving.value = false
   }
@@ -453,7 +474,7 @@ async function saveAll() {
 async function savePercentageToItemMaster() {
   const code = props.itemCode || manualItemCode.value
   if (!code) {
-    alert('Item code is required.')
+    showToast('Item code is required.', 'error')
     return
   }
 
@@ -468,10 +489,10 @@ async function savePercentageToItemMaster() {
       item_code: code,
       percentages: JSON.stringify(percentages)
     })
-    alert('Percentages saved to Item Master successfully.')
+    showToast('Percentages saved to Item Master successfully.', 'success')
   } catch (e) {
     console.error('Failed to save percentages:', e)
-    alert('Failed to save percentages: ' + (e.message || e))
+    showToast('Failed to save percentages: ' + (e.message || e), 'error')
   } finally {
     savingPercentage.value = false
   }
