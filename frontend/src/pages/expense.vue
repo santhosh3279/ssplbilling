@@ -548,6 +548,18 @@ async function handleSubmit() {
         account = cashAccount.value.account
       }
 
+      // Filter out Payment Entry and Journal Entry references from the initial Payment Entry payload,
+      // as ERPNext's validate_reference_documents restricts references to only Sales/Purchase Invoices.
+      const invoiceRefs = (row.allocations || [])
+        .filter(a => ['Sales Invoice', 'Purchase Invoice'].includes(a.reference_doctype))
+        .map(a => ({
+          reference_doctype: a.reference_doctype,
+          reference_name: a.reference_name,
+          total_amount: a.total_amount,
+          outstanding_amount: a.outstanding_amount,
+          allocated_amount: a.allocated_amount
+        }))
+
       const payload = {
         payment_type: paymentType,
         party: party,
@@ -561,18 +573,42 @@ async function handleSubmit() {
         cost_center: localStorage.getItem('wb-cost-center'),
         remarks: row.remarks || '',
         "Custom Remarks": 1,
-        references: (row.allocations || []).map(a => ({
-          reference_doctype: a.reference_doctype,
-          reference_name: a.reference_name,
-          total_amount: a.total_amount,
-          outstanding_amount: a.outstanding_amount,
-          allocated_amount: a.allocated_amount
-        }))
+        references: invoiceRefs
       }
+
       const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
         data: JSON.stringify(payload)
       })
-      if (res && res.payment_entry) results.push(res.payment_entry)
+
+      if (res && res.payment_entry) {
+        const pe_name = res.payment_entry
+        results.push(pe_name)
+
+        // Handle cross-reconciliation (linking the new PE to unlinked Payments/Journals)
+        const crossAllocations = (row.allocations || [])
+          .filter(a => ['Payment Entry', 'Journal Entry'].includes(a.reference_doctype))
+          .map(a => ({
+            payment_type: 'Payment Entry',
+            payment_name: pe_name,
+            reference_row: a._row || null,
+            invoice_type: a.reference_doctype,
+            invoice_name: a.reference_name,
+            amount: a.allocated_amount,
+            unreconciled_amount: row.amount
+          }))
+
+        if (crossAllocations.length > 0) {
+          try {
+            await frappePost('ssplbilling.api.reconcile_api.post_reconciliation', {
+              party_type: partyType,
+              party: party,
+              allocations: JSON.stringify(crossAllocations)
+            })
+          } catch (err) {
+            console.warn('Cross reconciliation failed for ' + pe_name + ':', err)
+          }
+        }
+      }
     }
     if (results.length > 0) {
       successDocName.value = results.join(', ')
