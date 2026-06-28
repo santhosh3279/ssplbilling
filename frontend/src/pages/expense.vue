@@ -91,26 +91,7 @@
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Search (Enter)</div>
                   </div>
-                  <!-- Allocations & Warning Details -->
-                  <div class="flex flex-col gap-1 mt-1">
-                    <div v-if="row.allocations && row.allocations.length" class="flex flex-wrap gap-1">
-                      <span 
-                        v-for="alloc in row.allocations" 
-                        :key="alloc.reference_name"
-                        class="text-[14px] font-black uppercase bg-[var(--color-success)]/10 text-[var(--color-success)] px-2 py-0.5 rounded font-mono"
-                      >
-                        {{ alloc.reference_name }}: ₹{{ Number(alloc.allocated_amount).toLocaleString('en-IN') }}
-                      </span>
-                    </div>
-                    <button 
-                      v-if="row.hasUnallocated"
-                      type="button"
-                      @click="triggerOutstandingModal(idx)"
-                      class="self-start text-[14px] font-black uppercase bg-[var(--color-warning)]/10 text-[var(--color-warning)] hover:bg-[var(--color-warning)]/20 px-2 py-0.5 rounded transition-all flex items-center gap-1"
-                    >
-                      ⚠️ Unallocated Cash Available (Click to Adjust)
-                    </button>
-                  </div>
+
                 </td>
 
                 <td 
@@ -243,22 +224,7 @@
       @confirm="showExitWarning = false; router.push('/')"
     />
 
-    <!-- Outstanding Bills Modal -->
-    <OutstandingBillsModal
-      v-if="modalRowIdx !== null"
-      :show="showOutstandingModal"
-      :partyType="form.rows[modalRowIdx].party_type"
-      :party="form.rows[modalRowIdx].account"
-      :enteredAmount="Number(form.rows[modalRowIdx].amount) || 0"
-      :activeTab="activeTab"
-      :modalAmounts="form.rows[modalRowIdx].modalAmounts"
-      :invoices="form.rows[modalRowIdx].invoices"
-      :unlinkedPayments="form.rows[modalRowIdx].unlinkedPayments"
-      :unlinkedJournals="form.rows[modalRowIdx].unlinkedJournals"
-      :autoFill="true"
-      @close="closeOutstandingModal"
-      @update-allocations="updateRowAllocations"
-    />
+
 
     <!-- Success Popup -->
     <div v-if="showSuccess" class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
@@ -280,7 +246,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import Warning from '../components/Warning.vue'
-import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
+
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 
 const router = useRouter()
@@ -301,7 +267,7 @@ const cashAccount = ref({
 
 const form = reactive({
   rows: [
-    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {}, invoices: [], unlinkedPayments: [], unlinkedJournals: [], hasUnallocated: false }
+    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '' }
   ],
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0]
@@ -419,66 +385,7 @@ function handleAccountEnter(idx) {
   }
 }
 
-const showOutstandingModal = ref(false)
-const modalRowIdx = ref(null)
 
-async function checkOutstandingForParty(idx) {
-  const row = form.rows[idx]
-  if (!row.account || (row.party_type !== 'Customer' && row.party_type !== 'Supplier')) return false
-
-  try {
-    const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
-      party_type: row.party_type,
-      party: row.account
-    })
-    
-    row.invoices = res.invoices || []
-    row.unlinkedPayments = res.payment_entries || []
-    row.unlinkedJournals = res.journal_entries || []
-
-    const hasUnallocated = (res.payment_entries || []).some(pe => Number(pe.unallocated_amount) > 0.005) ||
-                           (res.journal_entries || []).some(je => Number(je.unallocated_amount) > 0.005)
-    row.hasUnallocated = hasUnallocated
-    return hasUnallocated
-  } catch (e) {
-    console.error('Failed to fetch outstanding items:', e)
-    return false
-  }
-}
-
-function triggerOutstandingModal(idx) {
-  modalRowIdx.value = idx
-  showOutstandingModal.value = true
-}
-
-function closeOutstandingModal() {
-  showOutstandingModal.value = false
-  modalRowIdx.value = null
-}
-
-function updateRowAllocations(allocations) {
-  if (modalRowIdx.value !== null) {
-    const idx = modalRowIdx.value
-    const row = form.rows[idx]
-    row.allocations = allocations
-    
-    // Sync modalAmounts
-    const newModalAmounts = {}
-    allocations.forEach(a => {
-      newModalAmounts[a._row || a.reference_name] = a.allocated_amount
-    })
-    row.modalAmounts = newModalAmounts
-
-    closeOutstandingModal()
-
-    // Focus remarks after modal
-    nextTick(() => {
-      setTimeout(() => {
-        rowRemarksRefs.value[idx]?.focus()
-      }, 50)
-    })
-  }
-}
 
 function handleSelect(item) {
   showSearchModal.value = false
@@ -508,7 +415,6 @@ async function fetchRowBalance(idx) {
     if (res && res.closing_balance !== undefined) {
       row.balance = res.closing_balance
     }
-    await checkOutstandingForParty(idx)
   } catch (e) {
     console.error('Row balance fetch failed:', e)
   }
@@ -517,21 +423,17 @@ async function fetchRowBalance(idx) {
 async function handleAmountEnter(idx) {
   const row = form.rows[idx]
   if (row.amount > 0 && row.account) {
-    if (row.hasUnallocated) {
-      triggerOutstandingModal(idx)
-    } else {
-      nextTick(() => {
-        setTimeout(() => {
-          rowRemarksRefs.value[idx]?.focus()
-        }, 50)
-      })
-    }
+    nextTick(() => {
+      setTimeout(() => {
+        rowRemarksRefs.value[idx]?.focus()
+      }, 50)
+    })
   }
 }
 
 function handleRowRemarksEnter(idx) {
   if (idx === form.rows.length - 1) {
-    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {}, invoices: [], unlinkedPayments: [], unlinkedJournals: [], hasUnallocated: false })
+    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '' })
     nextTick(() => {
       setTimeout(() => {
         expenseSearchRefs.value[idx + 1]?.focus()
@@ -615,13 +517,7 @@ async function handleSubmit() {
         cost_center: localStorage.getItem('wb-cost-center'),
         remarks: row.remarks || '',
         "Custom Remarks": 1,
-        references: (row.allocations || []).map(a => ({
-          reference_doctype: a.reference_doctype,
-          reference_name: a.reference_name,
-          total_amount: a.total_amount,
-          outstanding_amount: a.outstanding_amount,
-          allocated_amount: a.allocated_amount
-        }))
+        references: []
       }
       const res = await frappePost('ssplbilling.api.expense_api.create_payment_entry', {
         data: JSON.stringify(payload)

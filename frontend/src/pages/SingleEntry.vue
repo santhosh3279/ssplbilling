@@ -240,6 +240,7 @@
       :enteredAmount="rowAmount(rows[modalRowIdx])"
       :activeTab="rowActiveTab"
       :modalAmounts="rows[modalRowIdx].modalAmounts"
+      :mop="mopAccountLabel"
       @close="closeModal"
       @update-allocations="updateRowAllocations"
     />

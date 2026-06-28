@@ -457,6 +457,7 @@
       :activeTab="activeTab"
       :modalAmounts="modalAmounts"
       :otherAllocations="otherAllocations"
+      :mop="form.mop_rows[currentMopRowIdx.value]?.name"
       @close="showInvoicesModal = false"
       @update-allocations="updateAllocations"
     />

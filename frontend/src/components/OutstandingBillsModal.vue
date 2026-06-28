@@ -34,13 +34,7 @@
             >
               <span v-if="showTypePay">●</span> Payments
             </button>
-            <button
-              @click="showTypeJrn = !showTypeJrn"
-              class="min-w-[80px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase transition-all duration-150 flex items-center justify-center gap-2"
-              :class="showTypeJrn ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
-            >
-              <span v-if="showTypeJrn">●</span> Journals
-            </button>
+
           </div>
         </div>
         <button @click="$emit('close')" class="h-11 w-11 rounded-full hover:bg-[var(--color-midlight)] flex items-center justify-center text-2xl transition-colors">✕</button>
@@ -424,6 +418,7 @@ const props = defineProps({
   modalAmounts: { type: Object, default: () => ({}) },
   otherAllocations: { type: Array, default: () => [] },
   autoFill: { type: Boolean, default: false },
+  mop: { type: String, default: '' },
   // Backward-compat props (used when data is passed in from parent)
   invoices: { type: Array, default: () => [] },
   unlinkedPayments: { type: Array, default: () => [] },
@@ -439,7 +434,7 @@ const localJournals = ref([])
 const filterDirection = ref('All')
 const showTypeInv = ref(true)
 const showTypePay = ref(true)
-const showTypeJrn = ref(true)
+const showTypeJrn = ref(false)
 const localAmounts = ref({})
 const lastModifiedKey = ref(null)
 const confirmBtn = ref(null)
@@ -539,7 +534,10 @@ const filteredInvoices = computed(() => {
 })
 const filteredPayments = computed(() => {
   if (!showTypePay.value) return []
-  const list = currentPayments.value || []
+  let list = currentPayments.value || []
+  if (props.mop) {
+    list = list.filter(p => p.mode_of_payment && p.mode_of_payment.toLowerCase() === props.mop.toLowerCase())
+  }
   return filterDirection.value === 'All' ? list : list.filter(p => p.direction === filterDirection.value)
 })
 const filteredJournals = computed(() => {
