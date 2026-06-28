@@ -31,7 +31,6 @@ import GstDummyLedger from './pages/GstDummyLedger.vue'
 import GstLedger from './pages/GstLedger.vue'
 import DailyReport from './pages/DailyReport.vue'
 import StoreTransfer from './pages/StoreTransfer.vue'
-import SingleEntry from './pages/SingleEntry.vue'
 import Cancellation from './pages/Cancellation.vue'
 import NamingSettings from './pages/NamingSettings.vue'
 import Expense from './pages/expense.vue'
@@ -72,12 +71,7 @@ const routes = [
     component: Cancellation,
     meta: { title: 'Cancellation' },
   },
-  {
-    path: '/single-entry',
-    name: 'SingleEntry',
-    component: SingleEntry,
-    meta: { title: 'Bulk Payment' },
-  },
+
   {
     path: '/store-transfer',
     name: 'StoreTransfer',
