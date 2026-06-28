@@ -118,6 +118,7 @@
             <div v-if="!isSaved" class="flex items-center gap-2" :class="postingTime ? 'border-l border-[var(--color-border)] pl-6' : ''">
               <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Discount %</label>
               <input
+                ref="globalDiscountInputRef"
                 v-model.number="globalDiscountPct"
                 type="number"
                 min="0"
@@ -126,6 +127,7 @@
                 placeholder="0.00"
                 :disabled="isReadOnly"
                 class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-24 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                @keydown.enter.prevent="supplierInvoiceNoRef?.focus()"
               />
             </div>
           </div>
@@ -976,6 +978,7 @@ const taxTemplateRef = ref(null)
 const inclusiveTaxRef = ref(null)
 const costCenterRef = ref(null)
 const supplierInvoiceNoRef = ref(null)
+const globalDiscountInputRef = ref(null)
 const supplierInvoiceDateInputRef = ref(null)
 const suppDateFocused = ref(false)
 const suppDateEntry = ref('')
@@ -2425,7 +2428,14 @@ function handleSupplierSelected(party) {
   }
   fetchSupplierPurchaseHistory(party.name)
   showSupplierModal.value = false
-  nextTick(() => { supplierInvoiceNoRef.value?.focus() })
+  nextTick(() => {
+    if (globalDiscountInputRef.value) {
+      globalDiscountInputRef.value.focus()
+      globalDiscountInputRef.value.select()
+    } else {
+      supplierInvoiceNoRef.value?.focus()
+    }
+  })
 }
 
 async function handleSeriesSelected(series) {
