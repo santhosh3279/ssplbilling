@@ -32,7 +32,11 @@
             <div v-if="item.has_history" class="h-3 w-3 shrink-0 rounded-full animate-pulse bg-[var(--color-highlight)]" title="Previously sold to this customer"></div>
             <div class="min-w-0 flex-1">
               <div class="text-3xl font-normal truncate" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
-              <div class="text-2xl font-mono" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">{{ item.item_code }}</div>
+              <div class="text-2xl font-mono flex flex-wrap items-center gap-x-2 gap-y-0.5" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
+                <span>{{ item.item_code }}</span>
+                <span v-if="item.hsn_sac" class="text-lg opacity-70">· HSN: {{ item.hsn_sac }}</span>
+                <span v-if="item.suppliers && item.suppliers.length" class="text-lg opacity-70 truncate max-w-[320px]" :title="item.suppliers.join(', ')">· Supp: {{ item.suppliers.join(', ') }}</span>
+              </div>
             </div>
           </div>
           <div class="flex flex-col items-end shrink-0">
