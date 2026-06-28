@@ -638,9 +638,7 @@ async function handleSubmit() {
       }
     }
     if (results.length > 0) {
-      successDocName.value = results.join(', ')
-      showSuccess.value = true
-      setTimeout(() => window.location.reload(), 1500)
+      window.location.reload()
     }
   } catch (e) {
     alert('Posting failed: ' + (e.message || e))
