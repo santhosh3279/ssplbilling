@@ -145,6 +145,11 @@
         </div>
         <div class="flex items-center gap-3 text-xl text-[var(--color-text-muted)]">
           <slot name="header-right"></slot>
+          <span class="h-3 w-px bg-[var(--color-border)] opacity-50 ml-1"></span>
+          <span class="text-[var(--color-info)] font-bold uppercase tracking-widest flex items-center gap-1.5 ml-1">
+            👤 {{ session.fullName.value || session.user.value }}
+            <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-sm"> ({{ inheritedUser }})</span>
+          </span>
         </div>
       </div>
 
@@ -542,6 +547,9 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useDevice } from '../composables/useDevice'
 import { useLayout } from '../composables/useLayout'
+import { session } from '../session'
+
+const inheritedUser = computed(() => localStorage.getItem('wb-inherited-user'))
 
 const props = defineProps({
   title: { type: String, default: 'Invoice' },

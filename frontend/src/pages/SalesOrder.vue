@@ -69,12 +69,6 @@
       @party-click="customerInitialQuery = ''; showCustomerModal = true"
     >
       <!-- Custom slots for additional logic if needed -->
-      <template #header-right>
-        <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">
-          {{ session.fullName.value || session.user.value }}
-          <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-sm"> ({{ inheritedUser }})</span>
-        </span>
-      </template>
 
       <template #row="{ item, index, formatQty }">
         <tr

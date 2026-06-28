@@ -84,10 +84,6 @@
           >
             <span>📜</span> History
           </button>
-          <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">
-            {{ session.fullName.value || session.user.value }}
-            <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-sm"> ({{ inheritedUser }})</span>
-          </span>
         </div>
       </template>
 

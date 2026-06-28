@@ -157,14 +157,20 @@
             <p class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
           </div>
           
-          <!-- Fullscreen button -->
-          <button
-            @click="toggleFullscreen"
-            class="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition shadow-sm active:scale-95 focus:outline-none"
-            title="Toggle Fullscreen"
-          >
-            <span>{{ isFullscreen ? '📴 Exit Fullscreen' : '📺 Fullscreen' }}</span>
-          </button>
+          <div class="flex items-center gap-4">
+            <span class="text-[var(--color-info)] font-bold uppercase tracking-widest text-xs">
+              👤 {{ session.fullName.value || session.user.value }}
+              <span v-if="selectedUser !== session.user.value" class="normal-case font-normal text-[var(--color-text-muted)] text-xs"> ({{ selectedUser }})</span>
+            </span>
+            <!-- Fullscreen button -->
+            <button
+              @click="toggleFullscreen"
+              class="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition shadow-sm active:scale-95 focus:outline-none"
+              title="Toggle Fullscreen"
+            >
+              <span>{{ isFullscreen ? '📴 Exit Fullscreen' : '📺 Fullscreen' }}</span>
+            </button>
+          </div>
         </div>
       </header>
 
