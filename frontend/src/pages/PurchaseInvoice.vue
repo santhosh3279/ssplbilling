@@ -175,12 +175,29 @@
             </div>
 
             <!-- Bill Date (Original) -->
-            <div v-if="invoiceDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6">
-              <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
-              <div class="flex items-center gap-1">
-                <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
-                <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
-                <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+            <div v-if="invoiceDate" class="flex flex-col items-end gap-1 border-l border-[var(--color-border)] pl-6">
+              <!-- Discount percentage field above -->
+              <div class="flex items-center gap-2">
+                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Discount %</label>
+                <input
+                  v-model.number="globalDiscountPct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="0.00"
+                  :disabled="isReadOnly"
+                  class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-24 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+              <!-- Bill Date itself -->
+              <div class="flex items-center gap-3 mt-1">
+                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
+                <div class="flex items-center gap-1">
+                  <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                  <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
+                  <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+                </div>
               </div>
             </div>
           </div>
@@ -905,6 +922,19 @@ const loadingEntry = ref('')
 const otherEntry = ref('')
 const discountPct = ref('')
 const discountDirectAmt = ref('')
+const globalDiscountPct = ref('')
+
+watch(globalDiscountPct, (newVal) => {
+  const pct = newVal === '' || newVal === null || newVal === undefined ? 0 : parseFloat(newVal)
+  if (!isNaN(pct)) {
+    items.value.forEach((item, idx) => {
+      if (!item.deleted && !item._is_free) {
+        item.discount = pct
+        recalcAmount(idx)
+      }
+    })
+  }
+})
 
 const freightAmt = computed(() => parseFloat(freightEntry.value) || 0)
 const packingAmt = computed(() => parseFloat(packingEntry.value) || 0)
@@ -1471,6 +1501,7 @@ async function clearBill() {
   editingField.value = null
   discountPct.value = ''
   discountDirectAmt.value = ''
+  globalDiscountPct.value = ''
   freightEntry.value = ''
   loadingEntry.value = ''
   packingEntry.value = ''
@@ -1718,6 +1749,7 @@ async function closePrintModal() {
   editingField.value = null
   discountPct.value = ''
   discountDirectAmt.value = ''
+  globalDiscountPct.value = ''
   freightEntry.value = ''
   loadingEntry.value = ''
   packingEntry.value = ''
@@ -2355,11 +2387,14 @@ function confirmPendingItem() {
   }
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
+  const globalPct = parseFloat(globalDiscountPct.value)
+  const itemDiscount = !isNaN(globalPct) ? globalPct : (p.discount || 0)
+  const netRate = parseFloat(((p.rate || 0) * (1 - itemDiscount / 100)).toFixed(2))
   const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty, uom: p.uom || 'Nos',
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0,
-    discount: p.discount || 0, tax_rate: p.tax_rate || 0,
-    amount: parseFloat((qty * (p.rate || 0)).toFixed(2)),
+    discount: itemDiscount, tax_rate: p.tax_rate || 0,
+    amount: parseFloat((qty * netRate).toFixed(2)),
     deleted: false,
   }
   items.value.push(newItem)
