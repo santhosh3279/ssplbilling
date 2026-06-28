@@ -89,15 +89,6 @@
                       <span>Calc</span>
                       <span v-if="hasFetchedPercentages" class="text-[9px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
                     </div>
-                    <button
-                      type="button"
-                      @click="savePercentageToItemMaster"
-                      :disabled="savingPercentage || !(itemCode || manualItemCode)"
-                      class="w-full rounded bg-[var(--color-info)] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[var(--color-info)]/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-center"
-                      title="Save all markup percentages to the Item Master child table"
-                    >
-                      {{ savingPercentage ? 'Saving...' : 'Save %' }}
-                    </button>
                   </div>
                 </th>
                 <th
@@ -125,6 +116,17 @@
                       title="Apply to all UOMs"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </button>
+                  </div>
+                  <div v-else class="flex justify-end">
+                    <button
+                      type="button"
+                      @click="savePercentageToItemMaster"
+                      :disabled="savingPercentage || !(itemCode || manualItemCode)"
+                      class="w-full rounded bg-[var(--color-info)] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[var(--color-info)]/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-center whitespace-nowrap"
+                      title="Save all markup percentages to the Item Master child table"
+                    >
+                      {{ savingPercentage ? 'Saving...' : 'Save %' }}
                     </button>
                   </div>
                 </th>
