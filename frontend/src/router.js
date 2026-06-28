@@ -39,6 +39,7 @@ import Repack from './pages/Repack.vue'
 import OfferDisplay from './pages/OfferDisplay.vue'
 import OfferPage from './pages/OfferPage.vue'
 import Catelogue from './pages/catelogue.vue'
+import Unreconciled from './pages/unreconciled.vue'
 
 const routes = [
   {
@@ -266,6 +267,12 @@ const routes = [
     name: 'Catelogue',
     component: Catelogue,
     meta: { public: true, title: 'Catalogue' },
+  },
+  {
+    path: '/unreconciled',
+    name: 'Unreconciled',
+    component: Unreconciled,
+    meta: { title: 'Unreconciled Entries' },
   },
 ]
 

@@ -51,6 +51,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'Payment',
   'Expense',
   'IncentiveRedeem',
+  'Unreconciled',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
@@ -63,6 +64,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'DailyReport',
   'SingleEntry',
   'IncentiveRedeem',
+  'Unreconciled',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -160,6 +162,7 @@ const TILE_ROUTE_MAP = {
   'ssplbillingsettings': 'SSPLBillingSettings',
   'offer-display':     'OfferDisplay',
   'catelogue':         'Catelogue',
+  'unreconciled':      'Unreconciled',
 }
 
 export function canAccessTile(tileId) {
