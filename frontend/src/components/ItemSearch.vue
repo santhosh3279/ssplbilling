@@ -76,8 +76,8 @@
               <span class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ results[selectedIdx].item_name }}</span>
             </div>
             <div class="flex flex-col flex-[0.4]">
-              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Default Supplier</span>
-              <span class="text-2xl text-[var(--color-text-muted)] truncate" :title="results[selectedIdx].default_supplier">{{ results[selectedIdx].default_supplier || '--' }}</span>
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Suppliers</span>
+              <span class="text-2xl text-[var(--color-text-muted)] truncate" :title="getSupplierListDisplay(results[selectedIdx])">{{ getSupplierListDisplay(results[selectedIdx]) }}</span>
             </div>
           </div>
         </div>
@@ -345,6 +345,11 @@ function encPrice(val) {
   const str = n % 1 === 0 ? String(n) : n.toFixed(2)
   if (isDecrypted.value || !cipherMap.value.length) return str
   return str.replace(/\d/g, d => cipherMap.value[parseInt(d)] ?? d)
+}
+
+function getSupplierListDisplay(item) {
+  if (!item || !item.suppliers || !item.suppliers.length) return '--'
+  return item.suppliers.join(', ')
 }
 
 // ─── Data Preloading ─────────────────────────────────────────────────────────

@@ -238,6 +238,19 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		# Maintain backward compatibility for comma-separated search if needed
 		i["barcodes"] = ",".join([b["barcode"] for b in i["barcodes_detailed"]])
 
+	# 6. Batch fetch Suppliers
+	all_suppliers = frappe.get_all(
+		"Item Supplier",
+		filters={"parent": ["in", item_codes]},
+		fields=["parent as item_code", "supplier"],
+	)
+	item_suppliers_map = {}
+	for row in all_suppliers:
+		item_suppliers_map.setdefault(row.item_code, []).append(row.supplier)
+	
+	for i in items:
+		i["suppliers"] = item_suppliers_map.get(i.item_code, [])
+
 	return items
 
 
