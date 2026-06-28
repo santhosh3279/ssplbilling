@@ -49,14 +49,14 @@
             <input
               v-model="fromDate"
               type="date"
-              class="bg-transparent border-none text-xs text-[var(--color-text)] focus:ring-0 px-2 py-1"
+              class="bg-transparent border-none text-lg text-[var(--color-text)] focus:ring-0 px-2 py-1"
               @change="fetchData"
             />
-            <span class="text-[var(--color-text-muted)] text-xs">to</span>
+            <span class="text-[var(--color-text-muted)] text-lg">to</span>
             <input
               v-model="toDate"
               type="date"
-              class="bg-transparent border-none text-xs text-[var(--color-text)] focus:ring-0 px-2 py-1"
+              class="bg-transparent border-none text-lg text-[var(--color-text)] focus:ring-0 px-2 py-1"
               @change="fetchData"
             />
           </div>
