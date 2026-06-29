@@ -19,7 +19,7 @@ def search_employees(query="", limit=20):
 def get_employee_incentive_ledger(employee, from_date=None, to_date=None):
 	"""
 	Return all incentive ledger entries for an employee — earned (from submitted
-	Sales Invoice / Purchase Invoice / Stock Entry) and redeemed (Incentive Redeem),
+	Invoice Incentive entries) and redeemed (Incentive Redeem),
 	combined and sorted by date with a running balance.
 	"""
 	params = {"employee": employee}
@@ -30,53 +30,44 @@ def get_employee_incentive_ledger(employee, from_date=None, to_date=None):
 	if from_date:
 		fd = getdate(from_date)
 		params["from_date"] = fd
-		earned_date_filter += (
-			" AND ("
-			"  (is_row.parenttype = 'Sales Invoice'   AND si.posting_date  >= %(from_date)s)"
-			"  OR (is_row.parenttype = 'Purchase Invoice' AND pi.posting_date >= %(from_date)s)"
-			"  OR (is_row.parenttype = 'Stock Entry'      AND se.posting_date >= %(from_date)s)"
-			")"
-		)
+		earned_date_filter += " AND ii.date >= %(from_date)s"
 		redeem_date_filter += " AND posting_date >= %(from_date)s"
 	if to_date:
 		td = getdate(to_date)
 		params["to_date"] = td
-		earned_date_filter += (
-			" AND ("
-			"  (is_row.parenttype = 'Sales Invoice'   AND si.posting_date  <= %(to_date)s)"
-			"  OR (is_row.parenttype = 'Purchase Invoice' AND pi.posting_date <= %(to_date)s)"
-			"  OR (is_row.parenttype = 'Stock Entry'      AND se.posting_date <= %(to_date)s)"
-			")"
-		)
+		earned_date_filter += " AND ii.date <= %(to_date)s"
 		redeem_date_filter += " AND posting_date <= %(to_date)s"
 
 	# ── Earned rows ───────────────────────────────────────────────────────────
 	earned_rows = frappe.db.sql(
 		f"""
 		SELECT
-			is_row.parent            AS voucher_no,
-			is_row.parenttype        AS voucher_type,
+			is_row.parent            AS incentive_entry,
 			is_row.role              AS role,
 			CAST(is_row.points AS DECIMAL(15,2)) AS points,
+			ii.date                  AS posting_date,
+			ii.inv_no                AS voucher_no,
 			CASE
-				WHEN is_row.parenttype = 'Sales Invoice'   THEN si.posting_date
-				WHEN is_row.parenttype = 'Purchase Invoice' THEN pi.posting_date
-				WHEN is_row.parenttype = 'Stock Entry'      THEN se.posting_date
-			END AS posting_date,
+				WHEN si.name IS NOT NULL THEN 'Sales Invoice'
+				WHEN pi.name IS NOT NULL THEN 'Purchase Invoice'
+				WHEN se.name IS NOT NULL THEN 'Stock Entry'
+				ELSE 'Sales Invoice'
+			END AS voucher_type,
 			CASE
-				WHEN is_row.parenttype = 'Sales Invoice'   THEN si.customer
-				WHEN is_row.parenttype = 'Purchase Invoice' THEN pi.supplier
+				WHEN si.name IS NOT NULL THEN si.customer
+				WHEN pi.name IS NOT NULL THEN pi.supplier
 				ELSE NULL
 			END AS party
 		FROM `tabIncentive System` is_row
+		INNER JOIN `tabInvoice Incentive` ii
+			ON ii.name = is_row.parent AND is_row.parenttype = 'Invoice Incentive' AND ii.docstatus = 1
 		LEFT JOIN `tabSales Invoice` si
-			ON si.name = is_row.parent AND is_row.parenttype = 'Sales Invoice'   AND si.docstatus = 1
+			ON si.name = ii.inv_no
 		LEFT JOIN `tabPurchase Invoice` pi
-			ON pi.name = is_row.parent AND is_row.parenttype = 'Purchase Invoice' AND pi.docstatus = 1
+			ON pi.name = ii.inv_no
 		LEFT JOIN `tabStock Entry` se
-			ON se.name = is_row.parent AND is_row.parenttype = 'Stock Entry'      AND se.docstatus = 1
+			ON se.name = ii.inv_no
 		WHERE is_row.employee = %(employee)s
-		  AND (si.name IS NOT NULL OR pi.name IS NOT NULL OR se.name IS NOT NULL)
 		  {earned_date_filter}
 		ORDER BY posting_date ASC, is_row.parent ASC
 		""",
