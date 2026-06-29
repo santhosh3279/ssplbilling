@@ -1,10 +1,17 @@
 <template>
   <div class="h-full flex flex-col bg-[var(--color-surface)] select-none">
     <!-- Header -->
-    <div class="bg-[var(--color-highlight)] p-2 text-center shadow-md shrink-0">
+    <div class="bg-[var(--color-highlight)] px-3 py-2 flex items-center justify-between shadow-md shrink-0">
       <div class="text-[var(--color-text-on-highlight)] font-black uppercase tracking-[0.1em] text-[10px]">
         Tablet Keyboard
       </div>
+      <button 
+        @pointerdown.prevent="closeKeyboard"
+        class="text-[var(--color-text-on-highlight)] hover:opacity-80 active:scale-95 transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+        title="Hide Keyboard"
+      >
+        Hide ➔
+      </button>
     </div>
 
     <!-- Scrollable Key Area -->
@@ -149,6 +156,10 @@ const isCapsLock = ref(true);
 const currentLayout = ref('qwerty');
 const symbols = '@#$%&*()_+=[]{}|\\:;"\'<>?'.split('');
 let lastActiveElement = null;
+
+function closeKeyboard() {
+  window.dispatchEvent(new CustomEvent('wb-global-keyboard-toggle'));
+}
 
 const toggleCapsLock = () => {
   isCapsLock.value = !isCapsLock.value;

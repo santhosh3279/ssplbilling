@@ -22,6 +22,15 @@
     >
       <Keyboard />
     </div>
+    <!-- Floating Keyboard Toggle Handle (Visible only when keyboard is hidden) -->
+    <button
+      v-if="!showKeyboardPanel && route.name !== 'OfferPage'"
+      @click="toggleKeyboard"
+      class="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex items-center justify-center h-16 w-6 rounded-l-xl bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-2xl hover:brightness-110 active:scale-95 transition-all focus:outline-none border-l border-t border-b border-[var(--color-border)] cursor-pointer"
+      title="Open Keyboard"
+    >
+      <span class="text-xs font-bold font-mono">◀</span>
+    </button>
   </div>
 </template>
 
