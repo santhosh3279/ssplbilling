@@ -154,15 +154,14 @@
               <thead>
                 <tr class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)] divide-x divide-[var(--color-border)]">
                   <th class="border border-[var(--color-border)] px-4 py-3 w-16 text-center rounded-tl-2xl">#</th>
-                  <th class="border border-[var(--color-border)] px-4 py-3 w-1/2">Employee Name</th>
-                  <th class="border border-[var(--color-border)] px-4 py-3 w-1/4 text-center">Role</th>
-                  <th class="border border-[var(--color-border)] px-4 py-3 w-1/4 text-right">Points</th>
-                  <th class="border border-[var(--color-border)] px-4 py-3 w-32 text-center rounded-tr-2xl">Action</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-3/5">Employee Name</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-1/5 text-center">Role</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-40 text-center rounded-tr-2xl">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
                 <tr v-if="doc.incentive_system.length === 0">
-                  <td colspan="5" class="border border-[var(--color-border)] px-5 py-8 text-center text-sm text-[var(--color-text-muted)]">
+                  <td colspan="4" class="border border-[var(--color-border)] px-5 py-8 text-center text-sm text-[var(--color-text-muted)]">
                     No employees added.
                   </td>
                 </tr>
@@ -228,16 +227,11 @@
                     </select>
                   </td>
 
-                  <!-- Calculated Points -->
-                  <td class="border border-[var(--color-border)] px-2 py-1 text-right font-mono font-black text-3xl text-[var(--color-success)] bg-[var(--color-success)]/[0.02]">
-                    {{ fmtPts(row.points) }}
-                  </td>
-
                   <!-- Action -->
                   <td class="border border-[var(--color-border)] px-2 py-1 text-center">
                     <button
                       @click="removeRow(idx)"
-                      class="text-2xl font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg px-3 py-1 transition-colors"
+                      class="text-2xl font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg px-3 py-1 transition-colors whitespace-nowrap"
                       title="Remove row"
                     >
                       ✕ Delete
