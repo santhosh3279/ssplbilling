@@ -481,6 +481,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
+      :series="selectedSeries"
       doctype="Sales Order"
       :initial-template="defaultTemplate"
       @close="closePrintModal"

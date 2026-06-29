@@ -621,6 +621,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="selectedInvoice?.name"
+      :series="selectedInvoice?.naming_series"
       @close="showPrintModal = false"
     />
 

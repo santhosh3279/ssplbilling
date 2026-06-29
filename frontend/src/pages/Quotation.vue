@@ -485,6 +485,7 @@
     <PrintOptionsModal
       v-if="showPrintModal"
       :invoice-name="invoiceNo"
+      :series="selectedSeries"
       doctype="Quotation"
       :initial-template="defaultTemplate"
       @close="closePrintModal"

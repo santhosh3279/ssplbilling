@@ -115,6 +115,7 @@ const props = defineProps({
   invoiceName: { type: String, required: true },
   doctype:     { type: String, default: 'Sales Invoice' },
   initialTemplate: { type: String, default: '' },
+  series:      { type: String, default: '' },
 })
 const emit = defineEmits(['close'])
 
@@ -261,8 +262,29 @@ async function loadSettings() {
       templates.value = validTemplates
     }
 
-    if (props.initialTemplate && templates.value.some(tmp => tmp.name === props.initialTemplate)) {
-      selectedTemplate.value = props.initialTemplate
+    let initialTemplate = props.initialTemplate
+
+    try {
+      const cachedSettings = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
+      const billingSeries = cachedSettings?.data?.billing_series || []
+      
+      let matchedSeries = null
+      if (props.series) {
+        matchedSeries = billingSeries.find(bs => bs.series === props.series)
+      }
+      if (!matchedSeries && props.invoiceName) {
+        matchedSeries = billingSeries.find(bs => bs.series && props.invoiceName.startsWith(bs.series))
+      }
+
+      if (matchedSeries?.print_format) {
+        initialTemplate = matchedSeries.print_format
+      }
+    } catch (e) {
+      console.warn('[PrintOptionsModal] Failed to resolve series print template:', e)
+    }
+
+    if (initialTemplate && templates.value.some(tmp => tmp.name === initialTemplate)) {
+      selectedTemplate.value = initialTemplate
     } else if (templates.value.length) {
       selectedTemplate.value = templates.value[0].name
     }
