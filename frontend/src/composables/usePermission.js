@@ -76,6 +76,7 @@ export const ADMIN_ROUTES = new Set([
   'SSPLBillingSettings',
   'StoreSalesReport',
   'CostCenterSalesReport',
+  'IncentiveLedger',
 ])
 
 /**
