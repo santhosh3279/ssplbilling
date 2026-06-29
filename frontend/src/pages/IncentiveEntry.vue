@@ -149,32 +149,21 @@
 
           <!-- Child Table: Incentive System -->
           <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md">
-            <div class="px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] flex items-center justify-between rounded-t-2xl">
-              <h4 class="text-sm font-bold uppercase tracking-wider text-[var(--color-text)]">
-                Incentive Distribution Child Table
-              </h4>
-              <button
-                @click="addRow"
-                class="rounded-lg bg-[var(--color-highlight)] px-3.5 py-1.5 text-xs font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 active:scale-95 transition-all"
-              >
-                + Add Employee
-              </button>
-            </div>
             
             <table class="w-full text-left border-collapse border border-[var(--color-border)]">
               <thead>
                 <tr class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)] divide-x divide-[var(--color-border)]">
-                  <th class="border border-[var(--color-border)] px-4 py-3 w-16 text-center">#</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-16 text-center rounded-tl-2xl">#</th>
                   <th class="border border-[var(--color-border)] px-4 py-3 w-1/2">Employee Name</th>
                   <th class="border border-[var(--color-border)] px-4 py-3 w-1/4 text-center">Role</th>
                   <th class="border border-[var(--color-border)] px-4 py-3 w-1/4 text-right">Points</th>
-                  <th class="border border-[var(--color-border)] px-4 py-3 w-32 text-center">Action</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-32 text-center rounded-tr-2xl">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
                 <tr v-if="doc.incentive_system.length === 0">
                   <td colspan="5" class="border border-[var(--color-border)] px-5 py-8 text-center text-sm text-[var(--color-text-muted)]">
-                    No employees added. Click "+ Add Employee" to start distributing points.
+                    No employees added.
                   </td>
                 </tr>
                 <tr 
