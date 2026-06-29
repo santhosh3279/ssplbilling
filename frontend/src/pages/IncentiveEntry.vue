@@ -252,16 +252,10 @@
         class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5 shadow-md flex items-center justify-between shrink-0"
       >
         <div class="flex items-center gap-4">
-          <span class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-            Total Distributed:
-          </span>
-          <span class="text-3xl font-mono font-black text-[var(--color-text)]">
-            {{ fmtPts(distributedTotal) }} / {{ fmtPts(billDetails.totalPoints) }} pts
-          </span>
           <!-- Warnings -->
           <span 
             v-if="Math.abs(distributedTotal - billDetails.totalPoints) > 0.05"
-            class="text-sm font-bold text-[var(--color-warning)] bg-[var(--color-warning)]/10 px-3.5 py-1 rounded-full whitespace-nowrap ml-2"
+            class="text-sm font-bold text-[var(--color-warning)] bg-[var(--color-warning)]/10 px-3.5 py-1 rounded-full whitespace-nowrap"
           >
             ⚠️ Incomplete distribution
           </span>
