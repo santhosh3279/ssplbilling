@@ -197,6 +197,7 @@
                         v-model="row._search"
                         @input="onEmployeeSearch(idx, $event.target.value)"
                         @focus="activeRowIndex = idx"
+                        @keydown.enter.prevent="handleEmpEnter(idx)"
                         class="w-full h-full bg-transparent px-4 py-3 text-lg font-bold focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]/30"
                       />
                       
@@ -361,6 +362,17 @@ function handleRoleEnter(idx) {
     })
   } else {
     focusRowInput(idx + 1)
+  }
+}
+
+function handleEmpEnter(idx) {
+  if (empOptions.value && empOptions.value.length > 0) {
+    pickEmployee(idx, empOptions.value[0])
+  } else {
+    nextTick(() => {
+      const el = roleSelectInputs.value[idx]
+      if (el) el.focus()
+    })
   }
 }
 
