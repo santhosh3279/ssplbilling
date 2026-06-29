@@ -148,8 +148,8 @@
           </div>
 
           <!-- Child Table: Incentive System -->
-          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md overflow-hidden">
-            <div class="px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] flex items-center justify-between">
+          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md">
+            <div class="px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] flex items-center justify-between rounded-t-2xl">
               <h4 class="text-sm font-bold uppercase tracking-wider text-[var(--color-text)]">
                 Incentive Distribution Child Table
               </h4>
