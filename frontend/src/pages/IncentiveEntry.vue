@@ -128,52 +128,23 @@
 
         <div v-else class="space-y-6">
           
-          <!-- Selected Bill Info & Rule Calculation Panel -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            
-            <!-- Bill details card -->
-            <div class="md:col-span-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm flex flex-col justify-between">
+          <!-- Selected Bill Info Panel -->
+          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
               <div>
                 <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Selected Document</span>
-                <h3 class="text-2xl font-mono font-black mt-0.5 text-[var(--color-text)]">
+                <h3 class="text-3xl font-mono font-black mt-1 text-[var(--color-text)]">
                   {{ selectedBill.name }}
                 </h3>
                 <p class="text-xs text-[var(--color-text-muted)] mt-1">
                   Type: {{ selectedBill.doctype }} | Date: {{ selectedBill.date }}
                 </p>
               </div>
-              <div class="mt-4 pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
-                <span class="text-xs text-[var(--color-text-muted)] font-semibold">Net Total Value:</span>
-                <span class="text-xl font-bold text-[var(--color-text)]">₹ {{ fmt(selectedBill.amount) }}</span>
+              <div class="flex flex-col items-end">
+                <span class="text-xs text-[var(--color-text-muted)] font-semibold uppercase tracking-wider">Net Total Value</span>
+                <span class="text-3xl font-black text-[var(--color-text)] mt-1">₹ {{ fmt(selectedBill.amount) }}</span>
               </div>
             </div>
-
-            <!-- Calculation Rate card -->
-            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm flex flex-col justify-between">
-              <div>
-                <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Incentive Rate</span>
-                <div class="text-4xl font-mono font-black text-[var(--color-info)] mt-2">
-                  {{ billDetails.percentage }} %
-                </div>
-              </div>
-              <p class="text-[10px] text-[var(--color-text-muted)] mt-auto">
-                Determined by Incentive Rule
-              </p>
-            </div>
-
-            <!-- Total Points Calculated card -->
-            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm flex flex-col justify-between">
-              <div>
-                <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total Points</span>
-                <div class="text-4xl font-mono font-black text-[var(--color-success)] mt-2">
-                  {{ fmtPts(billDetails.totalPoints) }}
-                </div>
-              </div>
-              <p class="text-[10px] text-[var(--color-text-muted)] mt-auto">
-                {{ billDetails.percentage }}% of ₹ {{ fmt(selectedBill.amount) }}
-              </p>
-            </div>
-
           </div>
 
           <!-- Child Table: Incentive System -->
