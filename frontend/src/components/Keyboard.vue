@@ -12,6 +12,30 @@
       <!-- Spacer to push content to bottom -->
       <div class="flex-1"></div>
       
+      <!-- Numpad on the left side top (above function keys) -->
+      <div class="flex mb-1">
+        <div class="grid grid-cols-3 gap-1 w-[60%]">
+          <button v-for="k in '789456123'.split('')" :key="k"
+                  @pointerdown.prevent="pressKey(k)"
+                  class="key-btn text-[22px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-text)] border border-[var(--color-border)] rounded shadow-sm">
+            {{ k }}
+          </button>
+          <button @pointerdown.prevent="pressKey('0')"
+                  class="key-btn text-[22px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-text)] border border-[var(--color-border)] rounded shadow-sm">
+            0
+          </button>
+          <button @pointerdown.prevent="pressKey('.')"
+                  class="key-btn text-[22px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-text)] border border-[var(--color-border)] rounded shadow-sm">
+            .
+          </button>
+          <button @pointerdown.prevent="pressKey('Backspace')"
+                  class="key-btn text-[22px] font-bold py-2 bg-[var(--color-bg)] text-[var(--color-danger)] border border-[var(--color-border)] rounded shadow-sm">
+            ⌫
+          </button>
+        </div>
+        <div class="flex-1"></div>
+      </div>
+
       <!-- Function Keys Row -->
       <div class="grid grid-cols-6 gap-1 mb-1">
         <button v-for="n in 12" :key="'f'+n" 
