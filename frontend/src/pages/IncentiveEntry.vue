@@ -102,15 +102,15 @@
         </div>
         
         <!-- Current Doc Date/Time info -->
-        <div class="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
+        <div class="flex items-center gap-6 text-sm text-[var(--color-text-muted)] shrink-0">
           <div class="flex flex-col items-end">
-            <span class="uppercase tracking-widest font-black text-[9px]">Posting Date</span>
-            <span class="font-mono font-bold text-[var(--color-text)]">{{ doc.date }}</span>
+            <span class="uppercase tracking-widest font-black text-xs text-[var(--color-text-muted)]">Posting Date</span>
+            <span class="font-mono font-bold text-2xl text-[var(--color-text)] mt-0.5">{{ doc.date }}</span>
           </div>
-          <span class="h-6 w-px bg-[var(--color-border)]"></span>
+          <span class="h-10 w-px bg-[var(--color-border)]"></span>
           <div class="flex flex-col items-end">
-            <span class="uppercase tracking-widest font-black text-[9px]">User</span>
-            <span class="font-mono font-bold text-[var(--color-text)]">{{ doc.user }}</span>
+            <span class="uppercase tracking-widest font-black text-xs text-[var(--color-text-muted)]">User</span>
+            <span class="font-mono font-bold text-2xl text-[var(--color-text)] mt-0.5">({{ doc.user }})</span>
           </div>
         </div>
       </header>
