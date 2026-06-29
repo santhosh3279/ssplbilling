@@ -172,7 +172,7 @@
                   class="group hover:bg-[var(--color-midlight)]/10 transition-colors divide-x divide-[var(--color-border)]"
                 >
                   <!-- Index -->
-                  <td class="border border-[var(--color-border)] px-4 py-3 text-center text-sm font-mono text-[var(--color-text-muted)]">
+                  <td class="border border-[var(--color-border)] px-2 py-1 text-center text-2xl font-mono text-[var(--color-text-muted)]">
                     {{ idx + 1 }}
                   </td>
                   
@@ -190,7 +190,7 @@
                         @keydown.down.prevent="handleEmpKeyDown"
                         @keydown.up.prevent="handleEmpKeyUp"
                         @keydown.enter.prevent="handleEmpEnter(idx)"
-                        class="w-full h-full bg-transparent px-4 py-3 text-lg font-bold focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]/30"
+                        class="w-full h-full bg-transparent px-2 py-1 text-3xl font-bold focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]/30"
                       />
                       
                       <!-- Employee Dropdown Results -->
@@ -221,7 +221,7 @@
                       v-model="row.role"
                       @change="recalculatePoints"
                       @keydown.enter.prevent="handleRoleEnter(idx)"
-                      class="w-full h-full bg-transparent px-4 py-3 text-lg font-bold text-center focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none appearance-none cursor-pointer"
+                      class="w-full h-full bg-transparent px-2 py-1 text-3xl font-bold text-center focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none appearance-none cursor-pointer"
                     >
                       <option value="Biller">Biller</option>
                       <option value="Sales">Sales</option>
@@ -229,15 +229,15 @@
                   </td>
 
                   <!-- Calculated Points -->
-                  <td class="border border-[var(--color-border)] px-4 py-3 text-right font-mono font-black text-xl text-[var(--color-success)] bg-[var(--color-success)]/[0.02]">
+                  <td class="border border-[var(--color-border)] px-2 py-1 text-right font-mono font-black text-3xl text-[var(--color-success)] bg-[var(--color-success)]/[0.02]">
                     {{ fmtPts(row.points) }}
                   </td>
 
                   <!-- Action -->
-                  <td class="border border-[var(--color-border)] px-4 py-3 text-center">
+                  <td class="border border-[var(--color-border)] px-2 py-1 text-center">
                     <button
                       @click="removeRow(idx)"
-                      class="text-sm font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg px-3 py-1.5 transition-colors"
+                      class="text-2xl font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg px-3 py-1 transition-colors"
                       title="Remove row"
                     >
                       ✕ Delete
