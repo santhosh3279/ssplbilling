@@ -64,6 +64,13 @@ def get_unposted_bills():
 	posted_set = {d.inv_no for d in posted if d.inv_no}
 
 	from ssplbilling.api.dashboard_api import get_allowed_series
+	from frappe.utils import flt
+
+	# Load Price List thresholds from Incentive Rule
+	rule = frappe.get_doc("Incentive Rule")
+	thresholds = {}
+	if rule.get("pricelist_incentives"):
+		thresholds = {r.pricelist: flt(r.amount) for r in rule.pricelist_incentives if r.pricelist}
 
 	# 1. Fetch Sales Invoices
 	si_allowed_res = get_allowed_series(doctype="Sales Invoice")
@@ -74,7 +81,7 @@ def get_unposted_bills():
 	sales_invoices = frappe.get_all(
 		"Sales Invoice",
 		filters=si_filters,
-		fields=["name", "posting_date as date", "grand_total as amount", "customer_name as detail"],
+		fields=["name", "posting_date as date", "grand_total as amount", "customer_name as detail", "selling_price_list"],
 		order_by="posting_date desc",
 		limit=100
 	)
@@ -88,7 +95,7 @@ def get_unposted_bills():
 	purchase_invoices = frappe.get_all(
 		"Purchase Invoice",
 		filters=pi_filters,
-		fields=["name", "posting_date as date", "grand_total as amount", "supplier_name as detail"],
+		fields=["name", "posting_date as date", "grand_total as amount", "supplier_name as detail", "buying_price_list"],
 		order_by="posting_date desc",
 		limit=100
 	)
@@ -107,10 +114,12 @@ def get_unposted_bills():
 		limit=100
 	)
 
-
 	bills = []
 	for si in sales_invoices:
 		if si.name not in posted_set:
+			price_list = si.get("selling_price_list")
+			if price_list in thresholds and flt(si.amount) <= thresholds[price_list]:
+				continue
 			bills.append({
 				"name": si.name,
 				"doctype": "Sales Invoice",
@@ -121,6 +130,9 @@ def get_unposted_bills():
 
 	for pi in purchase_invoices:
 		if pi.name not in posted_set:
+			price_list = pi.get("buying_price_list")
+			if price_list in thresholds and flt(pi.amount) <= thresholds[price_list]:
+				continue
 			bills.append({
 				"name": pi.name,
 				"doctype": "Purchase Invoice",
