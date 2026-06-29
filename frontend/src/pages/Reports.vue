@@ -421,7 +421,10 @@ async function generateReport() {
     let companyName = ''
     let companyAddressLines = []
     if (reportType.value === 'quotation') {
-      rows = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+      const res = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+      rows = res.rows || []
+      companyName = res.company_name || ''
+      companyAddressLines = res.company_address_lines || []
     } else if (reportType.value === 'hsn') {
       const res = await getHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
       rows = res.rows || []
@@ -437,7 +440,10 @@ async function generateReport() {
     } else if (reportType.value === 'store_summary') {
       rows = await getStoreWiseItemSalesReport(fromDate.value, toDate.value, selectedIncomeAccount.value)
     } else {
-      rows = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+      const res = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+      rows = res.rows || []
+      companyName = res.company_name || ''
+      companyAddressLines = res.company_address_lines || []
     }
 
     if (!rows || rows.length === 0) {
@@ -452,7 +458,7 @@ async function generateReport() {
     } else if (reportType.value === 'store_summary') {
       buildStoreWiseItemSummaryExcel(rows)
     } else {
-      buildExcel(rows)
+      buildExcel(rows, companyName, companyAddressLines)
     }
     showModal.value = false
   } catch (e) {
@@ -729,39 +735,92 @@ async function buildHSNExcel(rows, companyName, companyAddressLines) {
   link.click()
 }
 
-function buildExcel(rows) {
+async function buildExcel(rows, companyName, companyAddressLines) {
   const docLabel = modalConfig.value.docLabel
   const rType = reportType.value
 
-  const headers = [
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet(modalConfig.value.sheetName)
+
+  // Configure column widths
+  worksheet.columns = [
+    { key: 'doc_no', width: 22 },       // docLabel
+    { key: 'date', width: 14 },         // Date
+    { key: 'cust_code', width: 18 },    // Customer Code
+    { key: 'cust_name', width: 28 },    // Customer Name
+    { key: 'taxable', width: 16 },      // Taxable Amount
+    { key: 'cgst_rate', width: 12 },    // CGST Rate %
+    { key: 'cgst_amt', width: 14 },     // CGST Amount
+    { key: 'sgst_rate', width: 12 },    // SGST Rate %
+    { key: 'sgst_amt', width: 14 },     // SGST Amount
+    { key: 'igst_rate', width: 12 },    // IGST Rate %
+    { key: 'igst_amt', width: 14 },     // IGST Amount
+    { key: 'other_tax', width: 14 },    // Other Tax
+    { key: 'total_tax', width: 14 },    // Total Tax
+    { key: 'grand_total', width: 18 }   // Grand Total
+  ]
+
+  // Add Company Name in row 1
+  const row1 = worksheet.addRow([companyName || ''])
+  row1.getCell(1).font = { name: 'Arial', size: 14, bold: true }
+  row1.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+  worksheet.mergeCells(1, 1, 1, 14)
+
+  // Add Address lines in rows 2, 3, 4, 5
+  for (let i = 0; i < 4; i++) {
+    const addrLine = companyAddressLines[i] || ''
+    const rowNum = i + 2
+    const row = worksheet.addRow([addrLine])
+    row.getCell(1).font = { name: 'Arial', size: 10 }
+    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+    worksheet.mergeCells(rowNum, 1, rowNum, 14)
+  }
+
+  // Row 6: Empty spacing row
+  worksheet.addRow([])
+
+  // Table header row: columns/headers
+  const tableHeaderRow = worksheet.addRow([
     docLabel, 'Date', 'Customer Code', 'Customer Name',
     'Taxable Amount',
     'CGST Rate %', 'CGST Amount',
     'SGST Rate %', 'SGST Amount',
     'IGST Rate %', 'IGST Amount',
     'Other Tax', 'Total Tax', 'Grand Total',
-  ]
-
-  const data = rows.map(r => [
-    rType === 'order' ? r.order_no : (rType === 'quotation' ? r.quotation_no : r.invoice_no),
-    r.date,
-    r.customer,
-    r.customer_name,
-    fmt(r.taxable_amount),
-    fmt(r.cgst_rate),
-    fmt(r.cgst_amount),
-    fmt(r.sgst_rate),
-    fmt(r.sgst_amount),
-    fmt(r.igst_rate),
-    fmt(r.igst_amount),
-    fmt(r.other_tax),
-    fmt(r.total_tax),
-    fmt(r.grand_total),
   ])
+  tableHeaderRow.eachCell(cell => {
+    cell.font = { name: 'Arial', bold: true }
+    cell.alignment = { horizontal: 'center' }
+    cell.border = {
+      bottom: { style: 'thin' },
+      top: { style: 'thin' }
+    }
+  })
 
+  // Add row items
+  for (const r of rows) {
+    worksheet.addRow([
+      rType === 'order' ? r.order_no : (rType === 'quotation' ? r.quotation_no : r.invoice_no),
+      r.date || '',
+      r.customer || '',
+      r.customer_name || '',
+      fmt(r.taxable_amount),
+      fmt(r.cgst_rate),
+      fmt(r.cgst_amount),
+      fmt(r.sgst_rate),
+      fmt(r.sgst_amount),
+      fmt(r.igst_rate),
+      fmt(r.igst_amount),
+      fmt(r.other_tax),
+      fmt(r.total_tax),
+      fmt(r.grand_total),
+    ])
+  }
+
+  // Totals Row
   const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
-  const totals = [
-    'TOTAL', '', '', '',
+  const totalsRow = worksheet.addRow([
+    'GRAND TOTAL', '', '', '',
     fmt(sum('taxable_amount')),
     '', fmt(sum('cgst_amount')),
     '', fmt(sum('sgst_amount')),
@@ -769,24 +828,28 @@ function buildExcel(rows) {
     fmt(sum('other_tax')),
     fmt(sum('total_tax')),
     fmt(sum('grand_total')),
-  ]
+  ])
+  totalsRow.eachCell((cell, colNumber) => {
+    cell.font = { name: 'Arial', bold: true }
+    if (colNumber >= 5 || colNumber === 1) {
+      cell.border = {
+        top: { style: 'thin' },
+        bottom: { style: 'double' }
+      }
+    }
+  })
 
-  const wb = utils.book_new()
-  const ws = utils.aoa_to_sheet([headers, ...data, totals])
-  ws['!cols'] = [
-    { wch: 20 }, { wch: 12 }, { wch: 20 }, { wch: 30 },
-    { wch: 14 }, { wch: 10 }, { wch: 12 },
-    { wch: 10 }, { wch: 12 },
-    { wch: 10 }, { wch: 12 },
-    { wch: 10 }, { wch: 12 }, { wch: 14 },
-  ]
-
-  utils.book_append_sheet(wb, ws, modalConfig.value.sheetName)
+  // Generate blob and download
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
 
   const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
   const from = fromDate.value || 'all'
   const to = toDate.value || 'all'
-  writeFile(wb, `${modalConfig.value.filePrefix}_${series}_${from}_to_${to}.xlsx`)
+  link.download = `${modalConfig.value.filePrefix}_${series}_${from}_to_${to}.xlsx`
+  link.click()
 }
 </script>
 

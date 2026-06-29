@@ -91,7 +91,12 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 			}
 		)
 
-	return result
+	comp = get_company_details()
+	return {
+		"rows": result,
+		"company_name": comp["company_name"],
+		"company_address_lines": comp["address_lines"]
+	}
 
 
 @frappe.whitelist()
@@ -172,7 +177,12 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 			}
 		)
 
-	return result
+	comp = get_company_details()
+	return {
+		"rows": result,
+		"company_name": comp["company_name"],
+		"company_address_lines": comp["address_lines"]
+	}
 
 
 @frappe.whitelist()
