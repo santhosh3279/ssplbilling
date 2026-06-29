@@ -205,13 +205,8 @@ def get_quotation_series():
 @frappe.whitelist()
 def get_hsn_summary_report(series, from_date=None, to_date=None):
 	"""Return HSN Summary Report for Sales Invoices for the given naming series and date range.
-	Group by HSN code.
+	Group by HSN code and invoice to show bill details.
 	"""
-	filters = [
-		["Sales Invoice", "naming_series", "=", series],
-		["Sales Invoice", "docstatus", "=", 1],
-	]
-	
 	query_filters = [series]
 	date_condition = ""
 	if from_date:
@@ -224,11 +219,13 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 	rows = frappe.db.sql(f"""
 		SELECT 
 			it.gst_hsn_code as hsn_code,
-			SUM(it.qty) as total_qty,
-			SUM(it.taxable_value) as total_taxable_value,
-			SUM(it.cgst_amount) as total_cgst,
-			SUM(it.sgst_amount) as total_sgst,
-			SUM(it.igst_amount) as total_igst
+			inv.posting_date as date,
+			inv.name as bill_no,
+			SUM(it.qty) as qty,
+			SUM(it.taxable_value) as taxable_value,
+			SUM(it.cgst_amount) as cgst,
+			SUM(it.sgst_amount) as sgst,
+			SUM(it.igst_amount) as igst
 		FROM 
 			`tabSales Invoice` inv
 		JOIN 
@@ -238,25 +235,31 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 			AND inv.docstatus = 1
 			{date_condition}
 		GROUP BY 
-			it.gst_hsn_code
+			it.gst_hsn_code,
+			inv.name
+		ORDER BY 
+			it.gst_hsn_code,
+			inv.posting_date,
+			inv.name
 	""", tuple(query_filters), as_dict=1)
 	
-	# Handle None in hsn_code and calculate totals
+	# Handle None in hsn_code and convert types
 	result = []
 	for row in rows:
 		r = dict(row)
 		if not r.get("hsn_code"):
 			r["hsn_code"] = "N/A"
 		
-		r["total_tax"] = float(r.get("total_cgst") or 0) + float(r.get("total_sgst") or 0) + float(r.get("total_igst") or 0)
-		r["total_value"] = float(r.get("total_taxable_value") or 0) + r["total_tax"]
+		if r.get("date") and hasattr(r["date"], "strftime"):
+			r["date"] = r["date"].strftime("%Y-%m-%d")
+		elif r.get("date"):
+			r["date"] = str(r["date"])
 		
-		# Convert Decimal to float for JSON serialization if needed (frappe does this usually)
-		r["total_qty"] = float(r.get("total_qty") or 0)
-		r["total_taxable_value"] = float(r.get("total_taxable_value") or 0)
-		r["total_cgst"] = float(r.get("total_cgst") or 0)
-		r["total_sgst"] = float(r.get("total_sgst") or 0)
-		r["total_igst"] = float(r.get("total_igst") or 0)
+		r["qty"] = float(r.get("qty") or 0)
+		r["taxable_value"] = float(r.get("taxable_value") or 0)
+		r["cgst"] = float(r.get("cgst") or 0)
+		r["sgst"] = float(r.get("sgst") or 0)
+		r["igst"] = float(r.get("igst") or 0)
 		
 		result.append(r)
 
@@ -266,7 +269,7 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 @frappe.whitelist()
 def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 	"""Return HSN Summary Report for Quotations for the given naming series and date range.
-	Includes both Draft and Submitted quotations. Group by HSN code.
+	Includes both Draft and Submitted quotations. Group by HSN code and quotation name to show bill details.
 	"""
 	query_filters = [series]
 	date_condition = ""
@@ -280,11 +283,13 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 	rows = frappe.db.sql(f"""
 		SELECT 
 			it.gst_hsn_code as hsn_code,
-			SUM(it.qty) as total_qty,
-			SUM(it.taxable_value) as total_taxable_value,
-			SUM(it.cgst_amount) as total_cgst,
-			SUM(it.sgst_amount) as total_sgst,
-			SUM(it.igst_amount) as total_igst
+			qt.transaction_date as date,
+			qt.name as bill_no,
+			SUM(it.qty) as qty,
+			SUM(it.taxable_value) as taxable_value,
+			SUM(it.cgst_amount) as cgst,
+			SUM(it.sgst_amount) as sgst,
+			SUM(it.igst_amount) as igst
 		FROM 
 			`tabQuotation` qt
 		JOIN 
@@ -294,7 +299,12 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 			AND qt.docstatus IN (0, 1)
 			{date_condition}
 		GROUP BY 
-			it.gst_hsn_code
+			it.gst_hsn_code,
+			qt.name
+		ORDER BY 
+			it.gst_hsn_code,
+			qt.transaction_date,
+			qt.name
 	""", tuple(query_filters), as_dict=1)
 	
 	result = []
@@ -303,14 +313,16 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 		if not r.get("hsn_code"):
 			r["hsn_code"] = "N/A"
 		
-		r["total_tax"] = float(r.get("total_cgst") or 0) + float(r.get("total_sgst") or 0) + float(r.get("total_igst") or 0)
-		r["total_value"] = float(r.get("total_taxable_value") or 0) + r["total_tax"]
+		if r.get("date") and hasattr(r["date"], "strftime"):
+			r["date"] = r["date"].strftime("%Y-%m-%d")
+		elif r.get("date"):
+			r["date"] = str(r["date"])
 		
-		r["total_qty"] = float(r.get("total_qty") or 0)
-		r["total_taxable_value"] = float(r.get("total_taxable_value") or 0)
-		r["total_cgst"] = float(r.get("total_cgst") or 0)
-		r["total_sgst"] = float(r.get("total_sgst") or 0)
-		r["total_igst"] = float(r.get("total_igst") or 0)
+		r["qty"] = float(r.get("qty") or 0)
+		r["taxable_value"] = float(r.get("taxable_value") or 0)
+		r["cgst"] = float(r.get("cgst") or 0)
+		r["sgst"] = float(r.get("sgst") or 0)
+		r["igst"] = float(r.get("igst") or 0)
 		
 		result.append(r)
 

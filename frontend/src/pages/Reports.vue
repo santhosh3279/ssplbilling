@@ -528,37 +528,136 @@ function buildItemSummaryExcel(rows) {
 }
 
 function buildHSNExcel(rows) {
-  const headers = [
-    'HSN Code', 'Quantity', 'Taxable Value', 'CGST Amount', 'SGST Amount', 'IGST Amount', 'Total Tax', 'Total Value'
-  ]
+  // Group rows by hsn_code
+  const groups = {}
+  for (const r of rows) {
+    const hsn = r.hsn_code || 'N/A'
+    if (!groups[hsn]) {
+      groups[hsn] = []
+    }
+    groups[hsn].push(r)
+  }
 
-  const data = rows.map(r => [
-    r.hsn_code,
-    fmt(r.total_qty),
-    fmt(r.total_taxable_value),
-    fmt(r.total_cgst),
-    fmt(r.total_sgst),
-    fmt(r.total_igst),
-    fmt(r.total_tax),
-    fmt(r.total_value),
-  ])
+  const aoa = []
+  const hsnCodes = Object.keys(groups).sort()
 
-  const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
-  const totals = [
-    'TOTAL',
-    fmt(sum('total_qty')),
-    fmt(sum('total_taxable_value')),
-    fmt(sum('total_cgst')),
-    fmt(sum('total_sgst')),
-    fmt(sum('total_igst')),
-    fmt(sum('total_tax')),
-    fmt(sum('total_value')),
-  ]
+  let grandQty = 0
+  let grandTaxable = 0
+  let grandSgst = 0
+  let grandCgst = 0
+  let grandIgst = 0
+  let grandTax = 0
+  let grandValue = 0
+
+  for (const hsn of hsnCodes) {
+    // First row: HSN code header
+    aoa.push([`HSN Code: ${hsn}`])
+
+    // Table header row: date, bill no, qty, taxable, sgst, cgst, igst, total tax, total value
+    aoa.push([
+      'Date',
+      'Bill No',
+      'Quantity',
+      'Taxable Value',
+      'SGST Amount',
+      'CGST Amount',
+      'IGST Amount',
+      'Total Tax',
+      'Total Value'
+    ])
+
+    // All bills under this HSN code
+    const groupRows = groups[hsn]
+    let hsnQty = 0
+    let hsnTaxable = 0
+    let hsnSgst = 0
+    let hsnCgst = 0
+    let hsnIgst = 0
+    let hsnTax = 0
+    let hsnValue = 0
+
+    for (const r of groupRows) {
+      const qty = fmt(r.qty)
+      const taxable = fmt(r.taxable_value)
+      const sgst = fmt(r.sgst)
+      const cgst = fmt(r.cgst)
+      const igst = fmt(r.igst)
+      const tax = fmt(sgst + cgst + igst)
+      const val = fmt(taxable + tax)
+
+      aoa.push([
+        r.date || '',
+        r.bill_no || '',
+        qty,
+        taxable,
+        sgst,
+        cgst,
+        igst,
+        tax,
+        val
+      ])
+
+      hsnQty += qty
+      hsnTaxable += taxable
+      hsnSgst += sgst
+      hsnCgst += cgst
+      hsnIgst += igst
+      hsnTax += tax
+      hsnValue += val
+    }
+
+    // Add HSN subtotal row
+    aoa.push([
+      'Subtotal',
+      '',
+      fmt(hsnQty),
+      fmt(hsnTaxable),
+      fmt(hsnSgst),
+      fmt(hsnCgst),
+      fmt(hsnIgst),
+      fmt(hsnTax),
+      fmt(hsnValue)
+    ])
+
+    grandQty += hsnQty
+    grandTaxable += hsnTaxable
+    grandSgst += hsnSgst
+    grandCgst += hsnCgst
+    grandIgst += hsnIgst
+    grandTax += hsnTax
+    grandValue += hsnValue
+
+    // Add a blank row to separate HSN sections
+    aoa.push([])
+  }
+
+  // Grand Total row at the end
+  if (hsnCodes.length > 0) {
+    aoa.push([
+      'GRAND TOTAL',
+      '',
+      fmt(grandQty),
+      fmt(grandTaxable),
+      fmt(grandSgst),
+      fmt(grandCgst),
+      fmt(grandIgst),
+      fmt(grandTax),
+      fmt(grandValue)
+    ])
+  }
 
   const wb = utils.book_new()
-  const ws = utils.aoa_to_sheet([headers, ...data, totals])
+  const ws = utils.aoa_to_sheet(aoa)
   ws['!cols'] = [
-    { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+    { wch: 12 }, // Date
+    { wch: 20 }, // Bill No
+    { wch: 12 }, // Quantity
+    { wch: 15 }, // Taxable Value
+    { wch: 15 }, // SGST Amount
+    { wch: 15 }, // CGST Amount
+    { wch: 15 }, // IGST Amount
+    { wch: 15 }, // Total Tax
+    { wch: 15 }  // Total Value
   ]
 
   utils.book_append_sheet(wb, ws, modalConfig.value.sheetName)
