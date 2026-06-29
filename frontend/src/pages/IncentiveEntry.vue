@@ -161,68 +161,71 @@
               </button>
             </div>
             
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse border border-[var(--color-border)]">
               <thead>
-                <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  <th class="px-5 py-3 w-10 text-center">#</th>
-                  <th class="px-5 py-3 w-1/2">Employee Name</th>
-                  <th class="px-5 py-3 w-1/4 text-center">Role</th>
-                  <th class="px-5 py-3 w-1/4 text-right">Points</th>
-                  <th class="px-5 py-3 w-16 text-center">Action</th>
+                <tr class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)] divide-x divide-[var(--color-border)]">
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-16 text-center">#</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-1/2">Employee Name</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-1/4 text-center">Role</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-1/4 text-right">Points</th>
+                  <th class="border border-[var(--color-border)] px-4 py-3 w-32 text-center">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
                 <tr v-if="doc.incentive_system.length === 0">
-                  <td colspan="5" class="px-5 py-8 text-center text-sm text-[var(--color-text-muted)]">
+                  <td colspan="5" class="border border-[var(--color-border)] px-5 py-8 text-center text-sm text-[var(--color-text-muted)]">
                     No employees added. Click "+ Add Employee" to start distributing points.
                   </td>
                 </tr>
                 <tr 
                   v-for="(row, idx) in doc.incentive_system" 
                   :key="idx"
-                  class="group hover:bg-[var(--color-midlight)]/10 transition-colors"
+                  class="group hover:bg-[var(--color-midlight)]/10 transition-colors divide-x divide-[var(--color-border)]"
                 >
                   <!-- Index -->
-                  <td class="px-5 py-3 text-center text-xs font-mono text-[var(--color-text-muted)]">
+                  <td class="border border-[var(--color-border)] px-4 py-3 text-center text-sm font-mono text-[var(--color-text-muted)]">
                     {{ idx + 1 }}
                   </td>
                   
                   <!-- Employee Name search -->
-                  <td class="px-5 py-3 relative">
-                    <div class="flex flex-col">
+                  <td class="border border-[var(--color-border)] p-0 relative">
+                    <div class="relative w-full h-full">
                       <input
+                        :ref="el => { if (el) empRowInputs[idx] = el }"
                         type="text"
                         placeholder="Search employee..."
                         v-model="row._search"
                         @input="onEmployeeSearch(idx, $event.target.value)"
                         @focus="activeRowIndex = idx"
-                        class="w-full bg-transparent border-b border-transparent focus:border-[var(--color-info)] focus:outline-none text-sm font-semibold py-0.5 text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/50"
+                        class="w-full h-full bg-transparent px-4 py-3 text-lg font-bold focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]/30"
                       />
                       
                       <!-- Employee Dropdown Results -->
                       <div 
                         v-if="activeRowIndex === idx && empOptions.length > 0"
-                        class="absolute left-5 right-5 top-12 z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-1 max-h-48 overflow-y-auto"
+                        class="absolute left-0 right-0 top-full z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-1 max-h-48 overflow-y-auto mt-0.5"
                       >
                         <div
                           v-for="emp in empOptions"
                           :key="emp.name"
-                          @click="pickEmployee(idx, emp)"
-                          class="rounded-lg px-3 py-2 text-xs hover:bg-[var(--color-highlight)]/10 cursor-pointer flex justify-between"
+                          @mousedown.prevent="pickEmployee(idx, emp)"
+                          class="rounded-lg px-4 py-2 text-sm hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] cursor-pointer flex justify-between gap-4"
                         >
-                          <span class="font-bold text-[var(--color-text)]">{{ emp.employee_name }}</span>
-                          <span class="text-[10px] text-[var(--color-text-muted)]">{{ emp.designation || 'Staff' }}</span>
+                          <span class="font-bold text-[var(--color-text)] hover:text-inherit">{{ emp.employee_name }}</span>
+                          <span class="text-xs text-[var(--color-text-muted)] hover:text-inherit">{{ emp.designation || 'Staff' }}</span>
                         </div>
                       </div>
                     </div>
                   </td>
                   
                   <!-- Role Select -->
-                  <td class="px-5 py-3 text-center">
+                  <td class="border border-[var(--color-border)] p-0">
                     <select
+                      :ref="el => { if (el) roleSelectInputs[idx] = el }"
                       v-model="row.role"
                       @change="recalculatePoints"
-                      class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2.5 py-1 text-xs text-[var(--color-text)] font-semibold focus:border-[var(--color-info)] focus:outline-none"
+                      @keydown.enter.prevent="handleRoleEnter(idx)"
+                      class="w-full h-full bg-transparent px-4 py-3 text-lg font-bold text-center focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none appearance-none cursor-pointer"
                     >
                       <option value="Biller">Biller</option>
                       <option value="Sales">Sales</option>
@@ -230,18 +233,18 @@
                   </td>
 
                   <!-- Calculated Points -->
-                  <td class="px-5 py-3 text-right font-mono font-bold text-sm text-[var(--color-success)] bg-[var(--color-success)]/[0.01]">
+                  <td class="border border-[var(--color-border)] px-4 py-3 text-right font-mono font-black text-xl text-[var(--color-success)] bg-[var(--color-success)]/[0.02]">
                     {{ fmtPts(row.points) }}
                   </td>
 
                   <!-- Action -->
-                  <td class="px-5 py-3 text-center">
+                  <td class="border border-[var(--color-border)] px-4 py-3 text-center">
                     <button
                       @click="removeRow(idx)"
-                      class="text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg px-2 py-1 transition-colors"
+                      class="text-sm font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-lg px-3 py-1.5 transition-colors"
                       title="Remove row"
                     >
-                      ✕ Remove
+                      ✕ Delete
                     </button>
                   </td>
                 </tr>
@@ -304,7 +307,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { frappeGet, frappePost, getUnpostedBills, calculateBillIncentive } from '../api.js'
@@ -336,6 +339,30 @@ const activeRowIndex = ref(-1)
 const empOptions = ref([])
 const isSaving = ref(false)
 const successDoc = ref('')
+
+const empRowInputs = ref([])
+const roleSelectInputs = ref([])
+
+function focusRowInput(idx) {
+  nextTick(() => {
+    const el = empRowInputs.value[idx]
+    if (el) {
+      el.focus()
+      el.select()
+    }
+  })
+}
+
+function handleRoleEnter(idx) {
+  if (idx === doc.incentive_system.length - 1) {
+    addRow()
+    nextTick(() => {
+      focusRowInput(idx + 1)
+    })
+  } else {
+    focusRowInput(idx + 1)
+  }
+}
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 onMounted(async () => {
@@ -399,6 +426,12 @@ async function selectBill(bill) {
       percentage: res.percentage || 0,
       totalPoints: res.total_points || 0
     }
+    
+    // Automatically add the first row
+    addRow()
+    
+    // Focus the first row's employee search input
+    focusRowInput(0)
   } catch (e) {
     console.error('Failed to calculate incentive points:', e)
     billDetails.value = { amount: 0, percentage: 0, totalPoints: 0 }
@@ -480,6 +513,11 @@ function pickEmployee(index, emp) {
   
   empOptions.value = []
   activeRowIndex.value = -1
+  
+  nextTick(() => {
+    const el = roleSelectInputs.value[index]
+    if (el) el.focus()
+  })
 }
 
 // ── Form Validation ────────────────────────────────────────────────────────
