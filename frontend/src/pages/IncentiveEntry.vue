@@ -54,29 +54,29 @@
           v-for="bill in filteredBills"
           :key="bill.name"
           @click="selectBill(bill)"
-          class="rounded-xl border p-4 cursor-pointer transition-all hover:translate-x-1 duration-200"
+          class="rounded-xl border p-5 cursor-pointer transition-all hover:translate-x-1 duration-200"
           :class="selectedBill?.name === bill.name 
             ? 'bg-[var(--color-highlight)]/10 border-[var(--color-highlight)] shadow-md' 
             : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]'"
         >
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-mono font-bold text-xl tracking-tight text-[var(--color-text)]">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-mono font-bold text-3xl tracking-tight text-[var(--color-text)]">
               {{ bill.name }}
             </span>
             <span 
-              class="rounded px-2.5 py-1 text-sm font-black uppercase tracking-wider shrink-0"
+              class="rounded px-3 py-1.5 text-xl font-black uppercase tracking-wider shrink-0"
               :class="getBadgeClass(bill.doctype)"
             >
               {{ bill.doctype }}
             </span>
           </div>
-          <div class="mt-2.5 flex items-center justify-between text-base text-[var(--color-text-muted)] gap-2">
-            <span class="truncate max-w-[180px]">{{ bill.detail || '—' }}</span>
+          <div class="mt-4 flex items-center justify-between text-2xl text-[var(--color-text-muted)] gap-3">
+            <span class="truncate max-w-[200px]">{{ bill.detail || '—' }}</span>
             <span class="font-bold text-[var(--color-text)] shrink-0">
               ₹ {{ fmt(bill.amount) }}
             </span>
           </div>
-          <div class="mt-2 text-sm text-[var(--color-text-muted)] uppercase tracking-wider">
+          <div class="mt-3 text-xl text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
             {{ bill.date }}
           </div>
         </div>
