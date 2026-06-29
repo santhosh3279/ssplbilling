@@ -213,6 +213,12 @@
               />
             </div>
           </div>
+          <div class="flex flex-col gap-1 p-1.5">
+            <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total Amount</label>
+            <div class="text-4xl font-black text-[var(--color-text)]">
+              ₹{{ totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+            </div>
+          </div>
         </div>
 
         <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
@@ -352,6 +358,10 @@ const isFormValid = computed(() => {
 })
 
 const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
+
+const totalAmount = computed(() => {
+  return form.rows.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0)
+})
 
 const modalTitle = computed(() => {
   return 'Select Party'
