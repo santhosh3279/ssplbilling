@@ -249,19 +249,19 @@
       <!-- Bottom Submit Bar -->
       <footer 
         v-if="selectedBill"
-        class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3.5 shadow-md flex items-center justify-between shrink-0"
+        class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5 shadow-md flex items-center justify-between shrink-0"
       >
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-[var(--color-text-muted)]">
+        <div class="flex items-center gap-4">
+          <span class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             Total Distributed:
           </span>
-          <span class="text-sm font-mono font-black text-[var(--color-text)]">
+          <span class="text-3xl font-mono font-black text-[var(--color-text)]">
             {{ fmtPts(distributedTotal) }} / {{ fmtPts(billDetails.totalPoints) }} pts
           </span>
           <!-- Warnings -->
           <span 
             v-if="Math.abs(distributedTotal - billDetails.totalPoints) > 0.05"
-            class="text-[10px] font-bold text-[var(--color-warning)] bg-[var(--color-warning)]/10 px-2.5 py-0.5 rounded-full"
+            class="text-sm font-bold text-[var(--color-warning)] bg-[var(--color-warning)]/10 px-3.5 py-1 rounded-full whitespace-nowrap ml-2"
           >
             ⚠️ Incomplete distribution
           </span>
@@ -270,7 +270,7 @@
         <button
           @click="handleSubmit"
           :disabled="isSaving || !isValid"
-          class="flex items-center gap-2 rounded-xl bg-[var(--color-success)] px-8 py-2.5 font-bold text-sm text-[var(--color-text-on-highlight)] shadow hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          class="flex items-center gap-3 rounded-2xl bg-[var(--color-success)] px-12 py-5 font-black text-2xl text-[var(--color-text-on-highlight)] shadow-lg hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <span v-if="isSaving" class="animate-spin">⏳</span>
           Submit Incentive Entry
