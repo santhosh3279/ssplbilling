@@ -243,6 +243,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
+import ExcelJS from 'exceljs'
 import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport, getStoreWiseItemSalesReport, getIncomeAccounts } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
@@ -535,7 +536,42 @@ function buildItemSummaryExcel(rows) {
   writeFile(wb, `ItemSalesSummary_${series}_${from}_to_${to}.xlsx`)
 }
 
-function buildHSNExcel(rows, companyName, companyAddressLines) {
+async function buildHSNExcel(rows, companyName, companyAddressLines) {
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet(modalConfig.value.sheetName)
+
+  // Configure column widths
+  worksheet.columns = [
+    { key: 'date', width: 14 },        // Date
+    { key: 'bill_no', width: 22 },     // Bill No
+    { key: 'qty', width: 14 },         // Quantity
+    { key: 'taxable', width: 16 },     // Taxable Value
+    { key: 'sgst', width: 16 },        // SGST Amount
+    { key: 'cgst', width: 16 },        // CGST Amount
+    { key: 'igst', width: 16 },        // IGST Amount
+    { key: 'total_tax', width: 16 },    // Total Tax
+    { key: 'total_value', width: 18 }   // Total Value
+  ]
+
+  // Add Company Name in row 1
+  const row1 = worksheet.addRow([companyName || ''])
+  row1.getCell(1).font = { name: 'Arial', size: 14, bold: true }
+  row1.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+  worksheet.mergeCells(1, 1, 1, 9)
+
+  // Add Address lines in rows 2, 3, 4, 5
+  for (let i = 0; i < 4; i++) {
+    const addrLine = companyAddressLines[i] || ''
+    const rowNum = i + 2
+    const row = worksheet.addRow([addrLine])
+    row.getCell(1).font = { name: 'Arial', size: 10 }
+    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+    worksheet.mergeCells(rowNum, 1, rowNum, 9)
+  }
+
+  // Row 6: Empty spacing row
+  worksheet.addRow([])
+
   // Group rows by hsn_code
   const groups = {}
   for (const r of rows) {
@@ -545,19 +581,6 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
     }
     groups[hsn].push(r)
   }
-
-  const aoa = []
-
-  // Add Company and Address in the first 5 rows
-  const headerRows = [
-    [companyName || ''],
-    [companyAddressLines[0] || ''],
-    [companyAddressLines[1] || ''],
-    [companyAddressLines[2] || ''],
-    [companyAddressLines[3] || '']
-  ]
-  aoa.push(...headerRows)
-  aoa.push([]) // Row 6: Empty row before the data blocks
 
   const hsnCodes = Object.keys(groups).sort()
 
@@ -570,11 +593,13 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
   let grandValue = 0
 
   for (const hsn of hsnCodes) {
-    // First row: HSN code header
-    aoa.push([`HSN Code: ${hsn}`])
+    // HSN code header row
+    const hsnHeaderRow = worksheet.addRow([`HSN Code: ${hsn}`])
+    hsnHeaderRow.getCell(1).font = { name: 'Arial', size: 11, bold: true }
+    worksheet.mergeCells(hsnHeaderRow.number, 1, hsnHeaderRow.number, 9)
 
-    // Table header row: date, bill no, qty, taxable, sgst, cgst, igst, total tax, total value
-    aoa.push([
+    // Table header row: Date, Bill No, Quantity, Taxable Value, SGST Amount, CGST Amount, IGST Amount, Total Tax, Total Value
+    const tableHeaderRow = worksheet.addRow([
       'Date',
       'Bill No',
       'Quantity',
@@ -585,8 +610,16 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
       'Total Tax',
       'Total Value'
     ])
+    tableHeaderRow.eachCell(cell => {
+      cell.font = { name: 'Arial', bold: true }
+      cell.alignment = { horizontal: 'center' }
+      cell.border = {
+        bottom: { style: 'thin' },
+        top: { style: 'thin' }
+      }
+    })
 
-    // All bills under this HSN code
+    // Detailed rows
     const groupRows = groups[hsn]
     let hsnQty = 0
     let hsnTaxable = 0
@@ -605,7 +638,7 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
       const tax = fmt(sgst + cgst + igst)
       const val = fmt(taxable + tax)
 
-      aoa.push([
+      worksheet.addRow([
         r.date || '',
         r.bill_no || '',
         qty,
@@ -626,8 +659,8 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
       hsnValue += val
     }
 
-    // Add HSN subtotal row
-    aoa.push([
+    // Subtotal row
+    const subtotalRow = worksheet.addRow([
       'Subtotal',
       '',
       fmt(hsnQty),
@@ -638,6 +671,14 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
       fmt(hsnTax),
       fmt(hsnValue)
     ])
+    subtotalRow.eachCell((cell, colNumber) => {
+      cell.font = { name: 'Arial', bold: true, italic: true }
+      if (colNumber >= 3) {
+        cell.border = {
+          top: { style: 'thin' }
+        }
+      }
+    })
 
     grandQty += hsnQty
     grandTaxable += hsnTaxable
@@ -647,13 +688,13 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
     grandTax += hsnTax
     grandValue += hsnValue
 
-    // Add a blank row to separate HSN sections
-    aoa.push([])
+    // Add empty row
+    worksheet.addRow([])
   }
 
-  // Grand Total row at the end
+  // Grand Total row
   if (hsnCodes.length > 0) {
-    aoa.push([
+    const grandTotalRow = worksheet.addRow([
       'GRAND TOTAL',
       '',
       fmt(grandQty),
@@ -664,28 +705,28 @@ function buildHSNExcel(rows, companyName, companyAddressLines) {
       fmt(grandTax),
       fmt(grandValue)
     ])
+    grandTotalRow.eachCell((cell, colNumber) => {
+      cell.font = { name: 'Arial', bold: true }
+      if (colNumber >= 3 || colNumber === 1) {
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'double' }
+        }
+      }
+    })
   }
 
-  const wb = utils.book_new()
-  const ws = utils.aoa_to_sheet(aoa)
-  ws['!cols'] = [
-    { wch: 12 }, // Date
-    { wch: 20 }, // Bill No
-    { wch: 12 }, // Quantity
-    { wch: 15 }, // Taxable Value
-    { wch: 15 }, // SGST Amount
-    { wch: 15 }, // CGST Amount
-    { wch: 15 }, // IGST Amount
-    { wch: 15 }, // Total Tax
-    { wch: 15 }  // Total Value
-  ]
-
-  utils.book_append_sheet(wb, ws, modalConfig.value.sheetName)
+  // Generate blob and download
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
 
   const series = selectedSeries.value.replace(/[^A-Za-z0-9]/g, '')
   const from = fromDate.value || 'all'
   const to = toDate.value || 'all'
-  writeFile(wb, `${modalConfig.value.filePrefix}_${series}_${from}_to_${to}.xlsx`)
+  link.download = `${modalConfig.value.filePrefix}_${series}_${from}_to_${to}.xlsx`
+  link.click()
 }
 
 function buildExcel(rows) {
