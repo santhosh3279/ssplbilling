@@ -351,6 +351,7 @@ async function loadForEdit(itemCode) {
     form.value.item_group        = data.item_group        || ''
     form.value.hsn_sac           = data.hsn_sac           || ''
     form.value.stock_uom         = data.stock_uom         || 'Nos'
+    form.value.item_tax_template = data.item_tax_template || ''
     form.value.standard_rate     = data.standard_rate     || 0
     form.value.safety_stock      = data.safety_stock      || 0
     form.value.suppliers         = (data.suppliers || []).map(s => ({
