@@ -129,20 +129,20 @@
         <div v-else class="space-y-6">
           
           <!-- Selected Bill Info Panel -->
-          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Selected Document</span>
-                <h3 class="text-3xl font-mono font-black mt-1 text-[var(--color-text)]">
-                  {{ selectedBill.name }}
-                </h3>
-                <p class="text-xs text-[var(--color-text-muted)] mt-1">
-                  Type: {{ selectedBill.doctype }} | Date: {{ selectedBill.date }}
-                </p>
+          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+            <div class="flex items-center justify-between gap-6 flex-wrap">
+              <!-- Selected Document -->
+              <div class="flex items-baseline gap-3 text-3xl font-black text-[var(--color-text)]">
+                <span class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selected Document:</span>
+                <span class="font-mono text-3xl">{{ selectedBill.name }}</span>
+                <span class="text-xs font-semibold text-[var(--color-text-muted)] tracking-wider uppercase ml-2 bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-0.5 rounded-lg">
+                  {{ selectedBill.doctype }} · {{ selectedBill.date }}
+                </span>
               </div>
-              <div class="flex flex-col items-end">
-                <span class="text-xs text-[var(--color-text-muted)] font-semibold uppercase tracking-wider">Net Total Value</span>
-                <span class="text-3xl font-black text-[var(--color-text)] mt-1">₹ {{ fmt(selectedBill.amount) }}</span>
+              <!-- Net Total Value -->
+              <div class="flex items-baseline gap-3 text-3xl font-black text-[var(--color-text)]">
+                <span class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Net Total Value:</span>
+                <span class="text-3xl text-[var(--color-success)]">₹ {{ fmt(selectedBill.amount) }}</span>
               </div>
             </div>
           </div>
