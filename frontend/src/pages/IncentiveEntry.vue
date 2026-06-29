@@ -197,6 +197,7 @@
                         v-model="row._search"
                         @input="onEmployeeSearch(idx, $event.target.value)"
                         @focus="activeRowIndex = idx; activeOptionIndex = empOptions.length > 0 ? 0 : -1"
+                        @blur="handleEmpBlur(idx)"
                         @keydown.down.prevent="handleEmpKeyDown"
                         @keydown.up.prevent="handleEmpKeyUp"
                         @keydown.enter.prevent="handleEmpEnter(idx)"
@@ -389,15 +390,45 @@ function handleEmpKeyUp() {
 }
 
 function handleEmpEnter(idx) {
+  const row = doc.incentive_system[idx]
+  if (!row) return
+
   const optIdx = activeOptionIndex.value >= 0 ? activeOptionIndex.value : 0
-  if (empOptions.value && empOptions.value.length > optIdx) {
+  
+  if (!row.employee && empOptions.value && empOptions.value.length > optIdx) {
     pickEmployee(idx, empOptions.value[optIdx])
-  } else {
-    nextTick(() => {
-      const el = roleSelectInputs.value[idx]
-      if (el) el.focus()
-    })
+    return
   }
+  
+  if (!row.employee) {
+    focusRowInput(idx)
+    return
+  }
+  
+  nextTick(() => {
+    const el = roleSelectInputs.value[idx]
+    if (el) el.focus()
+  })
+}
+
+function handleEmpBlur(idx) {
+  setTimeout(() => {
+    const row = doc.incentive_system[idx]
+    if (!row) return
+    
+    if (row._search !== row.employee_name) {
+      if (row.employee) {
+        row._search = row.employee_name
+      } else {
+        row._search = ''
+      }
+    }
+    
+    if (activeRowIndex.value === idx) {
+      activeRowIndex.value = -1
+      empOptions.value = []
+    }
+  }, 200)
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
