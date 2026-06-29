@@ -63,7 +63,6 @@
       @discount-amt-keydown="handleDiscountAmtKeydown"
       @other-entry-enter="saveBtnRef?.focus()"
       @cancel="handleCancel"
-      @incentive="handleIncentive"
       @party-click="supplierInitialQuery = ''; showSupplierModal = true"
     >
       <template #header-right>
@@ -679,14 +678,6 @@
       @jump="handleJump"
     />
 
-    <IncentiveEntry
-      :show="showIncentiveModal"
-      doctype="Purchase Invoice"
-      :docname="isSaved ? invoiceNo : ''"
-      :initial-rows="incentiveRows"
-      @close="showIncentiveModal = false"
-      @update:rows="onIncentiveSaved"
-    />
 
     <Warning
       :show="showClearWarning"
@@ -714,7 +705,6 @@
 
         { key: 'ALT + P', desc: 'Print barcodes' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
-        { key: 'Insert', desc: 'Open incentive entry' },
         { key: 'Page Up', desc: 'Series (empty) / Change supplier (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
       ]"
@@ -946,8 +936,6 @@ const otherAmt = computed(() => parseFloat(otherEntry.value) || 0)
 const showSeriesModal = ref(false)
 const showSupplierModal = ref(false)
 const showShortcutPage = ref(false)
-const showIncentiveModal = ref(false)
-const incentiveRows = ref([])
 const showClearWarning = ref(false)
 const showExitWarning = ref(false)
 const supplierInitialQuery = ref('')
@@ -1220,7 +1208,6 @@ async function handleSelectSidebarItem(item) {
     discountPct.value = data.discount_percentage || ''
     discountDirectAmt.value = data.additional_discount_amount || ''
 
-    incentiveRows.value = data.incentive_system || []
 
     items.value = (data.items || []).map(i => {
       const discount = i.discount || 0
@@ -1510,7 +1497,6 @@ async function clearBill() {
   otherEntry.value = ''
   supplierInvoiceNo.value = ''
   supplierInvoiceDate.value = new Date().toISOString().split('T')[0]
-  incentiveRows.value = []
   clearHistory()
   invoiceNo.value = 'NEW'
   postingTime.value = ''
@@ -1624,7 +1610,6 @@ async function handleSave() {
     is_inclusive: isInclusiveTax.value ? 1 : 0,
     is_return: isReturn.value ? 1 : 0,
     taxes: additionalCharges,
-    incentive_system: incentiveRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 })),
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
@@ -1758,7 +1743,6 @@ async function closePrintModal() {
   otherEntry.value = ''
   supplierInvoiceNo.value = ''
   supplierInvoiceDate.value = new Date().toISOString().split('T')[0]
-  incentiveRows.value = []
   clearHistory()
 
   isSaved.value = false
@@ -1791,7 +1775,6 @@ function handleCancel() {
   }
 }
 
-function handleIncentive() { showIncentiveModal.value = true }
 
 // --- Export / Import CSV ---
 const csvImportRef = ref(null)
@@ -1868,11 +1851,6 @@ function onCsvFileSelected(e) {
     items.value = parsed
   }
   reader.readAsText(file)
-}
-
-function onIncentiveSaved(rows) {
-  incentiveRows.value = rows
-  showIncentiveModal.value = false
 }
 
 function handleJump(targetNo) {
@@ -2698,7 +2676,6 @@ useShortcuts(salesInvoiceShortcuts({
   openParcelAddress:() => {},
   save:             () => handleSave(),
   cancel:           () => handleCancel(),
-  openIncentive:    () => { showIncentiveModal.value = true },
   pageUp:           () => handlePageUp(),
   deleteRow:        () => {
     if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
@@ -2719,7 +2696,7 @@ function handleGlobalEscape(e) {
     }
     const modalOpen = showSeriesModal.value || showSupplierModal.value || 
                       showItemSearch.value || showPrintModal.value || 
-                      showJumpModal.value || showIncentiveModal.value || 
+                      showJumpModal.value || 
                       showClearWarning.value || showExitWarning.value || 
                       showShortcutPage.value || showPriceListUpdate.value || 
                       showBarcodeModal.value || showHistoryModal.value ||

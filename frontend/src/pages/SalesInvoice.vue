@@ -69,7 +69,6 @@
       @discount-amt-keydown="handleDiscountAmtKeydown"
       @other-entry-enter="saveBtnRef?.focus()"
       @cancel="handleCancel"
-      @incentive="handleIncentive"
       @party-click="customerInitialQuery = ''; showCustomerModal = true"
     >
       <!-- Custom slots for additional logic if needed -->
@@ -521,14 +520,6 @@
       @jump="handleJump"
     />
 
-    <IncentiveEntry
-      :show="showIncentiveModal"
-      doctype="Sales Invoice"
-      :docname="isSaved ? invoiceNo : ''"
-      :initial-rows="incentiveRows"
-      @close="showIncentiveModal = false"
-      @update:rows="onIncentiveSaved"
-    />
 
     <CustomAddress
       v-if="showCustomAddressModal"
@@ -570,7 +561,6 @@
 
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
-        { key: 'Insert', desc: 'Open incentive entry' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
       ]"
@@ -768,8 +758,6 @@ const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, 
 const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
 const showShortcutPage = ref(false)
-const showIncentiveModal = ref(false)
-const incentiveRows = ref([])
 const showCustomAddressModal = ref(false)
 const showHistoryModal = ref(false)
 const historyViewMode = ref('item') // 'invoice' or 'item'
@@ -975,8 +963,6 @@ async function handleSelectSidebarItem(item) {
       address_line_2: data.custom_address_line2 || '',
     }
 
-    // Incentive rows
-    incentiveRows.value = data.incentive_system || []
 
     ewaybill.value = data.ewaybill || ''
     ewaybillStatus.value = data.e_waybill_status || ''
@@ -1243,7 +1229,6 @@ async function clearBill() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
-  incentiveRows.value = []
   customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
@@ -1367,7 +1352,6 @@ async function handleSave() {
     is_return: isReturn.value ? 1 : 0,
     customer_rate_multiplier: ignoreModifier.value ? 0 : 1,
     additional_charges: additionalCharges,
-    incentive_rows: incentiveRows.value.map(r => ({ employee: r.employee, role: r.role, points: r.points || 0 })),
     place_of_supply: customerState.value || '',
     custom_customer_name: customAddress.value.customer_name || '',
     custom_address_line1: customAddress.value.address_line_1 || '',
@@ -1517,7 +1501,6 @@ async function closePrintModal() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
-  incentiveRows.value = []
   customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   clearHistory()
 
@@ -1547,12 +1530,6 @@ function handleCancel() {
   }
 }
 
-function handleIncentive() { showIncentiveModal.value = true }
-
-function onIncentiveSaved(rows) {
-  incentiveRows.value = rows
-  showIncentiveModal.value = false
-}
 
 // --- Export / Import CSV ---
 const csvImportRef = ref(null)
@@ -2573,7 +2550,6 @@ useShortcuts(salesInvoiceShortcuts({
   openParcelAddress:() => { showCustomAddressModal.value = true },
   save:             () => handleSave(),
   cancel:           () => handleCancel(),
-  openIncentive:    () => { showIncentiveModal.value = true },
   pageUp:           () => handlePageUp(),
   deleteRow:        () => {
     if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
@@ -2596,7 +2572,7 @@ function handleGlobalEscape(e) {
     const modalOpen = showSeriesModal.value || showCustomerModal.value || 
                       showItemSearch.value || showPriceDetectModal.value || 
                       showPrintModal.value || showJumpModal.value || 
-                      showIncentiveModal.value || showCustomAddressModal.value || 
+                      showCustomAddressModal.value || 
                       showClearWarning.value || showExitWarning.value || 
                       showShortcutPage.value || showHistoryModal.value ||
                       showGstBillCreator.value ||

@@ -14,7 +14,6 @@ export const salesInvoiceShortcuts = (handlers) => ({
   'F6':      handlers.openParcelAddress|| (() => {}),
   'F8':      handlers.save             || (() => {}),
   'CTRL+S':  handlers.save             || (() => {}),
-  'INSERT':  handlers.openIncentive    || (() => {}),
   'PAGEUP':  handlers.pageUp           || (() => {}),
   'ESCAPE':  handlers.cancel           || (() => {}),
   'DELETE':  handlers.deleteRow        || (() => {}),
