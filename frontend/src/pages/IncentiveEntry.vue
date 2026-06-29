@@ -196,19 +196,19 @@
                       <!-- Employee Dropdown Results -->
                       <div 
                         v-if="activeRowIndex === idx && empOptions.length > 0"
-                        class="absolute left-0 right-0 top-full z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-1 max-h-48 overflow-y-auto mt-0.5"
+                        class="absolute left-0 right-0 top-full z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-1 max-h-72 overflow-y-auto mt-0.5"
                       >
                         <div
                           v-for="(emp, eIdx) in empOptions"
                           :key="emp.name"
                           @mousedown.prevent="pickEmployee(idx, emp)"
-                          class="rounded-lg px-4 py-2 text-sm cursor-pointer flex justify-between gap-4 transition-colors"
+                          class="rounded-xl px-5 py-3 text-2xl cursor-pointer flex justify-between gap-4 transition-colors"
                           :class="activeOptionIndex === eIdx 
                             ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] font-bold' 
                             : 'hover:bg-[var(--color-highlight)]/10 text-[var(--color-text)]'"
                         >
                           <span class="font-bold text-inherit">{{ emp.employee_name }}</span>
-                          <span class="text-xs text-[var(--color-text-muted)] hover:text-inherit">{{ emp.designation || 'Staff' }}</span>
+                          <span class="text-lg text-[var(--color-text-muted)] hover:text-inherit">{{ emp.designation || 'Staff' }}</span>
                         </div>
                       </div>
                     </div>
