@@ -513,30 +513,37 @@ function removeRow(idx) {
 
 // Recalculate points based on the logic from backend hooks
 function recalculatePoints() {
-  const n = doc.incentive_system.length
+  // Reset all row points first
+  doc.incentive_system.forEach(row => {
+    row.points = 0
+  })
+
+  const validRows = doc.incentive_system.filter(r => r.employee)
+  const n = validRows.length
   if (n === 0) return
 
   const totalPoints = billDetails.value.totalPoints
-  const billerIndex = doc.incentive_system.findIndex(r => r.role === 'Biller')
+  const billerIndex = validRows.findIndex(r => r.role === 'Biller')
 
   if (billerIndex !== -1 && n > 1) {
     const billerPoints = Number((totalPoints / (2 * n)).toFixed(2))
     const remaining = totalPoints - billerPoints
     const othersEach = Number((remaining / (n - 1)).toFixed(2))
 
-    doc.incentive_system.forEach((row, idx) => {
+    validRows.forEach((row, idx) => {
       row.points = idx === billerIndex ? billerPoints : othersEach
     })
   } else {
     const perPerson = Number((totalPoints / n).toFixed(2))
-    doc.incentive_system.forEach(row => {
+    validRows.forEach(row => {
       row.points = perPerson
     })
   }
 }
 
 const distributedTotal = computed(() => {
-  return doc.incentive_system.reduce((sum, r) => sum + (r.points || 0), 0)
+  const validRows = doc.incentive_system.filter(r => r.employee)
+  return validRows.reduce((sum, r) => sum + (r.points || 0), 0)
 })
 
 // ── Employee Search within child row ───────────────────────────────────────
@@ -574,6 +581,8 @@ function pickEmployee(index, emp) {
   activeRowIndex.value = -1
   activeOptionIndex.value = -1
   
+  recalculatePoints()
+  
   nextTick(() => {
     const el = roleSelectInputs.value[index]
     if (el) el.focus()
@@ -583,13 +592,11 @@ function pickEmployee(index, emp) {
 // ── Form Validation ────────────────────────────────────────────────────────
 const isValid = computed(() => {
   if (!doc.inv_no) return false
-  if (doc.incentive_system.length === 0) return false
   
-  // All rows must have selected employees
-  const allEmployeesSelected = doc.incentive_system.every(r => r.employee)
-  if (!allEmployeesSelected) return false
+  const validRows = doc.incentive_system.filter(r => r.employee)
+  if (validRows.length === 0) return false
   
-  // Sum should equal rule total points (with a tiny decimal delta margin of 0.05)
+  // Sum of valid rows points should equal rule total points (with a tiny decimal delta margin of 0.05)
   if (Math.abs(distributedTotal.value - billDetails.value.totalPoints) > 0.05) return false
   
   return true
@@ -607,7 +614,7 @@ async function handleSubmit() {
       date: doc.date,
       time: doc.time,
       user: doc.user,
-      incentive_system: doc.incentive_system.map(r => ({
+      incentive_system: doc.incentive_system.filter(r => r.employee).map(r => ({
         employee: r.employee,
         role: r.role,
         points: r.points
