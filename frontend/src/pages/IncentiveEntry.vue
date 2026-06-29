@@ -196,7 +196,9 @@
                         placeholder="Search employee..."
                         v-model="row._search"
                         @input="onEmployeeSearch(idx, $event.target.value)"
-                        @focus="activeRowIndex = idx"
+                        @focus="activeRowIndex = idx; activeOptionIndex = empOptions.length > 0 ? 0 : -1"
+                        @keydown.down.prevent="handleEmpKeyDown"
+                        @keydown.up.prevent="handleEmpKeyUp"
                         @keydown.enter.prevent="handleEmpEnter(idx)"
                         class="w-full h-full bg-transparent px-4 py-3 text-lg font-bold focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]/30"
                       />
@@ -207,12 +209,15 @@
                         class="absolute left-0 right-0 top-full z-50 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-1 max-h-48 overflow-y-auto mt-0.5"
                       >
                         <div
-                          v-for="emp in empOptions"
+                          v-for="(emp, eIdx) in empOptions"
                           :key="emp.name"
                           @mousedown.prevent="pickEmployee(idx, emp)"
-                          class="rounded-lg px-4 py-2 text-sm hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] cursor-pointer flex justify-between gap-4"
+                          class="rounded-lg px-4 py-2 text-sm cursor-pointer flex justify-between gap-4 transition-colors"
+                          :class="activeOptionIndex === eIdx 
+                            ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] font-bold' 
+                            : 'hover:bg-[var(--color-highlight)]/10 text-[var(--color-text)]'"
                         >
-                          <span class="font-bold text-[var(--color-text)] hover:text-inherit">{{ emp.employee_name }}</span>
+                          <span class="font-bold text-inherit">{{ emp.employee_name }}</span>
                           <span class="text-xs text-[var(--color-text-muted)] hover:text-inherit">{{ emp.designation || 'Staff' }}</span>
                         </div>
                       </div>
@@ -365,9 +370,28 @@ function handleRoleEnter(idx) {
   }
 }
 
+const activeOptionIndex = ref(-1)
+
+function handleEmpKeyDown() {
+  if (empOptions.value.length > 0) {
+    activeOptionIndex.value = (activeOptionIndex.value + 1) % empOptions.value.length
+  }
+}
+
+function handleEmpKeyUp() {
+  if (empOptions.value.length > 0) {
+    if (activeOptionIndex.value <= 0) {
+      activeOptionIndex.value = empOptions.value.length - 1
+    } else {
+      activeOptionIndex.value--
+    }
+  }
+}
+
 function handleEmpEnter(idx) {
-  if (empOptions.value && empOptions.value.length > 0) {
-    pickEmployee(idx, empOptions.value[0])
+  const optIdx = activeOptionIndex.value >= 0 ? activeOptionIndex.value : 0
+  if (empOptions.value && empOptions.value.length > optIdx) {
+    pickEmployee(idx, empOptions.value[optIdx])
   } else {
     nextTick(() => {
       const el = roleSelectInputs.value[idx]
@@ -504,6 +528,7 @@ function onEmployeeSearch(index, query) {
   
   if (!query.trim()) {
     empOptions.value = []
+    activeOptionIndex.value = -1
     return
   }
 
@@ -511,8 +536,10 @@ function onEmployeeSearch(index, query) {
     try {
       const raw = await frappeGet('ssplbilling.api.incentive_api.search_employees', { query })
       empOptions.value = raw
+      activeOptionIndex.value = raw.length > 0 ? 0 : -1
     } catch {
       empOptions.value = []
+      activeOptionIndex.value = -1
     }
   }, 200)
 }
@@ -525,6 +552,7 @@ function pickEmployee(index, emp) {
   
   empOptions.value = []
   activeRowIndex.value = -1
+  activeOptionIndex.value = -1
   
   nextTick(() => {
     const el = roleSelectInputs.value[index]
