@@ -274,6 +274,13 @@
       <!-- Footer Actions -->
       <div class="px-[20px] py-[12px] bg-[var(--color-surface)] border-t border-[var(--color-border)] flex gap-[8px]">
         <button
+          @click="gotoERPNext"
+          class="flex-1 rounded-xl py-[12px] text-2xl font-bold uppercase tracking-widest text-[var(--color-info)] border border-[var(--color-info)] hover:bg-[var(--color-info)]/10 transition-all active:scale-95 flex items-center justify-center gap-[8px]"
+        >
+          <span>ERPNext</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
+        <button
           @click="$emit('close')"
           class="flex-1 rounded-xl py-[12px] text-2xl font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:bg-[var(--color-midlight)] transition-all active:scale-95"
         >
@@ -309,6 +316,13 @@ const emit = defineEmits(['close', 'created'])
 useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
 const isEditMode = computed(() => !!props.editItemCode)
+
+function gotoERPNext() {
+  const url = isEditMode.value
+    ? `/app/item/${encodeURIComponent(props.editItemCode)}`
+    : '/app/item'
+  window.open(url, '_blank')
+}
 
 // ── Field cache (item_group, hsn_sac, stock_uom, item_tax_template, supplier) ─
 const CACHE_KEY = 'ic-field-cache'
