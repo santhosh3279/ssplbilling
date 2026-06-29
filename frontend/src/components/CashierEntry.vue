@@ -229,7 +229,7 @@ const difference = computed(() => total.value - ledgerBalance.value)
 
 // ── Load cash account and existing record ────────────────────────────────────
 onMounted(async () => {
-  form.user = session.user.value || ''
+  form.user = localStorage.getItem('wb-inherited-user') || session.user.value || ''
 
   // Set opening_or_closing based on title
   const t = props.title || ''
