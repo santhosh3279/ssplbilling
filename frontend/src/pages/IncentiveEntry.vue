@@ -15,11 +15,11 @@
             v-model="searchTerm"
             type="text"
             placeholder="Search by Bill No or detail..."
-            class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none placeholder:text-[var(--color-text-muted)]"
+            class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-2xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none placeholder:text-[var(--color-text-muted)]/50"
           />
           <button
             @click="fetchBills"
-            class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2.5 py-1.5 hover:bg-[var(--color-midlight)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+            class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-xl hover:bg-[var(--color-midlight)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
             title="Refresh list"
           >
             🔄
