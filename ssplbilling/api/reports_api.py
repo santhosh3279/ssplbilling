@@ -40,12 +40,18 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 			"total_taxes_and_charges",
 			"grand_total",
 			"naming_series",
+			"billing_address_gstin",
 		],
 		order_by="posting_date asc, name asc",
 	)
 
 	result = []
 	for inv in invoices:
+		customer_gstin = inv.billing_address_gstin
+		if not customer_gstin and inv.customer:
+			customer_gstin = frappe.db.get_value("Customer", inv.customer, "gstin") or ""
+		customer_gstin = customer_gstin or ""
+
 		taxes = frappe.get_all(
 			"Sales Taxes and Charges",
 			filters={"parent": inv.name, "parenttype": "Sales Invoice"},
@@ -78,6 +84,7 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 				"date": str(inv.posting_date),
 				"customer": inv.customer,
 				"customer_name": inv.customer_name,
+				"customer_gstin": customer_gstin,
 				"taxable_amount": float(inv.net_total or 0),
 				"cgst_rate": cgst_rate,
 				"cgst_amount": cgst_amount,
@@ -126,12 +133,18 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 			"total_taxes_and_charges",
 			"grand_total",
 			"naming_series",
+			"billing_address_gstin",
 		],
 		order_by="transaction_date asc, name asc",
 	)
 
 	result = []
 	for qt in quotations:
+		customer_gstin = qt.billing_address_gstin
+		if not customer_gstin and qt.party_name:
+			customer_gstin = frappe.db.get_value("Customer", qt.party_name, "gstin") or ""
+		customer_gstin = customer_gstin or ""
+
 		taxes = frappe.get_all(
 			"Sales Taxes and Charges",
 			filters={"parent": qt.name, "parenttype": "Quotation"},
@@ -164,6 +177,7 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 				"date": str(qt.transaction_date),
 				"customer": qt.party_name,
 				"customer_name": qt.customer_name,
+				"customer_gstin": customer_gstin,
 				"taxable_amount": float(qt.net_total or 0),
 				"cgst_rate": cgst_rate,
 				"cgst_amount": cgst_amount,

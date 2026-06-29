@@ -748,6 +748,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     { key: 'date', width: 14 },         // Date
     { key: 'cust_code', width: 18 },    // Customer Code
     { key: 'cust_name', width: 28 },    // Customer Name
+    { key: 'cust_gstin', width: 18 },   // Customer GSTIN
     { key: 'taxable', width: 16 },      // Taxable Amount
     { key: 'cgst_rate', width: 12 },    // CGST Rate %
     { key: 'cgst_amt', width: 14 },     // CGST Amount
@@ -764,7 +765,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   const row1 = worksheet.addRow([companyName || ''])
   row1.getCell(1).font = { name: 'Arial', size: 14, bold: true }
   row1.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-  worksheet.mergeCells(1, 1, 1, 14)
+  worksheet.mergeCells(1, 1, 1, 15)
 
   // Add Address lines in rows 2, 3, 4, 5
   for (let i = 0; i < 4; i++) {
@@ -773,7 +774,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     const row = worksheet.addRow([addrLine])
     row.getCell(1).font = { name: 'Arial', size: 10 }
     row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-    worksheet.mergeCells(rowNum, 1, rowNum, 14)
+    worksheet.mergeCells(rowNum, 1, rowNum, 15)
   }
 
   // Row 6: Empty spacing row
@@ -781,7 +782,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
 
   // Table header row: columns/headers
   const tableHeaderRow = worksheet.addRow([
-    docLabel, 'Date', 'Customer Code', 'Customer Name',
+    docLabel, 'Date', 'Customer Code', 'Customer Name', 'Customer GSTIN',
     'Taxable Amount',
     'CGST Rate %', 'CGST Amount',
     'SGST Rate %', 'SGST Amount',
@@ -804,6 +805,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
       r.date || '',
       r.customer || '',
       r.customer_name || '',
+      r.customer_gstin || '',
       fmt(r.taxable_amount),
       fmt(r.cgst_rate),
       fmt(r.cgst_amount),
@@ -820,7 +822,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   // Totals Row
   const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
   const totalsRow = worksheet.addRow([
-    'GRAND TOTAL', '', '', '',
+    'GRAND TOTAL', '', '', '', '',
     fmt(sum('taxable_amount')),
     '', fmt(sum('cgst_amount')),
     '', fmt(sum('sgst_amount')),
@@ -831,7 +833,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   ])
   totalsRow.eachCell((cell, colNumber) => {
     cell.font = { name: 'Arial', bold: true }
-    if (colNumber >= 5 || colNumber === 1) {
+    if (colNumber >= 6 || colNumber === 1) {
       cell.border = {
         top: { style: 'thin' },
         bottom: { style: 'double' }
