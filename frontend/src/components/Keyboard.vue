@@ -12,8 +12,9 @@
       <!-- Spacer to push content to bottom -->
       <div class="flex-1"></div>
       
-      <!-- Numpad on the left side top (above function keys) -->
+      <!-- Numpad on the right side top (above function keys) -->
       <div class="flex mb-1">
+        <div class="flex-1"></div>
         <div class="grid grid-cols-3 gap-1 w-[60%]">
           <button v-for="k in '789456123'.split('')" :key="k"
                   @pointerdown.prevent="pressKey(k)"
@@ -33,7 +34,6 @@
             ⌫
           </button>
         </div>
-        <div class="flex-1"></div>
       </div>
 
       <!-- Function Keys Row -->
