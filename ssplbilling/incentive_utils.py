@@ -13,12 +13,28 @@ def calculate_incentive_points(doc, method=None):
 		return
 
 	rule = frappe.get_single("Incentive Rule")
-	percentage = _get_percentage(doc, rule)
+	
+	ref_doc = doc
+	if doc.doctype == "Invoice Incentive":
+		ref_doctype = None
+		if frappe.db.exists("Sales Invoice", doc.inv_no):
+			ref_doctype = "Sales Invoice"
+		elif frappe.db.exists("Purchase Invoice", doc.inv_no):
+			ref_doctype = "Purchase Invoice"
+		elif frappe.db.exists("Stock Entry", doc.inv_no):
+			ref_doctype = "Stock Entry"
+		
+		if ref_doctype:
+			ref_doc = frappe.get_doc(ref_doctype, doc.inv_no)
+		else:
+			return
+
+	percentage = _get_percentage(ref_doc, rule)
 
 	if not percentage:
 		return
 
-	amount = _get_amount(doc)
+	amount = _get_amount(ref_doc)
 	if not amount:
 		return
 

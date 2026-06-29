@@ -17,10 +17,9 @@
  "fields": [
   {
    "fieldname": "inv_no",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Inv No",
-   "options": "Sales Invoice",
    "reqd": 1
   },
   {

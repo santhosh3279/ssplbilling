@@ -194,6 +194,10 @@ doc_events = {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
 		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
 	},
+	"Invoice Incentive": {
+		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
+		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
+	},
 }
 
 # Scheduled Tasks

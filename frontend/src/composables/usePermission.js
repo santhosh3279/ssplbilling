@@ -52,6 +52,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'Payment',
   'Expense',
   'IncentiveRedeem',
+  'IncentiveEntry',
   'Unreconciled',
 ])
 
@@ -65,6 +66,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'DailyReport',
   'SingleEntry',
   'IncentiveRedeem',
+  'IncentiveEntry',
   'Unreconciled',
   'PurchaseOrder',
 ])
@@ -77,6 +79,7 @@ export const ADMIN_ROUTES = new Set([
   'StoreSalesReport',
   'CostCenterSalesReport',
   'IncentiveLedger',
+  'IncentiveEntry',
 ])
 
 /**
@@ -144,6 +147,7 @@ const TILE_ROUTE_MAP = {
   'barcode-print':     'BarcodePrintPage',
   'incentive-ledger':  'IncentiveLedger',
   'incentive-redeem':  'IncentiveRedeem',
+  'incentive-entry':   'IncentiveEntry',
   'reports':           'Reports',
   'store-sale-report': 'StoreSalesReport',
   'cost-center-sale-report': 'CostCenterSalesReport',

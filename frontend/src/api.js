@@ -901,3 +901,12 @@ export async function getCostCenterSaleReport(fromDate, toDate) {
     to_date: toDate,
   });
 }
+
+export async function getUnpostedBills() {
+  return frappeGet("ssplbilling.api.incentive_api.get_unposted_bills");
+}
+
+export async function calculateBillIncentive(doctype, name) {
+  return frappeGet("ssplbilling.api.incentive_api.calculate_bill_incentive", { doctype, name });
+}
+
