@@ -11,9 +11,9 @@
         ← Dashboard
       </button>
 
-      <!-- Create/Manage button if logged in -->
+      <!-- Create/Manage button if logged in and authorized -->
       <button 
-        v-if="isLoggedIn"
+        v-if="canCreateOffer"
         @click="goCreateOffer"
         class="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white border border-indigo-500 transition active:scale-95 focus:outline-none"
       >
@@ -116,10 +116,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session'
+import { canAccessRoute } from '../composables/usePermission'
 
 const router = useRouter()
 
@@ -127,6 +128,10 @@ const loading = ref(true)
 const error = ref(null)
 const catalogues = ref([])
 const isLoggedIn = ref(false)
+
+const canCreateOffer = computed(() => {
+  return isLoggedIn.value && canAccessRoute('OfferDisplay')
+})
 
 async function fetchCatalogues() {
   loading.value = true
