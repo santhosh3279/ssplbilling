@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useShortcuts } from './services/shortcutManager';
 import { globalShortcuts } from './shortcuts/globalShortcuts';
@@ -50,9 +50,19 @@ const { isSidebarCollapsed } = useLayout();
 const { connectMqtt } = useMqtt();
 
 const route = useRoute();
+const forceKeyboard = ref(localStorage.getItem('wb-force-keyboard') === 'true');
+
 const showKeyboardPanel = computed(() => {
+  if (forceKeyboard.value) {
+    return route.name !== 'OfferPage';
+  }
   return isTablet.value && route.name !== 'OfferPage';
 });
+
+function toggleKeyboard() {
+  forceKeyboard.value = !forceKeyboard.value;
+  localStorage.setItem('wb-force-keyboard', forceKeyboard.value ? 'true' : 'false');
+}
 
 useShortcuts(globalShortcuts, 'global');
 
@@ -66,63 +76,82 @@ function toggleCommandLine() {
 
 const _nativeAlert = window.alert.bind(window);
 
-// Global Keyboard Suppression for Tablet
+// Global Keyboard Suppression for Tablet / Forced Keyboard
 function suppressKeyboard(e) {
-  if (!isTablet.value) return;
+  if (!showKeyboardPanel.value) return;
 
   const target = e.target;
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
-    // Force inputmode to none to prevent virtual keyboard
     target.setAttribute('inputmode', 'none');
-    // Newer standard for chromium browsers
     target.setAttribute('virtualkeyboardpolicy', 'manual');
   }
 }
 
 let observer = null;
+let isObserverActive = false;
+
+function setupKeyboardSuppression() {
+  if (showKeyboardPanel.value) {
+    if (isObserverActive) return;
+    
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+      el.setAttribute('inputmode', 'none');
+      el.setAttribute('virtualkeyboardpolicy', 'manual');
+    });
+
+    document.addEventListener('focusin', suppressKeyboard, true);
+    document.addEventListener('touchstart', suppressKeyboard, true);
+
+    if (!observer) {
+      observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) {
+              if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA' || node.tagName === 'SELECT') {
+                node.setAttribute('inputmode', 'none');
+                node.setAttribute('virtualkeyboardpolicy', 'manual');
+              }
+              node.querySelectorAll?.('input, textarea, select').forEach(el => {
+                el.setAttribute('inputmode', 'none');
+                el.setAttribute('virtualkeyboardpolicy', 'manual');
+              });
+            }
+          });
+        });
+      });
+    }
+    observer.observe(document.body, { childList: true, subtree: true });
+    isObserverActive = true;
+  } else {
+    if (!isObserverActive) return;
+    
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+      el.removeAttribute('inputmode');
+      el.removeAttribute('virtualkeyboardpolicy');
+    });
+
+    document.removeEventListener('focusin', suppressKeyboard, true);
+    document.removeEventListener('touchstart', suppressKeyboard, true);
+
+    if (observer) {
+      observer.disconnect();
+    }
+    isObserverActive = false;
+  }
+}
+
+watch(showKeyboardPanel, () => {
+  setupKeyboardSuppression();
+});
 
 onMounted(() => {
   initTheme();
   connectMqtt();
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
-
   window.addEventListener('wb-global-command-line-toggle', toggleCommandLine);
+  window.addEventListener('wb-global-keyboard-toggle', toggleKeyboard);
 
-  // Initial scan and setup for tablet
-  if (isTablet.value) {
-    const applyToAll = () => {
-      document.querySelectorAll('input, textarea, select').forEach(el => {
-        el.setAttribute('inputmode', 'none');
-        el.setAttribute('virtualkeyboardpolicy', 'manual');
-      });
-    };
-    
-    applyToAll();
-
-    // Attach global focus listener for keyboard suppression
-    document.addEventListener('focusin', suppressKeyboard, true);
-    document.addEventListener('touchstart', suppressKeyboard, true);
-
-    // Watch for dynamic inputs (modals, new rows, etc)
-    observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1) { // Element
-            if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA' || node.tagName === 'SELECT') {
-              node.setAttribute('inputmode', 'none');
-              node.setAttribute('virtualkeyboardpolicy', 'manual');
-            }
-            node.querySelectorAll?.('input, textarea, select').forEach(el => {
-              el.setAttribute('inputmode', 'none');
-              el.setAttribute('virtualkeyboardpolicy', 'manual');
-            });
-          }
-        });
-      });
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
+  setupKeyboardSuppression();
 
   window.alert = (msg) => {
     const messageStr = String(msg ?? '')
@@ -151,6 +180,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.removeEventListener('wb-global-command-line-toggle', toggleCommandLine);
+  window.removeEventListener('wb-global-keyboard-toggle', toggleKeyboard);
   document.removeEventListener('focusin', suppressKeyboard, true);
   document.removeEventListener('touchstart', suppressKeyboard, true);
   if (observer) observer.disconnect();

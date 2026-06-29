@@ -124,6 +124,19 @@
           ⚙️ General
         </button>
         <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+          @click="handleToggleKeyboard"
+        >
+          <span>⌨️</span>
+          <span>Keyboard Panel</span>
+          <span 
+            class="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+            :class="isKeyboardVisible ? 'bg-[var(--color-success)]/20 text-[var(--color-success)]' : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
+          >
+            {{ isKeyboardVisible ? 'ON' : 'OFF' }}
+          </span>
+        </button>
+        <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)] disabled:opacity-50 transition-colors"
           @click="handleClearRedisCache"
           :disabled="isClearingRedis"
@@ -249,6 +262,32 @@
               class="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-4 py-2.5 text-xs font-bold text-white transition active:scale-95 border border-amber-500 shadow-md focus:outline-none"
             >
               <span>{{ isConnecting ? '⏳ Connecting...' : '🔄 Reconnect MQTT' }}</span>
+            </button>
+          </div>
+
+          <!-- Keyboard Widget -->
+          <div class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
+              <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">On-Screen Keyboard</span>
+              <span class="flex items-center gap-1.5 text-xs font-bold">
+                <span 
+                  class="h-2.5 w-2.5 rounded-full" 
+                  :class="isKeyboardVisible ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-slate-500'"
+                ></span>
+                <span :class="isKeyboardVisible ? 'text-emerald-500' : 'text-[var(--color-text-muted)]'">
+                  {{ isKeyboardVisible ? 'Active' : 'Disabled' }}
+                </span>
+              </span>
+            </div>
+            
+            <button
+              @click="handleToggleKeyboard"
+              class="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 border shadow-md focus:outline-none"
+              :class="isKeyboardVisible 
+                ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-500' 
+                : 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] border-[var(--color-info)] hover:opacity-90'"
+            >
+              <span>⌨️ {{ isKeyboardVisible ? 'Close Keyboard' : 'Open Keyboard' }}</span>
             </button>
           </div>
         </div>
@@ -422,6 +461,17 @@ function handleToggleTheme() {
 
 function handleOpenGstValidator() {
   window.dispatchEvent(new CustomEvent('wb-open-gst-validator'))
+}
+
+// ==================== KEYBOARD ====================
+const isKeyboardVisible = ref(localStorage.getItem('wb-force-keyboard') === 'true')
+
+function handleToggleKeyboard() {
+  window.dispatchEvent(new CustomEvent('wb-global-keyboard-toggle'))
+}
+
+function syncKeyboardState() {
+  isKeyboardVisible.value = localStorage.getItem('wb-force-keyboard') === 'true'
 }
 
 // ==================== USER ====================
@@ -870,6 +920,7 @@ onMounted(async () => {
   cleanupOldKeys()
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   document.addEventListener('fullscreenchange', handleFullscreenChange)
+  window.addEventListener('wb-global-keyboard-toggle', syncKeyboardState)
   
   if (isActualAdmin.value) {
     try {
@@ -891,6 +942,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  window.removeEventListener('wb-global-keyboard-toggle', syncKeyboardState)
   if (timeInterval) {
     clearInterval(timeInterval)
   }
