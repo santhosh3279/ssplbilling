@@ -202,6 +202,37 @@ def get_quotation_series():
 	return ["QTN-"]
 
 
+def get_company_details():
+	from erpnext import get_default_company
+	company = frappe.defaults.get_global_default("company") or get_default_company() or "Sundaram and Sons Private Ltd"
+	
+	address_fields = ["address_line1", "address_line2", "city", "state", "pincode", "gstin"]
+	addr = frappe.db.get_value("Address", {"is_your_company_address": 1}, address_fields, as_dict=True)
+	
+	address_lines = []
+	if addr:
+		if addr.get("address_line1"):
+			address_lines.append(addr["address_line1"])
+		if addr.get("address_line2"):
+			address_lines.append(addr["address_line2"])
+		city_state = []
+		if addr.get("city"):
+			city_state.append(addr["city"])
+		if addr.get("state"):
+			city_state.append(addr["state"])
+		if addr.get("pincode"):
+			city_state.append(addr["pincode"])
+		if city_state:
+			address_lines.append(", ".join(city_state))
+		if addr.get("gstin"):
+			address_lines.append(f"GSTIN: {addr['gstin']}")
+	
+	return {
+		"company_name": company,
+		"address_lines": address_lines
+	}
+
+
 @frappe.whitelist()
 def get_hsn_summary_report(series, from_date=None, to_date=None):
 	"""Return HSN Summary Report for Sales Invoices for the given naming series and date range.
@@ -263,7 +294,12 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 		
 		result.append(r)
 
-	return result
+	comp = get_company_details()
+	return {
+		"rows": result,
+		"company_name": comp["company_name"],
+		"company_address_lines": comp["address_lines"]
+	}
 
 
 @frappe.whitelist()
@@ -326,7 +362,12 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 		
 		result.append(r)
 
-	return result
+	comp = get_company_details()
+	return {
+		"rows": result,
+		"company_name": comp["company_name"],
+		"company_address_lines": comp["address_lines"]
+	}
 
 
 

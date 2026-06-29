@@ -417,12 +417,20 @@ async function generateReport() {
   generating.value = true
   try {
     let rows = []
+    let companyName = ''
+    let companyAddressLines = []
     if (reportType.value === 'quotation') {
       rows = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'hsn') {
-      rows = await getHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+      const res = await getHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+      rows = res.rows || []
+      companyName = res.company_name || ''
+      companyAddressLines = res.company_address_lines || []
     } else if (reportType.value === 'quotation_hsn') {
-      rows = await getQuotationHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+      const res = await getQuotationHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+      rows = res.rows || []
+      companyName = res.company_name || ''
+      companyAddressLines = res.company_address_lines || []
     } else if (reportType.value === 'item_summary') {
       rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'store_summary') {
@@ -437,7 +445,7 @@ async function generateReport() {
     }
 
     if (reportType.value === 'hsn' || reportType.value === 'quotation_hsn') {
-      buildHSNExcel(rows)
+      buildHSNExcel(rows, companyName, companyAddressLines)
     } else if (reportType.value === 'item_summary') {
       buildItemSummaryExcel(rows)
     } else if (reportType.value === 'store_summary') {
@@ -527,7 +535,7 @@ function buildItemSummaryExcel(rows) {
   writeFile(wb, `ItemSalesSummary_${series}_${from}_to_${to}.xlsx`)
 }
 
-function buildHSNExcel(rows) {
+function buildHSNExcel(rows, companyName, companyAddressLines) {
   // Group rows by hsn_code
   const groups = {}
   for (const r of rows) {
@@ -539,6 +547,18 @@ function buildHSNExcel(rows) {
   }
 
   const aoa = []
+
+  // Add Company and Address in the first 5 rows
+  const headerRows = [
+    [companyName || ''],
+    [companyAddressLines[0] || ''],
+    [companyAddressLines[1] || ''],
+    [companyAddressLines[2] || ''],
+    [companyAddressLines[3] || '']
+  ]
+  aoa.push(...headerRows)
+  aoa.push([]) // Row 6: Empty row before the data blocks
+
   const hsnCodes = Object.keys(groups).sort()
 
   let grandQty = 0
