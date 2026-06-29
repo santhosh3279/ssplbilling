@@ -15,7 +15,8 @@
   "column_break_fpju",
   "wholesale_pricelist_1",
   "wholesale_pricelist_2",
-  "wholesale_pricelist_3"
+  "wholesale_pricelist_3",
+  "pricelist_incentives"
  ],
  "fields": [
   {
@@ -76,6 +77,12 @@
    "fieldtype": "Link",
    "label": "Incentive Ledger",
    "options": "Account"
+  },
+  {
+   "fieldname": "pricelist_incentives",
+   "fieldtype": "Table",
+   "label": "Pricelist Incentives",
+   "options": "Incentive Rule Detail"
   }
  ],
  "grid_page_length": 50,
