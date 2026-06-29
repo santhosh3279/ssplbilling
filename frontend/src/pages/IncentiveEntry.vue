@@ -189,6 +189,7 @@
                         @keydown.down.prevent="handleEmpKeyDown"
                         @keydown.up.prevent="handleEmpKeyUp"
                         @keydown.enter.prevent="handleEmpEnter(idx)"
+                        @keydown.end.prevent="focusSubmitButton"
                         class="w-full h-full bg-transparent px-2 py-1 text-3xl font-bold focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]/30"
                       />
                       
@@ -220,6 +221,7 @@
                       v-model="row.role"
                       @change="recalculatePoints"
                       @keydown.enter.prevent="handleRoleEnter(idx)"
+                      @keydown.end.prevent="focusSubmitButton"
                       class="w-full h-full bg-transparent px-2 py-1 text-3xl font-bold text-center focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:outline-none appearance-none cursor-pointer"
                     >
                       <option value="Biller">Biller</option>
@@ -262,9 +264,10 @@
         </div>
 
         <button
+          ref="submitBtn"
           @click="handleSubmit"
           :disabled="isSaving || !isValid"
-          class="flex items-center gap-3 rounded-2xl bg-[var(--color-success)] px-12 py-5 font-black text-2xl text-[var(--color-text-on-highlight)] shadow-lg hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          class="flex items-center gap-3 rounded-2xl bg-[var(--color-success)] px-12 py-5 font-black text-2xl text-[var(--color-text-on-highlight)] shadow-lg hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed focus:ring-4 focus:ring-[var(--color-success)]/50 focus:outline-none transition-all"
         >
           <span v-if="isSaving" class="animate-spin">⏳</span>
           Submit Incentive Entry
@@ -326,6 +329,15 @@ const successDoc = ref('')
 
 const empRowInputs = ref([])
 const roleSelectInputs = ref([])
+const submitBtn = ref(null)
+
+function focusSubmitButton() {
+  nextTick(() => {
+    if (submitBtn.value && !submitBtn.value.disabled) {
+      submitBtn.value.focus()
+    }
+  })
+}
 
 function focusRowInput(idx) {
   nextTick(() => {
