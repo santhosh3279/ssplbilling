@@ -49,7 +49,6 @@ function _connect(siteName, socketioPort) {
   _socket.on('connect', () => console.log(`[frappeSocket] connected → ${baseUrl}/${siteName}`))
   _socket.on('disconnect', () => console.log('[frappeSocket] disconnected'))
   _socket.on('connect_error', (err) => console.warn('[frappeSocket] error:', err.message))
-  _socket.onAny((event, ...args) => console.log('[frappeSocket] event:', event, args))
   return _socket
 }
 
