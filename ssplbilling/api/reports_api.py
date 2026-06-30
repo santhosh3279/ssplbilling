@@ -749,122 +749,122 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 as_dict=1,
         )
 
-	for b in bills_results:
-		if b.get("posting_date"):
-			b["posting_date"] = str(b["posting_date"])
-		if not b.get("cost_center"):
-			b["cost_center"] = "No Cost Center"
+        for b in bills_results:
+                if b.get("posting_date"):
+                        b["posting_date"] = str(b["posting_date"])
+                if not b.get("cost_center"):
+                        b["cost_center"] = "No Cost Center"
 
-	# Fetch Direct Expenses
-	direct_expense_groups = frappe.get_all(
-		"Account",
-		filters={"account_name": ["like", "Direct Expense%"], "is_group": 1},
-		fields=["name", "lft", "rgt"],
-	)
-	direct_expense_accounts = []
-	for acc in direct_expense_groups:
-		children = frappe.get_all(
-			"Account",
-			filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
-			fields=["name"],
-		)
-		direct_expense_accounts.extend([c.name for c in children])
+        # Fetch Direct Expenses
+        direct_expense_groups = frappe.get_all(
+                "Account",
+                filters={"account_name": ["like", "Direct Expense%"], "is_group": 1},
+                fields=["name", "lft", "rgt"],
+        )
+        direct_expense_accounts = []
+        for acc in direct_expense_groups:
+                children = frappe.get_all(
+                        "Account",
+                        filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
+                        fields=["name"],
+                )
+                direct_expense_accounts.extend([c.name for c in children])
 
-	direct_expense_data = {}
-	if direct_expense_accounts:
-		direct_expenses = frappe.db.sql(
-			"""
-			SELECT
-				cost_center,
-				SUM(debit - credit) as amount
-			FROM
-				`tabGL Entry`
-			WHERE
-				posting_date BETWEEN %s AND %s
-				AND account IN %s
-				AND is_cancelled = 0
-			GROUP BY
-				cost_center
-			""",
-			(from_date, to_date, tuple(direct_expense_accounts)),
-			as_dict=1,
-		)
-		for de in direct_expenses:
-			cc = de["cost_center"] or "No Cost Center"
-			direct_expense_data[cc] = float(de["amount"] or 0)
+        direct_expense_data = {}
+        if direct_expense_accounts:
+                direct_expenses = frappe.db.sql(
+                        """
+                        SELECT
+                                cost_center,
+                                SUM(debit - credit) as amount
+                        FROM
+                                `tabGL Entry`
+                        WHERE
+                                posting_date BETWEEN %s AND %s
+                                AND account IN %s
+                                AND is_cancelled = 0
+                        GROUP BY
+                                cost_center
+                        """,
+                        (from_date, to_date, tuple(direct_expense_accounts)),
+                        as_dict=1,
+                )
+                for de in direct_expenses:
+                        cc = de["cost_center"] or "No Cost Center"
+                        direct_expense_data[cc] = float(de["amount"] or 0)
 
-	# Fetch Indirect Expenses
-	indirect_expense_groups = frappe.get_all(
-		"Account",
-		filters={"account_name": ["like", "Indirect Expense%"], "is_group": 1},
-		fields=["name", "lft", "rgt"],
-	)
-	indirect_expense_accounts = []
-	for acc in indirect_expense_groups:
-		children = frappe.get_all(
-			"Account",
-			filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
-			fields=["name"],
-		)
-		indirect_expense_accounts.extend([c.name for c in children])
+        # Fetch Indirect Expenses
+        indirect_expense_groups = frappe.get_all(
+                "Account",
+                filters={"account_name": ["like", "Indirect Expense%"], "is_group": 1},
+                fields=["name", "lft", "rgt"],
+        )
+        indirect_expense_accounts = []
+        for acc in indirect_expense_groups:
+                children = frappe.get_all(
+                        "Account",
+                        filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
+                        fields=["name"],
+                )
+                indirect_expense_accounts.extend([c.name for c in children])
 
-	indirect_expense_data = {}
-	if indirect_expense_accounts:
-		indirect_expenses = frappe.db.sql(
-			"""
-			SELECT
-				cost_center,
-				SUM(debit - credit) as amount
-			FROM
-				`tabGL Entry`
-			WHERE
-				posting_date BETWEEN %s AND %s
-				AND account IN %s
-				AND is_cancelled = 0
-			GROUP BY
-				cost_center
-			""",
-			(from_date, to_date, tuple(indirect_expense_accounts)),
-			as_dict=1,
-		)
-		for ie in indirect_expenses:
-			cc = ie["cost_center"] or "No Cost Center"
-			indirect_expense_data[cc] = float(ie["amount"] or 0)
+        indirect_expense_data = {}
+        if indirect_expense_accounts:
+                indirect_expenses = frappe.db.sql(
+                        """
+                        SELECT
+                                cost_center,
+                                SUM(debit - credit) as amount
+                        FROM
+                                `tabGL Entry`
+                        WHERE
+                                posting_date BETWEEN %s AND %s
+                                AND account IN %s
+                                AND is_cancelled = 0
+                        GROUP BY
+                                cost_center
+                        """,
+                        (from_date, to_date, tuple(indirect_expense_accounts)),
+                        as_dict=1,
+                )
+                for ie in indirect_expenses:
+                        cc = ie["cost_center"] or "No Cost Center"
+                        indirect_expense_data[cc] = float(ie["amount"] or 0)
 
-	# Merge direct and indirect expenses per Cost Center
-	expense_ccs = {}
-	for cc, amt in direct_expense_data.items():
-		if cc not in expense_ccs:
-			cc_display_name = cc.split(" - ")[0] if " - " in cc else cc
-			expense_ccs[cc] = {
-				"cost_center": cc,
-				"cost_center_name": cc_display_name,
-				"direct_expense": 0.0,
-				"indirect_expense": 0.0,
-				"total_expense": 0.0,
-			}
-		expense_ccs[cc]["direct_expense"] = amt
-		expense_ccs[cc]["total_expense"] += amt
+        # Merge direct and indirect expenses per Cost Center
+        expense_ccs = {}
+        for cc, amt in direct_expense_data.items():
+                if cc not in expense_ccs:
+                        cc_display_name = cc.split(" - ")[0] if " - " in cc else cc
+                        expense_ccs[cc] = {
+                                "cost_center": cc,
+                                "cost_center_name": cc_display_name,
+                                "direct_expense": 0.0,
+                                "indirect_expense": 0.0,
+                                "total_expense": 0.0,
+                        }
+                expense_ccs[cc]["direct_expense"] = amt
+                expense_ccs[cc]["total_expense"] += amt
 
-	for cc, amt in indirect_expense_data.items():
-		if cc not in expense_ccs:
-			cc_display_name = cc.split(" - ")[0] if " - " in cc else cc
-			expense_ccs[cc] = {
-				"cost_center": cc,
-				"cost_center_name": cc_display_name,
-				"direct_expense": 0.0,
-				"indirect_expense": 0.0,
-				"total_expense": 0.0,
-			}
-		expense_ccs[cc]["indirect_expense"] = amt
-		expense_ccs[cc]["total_expense"] += amt
+        for cc, amt in indirect_expense_data.items():
+                if cc not in expense_ccs:
+                        cc_display_name = cc.split(" - ")[0] if " - " in cc else cc
+                        expense_ccs[cc] = {
+                                "cost_center": cc,
+                                "cost_center_name": cc_display_name,
+                                "direct_expense": 0.0,
+                                "indirect_expense": 0.0,
+                                "total_expense": 0.0,
+                        }
+                expense_ccs[cc]["indirect_expense"] = amt
+                expense_ccs[cc]["total_expense"] += amt
 
-	expenses_report_data = list(expense_ccs.values())
-	expenses_report_data.sort(key=lambda x: x["total_expense"], reverse=True)
+        expenses_report_data = list(expense_ccs.values())
+        expenses_report_data.sort(key=lambda x: x["total_expense"], reverse=True)
 
-	return {
-		"report_data": report_data,
-		"price_lists": sorted(list(all_price_lists)),
-		"bills_data": bills_results,
-		"expenses_data": expenses_report_data,
-	}
+        return {
+                "report_data": report_data,
+                "price_lists": sorted(list(all_price_lists)),
+                "bills_data": bills_results,
+                "expenses_data": expenses_report_data,
+        }
