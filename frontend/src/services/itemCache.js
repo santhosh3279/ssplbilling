@@ -204,6 +204,38 @@ export function searchItemsInCache(query, maxResults = 50) {
   return filtered.slice(0, maxResults)
 }
 
+export function updateItemPriceInCache(itemCode, priceList, rate, uom) {
+  const idx = items.value.findIndex(i => i.item_code === itemCode)
+  if (idx === -1) return
+
+  const item = { ...items.value[idx] }
+  
+  if (!item.price_lists) item.price_lists = []
+  if (!item.uom_price_lists) item.uom_price_lists = {}
+
+  if (uom) {
+    if (!item.uom_price_lists[priceList]) item.uom_price_lists[priceList] = {}
+    item.uom_price_lists[priceList][uom] = rate
+  } else {
+    const plIdx = item.price_lists.findIndex(pl => pl.name === priceList)
+    if (plIdx !== -1) {
+      item.price_lists[plIdx] = { ...item.price_lists[plIdx], rate }
+    } else {
+      item.price_lists.push({ name: priceList, rate })
+    }
+    
+    const { priceList: activePriceList } = lastParams.value
+    const mainPriceList = activePriceList || 'Standard Selling'
+    if (priceList === mainPriceList) {
+      item.price = rate
+      item.rate = rate
+    }
+  }
+
+  items.value.splice(idx, 1, item)
+  lastSync.value = Date.now()
+}
+
 export function useItemCache() {
   return {
     items,
@@ -214,9 +246,11 @@ export function useItemCache() {
     patchItemInCache,
     lookupItemInCache,
     searchItemsInCache,
+    updateItemPriceInCache,
     // Discount Rules (custom doctype)
     discountRules,
     refreshDiscountRuleCache,
     saveDiscountRulesToStorage
   }
 }
+

@@ -144,9 +144,17 @@ def save_item_pricelist_percentages(item_code, percentages):
 def on_item_price_update(doc, method=None):
 	"""Publish a realtime update for the parent Item when its Price changes."""
 	if doc.get("item_code"):
+		is_deleted = (method == "on_trash") or doc.flags.get("in_trash")
+		rate = 0.0 if is_deleted else float(doc.price_list_rate or 0)
 		frappe.publish_realtime(
-			"list_update",
-			{"doctype": "Item", "name": doc.item_code},
+			"item_price_update",
+			{
+				"item_code": doc.item_code,
+				"price_list": doc.price_list,
+				"rate": rate,
+				"uom": doc.uom or ""
+			},
 			after_commit=True
 		)
+
 
