@@ -12,6 +12,31 @@
       <CommandLine :show="showCommandLine" @close="showCommandLine = false" @open="showCommandLine = true" />
       <GlobalModals />
       <ErrorWindow :show="showError" :message="errorMessage" :type="errorType" :title="errorTitle" @close="showError = false" />
+      
+      <!-- Global Toast Stack -->
+      <div class="fixed bottom-6 right-6 z-[300] flex flex-col gap-3 pointer-events-none">
+        <TransitionGroup name="toast-fade" tag="div" class="flex flex-col gap-3">
+          <div 
+            v-for="t in toasts" 
+            :key="t.id"
+            class="flex items-center gap-3 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-success)]/30 shadow-2xl px-6 py-4 min-w-[320px] pointer-events-auto transform-gpu"
+          >
+            <div class="h-8 w-8 rounded-full bg-[var(--color-success)]/20 flex items-center justify-center text-xl shrink-0">
+              ✅
+            </div>
+            <div class="flex-1">
+              <h4 class="text-lg font-bold text-[var(--color-success)] uppercase tracking-wider">Success</h4>
+              <p class="text-base text-[var(--color-text)] font-medium leading-tight mt-0.5">{{ t.message }}</p>
+            </div>
+            <button 
+              @click="toasts = toasts.filter(item => item.id !== t.id)"
+              class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl font-bold ml-2 focus:outline-none"
+            >
+              &times;
+            </button>
+          </div>
+        </TransitionGroup>
+      </div>
     </div>
 
     <!-- Tablet Side Panel (Keyboard) -->
@@ -57,6 +82,15 @@ const showError = ref(false);
 const errorMessage = ref('');
 const errorType = ref('error');
 const errorTitle = ref('Error');
+
+const toasts = ref([]);
+function showToast(message, type = 'success', duration = 2000) {
+  const id = Date.now() + Math.random().toString(36).substr(2, 9);
+  toasts.value.push({ id, message, type });
+  setTimeout(() => {
+    toasts.value = toasts.value.filter(t => t.id !== id);
+  }, duration);
+}
 const { initTheme } = useTheme();
 const { isTablet } = useDevice();
 const { isSidebarCollapsed } = useLayout();
@@ -184,10 +218,7 @@ onMounted(async () => {
     ) && !lower.includes('fail') && !lower.includes('error') && !lower.includes('required') && !lower.includes('invalid')
 
     if (isSuccess) {
-      errorMessage.value = messageStr
-      errorType.value = 'success'
-      errorTitle.value = 'Success'
-      showError.value = true
+      showToast(messageStr, 'success', 2000)
     } else {
       errorMessage.value = messageStr
       errorType.value = 'error'
@@ -208,3 +239,24 @@ onUnmounted(() => {
   window.alert = _nativeAlert;
 });
 </script>
+
+<style>
+.toast-fade-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toast-fade-leave-active {
+  transition: all 0.2s ease;
+}
+.toast-fade-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+}
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(40px);
+}
+.toast-fade-move {
+  transition: transform 0.3s ease;
+}
+</style>
+
