@@ -1,5 +1,7 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
-import { refreshItemCache, lastParams, lastSync } from '../services/itemCache.js'
+import { refreshItemCache, useItemCache } from '../services/itemCache.js'
+
+const { lastParams, lastSync } = useItemCache()
 
 let _handler = null
 let _debounceTimer = null
