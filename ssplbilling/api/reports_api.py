@@ -934,6 +934,33 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
         profit_report_data = list(profit_ccs.values())
         profit_report_data.sort(key=lambda x: x["profit"], reverse=True)
 
+        # Fetch item-level details for profit report
+        item_profit_results = frappe.db.sql(
+                """
+                SELECT
+                        sii.cost_center,
+                        si.selling_price_list,
+                        sii.item_code,
+                        sii.item_name,
+                        SUM(sii.qty) as qty,
+                        SUM(sii.base_net_amount) as sales_amount,
+                        SUM(sii.qty * sii.incoming_rate) as valuation_amount
+                FROM
+                        `tabSales Invoice Item` sii
+                INNER JOIN
+                        `tabSales Invoice` si ON si.name = sii.parent
+                WHERE
+                        si.posting_date BETWEEN %s AND %s
+                        AND si.docstatus = 1
+                GROUP BY
+                        sii.cost_center, si.selling_price_list, sii.item_code, sii.item_name
+                ORDER BY
+                        sii.cost_center, si.selling_price_list, sales_amount DESC
+                """,
+                (from_date, to_date),
+                as_dict=1,
+        )
+
         return {
                 "report_data": report_data,
                 "price_lists": sorted(list(all_price_lists)),
@@ -943,4 +970,5 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 "indirect_expense_heads": sorted(list(indirect_heads)),
                 "profit_data": profit_report_data,
                 "profit_price_lists": sorted(list(profit_price_lists)),
+                "item_profit_data": item_profit_results,
         }

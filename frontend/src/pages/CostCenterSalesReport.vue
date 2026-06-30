@@ -423,6 +423,7 @@ const directExpenseHeads = ref([])
 const indirectExpenseHeads = ref([])
 const profitData = ref([])
 const profitPriceLists = ref([])
+const itemProfitData = ref([])
 
 const grandDirectExpenseTotal = computed(() => {
   return expensesData.value.reduce((sum, r) => sum + (r.direct_expense || 0), 0)
@@ -484,6 +485,7 @@ async function fetchData() {
     indirectExpenseHeads.value = res.indirect_expense_heads || []
     profitData.value = res.profit_data || []
     profitPriceLists.value = res.profit_price_lists || []
+    itemProfitData.value = res.item_profit_data || []
   } catch (e) {
     error.value = e.message || 'Failed to fetch cost center sale report'
   } finally {
@@ -725,6 +727,64 @@ function exportToExcel() {
     wsProfit['!cols'] = colWidths
 
     utils.book_append_sheet(wb, wsProfit, 'Cost Center Profit')
+  }
+
+  // Add Item Profit Sheet
+  if (itemProfitData.value.length) {
+    const itemHeaders = [
+      'Cost Center', 'Price List', 'Item Code', 'Item Name', 'Qty', 
+      'Selling Rate', 'Valuation Rate', 'Profit'
+    ]
+
+    const itemRows = itemProfitData.value.map(r => {
+      const ccName = r.cost_center.split(" - ")[0]
+      const qty = r.qty || 0
+      const sales = r.sales_amount || 0
+      const valuation = r.valuation_amount || 0
+      const sellingRate = qty ? Math.round(sales / qty) : 0
+      const valuationRate = qty ? Math.round(valuation / qty) : 0
+      const profit = sales - valuation
+
+      return [
+        ccName,
+        r.selling_price_list || 'Other/Direct',
+        r.item_code,
+        r.item_name,
+        qty,
+        sellingRate,
+        valuationRate,
+        Math.round(profit)
+      ]
+    })
+
+    // Calculate totals
+    const grandQty = itemProfitData.value.reduce((sum, r) => sum + (r.qty || 0), 0)
+    const grandSales = itemProfitData.value.reduce((sum, r) => sum + (r.sales_amount || 0), 0)
+    const grandValuation = itemProfitData.value.reduce((sum, r) => sum + (r.valuation_amount || 0), 0)
+    const grandProfit = grandSales - grandValuation
+    
+    // Average rates for grand total
+    const avgSellingRate = grandQty ? Math.round(grandSales / grandQty) : 0
+    const avgValuationRate = grandQty ? Math.round(grandValuation / grandQty) : 0
+
+    itemRows.push([
+      'GRAND TOTAL',
+      '',
+      '',
+      '',
+      grandQty,
+      avgSellingRate,
+      avgValuationRate,
+      Math.round(grandProfit)
+    ])
+
+    const wsItemProfit = utils.aoa_to_sheet([itemHeaders, ...itemRows])
+    wsItemProfit['!cols'] = [
+      { wch: 25 }, { wch: 18 }, { wch: 15 }, { wch: 30 }, { wch: 10 },
+      { wch: 15 }, { wch: 15 }, { wch: 15 }
+    ]
+
+    utils.book_append_sheet(wb, wsItemProfit, 'Item Profit')
   }
 
   // Group bills by cost center
