@@ -11,7 +11,7 @@
       <Calculator :show="showCalculator" @close="showCalculator = false" />
       <CommandLine :show="showCommandLine" @close="showCommandLine = false" @open="showCommandLine = true" />
       <GlobalModals />
-      <ErrorWindow :show="showError" :message="errorMessage" @close="showError = false" />
+      <ErrorWindow :show="showError" :message="errorMessage" :type="errorType" :title="errorTitle" @close="showError = false" />
     </div>
 
     <!-- Tablet Side Panel (Keyboard) -->
@@ -55,6 +55,8 @@ const showCalculator = ref(false);
 const showCommandLine = ref(false);
 const showError = ref(false);
 const errorMessage = ref('');
+const errorType = ref('error');
+const errorTitle = ref('Error');
 const { initTheme } = useTheme();
 const { isTablet } = useDevice();
 const { isSidebarCollapsed } = useLayout();
@@ -182,9 +184,14 @@ onMounted(async () => {
     ) && !lower.includes('fail') && !lower.includes('error') && !lower.includes('required') && !lower.includes('invalid')
 
     if (isSuccess) {
-      _nativeAlert(messageStr)
+      errorMessage.value = messageStr
+      errorType.value = 'success'
+      errorTitle.value = 'Success'
+      showError.value = true
     } else {
       errorMessage.value = messageStr
+      errorType.value = 'error'
+      errorTitle.value = 'Error'
       showError.value = true
     }
   };

@@ -609,7 +609,7 @@ async function handleSubmit() {
         item_code: props.editItemCode,
       })
       saveCache()
-      alert(`Item ${res.item_code} updated successfully!`)
+      alert('Item updated successfully!')
       emit('created', {
         item_code: res.item_code,
         item_name: res.item_name,
