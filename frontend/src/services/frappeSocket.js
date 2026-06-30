@@ -39,7 +39,13 @@ function _connect(siteName, socketioPort) {
     ? `${window.location.protocol}//${window.location.hostname}:${socketioPort}`
     : window.location.origin
 
-  _socket = io(`${baseUrl}/${siteName}`, { withCredentials: true })
+  // extraHeaders are sent with the initial HTTP polling request where auth runs.
+  // X-Frappe-Site-Name tells the middleware the actual site name so the namespace
+  // check passes even when the connection comes from a non-localhost IP.
+  _socket = io(`${baseUrl}/${siteName}`, {
+    withCredentials: true,
+    extraHeaders: { 'X-Frappe-Site-Name': siteName },
+  })
   _socket.on('connect', () => console.log(`[frappeSocket] connected → ${baseUrl}/${siteName}`))
   _socket.on('disconnect', () => console.log('[frappeSocket] disconnected'))
   _socket.on('connect_error', (err) => console.warn('[frappeSocket] error:', err.message))
