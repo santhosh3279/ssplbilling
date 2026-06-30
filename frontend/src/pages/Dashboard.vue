@@ -220,8 +220,8 @@
             <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
               <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">MQTT Server</span>
               <span class="flex items-center gap-1.5 text-xs font-bold">
-                <span 
-                  class="h-2.5 w-2.5 rounded-full" 
+                <span
+                  class="h-2.5 w-2.5 rounded-full"
                   :class="isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-rose-500'"
                 ></span>
                 <span :class="isConnected ? 'text-emerald-500' : 'text-rose-500'">
@@ -250,6 +250,47 @@
             >
               <span>{{ isConnecting ? '⏳ Connecting...' : '🔄 Reconnect MQTT' }}</span>
             </button>
+          </div>
+
+          <!-- Live Sync Status -->
+          <div
+            class="bg-[var(--color-surface)] p-5 rounded-3xl border shadow-xl flex flex-col gap-3 transition-all duration-500"
+            :class="syncFlash ? 'border-emerald-500 shadow-emerald-500/20' : 'border-[var(--color-border)]'"
+          >
+            <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
+              <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">Live Sync</span>
+              <span class="flex items-center gap-1.5 text-xs font-bold">
+                <span
+                  class="h-2.5 w-2.5 rounded-full"
+                  :class="socketConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-rose-500'"
+                ></span>
+                <span :class="socketConnected ? 'text-emerald-500' : 'text-rose-500'">
+                  {{ socketConnected ? 'Connected' : 'Offline' }}
+                </span>
+              </span>
+            </div>
+
+            <div class="text-xs space-y-1.5">
+              <div class="flex justify-between items-center">
+                <span class="text-[var(--color-text-muted)]">Channel:</span>
+                <span class="font-mono text-[var(--color-text)] font-bold">Item Cache</span>
+              </div>
+              <div class="flex justify-between items-start gap-2">
+                <span class="text-[var(--color-text-muted)] shrink-0">Last Update:</span>
+                <span class="font-mono text-right text-[var(--color-text)]">
+                  {{ lastSyncTime || '—' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Flash banner on update -->
+            <div
+              v-if="syncFlash"
+              class="flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3 py-2 text-xs font-bold text-emerald-500"
+            >
+              <span class="animate-bounce">↻</span>
+              Items refreshed
+            </div>
           </div>
         </div>
       </div>
@@ -367,6 +408,7 @@ import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePe
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
 import { useMqtt } from '../composables/useMqtt'
+import { getFrappeSocket } from '../services/frappeSocket'
 
 const router = useRouter()
 
@@ -374,6 +416,21 @@ const { isConnected, isConnecting, serverInfo, refreshConnection, checkStatus } 
 
 async function handleMqttRefresh() {
   await refreshConnection()
+}
+
+// ==================== LIVE SYNC INDICATOR ====================
+const socketConnected = ref(false)
+const lastSyncTime = ref('')
+const syncFlash = ref(false)
+let _flashTimer = null
+
+function _onSocketConnect() { socketConnected.value = true }
+function _onSocketDisconnect() { socketConnected.value = false }
+function _onItemCacheUpdated() {
+  lastSyncTime.value = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  syncFlash.value = true
+  clearTimeout(_flashTimer)
+  _flashTimer = setTimeout(() => { syncFlash.value = false }, 3000)
 }
 
 const isFullscreen = ref(false)
@@ -884,6 +941,14 @@ onMounted(async () => {
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   window.addEventListener('wb-global-keyboard-toggle', syncKeyboardState)
+  window.addEventListener('wb-item-cache-updated', _onItemCacheUpdated)
+
+  const socket = getFrappeSocket()
+  if (socket) {
+    socketConnected.value = socket.connected
+    socket.on('connect', _onSocketConnect)
+    socket.on('disconnect', _onSocketDisconnect)
+  }
   
   if (isActualAdmin.value) {
     try {
@@ -906,6 +971,14 @@ onUnmounted(() => {
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
   window.removeEventListener('wb-global-keyboard-toggle', syncKeyboardState)
+  window.removeEventListener('wb-item-cache-updated', _onItemCacheUpdated)
+  clearTimeout(_flashTimer)
+
+  const socket = getFrappeSocket()
+  if (socket) {
+    socket.off('connect', _onSocketConnect)
+    socket.off('disconnect', _onSocketDisconnect)
+  }
   if (timeInterval) {
     clearInterval(timeInterval)
   }
