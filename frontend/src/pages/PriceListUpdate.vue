@@ -377,13 +377,58 @@ async function loadPrices(code) {
   if (!code) return
   loading.value = true
   try {
-    const data = await frappeGet('ssplbilling.api.pricelist_api.get_item_prices', { item_code: code })
+    const cached = lookupItemInCache(code)
+    let data
+    if (cached) {
+      console.log('[PriceListUpdate] loading prices from cache for:', code)
+      const localPriceLists = JSON.parse(localStorage.getItem('wb-pricelist') || '[]')
+      if (!localPriceLists.length) {
+        localPriceLists.push('Standard Selling', 'Standard Buying')
+      }
+      const uomsList = [
+        { uom: cached.uom, conversion_factor: 1.0 },
+        ...(cached.uoms || [])
+      ]
+      const pricesList = localPriceLists.map(plName => {
+        const basePriceEntry = (cached.price_lists || []).find(pl => pl.name === plName)
+        const baseRate = basePriceEntry ? parseFloat(basePriceEntry.rate || 0) : 0.0
+        
+        const uomRatesMap = {}
+        for (const u of uomsList) {
+          const cachedUomPl = cached.uom_price_lists?.[plName]
+          const uomRate = cachedUomPl?.[u.uom] !== undefined ? parseFloat(cachedUomPl[u.uom] || 0) : 0.0
+          uomRatesMap[u.uom] = uomRate
+        }
+        
+        return {
+          price_list: plName,
+          buying: plName.toLowerCase().includes('buying'),
+          selling: plName.toLowerCase().includes('selling'),
+          rate: baseRate,
+          uom_rates: uomRatesMap,
+          exists: baseRate > 0 || Object.values(uomRatesMap).some(r => r > 0),
+          item_price_name: null
+        }
+      })
+      data = {
+        prices: pricesList,
+        uoms: uomsList,
+        stock_uom: cached.uom,
+        item_name: cached.item_name,
+        pricelist_percentages: cached.pricelist_percentages || []
+      }
+    } else {
+      console.log('[PriceListUpdate] loading prices from server for:', code)
+      data = await frappeGet('ssplbilling.api.pricelist_api.get_item_prices', { item_code: code })
+    }
+
     loadedItemCode.value = code
     itemName.value = data.item_name || ''
     uoms.value = data.uoms || []
     stockUom.value = data.stock_uom || ''
 
     hasFetchedPercentages.value = !!(data.pricelist_percentages && data.pricelist_percentages.length > 0)
+
 
     const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
 
