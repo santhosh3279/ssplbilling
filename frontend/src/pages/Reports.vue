@@ -744,7 +744,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
 
   // Configure column widths
   worksheet.columns = [
-    { key: 'doc_no', width: 22 },       // docLabel
+    { key: 'doc_no', width: 28 },       // docLabel
     { key: 'date', width: 14 },         // Date
     { key: 'cust_code', width: 18 },    // Customer Code
     { key: 'cust_name', width: 28 },    // Customer Name
