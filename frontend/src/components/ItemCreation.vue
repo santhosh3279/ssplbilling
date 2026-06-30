@@ -309,9 +309,6 @@ import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const { lookupItemInCache } = useItemCache()
 
-// Cache metadata for the lifetime of the page — item groups, UOMs, tax templates rarely change
-let _metadataCache = null
-
 const props = defineProps({
   show: Boolean,
   editItemCode: { type: String, default: '' },  // when set → edit mode
@@ -535,8 +532,7 @@ const canSubmit = computed(() => {
 
 async function loadMetadata() {
   try {
-    if (!_metadataCache) _metadataCache = await fetchItemCreationMetadata()
-    const data = _metadataCache
+    const data = await fetchItemCreationMetadata()
     metadata.value = data
 
     if (data.item_groups?.length && !form.value.item_group) {

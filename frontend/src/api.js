@@ -671,8 +671,12 @@ export async function linkSupplierToItems(supplier, items) {
 /**
  * Fetch metadata for item creation.
  */
+let _itemCreationMetadataCache = null
 export async function fetchItemCreationMetadata() {
-  return frappeGet("ssplbilling.api.item_api.get_item_creation_metadata");
+  if (!_itemCreationMetadataCache) {
+    _itemCreationMetadataCache = await frappeGet("ssplbilling.api.item_api.get_item_creation_metadata")
+  }
+  return _itemCreationMetadataCache
 }
 
 /**
