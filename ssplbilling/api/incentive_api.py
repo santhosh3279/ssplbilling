@@ -58,7 +58,7 @@ def search_employees(query):
 
 
 @frappe.whitelist()
-def get_unposted_bills():
+def get_unposted_bills(user=None):
 	# Get all posted bill names (including drafts and submitted)
 	posted = frappe.get_all("Invoice Incentive", filters={"docstatus": ["in", [0, 1]]}, fields=["inv_no"])
 	posted_set = {d.inv_no for d in posted if d.inv_no}
@@ -73,7 +73,7 @@ def get_unposted_bills():
 		thresholds = {r.pricelist: flt(r.amount) for r in rule.pricelist_incentives if r.pricelist}
 
 	# 1. Fetch Sales Invoices
-	si_allowed_res = get_allowed_series(doctype="Sales Invoice")
+	si_allowed_res = get_allowed_series(doctype="Sales Invoice", user=user)
 	si_filters = {"docstatus": 1}
 	if si_allowed_res.get("user_allowed_string") != "ALL":
 		si_filters["naming_series"] = ["in", si_allowed_res.get("allowed_series") or []]
@@ -87,7 +87,7 @@ def get_unposted_bills():
 	)
 	
 	# 2. Fetch Purchase Invoices
-	pi_allowed_res = get_allowed_series(doctype="Purchase Invoice")
+	pi_allowed_res = get_allowed_series(doctype="Purchase Invoice", user=user)
 	pi_filters = {"docstatus": 1}
 	if pi_allowed_res.get("user_allowed_string") != "ALL":
 		pi_filters["naming_series"] = ["in", pi_allowed_res.get("allowed_series") or []]
@@ -101,7 +101,7 @@ def get_unposted_bills():
 	)
 	
 	# 3. Fetch Stock Entries of purpose "Material Transfer"
-	se_allowed_res = get_allowed_series(doctype="Stock Entry")
+	se_allowed_res = get_allowed_series(doctype="Stock Entry", user=user)
 	se_filters = {"docstatus": 1, "purpose": "Material Transfer"}
 	if se_allowed_res.get("user_allowed_string") != "ALL":
 		se_filters["naming_series"] = ["in", se_allowed_res.get("allowed_series") or []]

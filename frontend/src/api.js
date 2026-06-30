@@ -902,8 +902,8 @@ export async function getCostCenterSaleReport(fromDate, toDate) {
   });
 }
 
-export async function getUnpostedBills() {
-  return frappeGet("ssplbilling.api.incentive_api.get_unposted_bills");
+export async function getUnpostedBills(user) {
+  return frappeGet("ssplbilling.api.incentive_api.get_unposted_bills", { user });
 }
 
 export async function calculateBillIncentive(doctype, name) {

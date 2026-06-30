@@ -421,8 +421,10 @@ function handleEmpBlur(idx) {
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
+const targetUser = computed(() => localStorage.getItem('wb-inherited-user') || session.user.value)
+
 onMounted(async () => {
-  doc.user = session.user.value
+  doc.user = targetUser.value
   await fetchBills()
 })
 
@@ -430,7 +432,7 @@ onMounted(async () => {
 async function fetchBills() {
   loadingBills.value = true
   try {
-    bills.value = await getUnpostedBills()
+    bills.value = await getUnpostedBills(targetUser.value)
   } catch (e) {
     console.error('Failed to load unposted bills:', e)
   } finally {

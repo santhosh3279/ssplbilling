@@ -13,6 +13,9 @@
           >&larr; Close</button>
           <span class="text-sm text-[var(--color-text-muted)]">|</span>
           <span class="text-sm font-semibold text-[var(--color-text)]">Incentive Entries</span>
+          <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-xs">
+            ({{ inheritedUser }})
+          </span>
           <span v-if="docname" class="font-mono text-xs text-[var(--color-info)]">{{ docname }}</span>
         </div>
         <div class="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
@@ -202,6 +205,7 @@
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
 import { frappeGet } from '../api.js'
+import { session } from '../session.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -214,6 +218,11 @@ const props = defineProps({
 const emit = defineEmits(['close', 'update:rows'])
 
 useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
+
+const inheritedUser = computed(() => {
+  const inherited = localStorage.getItem('wb-inherited-user')
+  return inherited && inherited !== session.user.value ? inherited : null
+})
 
 // ── state ──────────────────────────────────────────────────────────────
 const localRows   = ref([])
