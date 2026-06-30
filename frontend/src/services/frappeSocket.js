@@ -1,15 +1,19 @@
 import { io } from 'socket.io-client'
 
+// import.meta.env.DEV is true during `yarn dev`, false after `yarn build`
+const _isDev = import.meta.env.DEV
+
 let _socket = null
 let _initPromise = null
 
 /**
- * Initialise the shared Frappe socket.io connection.
- * Must be awaited once (in App.vue onMounted) before getFrappeSocket() is called.
+ * Initialise the shared Frappe socket.io connection. Await this once in App.vue
+ * before calling getFrappeSocket().
  *
- * Frappe's socket.io server uses per-site namespaces: io.of('/sitename').
- * We fetch the site name from the API so this works for any environment
- * without hardcoding — dev (Vite proxy → socketio_port) and production (nginx proxy).
+ * Dev:  connect directly to hostname:socketio_port/<siteName> — same as Frappe desk.
+ *       Going through the Vite proxy causes an "Invalid origin" error because
+ *       changeOrigin:true rewrites the host header, breaking the middleware check.
+ * Prod: connect through origin/<siteName>; nginx proxies /socket.io → socket.io server.
  */
 export function initFrappeSocket() {
   if (_initPromise) return _initPromise
@@ -18,25 +22,31 @@ export function initFrappeSocket() {
     credentials: 'include',
   })
     .then((res) => res.json())
-    .then(({ message: siteName }) => _connect(siteName || window.location.hostname))
+    .then(({ message }) => _connect(message?.site, message?.socketio_port))
     .catch((err) => {
-      console.warn('[frappeSocket] site name fetch failed, falling back to hostname:', err)
-      return _connect(window.location.hostname)
+      console.warn('[frappeSocket] site info fetch failed, using fallback:', err)
+      return _connect(null, null)
     })
 
   return _initPromise
 }
 
-function _connect(siteName) {
-  // socket.io interprets 'origin/siteName' as: connect to origin, namespace = /siteName
-  _socket = io(`${window.location.origin}/${siteName}`, { withCredentials: true })
-  _socket.on('connect', () => console.log(`[frappeSocket] connected (/${siteName})`))
+function _connect(siteName, socketioPort) {
+  siteName = siteName || window.location.hostname
+  socketioPort = socketioPort || 9000
+
+  const baseUrl = _isDev
+    ? `${window.location.protocol}//${window.location.hostname}:${socketioPort}`
+    : window.location.origin
+
+  _socket = io(`${baseUrl}/${siteName}`, { withCredentials: true })
+  _socket.on('connect', () => console.log(`[frappeSocket] connected → ${baseUrl}/${siteName}`))
   _socket.on('disconnect', () => console.log('[frappeSocket] disconnected'))
   _socket.on('connect_error', (err) => console.warn('[frappeSocket] error:', err.message))
   return _socket
 }
 
-/** Returns the socket after initFrappeSocket() has resolved. */
+/** Returns the socket synchronously after initFrappeSocket() has resolved. */
 export function getFrappeSocket() {
   return _socket
 }

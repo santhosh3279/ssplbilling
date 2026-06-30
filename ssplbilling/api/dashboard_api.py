@@ -497,5 +497,8 @@ def get_billing_settings(user=None):
 
 @frappe.whitelist(allow_guest=True)
 def get_frappe_site_name():
-	"""Return the current Frappe site name. Used by the frontend to connect to the correct socket.io namespace."""
-	return frappe.local.site
+	"""Return site name and socket.io port so the frontend can build the correct socket.io URL."""
+	return {
+		"site": frappe.local.site,
+		"socketio_port": frappe.conf.get("socketio_port", 9000),
+	}
