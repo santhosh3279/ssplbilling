@@ -493,3 +493,9 @@ def get_billing_settings(user=None):
 			for r in (settings.visible_accounts or [])
 		],
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def get_frappe_site_name():
+	"""Return the current Frappe site name. Used by the frontend to connect to the correct socket.io namespace."""
+	return frappe.local.site

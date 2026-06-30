@@ -49,6 +49,7 @@ import { useDevice } from './composables/useDevice';
 import { useLayout } from './composables/useLayout';
 import { useMqtt } from './composables/useMqtt';
 import { initItemSync, destroyItemSync } from './composables/useItemSync';
+import { initFrappeSocket } from './services/frappeSocket';
 
 const showCalculator = ref(false);
 const showCommandLine = ref(false);
@@ -154,8 +155,9 @@ watch(showKeyboardPanel, () => {
   setupKeyboardSuppression();
 });
 
-onMounted(() => {
+onMounted(async () => {
   initTheme();
+  await initFrappeSocket();
   connectMqtt();
   initItemSync();
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
