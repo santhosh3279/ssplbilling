@@ -19,8 +19,11 @@
             &larr; Dashboard
           </button>
           <h1 class="text-3xl text-[var(--color-text)]">{{ itemName || 'Update Item Prices' }}</h1>
-          <div v-if="itemCode" class="rounded-full bg-[var(--color-info)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-info)]">
-            {{ itemCode }}
+          <div v-if="currentItemCode" class="rounded-full bg-[var(--color-info)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-info)]">
+            {{ currentItemCode }}
+          </div>
+          <div v-if="cachedItem && cachedItem.stock !== undefined" class="rounded-full px-3 py-1 text-3xl font-bold" :class="cachedItem.stock <= 0 ? 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]' : 'bg-[var(--color-success)]/20 text-[var(--color-success)]'">
+            Stock: {{ cachedItem.stock }} {{ cachedItem.uom || '' }}
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -38,7 +41,7 @@
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-info)] border-t-transparent"></div>
           </div>
 
-          <div v-else-if="!itemCode && !isSubWindow" class="p-10 text-center">
+          <div v-else-if="!currentItemCode && !isSubWindow" class="p-10 text-center">
             <div class="mb-4 text-[var(--color-text-muted)]">Please provide an item code to update prices.</div>
             <input
               v-model="manualItemCode"
@@ -122,7 +125,7 @@
                     <button
                       type="button"
                       @click="savePercentageToItemMaster"
-                      :disabled="savingPercentage || !(itemCode || manualItemCode)"
+                      :disabled="savingPercentage || !currentItemCode"
                       class="w-full rounded bg-[var(--color-info)] px-2 py-1 text-[15px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[var(--color-info)]/80 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-center whitespace-nowrap"
                       title="Save all markup percentages to the Item Master child table"
                     >
@@ -247,6 +250,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
+import { useItemCache } from '../services/itemCache.js'
 
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
@@ -281,6 +285,15 @@ const activeRow = ref(0)
 const inputRefs = ref({})
 
 const toast = ref(null)
+
+const { lookupItemInCache } = useItemCache()
+const loadedItemCode = ref('')
+const currentItemCode = computed(() => props.itemCode || loadedItemCode.value)
+
+const cachedItem = computed(() => {
+  if (!currentItemCode.value) return null
+  return lookupItemInCache(currentItemCode.value)
+})
 
 function showToast(message, type = 'success') {
   toast.value = { message, type }
@@ -334,6 +347,13 @@ watch(() => props.initialFactor, (val) => {
   factor.value = val
 })
 
+watch(() => props.itemCode, (newVal) => {
+  if (newVal) {
+    loadPrices(newVal)
+    manualItemCode.value = newVal
+  }
+})
+
 watch(() => prices.value, (newPrices) => {
   if (!newPrices || !stockUom.value) return
   
@@ -358,6 +378,7 @@ async function loadPrices(code) {
   loading.value = true
   try {
     const data = await frappeGet('ssplbilling.api.pricelist_api.get_item_prices', { item_code: code })
+    loadedItemCode.value = code
     itemName.value = data.item_name || ''
     uoms.value = data.uoms || []
     stockUom.value = data.stock_uom || ''
@@ -428,7 +449,7 @@ function applyCalc(p, idx) {
 }
 
 async function saveAll() {
-  const code = props.itemCode || manualItemCode.value
+  const code = currentItemCode.value
   if (!code) return
 
   // Only update prices that have changed (base rate or any uom rate)
@@ -472,7 +493,7 @@ async function saveAll() {
 }
 
 async function savePercentageToItemMaster() {
-  const code = props.itemCode || manualItemCode.value
+  const code = currentItemCode.value
   if (!code) {
     showToast('Item code is required.', 'error')
     return
