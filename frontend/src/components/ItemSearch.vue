@@ -543,11 +543,8 @@ function closeSubForm() {
 
 function handleGlobalItemSearch() {
   if (props.show && results.value[selectedIdx.value]) {
-    // If already open and an item is selected, trigger stock ledger (via date selector)
     isSlMode.value = true
     showDateModal.value = true
-  } else {
-    preloadItems(true)
   }
 }
 
