@@ -6,6 +6,7 @@ const { lastParams } = useItemCache()
 
 let _handler = null
 let _debounceTimer = null
+const pendingPatches = new Set()
 
 async function _patchItem(itemCode) {
   const { searchType, priceList, warehouse } = lastParams.value
@@ -25,23 +26,44 @@ async function _patchItem(itemCode) {
   }
 }
 
+function _handleVisibilityChange() {
+  if (!document.hidden && pendingPatches.size > 0) {
+    console.log('[useItemSync] Tab became visible. Processing deferred patches:', [...pendingPatches])
+    for (const itemCode of pendingPatches) {
+      _patchItem(itemCode)
+    }
+    pendingPatches.clear()
+  }
+}
+
 export function initItemSync() {
   const socket = getFrappeSocket()
   socket.emit('doctype_subscribe', 'Item')
 
   _handler = (data) => {
     if (data?.doctype !== 'Item' || !data.name) return
+    
+    if (document.hidden) {
+      pendingPatches.add(data.name)
+      console.log('[useItemSync] Tab is hidden. Queueing patch for:', data.name)
+      return
+    }
+
     clearTimeout(_debounceTimer)
     _debounceTimer = setTimeout(() => _patchItem(data.name), 500)
   }
   socket.on('list_update', _handler)
+  document.addEventListener('visibilitychange', _handleVisibilityChange)
   console.log('[useItemSync] subscribed to doctype:Item, listening for list_update')
 }
 
 export function destroyItemSync() {
   clearTimeout(_debounceTimer)
+  pendingPatches.clear()
   if (_handler) {
     getFrappeSocket().off('list_update', _handler)
     _handler = null
   }
+  document.removeEventListener('visibilitychange', _handleVisibilityChange)
 }
+

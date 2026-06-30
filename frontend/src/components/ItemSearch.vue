@@ -522,9 +522,10 @@ function handleDateConfirm(dates) {
 }
 
 function handleItemCreated(item) {
-  // Refresh cache to include new item in background
-  preloadItems(true)
+  // No full-cache reload needed; the background WebSocket listener (initItemSync)
+  // automatically catches the new Item and patches the cache via get_single_item_detailed.
 }
+
 
 function focus() {
   setTimeout(() => {
