@@ -222,23 +222,21 @@
           </table>
         </div>
 
-        <!-- Expenses Table -->
-        <div v-if="expensesData.length > 0" class="mt-12 w-full">
-          <h2 class="text-2xl font-bold text-[var(--color-text)] uppercase tracking-wider mb-4">Cost Center Expenses</h2>
+        <!-- Direct Expenses Table -->
+        <div v-if="directExpensesData.length > 0" class="mt-12 w-full">
+          <h2 class="text-2xl font-bold text-[var(--color-text)] uppercase tracking-wider mb-4">Direct Expenses</h2>
           <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
             <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
               <thead>
                 <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
                   <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)] text-center">S.No</th>
                   <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-12 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Cost Center</th>
-                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Direct Expenses</th>
-                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Indirect Expenses</th>
-                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Expenses</th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Amount</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-700/50">
                 <tr
-                  v-for="(row, idx) in expensesData"
+                  v-for="(row, idx) in directExpensesData"
                   :key="row.cost_center"
                   class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
                 >
@@ -252,11 +250,48 @@
                   <td class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50 text-[var(--color-text)]">
                     {{ formatCurrency(row.direct_expense) }}
                   </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
+                  <td class="w-12 px-2 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
+                  <td class="px-6 py-1.5 text-lg sticky left-12 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
+                  <td class="px-6 py-1.5 text-right font-mono text-2xl text-[var(--color-danger)] border-t border-[var(--color-border)]">
+                    {{ formatCurrency(grandDirectExpenseTotal) }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Indirect Expenses Table -->
+        <div v-if="indirectExpensesData.length > 0" class="mt-12 w-full">
+          <h2 class="text-2xl font-bold text-[var(--color-text)] uppercase tracking-wider mb-4">Indirect Expenses</h2>
+          <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+            <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
+              <thead>
+                <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
+                  <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)] text-center">S.No</th>
+                  <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-12 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Cost Center</th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Amount</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                <tr
+                  v-for="(row, idx) in indirectExpensesData"
+                  :key="row.cost_center"
+                  class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
+                >
+                  <td class="w-12 px-2 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 font-mono text-lg text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-center">
+                    {{ idx + 1 }}
+                  </td>
+                  <td class="px-6 py-2 sticky left-12 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 border-b border-[var(--color-border)]/50">
+                    <div class="text-lg font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.cost_center_name }}</div>
+                    <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.cost_center }}</div>
+                  </td>
                   <td class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50 text-[var(--color-text)]">
                     {{ formatCurrency(row.indirect_expense) }}
-                  </td>
-                  <td class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                    {{ formatCurrency(row.total_expense) }}
                   </td>
                 </tr>
               </tbody>
@@ -264,14 +299,8 @@
                 <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
                   <td class="w-12 px-2 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
                   <td class="px-6 py-1.5 text-lg sticky left-12 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
-                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
-                    {{ formatCurrency(grandDirectExpenseTotal) }}
-                  </td>
-                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                  <td class="px-6 py-1.5 text-right font-mono text-2xl text-[var(--color-danger)] border-t border-[var(--color-border)]">
                     {{ formatCurrency(grandIndirectExpenseTotal) }}
-                  </td>
-                  <td class="px-6 py-1.5 text-right text-3xl text-[var(--color-danger)] border-t border-[var(--color-border)]">
-                    {{ formatCurrency(grandExpenseTotal) }}
                   </td>
                 </tr>
               </tfoot>
@@ -319,6 +348,20 @@ const toDate = ref(today)
 
 const grandTotal = computed(() => {
   return reportData.value.reduce((sum, r) => sum + (r.total_amount || 0), 0)
+})
+
+const directExpensesData = computed(() => {
+  return expensesData.value
+    .filter(r => (r.direct_expense || 0) > 0)
+    .map(r => ({ ...r }))
+    .sort((a, b) => b.direct_expense - a.direct_expense)
+})
+
+const indirectExpensesData = computed(() => {
+  return expensesData.value
+    .filter(r => (r.indirect_expense || 0) > 0)
+    .map(r => ({ ...r }))
+    .sort((a, b) => b.indirect_expense - a.indirect_expense)
 })
 
 async function fetchData() {
@@ -448,79 +491,74 @@ function exportToExcel() {
 
   utils.book_append_sheet(wb, ws, 'Cost Center Sale Report')
 
-  // Add Expenses Sheet
-  if (expensesData.value.length) {
+  // Add Direct Expenses Sheet
+  if (directExpensesData.value.length) {
     const dirHeads = directExpenseHeads.value
-    const indHeads = indirectExpenseHeads.value
+    const expHeaders = ['S.No', 'Cost Center Name', 'Cost Center', ...dirHeads, 'Total Direct']
 
-    // Headers: S.No, Cost Center Name, Cost Center, [Direct Heads...], Total Direct, [Indirect Heads...], Total Indirect, Total Expenses
-    const expHeaders = [
-      'S.No', 'Cost Center Name', 'Cost Center',
-      ...dirHeads, 'Total Direct',
-      ...indHeads, 'Total Indirect',
-      'Total Expenses'
-    ]
-
-    const expRows = expensesData.value.map((r, idx) => {
+    const expRows = directExpensesData.value.map((r, idx) => {
       const row = [
         idx + 1,
         r.cost_center_name,
         r.cost_center
       ]
 
-      // Add Direct Expense Head details
       dirHeads.forEach(h => {
         row.push(Math.round(r.account_amounts[h] || 0))
       })
       row.push(Math.round(r.direct_expense || 0))
+      return row
+    })
 
-      // Add Indirect Expense Head details
+    const expTotalRow = ['', 'GRAND TOTAL', '']
+    dirHeads.forEach(h => {
+      const total = directExpensesData.value.reduce((sum, r) => sum + (r.account_amounts[h] || 0), 0)
+      expTotalRow.push(Math.round(total))
+    })
+    expTotalRow.push(Math.round(grandDirectExpenseTotal.value || 0))
+    expRows.push(expTotalRow)
+
+    const wsExp = utils.aoa_to_sheet([expHeaders, ...expRows])
+    const expColWidths = [{ wch: 8 }, { wch: 30 }, { wch: 40 }]
+    expHeaders.slice(3).forEach(() => expColWidths.push({ wch: 18 }))
+    wsExp['!cols'] = expColWidths
+
+    utils.book_append_sheet(wb, wsExp, 'Direct Expenses')
+  }
+
+  // Add Indirect Expenses Sheet
+  if (indirectExpensesData.value.length) {
+    const indHeads = indirectExpenseHeads.value
+    const expHeaders = ['S.No', 'Cost Center Name', 'Cost Center', ...indHeads, 'Total Indirect']
+
+    const expRows = indirectExpensesData.value.map((r, idx) => {
+      const row = [
+        idx + 1,
+        r.cost_center_name,
+        r.cost_center
+      ]
+
       indHeads.forEach(h => {
         row.push(Math.round(r.account_amounts[h] || 0))
       })
       row.push(Math.round(r.indirect_expense || 0))
-
-      // Total Expenses
-      row.push(Math.round(r.total_expense || 0))
       return row
     })
 
-    // Grand Total row
-    const expTotalRow = [
-      '',
-      'GRAND TOTAL',
-      ''
-    ]
-
-    // Grand totals for Direct Heads
-    dirHeads.forEach(h => {
-      const total = expensesData.value.reduce((sum, r) => sum + (r.account_amounts[h] || 0), 0)
-      expTotalRow.push(Math.round(total))
-    })
-    expTotalRow.push(Math.round(grandDirectExpenseTotal.value || 0))
-
-    // Grand totals for Indirect Heads
+    const expTotalRow = ['', 'GRAND TOTAL', '']
     indHeads.forEach(h => {
-      const total = expensesData.value.reduce((sum, r) => sum + (r.account_amounts[h] || 0), 0)
+      const total = indirectExpensesData.value.reduce((sum, r) => sum + (r.account_amounts[h] || 0), 0)
       expTotalRow.push(Math.round(total))
     })
     expTotalRow.push(Math.round(grandIndirectExpenseTotal.value || 0))
-
-    // Grand total of all expenses
-    expTotalRow.push(Math.round(grandExpenseTotal.value || 0))
-
     expRows.push(expTotalRow)
 
     const wsExp = utils.aoa_to_sheet([expHeaders, ...expRows])
-
-    // Set Column Widths dynamically
-    const expColWidths = [
-      { wch: 8 }, { wch: 30 }, { wch: 40 }
-    ]
+    const expColWidths = [{ wch: 8 }, { wch: 30 }, { wch: 40 }]
     expHeaders.slice(3).forEach(() => expColWidths.push({ wch: 18 }))
     wsExp['!cols'] = expColWidths
 
-    utils.book_append_sheet(wb, wsExp, 'Cost Center Expenses')
+    utils.book_append_sheet(wb, wsExp, 'Indirect Expenses')
   }
 
   // Group bills by cost center
