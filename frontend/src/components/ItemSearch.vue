@@ -573,14 +573,12 @@ watch(selectedIdx, async (idx) => {
   }
 })
 
-watch(() => props.show, async (newVal) => {
+watch(() => props.show, (newVal) => {
   if (newVal) {
     query.value = ''
     isDecrypted.value = false
     loadCipherMap()
-    focus() // Focus immediately
-    await preloadItems()
-    focus() // Refocus after items load if needed
+    focus()
     if (props.initialQuery) {
       const idx = results.value.findIndex(i => i.item_code === props.initialQuery)
       if (idx >= 0) {
