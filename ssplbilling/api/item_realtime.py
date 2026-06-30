@@ -31,7 +31,9 @@ def _relevant_change(doc):
 def on_item_save(doc, method):
 	"""Broadcast item_cache_invalidated to all browsers after an Item is saved."""
 	if not _relevant_change(doc):
+		frappe.logger("ssplbilling").info(f"item_realtime: {doc.item_code} saved but no relevant change, skipping")
 		return
+	frappe.logger("ssplbilling").info(f"item_realtime: publishing item_cache_invalidated for {doc.item_code}")
 	frappe.publish_realtime(
 		event="item_cache_invalidated",
 		message={"item_code": doc.item_code, "action": "save"},
