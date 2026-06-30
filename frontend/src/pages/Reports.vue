@@ -325,7 +325,7 @@ const modalConfig = computed(() => {
       sheetName: 'Quotation Tax Register',
       filePrefix: 'QuotationTaxRegister',
       noDataMsg: 'No quotations found for the selected criteria.',
-      docLabel: 'Quotation No',
+      docLabel: 'Bill No.',
     }
   }
   if (reportType.value === 'hsn') {
