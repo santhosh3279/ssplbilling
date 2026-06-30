@@ -139,3 +139,14 @@ def save_item_pricelist_percentages(item_code, percentages):
 	item.flags.ignore_permissions = True
 	item.save()
 	return {"status": "success"}
+
+
+def on_item_price_update(doc, method=None):
+	"""Publish a realtime update for the parent Item when its Price changes."""
+	if doc.get("item_code"):
+		frappe.publish_realtime(
+			"list_update",
+			{"doctype": "Item", "name": doc.item_code},
+			after_commit=True
+		)
+

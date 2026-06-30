@@ -184,7 +184,12 @@ doc_events = {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
 		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",
 	},
+	"Item Price": {
+		"on_update": "ssplbilling.api.pricelist_api.on_item_price_update",
+		"on_trash": "ssplbilling.api.pricelist_api.on_item_price_update",
+	},
 }
+
 
 # Scheduled Tasks
 # ---------------
