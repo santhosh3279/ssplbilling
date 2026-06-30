@@ -307,6 +307,77 @@
             </table>
           </div>
         </div>
+
+        <!-- Profit Table -->
+        <div v-if="profitData.length > 0" class="mt-12 w-full">
+          <h2 class="text-2xl font-bold text-[var(--color-text)] uppercase tracking-wider mb-4">Cost Center Profit</h2>
+          <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+            <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
+              <thead>
+                <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
+                  <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)] text-center">S.No</th>
+                  <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-12 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Cost Center</th>
+                  <!-- Dynamic Price List Columns -->
+                  <th v-for="pl in profitPriceLists" :key="pl" class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">
+                    {{ pl }}
+                  </th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Sales</th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Valuation Rate</th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Profit</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                <tr
+                  v-for="(row, idx) in profitData"
+                  :key="row.cost_center"
+                  class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
+                >
+                  <td class="w-12 px-2 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 font-mono text-lg text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-center">
+                    {{ idx + 1 }}
+                  </td>
+                  <td class="px-6 py-2 sticky left-12 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 border-b border-[var(--color-border)]/50">
+                    <div class="text-lg font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.cost_center_name }}</div>
+                    <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.cost_center }}</div>
+                  </td>
+                  <!-- Price List values -->
+                  <td v-for="pl in profitPriceLists" :key="pl" class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50">
+                    <span v-if="row.sales_by_pl[pl]" class="text-[var(--color-text)]">
+                      {{ formatCurrency(row.sales_by_pl[pl]) }}
+                    </span>
+                    <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
+                  </td>
+                  <td class="px-6 py-2 text-right font-mono text-xl text-[var(--color-text)] border-b border-[var(--color-border)]/50">
+                    {{ formatCurrency(row.total_sales) }}
+                  </td>
+                  <td class="px-6 py-2 text-right font-mono text-xl text-[var(--color-text)] border-b border-[var(--color-border)]/50">
+                    {{ formatCurrency(row.valuation_amount) }}
+                  </td>
+                  <td class="px-6 py-2 text-right text-lg font-bold border-b border-[var(--color-border)]/50" :class="row.profit < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                    {{ formatCurrency(row.profit) }}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
+                  <td class="w-12 px-2 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
+                  <td class="px-6 py-1.5 text-lg sticky left-12 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
+                  <td v-for="pl in profitPriceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                    {{ formatCurrency(getProfitPriceListTotal(pl)) }}
+                  </td>
+                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                    {{ formatCurrency(grandProfitSalesTotal) }}
+                  </td>
+                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                    {{ formatCurrency(grandProfitValuationTotal) }}
+                  </td>
+                  <td class="px-6 py-1.5 text-right text-3xl border-t border-[var(--color-border)]" :class="grandProfitTotal < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                    {{ formatCurrency(grandProfitTotal) }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -328,6 +399,8 @@ const billsData = ref([])
 const expensesData = ref([])
 const directExpenseHeads = ref([])
 const indirectExpenseHeads = ref([])
+const profitData = ref([])
+const profitPriceLists = ref([])
 
 const grandDirectExpenseTotal = computed(() => {
   return expensesData.value.reduce((sum, r) => sum + (r.direct_expense || 0), 0)
@@ -348,6 +421,18 @@ const toDate = ref(today)
 
 const grandTotal = computed(() => {
   return reportData.value.reduce((sum, r) => sum + (r.total_amount || 0), 0)
+})
+
+const grandProfitSalesTotal = computed(() => {
+  return profitData.value.reduce((sum, r) => sum + (r.total_sales || 0), 0)
+})
+
+const grandProfitValuationTotal = computed(() => {
+  return profitData.value.reduce((sum, r) => sum + (r.valuation_amount || 0), 0)
+})
+
+const grandProfitTotal = computed(() => {
+  return profitData.value.reduce((sum, r) => sum + (r.profit || 0), 0)
 })
 
 const directExpensesData = computed(() => {
@@ -375,6 +460,8 @@ async function fetchData() {
     expensesData.value = res.expenses_data || []
     directExpenseHeads.value = res.direct_expense_heads || []
     indirectExpenseHeads.value = res.indirect_expense_heads || []
+    profitData.value = res.profit_data || []
+    profitPriceLists.value = res.profit_price_lists || []
   } catch (e) {
     error.value = e.message || 'Failed to fetch cost center sale report'
   } finally {
@@ -445,6 +532,10 @@ function formatCurrency(val) {
 
 function getPriceListTotal(pl) {
   return reportData.value.reduce((sum, row) => sum + (row.price_list_data[pl] || 0), 0)
+}
+
+function getProfitPriceListTotal(pl) {
+  return profitData.value.reduce((sum, r) => sum + (r.sales_by_pl[pl] || 0), 0)
 }
 
 function exportToExcel() {
@@ -559,6 +650,46 @@ function exportToExcel() {
     wsExp['!cols'] = expColWidths
 
     utils.book_append_sheet(wb, wsExp, 'Indirect Expenses')
+  }
+
+  // Add Profit Sheet
+  if (profitData.value.length) {
+    const plList = profitPriceLists.value
+    const headers = [
+      'S.No', 'Cost Center Name', 'Cost Center',
+      ...plList, 'Total Sales', 'Valuation Rate', 'Profit'
+    ]
+
+    const rows = profitData.value.map((r, idx) => {
+      const row = [
+        idx + 1,
+        r.cost_center_name,
+        r.cost_center
+      ]
+      plList.forEach(pl => {
+        row.push(Math.round(r.sales_by_pl[pl] || 0))
+      })
+      row.push(Math.round(r.total_sales || 0))
+      row.push(Math.round(r.valuation_amount || 0))
+      row.push(Math.round(r.profit || 0))
+      return row
+    })
+
+    const totalRow = ['', 'GRAND TOTAL', '']
+    plList.forEach(pl => {
+      totalRow.push(Math.round(getProfitPriceListTotal(pl)))
+    })
+    totalRow.push(Math.round(grandProfitSalesTotal.value))
+    totalRow.push(Math.round(grandProfitValuationTotal.value))
+    totalRow.push(Math.round(grandProfitTotal.value))
+    rows.push(totalRow)
+
+    const wsProfit = utils.aoa_to_sheet([headers, ...rows])
+    const colWidths = [{ wch: 8 }, { wch: 30 }, { wch: 40 }]
+    headers.slice(3).forEach(() => colWidths.push({ wch: 18 }))
+    wsProfit['!cols'] = colWidths
+
+    utils.book_append_sheet(wb, wsProfit, 'Cost Center Profit')
   }
 
   // Group bills by cost center

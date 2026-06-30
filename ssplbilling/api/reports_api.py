@@ -879,6 +879,59 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
         expenses_report_data = list(expense_ccs.values())
         expenses_report_data.sort(key=lambda x: x["total_expense"], reverse=True)
 
+        # Fetch Sales Invoice Items details for profit report
+        profit_results = frappe.db.sql(
+                """
+                SELECT
+                        sii.cost_center,
+                        si.selling_price_list,
+                        SUM(sii.base_net_amount) as sales_amount,
+                        SUM(sii.qty * sii.incoming_rate) as valuation_amount
+                FROM
+                        `tabSales Invoice Item` sii
+                INNER JOIN
+                        `tabSales Invoice` si ON si.name = sii.parent
+                WHERE
+                        si.posting_date BETWEEN %s AND %s
+                        AND si.docstatus = 1
+                GROUP BY
+                        sii.cost_center, si.selling_price_list
+                """,
+                (from_date, to_date),
+                as_dict=1,
+        )
+
+        profit_ccs = {}
+        profit_price_lists = set()
+        for pr in profit_results:
+                cc = pr["cost_center"] or "No Cost Center"
+                pl = pr["selling_price_list"] or "Other/Direct"
+                profit_price_lists.add(pl)
+                
+                if cc not in profit_ccs:
+                        cc_display_name = cc.split(" - ")[0] if " - " in cc else cc
+                        profit_ccs[cc] = {
+                                "cost_center": cc,
+                                "cost_center_name": cc_display_name,
+                                "sales_by_pl": {},
+                                "total_sales": 0.0,
+                                "valuation_amount": 0.0,
+                                "profit": 0.0
+                        }
+                
+                sales_amt = float(pr["sales_amount"] or 0)
+                val_amt = float(pr["valuation_amount"] or 0)
+                
+                profit_ccs[cc]["sales_by_pl"][pl] = sales_amt
+                profit_ccs[cc]["total_sales"] += sales_amt
+                profit_ccs[cc]["valuation_amount"] += val_amt
+
+        for cc in profit_ccs:
+                profit_ccs[cc]["profit"] = profit_ccs[cc]["total_sales"] - profit_ccs[cc]["valuation_amount"]
+
+        profit_report_data = list(profit_ccs.values())
+        profit_report_data.sort(key=lambda x: x["profit"], reverse=True)
+
         return {
                 "report_data": report_data,
                 "price_lists": sorted(list(all_price_lists)),
@@ -886,4 +939,6 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 "expenses_data": expenses_report_data,
                 "direct_expense_heads": sorted(list(direct_heads)),
                 "indirect_expense_heads": sorted(list(indirect_heads)),
+                "profit_data": profit_report_data,
+                "profit_price_lists": sorted(list(profit_price_lists)),
         }
