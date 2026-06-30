@@ -165,7 +165,18 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 		for s in frappe.get_all("Item Supplier", filters={"parent": item_code}, fields=["supplier", "supplier_part_no"])
 	]
 
+	# Price List Percentages
+	item["pricelist_percentages"] = [
+		{"pricelist": p.pricelist, "percentage": float(p.percentage or 0)}
+		for p in frappe.get_all(
+			"Item Price List Percentage",
+			filters={"parent": item_code},
+			fields=["pricelist", "percentage"],
+		)
+	]
+
 	return item
+
 
 
 @frappe.whitelist()
@@ -357,7 +368,24 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	for i in items:
 		i["suppliers"] = item_suppliers_map.get(i.item_code, [])
 
+	# 7. Batch fetch Price List Percentages
+	all_percentages = frappe.get_all(
+		"Item Price List Percentage",
+		filters={"parent": ["in", item_codes]},
+		fields=["parent as item_code", "pricelist", "percentage"],
+	)
+	item_percentages_map = {}
+	for row in all_percentages:
+		item_percentages_map.setdefault(row.item_code, []).append({
+			"pricelist": row.pricelist,
+			"percentage": float(row.percentage or 0)
+		})
+
+	for i in items:
+		i["pricelist_percentages"] = item_percentages_map.get(i.item_code, [])
+
 	return items
+
 
 
 @frappe.whitelist()

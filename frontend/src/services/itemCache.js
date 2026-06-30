@@ -23,6 +23,23 @@ function saveUomsToStorage(itemList) {
 }
 const storedUoms = loadUomsFromStorage()
 
+// Pricelist Percentages cache — persisted to localStorage: { item_code: [{pricelist, percentage}] }
+const ITEM_PERCENTAGES_KEY = 'sspl-item-pricelist-percentages'
+function loadPercentagesFromStorage() {
+  try { return JSON.parse(localStorage.getItem(ITEM_PERCENTAGES_KEY) || '{}') } catch { return {} }
+}
+function savePercentagesToStorage(itemList) {
+  try {
+    const map = {}
+    for (const i of itemList) {
+      if (i.pricelist_percentages?.length) map[i.item_code] = i.pricelist_percentages
+    }
+    localStorage.setItem(ITEM_PERCENTAGES_KEY, JSON.stringify(map))
+  } catch {}
+}
+const storedPercentages = loadPercentagesFromStorage()
+
+
 // Discount Rules cache (custom Discount Rule doctype) — persisted to localStorage
 const DISCOUNT_RULES_KEY = 'sspl-discount-rules'
 function loadDiscountRulesFromStorage() {
@@ -52,7 +69,9 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
     discountRules.value = discRules || []
     saveDiscountRulesToStorage(discountRules.value)
     saveUomsToStorage(items.value)
+    savePercentagesToStorage(items.value)
     lastSync.value = Date.now()
+
     lastParams.value = { searchType, priceList, warehouse }
     return items.value
   } catch (e) {
@@ -112,6 +131,9 @@ export function lookupItemInCache(code) {
     if (!item.uoms?.length && storedUoms[item.item_code]?.length) {
       item.uoms = storedUoms[item.item_code]
     }
+    if (!item.pricelist_percentages?.length && storedPercentages[item.item_code]?.length) {
+      item.pricelist_percentages = storedPercentages[item.item_code]
+    }
     return item
   }
 
@@ -131,8 +153,12 @@ export function lookupItemInCache(code) {
     if (!item.uoms?.length && storedUoms[item.item_code]?.length) {
       item.uoms = storedUoms[item.item_code]
     }
+    if (!item.pricelist_percentages?.length && storedPercentages[item.item_code]?.length) {
+      item.pricelist_percentages = storedPercentages[item.item_code]
+    }
     return item
   }
+
 
   return null
 }
