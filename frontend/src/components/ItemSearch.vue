@@ -353,7 +353,7 @@ function encPrice(val) {
 
 function getSupplierListDisplay(item) {
   if (!item || !item.suppliers || !item.suppliers.length) return '--'
-  return item.suppliers.join(', ')
+  return item.suppliers.map(s => (typeof s === 'string' ? s : s.supplier)).join(', ')
 }
 
 // ─── Data Preloading ─────────────────────────────────────────────────────────
@@ -497,7 +497,6 @@ function openEditModal() {
 
 function handleItemUpdated() {
   showEditModal.value = false
-  preloadItems(true)
   focus()
 }
 

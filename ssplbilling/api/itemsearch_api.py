@@ -82,7 +82,8 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 	rows = frappe.get_all(
 		"Item",
 		filters=base_filters,
-		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate",
+		fields=["item_code", "item_name", "item_print_name", "item_group",
+				"stock_uom as uom", "standard_rate as rate",
 				"valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock"],
 	)
 	if not rows:
@@ -131,9 +132,10 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 		if ic == item_code:
 			item["redis_stock"] += dq
 
-	# Tax rate
+	# Tax rate + template name
 	today = frappe.utils.today()
 	item["tax_rate"] = 0.0
+	item["item_tax_template"] = ""
 	for row in frappe.get_all(
 		"Item Tax",
 		filters={"parent": item_code, "parenttype": "Item"},
@@ -143,6 +145,7 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 		if row.item_tax_template and (not row.valid_from or str(row.valid_from) <= today):
 			details = frappe.get_all("Item Tax Template Detail", filters={"parent": row.item_tax_template}, fields=["tax_rate"])
 			item["tax_rate"] = sum(float(d.tax_rate or 0) for d in details) / 2
+			item["item_tax_template"] = row.item_tax_template
 			break
 
 	# UOM conversions
@@ -157,7 +160,10 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 	item["barcodes"] = ",".join(b["barcode"] for b in item["barcodes_detailed"])
 
 	# Suppliers
-	item["suppliers"] = [s.supplier for s in frappe.get_all("Item Supplier", filters={"parent": item_code}, fields=["supplier"])]
+	item["suppliers"] = [
+		{"supplier": s.supplier, "supplier_part_no": s.supplier_part_no or ""}
+		for s in frappe.get_all("Item Supplier", filters={"parent": item_code}, fields=["supplier", "supplier_part_no"])
+	]
 
 	return item
 
@@ -176,7 +182,8 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	items = frappe.get_all(
 		"Item",
 		filters=filters,
-		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock"],
+		fields=["item_code", "item_name", "item_print_name", "item_group",
+				"stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock"],
 		limit=0,
 		order_by="item_name asc",
 	)
@@ -296,8 +303,10 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		ic = i.item_code
 		if ic in item_template_map:
 			i["tax_rate"] = template_rate_map.get(item_template_map[ic], 0.0)
+			i["item_tax_template"] = item_template_map[ic]
 		else:
 			i["tax_rate"] = 0.0
+			i["item_tax_template"] = ""
 
 	# 4. Batch fetch UOM conversions
 	all_item_uoms = frappe.get_all(
@@ -337,12 +346,14 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	all_suppliers = frappe.get_all(
 		"Item Supplier",
 		filters={"parent": ["in", item_codes]},
-		fields=["parent as item_code", "supplier"],
+		fields=["parent as item_code", "supplier", "supplier_part_no"],
 	)
 	item_suppliers_map = {}
 	for row in all_suppliers:
-		item_suppliers_map.setdefault(row.item_code, []).append(row.supplier)
-	
+		item_suppliers_map.setdefault(row.item_code, []).append(
+			{"supplier": row.supplier, "supplier_part_no": row.supplier_part_no or ""}
+		)
+
 	for i in items:
 		i["suppliers"] = item_suppliers_map.get(i.item_code, [])
 
