@@ -221,6 +221,63 @@
             </tfoot>
           </table>
         </div>
+
+        <!-- Expenses Table -->
+        <div v-if="expensesData.length > 0" class="mt-12 w-full">
+          <h2 class="text-2xl font-bold text-[var(--color-text)] uppercase tracking-wider mb-4">Cost Center Expenses</h2>
+          <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+            <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
+              <thead>
+                <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
+                  <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)] text-center">S.No</th>
+                  <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-12 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Cost Center</th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Direct Expenses</th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Indirect Expenses</th>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Expenses</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                <tr
+                  v-for="(row, idx) in expensesData"
+                  :key="row.cost_center"
+                  class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
+                >
+                  <td class="w-12 px-2 py-2 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 font-mono text-lg text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-center">
+                    {{ idx + 1 }}
+                  </td>
+                  <td class="px-6 py-2 sticky left-12 bg-[var(--color-surface)] group-hover:bg-[var(--color-surface-raised)]/30 z-10 border-b border-[var(--color-border)]/50">
+                    <div class="text-lg font-semibold text-[var(--color-text)] group-hover:text-[var(--color-text)]">{{ row.cost_center_name }}</div>
+                    <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.cost_center }}</div>
+                  </td>
+                  <td class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50 text-[var(--color-text)]">
+                    {{ formatCurrency(row.direct_expense) }}
+                  </td>
+                  <td class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50 text-[var(--color-text)]">
+                    {{ formatCurrency(row.indirect_expense) }}
+                  </td>
+                  <td class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text)] border-b border-[var(--color-border)]/50">
+                    {{ formatCurrency(row.total_expense) }}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
+                  <td class="w-12 px-2 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
+                  <td class="px-6 py-1.5 text-lg sticky left-12 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
+                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                    {{ formatCurrency(grandDirectExpenseTotal) }}
+                  </td>
+                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                    {{ formatCurrency(grandIndirectExpenseTotal) }}
+                  </td>
+                  <td class="px-6 py-1.5 text-right text-3xl text-[var(--color-danger)] border-t border-[var(--color-border)]">
+                    {{ formatCurrency(grandExpenseTotal) }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -239,6 +296,19 @@ const error = ref('')
 const reportData = ref([])
 const priceLists = ref([])
 const billsData = ref([])
+const expensesData = ref([])
+
+const grandDirectExpenseTotal = computed(() => {
+  return expensesData.value.reduce((sum, r) => sum + (r.direct_expense || 0), 0)
+})
+
+const grandIndirectExpenseTotal = computed(() => {
+  return expensesData.value.reduce((sum, r) => sum + (r.indirect_expense || 0), 0)
+})
+
+const grandExpenseTotal = computed(() => {
+  return expensesData.value.reduce((sum, r) => sum + (r.total_expense || 0), 0)
+})
 
 // Default dates: Today
 const today = new Date().toISOString().slice(0, 10)
@@ -257,6 +327,7 @@ async function fetchData() {
     reportData.value = res.report_data || []
     priceLists.value = res.price_lists || []
     billsData.value = res.bills_data || []
+    expensesData.value = res.expenses_data || []
   } catch (e) {
     error.value = e.message || 'Failed to fetch cost center sale report'
   } finally {
@@ -372,6 +443,32 @@ function exportToExcel() {
   ws['!cols'] = colWidths
 
   utils.book_append_sheet(wb, ws, 'Cost Center Sale Report')
+
+  // Add Expenses Sheet
+  if (expensesData.value.length) {
+    const expHeaders = ['S.No', 'Cost Center Name', 'Cost Center', 'Direct Expenses', 'Indirect Expenses', 'Total Expenses']
+    const expRows = expensesData.value.map((r, idx) => [
+      idx + 1,
+      r.cost_center_name,
+      r.cost_center,
+      Math.round(r.direct_expense || 0),
+      Math.round(r.indirect_expense || 0),
+      Math.round(r.total_expense || 0)
+    ])
+    expRows.push([
+      '',
+      'GRAND TOTAL',
+      '',
+      Math.round(grandDirectExpenseTotal.value || 0),
+      Math.round(grandIndirectExpenseTotal.value || 0),
+      Math.round(grandExpenseTotal.value || 0)
+    ])
+    const wsExp = utils.aoa_to_sheet([expHeaders, ...expRows])
+    wsExp['!cols'] = [
+      { wch: 8 }, { wch: 30 }, { wch: 40 }, { wch: 18 }, { wch: 18 }, { wch: 18 }
+    ]
+    utils.book_append_sheet(wb, wsExp, 'Cost Center Expenses')
+  }
 
   // Group bills by cost center
   const billsByCostCenter = {}
