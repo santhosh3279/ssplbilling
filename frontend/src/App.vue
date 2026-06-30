@@ -48,6 +48,7 @@ import { useTheme } from './composables/useTheme';
 import { useDevice } from './composables/useDevice';
 import { useLayout } from './composables/useLayout';
 import { useMqtt } from './composables/useMqtt';
+import { initItemSync, destroyItemSync } from './composables/useItemSync';
 
 const showCalculator = ref(false);
 const showCommandLine = ref(false);
@@ -156,6 +157,7 @@ watch(showKeyboardPanel, () => {
 onMounted(() => {
   initTheme();
   connectMqtt();
+  initItemSync();
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.addEventListener('wb-global-command-line-toggle', toggleCommandLine);
   window.addEventListener('wb-global-keyboard-toggle', toggleKeyboard);
@@ -187,6 +189,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  destroyItemSync();
   window.removeEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.removeEventListener('wb-global-command-line-toggle', toggleCommandLine);
   window.removeEventListener('wb-global-keyboard-toggle', toggleKeyboard);

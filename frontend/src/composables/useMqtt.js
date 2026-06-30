@@ -1,11 +1,10 @@
 import { ref } from 'vue'
-import { io } from 'socket.io-client'
 import { frappeGet } from '../api.js'
+import { getFrappeSocket } from '../services/frappeSocket.js'
 
 const isConnected = ref(false)
 const serverInfo = ref({ server: '', port: '' })
 const isConnecting = ref(false)
-let socket = null
 let statusInterval = null
 
 export function useMqtt() {
@@ -34,21 +33,7 @@ export function useMqtt() {
   }
 
   function initSocketConnection() {
-    if (socket) return
-
-    const url = window.location.origin
-    console.log(`[useMqtt] Connecting to Frappe Socket.io at ${url}...`)
-    
-    socket = io(url, { withCredentials: true })
-
-    socket.on('connect', () => {
-      console.log('[useMqtt] Socket.io connected.')
-    })
-
-    socket.on('disconnect', () => {
-      console.log('[useMqtt] Socket.io disconnected.')
-    })
-
+    const socket = getFrappeSocket()
     socket.on('events', (data) => {
       if (data && data.event === 'mqtt_payment_received') {
         console.log('[useMqtt] Realtime message received:', data.message)
@@ -79,10 +64,6 @@ export function useMqtt() {
 
   function disconnectMqtt() {
     stopStatusPolling()
-    if (socket) {
-      socket.disconnect()
-      socket = null
-    }
   }
 
   async function refreshConnection() {
