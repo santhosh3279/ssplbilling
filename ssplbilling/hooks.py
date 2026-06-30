@@ -172,10 +172,6 @@ after_migrate = ["ssplbilling.setup.after_migrate"]
 # Hook on document methods and events
 
 doc_events = {
-	"Item": {
-		"after_save": "ssplbilling.api.item_realtime.on_item_save",
-		"on_trash": "ssplbilling.api.item_realtime.on_item_trash",
-	},
 	"Sales Invoice": {
 		"before_insert": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"before_save": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
