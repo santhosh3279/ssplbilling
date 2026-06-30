@@ -914,6 +914,7 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                                 "cost_center": cc,
                                 "cost_center_name": cc_display_name,
                                 "sales_by_pl": {},
+                                "valuation_by_pl": {},
                                 "total_sales": 0.0,
                                 "valuation_amount": 0.0,
                                 "profit": 0.0
@@ -923,6 +924,7 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 val_amt = float(pr["valuation_amount"] or 0)
                 
                 profit_ccs[cc]["sales_by_pl"][pl] = sales_amt
+                profit_ccs[cc]["valuation_by_pl"][pl] = val_amt
                 profit_ccs[cc]["total_sales"] += sales_amt
                 profit_ccs[cc]["valuation_amount"] += val_amt
 

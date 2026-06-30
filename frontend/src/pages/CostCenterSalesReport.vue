@@ -318,12 +318,18 @@
                   <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-0 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)] text-center">S.No</th>
                   <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider sticky left-12 bg-[var(--color-surface)] z-20 border-b border-[var(--color-border)]">Cost Center</th>
                   <!-- Dynamic Price List Columns -->
-                  <th v-for="pl in profitPriceLists" :key="pl" class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">
-                    {{ pl }}
-                  </th>
-                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Sales</th>
-                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Valuation Rate</th>
-                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Profit</th>
+                  <template v-for="pl in profitPriceLists" :key="pl">
+                    <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">
+                      {{ pl }}
+                    </th>
+                    <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">
+                      Valuation Rate
+                    </th>
+                    <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">
+                      Profit
+                    </th>
+                  </template>
+                  <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Profit</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-700/50">
@@ -340,18 +346,29 @@
                     <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.cost_center }}</div>
                   </td>
                   <!-- Price List values -->
-                  <td v-for="pl in profitPriceLists" :key="pl" class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50">
-                    <span v-if="row.sales_by_pl[pl]" class="text-[var(--color-text)]">
-                      {{ formatCurrency(row.sales_by_pl[pl]) }}
-                    </span>
-                    <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
-                  </td>
-                  <td class="px-6 py-2 text-right font-mono text-xl text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                    {{ formatCurrency(row.total_sales) }}
-                  </td>
-                  <td class="px-6 py-2 text-right font-mono text-xl text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                    {{ formatCurrency(row.valuation_amount) }}
-                  </td>
+                  <template v-for="pl in profitPriceLists" :key="pl">
+                    <!-- Sales -->
+                    <td class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50">
+                      <span v-if="row.sales_by_pl[pl]" class="text-[var(--color-text)]">
+                        {{ formatCurrency(row.sales_by_pl[pl]) }}
+                      </span>
+                      <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
+                    </td>
+                    <!-- Valuation Rate -->
+                    <td class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50">
+                      <span v-if="row.valuation_by_pl && row.valuation_by_pl[pl]" class="text-[var(--color-text)]">
+                        {{ formatCurrency(row.valuation_by_pl[pl]) }}
+                      </span>
+                      <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
+                    </td>
+                    <!-- Profit -->
+                    <td class="px-6 py-2 text-right font-mono text-xl border-b border-[var(--color-border)]/50" :class="((row.sales_by_pl[pl] || 0) - (row.valuation_by_pl && row.valuation_by_pl[pl] || 0)) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      <span v-if="row.sales_by_pl[pl] || (row.valuation_by_pl && row.valuation_by_pl[pl])" class="font-bold">
+                        {{ formatCurrency((row.sales_by_pl[pl] || 0) - (row.valuation_by_pl && row.valuation_by_pl[pl] || 0)) }}
+                      </span>
+                      <span v-else class="text-[var(--color-text-muted)] opacity-30">—</span>
+                    </td>
+                  </template>
                   <td class="px-6 py-2 text-right text-lg font-bold border-b border-[var(--color-border)]/50" :class="row.profit < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                     {{ formatCurrency(row.profit) }}
                   </td>
@@ -361,15 +378,20 @@
                 <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
                   <td class="w-12 px-2 py-1.5 text-lg sticky left-0 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]"></td>
                   <td class="px-6 py-1.5 text-lg sticky left-12 bg-[var(--color-bg)] z-10 border-t border-[var(--color-border)]">GRAND TOTAL</td>
-                  <td v-for="pl in profitPriceLists" :key="pl" class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
-                    {{ formatCurrency(getProfitPriceListTotal(pl)) }}
-                  </td>
-                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
-                    {{ formatCurrency(grandProfitSalesTotal) }}
-                  </td>
-                  <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
-                    {{ formatCurrency(grandProfitValuationTotal) }}
-                  </td>
+                  <template v-for="pl in profitPriceLists" :key="pl">
+                    <!-- Sales Total -->
+                    <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                      {{ formatCurrency(getProfitPriceListTotal(pl)) }}
+                    </td>
+                    <!-- Valuation Total -->
+                    <td class="px-6 py-1.5 text-right font-mono text-xl text-[var(--color-text)] border-t border-[var(--color-border)]">
+                      {{ formatCurrency(getProfitValuationPriceListTotal(pl)) }}
+                    </td>
+                    <!-- Profit Total -->
+                    <td class="px-6 py-1.5 text-right font-mono text-xl border-t border-[var(--color-border)]" :class="(getProfitPriceListTotal(pl) - getProfitValuationPriceListTotal(pl)) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ formatCurrency(getProfitPriceListTotal(pl) - getProfitValuationPriceListTotal(pl)) }}
+                    </td>
+                  </template>
                   <td class="px-6 py-1.5 text-right text-3xl border-t border-[var(--color-border)]" :class="grandProfitTotal < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                     {{ formatCurrency(grandProfitTotal) }}
                   </td>
@@ -538,6 +560,10 @@ function getProfitPriceListTotal(pl) {
   return profitData.value.reduce((sum, r) => sum + (r.sales_by_pl[pl] || 0), 0)
 }
 
+function getProfitValuationPriceListTotal(pl) {
+  return profitData.value.reduce((sum, r) => sum + (r.valuation_by_pl?.[pl] || 0), 0)
+}
+
 function exportToExcel() {
   if (!reportData.value.length) return
 
@@ -655,10 +681,13 @@ function exportToExcel() {
   // Add Profit Sheet
   if (profitData.value.length) {
     const plList = profitPriceLists.value
-    const headers = [
-      'S.No', 'Cost Center Name', 'Cost Center',
-      ...plList, 'Total Sales', 'Valuation Rate', 'Profit'
-    ]
+    const headers = ['S.No', 'Cost Center Name', 'Cost Center']
+    plList.forEach(pl => {
+      headers.push(pl)
+      headers.push(`${pl} Valuation Rate`)
+      headers.push(`${pl} Profit`)
+    })
+    headers.push('Total Profit')
 
     const rows = profitData.value.map((r, idx) => {
       const row = [
@@ -667,21 +696,27 @@ function exportToExcel() {
         r.cost_center
       ]
       plList.forEach(pl => {
-        row.push(Math.round(r.sales_by_pl[pl] || 0))
+        const sales = Math.round(r.sales_by_pl[pl] || 0)
+        const valuation = Math.round(r.valuation_by_pl?.[pl] || 0)
+        const profit = sales - valuation
+        row.push(sales)
+        row.push(valuation)
+        row.push(profit)
       })
-      row.push(Math.round(r.total_sales || 0))
-      row.push(Math.round(r.valuation_amount || 0))
       row.push(Math.round(r.profit || 0))
       return row
     })
 
     const totalRow = ['', 'GRAND TOTAL', '']
     plList.forEach(pl => {
-      totalRow.push(Math.round(getProfitPriceListTotal(pl)))
+      const salesTotal = Math.round(getProfitPriceListTotal(pl) || 0)
+      const valuationTotal = Math.round(getProfitValuationPriceListTotal(pl) || 0)
+      const profitTotal = salesTotal - valuationTotal
+      totalRow.push(salesTotal)
+      totalRow.push(valuationTotal)
+      totalRow.push(profitTotal)
     })
-    totalRow.push(Math.round(grandProfitSalesTotal.value))
-    totalRow.push(Math.round(grandProfitValuationTotal.value))
-    totalRow.push(Math.round(grandProfitTotal.value))
+    totalRow.push(Math.round(grandProfitTotal.value || 0))
     rows.push(totalRow)
 
     const wsProfit = utils.aoa_to_sheet([headers, ...rows])
