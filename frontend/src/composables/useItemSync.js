@@ -7,15 +7,12 @@ let _handler = null
 let _debounceTimer = null
 
 function _scheduleRefresh() {
-  // Don't refresh if the cache was never populated (e.g. browser just opened)
-  if (lastSync.value === 0) return
   clearTimeout(_debounceTimer)
   _debounceTimer = setTimeout(async () => {
     const { searchType, priceList, warehouse } = lastParams.value
     console.log('[useItemSync] item_cache_invalidated — refreshing item cache')
     try {
-      await refreshItemCache(searchType, priceList, warehouse)
-      // Let any interested component react without coupling to a specific toast library
+      await refreshItemCache(searchType || 'Sales', priceList, warehouse)
       window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
     } catch (e) {
       console.warn('[useItemSync] cache refresh failed:', e)
