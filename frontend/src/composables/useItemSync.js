@@ -25,19 +25,15 @@ function _scheduleRefresh() {
 
 export function initItemSync() {
   const socket = getFrappeSocket()
-  _handler = (data) => {
-    if (data?.event === 'item_cache_invalidated') {
-      _scheduleRefresh()
-    }
-  }
-  socket.on('events', _handler)
+  _handler = () => _scheduleRefresh()
+  socket.on('item_cache_invalidated', _handler)
   console.log('[useItemSync] listening for item_cache_invalidated')
 }
 
 export function destroyItemSync() {
   clearTimeout(_debounceTimer)
   if (_handler) {
-    getFrappeSocket().off('events', _handler)
+    getFrappeSocket().off('item_cache_invalidated', _handler)
     _handler = null
   }
 }
