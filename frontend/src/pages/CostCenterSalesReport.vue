@@ -297,6 +297,8 @@ const reportData = ref([])
 const priceLists = ref([])
 const billsData = ref([])
 const expensesData = ref([])
+const directExpenseHeads = ref([])
+const indirectExpenseHeads = ref([])
 
 const grandDirectExpenseTotal = computed(() => {
   return expensesData.value.reduce((sum, r) => sum + (r.direct_expense || 0), 0)
@@ -328,6 +330,8 @@ async function fetchData() {
     priceLists.value = res.price_lists || []
     billsData.value = res.bills_data || []
     expensesData.value = res.expenses_data || []
+    directExpenseHeads.value = res.direct_expense_heads || []
+    indirectExpenseHeads.value = res.indirect_expense_heads || []
   } catch (e) {
     error.value = e.message || 'Failed to fetch cost center sale report'
   } finally {
@@ -446,27 +450,76 @@ function exportToExcel() {
 
   // Add Expenses Sheet
   if (expensesData.value.length) {
-    const expHeaders = ['S.No', 'Cost Center Name', 'Cost Center', 'Direct Expenses', 'Indirect Expenses', 'Total Expenses']
-    const expRows = expensesData.value.map((r, idx) => [
-      idx + 1,
-      r.cost_center_name,
-      r.cost_center,
-      Math.round(r.direct_expense || 0),
-      Math.round(r.indirect_expense || 0),
-      Math.round(r.total_expense || 0)
-    ])
-    expRows.push([
+    const dirHeads = directExpenseHeads.value
+    const indHeads = indirectExpenseHeads.value
+
+    // Headers: S.No, Cost Center Name, Cost Center, [Direct Heads...], Total Direct, [Indirect Heads...], Total Indirect, Total Expenses
+    const expHeaders = [
+      'S.No', 'Cost Center Name', 'Cost Center',
+      ...dirHeads, 'Total Direct',
+      ...indHeads, 'Total Indirect',
+      'Total Expenses'
+    ]
+
+    const expRows = expensesData.value.map((r, idx) => {
+      const row = [
+        idx + 1,
+        r.cost_center_name,
+        r.cost_center
+      ]
+
+      // Add Direct Expense Head details
+      dirHeads.forEach(h => {
+        row.push(Math.round(r.account_amounts[h] || 0))
+      })
+      row.push(Math.round(r.direct_expense || 0))
+
+      // Add Indirect Expense Head details
+      indHeads.forEach(h => {
+        row.push(Math.round(r.account_amounts[h] || 0))
+      })
+      row.push(Math.round(r.indirect_expense || 0))
+
+      // Total Expenses
+      row.push(Math.round(r.total_expense || 0))
+      return row
+    })
+
+    // Grand Total row
+    const expTotalRow = [
       '',
       'GRAND TOTAL',
-      '',
-      Math.round(grandDirectExpenseTotal.value || 0),
-      Math.round(grandIndirectExpenseTotal.value || 0),
-      Math.round(grandExpenseTotal.value || 0)
-    ])
-    const wsExp = utils.aoa_to_sheet([expHeaders, ...expRows])
-    wsExp['!cols'] = [
-      { wch: 8 }, { wch: 30 }, { wch: 40 }, { wch: 18 }, { wch: 18 }, { wch: 18 }
+      ''
     ]
+
+    // Grand totals for Direct Heads
+    dirHeads.forEach(h => {
+      const total = expensesData.value.reduce((sum, r) => sum + (r.account_amounts[h] || 0), 0)
+      expTotalRow.push(Math.round(total))
+    })
+    expTotalRow.push(Math.round(grandDirectExpenseTotal.value || 0))
+
+    // Grand totals for Indirect Heads
+    indHeads.forEach(h => {
+      const total = expensesData.value.reduce((sum, r) => sum + (r.account_amounts[h] || 0), 0)
+      expTotalRow.push(Math.round(total))
+    })
+    expTotalRow.push(Math.round(grandIndirectExpenseTotal.value || 0))
+
+    // Grand total of all expenses
+    expTotalRow.push(Math.round(grandExpenseTotal.value || 0))
+
+    expRows.push(expTotalRow)
+
+    const wsExp = utils.aoa_to_sheet([expHeaders, ...expRows])
+
+    // Set Column Widths dynamically
+    const expColWidths = [
+      { wch: 8 }, { wch: 30 }, { wch: 40 }
+    ]
+    expHeaders.slice(3).forEach(() => expColWidths.push({ wch: 18 }))
+    wsExp['!cols'] = expColWidths
+
     utils.book_append_sheet(wb, wsExp, 'Cost Center Expenses')
   }
 
