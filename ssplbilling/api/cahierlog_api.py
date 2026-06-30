@@ -33,9 +33,10 @@ def get_opening_total(date):
 
 
 @frappe.whitelist()
-def get_cahier_totals(date, op_type="Opening", account=None):
+def get_cahier_totals(date, op_type="Opening", account=None, user=None):
 	"""Return the total and cash_ledger_balance from Cashier_Opening for a specific date, user and type."""
-	user = frappe.session.user
+	if not user:
+		user = frappe.session.user
 	doc_name = f"{date}_{op_type}_{user}"
 
 	values = frappe.db.get_value("Cashier_Opening", doc_name, ["total", "cash_ledger_balance"], as_dict=True)

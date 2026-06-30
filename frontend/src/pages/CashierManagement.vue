@@ -16,8 +16,13 @@
         <div class="h-8 w-px bg-[var(--color-surface)]"></div>
 
         <!-- Page Title -->
-        <h1 class="text-xl font-black tracking-tighter uppercase">
-          <span class="text-[var(--color-success)]">Cashier</span> <span class="text-[var(--color-text-muted)] font-light">Management</span>
+        <h1 class="text-xl font-black tracking-tighter uppercase flex items-center gap-2">
+          <span>
+            <span class="text-[var(--color-success)]">Cashier</span> <span class="text-[var(--color-text-muted)] font-light">Management</span>
+          </span>
+          <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-sm">
+            ({{ inheritedUser }})
+          </span>
         </h1>
       </div>
 
@@ -626,6 +631,13 @@ const localStorage = window.localStorage
 const showBoxCash = ref(false)
 const modalTitle = ref('Cashier Opening')
 
+const inheritedUser = computed(() => {
+  const inherited = localStorage.getItem('wb-inherited-user')
+  return inherited && inherited !== session.user.value ? inherited : null
+})
+
+const targetUser = computed(() => localStorage.getItem('wb-inherited-user') || session.user.value)
+
 // --- SHORTCUTS ---
 useShortcuts({
   'ESCAPE': () => {
@@ -904,7 +916,7 @@ async function exportToExcel() {
     try {
       const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cashier_opening', {
         date: currentDate.value,
-        user: session.user.value,
+        user: targetUser.value,
         opening_or_closing: t
       })
       docs[t] = res?.message || res
@@ -923,7 +935,7 @@ async function exportToExcel() {
     upiLedgerEntries: upiLedgerEntries.value,
     upiLedgerOpening: upiLedgerOpening.value,
     metadata: {
-      billerName: session.fullName.value || session.user.value || '',
+      billerName: inheritedUser.value || session.fullName.value || session.user.value || '',
       warehouse: localStorage.getItem('wb-warehouse') || '',
       cashAccount: localStorage.getItem('wb-cash') || '',
       upiAccount: localStorage.getItem('wb-upi') || '',
@@ -950,11 +962,12 @@ function openModal(title) {
 async function refreshAll() {
   const today = currentDate.value
   const account = localStorage.getItem('wb-cash') || ''
+  const user = targetUser.value
 
   // Fetch Opening
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Opening', account
+      date: today, op_type: 'Opening', account, user
     })
     openingTotal.value = res.total || 0
     openingLedger.value = res.cash_ledger_balance || 0
@@ -966,7 +979,7 @@ async function refreshAll() {
   // Fetch Mid-Day-1
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Mid-Day-1', account
+      date: today, op_type: 'Mid-Day-1', account, user
     })
     md1Total.value = res.total || 0
     md1Ledger.value = res.cash_ledger_balance || 0
@@ -977,7 +990,7 @@ async function refreshAll() {
   // Fetch Mid-Day-2
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Mid-Day-2', account
+      date: today, op_type: 'Mid-Day-2', account, user
     })
     md2Total.value = res.total || 0
     md2Ledger.value = res.cash_ledger_balance || 0
@@ -988,7 +1001,7 @@ async function refreshAll() {
   // Fetch Closing
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cahier_totals', {
-      date: today, op_type: 'Closing', account
+      date: today, op_type: 'Closing', account, user
     })
     closingTotal.value = res.total || 0
     if (!isToday.value) {
