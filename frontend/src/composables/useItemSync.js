@@ -1,35 +1,38 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
-import { refreshItemCache, useItemCache } from '../services/itemCache.js'
+import { frappeGet } from '../api.js'
+import { patchItemInCache, useItemCache } from '../services/itemCache.js'
 
 const { lastParams } = useItemCache()
 
 let _handler = null
 let _debounceTimer = null
 
-function _scheduleRefresh() {
-  clearTimeout(_debounceTimer)
-  _debounceTimer = setTimeout(async () => {
-    const { searchType, priceList, warehouse } = lastParams.value
-    console.log('[useItemSync] Item list_update — refreshing item cache')
-    try {
-      await refreshItemCache(searchType || 'Sales', priceList, warehouse)
-      window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
-    } catch (e) {
-      console.warn('[useItemSync] cache refresh failed:', e)
-    }
-  }, 1000)
+async function _patchItem(itemCode) {
+  const { searchType, priceList, warehouse } = lastParams.value
+  const params = { item_code: itemCode, search_type: searchType || 'Sales' }
+  if (priceList) params.price_list = priceList
+  if (warehouse) params.warehouse = warehouse
+
+  console.log('[useItemSync] patching cache for item:', itemCode)
+  try {
+    const result = await frappeGet('ssplbilling.api.itemsearch_api.get_single_item_detailed', params)
+    // frappeGet returns json.message ?? json. When Python returns None, result = {message:null}
+    // so check for item_code presence to detect "deleted / filtered out"
+    patchItemInCache(itemCode, result?.item_code ? result : null)
+    window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+  } catch (e) {
+    console.warn('[useItemSync] patch failed:', e)
+  }
 }
 
 export function initItemSync() {
   const socket = getFrappeSocket()
-
-  // Join the doctype:Item room so Frappe's built-in list_update events reach us.
   socket.emit('doctype_subscribe', 'Item')
 
-  // list_update is sent automatically by Frappe on every Item save/delete.
-  // No custom Python hook needed — this is already confirmed to arrive.
   _handler = (data) => {
-    if (data?.doctype === 'Item') _scheduleRefresh()
+    if (data?.doctype !== 'Item' || !data.name) return
+    clearTimeout(_debounceTimer)
+    _debounceTimer = setTimeout(() => _patchItem(data.name), 500)
   }
   socket.on('list_update', _handler)
   console.log('[useItemSync] subscribed to doctype:Item, listening for list_update')

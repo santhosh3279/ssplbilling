@@ -79,6 +79,25 @@ export async function refreshDiscountRuleCache() {
 }
 
 /**
+ * Patch a single item in the cache without a full refresh.
+ * Pass null as newData to remove the item (deleted / disabled / filtered out).
+ */
+export function patchItemInCache(itemCode, newData) {
+  const idx = items.value.findIndex(i => i.item_code === itemCode)
+  if (newData === null) {
+    if (idx !== -1) items.value.splice(idx, 1)
+  } else if (idx !== -1) {
+    items.value.splice(idx, 1, newData)
+  } else {
+    // New item — insert maintaining item_name alphabetical order
+    const insertAt = items.value.findIndex(i => (i.item_name || '') > (newData.item_name || ''))
+    if (insertAt === -1) items.value.push(newData)
+    else items.value.splice(insertAt, 0, newData)
+  }
+  lastSync.value = Date.now()
+}
+
+/**
  * Look up an item by code or barcode in the local cache.
  * If found via barcode, returns the item with the barcode's specific UOM.
  */
@@ -166,6 +185,7 @@ export function useItemCache() {
     syncLoading,
     lastParams,
     refreshItemCache,
+    patchItemInCache,
     lookupItemInCache,
     searchItemsInCache,
     // Discount Rules (custom doctype)

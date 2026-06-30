@@ -68,6 +68,101 @@ def save_pricing_rule(name, discount_percentage=None, rate=None, discount_amount
 
 
 @frappe.whitelist()
+def get_single_item_detailed(item_code, search_type="Sales", price_list=None, warehouse=None):
+	"""Return one item with the same shape as get_all_items_detailed.
+	Returns None if the item is deleted, disabled, or excluded by search_type."""
+	base_filters = {"name": item_code, "disabled": 0}
+	if search_type == "Sales":
+		base_filters["is_sales_item"] = 1
+	elif search_type == "Purchase":
+		base_filters["is_purchase_item"] = 1
+	elif search_type == "Stock":
+		base_filters["is_stock_item"] = 1
+
+	rows = frappe.get_all(
+		"Item",
+		filters=base_filters,
+		fields=["item_code", "item_name", "stock_uom as uom", "standard_rate as rate",
+				"valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock"],
+	)
+	if not rows:
+		return None
+
+	item = rows[0]
+	item["stock"] = 0.0
+	item["redis_stock"] = 0.0
+	item["price"] = float(item.rate or 0)
+	item["valuation_rate"] = float(item.valuation_rate or item.rate or 0)
+	item["price_lists"] = []
+	item["uom_price_lists"] = {}
+	item["warehouse_stock"] = []
+
+	if not price_list:
+		price_list = "Standard Selling" if search_type == "Sales" else "Standard Buying"
+
+	# Prices
+	pl_names = [pl.name for pl in frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])]
+	for r in frappe.get_all(
+		"Item Price",
+		filters={"item_code": item_code, "price_list": ["in", pl_names]},
+		fields=["price_list", "price_list_rate", "uom"],
+	):
+		rate_val = float(r.price_list_rate or 0)
+		if r.uom:
+			item["uom_price_lists"].setdefault(r.price_list, {})[r.uom] = rate_val
+		else:
+			if r.price_list == price_list:
+				item["price"] = rate_val
+			item["price_lists"].append({"name": r.price_list, "rate": rate_val})
+
+	# Stock
+	bin_filters = {"item_code": item_code}
+	if warehouse:
+		bin_filters["warehouse"] = warehouse
+	draft_qtys = get_draft_invoice_qtys_batch(warehouse)
+	for b in frappe.get_all("Bin", filters=bin_filters, fields=["warehouse", "actual_qty", "valuation_rate"]):
+		draft = draft_qtys.get((item_code, b.warehouse), 0.0)
+		qty = float(b.actual_qty or 0) - draft
+		item["stock"] += qty
+		item["warehouse_stock"].append({"warehouse": b.warehouse, "qty": qty})
+		if b.valuation_rate:
+			item["valuation_rate"] = float(b.valuation_rate)
+	for (ic, _wh), dq in draft_qtys.items():
+		if ic == item_code:
+			item["redis_stock"] += dq
+
+	# Tax rate
+	today = frappe.utils.today()
+	item["tax_rate"] = 0.0
+	for row in frappe.get_all(
+		"Item Tax",
+		filters={"parent": item_code, "parenttype": "Item"},
+		fields=["item_tax_template", "valid_from"],
+		order_by="valid_from desc",
+	):
+		if row.item_tax_template and (not row.valid_from or str(row.valid_from) <= today):
+			details = frappe.get_all("Item Tax Template Detail", filters={"parent": row.item_tax_template}, fields=["tax_rate"])
+			item["tax_rate"] = sum(float(d.tax_rate or 0) for d in details) / 2
+			break
+
+	# UOM conversions
+	item["uoms"] = [
+		{"uom": u.uom, "conversion_factor": float(u.conversion_factor or 1)}
+		for u in frappe.get_all("UOM Conversion Detail", filters={"parent": item_code}, fields=["uom", "conversion_factor"])
+	]
+
+	# Barcodes
+	bc_rows = frappe.get_all("Item Barcode", filters={"parent": item_code}, fields=["barcode", "uom"])
+	item["barcodes_detailed"] = [{"barcode": b.barcode, "uom": b.uom or item.uom} for b in bc_rows]
+	item["barcodes"] = ",".join(b["barcode"] for b in item["barcodes_detailed"])
+
+	# Suppliers
+	item["suppliers"] = [s.supplier for s in frappe.get_all("Item Supplier", filters={"parent": item_code}, fields=["supplier"])]
+
+	return item
+
+
+@frappe.whitelist()
 def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None):
 	"""Fetch all items with price, stock, and ALL price lists in bulk for local caching."""
 	filters = {"disabled": 0}
