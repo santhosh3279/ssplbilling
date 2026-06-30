@@ -1,4 +1,5 @@
 import frappe
+from frappe.realtime import get_doctype_room
 
 # Fields whose changes are relevant to the frontend item cache
 _WATCHED_FIELDS = (
@@ -34,6 +35,7 @@ def on_item_save(doc, method):
 	frappe.publish_realtime(
 		event="item_cache_invalidated",
 		message={"item_code": doc.item_code, "action": "save"},
+		room=get_doctype_room("Item"),
 		after_commit=True,
 	)
 
@@ -43,5 +45,6 @@ def on_item_trash(doc, method):
 	frappe.publish_realtime(
 		event="item_cache_invalidated",
 		message={"item_code": doc.item_code, "action": "delete"},
+		room=get_doctype_room("Item"),
 		after_commit=True,
 	)

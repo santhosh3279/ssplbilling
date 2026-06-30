@@ -22,9 +22,14 @@ function _scheduleRefresh() {
 
 export function initItemSync() {
   const socket = getFrappeSocket()
+
+  // Join the server-side doctype room so the Python hook can target us directly,
+  // bypassing the System-User-only "all" room.
+  socket.emit('doctype_subscribe', 'Item')
+
   _handler = () => _scheduleRefresh()
   socket.on('item_cache_invalidated', _handler)
-  console.log('[useItemSync] listening for item_cache_invalidated')
+  console.log('[useItemSync] subscribed to Item doctype room, listening for item_cache_invalidated')
 }
 
 export function destroyItemSync() {
