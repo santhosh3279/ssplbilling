@@ -306,6 +306,9 @@ import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
+// Cache metadata for the lifetime of the page — item groups, UOMs, tax templates rarely change
+let _metadataCache = null
+
 const props = defineProps({
   show: Boolean,
   editItemCode: { type: String, default: '' },  // when set → edit mode
@@ -505,18 +508,18 @@ const canSubmit = computed(() => {
 
 async function loadMetadata() {
   try {
-    const data = await fetchItemCreationMetadata()
+    if (!_metadataCache) _metadataCache = await fetchItemCreationMetadata()
+    const data = _metadataCache
     metadata.value = data
-    
-    // Default group if available
+
     if (data.item_groups?.length && !form.value.item_group) {
       const allGroup = data.item_groups.find(g => g.name === 'All Item Groups')
       form.value.item_group = allGroup ? allGroup.name : data.item_groups[0].name
     }
-    
+
     if (data.naming_series?.length) {
       selectedSeries.value = data.naming_series[0]
-      generateBarcode()
+      if (!isEditMode.value) generateBarcode()
     }
   } catch (e) {
     console.warn('Failed to load item metadata', e)
