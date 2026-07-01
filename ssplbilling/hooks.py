@@ -176,13 +176,33 @@ doc_events = {
 		"before_insert": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"before_save": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"on_update": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
-		"on_submit": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
-		"on_cancel": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+		"on_submit": [
+			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+		],
+		"on_cancel": [
+			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+		],
 		"on_trash": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 	},
 	"Purchase Invoice": {
-		"on_submit": "ssplbilling.api.stock_utils.publish_stock_updates",
-		"on_cancel": "ssplbilling.api.stock_utils.publish_stock_updates",
+		"on_submit": [
+			"ssplbilling.api.stock_utils.publish_stock_updates",
+			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+		],
+		"on_cancel": [
+			"ssplbilling.api.stock_utils.publish_stock_updates",
+			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+		],
+	},
+	"Payment Entry": {
+		"on_submit": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+		"on_cancel": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+	},
+	"Journal Entry": {
+		"on_submit": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+		"on_cancel": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 	},
 	"Invoice Incentive": {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",

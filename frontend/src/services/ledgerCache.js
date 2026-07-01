@@ -88,6 +88,27 @@ export async function refreshLedgerCache(force = false) {
   }
 }
 
+// Debounce the (full-array) localStorage write so a burst of realtime balance
+// patches doesn't stringify the whole ledger list on every event.
+let _persistTimer = null
+function _schedulePersist() {
+  clearTimeout(_persistTimer)
+  _persistTimer = setTimeout(() => saveToStorage(ledgers.value, partyLinks.value), 1000)
+}
+
+/**
+ * Apply a realtime ledger_balance_update event to the cache: patches the party/account's
+ * balance in place. Ignored if that ledger isn't cached yet (reconciled on next full refresh).
+ */
+export function updateLedgerBalanceInCache(name, balance) {
+  if (!name) return
+  const idx = ledgers.value.findIndex(l => l.name === name)
+  if (idx === -1) return
+  ledgers.value.splice(idx, 1, { ...ledgers.value[idx], balance: Number(balance) || 0 })
+  lastSync.value = Date.now()
+  _schedulePersist()
+}
+
 export function useLedgerCache() {
   return {
     ledgers,
@@ -95,6 +116,7 @@ export function useLedgerCache() {
     lastSync,
     syncLoading,
     refreshLedgerCache,
+    updateLedgerBalanceInCache,
     searchLedgersInCache
   }
 }
