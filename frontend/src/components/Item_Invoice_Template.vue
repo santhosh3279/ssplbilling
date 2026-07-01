@@ -277,7 +277,12 @@
               <!-- #row slot wraps the entire <tr> so consumers can add :class/:ref/@click on the row -->
               <template v-for="(item, idx) in items" :key="idx">
                 <slot name="row" :item="item" :index="idx" :formatQty="formatQty" :format="format">
-                  <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50">
+                   <tr 
+                    class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50 focus:bg-[var(--color-focus)] outline-none"
+                    tabindex="0"
+                    @keydown.delete.prevent="$emit('delete-item', idx)"
+                    @keydown.backspace.prevent="$emit('delete-item', idx)"
+                  >
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ idx + 1 }}</td>
                     <td class="px-2 py-1 border-r border(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
@@ -293,7 +298,12 @@
                     </td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ format(item.amount) }}</td>
                     <td class="px-2 py-1 text-center">
-                      <button class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="$emit('delete-item', idx)">&times;</button>
+                      <button 
+                        class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] focus:outline-none" 
+                        @click="$emit('delete-item', idx)"
+                        @keydown.delete.prevent="$emit('delete-item', idx)"
+                        @keydown.backspace.prevent="$emit('delete-item', idx)"
+                      >&times;</button>
                     </td>
                   </tr>
                 </slot>
