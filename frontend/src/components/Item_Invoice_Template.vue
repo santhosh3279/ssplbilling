@@ -63,7 +63,7 @@
           </div>
           <button
             @click="$emit('toggle-draft-only')"
-            class="w-full rounded-xl border py-1.5 text-[10px] font-bold uppercase transition-all"
+            class="w-full rounded-xl border py-1.5 text-[15px] font-bold uppercase transition-all"
             :class="draftOnly ? 'bg-[var(--color-warning)]/40 border-[var(--color-warning)] text-[var(--color-warning)] shadow-sm' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]'"
           >
             {{ draftOnly ? 'Drafts Only' : 'All Bills' }}
