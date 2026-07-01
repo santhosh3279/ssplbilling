@@ -175,26 +175,61 @@ doc_events = {
 	"Sales Invoice": {
 		"before_insert": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"before_save": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
-		"on_update": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_update": [
+			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
+		],
 		"on_submit": [
 			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
 		"on_cancel": [
 			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
-		"on_trash": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+		"on_trash": [
+			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
+		],
 	},
 	"Purchase Invoice": {
+		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_submit": [
 			"ssplbilling.api.stock_utils.publish_stock_updates",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
 		"on_cancel": [
 			"ssplbilling.api.stock_utils.publish_stock_updates",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
+		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+	},
+	"Sales Order": {
+		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_submit": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_cancel": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+	},
+	"Purchase Order": {
+		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_submit": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_cancel": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+	},
+	"Quotation": {
+		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_submit": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_cancel": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 	},
 	"Payment Entry": {
 		"on_submit": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",

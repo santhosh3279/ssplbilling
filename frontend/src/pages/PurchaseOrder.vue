@@ -527,6 +527,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -1850,11 +1851,16 @@ onMounted(() => {
   fetchAllowedSeries('Purchase Order')
   showSeriesModal.value = true
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) refreshItemCache('Purchase', priceList.value, warehouse.value)
+
+  _billPanelCleanup = onBillPanelUpdate('Purchase Order', sidebarSeries, fetchRecentOrders)
 })
+
+let _billPanelCleanup = null
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
   releaseLock()
+  _billPanelCleanup?.()
 })
 </script>
 

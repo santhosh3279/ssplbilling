@@ -75,6 +75,7 @@ import { useLayout } from './composables/useLayout';
 import { useMqtt } from './composables/useMqtt';
 import { initItemSync, destroyItemSync } from './composables/useItemSync';
 import { initLedgerSync, destroyLedgerSync } from './composables/useLedgerSync';
+import { initBillPanelSync, destroyBillPanelSync } from './composables/useBillPanelSync';
 import { initFrappeSocket } from './services/frappeSocket';
 
 const showCalculator = ref(false);
@@ -198,6 +199,7 @@ onMounted(async () => {
   connectMqtt();
   initItemSync();
   initLedgerSync();
+  initBillPanelSync();
   window.addEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.addEventListener('wb-global-command-line-toggle', toggleCommandLine);
   window.addEventListener('wb-global-keyboard-toggle', toggleKeyboard);
@@ -233,6 +235,7 @@ onMounted(async () => {
 onUnmounted(() => {
   destroyItemSync();
   destroyLedgerSync();
+  destroyBillPanelSync();
   window.removeEventListener('wb-global-calculator-toggle', toggleCalculator);
   window.removeEventListener('wb-global-command-line-toggle', toggleCommandLine);
   window.removeEventListener('wb-global-keyboard-toggle', toggleKeyboard);
