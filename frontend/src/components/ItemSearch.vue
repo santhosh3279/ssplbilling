@@ -570,12 +570,17 @@ watch(selectedIdx, async (idx) => {
   }
 })
 
-watch(() => props.show, (newVal) => {
+watch(() => props.show, async (newVal) => {
   if (newVal) {
     query.value = ''
     isDecrypted.value = false
     loadCipherMap()
     focus()
+    // Re-scope/refresh the shared cache to THIS modal's warehouse + price list.
+    // The global cache may have been populated warehouse-less (e.g. by Dashboard),
+    // which shows all-warehouse aggregate stock. preloadItems() only refetches when
+    // the scope actually differs, so same-scope opens stay instant.
+    await preloadItems()
     if (props.initialQuery) {
       const idx = results.value.findIndex(i => i.item_code === props.initialQuery)
       if (idx >= 0) {
