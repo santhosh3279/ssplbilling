@@ -180,6 +180,10 @@ doc_events = {
 		"on_cancel": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 		"on_trash": "ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 	},
+	"Purchase Invoice": {
+		"on_submit": "ssplbilling.api.stock_utils.publish_stock_updates",
+		"on_cancel": "ssplbilling.api.stock_utils.publish_stock_updates",
+	},
 	"Invoice Incentive": {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",
 		"on_cancel": "ssplbilling.incentive_utils.reverse_incentive_points",

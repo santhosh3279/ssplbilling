@@ -1,11 +1,12 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { frappeGet } from '../api.js'
-import { patchItemInCache, updateItemPriceInCache, useItemCache } from '../services/itemCache.js'
+import { patchItemInCache, updateItemPriceInCache, updateItemStockInCache, useItemCache } from '../services/itemCache.js'
 
 const { lastParams } = useItemCache()
 
 let _handler = null
 let _priceHandler = null
+let _stockHandler = null
 let _debounceTimer = null
 const pendingPatches = new Set()
 
@@ -63,8 +64,16 @@ export function initItemSync() {
   }
   socket.on('item_price_update', _priceHandler)
 
+  _stockHandler = (data) => {
+    if (!data?.item_code || !data?.warehouse) return
+    console.log('[useItemSync] received stock_update:', data)
+    updateItemStockInCache(data.item_code, data.warehouse, data.qty, data.redis_stock)
+    window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+  }
+  socket.on('stock_update', _stockHandler)
+
   document.addEventListener('visibilitychange', _handleVisibilityChange)
-  console.log('[useItemSync] subscribed to doctype:Item, listening for list_update and item_price_update')
+  console.log('[useItemSync] subscribed to doctype:Item, listening for list_update, item_price_update and stock_update')
 }
 
 export function destroyItemSync() {
@@ -78,6 +87,10 @@ export function destroyItemSync() {
   if (_priceHandler) {
     socket.off('item_price_update', _priceHandler)
     _priceHandler = null
+  }
+  if (_stockHandler) {
+    socket.off('stock_update', _stockHandler)
+    _stockHandler = null
   }
   document.removeEventListener('visibilitychange', _handleVisibilityChange)
 }

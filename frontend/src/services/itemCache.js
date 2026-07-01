@@ -236,6 +236,35 @@ export function updateItemPriceInCache(itemCode, priceList, rate, uom) {
   lastSync.value = Date.now()
 }
 
+/**
+ * Apply a realtime stock_update event to the cache: patches the affected warehouse's
+ * qty, recomputes the item's total stock, and updates its redis (draft) stock figure.
+ * Ignored if the cache is currently scoped to a different single warehouse.
+ */
+export function updateItemStockInCache(itemCode, warehouse, qty, redisStock) {
+  const { warehouse: activeWarehouse } = lastParams.value
+  if (activeWarehouse && activeWarehouse !== warehouse) return
+
+  const idx = items.value.findIndex(i => i.item_code === itemCode)
+  if (idx === -1) return
+
+  const item = { ...items.value[idx] }
+  const warehouseStock = [...(item.warehouse_stock || [])]
+  const whIdx = warehouseStock.findIndex(w => w.warehouse === warehouse)
+  if (whIdx !== -1) {
+    warehouseStock[whIdx] = { ...warehouseStock[whIdx], qty }
+  } else {
+    warehouseStock.push({ warehouse, qty })
+  }
+
+  item.warehouse_stock = warehouseStock
+  item.stock = warehouseStock.reduce((sum, w) => sum + (w.qty || 0), 0)
+  item.redis_stock = redisStock
+
+  items.value.splice(idx, 1, item)
+  lastSync.value = Date.now()
+}
+
 export function useItemCache() {
   return {
     items,
@@ -247,6 +276,7 @@ export function useItemCache() {
     lookupItemInCache,
     searchItemsInCache,
     updateItemPriceInCache,
+    updateItemStockInCache,
     // Discount Rules (custom doctype)
     discountRules,
     refreshDiscountRuleCache,
