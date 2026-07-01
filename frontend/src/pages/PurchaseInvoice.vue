@@ -737,95 +737,13 @@
       @close="showBarcodeModal = false"
     />
 
-    <!-- History Modal -->
-    <div v-if="showHistoryModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showHistoryModal = false">
-      <div class="flex h-[80vh] w-[80vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
-        <div class="border-b border-[var(--color-border)] px-6 py-4 flex justify-between items-center bg-[var(--color-surface-raised)]">
-          <div class="flex items-center gap-6">
-            <div>
-              <div class="text-2xl font-bold">Purchase History: {{ supplierName }}</div>
-              <div class="text-sm text-[var(--color-text-muted)]">{{ historyViewMode === 'invoice' ? supplierPurchaseHistory.length : supplierHistoryItemWise.length }} {{ historyViewMode === 'invoice' ? 'transactions' : 'unique items' }} previously purchased</div>
-            </div>
-            <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-0.5 ml-4">
-              <button 
-                @click="historyViewMode = 'invoice'"
-                class="px-3 py-1 text-xs font-bold uppercase rounded transition-all"
-                :class="historyViewMode === 'invoice' ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
-              >
-                Invoice-wise
-              </button>
-              <button 
-                @click="historyViewMode = 'item'"
-                class="px-3 py-1 text-xs font-bold uppercase rounded transition-all"
-                :class="historyViewMode === 'item' ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
-              >
-                Item-wise
-              </button>
-            </div>
-          </div>
-          <button @click="showHistoryModal = false" class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-          <table class="w-full border-collapse">
-            <thead class="sticky top-0 bg-[var(--color-surface-raised)] shadow-sm">
-              <!-- Invoice-wise Header -->
-              <tr v-if="historyViewMode === 'invoice'" class="text-left text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
-                <th class="px-4 py-2">Date</th>
-                <th class="px-4 py-2">Item Code</th>
-                <th class="px-4 py-2">Item Name</th>
-                <th class="px-4 py-2">Barcodes</th>
-                <th class="px-4 py-2 text-right">Qty</th>
-                <th class="px-4 py-2 text-right">Rate</th>
-                <th class="px-4 py-2">Invoice</th>
-              </tr>
-              <!-- Item-wise Header -->
-              <tr v-else class="text-left text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
-                <th class="px-4 py-2">Item Code</th>
-                <th class="px-4 py-2">Item Name</th>
-                <th class="px-4 py-2">Barcodes</th>
-                <th class="px-4 py-2 text-right">Total Qty</th>
-                <th class="px-4 py-2 text-right">Last Rate</th>
-                <th class="px-4 py-2">Last Date</th>
-                <th class="px-4 py-2">Last Invoice</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--color-border)]">
-              <!-- Invoice-wise Rows -->
-              <template v-if="historyViewMode === 'invoice'">
-                <tr v-for="(h, idx) in supplierPurchaseHistory" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
-                  <td class="px-4 py-3 font-mono text-sm">{{ h.date }}</td>
-                  <td class="px-4 py-3 font-mono font-bold text-[var(--color-highlight)]">{{ h.item_code }}</td>
-                  <td class="px-4 py-3 text-lg font-medium">{{ h.item_name }}</td>
-                  <td class="px-4 py-3 font-mono text-xs text-[var(--color-text-muted)]">{{ h.barcodes }}</td>
-                  <td class="px-4 py-3 text-right font-bold text-xl">{{ h.qty }}</td>
-                  <td class="px-4 py-3 text-right font-mono text-lg text-[var(--color-warning)]">{{ h.rate.toFixed(2) }}</td>
-                  <td class="px-4 py-3 text-sm text-[var(--color-info)]">{{ h.name }}</td>
-                </tr>
-              </template>
-              <!-- Item-wise Rows -->
-              <template v-else>
-                <tr v-for="(h, idx) in supplierHistoryItemWise" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
-                  <td class="px-4 py-3 font-mono font-bold text-[var(--color-highlight)]">{{ h.item_code }}</td>
-                  <td class="px-4 py-3 text-lg font-medium">{{ h.item_name }}</td>
-                  <td class="px-4 py-3 font-mono text-xs text-[var(--color-text-muted)]">{{ h.barcodes }}</td>
-                  <td class="px-4 py-3 text-right font-bold text-xl">{{ h.total_qty }}</td>
-                  <td class="px-4 py-3 text-right font-mono text-lg text-[var(--color-warning)]">{{ h.last_rate.toFixed(2) }}</td>
-                  <td class="px-4 py-3 font-mono text-sm">{{ h.last_date }}</td>
-                  <td class="px-4 py-3 text-sm text-[var(--color-info)]">{{ h.last_invoice }}</td>
-                </tr>
-              </template>
-              <!-- Empty State -->
-              <tr v-if="historyViewMode === 'invoice' ? !supplierPurchaseHistory.length : !supplierHistoryItemWise.length">
-                <td colspan="7" class="px-4 py-12 text-center text-[var(--color-text-muted)] italic">No history available for this supplier</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="border-t border-[var(--color-border)] px-6 py-3 bg-[var(--color-surface-raised)] text-right">
-          <button @click="showHistoryModal = false" class="rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] px-6 py-2 font-bold uppercase tracking-wider hover:bg-[var(--color-surface-raised)] transition-all">Close</button>
-        </div>
-      </div>
-    </div>
+    <!-- Purchase-history modal (supplier) -->
+    <PartyHistoryModal
+      v-model:show="showHistoryModal"
+      :party-name="supplierName"
+      party-noun="supplier"
+      :history="supplierPurchaseHistory"
+    />
 
   </div>
 </template>
@@ -836,6 +754,7 @@ import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost, linkSupplierToItems } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
+import PartyHistoryModal from '../components/PartyHistoryModal.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
@@ -941,27 +860,6 @@ const showClearWarning = ref(false)
 const showExitWarning = ref(false)
 const supplierInitialQuery = ref('')
 const showHistoryModal = ref(false)
-const historyViewMode = ref('item') // 'invoice' or 'item'
-
-const supplierHistoryItemWise = computed(() => {
-  const map = {}
-  supplierPurchaseHistory.value.forEach(h => {
-    if (!map[h.item_code]) {
-      map[h.item_code] = {
-        item_code: h.item_code,
-        item_name: h.item_name,
-        barcodes: h.barcodes,
-        total_qty: 0,
-        last_rate: h.rate,
-        last_date: h.date,
-        last_invoice: h.name,
-      }
-    }
-    const entry = map[h.item_code]
-    entry.total_qty += h.qty
-  })
-  return Object.values(map)
-})
 const invoiceTemplateRef = ref(null)
 const priceListSelectRef = ref(null)
 const taxTemplateRef = ref(null)
