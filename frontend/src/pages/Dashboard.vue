@@ -457,8 +457,8 @@ function handleFullscreenChange() {
 
 
 
-const { refreshItemCache } = useItemCache()
-const { refreshLedgerCache } = useLedgerCache()
+const { items: cachedItems, lastSync: itemsLastSync, refreshItemCache } = useItemCache()
+const { ledgers: cachedLedgers, lastSync: ledgersLastSync, refreshLedgerCache } = useLedgerCache()
 const { user: currentUser } = session
 
 // ==================== PERMISSIONS & ROLES ====================
@@ -690,6 +690,11 @@ const systemSettings = ref(null)
 
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
+const ALLOWED_SERIES_CACHE_KEY = 'wb-allowed-series-v1'
+const NAMING_SERIES_TS_KEY = 'wb-naming-series-ts-v1'
+const OPENING_CASH_DATE_KEY = 'wb-opening-box-cash-date'
+const GENERIC_CACHE_TTL = 30 * 60 * 1000 // 30 mins — series / naming series
+const ITEM_CACHE_TTL = 5 * 60 * 1000 // 5 mins — items / ledgers freshness window
 
 
 
@@ -777,14 +782,26 @@ const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 
 async function syncSettings() {
   localStorage.removeItem(SETTINGS_CACHE_KEY)
-  await fetchSettings(selectedUser.value)
+  // force=true bypasses the series / opening-cash / naming-series caches too.
+  await fetchSettings(selectedUser.value, true)
 }
 
 async function fetchSettings(user = null, force = false) {
   const targetUser = user || session.user.value
-  // 1. Fetch allowed series for this user
+  // 1. Fetch allowed series for this user — cached per user with TTL.
+  //    Always rehydrate reactive state (even on cache hit) so a page reload
+  //    doesn't leave the series dropdown empty.
   try {
-    const d = await dashboardApi.getAllowedSeries(targetUser)
+    let d = null
+    const cached = JSON.parse(localStorage.getItem(ALLOWED_SERIES_CACHE_KEY) || 'null')
+    const cacheValid = !force && cached && cached.user === targetUser &&
+      (Date.now() - cached.ts) < GENERIC_CACHE_TTL
+    if (cacheValid) {
+      d = cached.data
+    } else {
+      d = await dashboardApi.getAllowedSeries(targetUser)
+      localStorage.setItem(ALLOWED_SERIES_CACHE_KEY, JSON.stringify({ data: d, user: targetUser, ts: Date.now() }))
+    }
     availableSeries.value = d.allowed_series || []
     userAllowedString.value = d.user_allowed_string || ''
     if (availableSeries.value.length && !availableSeries.value.includes(defaultSeries.value)) {
@@ -865,21 +882,32 @@ async function fetchSettings(user = null, force = false) {
     console.warn('[Dashboard] getBillingSettings failed:', e)
   }
 
-  // 3. Sync today's opening box cash
+  // 3. Sync today's opening box cash — refetch only once per calendar day
+  //    (date-keyed, NOT TTL: a stale value here would show yesterday's opening).
   try {
     const today = new Date().toLocaleDateString('en-CA')
-    const openingRes = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
-    if (openingRes) {
-      const boxCash = String(openingRes.total || 0)
-      localStorage.setItem('opening_cash', boxCash)
-      localStorage.setItem('wb-opening-box-cash', boxCash)
+    const haveToday = localStorage.getItem(OPENING_CASH_DATE_KEY) === today &&
+      localStorage.getItem('wb-opening-box-cash') != null
+    if (force || !haveToday) {
+      const openingRes = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
+      if (openingRes) {
+        const boxCash = String(openingRes.total || 0)
+        localStorage.setItem('opening_cash', boxCash)
+        localStorage.setItem('wb-opening-box-cash', boxCash)
+        localStorage.setItem(OPENING_CASH_DATE_KEY, today)
+      }
     }
   } catch (e) {
     console.warn('[Dashboard] opening box cash sync failed:', e)
   }
 
-  // 4. Fetch and store all naming series for the requested DocTypes
+  // 4. Fetch and store all naming series for the requested DocTypes.
+  //    Rarely changes → refetch on TTL only; consumers read the wb-series-* LS keys.
   try {
+    const ts = Number(localStorage.getItem(NAMING_SERIES_TS_KEY) || 0)
+    if (!force && (Date.now() - ts) < GENERIC_CACHE_TTL && localStorage.getItem('wb-all-naming-series')) {
+      // Cached naming series still fresh — skip the network call.
+    } else {
     const seriesMap = await dashboardApi.getAllNamingSeries()
     if (seriesMap) {
       // Store individual lists and a flattened list of all unique prefixes
@@ -897,6 +925,8 @@ async function fetchSettings(user = null, force = false) {
       })
       // Flattened array of all unique prefixes as requested
       localStorage.setItem('wb-all-naming-series', JSON.stringify([...allPrefixes]))
+      localStorage.setItem(NAMING_SERIES_TS_KEY, String(Date.now()))
+    }
     }
   } catch (e) {
     console.warn('[Dashboard] getAllNamingSeries failed:', e)
@@ -958,10 +988,21 @@ onMounted(async () => {
     }
   }
 
-  fetchSettings(selectedUser.value, true)
-  refreshItemCache('Sales') // Preload items for fast entry
-  refreshLedgerCache()      // Preload ledgers for fast search
-  checkStatus()             // Retrieve MQTT server status once on load
+  // Settings/series/opening-cash/naming-series: fetch only on cache miss/expiry (see fetchSettings)
+  fetchSettings(selectedUser.value)
+  // Items: skip if already cached this session and still fresh (WebSocket keeps stock live)
+  if (!cachedItems.value.length || (Date.now() - itemsLastSync.value) > ITEM_CACHE_TTL) {
+    refreshItemCache('Sales') // Preload items for fast entry
+  }
+  // Ledgers: hydrated from localStorage at module init; refresh only if empty or stale
+  if (!cachedLedgers.value.length || (Date.now() - ledgersLastSync.value) > ITEM_CACHE_TTL) {
+    refreshLedgerCache()      // Preload ledgers for fast search
+  }
+  // MQTT is live connection health — don't persist it; poll at most once per browser session
+  if (!sessionStorage.getItem('wb-mqtt-checked')) {
+    checkStatus()             // Retrieve MQTT server status once on load
+    sessionStorage.setItem('wb-mqtt-checked', '1')
+  }
 
   timeInterval = setInterval(() => {
     now.value = new Date()
