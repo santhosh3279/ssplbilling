@@ -54,11 +54,13 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval:doc.discount_type!='X to Y product discount'",
    "fieldname": "applies_to",
    "fieldtype": "Select",
    "label": "Applies To",
+   "mandatory_depends_on": "eval:doc.discount_type!='X to Y product discount'",
    "options": "\nProduct Group\nItem Code",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "section_applies_to",

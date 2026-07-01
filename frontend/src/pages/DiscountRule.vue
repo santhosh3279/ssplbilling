@@ -999,6 +999,11 @@ async function handleSave() {
       enabled: form.value.enabled ? 1 : 0,
       recursive: form.value.recursive ? 1 : 0
     }
+    if (form.value.discount_type === 'X to Y product discount') {
+      payload.applies_to = ''
+      payload.product_group = ''
+      payload.items = []
+    }
     
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
     alert(`Discount Rule saved successfully!`)
