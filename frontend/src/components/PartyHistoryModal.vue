@@ -39,14 +39,20 @@
               <th class="px-4 py-2 text-right">Rate</th>
               <th class="px-4 py-2">Invoice</th>
             </tr>
-            <!-- Item-wise Header -->
+            <!-- Item-wise Header (Total Qty / Last Rate / Last Date are click-to-sort) -->
             <tr v-else class="text-left text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
               <th class="px-4 py-2">Item Code</th>
               <th class="px-4 py-2">Item Name</th>
               <th class="px-4 py-2">Barcodes</th>
-              <th class="px-4 py-2 text-right">Total Qty</th>
-              <th class="px-4 py-2 text-right">Last Rate</th>
-              <th class="px-4 py-2">Last Date</th>
+              <th class="px-4 py-2 text-right cursor-pointer select-none hover:text-[var(--color-text)]" @click="sortBy('total_qty')">
+                Total Qty<span v-if="sortKey === 'total_qty'" class="ml-1">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-4 py-2 text-right cursor-pointer select-none hover:text-[var(--color-text)]" @click="sortBy('last_rate')">
+                Last Rate<span v-if="sortKey === 'last_rate'" class="ml-1">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-4 py-2 cursor-pointer select-none hover:text-[var(--color-text)]" @click="sortBy('last_date')">
+                Last Date<span v-if="sortKey === 'last_date'" class="ml-1">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+              </th>
               <th class="px-4 py-2">Last Invoice</th>
             </tr>
           </thead>
@@ -65,11 +71,11 @@
             </template>
             <!-- Item-wise Rows -->
             <template v-else>
-              <tr v-for="(h, idx) in itemWise" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
+              <tr v-for="(h, idx) in sortedItemWise" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
                 <td class="px-4 py-3 font-mono font-bold text-[var(--color-highlight)]">{{ h.item_code }}</td>
                 <td class="px-4 py-3 text-lg font-medium">{{ h.item_name }}</td>
                 <td class="px-4 py-3 font-mono text-xs text-[var(--color-text-muted)]">{{ h.barcodes }}</td>
-                <td class="px-4 py-3 text-right font-bold text-xl">{{ h.total_qty }}</td>
+                <td class="px-4 py-3 text-right font-bold text-xl">{{ Number(h.total_qty).toFixed(3) }}</td>
                 <td class="px-4 py-3 text-right font-mono text-lg text-[var(--color-warning)]">{{ h.last_rate.toFixed(2) }}</td>
                 <td class="px-4 py-3 font-mono text-sm">{{ h.last_date }}</td>
                 <td class="px-4 py-3 text-sm text-[var(--color-info)]">{{ h.last_invoice }}</td>
@@ -125,6 +131,34 @@ const itemWise = computed(() => {
     map[h.item_code].total_qty += h.qty
   })
   return Object.values(map)
+})
+
+// Click-to-sort for the item-wise view. total_qty/last_rate sort numerically;
+// last_date is ISO (YYYY-MM-DD), so lexicographic order is chronological.
+const sortKey = ref(null) // 'total_qty' | 'last_rate' | 'last_date' | null
+const sortDir = ref('desc') // 'asc' | 'desc'
+
+function sortBy(key) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortDir.value = 'desc'
+  }
+}
+
+const sortedItemWise = computed(() => {
+  const rows = itemWise.value
+  if (!sortKey.value) return rows
+  const key = sortKey.value
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  const numeric = key === 'total_qty' || key === 'last_rate'
+  return [...rows].sort((a, b) => {
+    if (numeric) return ((Number(a[key]) || 0) - (Number(b[key]) || 0)) * dir
+    const av = a[key] || '',
+      bv = b[key] || ''
+    return av < bv ? -dir : av > bv ? dir : 0
+  })
 })
 
 function close() {
