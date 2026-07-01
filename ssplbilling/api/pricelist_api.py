@@ -101,11 +101,18 @@ def update_multiple_prices(item_code, prices):
 		prices = json.loads(prices)
 
 	updated = []
+	realtime_events = []
 	for p in prices:
 		# Update base rate if changed
 		if float(p.get("rate", 0)) != float(p.get("original_rate", p.get("rate", 0))):
 			name = update_item_price(item_code, p["price_list"], p["rate"], uom="")
 			updated.append(name)
+			realtime_events.append({
+				"item_code": item_code,
+				"price_list": p["price_list"],
+				"rate": float(p["rate"]),
+				"uom": "",
+			})
 
 		# Update per-UOM rates
 		for uom, rate in (p.get("uom_rates") or {}).items():
@@ -113,6 +120,17 @@ def update_multiple_prices(item_code, prices):
 			if float(rate) != float(orig):
 				name = update_item_price(item_code, p["price_list"], rate, uom=uom)
 				updated.append(name)
+				realtime_events.append({
+					"item_code": item_code,
+					"price_list": p["price_list"],
+					"rate": float(rate),
+					"uom": uom,
+				})
+
+	# frappe.db.set_value (used in update_item_price) bypasses document events,
+	# so we publish the realtime events explicitly here after the DB write.
+	for event in realtime_events:
+		frappe.publish_realtime("item_price_update", event, after_commit=True)
 
 	return updated
 
