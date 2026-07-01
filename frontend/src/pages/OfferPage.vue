@@ -536,6 +536,7 @@ import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { encryptPrice } from '../encryption.js'
+import { initFrappeSocket } from '../services/frappeSocket.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -980,8 +981,52 @@ function handleKeyDown(event) {
   }
 }
 
+// ── Live refresh over websocket ───────────────────────────────────────────────
+// The offer page is public (guest), so the backend broadcasts offer_page_update to
+// the website room, which guest sockets join. We refresh when the changed doctype
+// affects THIS page: an Offer-Items change matching our pageaddress, or an Item
+// change whose item_code is currently shown in this offer.
+let _offerSocket = null
+let _offerHandler = null
+let _offerRefreshTimer = null
+
+function scheduleOfferRefresh() {
+  if (_offerRefreshTimer) clearTimeout(_offerRefreshTimer)
+  _offerRefreshTimer = setTimeout(() => {
+    _offerRefreshTimer = null
+    loadOffer(true) // silent refresh — no loading spinner
+  }, 800)
+}
+
+function setupOfferSocket() {
+  initFrappeSocket().then((socket) => {
+    if (!socket) return
+    _offerSocket = socket
+    _offerHandler = (data) => {
+      if (!data) return
+      const affectsThisPage =
+        (data.type === 'offer' && data.pageaddress && data.pageaddress === pageaddress) ||
+        (data.type === 'item' &&
+          data.item_code &&
+          offer.value?.items?.some((i) => i.itemcode === data.item_code))
+      if (affectsThisPage) scheduleOfferRefresh()
+    }
+    socket.on('offer_page_update', _offerHandler)
+  })
+}
+
+function teardownOfferSocket() {
+  if (_offerRefreshTimer) clearTimeout(_offerRefreshTimer)
+  if (_offerSocket && _offerHandler) {
+    _offerSocket.off('offer_page_update', _offerHandler)
+  }
+  _offerSocket = null
+  _offerHandler = null
+}
+
 onMounted(() => {
   loadOffer()
+  setupOfferSocket()
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('mousemove', resetControlsTimer)
@@ -990,6 +1035,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopTimer()
   stopSlideshow()
+  teardownOfferSocket()
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('mousemove', resetControlsTimer)

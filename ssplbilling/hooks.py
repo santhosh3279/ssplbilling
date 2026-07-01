@@ -231,6 +231,16 @@ doc_events = {
 		"on_cancel": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 	},
+	"Item": {
+		"after_insert": "ssplbilling.api.offer_sync.publish_item_offer_update",
+		"on_update": "ssplbilling.api.offer_sync.publish_item_offer_update",
+		"on_trash": "ssplbilling.api.offer_sync.publish_item_offer_update",
+	},
+	"Offer-Items": {
+		"after_insert": "ssplbilling.api.offer_sync.publish_offer_items_update",
+		"on_update": "ssplbilling.api.offer_sync.publish_offer_items_update",
+		"on_trash": "ssplbilling.api.offer_sync.publish_offer_items_update",
+	},
 	"Payment Entry": {
 		"on_submit": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 		"on_cancel": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
