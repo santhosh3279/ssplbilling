@@ -302,6 +302,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
 import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
@@ -555,10 +556,15 @@ async function handleAllocations(allocations) {
 onMounted(() => {
   window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   loadInvoices()
+  // No series filter on this desk — refresh on any Purchase Invoice change.
+  _billPanelCleanup = onBillPanelUpdate('Purchase Invoice', null, loadInvoices)
 })
+
+let _billPanelCleanup = null
 
 onUnmounted(() => {
   window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
+  _billPanelCleanup?.()
 })
 </script>
 

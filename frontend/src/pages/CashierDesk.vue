@@ -682,6 +682,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { session } from '../session'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
@@ -1595,12 +1596,17 @@ onMounted(() => {
   }
   checkDayOpening()
   window.addEventListener('keydown', handleKeydown)
+
+  _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices)
 })
+
+let _billPanelCleanup = null
 
 onUnmounted(() => {
   window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   window.removeEventListener('click', handleSeriesClickAway)
   window.removeEventListener('keydown', handleKeydown)
+  _billPanelCleanup?.()
 })
 
 // Register shortcuts
