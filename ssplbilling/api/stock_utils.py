@@ -70,16 +70,31 @@ def publish_stock_update(item_code, warehouse):
 		return
 	frappe.publish_realtime("stock_update", get_item_available_stock(item_code, warehouse), after_commit=True)
 
+def _iter_item_warehouse_pairs(doc):
+	"""Yield (item_code, warehouse) for every line on the doc AND on its pre-save
+	version. Including the pre-save rows means a line removed by a draft edit still
+	triggers a rebroadcast, so the freed stock for the removed item+warehouse is
+	pushed to clients even though it is no longer on the current doc."""
+	docs = [doc]
+	before = doc.get_doc_before_save() if hasattr(doc, "get_doc_before_save") else None
+	if before is not None:
+		docs.append(before)
+	for d in docs:
+		for row in d.get("items", []):
+			if row.item_code and row.warehouse:
+				yield row.item_code, row.warehouse
+
 def _publish_stock_updates_for_doc(doc):
-	"""Broadcast stock updates for every distinct item+warehouse row on a document."""
+	"""Broadcast stock updates for every distinct item+warehouse touched by a document,
+	spanning both its current and pre-save line items."""
 	if doc is None:
 		return
 	seen = set()
-	for row in doc.get("items", []):
-		key = (row.item_code, row.warehouse)
-		if row.item_code and row.warehouse and key not in seen:
+	for item_code, warehouse in _iter_item_warehouse_pairs(doc):
+		key = (item_code, warehouse)
+		if key not in seen:
 			seen.add(key)
-			publish_stock_update(row.item_code, row.warehouse)
+			publish_stock_update(item_code, warehouse)
 
 def publish_stock_updates(doc, method=None):
 	"""Doc event handler: broadcast live stock figures for every item on a stock document."""
