@@ -269,12 +269,133 @@
             </div>
 
             <!-- Scope / Applies To Card -->
-            <div v-if="form.discount_type !== 'X to Y product discount'" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
               <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 pb-1.5">
                 Rule Scope (Applies To)
               </h3>
               
-              <div class="flex flex-col gap-4">
+              <!-- X TO Y SCOPE TABLE -->
+              <div v-if="form.discount_type === 'X to Y product discount'" class="space-y-2">
+                <div class="flex items-center justify-between border-b border-[var(--color-border)]/30 pb-2">
+                  <span class="text-[11px] font-bold text-[var(--color-text-muted)] uppercase">X to Y Discount Scope Mapping</span>
+                  <button
+                    @click="addXtoYRow"
+                    type="button"
+                    class="rounded bg-[var(--color-info)] px-3 py-1 text-[10px] font-bold text-white hover:bg-[var(--color-info)]/90 transition"
+                  >
+                    + Add Scope Mapping
+                  </button>
+                </div>
+
+                <div class="border border-[var(--color-border)] rounded-lg overflow-x-auto">
+                  <table class="w-full text-left table-fixed">
+                    <thead>
+                      <tr class="bg-[var(--color-surface-raised)] text-[10px] uppercase font-bold text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
+                        <th class="p-2 w-[25%]">Item Code (X)</th>
+                        <th class="p-2 w-[12%]">Min Qty</th>
+                        <th class="p-2 w-[25%]">Free Item Code (Y)</th>
+                        <th class="p-2 w-[12%]">Free Qty</th>
+                        <th class="p-2 w-[16%]">Free Price</th>
+                        <th class="p-2 w-[10%] text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--color-border)]">
+                      <tr v-if="!form.x_to_y_table || !form.x_to_y_table.length">
+                        <td colspan="6" class="p-4 text-center text-xs text-[var(--color-text-muted)] italic">
+                          No X to Y rules added yet. Click "+ Add Scope Mapping" above to insert.
+                        </td>
+                      </tr>
+                      <tr v-for="(row, idx) in form.x_to_y_table" :key="idx" class="text-xs hover:bg-[var(--color-surface-raised)]/20">
+                        <td class="p-1.5 relative">
+                          <input
+                            v-model="row.item_code"
+                            @input="handleXtoYSearch(idx, 'item', row.item_code)"
+                            type="text"
+                            placeholder="Search Item X"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
+                          />
+                          <div
+                            v-if="xtoySuggestions.idx === idx && xtoySuggestions.type === 'item' && xtoySuggestions.list.length"
+                            class="absolute z-50 left-1.5 right-1.5 mt-1 max-h-40 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg divide-y divide-[var(--color-border)]/50"
+                          >
+                            <div
+                              v-for="item in xtoySuggestions.list"
+                              :key="item.item_code"
+                              @click="selectXtoYItem(idx, 'item', item)"
+                              class="p-1.5 cursor-pointer text-[11px] hover:bg-[var(--color-info)]/10"
+                            >
+                              <span class="font-mono font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
+                              <span class="text-[var(--color-text-muted)] ml-1 truncate">— {{ item.item_name }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="p-1.5">
+                          <input
+                            v-model.number="row.min_quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
+                          />
+                        </td>
+                        <td class="p-1.5 relative">
+                          <input
+                            v-model="row.free_item_code"
+                            @input="handleXtoYSearch(idx, 'free', row.free_item_code)"
+                            type="text"
+                            placeholder="Search Item Y"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
+                          />
+                          <div
+                            v-if="xtoySuggestions.idx === idx && xtoySuggestions.type === 'free' && xtoySuggestions.list.length"
+                            class="absolute z-50 left-1.5 right-1.5 mt-1 max-h-40 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg divide-y divide-[var(--color-border)]/50"
+                          >
+                            <div
+                              v-for="item in xtoySuggestions.list"
+                              :key="item.item_code"
+                              @click="selectXtoYItem(idx, 'free', item)"
+                              class="p-1.5 cursor-pointer text-[11px] hover:bg-[var(--color-info)]/10"
+                            >
+                              <span class="font-mono font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
+                              <span class="text-[var(--color-text-muted)] ml-1 truncate">— {{ item.item_name }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="p-1.5">
+                          <input
+                            v-model.number="row.free_item_quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
+                          />
+                        </td>
+                        <td class="p-1.5">
+                          <input
+                            v-model.number="row.free_item_price"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
+                          />
+                        </td>
+                        <td class="p-1.5 text-center">
+                          <button
+                            @click="removeXtoYRow(idx)"
+                            class="text-red-500 hover:text-red-700 font-bold px-2 py-1 text-sm transition"
+                            title="Delete Row"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- REGULAR APPLIES_TO LISTS -->
+              <div v-else class="flex flex-col gap-4">
                 <div class="flex flex-col gap-1.5">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
                     Applies To <span class="text-[var(--color-danger)]">*</span>
@@ -537,124 +658,9 @@
                 </div>
               </div>
 
-              <!-- X TO Y PRODUCT DISCOUNT SETTINGS -->
-              <div v-else-if="form.discount_type === 'X to Y product discount'" class="space-y-2">
-                <div class="flex items-center justify-between border-b border-[var(--color-border)]/30 pb-2">
-                  <span class="text-[11px] font-bold text-[var(--color-text-muted)] uppercase">X to Y Discount Rules</span>
-                  <button
-                    @click="addXtoYRow"
-                    type="button"
-                    class="rounded bg-[var(--color-info)] px-3 py-1 text-[10px] font-bold text-white hover:bg-[var(--color-info)]/90 transition"
-                  >
-                    + Add Rule
-                  </button>
-                </div>
-
-                <div class="border border-[var(--color-border)] rounded-lg overflow-x-auto">
-                  <table class="w-full text-left table-fixed">
-                    <thead>
-                      <tr class="bg-[var(--color-surface-raised)] text-[10px] uppercase font-bold text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
-                        <th class="p-2 w-[25%]">Item Code (X)</th>
-                        <th class="p-2 w-[12%]">Min Qty</th>
-                        <th class="p-2 w-[25%]">Free Item Code (Y)</th>
-                        <th class="p-2 w-[12%]">Free Qty</th>
-                        <th class="p-2 w-[16%]">Free Price</th>
-                        <th class="p-2 w-[10%] text-center">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--color-border)]">
-                      <tr v-if="!form.x_to_y_table || !form.x_to_y_table.length">
-                        <td colspan="6" class="p-4 text-center text-xs text-[var(--color-text-muted)] italic">
-                          No X to Y rules added yet. Click "+ Add Rule" above to insert.
-                        </td>
-                      </tr>
-                      <tr v-for="(row, idx) in form.x_to_y_table" :key="idx" class="text-xs hover:bg-[var(--color-surface-raised)]/20">
-                        <td class="p-1.5 relative">
-                          <input
-                            v-model="row.item_code"
-                            @input="handleXtoYSearch(idx, 'item', row.item_code)"
-                            type="text"
-                            placeholder="Search Item X"
-                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
-                          />
-                          <div
-                            v-if="xtoySuggestions.idx === idx && xtoySuggestions.type === 'item' && xtoySuggestions.list.length"
-                            class="absolute z-50 left-1.5 right-1.5 mt-1 max-h-40 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg divide-y divide-[var(--color-border)]/50"
-                          >
-                            <div
-                              v-for="item in xtoySuggestions.list"
-                              :key="item.item_code"
-                              @click="selectXtoYItem(idx, 'item', item)"
-                              class="p-1.5 cursor-pointer text-[11px] hover:bg-[var(--color-info)]/10"
-                            >
-                              <span class="font-mono font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
-                              <span class="text-[var(--color-text-muted)] ml-1 truncate">— {{ item.item_name }}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td class="p-1.5">
-                          <input
-                            v-model.number="row.min_quantity"
-                            type="number"
-                            min="1"
-                            step="1"
-                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
-                          />
-                        </td>
-                        <td class="p-1.5 relative">
-                          <input
-                            v-model="row.free_item_code"
-                            @input="handleXtoYSearch(idx, 'free', row.free_item_code)"
-                            type="text"
-                            placeholder="Search Item Y"
-                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
-                          />
-                          <div
-                            v-if="xtoySuggestions.idx === idx && xtoySuggestions.type === 'free' && xtoySuggestions.list.length"
-                            class="absolute z-50 left-1.5 right-1.5 mt-1 max-h-40 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg divide-y divide-[var(--color-border)]/50"
-                          >
-                            <div
-                              v-for="item in xtoySuggestions.list"
-                              :key="item.item_code"
-                              @click="selectXtoYItem(idx, 'free', item)"
-                              class="p-1.5 cursor-pointer text-[11px] hover:bg-[var(--color-info)]/10"
-                            >
-                              <span class="font-mono font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
-                              <span class="text-[var(--color-text-muted)] ml-1 truncate">— {{ item.item_name }}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td class="p-1.5">
-                          <input
-                            v-model.number="row.free_item_quantity"
-                            type="number"
-                            min="1"
-                            step="1"
-                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
-                          />
-                        </td>
-                        <td class="p-1.5">
-                          <input
-                            v-model.number="row.free_item_price"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
-                          />
-                        </td>
-                        <td class="p-1.5 text-center">
-                          <button
-                            @click="removeXtoYRow(idx)"
-                            class="text-red-500 hover:text-red-700 font-bold px-2 py-1 text-sm transition"
-                            title="Delete Row"
-                          >
-                            ✕
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <!-- X TO Y PRODUCT DISCOUNT SETTINGS INFO -->
+              <div v-else-if="form.discount_type === 'X to Y product discount'" class="text-xs text-[var(--color-text-muted)] leading-relaxed italic">
+                ℹ️ Rules and pricing for X to Y product discount are configured in the Scope Mapping section above.
               </div>
             </div>
           </div>
