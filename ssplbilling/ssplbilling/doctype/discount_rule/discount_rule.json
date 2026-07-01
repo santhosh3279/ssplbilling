@@ -22,7 +22,8 @@
   "recursive",
   "percentage_discount",
   "custom_logic_type",
-  "custom_logic_table"
+  "custom_logic_table",
+  "x_to_y_table"
  ],
  "fields": [
   {
@@ -49,7 +50,7 @@
    "fieldname": "discount_type",
    "fieldtype": "Select",
    "label": "Discount Type",
-   "options": "\nProduct Discount\nPercentage Discount\nCustom Logic",
+   "options": "\nProduct Discount\nPercentage Discount\nCustom Logic\nX to Y product discount",
    "reqd": 1
   },
   {
@@ -131,6 +132,13 @@
    "fieldtype": "Table",
    "label": "Custom Logic",
    "options": "Discount Rule Custom Logic"
+  },
+  {
+   "depends_on": "eval:doc.discount_type=='X to Y product discount'",
+   "fieldname": "x_to_y_table",
+   "fieldtype": "Table",
+   "label": "X to Y Product Discount",
+   "options": "Discount Rule X to Y"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "item_name",
+  "min_quantity",
+  "free_item_code",
+  "free_item_name",
+  "free_item_quantity",
+  "free_item_price"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "item_code.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "min_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Min Quantity",
+   "reqd": 1
+  },
+  {
+   "fieldname": "free_item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Free Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "free_item_code.item_name",
+   "fieldname": "free_item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Free Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "free_item_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Free Item Quantity",
+   "reqd": 1
+  },
+  {
+   "fieldname": "free_item_price",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Free Item Price",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "Discount Rule X to Y",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

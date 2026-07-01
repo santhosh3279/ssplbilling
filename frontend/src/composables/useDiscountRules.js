@@ -39,6 +39,10 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
 
   function _itemMatchesScope(rule, itemCode) {
     const code = (itemCode || '').toLowerCase()
+    if (rule.discount_type === 'X to Y product discount') {
+      const codes = (rule.x_to_y_table || []).map(i => (i.item_code || '').toLowerCase())
+      return codes.includes(code)
+    }
     if (rule.applies_to === 'Item Code') {
       const codes = (rule.items || []).map(i => (i.item_code || '').toLowerCase())
       return codes.includes(code)
@@ -78,6 +82,37 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
       uom:       row.uom      || cached?.uom       || '',
       rate: 0, discount: 0, tax_rate: row.tax_rate,
       warehouse: row.warehouse, deleted: false, _is_free: true,
+    }
+
+    // ── X to Y Product Discount ──────────────────────────────────────────────
+    if (rule.discount_type === 'X to Y product discount') {
+      const matchRow = (rule.x_to_y_table || []).find(
+        r => (r.item_code || '').toLowerCase() === (row.item_code || '').toLowerCase()
+      )
+      if (!matchRow) return { freeRows: [], discount: null }
+
+      const minQty = matchRow.min_quantity || 1
+      if (row.qty < minQty) return { freeRows: [], discount: null }
+
+      const freeQtyPerMin = matchRow.free_item_quantity || 1
+      const totalFree = Math.floor(row.qty / minQty) * freeQtyPerMin
+      if (totalFree <= 0) return { freeRows: [], discount: null }
+
+      const yCached = lookupItemInCache(matchRow.free_item_code)
+
+      const freeRowY = {
+        item_code: matchRow.free_item_code,
+        item_name: matchRow.free_item_name || yCached?.item_name || matchRow.free_item_code,
+        uom: yCached?.uom || 'Nos',
+        qty: totalFree,
+        rate: matchRow.free_item_price || 0.0,
+        discount: 0,
+        tax_rate: yCached?.tax_rate || row.tax_rate,
+        warehouse: row.warehouse,
+        deleted: false,
+        _is_free: true,
+      }
+      return { freeRows: [freeRowY], discount: null }
     }
 
     // ── Product Discount ────────────────────────────────────────────────────

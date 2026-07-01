@@ -547,6 +547,13 @@ def get_discount_rules():
             fields=["min_quantity", "nos", "percentage"],
             order_by="idx asc",
         ) if rule.get("discount_type") == "Custom Logic" else []
+
+        rule["x_to_y_table"] = frappe.get_all(
+            "Discount Rule X to Y",
+            filters={"parent": rule["name"]},
+            fields=["item_code", "item_name", "min_quantity", "free_item_code", "free_item_name", "free_item_quantity", "free_item_price"],
+            order_by="idx asc",
+        ) if rule.get("discount_type") == "X to Y product discount" else []
     return rules
 
 

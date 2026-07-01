@@ -36,6 +36,12 @@ def get_discount_rules(query=""):
 			order_by="idx asc",
 		)
 		rule["custom_logic_rows"] = rule["custom_logic_table"]
+		rule["x_to_y_table"] = frappe.get_all(
+			"Discount Rule X to Y",
+			filters={"parent": rule["name"]},
+			fields=["item_code", "item_name", "min_quantity", "free_item_code", "free_item_name", "free_item_quantity", "free_item_price"],
+			order_by="idx asc",
+		)
 	return rules
 
 
@@ -46,6 +52,7 @@ def get_discount_rule(name):
 	doc_dict["items"] = [d.as_dict() for d in doc.items]
 	doc_dict["custom_logic_table"] = [d.as_dict() for d in doc.custom_logic_table]
 	doc_dict["custom_logic_rows"] = doc_dict["custom_logic_table"]
+	doc_dict["x_to_y_table"] = [d.as_dict() for d in doc.x_to_y_table] if doc.get("x_to_y_table") else []
 	return doc_dict
 
 
@@ -84,6 +91,18 @@ def create_discount_rule(data):
 				"min_quantity": float(row.get("min_quantity") or 0.0),
 				"nos": float(row.get("nos") or 0.0),
 				"percentage": float(row.get("percentage") or 0.0)
+			})
+
+	if data.get("x_to_y_table"):
+		for row in data.get("x_to_y_table"):
+			doc.append("x_to_y_table", {
+				"item_code": row.get("item_code"),
+				"item_name": row.get("item_name"),
+				"min_quantity": float(row.get("min_quantity") or 0.0),
+				"free_item_code": row.get("free_item_code"),
+				"free_item_name": row.get("free_item_name"),
+				"free_item_quantity": float(row.get("free_item_quantity") or 0.0),
+				"free_item_price": float(row.get("free_item_price") or 0.0)
 			})
 
 	doc.insert(ignore_permissions=True)
@@ -136,6 +155,19 @@ def update_discount_rule(data):
 				"min_quantity": float(row.get("min_quantity") or 0.0),
 				"nos": float(row.get("nos") or 0.0),
 				"percentage": float(row.get("percentage") or 0.0)
+			})
+
+	doc.set("x_to_y_table", [])
+	if data.get("x_to_y_table"):
+		for row in data.get("x_to_y_table"):
+			doc.append("x_to_y_table", {
+				"item_code": row.get("item_code"),
+				"item_name": row.get("item_name"),
+				"min_quantity": float(row.get("min_quantity") or 0.0),
+				"free_item_code": row.get("free_item_code"),
+				"free_item_name": row.get("free_item_name"),
+				"free_item_quantity": float(row.get("free_item_quantity") or 0.0),
+				"free_item_price": float(row.get("free_item_price") or 0.0)
 			})
 
 	doc.save(ignore_permissions=True)

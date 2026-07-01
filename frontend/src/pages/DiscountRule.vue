@@ -75,6 +75,7 @@
                     'bg-[var(--color-employee)]/20 text-[var(--color-employee)]': rule.discount_type === 'Product Discount',
                     'bg-[var(--color-warning)]/20 text-[var(--color-warning)]': rule.discount_type === 'Percentage Discount',
                     'bg-[var(--color-info)]/20 text-[var(--color-info)]': rule.discount_type === 'Custom Logic',
+                    'bg-[var(--color-highlight)]/20 text-[var(--color-highlight)]': rule.discount_type === 'X to Y product discount',
                   }">{{ rule.discount_type }}</span>
 
                   <!-- Status Toggle Switch -->
@@ -241,6 +242,7 @@
                     <option value="Product Discount">Product Discount (Free Goods)</option>
                     <option value="Percentage Discount">Percentage Discount (%)</option>
                     <option value="Custom Logic">Custom Logic (Tiers)</option>
+                    <option value="X to Y product discount">X to Y Product Discount</option>
                   </select>
                 </div>
 
@@ -267,7 +269,7 @@
             </div>
 
             <!-- Scope / Applies To Card -->
-            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
+            <div v-if="form.discount_type !== 'X to Y product discount'" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
               <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 pb-1.5">
                 Rule Scope (Applies To)
               </h3>
@@ -446,7 +448,7 @@
               </div>
 
               <!-- CUSTOM LOGIC TIERED SETTINGS -->
-              <div v-else class="space-y-4">
+              <div v-else-if="form.discount_type === 'Custom Logic'" class="space-y-4 font-normal">
                 <div class="flex flex-col gap-1.5 w-full md:w-1/2">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">Custom Logic Type</label>
                   <select
@@ -534,6 +536,126 @@
                   </div>
                 </div>
               </div>
+
+              <!-- X TO Y PRODUCT DISCOUNT SETTINGS -->
+              <div v-else-if="form.discount_type === 'X to Y product discount'" class="space-y-2">
+                <div class="flex items-center justify-between border-b border-[var(--color-border)]/30 pb-2">
+                  <span class="text-[11px] font-bold text-[var(--color-text-muted)] uppercase">X to Y Discount Rules</span>
+                  <button
+                    @click="addXtoYRow"
+                    type="button"
+                    class="rounded bg-[var(--color-info)] px-3 py-1 text-[10px] font-bold text-white hover:bg-[var(--color-info)]/90 transition"
+                  >
+                    + Add Rule
+                  </button>
+                </div>
+
+                <div class="border border-[var(--color-border)] rounded-lg overflow-x-auto">
+                  <table class="w-full text-left table-fixed">
+                    <thead>
+                      <tr class="bg-[var(--color-surface-raised)] text-[10px] uppercase font-bold text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
+                        <th class="p-2 w-[25%]">Item Code (X)</th>
+                        <th class="p-2 w-[12%]">Min Qty</th>
+                        <th class="p-2 w-[25%]">Free Item Code (Y)</th>
+                        <th class="p-2 w-[12%]">Free Qty</th>
+                        <th class="p-2 w-[16%]">Free Price</th>
+                        <th class="p-2 w-[10%] text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--color-border)]">
+                      <tr v-if="!form.x_to_y_table || !form.x_to_y_table.length">
+                        <td colspan="6" class="p-4 text-center text-xs text-[var(--color-text-muted)] italic">
+                          No X to Y rules added yet. Click "+ Add Rule" above to insert.
+                        </td>
+                      </tr>
+                      <tr v-for="(row, idx) in form.x_to_y_table" :key="idx" class="text-xs hover:bg-[var(--color-surface-raised)]/20">
+                        <td class="p-1.5 relative">
+                          <input
+                            v-model="row.item_code"
+                            @input="handleXtoYSearch(idx, 'item', row.item_code)"
+                            type="text"
+                            placeholder="Search Item X"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
+                          />
+                          <div
+                            v-if="xtoySuggestions.idx === idx && xtoySuggestions.type === 'item' && xtoySuggestions.list.length"
+                            class="absolute z-50 left-1.5 right-1.5 mt-1 max-h-40 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg divide-y divide-[var(--color-border)]/50"
+                          >
+                            <div
+                              v-for="item in xtoySuggestions.list"
+                              :key="item.item_code"
+                              @click="selectXtoYItem(idx, 'item', item)"
+                              class="p-1.5 cursor-pointer text-[11px] hover:bg-[var(--color-info)]/10"
+                            >
+                              <span class="font-mono font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
+                              <span class="text-[var(--color-text-muted)] ml-1 truncate">— {{ item.item_name }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="p-1.5">
+                          <input
+                            v-model.number="row.min_quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
+                          />
+                        </td>
+                        <td class="p-1.5 relative">
+                          <input
+                            v-model="row.free_item_code"
+                            @input="handleXtoYSearch(idx, 'free', row.free_item_code)"
+                            type="text"
+                            placeholder="Search Item Y"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
+                          />
+                          <div
+                            v-if="xtoySuggestions.idx === idx && xtoySuggestions.type === 'free' && xtoySuggestions.list.length"
+                            class="absolute z-50 left-1.5 right-1.5 mt-1 max-h-40 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg divide-y divide-[var(--color-border)]/50"
+                          >
+                            <div
+                              v-for="item in xtoySuggestions.list"
+                              :key="item.item_code"
+                              @click="selectXtoYItem(idx, 'free', item)"
+                              class="p-1.5 cursor-pointer text-[11px] hover:bg-[var(--color-info)]/10"
+                            >
+                              <span class="font-mono font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
+                              <span class="text-[var(--color-text-muted)] ml-1 truncate">— {{ item.item_name }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="p-1.5">
+                          <input
+                            v-model.number="row.free_item_quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
+                          />
+                        </td>
+                        <td class="p-1.5">
+                          <input
+                            v-model.number="row.free_item_price"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono text-right"
+                          />
+                        </td>
+                        <td class="p-1.5 text-center">
+                          <button
+                            @click="removeXtoYRow(idx)"
+                            class="text-red-500 hover:text-red-700 font-bold px-2 py-1 text-sm transition"
+                            title="Delete Row"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -582,7 +704,8 @@ const emptyForm = () => ({
   percentage_discount: 0,
   custom_logic_type: 'Product',
   items: [],
-  custom_logic_table: []
+  custom_logic_table: [],
+  x_to_y_table: []
 })
 
 const form = ref(emptyForm())
@@ -659,7 +782,8 @@ async function selectRule(name) {
       percentage_discount: doc.percentage_discount || 0,
       custom_logic_type: doc.custom_logic_type || 'Product',
       items: doc.items || [],
-      custom_logic_table: doc.custom_logic_table || []
+      custom_logic_table: doc.custom_logic_table || [],
+      x_to_y_table: doc.x_to_y_table || []
     }
   } catch (e) {
     alert(e.message || 'Failed to load discount rule details')
@@ -762,6 +886,57 @@ function removeCustomLogicRow(idx) {
   form.value.custom_logic_table.splice(idx, 1)
 }
 
+const xtoySuggestions = ref({
+  idx: -1,
+  type: '', // 'item' or 'free'
+  list: []
+})
+
+function handleXtoYSearch(idx, type, query) {
+  const q = query.trim()
+  if (!q || q.length < 2) {
+    xtoySuggestions.value = { idx: -1, type: '', list: [] }
+    return
+  }
+  const found = searchItemsInCache(q, 8)
+  xtoySuggestions.value = {
+    idx,
+    type,
+    list: found
+  }
+}
+
+function selectXtoYItem(idx, type, item) {
+  const row = form.value.x_to_y_table[idx]
+  if (type === 'item') {
+    row.item_code = item.item_code
+    row.item_name = item.item_name || ''
+  } else {
+    row.free_item_code = item.item_code
+    row.free_item_name = item.item_name || ''
+  }
+  xtoySuggestions.value = { idx: -1, type: '', list: [] }
+}
+
+function addXtoYRow() {
+  if (!form.value.x_to_y_table) {
+    form.value.x_to_y_table = []
+  }
+  form.value.x_to_y_table.push({
+    item_code: '',
+    item_name: '',
+    min_quantity: 1,
+    free_item_code: '',
+    free_item_name: '',
+    free_item_quantity: 1,
+    free_item_price: 0
+  })
+}
+
+function removeXtoYRow(idx) {
+  form.value.x_to_y_table.splice(idx, 1)
+}
+
 // Validate inputs & Save
 async function handleSave() {
   if (!form.value.rule_name.trim()) {
@@ -772,13 +947,42 @@ async function handleSave() {
     alert('Please select a Price List.')
     return
   }
-  if (form.value.applies_to === 'Product Group' && !form.value.product_group) {
-    alert('Please select a Product Group.')
-    return
-  }
-  if (form.value.applies_to === 'Item Code' && !form.value.items.length) {
-    alert('Please add at least one Item to the scope.')
-    return
+  if (form.value.discount_type === 'X to Y product discount') {
+    if (!form.value.x_to_y_table || !form.value.x_to_y_table.length) {
+      alert('Please add at least one X to Y rule.')
+      return
+    }
+    for (const row of form.value.x_to_y_table) {
+      if (!row.item_code) {
+        alert('Please select Item Code (X) for all rows.')
+        return
+      }
+      if (!row.free_item_code) {
+        alert('Please select Free Item Code (Y) for all rows.')
+        return
+      }
+      if (!row.min_quantity || row.min_quantity <= 0) {
+        alert('Min Quantity must be greater than 0.')
+        return
+      }
+      if (!row.free_item_quantity || row.free_item_quantity <= 0) {
+        alert('Free Quantity must be greater than 0.')
+        return
+      }
+      if (row.free_item_price === undefined || row.free_item_price === null || row.free_item_price < 0) {
+        alert('Free Price must be 0 or greater.')
+        return
+      }
+    }
+  } else {
+    if (form.value.applies_to === 'Product Group' && !form.value.product_group) {
+      alert('Please select a Product Group.')
+      return
+    }
+    if (form.value.applies_to === 'Item Code' && !form.value.items.length) {
+      alert('Please add at least one Item to the scope.')
+      return
+    }
   }
 
   saving.value = true
