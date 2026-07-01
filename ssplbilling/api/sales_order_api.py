@@ -175,7 +175,7 @@ def get_next_order_no(naming_series):
 def get_sales_orders(query="", limit=50, transaction_date=None, show_submitted=False):
 	"""Return list of Sales Orders for the sidebar."""
 	filters = {}
-	if transaction_date:
+	if transaction_date and not query:
 		filters["transaction_date"] = transaction_date
 	if not frappe.parse_json(show_submitted) if isinstance(show_submitted, str) else not show_submitted:
 		filters["docstatus"] = 0

@@ -9,7 +9,9 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
     """List Sales Invoices for the sidebar bill panel."""
     draft_only = frappe.parse_json(draft_only)
 
-    filters = [["docstatus", "!=", 2], ["posting_date", "=", posting_date or frappe.utils.today()]]
+    filters = [["docstatus", "!=", 2]]
+    if not query:
+        filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
 
     if draft_only:
         filters.append(["docstatus", "=", 0])

@@ -339,8 +339,10 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
     draft_only=True  → only Draft invoices (docstatus=0).
     draft_only=False → all non-cancelled invoices for the date.
     """
-    date_filter = posting_date or frappe.utils.today()
-    filters = [["posting_date", "=", date_filter], ["docstatus", "!=", 2]]
+    filters = [["docstatus", "!=", 2]]
+    if not query:
+        date_filter = posting_date or frappe.utils.today()
+        filters.append(["posting_date", "=", date_filter])
     draft_only = frappe.parse_json(draft_only)
     if draft_only:
         filters.append(["docstatus", "=", 0])

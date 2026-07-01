@@ -310,8 +310,10 @@ def get_next_bill_no(naming_series="PUR-ORD-.YY.-"):
 @frappe.whitelist()
 def get_purchase_orders(query="", limit=20, posting_date=None, naming_series=None, draft_only=False):
     """List Purchase Orders for modification."""
-    date_filter = posting_date or frappe.utils.today()
-    filters = [["transaction_date", "=", date_filter], ["docstatus", "!=", 2]]
+    filters = [["docstatus", "!=", 2]]
+    if not query:
+        date_filter = posting_date or frappe.utils.today()
+        filters.append(["transaction_date", "=", date_filter])
     
     draft_only = frappe.parse_json(draft_only)
     if draft_only:
