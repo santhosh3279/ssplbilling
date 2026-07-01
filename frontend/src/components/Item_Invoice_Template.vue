@@ -32,7 +32,7 @@
             />
             <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
-          <div class="relative series-dropdown-container">
+          <div ref="seriesDropdownRef" class="relative series-dropdown-container">
             <button
               @click="showSeriesDropdown = !showSeriesDropdown"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
@@ -666,6 +666,7 @@ onMounted(() => {
 const sidebarSearchRef = ref(null)
 const sidebarListRef = ref(null)
 const showSeriesDropdown = ref(false)
+const seriesDropdownRef = ref(null)
 const discountPctRef = ref(null)
 const discountAmtRef = ref(null)
 const freightRef = ref(null)
@@ -745,8 +746,17 @@ onMounted(() => {
       isSidebarCollapsed.value = !isSidebarCollapsed.value
     }
   }
+  const handleClickOutside = (e) => {
+    if (seriesDropdownRef.value && !seriesDropdownRef.value.contains(e.target)) {
+      showSeriesDropdown.value = false
+    }
+  }
   window.addEventListener('keydown', handleKeyDown)
-  onUnmounted(() => window.removeEventListener('keydown', handleKeyDown))
+  window.addEventListener('click', handleClickOutside)
+  onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeyDown)
+    window.removeEventListener('click', handleClickOutside)
+  })
 })
 
 function formatTime(timeStr) {
