@@ -751,7 +751,7 @@ async function handleClearRedisCache() {
     const res = await dashboardApi.clearDraftInvoiceCache()
     if (res?.status === 'success') {
       alert(`Success: Redis stock cache cleared & rebuilt successfully (${res.count} items cached).`)
-      await refreshItemCache('Sales')
+      await refreshItemCache('Sales', null, defaultWarehouse.value || null)
     } else {
       alert('Failed to clear Redis cache: ' + (res?.message || 'Unknown error'))
     }
@@ -990,9 +990,11 @@ onMounted(async () => {
 
   // Settings/series/opening-cash/naming-series: fetch only on cache miss/expiry (see fetchSettings)
   fetchSettings(selectedUser.value)
-  // Items: skip if already cached this session and still fresh (WebSocket keeps stock live)
+  // Items: skip if already cached this session and still fresh (WebSocket keeps stock live).
+  // Seed warehouse-scoped (user's default warehouse) so per-warehouse stock is correct from
+  // load and the first Ctrl+I in Sales Entry — same warehouse — needs no re-scope refetch.
   if (!cachedItems.value.length || (Date.now() - itemsLastSync.value) > ITEM_CACHE_TTL) {
-    refreshItemCache('Sales') // Preload items for fast entry
+    refreshItemCache('Sales', null, defaultWarehouse.value || null) // Preload items for fast entry
   }
   // Ledgers: hydrated from localStorage at module init; refresh only if empty or stale
   if (!cachedLedgers.value.length || (Date.now() - ledgersLastSync.value) > ITEM_CACHE_TTL) {

@@ -362,9 +362,12 @@ async function preloadItems(forceRefresh = false) {
   const currentWarehouse = props.warehouse || null
   const currentPriceList = props.priceList || null
   
-  const paramsChanged = forceRefresh || 
+  // NOTE: price_list is intentionally NOT a refetch trigger. get_all_items_detailed
+  // always returns the full price_lists[] array (the param only sets a scalar `price`
+  // that we override from the array), so a price-list change needs no new fetch.
+  // Stock depends only on the warehouse.
+  const paramsChanged = forceRefresh ||
     lastParams.value.searchType !== props.searchType ||
-    lastParams.value.priceList !== currentPriceList ||
     lastParams.value.warehouse !== currentWarehouse
 
   if (!paramsChanged && allItems.value.length > 0) return
