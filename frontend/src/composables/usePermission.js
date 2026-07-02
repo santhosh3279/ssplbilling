@@ -28,6 +28,7 @@ export const BILLER_ROUTES = new Set([
   'ParcelAddress',
   'BarcodePrintPage',
   'LoadingReceipt',
+  'CustomerEnquiry',
   'StockReconciliation',
   'GstDummyLedger',
   'GstLedger',
@@ -80,6 +81,7 @@ export const ADMIN_ROUTES = new Set([
   'CostCenterSalesReport',
   'IncentiveLedger',
   'IncentiveEntry',
+  'CustomerEnquiry',
 ])
 
 /**
@@ -156,6 +158,7 @@ const TILE_ROUTE_MAP = {
   'pricing-rules':     'DiscountRule',
   'discount-rules':    'DiscountRule',
   'loading-receipt':   'LoadingReceipt',
+  'customer-enquiry':  'CustomerEnquiry',
   'parcel-address':    'ParcelAddress',
   'gst-dummy-ledger':  'GstDummyLedger',
   'gst-ledger':        'GstLedger',

@@ -26,6 +26,7 @@ import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
 import CostCenterSalesReport from './pages/CostCenterSalesReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
+import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
 import StockReconciliation from './pages/StockReconciliation.vue'
 import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
@@ -251,6 +252,12 @@ const routes = [
     name: 'LoadingReceipt',
     component: LoadingReceipt,
     meta: { title: 'Loading Receipt' },
+  },
+  {
+    path: '/customer-enquiry',
+    name: 'CustomerEnquiry',
+    component: CustomerEnquiry,
+    meta: { title: 'Customer Enquiry' },
   },
   {
     path: '/parcel-address',

@@ -585,6 +585,7 @@ const allTiles = [
   { id: 'general-ledger',    bucket: 'ledger',   name: 'General Ledger',        desc: 'GL ledger via ERPNext report engine',       icon: '📒', shortcut: ''    },
   // ── SSPL Special ──
   { id: 'loading-receipt',    bucket: 'sspl',     name: 'Loading Receipt',       desc: 'Generate loading receipts',                icon: '🚚', shortcut: ''    },
+  { id: 'customer-enquiry',   bucket: 'sspl',     name: 'Customer Enquiry',      desc: 'Track customer item enquiries',            icon: '📞', shortcut: ''    },
   { id: 'parcel-address',     bucket: 'sspl',     name: 'Parcel Address',        desc: 'Manage parcel addresses',                  icon: '📦', shortcut: ''    },
   { id: 'gst-dummy-ledger',   bucket: 'sspl',     name: 'WGB PAYMENTS',          desc: 'Manage WGB payment entries',               icon: '📖', shortcut: ''    },
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Discount Rules',        desc: 'Manage discount rules and tiers',          icon: '🏷️', shortcut: ''    },
@@ -630,6 +631,7 @@ const routeAliases = {
   'incentive-redeem': '/incentive-redeem',
   'incentive-entry': '/incentive-entry',
   'loading-receipt': '/loading-receipt',
+  'customer-enquiry': '/customer-enquiry',
   'daily-report': '/daily-report',
   'parcel-address': '/parcel-address',
   'store-transfer': '/store-transfer',
