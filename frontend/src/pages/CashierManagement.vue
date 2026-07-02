@@ -632,7 +632,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShortcuts } from '../services/shortcutManager'
-import { frappeGet } from '../api.js'
+import { frappeGet, frappePost } from '../api.js'
 import { session } from '../session.js'
 import BoxCashSubwindow from '../components/CashierEntry.vue'
 import CahierContraModal from '../components/CashierContraModal.vue'
@@ -1089,6 +1089,14 @@ function openContra(entryType, diff) {
 
 async function onContraSaved() {
   showContraModal.value = false
+  try {
+    await frappePost('ssplbilling.api.cahierlog_api.lock_day_entries', {
+      date: currentDate.value,
+      user: targetUser.value
+    })
+  } catch (e) {
+    console.warn('[Cahier] Auto-locking day entries after contra failed:', e)
+  }
   await Promise.all([refreshAll(), refreshLiveLedger(), fetchDayContras()])
   const diff = contraEntryType.value === 'Opening'
     ? openingTotal.value - openingLedger.value
