@@ -387,7 +387,7 @@ async function loadPrices(code) {
       }
       const uomsList = [
         { uom: cached.uom, conversion_factor: 1.0 },
-        ...(cached.uoms || [])
+        ...(cached.uoms || []).filter(u => u.uom !== cached.uom)
       ]
       const pricesList = localPriceLists.map(plName => {
         const basePriceEntry = (cached.price_lists || []).find(pl => pl.name === plName)
@@ -424,8 +424,24 @@ async function loadPrices(code) {
 
     loadedItemCode.value = code
     itemName.value = data.item_name || ''
-    uoms.value = data.uoms || []
     stockUom.value = data.stock_uom || ''
+
+    // Ensure stock UOM is always first and there are no duplicate UOM rows
+    const rawUoms = data.uoms || []
+    const normalizedUoms = []
+    if (stockUom.value) {
+      const stockUomEntry = rawUoms.find(u => u.uom === stockUom.value)
+      normalizedUoms.push({
+        uom: stockUom.value,
+        conversion_factor: stockUomEntry ? stockUomEntry.conversion_factor : 1.0
+      })
+    }
+    for (const u of rawUoms) {
+      if (u.uom !== stockUom.value && !normalizedUoms.some(nu => nu.uom === u.uom)) {
+        normalizedUoms.push(u)
+      }
+    }
+    uoms.value = normalizedUoms
 
     hasFetchedPercentages.value = !!(data.pricelist_percentages && data.pricelist_percentages.length > 0)
 
