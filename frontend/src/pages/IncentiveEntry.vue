@@ -26,6 +26,16 @@
           </button>
         </div>
 
+        <!-- Cost Center Filter -->
+        <select
+          v-model="costCenterFilter"
+          @change="fetchBills"
+          class="mt-2.5 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none cursor-pointer"
+        >
+          <option value="">All Cost Centers</option>
+          <option v-for="cc in costCenters" :key="cc" :value="cc">{{ cc }}</option>
+        </select>
+
         <!-- Pill/Filter Tabs -->
         <div class="mt-2.5 flex gap-1.5 overflow-x-auto">
           <button
@@ -308,6 +318,14 @@ const selectedBill = ref(null)
 const searchTerm = ref('')
 const activeFilter = ref('All')
 
+// Cost center filter — options synced by GeneralSettings, default from device setting
+let localCostCenters = []
+try { localCostCenters = JSON.parse(localStorage.getItem('wb-cost-centers') || '[]') } catch { localCostCenters = [] }
+const defaultCostCenter = localStorage.getItem('wb-cost-center') || ''
+if (defaultCostCenter && !localCostCenters.includes(defaultCostCenter)) localCostCenters.unshift(defaultCostCenter)
+const costCenters = ref(localCostCenters)
+const costCenterFilter = ref(defaultCostCenter)
+
 const billDetails = ref({
   amount: 0,
   percentage: 0,
@@ -432,7 +450,7 @@ onMounted(async () => {
 async function fetchBills() {
   loadingBills.value = true
   try {
-    bills.value = await getUnpostedBills(targetUser.value)
+    bills.value = await getUnpostedBills(targetUser.value, costCenterFilter.value)
   } catch (e) {
     console.error('Failed to load unposted bills:', e)
   } finally {
