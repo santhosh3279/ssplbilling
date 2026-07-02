@@ -1617,7 +1617,8 @@ function handleRowKeydown(e, idx) {
       focusBarcodeInput()
     }
   }
-  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteItem(idx) }
+  // stopPropagation: shortcutManager also binds DELETE and would toggle the row right back
+  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); deleteItem(idx) }
 }
 
 function focusEditField(field, idx) {
