@@ -262,11 +262,11 @@
                   {{ upiLoading ? '…' : Math.abs(upiClosing).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                   <span v-if="!upiLoading" class="text-xs ml-1">{{ upiClosing >= 0 ? 'DR' : 'CR' }}</span>
                 </td>
-                <!-- Day's UPI -->
+                <!-- Day's Debit -->
                 <td class="px-2 py-3 text-right font-mono font-black"
-                    :class="upiLoading ? 'text-[var(--color-text-muted)]' : (upiDiff===0 ? 'text-[var(--color-text-muted)]' : upiDiff>0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')">
-                  <div class="text-xs font-black text-[var(--color-text-muted)] mb-0.5">Day's UPI</div>
-                  {{ upiLoading ? '…' : upiDiff.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                    :class="upiLoading ? 'text-[var(--color-text-muted)]' : (upiDebit===0 ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-success)]')">
+                  <div class="text-xs font-black text-[var(--color-text-muted)] mb-0.5">Day's Debit</div>
+                  {{ upiLoading ? '…' : upiDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
                 <td class="px-2 py-3 text-center text-[var(--color-text-muted)]">—</td>
               </tr>
@@ -669,7 +669,7 @@ const upiOpening = ref(0)
 const upiClosing = ref(0)
 const upiLoading = ref(false)
 const upiAccount = ref(localStorage.getItem('wb-upi') || '')
-const upiDiff = computed(() => upiClosing.value - upiOpening.value)
+const upiDebit = ref(0)
 
 async function refreshUpi() {
   let account = localStorage.getItem('wb-upi') || ''
@@ -695,6 +695,7 @@ async function refreshUpi() {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_upi_day_balances', { account, date: currentDate.value })
     upiOpening.value = res.opening ?? 0
     upiClosing.value = res.closing ?? 0
+    upiDebit.value = res.debit ?? 0
   } catch (e) {
     console.warn('[Cahier] UPI balances fetch failed:', e)
   } finally {

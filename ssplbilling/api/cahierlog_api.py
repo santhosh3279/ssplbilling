@@ -56,9 +56,9 @@ def get_cahier_totals(date, op_type="Opening", account=None, user=None):
 
 @frappe.whitelist()
 def get_upi_day_balances(account, date):
-	"""Return UPI account opening balance (before date) and closing balance (up to and including date)."""
+	"""Return UPI account opening balance (before date), closing balance, and day's debit."""
 	if not account:
-		return {"opening": 0.0, "closing": 0.0}
+		return {"opening": 0.0, "closing": 0.0, "debit": 0.0}
 
 	opening = frappe.db.sql(
 		"""
@@ -76,9 +76,18 @@ def get_upi_day_balances(account, date):
 		""",
 		(account, date),
 	)
+	debit = frappe.db.sql(
+		"""
+		SELECT IFNULL(SUM(debit), 0)
+		FROM `tabGL Entry`
+		WHERE account = %s AND is_cancelled = 0 AND posting_date = %s
+		""",
+		(account, date),
+	)
 	return {
 		"opening": float(opening[0][0]) if opening else 0.0,
 		"closing": float(closing[0][0]) if closing else 0.0,
+		"debit": float(debit[0][0]) if debit else 0.0,
 	}
 
 
