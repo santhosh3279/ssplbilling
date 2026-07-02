@@ -30,20 +30,18 @@
         <div class="flex items-center gap-6">
           <!-- Column 1: Ledger Info -->
           <div class="min-w-0 flex-1">
-            <div class="mb-1">
+            <div class="text-3xl font-normal truncate mb-1" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
+              {{ ledger.label }}
+            </div>
+            <div class="flex items-center gap-2 text-xl font-mono opacity-60" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
               <span 
-                class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest"
+                class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest shrink-0"
                 :class="getTypeClass(ledger.type)"
               >
                 {{ ledger.type }}
               </span>
-            </div>
-            <div class="text-3xl font-normal truncate" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
-              {{ ledger.label }}
-            </div>
-            <div class="flex items-center gap-2 text-xl font-mono mt-1 opacity-60" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-              <span>{{ ledger.name }}</span>
-              <span v-if="ledger.group">· {{ ledger.group }}</span>
+              <span class="truncate">{{ ledger.name }}</span>
+              <span v-if="ledger.group" class="truncate">· {{ ledger.group }}</span>
             </div>
           </div>
           
