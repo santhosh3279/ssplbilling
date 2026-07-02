@@ -156,32 +156,19 @@
                         placeholder="Type item name..."
                         class="w-full bg-transparent text-[var(--color-text)] outline-none"
                         @input="onItemSearch"
-                        @keydown.enter.prevent="onItemEnter"
-                        @keydown.down.prevent="itemHighlight = itemResults.length ? (itemHighlight + 1) % itemResults.length : 0"
-                        @keydown.up.prevent="itemHighlight = itemResults.length ? (itemHighlight - 1 + itemResults.length) % itemResults.length : 0"
-                        @keydown.escape="itemResults = []"
+                        @focus="showQuickItemSearch = true"
+                        @keydown="handleItemInputKeydown"
                       />
-                      <div
-                        v-if="itemResults.length"
-                        class="absolute left-0 top-full z-50 mt-1 w-[26rem] max-h-72 overflow-y-auto rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
-                      >
-                        <div
-                          v-for="(it, i) in itemResults"
-                          :key="it.item_code"
-                          class="cursor-pointer px-3 py-2"
-                          :class="i === itemHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
-                          @mousedown.prevent="pickItem(it)"
-                          @mouseover="itemHighlight = i"
-                        >
-                          <div class="font-mono font-semibold">{{ it.item_code }}</div>
-                          <div class="text-xs" :class="i === itemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</div>
-                        </div>
-                        <div
-                          class="cursor-pointer border-t border-[var(--color-border)] px-3 py-2 text-xs font-bold"
-                          :class="itemHighlight === itemResults.length ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-info)] hover:bg-[var(--color-surface)]'"
-                          @mousedown.prevent="addTypedAsNewItem"
-                        >+ Add "{{ newItem.query }}" as new item</div>
-                      </div>
+                      
+                      <QuickItemSearch
+                        ref="quickItemSearchRef"
+                        v-if="showQuickItemSearch && itemResults.length"
+                        :results="itemResults"
+                        :query="newItem.query"
+                        :anchor-el="newItemInput"
+                        @select="pickItem"
+                        @close="showQuickItemSearch = false"
+                      />
                     </td>
                     <td class="px-2 py-1.5">
                       <input
@@ -323,6 +310,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
 import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { searchItemsInCache } from '../services/itemCache.js'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache.js'
 
@@ -352,6 +340,9 @@ const searchResults = ref([])
 const customerInputRef = ref(null)
 const quickSearchRef = ref(null)
 const { refreshLedgerCache } = useLedgerCache()
+
+const showQuickItemSearch = ref(false)
+const quickItemSearchRef = ref(null)
 
 // ── CUSTOMER ─────────────────────────────────────────────────────────
 function searchCustomers() {
@@ -437,29 +428,47 @@ let pickedItem = null
 function onItemSearch() {
   pickedItem = null
   itemHighlight.value = 0
-  itemResults.value = newItem.value.query.trim().length >= 2
-    ? searchItemsInCache(newItem.value.query, 8)
-    : []
+  if (newItem.value.query.trim().length >= 2) {
+    itemResults.value = searchItemsInCache(newItem.value.query, 8)
+    showQuickItemSearch.value = true
+  } else {
+    itemResults.value = []
+    showQuickItemSearch.value = false
+  }
 }
 
-function onItemEnter() {
-  if (itemResults.value.length && itemHighlight.value < itemResults.value.length) {
-    pickItem(itemResults.value[itemHighlight.value])
-  } else if (newItem.value.query.trim()) {
-    addTypedAsNewItem()
+function handleItemInputKeydown(e) {
+  if (e.key === 'Escape') {
+    if (showQuickItemSearch.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      showQuickItemSearch.value = false
+    }
+  } else if (e.key === 'Enter') {
+    if (showQuickItemSearch.value && itemResults.value.length > 0 && quickItemSearchRef.value) {
+      quickItemSearchRef.value.handleQuickSearchKeydown(e)
+    } else if (newItem.value.query.trim()) {
+      addTypedAsNewItem()
+    }
+  } else if (showQuickItemSearch.value && quickItemSearchRef.value) {
+    quickItemSearchRef.value.handleQuickSearchKeydown(e)
   }
 }
 
 function pickItem(it) {
   pickedItem = it
   newItem.value.query = it.item_name || it.item_code
+  newItem.value.description = it.item_name || ''
   itemResults.value = []
+  showQuickItemSearch.value = false
   nextTick(() => newDescInput.value?.focus())
 }
 
 function addTypedAsNewItem() {
   pickedItem = null
+  newItem.value.description = ''
   itemResults.value = []
+  showQuickItemSearch.value = false
   nextTick(() => newDescInput.value?.focus())
 }
 
@@ -475,6 +484,7 @@ function commitNewItem() {
   newItem.value = { query: '', description: '' }
   pickedItem = null
   itemResults.value = []
+  showQuickItemSearch.value = false
   nextTick(() => newItemInput.value?.focus())
 }
 
@@ -515,6 +525,7 @@ function clearForm() {
   pickedItem = null
   itemResults.value = []
   showQuickSearch.value = false
+  showQuickItemSearch.value = false
 }
 
 async function loadEnquiry(name) {
@@ -588,7 +599,7 @@ async function reopenEnquiry(name) {
 
 // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────────
 function onKeydown(e) {
-  if (showQuickSearch.value) return
+  if (showQuickSearch.value || showQuickItemSearch.value) return
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveEnquiry() }
   if (e.key === 'Escape') { router.push('/') }
 }
