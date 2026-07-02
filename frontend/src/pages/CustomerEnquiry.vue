@@ -53,17 +53,18 @@
           </div>
 
           <!-- Existing customer -->
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-col gap-1 relative">
             <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Customer <span class="normal-case font-normal">(from system)</span></label>
             <div class="flex gap-2">
               <input
-                :value="form.customer_name && form.customer ? form.customer_name : ''"
+                ref="customerInputRef"
+                v-model="customerQuery"
                 type="text"
-                placeholder="Click to search customer..."
-                class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] cursor-pointer"
-                readonly
-                @click="showCustomerModal = true"
-                @keydown.enter.prevent="showCustomerModal = true"
+                placeholder="Type to search customer..."
+                class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                @input="onCustomerInput"
+                @focus="onCustomerFocus"
+                @keydown="handleCustomerKeydown"
               />
               <button
                 v-if="form.customer"
@@ -72,6 +73,17 @@
                 @click="clearCustomer"
               >&times;</button>
             </div>
+
+            <!-- Quick Ledger Search Dropdown -->
+            <QuickLedgerSearch
+              ref="quickSearchRef"
+              v-if="showQuickSearch && searchResults.length"
+              :results="searchResults"
+              :query="customerQuery"
+              :anchor-el="customerInputRef"
+              @select="onCustomerSelected"
+              @close="showQuickSearch = false"
+            />
           </div>
 
           <!-- New customer -->
@@ -301,15 +313,7 @@
       </div>
     </div>
 
-    <CustomerSearchModal
-      v-if="showCustomerModal"
-      :show="showCustomerModal"
-      :skip-date-filter="true"
-      initial-type="Customer"
-      :allowed-types="['Customer']"
-      @close="showCustomerModal = false"
-      @select="onCustomerSelected"
-    />
+
 
   </div>
 </template>
@@ -318,8 +322,9 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
-import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { searchItemsInCache } from '../services/itemCache.js'
+import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache.js'
 
 const router = useRouter()
 const API = 'ssplbilling.api.enquiry_api'
@@ -341,26 +346,78 @@ const rows = ref([])
 const docName = ref(null)
 const saving = ref(false)
 const mobileFromCache = ref(false)
-const showCustomerModal = ref(false)
+const customerQuery = ref('')
+const showQuickSearch = ref(false)
+const searchResults = ref([])
+const customerInputRef = ref(null)
+const quickSearchRef = ref(null)
+const { refreshLedgerCache } = useLedgerCache()
 
 // ── CUSTOMER ─────────────────────────────────────────────────────────
+function searchCustomers() {
+  const q = customerQuery.value.trim()
+  if (!q) {
+    searchResults.value = []
+    showQuickSearch.value = false
+    return
+  }
+  try {
+    searchResults.value = searchLedgersInCache(q, 'Customer')
+    showQuickSearch.value = true
+  } catch (e) {
+    console.warn('[CustomerEnquiry] searchCustomers failed:', e)
+    searchResults.value = []
+  }
+}
+
+function onCustomerInput() {
+  if (form.value.customer) {
+    clearCustomer()
+  }
+  searchCustomers()
+}
+
+function onCustomerFocus() {
+  showQuickSearch.value = true
+  searchCustomers()
+}
+
+function handleCustomerKeydown(e) {
+  if (e.key === 'Escape') {
+    if (showQuickSearch.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      showQuickSearch.value = false
+    }
+  } else if (e.key === 'Enter') {
+    if (showQuickSearch.value && searchResults.value.length > 0 && quickSearchRef.value) {
+      quickSearchRef.value.handleKeydown(e)
+    }
+  } else if (showQuickSearch.value && quickSearchRef.value) {
+    quickSearchRef.value.handleKeydown(e)
+  }
+}
+
 function onCustomerSelected(c) {
   if (!c) return
   form.value.customer = c.name
   form.value.customer_name = c.label || c.customer_name || c.name
+  customerQuery.value = c.label || c.customer_name || c.name
   form.value.new_customer = ''
   // Mobile number comes straight from the local customer cache
   form.value.mobile_no = c.mobile_no || ''
   mobileFromCache.value = !!c.mobile_no
-  showCustomerModal.value = false
+  showQuickSearch.value = false
   nextTick(() => newItemInput.value?.focus())
 }
 
 function clearCustomer() {
   form.value.customer = ''
   form.value.customer_name = ''
+  customerQuery.value = ''
   form.value.mobile_no = ''
   mobileFromCache.value = false
+  showQuickSearch.value = false
 }
 
 function onNewCustomerInput() {
@@ -450,12 +507,14 @@ async function saveEnquiry() {
 
 function clearForm() {
   form.value = blankForm()
+  customerQuery.value = ''
   rows.value = []
   docName.value = null
   mobileFromCache.value = false
   newItem.value = { query: '', description: '' }
   pickedItem = null
   itemResults.value = []
+  showQuickSearch.value = false
 }
 
 async function loadEnquiry(name) {
@@ -470,6 +529,7 @@ async function loadEnquiry(name) {
       new_customer: d.new_customer || '',
       mobile_no: d.mobile_no || '',
     }
+    customerQuery.value = d.customer_name || d.customer || ''
     mobileFromCache.value = false
     rows.value = (d.items || []).map(r => ({ ...r }))
   } catch (e) {
@@ -528,7 +588,7 @@ async function reopenEnquiry(name) {
 
 // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────────
 function onKeydown(e) {
-  if (showCustomerModal.value) return
+  if (showQuickSearch.value) return
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveEnquiry() }
   if (e.key === 'Escape') { router.push('/') }
 }
@@ -536,6 +596,7 @@ function onKeydown(e) {
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
   fetchEnquiries()
+  refreshLedgerCache(false).catch(e => console.error('[CustomerEnquiry] Cache sync failed', e))
 })
 
 onUnmounted(() => {
