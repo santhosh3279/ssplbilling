@@ -419,6 +419,7 @@ const reportData = ref([])
 const priceLists = ref([])
 const billsData = ref([])
 const expensesData = ref([])
+const directExpenseEntries = ref([])
 const directExpenseHeads = ref([])
 const indirectExpenseHeads = ref([])
 const profitData = ref([])
@@ -481,6 +482,7 @@ async function fetchData() {
     priceLists.value = res.price_lists || []
     billsData.value = res.bills_data || []
     expensesData.value = res.expenses_data || []
+    directExpenseEntries.value = res.direct_expense_entries || []
     directExpenseHeads.value = res.direct_expense_heads || []
     indirectExpenseHeads.value = res.indirect_expense_heads || []
     profitData.value = res.profit_data || []
@@ -643,6 +645,33 @@ function exportToExcel() {
     wsExp['!cols'] = expColWidths
 
     utils.book_append_sheet(wb, wsExp, 'Direct Expenses')
+  }
+
+  // Add Direct Expense Particulars Sheet (entry-level details)
+  if (directExpenseEntries.value.length) {
+    const detHeaders = ['S.No', 'Cost Center', 'Date', 'Voucher Type', 'Voucher No', 'Expense Head', 'Particulars', 'Amount']
+
+    const detRows = directExpenseEntries.value.map((e, idx) => [
+      idx + 1,
+      (e.cost_center || '').split(' - ')[0],
+      e.posting_date,
+      e.voucher_type,
+      e.voucher_no,
+      e.account,
+      e.remarks && e.remarks !== 'No Remarks' ? e.remarks : (e.against || ''),
+      Math.round(e.amount || 0)
+    ])
+
+    const detTotal = directExpenseEntries.value.reduce((sum, e) => sum + (e.amount || 0), 0)
+    detRows.push(['', 'GRAND TOTAL', '', '', '', '', '', Math.round(detTotal)])
+
+    const wsDet = utils.aoa_to_sheet([detHeaders, ...detRows])
+    wsDet['!cols'] = [
+      { wch: 8 }, { wch: 25 }, { wch: 12 }, { wch: 16 }, { wch: 22 },
+      { wch: 35 }, { wch: 50 }, { wch: 15 }
+    ]
+
+    utils.book_append_sheet(wb, wsDet, 'Direct Expense Particulars')
   }
 
   // Add Indirect Expenses Sheet

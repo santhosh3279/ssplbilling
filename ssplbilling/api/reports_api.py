@@ -879,6 +879,36 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
         expenses_report_data = list(expense_ccs.values())
         expenses_report_data.sort(key=lambda x: x["total_expense"], reverse=True)
 
+        # Entry-level direct expense details (particulars) for Excel export
+        direct_expense_entries = []
+        if direct_expense_accounts:
+                direct_expense_entries = frappe.db.sql(
+                        """
+                        SELECT
+                                cost_center,
+                                posting_date,
+                                voucher_type,
+                                voucher_no,
+                                account,
+                                against,
+                                remarks,
+                                (debit - credit) as amount
+                        FROM
+                                `tabGL Entry`
+                        WHERE
+                                posting_date BETWEEN %s AND %s
+                                AND account IN %s
+                                AND is_cancelled = 0
+                        ORDER BY
+                                cost_center, account, posting_date, voucher_no
+                        """,
+                        (from_date, to_date, tuple(direct_expense_accounts)),
+                        as_dict=1,
+                )
+                for e in direct_expense_entries:
+                        e["cost_center"] = e["cost_center"] or "No Cost Center"
+                        e["posting_date"] = str(e["posting_date"] or "")
+
         # Fetch Sales Invoice Items details for profit report
         profit_results = frappe.db.sql(
                 """
@@ -966,6 +996,7 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 "price_lists": sorted(list(all_price_lists)),
                 "bills_data": bills_results,
                 "expenses_data": expenses_report_data,
+                "direct_expense_entries": direct_expense_entries,
                 "direct_expense_heads": sorted(list(direct_heads)),
                 "indirect_expense_heads": sorted(list(indirect_heads)),
                 "profit_data": profit_report_data,
