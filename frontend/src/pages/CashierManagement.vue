@@ -223,7 +223,8 @@
                   {{ (closingTotal-closingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
                 <td class="px-2 py-3 text-center">
-                  <template v-if="(closingTotal-closingLedger)!==0 || dayContras['Closing']">
+                  <!-- Case 1: Difference is not zero or has a contra entry -->
+                  <template v-if="Math.abs(closingTotal - closingLedger) >= 0.01 || dayContras['Closing']">
                     <span v-if="Math.abs(liveLedgerBalance-closingTotal)<0.01 || dayContras['Closing']"
                       class="inline-flex items-center rounded bg-[var(--color-success)]/20 border border-[var(--color-success)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-success)] whitespace-nowrap">
                       ✓ Adjusted
@@ -231,6 +232,17 @@
                     <button v-else @click="openContra('Closing', closingTotal-closingLedger)"
                       class="rounded bg-[var(--color-warning)]/20 border border-[var(--color-warning)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-warning)] hover:bg-[var(--color-warning)]/30 transition whitespace-nowrap">
                       Contra
+                    </button>
+                  </template>
+                  <!-- Case 2: Difference is zero -->
+                  <template v-else>
+                    <span v-if="closingLocked === 1"
+                      class="inline-flex items-center rounded bg-[var(--color-info)]/20 border border-[var(--color-info)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-info)] whitespace-nowrap">
+                      🔒 Locked
+                    </span>
+                    <button v-else @click="handleDayClose" :disabled="dayCloseLoading"
+                      class="rounded bg-[var(--color-success)]/20 border border-[var(--color-success)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition whitespace-nowrap disabled:opacity-50">
+                      {{ dayCloseLoading ? 'Locking…' : 'Day Close' }}
                     </button>
                   </template>
                 </td>
@@ -767,6 +779,28 @@ const closingLedger = ref(Number(localStorage.getItem('closing_ledger_balance') 
 
 const dayContras = ref({})
 
+const openingLocked = ref(0)
+const md1Locked = ref(0)
+const md2Locked = ref(0)
+const closingLocked = ref(0)
+
+const dayCloseLoading = ref(false)
+
+async function handleDayClose() {
+  dayCloseLoading.value = true
+  try {
+    await frappePost('ssplbilling.api.cahierlog_api.lock_day_entries', {
+      date: currentDate.value,
+      user: targetUser.value
+    })
+    await refreshAll()
+  } catch (e) {
+    console.warn('[Cahier] lock_day_entries failed:', e)
+  } finally {
+    dayCloseLoading.value = false
+  }
+}
+
 async function fetchDayContras() {
   const account = localStorage.getItem('wb-cash') || ''
   if (!account) return
@@ -989,6 +1023,7 @@ async function refreshAll() {
     })
     openingTotal.value = res.total || 0
     openingLedger.value = res.cash_ledger_balance || 0
+    openingLocked.value = res.is_locked || 0
     localStorage.setItem('opening_cash', String(openingTotal.value))
     localStorage.setItem('wb-opening-box-cash', String(openingTotal.value))
     localStorage.setItem('cash_ledger_balance', String(openingLedger.value))
@@ -1001,6 +1036,7 @@ async function refreshAll() {
     })
     md1Total.value = res.total || 0
     md1Ledger.value = res.cash_ledger_balance || 0
+    md1Locked.value = res.is_locked || 0
     localStorage.setItem('md1_cash', String(md1Total.value))
     localStorage.setItem('md1_ledger_balance', String(md1Ledger.value))
   } catch (e) { console.warn('[Cahier] Mid-Day-1 fetch failed:', e) }
@@ -1012,6 +1048,7 @@ async function refreshAll() {
     })
     md2Total.value = res.total || 0
     md2Ledger.value = res.cash_ledger_balance || 0
+    md2Locked.value = res.is_locked || 0
     localStorage.setItem('md2_cash', String(md2Total.value))
     localStorage.setItem('md2_ledger_balance', String(md2Ledger.value))
   } catch (e) { console.warn('[Cahier] Mid-Day-2 fetch failed:', e) }
@@ -1022,6 +1059,7 @@ async function refreshAll() {
       date: today, op_type: 'Closing', account, user
     })
     closingTotal.value = res.total || 0
+    closingLocked.value = res.is_locked || 0
     if (!isToday.value) {
       const d = new Date(today + 'T00:00:00')
       d.setDate(d.getDate() + 1)

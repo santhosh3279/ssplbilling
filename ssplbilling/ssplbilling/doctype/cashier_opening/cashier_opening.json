@@ -23,7 +23,8 @@
   "2",
   "1",
   "column_break_yjjg",
-  "total"
+  "total",
+  "is_locked"
  ],
  "fields": [
   {
@@ -122,6 +123,12 @@
    "fieldname": "difference",
    "fieldtype": "Data",
    "label": "Difference"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_locked",
+   "fieldtype": "Check",
+   "label": "Is Locked"
   }
  ],
  "grid_page_length": 50,

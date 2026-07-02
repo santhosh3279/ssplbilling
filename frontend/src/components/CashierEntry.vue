@@ -87,8 +87,18 @@
           </div>
         </div>
 
+        <!-- Locked status banner -->
+        <div v-if="isLocked" class="rounded-xl bg-[var(--color-info)]/10 border border-[var(--color-info)]/30 p-4 text-center">
+          <div class="text-sm font-black uppercase tracking-wider text-[var(--color-info)] mb-1">
+            🔒 This session is locked
+          </div>
+          <div class="font-mono text-lg font-black text-[var(--color-text)]">
+            Day Close has been finalized.
+          </div>
+        </div>
+
         <!-- Contra Entry status banner -->
-        <div v-if="contraName" class="rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 p-4 text-center">
+        <div v-else-if="contraName" class="rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 p-4 text-center">
           <div class="text-sm font-black uppercase tracking-wider text-[var(--color-success)] mb-1">
             ✓ Adjusted via Contra
           </div>
@@ -114,7 +124,7 @@
                   type="number"
                   min="0"
                   placeholder="0"
-                  :disabled="!!contraName"
+                  :disabled="!!contraName || isLocked"
                   class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-0.5 py-0.5 text-2xl text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)] disabled:opacity-60 disabled:cursor-not-allowed"
                   @keydown.enter.prevent="onDenomEnter(i)"
                   @keydown.down.prevent="denomInputRefs[i + 1]?.focus()"
@@ -145,7 +155,8 @@
 
       <!-- Footer -->
       <div class="flex items-center justify-between border-t border-[var(--color-border)] px-3 py-2 bg-[var(--color-surface-raised)]/10">
-        <div v-if="contraName" class="text-xl text-[var(--color-success)] font-mono font-bold">Adjusted via {{ contraName }}</div>
+        <div v-if="isLocked" class="text-xl text-[var(--color-info)] font-mono font-bold">🔒 Locked (Day Closed)</div>
+        <div v-else-if="contraName" class="text-xl text-[var(--color-success)] font-mono font-bold">Adjusted via {{ contraName }}</div>
         <div v-else-if="savedName" class="text-xl text-[var(--color-success)] font-mono font-bold">Saved: {{ savedName }}</div>
         <div v-else class="text-xl text-[var(--color-text-muted)] font-medium">Fill denominations and save</div>
         <div class="flex gap-1.5">
@@ -157,7 +168,7 @@
           </button>
           <button
             class="rounded-lg bg-[var(--color-info)] px-2.5 py-1 text-lg font-bold text-[var(--color-text-on-highlight)] hover:brightness-110 active:scale-95 transition disabled:opacity-50 disabled:active:scale-100"
-            :disabled="saving || !form.cash || !!contraName"
+            :disabled="saving || !form.cash || !!contraName || isLocked"
             @click="handleSave"
           >
             <span v-if="saving">Saving…</span>
@@ -234,6 +245,7 @@ const saving = ref(false)
 const saveError = ref('')
 const savedName = ref('')
 const contraName = ref('')
+const isLocked = ref(false)
 
 const total = computed(() =>
   denominations.reduce((s, d) => s + (Number(form.denominations[d]) || 0) * d, 0),
@@ -306,6 +318,7 @@ async function fetchExistingRecord() {
       // Always use wb-cash (resolved GL account) — never let the stored record override it
       form.cash = localStorage.getItem('wb-cash') || existing.cash || form.cash
       ledgerBalance.value = parseFloat(existing.cash_ledger_balance || 0)
+      isLocked.value = existing.is_locked === 1
       
       // Load denominations
       denominations.forEach(d => {
@@ -314,6 +327,7 @@ async function fetchExistingRecord() {
     } else {
       // No existing record: reset state
       savedName.value = ''
+      isLocked.value = false
       denominations.forEach(d => {
         form.denominations[d] = null
       })

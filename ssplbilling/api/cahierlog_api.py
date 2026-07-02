@@ -39,19 +39,20 @@ def get_cahier_totals(date, op_type="Opening", account=None, user=None):
 		user = frappe.session.user
 	doc_name = f"{date}_{op_type}_{user}"
 
-	values = frappe.db.get_value("Cashier_Opening", doc_name, ["total", "cash_ledger_balance"], as_dict=True)
+	values = frappe.db.get_value("Cashier_Opening", doc_name, ["total", "cash_ledger_balance", "is_locked"], as_dict=True)
 	if values:
 		return {
 			"total": float(values.total or 0.0),
-			"cash_ledger_balance": float(values.cash_ledger_balance or 0.0)
+			"cash_ledger_balance": float(values.cash_ledger_balance or 0.0),
+			"is_locked": int(values.is_locked or 0)
 		}
 
 	# Fallback for Opening: if no record exists, return the opening balance from GL entries
 	if op_type == "Opening" and account:
 		opening_res = get_cash_ledger_balance(account, date)
-		return {"total": 0.0, "cash_ledger_balance": opening_res.get("balance", 0.0)}
+		return {"total": 0.0, "cash_ledger_balance": opening_res.get("balance", 0.0), "is_locked": 0}
 
-	return {"total": 0.0, "cash_ledger_balance": 0.0}
+	return {"total": 0.0, "cash_ledger_balance": 0.0, "is_locked": 0}
 
 
 @frappe.whitelist()
@@ -358,4 +359,26 @@ def get_day_contras(account, date):
 				result[session_type] = e.get("name")
 				break
 	return result
+
+
+@frappe.whitelist()
+def lock_day_entries(date, user=None):
+	"""Set is_locked = 1 on all Cashier_Opening documents for the given date and user."""
+	if not user:
+		user = frappe.session.user
+
+	# Set is_locked = 1 on the 4 potential documents:
+	# Opening, Mid-Day-1, Mid-Day-2, Closing
+	locked_count = 0
+	for op_type in ["Opening", "Mid-Day-1", "Mid-Day-2", "Closing"]:
+		doc_name = f"{date}_{op_type}_{user}"
+		if frappe.db.exists("Cashier_Opening", doc_name):
+			frappe.db.set_value("Cashier_Opening", doc_name, "is_locked", 1)
+			locked_count += 1
+
+	if locked_count > 0:
+		frappe.db.commit()
+
+	return {"status": "Success", "locked_count": locked_count}
+
 
