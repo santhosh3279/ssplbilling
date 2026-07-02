@@ -42,13 +42,13 @@
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Cost Center</label>
-              <select
-                v-model="form.cost_center"
-                class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-              >
-                <option value="">-- None --</option>
-                <option v-for="cc in costCenters" :key="cc" :value="cc">{{ cc }}</option>
-              </select>
+              <input
+                :value="form.cost_center || 'None'"
+                type="text"
+                class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-lg font-bold text-[var(--color-text)] outline-none opacity-80"
+                readonly
+                disabled
+              />
             </div>
           </div>
 
@@ -221,13 +221,6 @@
               @click="viewStatus = s"
             >{{ s }}</button>
           </div>
-          <select
-            v-model="filterCostCenter"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-xs font-bold text-[var(--color-text)] outline-none"
-          >
-            <option value="">All Cost Centers</option>
-            <option v-for="cc in costCenters" :key="cc" :value="cc">{{ cc }}</option>
-          </select>
           <input
             v-model="searchQuery"
             type="text"
@@ -552,7 +545,6 @@ async function loadEnquiry(name) {
 const enquiries = ref([])
 const listLoading = ref(false)
 const viewStatus = ref('Open')
-const filterCostCenter = ref('')
 const searchQuery = ref('')
 let searchTimer = null
 
@@ -562,7 +554,7 @@ async function fetchEnquiries() {
     enquiries.value = await frappePost(`${API}.get_enquiries`, {
       status: viewStatus.value,
       query: searchQuery.value,
-      cost_center: filterCostCenter.value || null,
+      cost_center: defaultCostCenter || null,
     })
   } catch {
     enquiries.value = []
@@ -571,7 +563,7 @@ async function fetchEnquiries() {
   }
 }
 
-watch([viewStatus, filterCostCenter], fetchEnquiries)
+watch(viewStatus, fetchEnquiries)
 watch(searchQuery, () => {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(fetchEnquiries, 300)
