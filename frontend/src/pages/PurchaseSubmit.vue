@@ -54,7 +54,7 @@
               v-model="filterDate"
               @change="loadInvoices"
               type="date"
-              class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+              class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-[3px] text-[24px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
             />
             <button
               @click="adjustDate(1)"
@@ -88,7 +88,7 @@
               :key="inv.name"
               :data-inv-name="inv.name"
               @click="selectInvoice(inv)"
-              class="mb-2 flex w-full flex-col gap-1 rounded-xl py-2.5 px-4 text-left transition-all outline-none group border shadow-sm"
+              class="mb-2 flex w-full flex-col gap-1 rounded-xl py-[5px] px-2 text-left transition-all outline-none group border shadow-sm"
               :class="selectedInvoice?.name === inv.name
                 ? 'bg-[var(--color-warning)] border-[var(--color-warning)] ring-2 ring-amber-500/30'
                 : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border-[var(--color-border)]'"
@@ -108,7 +108,7 @@
                 <span class="text-[10px] font-bold tracking-wider" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
                   DRAFT
                 </span>
-                <span class="text-[10px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
+                <span class="text-[20px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
                   {{ formatDate(inv.posting_date) }}
                 </span>
               </div>
