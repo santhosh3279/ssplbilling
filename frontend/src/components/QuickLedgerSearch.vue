@@ -33,7 +33,7 @@
             <!-- Row 1: Ledger Name (Label) & ID -->
             <div class="text-3xl font-normal truncate" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
               {{ ledger.label }}
-              <span class="text-xl font-mono opacity-60 ml-2" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">({{ ledger.name }})</span>
+              <span class="text-xl font-mono opacity-60 ml-2" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ ledger.name }}</span>
             </div>
             
             <!-- Row 2: Ledger Type, Mobile Number, WhatsApp Number -->
