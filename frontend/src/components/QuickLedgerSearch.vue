@@ -27,34 +27,37 @@
         :class="selectedIndex === idx ? 'bg-[var(--color-focus)] border-l-4 border-l-[var(--color-focus)] font-bold' : 'hover:bg-[var(--color-surface-raised)]/40'"
         @click="$emit('select', ledger)"
       >
-        <div class="flex items-center gap-6">
-          <!-- Column 1: Ledger Info -->
-          <div class="min-w-0 flex-1">
-            <div class="text-3xl font-normal truncate mb-1" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
+        <div class="flex items-center justify-between gap-6">
+          <!-- Left Content: 2-Row Info Layout -->
+          <div class="min-w-0 flex-1 flex flex-col gap-1.5">
+            <!-- Row 1: Ledger Name (Label) & ID -->
+            <div class="text-3xl font-normal truncate" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
               {{ ledger.label }}
+              <span class="text-xl font-mono opacity-60 ml-2" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">({{ ledger.name }})</span>
             </div>
-            <div class="flex items-center gap-2 text-xl font-mono opacity-60" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+            
+            <!-- Row 2: Ledger Type, Mobile Number, WhatsApp Number -->
+            <div class="flex items-center gap-4 text-xl font-mono opacity-65" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
               <span 
                 class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest shrink-0"
                 :class="getTypeClass(ledger.type)"
               >
                 {{ ledger.type }}
               </span>
-              <span class="truncate">{{ ledger.name }}</span>
-              <span v-if="ledger.group" class="truncate">· {{ ledger.group }}</span>
+              <span v-if="ledger.mobile_no" class="flex items-center gap-1 shrink-0">
+                <span class="opacity-50">📞</span>
+                <span>{{ ledger.mobile_no }}</span>
+              </span>
+              <span v-if="ledger.whatsapp" class="flex items-center gap-1 shrink-0">
+                <span class="opacity-50">💬</span>
+                <span>{{ ledger.whatsapp }}</span>
+              </span>
+              <span v-if="ledger.group" class="opacity-50 text-lg truncate">· {{ ledger.group }}</span>
             </div>
-          </div>
-          
-          <!-- Column 2: Contact Info (Middle) -->
-          <div class="w-48 shrink-0 flex flex-col justify-center">
-            <div v-if="ledger.mobile_no" class="text-2xl font-mono" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-text-muted)]'">
-              {{ ledger.mobile_no }}
-            </div>
-            <div v-else class="text-xs italic opacity-20" :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : ''">No Mobile</div>
           </div>
 
-          <!-- Column 3: Financial Info (Right) -->
-          <div class="w-64 shrink-0 flex flex-col items-end justify-center">
+          <!-- Right End: Ledger Balance -->
+          <div class="shrink-0 flex flex-col items-end justify-center">
             <div 
               class="text-3xl font-mono font-black" 
               :class="selectedIndex === idx ? '!text-[var(--color-text-on-focus)]' : (ledger.balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')"
