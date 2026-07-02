@@ -25,7 +25,7 @@
       </div>
       <div class="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 py-2">
         <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Date</span>
-        <span class="font-mono text-sm font-bold text-[var(--color-text)]">{{ postingDate }}</span>
+        <span class="font-mono text-sm font-bold text-[var(--color-text)]">{{ displayDate }}</span>
       </div>
     </div>
 
@@ -142,6 +142,7 @@ const props = defineProps({
   cashAccount: { type: String, required: true },
   diff:        { type: Number, required: true },
   entryType:   { type: String, required: true },
+  date:        { type: String, default: () => new Date().toLocaleDateString('en-CA') },
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -150,7 +151,16 @@ useShortcuts({
   'ESCAPE': () => emit('close')
 }, 'subwindow')
 
-const postingDate = new Date().toLocaleDateString('en-CA')
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+function formatDate(dateStr) {
+  if (!dateStr) return ""
+  const [y, m, d] = dateStr.split("-")
+  const month = monthNames[parseInt(m) - 1]
+  return `${d}-${month}-${y}`
+}
+
+const postingDate = props.date
+const displayDate = computed(() => formatDate(props.date))
 const loading  = ref(true)
 const saving   = ref(false)
 const saveError = ref('')

@@ -598,6 +598,7 @@
       :cash-account="localStorage.getItem('wb-cash') || ''"
       :diff="contraDiff"
       :entry-type="contraEntryType"
+      :date="currentDate"
       @close="showContraModal = false"
       @saved="onContraSaved"
     />
