@@ -186,6 +186,7 @@ doc_events = {
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
 		"on_cancel": [
+			"ssplbilling.incentive_utils.cancel_linked_invoice_incentives",
 			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
@@ -204,6 +205,7 @@ doc_events = {
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
 		"on_cancel": [
+			"ssplbilling.incentive_utils.cancel_linked_invoice_incentives",
 			"ssplbilling.api.stock_utils.publish_stock_updates",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
@@ -248,6 +250,9 @@ doc_events = {
 	"Journal Entry": {
 		"on_submit": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 		"on_cancel": "ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
+	},
+	"Stock Entry": {
+		"on_cancel": "ssplbilling.incentive_utils.cancel_linked_invoice_incentives",
 	},
 	"Invoice Incentive": {
 		"on_submit": "ssplbilling.incentive_utils.calculate_incentive_points",

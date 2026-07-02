@@ -60,6 +60,24 @@ def calculate_incentive_points(doc, method=None):
 	_update_employee_totals(doc, multiplier=1)
 
 
+def cancel_linked_invoice_incentives(doc, method=None):
+	"""Cancel submitted Invoice Incentive entries linked to a cancelled bill.
+
+	Hooked to on_cancel of Sales Invoice, Purchase Invoice and Stock Entry.
+	Cancelling the Invoice Incentive fires its own on_cancel hook
+	(reverse_incentive_points), which rolls back employee totals.
+	"""
+	entries = frappe.get_all(
+		"Invoice Incentive",
+		filters={"inv_no": doc.name, "docstatus": 1},
+		pluck="name",
+	)
+	for name in entries:
+		incentive = frappe.get_doc("Invoice Incentive", name)
+		incentive.flags.ignore_permissions = True
+		incentive.cancel()
+
+
 def reverse_incentive_points(doc, method=None):
 	"""Reverse employee incentive totals on document cancellation."""
 	if not getattr(doc, "incentive_system", None):
