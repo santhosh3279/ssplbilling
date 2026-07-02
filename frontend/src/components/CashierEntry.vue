@@ -67,6 +67,7 @@
                 <span class="text-[20px] ml-0.5">{{ ledgerBalance >= 0 ? 'DR' : 'CR' }}</span>
               </template>
               <button 
+                v-if="!savedName && !contraName"
                 type="button"
                 @click.stop="fetchLedgerBalanceManual(form.cash)"
                 :disabled="loadingBalance || !form.cash"
