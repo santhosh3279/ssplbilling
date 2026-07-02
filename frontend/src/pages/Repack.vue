@@ -101,6 +101,7 @@
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">UOM</th>
+          <th v-for="pl in priceLists" :key="pl" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-36">{{ pl }}</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-center text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-36">Type</th>
           <th class="border-b border-[var(--color-border)] w-12"></th>
         </tr>
@@ -126,6 +127,9 @@
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ item.qty }}</span>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom }}</td>
+          <td v-for="pl in priceLists" :key="pl" class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/80 tabular-nums bg-transparent">
+            {{ formatRate(getPriceListRate(item, pl)) }}
+          </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-center">
             <span 
               v-if="isReadOnly"
@@ -169,6 +173,9 @@
               />
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td v-for="pl in priceLists" :key="pl" class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/70 tabular-nums bg-transparent">
+              {{ formatRate(getPriceListRate(pendingItem, pl)) }}
+            </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-center">
               <select 
                 ref="pendingTypeInput"
@@ -199,7 +206,7 @@
               @keydown="handleBarcodeKeydown"
             />
           </td>
-          <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to Repack</td>
+          <td :colspan="5 + priceLists.length" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to Repack</td>
         </tr>
       </template>
     </Stock_Template>
@@ -295,11 +302,49 @@ const saveButtonText = computed(() => {
   return 'Save'
 })
 
+const priceLists = ref([])
+try {
+  priceLists.value = JSON.parse(localStorage.getItem('wb-pricelist') || '[]')
+} catch {
+  priceLists.value = []
+}
+
+function getPriceListRate(item, priceListName) {
+  if (!item) return 0.0
+  if (item.price_lists) {
+    const pl = item.price_lists.find(p => p.name === priceListName)
+    if (pl) return pl.rate
+  }
+  const cached = lookupItemInCache(item.item_code)
+  if (cached && cached.price_lists) {
+    const pl = cached.price_lists.find(p => p.name === priceListName)
+    if (pl) return pl.rate
+  }
+  return 0.0
+}
+
+function formatRate(val) {
+  const num = parseFloat(val)
+  return isNaN(num) ? '0.00' : num.toFixed(2)
+}
+
 onMounted(async () => {
   await fetchMetadata()
   await fetchRecentRepacks()
   refreshItemCache('Stock')
   focusBarcodeInput()
+
+  if (!priceLists.value.length) {
+    try {
+      const res = await frappePost('ssplbilling.api.SaleEntry_api.get_sync_metadata')
+      if (res && res.price_lists) {
+        priceLists.value = res.price_lists
+        localStorage.setItem('wb-pricelist', JSON.stringify(res.price_lists))
+      }
+    } catch (e) {
+      console.error('Failed to fetch price lists:', e)
+    }
+  }
 })
 
 async function fetchMetadata() {
