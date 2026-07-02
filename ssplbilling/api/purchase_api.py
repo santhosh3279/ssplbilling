@@ -222,6 +222,11 @@ def create_purchase_invoice(data=None, **kwargs):
     if data.get("cost_center"):
         pi.cost_center = data["cost_center"]
 
+    pi.custom_customer_name = data.get("custom_customer_name") or ""
+    pi.custom_address_line1 = data.get("custom_address_line1") or ""
+    pi.custom_address_line2 = data.get("custom_address_line2") or ""
+    pi.custom_mobile_number = data.get("custom_mobile_number") or ""
+
     if data.get("discount_percentage"):
         pi.additional_discount_percentage = float(data["discount_percentage"])
 
@@ -428,6 +433,10 @@ def get_purchase_invoice(invoice_name):
         "supplier": pi.supplier,
         "supplier_name": pi.supplier_name,
         "customer_name": pi.supplier_name,
+        "custom_customer_name": pi.get("custom_customer_name") or "",
+        "custom_address_line1": pi.get("custom_address_line1") or "",
+        "custom_address_line2": pi.get("custom_address_line2") or "",
+        "custom_mobile_number": pi.get("custom_mobile_number") or "",
         "bill_no": pi.bill_no or "",
         "bill_date": str(pi.bill_date) if pi.bill_date else "",
         "state": party_state,
@@ -498,6 +507,12 @@ def update_purchase_invoice(data=None, **kwargs):
     pi.bill_date = data.get("bill_date")
     pi.posting_date = data.get("date", frappe.utils.today())
     pi.set_posting_time = 1
+
+    pi.custom_customer_name = data.get("custom_customer_name") or ""
+    pi.custom_address_line1 = data.get("custom_address_line1") or ""
+    pi.custom_address_line2 = data.get("custom_address_line2") or ""
+    pi.custom_mobile_number = data.get("custom_mobile_number") or ""
+
     # Do not overwrite posting_time if it's already set on existing document,
     # unless it's explicitly passed in data.
     if not pi.posting_time:

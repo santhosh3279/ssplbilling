@@ -743,6 +743,13 @@
       :history="supplierPurchaseHistory"
     />
 
+    <CustomAddress
+      v-if="showCustomAddressModal"
+      :initial-data="customAddress"
+      @saved="data => { customAddress = data }"
+      @close="showCustomAddressModal = false"
+    />
+
   </div>
 </template>
 
@@ -760,6 +767,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
+import CustomAddress from '../components/CustomAddress.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -858,6 +866,8 @@ const showExitWarning = ref(false)
 const supplierInitialQuery = ref('')
 const showHistoryModal = ref(false)
 const invoiceTemplateRef = ref(null)
+const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
+const showCustomAddressModal = ref(false)
 const priceListSelectRef = ref(null)
 const taxTemplateRef = ref(null)
 const inclusiveTaxRef = ref(null)
@@ -1086,6 +1096,13 @@ async function handleSelectSidebarItem(item) {
     supplierId.value = data.supplier || ''
     supplierName.value = data.supplier_name || data.customer_name || 'Select Supplier...'
     supplierState.value = data.state || ''
+
+    customAddress.value = {
+      customer_name: data.custom_customer_name || '',
+      mobile_number: data.custom_mobile_number || '',
+      address_line_1: data.custom_address_line1 || '',
+      address_line_2: data.custom_address_line2 || '',
+    }
 
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
@@ -1394,6 +1411,7 @@ async function clearBill() {
   supplierInvoiceNo.value = ''
   supplierInvoiceDate.value = new Date().toISOString().split('T')[0]
   clearHistory()
+  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
   invoiceNo.value = 'NEW'
   postingTime.value = ''
   isReturn.value = false
@@ -1499,6 +1517,10 @@ async function handleSave() {
     update_stock: 1,
     date: invoiceDate.value,
     price_list: priceList.value,
+    custom_customer_name: customAddress.value.customer_name || '',
+    custom_address_line1: customAddress.value.address_line_1 || '',
+    custom_address_line2: customAddress.value.address_line_2 || '',
+    custom_mobile_number: customAddress.value.mobile_number || '',
     discount_percentage: discountPct.value,
     tax_template: taxTemplate.value,
     cost_center: costCenter.value,
@@ -2570,7 +2592,7 @@ useShortcuts(salesInvoiceShortcuts({
   modify:           () => handleModify(),
   print:            () => handlePrint(),
   'ALT+P':          () => handleBarcodePrint(),
-  openParcelAddress:() => {},
+  openParcelAddress:() => { showCustomAddressModal.value = true },
   save:             () => handleSave(),
   cancel:           () => handleCancel(),
   pageUp:           () => handlePageUp(),
@@ -2591,9 +2613,14 @@ function handleGlobalEscape(e) {
       showHistoryModal.value = false
       return
     }
+    if (showCustomAddressModal.value) {
+      showCustomAddressModal.value = false
+      return
+    }
     const modalOpen = showSeriesModal.value || showSupplierModal.value || 
                       showItemSearch.value || showPrintModal.value || 
                       showJumpModal.value || 
+                      showCustomAddressModal.value ||
                       showClearWarning.value || showExitWarning.value || 
                       showShortcutPage.value || showPriceListUpdate.value || 
                       showBarcodeModal.value || showHistoryModal.value ||
