@@ -12,14 +12,14 @@
         </button>
         <h1 class="text-lg font-bold tracking-tight text-[var(--color-text)]">PURCHASE SUBMISSION</h1>
         <div class="h-4 w-px bg-[var(--color-surface-raised)] mx-2"></div>
-        <span class="rounded-full bg-[var(--color-warning)]/20 px-3 py-1 text-xs font-semibold text-[var(--color-warning)] border border-[var(--color-warning)]">
+        <span class="rounded-full bg-[var(--color-warning)]/20 px-3 py-1 text-[14px] font-semibold text-[var(--color-warning)] border border-[var(--color-warning)]">
           {{ invoices.length }} Pending Purchases
         </span>
       </div>
       <div class="flex items-center gap-4">
         <div class="text-right">
-          <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Current Date</div>
-          <div class="text-sm font-medium text-[var(--color-text)]">{{ todayStr }}</div>
+          <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Current Date</div>
+          <div class="text-[17px] font-medium text-[var(--color-text)]">{{ todayStr }}</div>
         </div>
       </div>
     </header>
@@ -38,7 +38,7 @@
               @input="debouncedSearch"
               type="text"
               placeholder="Search PINV or supplier..."
-              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-4 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)] transition-all"
+              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-4 text-[14px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)] transition-all"
             />
           </div>
           <div class="flex gap-1 items-center">
@@ -54,7 +54,7 @@
               v-model="filterDate"
               @change="loadInvoices"
               type="date"
-              class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-[3px] text-[24px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+              class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-[3px] text-[14px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
             />
             <button
               @click="adjustDate(1)"
@@ -76,11 +76,11 @@
         <div class="flex-1 overflow-y-auto custom-scrollbar bg-[var(--color-bg)]/30">
           <div v-if="loadingList" class="flex flex-col items-center justify-center py-20 opacity-50">
             <div class="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-warning)] border-t-transparent mb-2"></div>
-            <span class="text-xs text-[var(--color-text-muted)]">Loading purchases...</span>
+            <span class="text-[14px] text-[var(--color-text-muted)]">Loading purchases...</span>
           </div>
           <div v-else-if="invoices.length === 0" class="flex flex-col items-center justify-center py-20 opacity-30">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-[var(--color-text-muted)]"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span class="text-sm font-medium text-[var(--color-text-muted)]">No draft purchases found</span>
+            <span class="text-[17px] font-medium text-[var(--color-text-muted)]">No draft purchases found</span>
           </div>
           <div v-else class="px-3 pb-4">
             <button
@@ -105,10 +105,10 @@
                 {{ inv.supplier_name }}
               </div>
               <div class="flex items-center justify-between mt-1">
-                <span class="text-[10px] font-bold tracking-wider" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
+                <span class="text-[12px] font-bold tracking-wider" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
                   DRAFT
                 </span>
-                <span class="text-[20px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
+                <span class="text-[12px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
                   {{ formatDate(inv.posting_date) }}
                 </span>
               </div>
@@ -130,18 +130,18 @@
             <div class="flex items-center gap-4">
               <div>
                 <h2 class="text-xl font-bold text-[var(--color-text)] leading-none mb-1">{{ selectedInvoice.name }}</h2>
-                <p class="text-sm font-medium text-[var(--color-text-muted)]">{{ selectedInvoice.supplier_name }}</p>
+                <p class="text-[17px] font-medium text-[var(--color-text-muted)]">{{ selectedInvoice.supplier_name }}</p>
               </div>
-              <div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] px-2.5 py-1 rounded-md border border-[var(--color-border)]">
+              <div class="flex items-center gap-2 text-[14px] text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] px-2.5 py-1 rounded-md border border-[var(--color-border)]">
                 <span>Date: <span class="font-bold text-[var(--color-text)]">{{ formatDate(selectedInvoice.posting_date) }}</span></span>
                 <span class="h-3 w-px bg-[var(--color-border)]"></span>
-                <span class="font-bold uppercase tracking-wider text-[var(--color-warning)] text-[10px]">DRAFT</span>
+                <span class="font-bold uppercase tracking-wider text-[var(--color-warning)] text-[12px]">DRAFT</span>
               </div>
             </div>
             <div class="flex gap-3">
               <!-- MODIFY BUTTON -->
               <button
-                class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
+                class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-[17px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
                 @click="showModifyModal = true"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
@@ -149,7 +149,7 @@
               </button>
               <!-- BARCODE PRINT BUTTON -->
               <button
-                class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
+                class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-[17px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
                 @click="handleBarcodePrint"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2z"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></svg>
@@ -157,7 +157,7 @@
               </button>
               <!-- BILL PRINT BUTTON -->
               <button
-                class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
+                class="flex items-center gap-2 rounded-lg bg-[var(--color-surface-raised)] px-4 py-2 text-[17px] font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all border border-[var(--color-border)] shadow-sm active:scale-95"
                 @click="handleBillPrint"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)]"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
@@ -211,43 +211,43 @@
         <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           <div v-if="!selectedInvoice" class="flex flex-col items-center justify-center h-full text-[var(--color-text-muted)] text-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 mx-auto"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            <p class="text-xs font-medium uppercase tracking-wider">Select purchase to submit</p>
+            <p class="text-[14px] font-medium uppercase tracking-wider">Select purchase to submit</p>
           </div>
 
           <template v-else>
             <!-- SUMMARY CARD -->
             <div class="rounded-2xl bg-[var(--color-warning)]/20 border-2 border-[var(--color-warning)] p-6 relative overflow-hidden text-center">
               <div class="absolute top-0 left-0 w-full h-1 bg-[var(--color-warning)]"></div>
-              <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-warning)] mb-2">Total Payable to Supplier</div>
+              <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-warning)] mb-2">Total Payable to Supplier</div>
               <div class="text-4xl font-black tracking-tight text-[var(--color-text)] font-mono">
                 {{ fmt(selectedInvoice.rounded_total || selectedInvoice.grand_total) }}
               </div>
-              <div class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-surface-raised)] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+              <div class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-surface-raised)] px-3 py-1 text-[12px] font-bold uppercase tracking-widest text-[var(--color-text)]">
                 Credit Purchase
               </div>
             </div>
 
             <div class="space-y-4">
               <div class="p-4 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)]">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Submission Note</div>
-                <p class="text-xs text-[var(--color-text)] leading-relaxed">
+                <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Submission Note</div>
+                <p class="text-[14px] text-[var(--color-text)] leading-relaxed">
                   Submitting this invoice will update your stock and post the liability to the supplier's ledger as a credit entry.
                 </p>
               </div>
 
               <!-- SUBMIT ACTION -->
               <div class="pt-4">
-                <div v-if="errorMsg" class="mb-4 rounded-xl bg-[var(--color-danger)]/20 p-3 text-xs font-bold text-[var(--color-danger)] border border-[var(--color-danger)]">
+                <div v-if="errorMsg" class="mb-4 rounded-xl bg-[var(--color-danger)]/20 p-3 text-[14px] font-bold text-[var(--color-danger)] border border-[var(--color-danger)]">
                   {{ errorMsg }}
                 </div>
-                <div v-if="successMsg" class="mb-4 rounded-xl bg-[var(--color-success)]/20 p-3 text-xs font-bold text-[var(--color-success)] border border-[var(--color-success)]">
+                <div v-if="successMsg" class="mb-4 rounded-xl bg-[var(--color-success)]/20 p-3 text-[14px] font-bold text-[var(--color-success)] border border-[var(--color-success)]">
                   {{ successMsg }}
                 </div>
 
                 <button
                   @click="confirmSubmission"
                   :disabled="isSubmitting"
-                  class="flex w-full items-center justify-center gap-2 rounded-2xl py-5 text-sm font-bold uppercase tracking-widest transition-all active:scale-95 disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:shadow-none shadow-lg text-[var(--color-text-on-highlight)] bg-[var(--color-warning)] hover:bg-[var(--color-warning)] shadow-amber-900/50 group"
+                  class="flex w-full items-center justify-center gap-2 rounded-2xl py-5 text-[17px] font-bold uppercase tracking-widest transition-all active:scale-95 disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:shadow-none shadow-lg text-[var(--color-text-on-highlight)] bg-[var(--color-warning)] hover:bg-[var(--color-warning)] shadow-amber-900/50 group"
                 >
                   <span v-if="isSubmitting" class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                   <span v-else>Confirm & Submit Purchase</span>
