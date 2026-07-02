@@ -223,8 +223,8 @@
                   {{ (closingTotal-closingLedger).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </td>
                 <td class="px-2 py-3 text-center">
-                  <template v-if="(closingTotal-closingLedger)!==0">
-                    <span v-if="Math.abs(liveLedgerBalance-closingTotal)<0.01"
+                  <template v-if="(closingTotal-closingLedger)!==0 || dayContras['Closing']">
+                    <span v-if="Math.abs(liveLedgerBalance-closingTotal)<0.01 || dayContras['Closing']"
                       class="inline-flex items-center rounded bg-[var(--color-success)]/20 border border-[var(--color-success)]/40 px-2 py-0.5 text-xs font-black text-[var(--color-success)] whitespace-nowrap">
                       ✓ Adjusted
                     </span>
@@ -764,6 +764,22 @@ const md2Ledger = ref(Number(localStorage.getItem('md2_ledger_balance') || 0))
 const closingTotal = ref(Number(localStorage.getItem('closing_cash') || 0))
 const closingLedger = ref(Number(localStorage.getItem('closing_ledger_balance') || 0))
 
+const dayContras = ref({})
+
+async function fetchDayContras() {
+  const account = localStorage.getItem('wb-cash') || ''
+  if (!account) return
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_day_contras', {
+      account,
+      date: currentDate.value
+    })
+    dayContras.value = res || {}
+  } catch (e) {
+    console.warn('[Cahier] fetchDayContras failed:', e)
+  }
+}
+
 
 // Cash Ledger Entries
 const cashLedgerEntries = ref([])
@@ -947,12 +963,12 @@ async function exportToExcel() {
 }
 
 onMounted(async () => {
-  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries(), fetchUpiLedgerEntries()])
+  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries(), fetchUpiLedgerEntries(), fetchDayContras()])
 })
 
 watch(currentDate, async () => {
   selectedSeries.value = []
-  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries(), fetchUpiLedgerEntries()])
+  await Promise.all([refreshAll(), refreshLiveLedger(), refreshUpi(), fetchTodayBills(), fetchCashLedgerEntries(), fetchUpiLedgerEntries(), fetchDayContras()])
 })
 
 function openModal(title) {
@@ -1022,7 +1038,7 @@ async function refreshAll() {
 }
 
 async function onBoxCashSaved() {
-  await Promise.all([refreshAll(), refreshLiveLedger(), fetchTodayBills(), fetchCashLedgerEntries()])
+  await Promise.all([refreshAll(), refreshLiveLedger(), fetchTodayBills(), fetchCashLedgerEntries(), fetchDayContras()])
 }
 
 function openContra(entryType, diff) {
@@ -1034,7 +1050,7 @@ function openContra(entryType, diff) {
 
 async function onContraSaved() {
   showContraModal.value = false
-  await Promise.all([refreshAll(), refreshLiveLedger()])
+  await Promise.all([refreshAll(), refreshLiveLedger(), fetchDayContras()])
   const diff = contraEntryType.value === 'Opening'
     ? openingTotal.value - openingLedger.value
     : closingTotal.value - closingLedger.value

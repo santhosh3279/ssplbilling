@@ -86,6 +86,16 @@
           </div>
         </div>
 
+        <!-- Contra Entry status banner -->
+        <div v-if="contraName" class="rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 p-4 text-center">
+          <div class="text-sm font-black uppercase tracking-wider text-[var(--color-success)] mb-1">
+            ✓ Adjusted via Contra
+          </div>
+          <div class="font-mono text-2xl font-black text-[var(--color-text)]">
+            {{ contraName }}
+          </div>
+        </div>
+
         <!-- Denomination Section -->
         <div>
           <div class="mb-1.5 text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-t border-[var(--color-border)] pt-2">
@@ -103,7 +113,8 @@
                   type="number"
                   min="0"
                   placeholder="0"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-0.5 py-0.5 text-2xl text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)]"
+                  :disabled="!!contraName"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-0.5 py-0.5 text-2xl text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)] disabled:opacity-60 disabled:cursor-not-allowed"
                   @keydown.enter.prevent="onDenomEnter(i)"
                   @keydown.down.prevent="denomInputRefs[i + 1]?.focus()"
                   @keydown.up.prevent="denomInputRefs[i - 1]?.focus()"
@@ -133,7 +144,8 @@
 
       <!-- Footer -->
       <div class="flex items-center justify-between border-t border-[var(--color-border)] px-3 py-2 bg-[var(--color-surface-raised)]/10">
-        <div v-if="savedName" class="text-xl text-[var(--color-success)] font-mono font-bold">Saved: {{ savedName }}</div>
+        <div v-if="contraName" class="text-xl text-[var(--color-success)] font-mono font-bold">Adjusted via {{ contraName }}</div>
+        <div v-else-if="savedName" class="text-xl text-[var(--color-success)] font-mono font-bold">Saved: {{ savedName }}</div>
         <div v-else class="text-xl text-[var(--color-text-muted)] font-medium">Fill denominations and save</div>
         <div class="flex gap-1.5">
           <button
@@ -144,7 +156,7 @@
           </button>
           <button
             class="rounded-lg bg-[var(--color-info)] px-2.5 py-1 text-lg font-bold text-[var(--color-text-on-highlight)] hover:brightness-110 active:scale-95 transition disabled:opacity-50 disabled:active:scale-100"
-            :disabled="saving || !form.cash"
+            :disabled="saving || !form.cash || !!contraName"
             @click="handleSave"
           >
             <span v-if="saving">Saving…</span>
@@ -220,6 +232,7 @@ const ledgerBalance = ref(0)
 const saving = ref(false)
 const saveError = ref('')
 const savedName = ref('')
+const contraName = ref('')
 
 const total = computed(() =>
   denominations.reduce((s, d) => s + (Number(form.denominations[d]) || 0) * d, 0),
@@ -311,8 +324,22 @@ async function fetchExistingRecord() {
         await fetchLedgerBalanceManual(form.cash)
       }
     }
+    await fetchContraEntry()
   } catch (e) {
     console.warn('[CahierEntry] fetchExistingRecord failed:', e)
+  }
+}
+
+async function fetchContraEntry() {
+  if (!form.cash || !form.date) return
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_day_contras', {
+      account: form.cash,
+      date: form.date
+    })
+    contraName.value = res?.[form.opening_or_closing] || ''
+  } catch (e) {
+    console.warn('[CahierEntry] fetchContraEntry failed:', e)
   }
 }
 
@@ -347,8 +374,11 @@ watch(() => form.opening_or_closing, async () => {
 
 // ── Fetch ledger balance whenever cash account is set ────────────────────────
 watch(() => form.cash, async (account) => {
-  if (!account || savedName.value) return
-  await fetchLedgerBalanceManual(account)
+  if (!account) return
+  if (!savedName.value) {
+    await fetchLedgerBalanceManual(account)
+  }
+  await fetchContraEntry()
 }, { immediate: false })
 
 // ── Save ─────────────────────────────────────────────────────────────────────

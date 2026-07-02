@@ -326,3 +326,36 @@ def save_cashier_opening(date, cash, cash_ledger_balance, opening_or_closing, us
 	doc.total = float(total or 0)
 	doc.save(ignore_permissions=True)
 	return doc
+
+
+@frappe.whitelist()
+def get_day_contras(account, date):
+	"""Return a dictionary of session_type -> journal_entry_name for Contra Entry JVs on a date and account."""
+	if not account:
+		return {}
+
+	entries = frappe.db.sql(
+		"""
+		SELECT je.name, je.user_remark
+		FROM `tabJournal Entry` je
+		JOIN `tabJournal Entry Account` jea ON je.name = jea.parent
+		WHERE je.posting_date = %s
+		  AND je.voucher_type = 'Contra Entry'
+		  AND je.docstatus = 1
+		  AND jea.account = %s
+		""",
+		(date, account),
+		as_dict=True,
+	)
+
+	result = {}
+	for e in entries:
+		remark = e.get("user_remark") or ""
+		# Check which session type this matches
+		for session_type in ["Opening", "Mid-Day-1", "Mid-Day-2", "Closing"]:
+			# Support both 'Opening' and 'Cashier Opening'
+			if session_type in remark or (session_type == "Opening" and "Cashier Opening" in remark):
+				result[session_type] = e.get("name")
+				break
+	return result
+
