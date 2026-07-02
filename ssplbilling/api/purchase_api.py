@@ -453,6 +453,7 @@ def get_purchase_invoice(invoice_name):
         "loading_amount": loading_amount,
         "other_charges_amount": other_charges_amount,
         "grand_total": float(pi.grand_total or 0),
+        "rounded_total": float(pi.get("rounded_total") or pi.grand_total or 0),
         "tax_template": pi.taxes_and_charges or "",
         "is_inclusive": is_inclusive,
         "cost_center": cost_center or "",

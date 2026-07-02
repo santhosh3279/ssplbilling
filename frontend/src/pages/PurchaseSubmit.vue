@@ -94,11 +94,11 @@
                 : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border-[var(--color-border)]'"
             >
               <div class="flex items-start justify-between">
-                <span class="font-mono text-[16.5px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-warning)]'">
+                <span class="font-mono text-[16.5px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-warning)]'">
                   {{ inv.name }}
                 </span>
                 <span class="text-[18px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-success)]'">
-                  {{ fmt(inv.grand_total) }}
+                  {{ fmt(inv.rounded_total || inv.grand_total) }}
                 </span>
               </div>
               <div class="truncate text-[21px] font-semibold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'">
@@ -196,8 +196,8 @@
               <div class="mt-8 flex justify-end">
                 <div class="w-80 space-y-3">
                   <div class="flex justify-between border-t border-[var(--color-border)] pt-3 text-[27px] font-bold text-[var(--color-text)]">
-                    <span>Grand Total</span>
-                    <span class="font-mono text-[var(--color-warning)]">{{ fmt(selectedInvoice.grand_total) }}</span>
+                    <span>Rounded Total</span>
+                    <span class="font-mono text-[var(--color-warning)]">{{ fmt(selectedInvoice.rounded_total || selectedInvoice.grand_total) }}</span>
                   </div>
                 </div>
               </div>
@@ -220,7 +220,7 @@
               <div class="absolute top-0 left-0 w-full h-1 bg-[var(--color-warning)]"></div>
               <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-warning)] mb-2">Total Payable to Supplier</div>
               <div class="text-4xl font-black tracking-tight text-[var(--color-text)] font-mono">
-                {{ fmt(selectedInvoice.grand_total) }}
+                {{ fmt(selectedInvoice.rounded_total || selectedInvoice.grand_total) }}
               </div>
               <div class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-surface-raised)] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text)]">
                 Credit Purchase
@@ -475,7 +475,7 @@ async function confirmSubmission() {
   try {
     const invName = selectedInvoice.value.name
     const supplier = selectedInvoice.value.supplier
-    const grandTotal = selectedInvoice.value.grand_total
+    const grandTotal = selectedInvoice.value.rounded_total || selectedInvoice.value.grand_total
 
     await submitPurchaseInvoice(invName)
     
