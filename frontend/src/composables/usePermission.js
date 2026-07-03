@@ -4,7 +4,7 @@
  * Role-based access control using localStorage flags set by GeneralSettings.
  *
  * OVERRIDE: when SSPL Dashboard Tile Access is configured for the user
- * (wb-allowed-tiles-v2 cache written by Dashboard.vue), routes are allowed
+ * (wb-allowed-tiles-v3 cache written by Dashboard.vue), routes are allowed
  * only for the visible tiles and the role matrix below is bypassed.
  *
  * Flags (set via USER SERIES row in SSPL Billing Settings):
@@ -120,12 +120,12 @@ export function getUserRole() {
 
 /**
  * Returns the tile ids configured via SSPL Dashboard Tile Access, read from the
- * cache written by Dashboard.vue (wb-allowed-tiles-v2), or null when tile access
+ * cache written by Dashboard.vue (wb-allowed-tiles-v3), or null when tile access
  * is not doctype-configured for this user.
  */
 function getConfiguredTileIds() {
   try {
-    const cached = JSON.parse(localStorage.getItem('wb-allowed-tiles-v2') || 'null')
+    const cached = JSON.parse(localStorage.getItem('wb-allowed-tiles-v3') || 'null')
     return Array.isArray(cached?.tiles) ? cached.tiles : null
   } catch {
     return null

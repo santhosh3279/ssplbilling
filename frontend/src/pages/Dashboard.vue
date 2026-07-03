@@ -638,14 +638,16 @@ const allTiles = [
 // Cached in localStorage with TTL (same policy as billing settings) so login /
 // dashboard reloads within the window don't refetch. Cache is keyed to the
 // resolved user, so switching the inherited user invalidates it automatically.
-const TILE_CACHE_KEY = 'wb-allowed-tiles-v2'
+// v3: v2 caches hold the pre-ordering (alphabetical) tile list — key bump forces a refetch
+const TILE_CACHE_KEY = 'wb-allowed-tiles-v3'
 const TILE_CACHE_TTL = 30 * 60 * 1000 // 30 mins
 
 function readTileCache() {
   try { return JSON.parse(localStorage.getItem(TILE_CACHE_KEY) || 'null') } catch { return null }
 }
 
-localStorage.removeItem('wb-allowed-tiles') // drop pre-TTL cache key
+localStorage.removeItem('wb-allowed-tiles')    // drop pre-TTL cache key
+localStorage.removeItem('wb-allowed-tiles-v2') // drop pre-ordering cache key
 const _tileCache = readTileCache()
 const allowedTileIds = ref(_tileCache && _tileCache.user === selectedUser.value ? _tileCache.tiles : null)
 
