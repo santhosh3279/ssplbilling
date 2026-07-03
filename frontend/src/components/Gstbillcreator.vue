@@ -70,7 +70,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
-import { frappeGet, frappePost } from '../api'
+import { frappePost } from '../api'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
@@ -89,25 +90,15 @@ useSubwindowWatcher(computed(() => props.show), {
 })
 
 const modalRef = ref(null)
-const allowedSeries = ref([])
-const loading = ref(false)
+// Cache-first: resolves from the local series cache ∩ wb-allowed-series,
+// hitting the server (as the inherited user) only when local data is unavailable.
+const { allowedSeries, loading, fetchAllowedSeries: fetchSeries } = useAllowedSeries()
 const creating = ref(false)
 const focusedIndex = ref(0)
 
-async function fetchAllowedSeries() {
-  loading.value = true
-  try {
-    const targetUser = localStorage.getItem('wb-inherited-user') || session.user.value
-    const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', {
-      doctype: props.doctype,
-      user: targetUser
-    })
-    allowedSeries.value = d.allowed_series || []
-  } catch (e) {
-    console.error('[Gstbillcreator] Fetch failed:', e)
-  } finally {
-    loading.value = false
-  }
+function fetchAllowedSeries() {
+  const targetUser = localStorage.getItem('wb-inherited-user') || session.user.value
+  return fetchSeries(props.doctype, targetUser)
 }
 
 async function selectSeries(s) {

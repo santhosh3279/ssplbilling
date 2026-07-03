@@ -54,7 +54,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import { frappeGet } from '../api'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -68,47 +68,19 @@ useSubwindowWatcher(computed(() => props.show), {
   ESCAPE: () => emit('close')
 })
 
-const allowedSeries = ref([])
-const loading = ref(false)
+// Cache-first: resolves from the local series cache ∩ wb-allowed-series,
+// hitting the server only when the local data is unavailable.
+const { allowedSeries, loading, fetchAllowedSeries: fetchSeries } = useAllowedSeries()
 const currentSeries = ref(localStorage.getItem('wb-series') || '')
 const focusedIndex = ref(0)
 
 async function fetchAllowedSeries() {
-  loading.value = true
-  try {
-    // 1. Fetch backend allowed series (strictly filtered)
-    const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', {
-      doctype: props.doctype
-    })
-    let series = d.allowed_series || []
+  await fetchSeries(props.doctype)
 
-    // 2. Intersect with wb-allowed-series from localStorage
-    const storedAllowedRaw = localStorage.getItem('wb-allowed-series')
-    if (storedAllowedRaw) {
-      try {
-        const storedAllowed = JSON.parse(storedAllowedRaw)
-        if (Array.isArray(storedAllowed) && storedAllowed.length > 0) {
-          // Match DocType series if it starts with any allowed prefix
-          series = series.filter(s => 
-            storedAllowed.some(prefix => s.startsWith(prefix))
-          )
-        }
-      } catch (e) {
-        console.error('[Userseries] Failed to parse wb-allowed-series:', e)
-      }
-    }
-
-    allowedSeries.value = series
-    
-    // Set focused index to current series if found, otherwise 0
-    if (currentSeries.value) {
-      const idx = allowedSeries.value.indexOf(currentSeries.value)
-      if (idx !== -1) focusedIndex.value = idx
-    }
-  } catch (e) {
-    console.error('[Userseries] Fetch failed:', e)
-  } finally {
-    loading.value = false
+  // Set focused index to current series if found, otherwise 0
+  if (currentSeries.value) {
+    const idx = allowedSeries.value.indexOf(currentSeries.value)
+    if (idx !== -1) focusedIndex.value = idx
   }
 }
 

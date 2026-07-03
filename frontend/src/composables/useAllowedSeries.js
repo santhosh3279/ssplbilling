@@ -16,7 +16,7 @@ export function useAllowedSeries() {
     }
   }
 
-  async function fetchAllowedSeries(doctype) {
+  async function fetchAllowedSeries(doctype, user = null) {
     loading.value = true
     try {
       const allowedPrefixes = readAllowedPrefixes()
@@ -37,9 +37,9 @@ export function useAllowedSeries() {
       }
 
       // 2. Fallback: fetch backend allowed series (strictly filtered)
-      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', {
-        doctype: doctype
-      })
+      const params = { doctype: doctype }
+      if (user) params.user = user
+      const d = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', params)
       let series = d.allowed_series || []
 
       if (allowedPrefixes) {
