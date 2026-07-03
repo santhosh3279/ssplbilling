@@ -3,6 +3,10 @@
  * ─────────────────────────────────────────────────────────────────────
  * Role-based access control using localStorage flags set by GeneralSettings.
  *
+ * OVERRIDE: when SSPL Dashboard Tile Access is configured for the user
+ * (wb-allowed-tiles-v2 cache written by Dashboard.vue), routes are allowed
+ * only for the visible tiles and the role matrix below is bypassed.
+ *
  * Flags (set via USER SERIES row in SSPL Billing Settings):
  *   wb-role-admin    = '1' | '0'
  *   wb-role-cashier  = '1' | '0'
@@ -115,11 +119,38 @@ export function getUserRole() {
 }
 
 /**
+ * Returns the tile ids configured via SSPL Dashboard Tile Access, read from the
+ * cache written by Dashboard.vue (wb-allowed-tiles-v2), or null when tile access
+ * is not doctype-configured for this user.
+ */
+function getConfiguredTileIds() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('wb-allowed-tiles-v2') || 'null')
+    return Array.isArray(cached?.tiles) ? cached.tiles : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Returns true if the current user may navigate to the given route name.
  * Dashboard and Login are always accessible.
+ *
+ * When tiles are configured via SSPL Dashboard Tile Access, only the routes of
+ * the visible tiles are allowed and the role-based sets below are bypassed.
+ * Without a tile configuration, the role-based logic applies as before.
  */
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login', 'DailyReport', 'Catelogue'].includes(routeName)) return true
+
+  const tileIds = getConfiguredTileIds()
+  if (tileIds) {
+    const allowed = new Set(tileIds.map((id) => TILE_ROUTE_MAP[id]).filter(Boolean))
+    // Tiles that reach pages indirectly (via search modals) rather than TILE_ROUTE_MAP
+    if (tileIds.includes('outstanding-bills')) allowed.add('CustomerLedger')
+    return allowed.has(routeName)
+  }
+
   const role = getUserRole()
   if (role === 'admin') return ADMIN_ROUTES.has(routeName)
   if (role === 'accounts') return ACCOUNTS_ROUTES.has(routeName)
