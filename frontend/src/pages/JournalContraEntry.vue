@@ -118,14 +118,14 @@
                     @click="openLedgerSearch(idx)"
                     @keydown.enter.prevent.stop="openLedgerSearch(idx)"
                     tabindex="0"
-                    class="w-full h-full min-h-[48px] px-3 py-2 text-2xl font-bold cursor-pointer hover:bg-black/5 transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)]"
+                    class="w-full h-full min-h-[56px] px-3 py-2 text-2xl font-bold cursor-pointer hover:bg-black/5 transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)]"
                     :class="row.account ? 'text-inherit' : 'text-[var(--color-text-muted)] italic group-focus-within:text-inherit/60'"
                   >
                     <span class="truncate">{{ row.account_name || 'Select Ledger...' }}</span>
                   </div>
                 </td>
                 <td class="px-3 py-0 text-right border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30">
-                  <div v-if="row.account" class="text-2xl font-bold text-[var(--color-text-muted)] font-mono whitespace-nowrap">
+                  <div v-if="row.account" class="text-3xl font-bold text-[var(--color-text-muted)] font-mono whitespace-nowrap">
                     {{ formatBalance(row.current_balance) }}
                   </div>
                 </td>
@@ -139,7 +139,7 @@
                     :disabled="isFieldDisabled(idx, 'debit')"
                     :tabindex="isFieldDisabled(idx, 'debit') ? -1 : 0"
                     type="number"
-                    class="w-full h-[48px] bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)] transition-all disabled:opacity-20 focus:text-inherit placeholder:text-inherit"
+                    class="w-full h-[56px] bg-transparent px-3 py-0 text-right font-mono text-3xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)] transition-all disabled:opacity-20 focus:text-inherit placeholder:text-inherit"
                     :class="blinkCell?.idx === idx && blinkCell?.field === 'debit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
@@ -154,20 +154,20 @@
                     :disabled="isFieldDisabled(idx, 'credit')"
                     :tabindex="isFieldDisabled(idx, 'credit') ? -1 : 0"
                     type="number"
-                    class="w-full h-[48px] bg-transparent px-3 py-0 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)] transition-all disabled:opacity-20 focus:text-inherit placeholder:text-inherit"
+                    class="w-full h-[56px] bg-transparent px-3 py-0 text-right font-mono text-3xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)] transition-all disabled:opacity-20 focus:text-inherit placeholder:text-inherit"
                     :class="blinkCell?.idx === idx && blinkCell?.field === 'credit' ? 'bg-[var(--color-danger)]/20 animate-blink' : ''"
                     placeholder="0.00"
                   />
                 </td>
                 <td class="px-3 py-0 text-right border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30">
-                  <div v-if="row.account" class="text-2xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">
+                  <div v-if="row.account" class="text-3xl font-bold font-mono whitespace-nowrap" :class="getNewBalance(row) !== row.current_balance ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">
                     {{ formatBalance(getNewBalance(row)) }}
                   </div>
                 </td>
                 <td class="px-0 py-0 text-center border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30">
                   <button
                     @click="removeRow(idx)"
-                    class="w-full h-[48px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors opacity-0 group-hover:opacity-100"
+                    class="w-full h-[56px] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors opacity-0 group-hover:opacity-100"
                     tabindex="-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
