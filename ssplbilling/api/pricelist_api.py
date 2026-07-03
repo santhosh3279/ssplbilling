@@ -61,12 +61,21 @@ def get_item_prices(item_code):
 			for row in item.custom_pricelist_percentages
 		]
 
+	# Get tax rate
+	tax_rate = 0.0
+	item_tax_template = frappe.db.get_value("Item Tax", {"parent": item_code}, "item_tax_template")
+	if item_tax_template:
+		details = frappe.get_all("Item Tax Template Detail", filters={"parent": item_tax_template}, fields=["tax_rate"])
+		tax_rate = sum(float(d.tax_rate or 0) for d in details) / 2
+
 	return {
 		"prices": results,
 		"uoms": uoms,
 		"stock_uom": stock_uom,
 		"item_name": item.item_name,
-		"pricelist_percentages": pricelist_percentages
+		"pricelist_percentages": pricelist_percentages,
+		"hsn_sac": item.gst_hsn_code,
+		"tax_rate": tax_rate
 	}
 
 @frappe.whitelist()

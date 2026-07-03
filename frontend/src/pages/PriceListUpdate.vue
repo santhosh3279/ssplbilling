@@ -25,6 +25,12 @@
           <div v-if="cachedItem && cachedItem.stock !== undefined" class="rounded-full px-3 py-1 text-3xl font-bold" :class="cachedItem.stock <= 0 ? 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]' : 'bg-[var(--color-success)]/20 text-[var(--color-success)]'">
             Stock: {{ cachedItem.stock }} {{ cachedItem.uom || '' }}
           </div>
+          <div v-if="hsnSac" class="rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1 text-3xl font-bold text-[var(--color-text-muted)]">
+            HSN: {{ hsnSac }}
+          </div>
+          <div v-if="taxRate !== undefined && taxRate !== null" class="rounded-full bg-[var(--color-warning)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-warning)]">
+            Tax: {{ taxRate }}%
+          </div>
         </div>
         <div class="flex items-center gap-3">
           <span class="text-xs text-[var(--color-text-muted)]">
@@ -354,6 +360,8 @@ const hasFetchedPercentages = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
+const hsnSac = ref('')
+const taxRate = ref(0)
 
 const toast = ref(null)
 
@@ -514,7 +522,9 @@ async function loadPrices(code) {
         uoms: uomsList,
         stock_uom: cached.uom,
         item_name: cached.item_name,
-        pricelist_percentages: cached.pricelist_percentages || []
+        pricelist_percentages: cached.pricelist_percentages || [],
+        hsn_sac: cached.hsn_sac || '',
+        tax_rate: cached.tax_rate || 0
       }
     } else {
       console.log('[PriceListUpdate] loading prices from server for:', code)
@@ -524,6 +534,8 @@ async function loadPrices(code) {
     loadedItemCode.value = code
     itemName.value = data.item_name || ''
     stockUom.value = data.stock_uom || ''
+    hsnSac.value = data.hsn_sac || ''
+    taxRate.value = data.tax_rate || 0
 
     // Ensure stock UOM is always first and there are no duplicate UOM rows
     const rawUoms = data.uoms || []
