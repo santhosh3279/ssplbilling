@@ -388,9 +388,16 @@ function tokenMatch(l, fields, tokens) {
   return tokens.every(t => haystack.includes(t))
 }
 
-// Busiest ledgers first (recent GL activity, provided by get_all_ledgers).
+// Rank: Customers first, Suppliers second, then the rest; within each group
+// busiest ledgers first (recent GL activity, provided by get_all_ledgers).
 // Must run before the result cap so busy ledgers aren't truncated away.
-const byActivity = (a, b) => (b.activity || 0) - (a.activity || 0)
+const TYPE_PRIORITY = { Customer: 0, Supplier: 1 }
+const byActivity = (a, b) => {
+  const pa = TYPE_PRIORITY[a.type] ?? 2
+  const pb = TYPE_PRIORITY[b.type] ?? 2
+  if (pa !== pb) return pa - pb
+  return (b.activity || 0) - (a.activity || 0)
+}
 
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()

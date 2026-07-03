@@ -121,11 +121,20 @@ export function useLedgerCache() {
   }
 }
 
+// Rank: Customers first, Suppliers second, then the rest; within each group
+// busiest ledgers first (recent GL activity, provided by get_all_ledgers).
+const TYPE_PRIORITY = { Customer: 0, Supplier: 1 }
+function ledgerRank(a, b) {
+  const pa = TYPE_PRIORITY[a.type] ?? 2
+  const pb = TYPE_PRIORITY[b.type] ?? 2
+  if (pa !== pb) return pa - pb
+  return (b.activity || 0) - (a.activity || 0)
+}
+
 /**
  * Perform a fast local search across cached ledgers.
- * Matches are ranked by recent GL activity (busiest ledgers first), so the
- * sort must run before the result cap — a busy ledger low in the cache order
- * would otherwise be cut off.
+ * Matches are ranked (see ledgerRank), so the sort must run before the result
+ * cap — a busy ledger low in the cache order would otherwise be cut off.
  */
 export function searchLedgersInCache(query, typeFilter = null) {
   if (!query || query.length < 1) return []
@@ -142,6 +151,6 @@ export function searchLedgersInCache(query, typeFilter = null) {
         (l.gstin && l.gstin.toLowerCase().includes(q))
       )
     })
-    .sort((a, b) => (b.activity || 0) - (a.activity || 0))
+    .sort(ledgerRank)
     .slice(0, 50) // Limit for performance
 }
