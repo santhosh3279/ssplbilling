@@ -21,7 +21,7 @@
 
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar with Buttons -->
-      <aside class="w-80 border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 space-y-4">
+      <aside class="w-80 border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 space-y-4 overflow-y-auto">
         <h3 class="text-lg font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">Tax Register</h3>
         <div class="flex flex-col gap-3">
           <button
