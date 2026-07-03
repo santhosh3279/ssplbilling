@@ -538,7 +538,12 @@ function focus() {
       supplierCreatorRef.value?.focusFirst()
     } else {
       searchInput.value?.focus()
-      searchInput.value?.select()
+      if (query.value && query.value.length === 1) {
+        const len = searchInput.value.value.length
+        searchInput.value.setSelectionRange(len, len)
+      } else {
+        searchInput.value?.select()
+      }
     }
   })
 }
