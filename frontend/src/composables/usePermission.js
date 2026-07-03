@@ -82,6 +82,7 @@ export const ADMIN_ROUTES = new Set([
   'IncentiveLedger',
   'IncentiveEntry',
   'CustomerEnquiry',
+  'DiscountRule',
 ])
 
 /**
