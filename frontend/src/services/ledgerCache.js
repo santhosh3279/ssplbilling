@@ -123,15 +123,18 @@ export function useLedgerCache() {
 
 /**
  * Perform a fast local search across cached ledgers.
+ * Matches are ranked by recent GL activity (busiest ledgers first), so the
+ * sort must run before the result cap — a busy ledger low in the cache order
+ * would otherwise be cut off.
  */
 export function searchLedgersInCache(query, typeFilter = null) {
   if (!query || query.length < 1) return []
-  
+
   const q = query.toLowerCase()
   return ledgers.value
     .filter(l => {
       if (typeFilter && l.type !== typeFilter) return false
-      
+
       return (
         l.name.toLowerCase().includes(q) ||
         l.label.toLowerCase().includes(q) ||
@@ -139,5 +142,6 @@ export function searchLedgersInCache(query, typeFilter = null) {
         (l.gstin && l.gstin.toLowerCase().includes(q))
       )
     })
+    .sort((a, b) => (b.activity || 0) - (a.activity || 0))
     .slice(0, 50) // Limit for performance
 }

@@ -141,6 +141,24 @@ def get_all_ledgers():
         if b.name in ledger_map:
             ledger_map[b.name]["balance"] = float(b.balance or 0)
 
+    # 6b. Batch fetch activity counts (GL postings in the last 90 days) —
+    # the front-end ledger search ranks busier ledgers first.
+    activity_cutoff = frappe.utils.add_days(frappe.utils.today(), -90)
+    activity_rows = frappe.db.sql("""
+        SELECT party as name, COUNT(*) as activity
+        FROM `tabGL Entry`
+        WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s AND party IS NOT NULL AND party != ''
+        GROUP BY party
+        UNION
+        SELECT account as name, COUNT(*) as activity
+        FROM `tabGL Entry`
+        WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s AND (party IS NULL OR party = '')
+        GROUP BY account
+    """, {"cutoff": activity_cutoff}, as_dict=True)
+    for a in activity_rows:
+        if a.name in ledger_map:
+            ledger_map[a.name]["activity"] = int(a.activity or 0)
+
     # 7. Batch fetch Last Invoice Dates (Customers only)
     last_invoices = frappe.db.sql("""
         SELECT customer, MAX(posting_date) as last_date
