@@ -184,7 +184,7 @@
               :key="tile.id"
               :id="'wb-tile-' + idx"
               class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
-              :class="idx === focusedTileIndex ? 'ring-2 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
+              :class="idx === focusedTileIndex ? 'ring-4 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
               :style="{ width: '70mm', height: '15mm' }"
               @click="focusedTileIndex = idx; openModule(tile.id)"
             >
