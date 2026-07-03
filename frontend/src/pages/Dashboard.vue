@@ -431,6 +431,7 @@ import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePe
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
 import { useMqtt } from '../composables/useMqtt'
+import { useDevice } from '../composables/useDevice'
 import { getFrappeSocket } from '../services/frappeSocket'
 
 const router = useRouter()
@@ -505,14 +506,24 @@ function handleOpenGstValidator() {
 }
 
 // ==================== KEYBOARD ====================
-const isKeyboardVisible = ref(localStorage.getItem('wb-force-keyboard') === 'true')
+const { isTablet: isTabletDevice } = useDevice()
+
+// Mirrors App.vue's tri-state: explicit 'true'/'false' wins, unset follows device
+function readKeyboardVisible() {
+  const pref = localStorage.getItem('wb-force-keyboard')
+  if (pref === 'true') return true
+  if (pref === 'false') return false
+  return isTabletDevice.value
+}
+
+const isKeyboardVisible = ref(readKeyboardVisible())
 
 function handleToggleKeyboard() {
   window.dispatchEvent(new CustomEvent('wb-global-keyboard-toggle'))
 }
 
 function syncKeyboardState() {
-  isKeyboardVisible.value = localStorage.getItem('wb-force-keyboard') === 'true'
+  isKeyboardVisible.value = readKeyboardVisible()
 }
 
 // ==================== USER ====================

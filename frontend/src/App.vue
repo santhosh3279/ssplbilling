@@ -99,18 +99,21 @@ const { isSidebarCollapsed } = useLayout();
 const { connectMqtt } = useMqtt();
 
 const route = useRoute();
-const forceKeyboard = ref(localStorage.getItem('wb-force-keyboard') === 'true');
+// Tri-state preference: 'true' = always show, 'false' = always hide (even on
+// tablet), null/unset = follow device detection. An explicit 'false' is what
+// lets tablet users hide the keyboard.
+const keyboardPref = ref(localStorage.getItem('wb-force-keyboard'));
 
 const showKeyboardPanel = computed(() => {
-  if (forceKeyboard.value) {
-    return route.name !== 'OfferPage';
-  }
-  return isTablet.value && route.name !== 'OfferPage';
+  if (route.name === 'OfferPage') return false;
+  if (keyboardPref.value === 'true') return true;
+  if (keyboardPref.value === 'false') return false;
+  return isTablet.value;
 });
 
 function toggleKeyboard() {
-  forceKeyboard.value = !forceKeyboard.value;
-  localStorage.setItem('wb-force-keyboard', forceKeyboard.value ? 'true' : 'false');
+  keyboardPref.value = showKeyboardPanel.value ? 'false' : 'true';
+  localStorage.setItem('wb-force-keyboard', keyboardPref.value);
 }
 
 useShortcuts(globalShortcuts, 'global');
