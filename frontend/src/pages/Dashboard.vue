@@ -534,6 +534,7 @@ async function handleUserChange() {
 
 async function handleLogout() {
   localStorage.removeItem('wb-inherited-user')
+  localStorage.removeItem(TILE_CACHE_KEY)
   await session.logout()
   router.push('/login')
 }
@@ -620,19 +621,32 @@ const allTiles = [
 
 // Per-user/group tile selection from SSPL Dashboard Tile Access.
 // null = no record configured → fall back to role-based canAccessTile.
-// Hydrated from localStorage so the grid doesn't flash all tiles before the fetch lands.
-const allowedTileIds = ref(JSON.parse(localStorage.getItem('wb-allowed-tiles') || 'null'))
+// Cached in localStorage with TTL (same policy as billing settings) so login /
+// dashboard reloads within the window don't refetch. Cache is keyed to the
+// resolved user, so switching the inherited user invalidates it automatically.
+const TILE_CACHE_KEY = 'wb-allowed-tiles-v2'
+const TILE_CACHE_TTL = 30 * 60 * 1000 // 30 mins
 
-async function loadAllowedTiles(user = null) {
+function readTileCache() {
+  try { return JSON.parse(localStorage.getItem(TILE_CACHE_KEY) || 'null') } catch { return null }
+}
+
+localStorage.removeItem('wb-allowed-tiles') // drop pre-TTL cache key
+const _tileCache = readTileCache()
+const allowedTileIds = ref(_tileCache && _tileCache.user === selectedUser.value ? _tileCache.tiles : null)
+
+async function loadAllowedTiles(user = null, force = false) {
+  const cacheUser = user || session.user.value
+  const cached = readTileCache()
+  if (!force && cached && cached.user === cacheUser && (Date.now() - cached.ts) < TILE_CACHE_TTL) {
+    allowedTileIds.value = cached.tiles
+    return
+  }
   try {
     // Resolve for the inherited user; server falls back to the logged-in user
     const res = await fetchAllowedTiles(user)
     allowedTileIds.value = res?.configured ? res.tiles : null
-    if (allowedTileIds.value) {
-      localStorage.setItem('wb-allowed-tiles', JSON.stringify(allowedTileIds.value))
-    } else {
-      localStorage.removeItem('wb-allowed-tiles')
-    }
+    localStorage.setItem(TILE_CACHE_KEY, JSON.stringify({ user: cacheUser, tiles: allowedTileIds.value, ts: Date.now() }))
   } catch (e) {
     console.warn('[Dashboard] fetchAllowedTiles failed:', e)
   }
@@ -860,6 +874,7 @@ async function syncSettings() {
   localStorage.removeItem(SETTINGS_CACHE_KEY)
   // force=true bypasses the series / opening-cash / naming-series caches too.
   await fetchSettings(selectedUser.value, true)
+  await loadAllowedTiles(selectedUser.value !== session.user.value ? selectedUser.value : null, true)
 }
 
 async function fetchSettings(user = null, force = false) {
