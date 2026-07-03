@@ -98,7 +98,8 @@
                     v-model="form.recipient_name"
                     type="text"
                     placeholder="Recipient name"
-                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase"
+                    @input="form.recipient_name = form.recipient_name.toUpperCase()"
                     @keydown.enter.prevent="focusMobile"
                     @keydown.tab.prevent="focusMobile"
                   />
@@ -112,7 +113,8 @@
                     v-model="form.mobile_number"
                     type="text"
                     placeholder="Mobile"
-                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase"
+                    @input="form.mobile_number = form.mobile_number.toUpperCase()"
                     @keydown.enter.prevent="focusPackages"
                     @keydown.tab.prevent="focusPackages"
                   />
@@ -147,7 +149,8 @@
                     v-model="form.address_line_1"
                     type="text"
                     placeholder="Street / Building"
-                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase"
+                    @input="form.address_line_1 = form.address_line_1.toUpperCase()"
                     @keydown.enter.prevent="focusLine2"
                     @keydown.tab.prevent="focusLine2"
                   />
@@ -159,7 +162,8 @@
                     v-model="form.address_line_2"
                     type="text"
                     placeholder="Area / Landmark"
-                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase"
+                    @input="form.address_line_2 = form.address_line_2.toUpperCase()"
                     @keydown.enter.prevent="focusLine3"
                     @keydown.tab.prevent="focusLine3"
                   />
@@ -171,7 +175,8 @@
                     v-model="form.address_line_3"
                     type="text"
                     placeholder="City / PIN"
-                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                    class="rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-5xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase"
+                    @input="form.address_line_3 = form.address_line_3.toUpperCase()"
                     @keydown.enter.prevent="saveEntry"
                   />
                 </div>
@@ -311,6 +316,13 @@ function focusLine3()    { nextTick(() => line3Input.value?.focus()) }
 // ── SAVE / LOAD ──────────────────────────────────────────────────────
 async function saveEntry() {
   if (!form.value.recipient_name.trim()) { alert('Enter a name'); return }
+
+  // Safeguard: Force uppercase on all values
+  form.value.recipient_name = form.value.recipient_name.toUpperCase()
+  form.value.mobile_number = form.value.mobile_number.toUpperCase()
+  form.value.address_line_1 = form.value.address_line_1.toUpperCase()
+  form.value.address_line_2 = form.value.address_line_2.toUpperCase()
+  form.value.address_line_3 = form.value.address_line_3.toUpperCase()
 
   saving.value = true
   try {
