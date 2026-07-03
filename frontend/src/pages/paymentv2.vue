@@ -21,7 +21,7 @@
       <!-- Center: Payment / Receipt / Transfer tabs -->
       <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
         <button
-          v-for="t in ['Payment', 'Receipt', 'Internal Transfer']"
+          v-for="t in ['Payment', 'Receipt']"
           :key="t"
           @click="onTabClick(t)"
           class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
@@ -77,7 +77,7 @@
         </button>
 
         <h2 class="mb-10 text-5xl font-black uppercase tracking-tight">Select Entry Type</h2>
-        <div class="grid grid-cols-3 gap-8">
+        <div class="grid grid-cols-2 gap-8 max-w-lg mx-auto">
           <button
             @click="selectEntryType('Payment')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
@@ -97,16 +97,6 @@
           >
             <span class="text-8xl">💰</span>
             <span class="text-4xl font-black uppercase">Receipt</span>
-          </button>
-          <button
-            @click="selectEntryType('Internal Transfer')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
-            :class="selectionIdx === 2
-              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
-              : 'bg-blue-500/10 border-blue-500/30 text-blue-500 hover:bg-blue-500/20 hover:border-blue-500'"
-          >
-            <span class="text-8xl">🔄</span>
-            <span class="text-4xl font-black uppercase">Internal Transfer</span>
           </button>
         </div>
         <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -139,11 +129,11 @@
                     <input
                       ref="partyInputRef"
                       v-model="partyQuery"
-                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
-                      @keydown.enter.prevent="openSearch(activeTab === 'Internal Transfer' ? 'paid_to' : 'party')"
+                      @click="openSearch('party')"
+                      @keydown.enter.prevent="openSearch('party')"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Internal Transfer' ? 'Select Internal Transfer/Asset (Debit)...' : 'Search Party...'"
+                      placeholder="Search Party..."
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
@@ -215,11 +205,11 @@
                     <input
                       :ref="el => { if (el) mopAccountRefs[idx] = el }"
                       v-model="row.query"
-                      @click="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
-                      @keydown.enter.prevent="openSearch(activeTab === 'Internal Transfer' ? 'paid_from' : 'mop', idx)"
+                      @click="openSearch('mop', idx)"
+                      @keydown.enter.prevent="openSearch('mop', idx)"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
-                      :placeholder="activeTab === 'Internal Transfer' ? 'Select Bank/Cash (Credit)...' : 'Select Account...'"
+                      placeholder="Select Account..."
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
                   </div>
@@ -486,8 +476,8 @@ const remarksInput = ref(null)
 const refNoInput = ref(null)
 const saveBtn = ref(null)
 const selectionOverlayRef = ref(null)
-const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt, 2 = Internal Transfer
-const ENTRY_TYPES = ['Payment', 'Receipt', 'Internal Transfer']
+const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt
+const ENTRY_TYPES = ['Payment', 'Receipt']
 
 const currentMopRowIdx = ref(0)
 
@@ -506,7 +496,6 @@ function addMopRow() {
 function cycleTab() {
   let nextTab = 'Payment'
   if (activeTab.value === 'Payment') nextTab = 'Receipt'
-  else if (activeTab.value === 'Receipt') nextTab = 'Internal Transfer'
   else nextTab = 'Payment'
   onTabClick(nextTab)
 }
@@ -514,10 +503,10 @@ function cycleTab() {
 function onSelectionKeydown(e) {
   if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') {
     e.preventDefault()
-    selectionIdx.value = (selectionIdx.value + 1) % 3
+    selectionIdx.value = (selectionIdx.value + 1) % 2
   } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
     e.preventDefault()
-    selectionIdx.value = (selectionIdx.value + 2) % 3
+    selectionIdx.value = (selectionIdx.value + 1) % 2
   } else if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault()
     selectEntryType(ENTRY_TYPES[selectionIdx.value])
@@ -536,8 +525,6 @@ function onTabClick(t) {
     form.party_type = 'Supplier'
   } else if (t === 'Receipt') {
     form.party_type = 'Customer'
-  } else {
-    form.party_type = '' // Internal Transfer
   }
 
   resetForm()
@@ -708,17 +695,11 @@ const searchTarget = ref('party')
 const showSearchModal = ref(false)
 
 const modalTitle = computed(() => {
-  if (activeTab.value === 'Internal Transfer') {
-    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Internal Transfer - Paid To' : 'Internal Transfer - Paid From'
-  }
   const type = activeTab.value // Payment or Receipt
   return searchTarget.value === 'party' ? `${type} - Party Name` : `${type} - Mode of Payment`
 })
 
 const modalSubtitle = computed(() => {
-  if (activeTab.value === 'Internal Transfer') {
-    return searchTarget.value === 'party' || searchTarget.value === 'paid_to' ? 'Select Account Paid To (Debit)' : 'Select Account Paid From (Credit)'
-  }
   if (activeTab.value === 'Payment') {
     return searchTarget.value === 'party' ? 'Select Party to Pay (Debit)' : 'Select Account Paid From (Credit)'
   }
@@ -729,7 +710,6 @@ const modalSubtitle = computed(() => {
 })
 
 const allowedTypes = computed(() => {
-  if (activeTab.value === 'Internal Transfer') return ['Account']
   if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee', 'Account']
   return ['Account']
 })
