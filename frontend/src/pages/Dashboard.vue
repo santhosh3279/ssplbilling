@@ -177,8 +177,28 @@
       <div v-if="currentTab === 'dashboard'" class="flex flex-row items-start justify-between gap-8 px-10 py-10">
         <!-- Left: Bucketed Tiles -->
         <div class="flex-shrink-0 space-y-4">
+          <!-- Vertical list (no buckets) when tiles come from SSPL Dashboard Tile Access; ↑/↓ + Enter to navigate -->
+          <div v-if="isTileAccessMode" class="flex flex-col gap-2">
+            <div
+              v-for="(tile, idx) in tiles"
+              :key="tile.id"
+              :id="'wb-tile-' + idx"
+              class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
+              :class="idx === focusedTileIndex ? 'ring-2 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
+              :style="{ width: '70mm', height: '15mm' }"
+              @click="focusedTileIndex = idx; openModule(tile.id)"
+            >
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
+                {{ tile.icon }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
+                <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
+              </div>
+            </div>
+          </div>
           <template v-for="bucket in BUCKETS" :key="bucket.id">
-            <div v-if="tilesInBucket(bucket.id).length > 0">
+            <div v-if="!isTileAccessMode && tilesInBucket(bucket.id).length > 0">
               <!-- Bucket Label -->
               <div class="mb-1.5 flex items-center gap-2">
                 <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">{{ bucket.label }}</span>
@@ -626,6 +646,36 @@ const tiles = computed(() => {
   return allTiles.filter(t => canAccessTile(t.id))
 })
 
+// ── Vertical tile list + ↑/↓/Enter navigation (only when tiles are doctype-configured) ──
+const isTileAccessMode = computed(() => Array.isArray(allowedTileIds.value))
+const focusedTileIndex = ref(0)
+
+function handleTileKeyNav(e) {
+  if (!isTileAccessMode.value || currentTab.value !== 'dashboard' || showGeneralSettings.value) return
+  const tag = e.target?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return
+  const count = tiles.value.length
+  if (!count) return
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    focusedTileIndex.value = (focusedTileIndex.value + 1) % count
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    focusedTileIndex.value = (focusedTileIndex.value - 1 + count) % count
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    const tile = tiles.value[focusedTileIndex.value]
+    if (tile) openModule(tile.id)
+  }
+}
+
+watch(focusedTileIndex, (idx) => {
+  nextTick(() => document.getElementById('wb-tile-' + idx)?.scrollIntoView({ block: 'nearest' }))
+})
+watch(() => tiles.value.length, (count) => {
+  if (focusedTileIndex.value >= count) focusedTileIndex.value = 0
+})
+
 function tilesInBucket(bucketId) {
   return tiles.value.filter(t => t.bucket === bucketId)
 }
@@ -996,6 +1046,7 @@ onMounted(async () => {
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   window.addEventListener('wb-global-keyboard-toggle', syncKeyboardState)
+  window.addEventListener('keydown', handleTileKeyNav)
   window.addEventListener('wb-item-cache-updated', _onItemCacheUpdated)
 
   const socket = getFrappeSocket()
@@ -1041,6 +1092,7 @@ onUnmounted(() => {
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
   window.removeEventListener('wb-global-keyboard-toggle', syncKeyboardState)
+  window.removeEventListener('keydown', handleTileKeyNav)
   window.removeEventListener('wb-item-cache-updated', _onItemCacheUpdated)
   clearTimeout(_flashTimer)
 
