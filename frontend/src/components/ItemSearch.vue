@@ -83,6 +83,10 @@
               <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">HSN Code</span>
               <span class="text-2xl text-[var(--color-text)] font-semibold">{{ results[selectedIdx].hsn_sac || '--' }}</span>
             </div>
+            <div class="flex flex-col flex-[0.2] min-w-[80px]">
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Tax %</span>
+              <span class="text-2xl text-[var(--color-text)] font-semibold">{{ results[selectedIdx].tax_rate != null ? results[selectedIdx].tax_rate + '%' : '--' }}</span>
+            </div>
           </div>
         </div>
       </div>
