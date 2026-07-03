@@ -96,7 +96,7 @@
               v-model="form.mobile_no"
               type="text"
               placeholder="Mobile number..."
-              class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg font-mono font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-2xl font-mono font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
               @input="mobileFromCache = false"
             />
           </div>
@@ -105,22 +105,22 @@
           <div class="flex flex-col gap-1">
             <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Enquired Items</label>
             <div class="rounded border border-[var(--color-border)] overflow-visible">
-              <table class="w-full text-sm border-collapse">
+              <table class="w-full text-lg border-collapse">
                 <thead>
                   <tr class="bg-[var(--color-surface-raised)]">
-                    <th class="px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] w-[45%]">Item</th>
-                    <th class="px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Description</th>
-                    <th class="w-8"></th>
+                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] w-[45%]">Item</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Description</th>
+                    <th class="w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(row, idx) in rows" :key="idx" class="border-t border-[var(--color-border)]">
-                    <td class="px-2 py-1.5">
+                    <td class="px-4 py-3">
                       <div class="font-bold text-[var(--color-text)]">{{ row.item_name }}</div>
-                      <div v-if="row.is_new_item" class="text-[10px] font-bold uppercase text-[var(--color-warning,#f59e0b)]">New item</div>
-                      <div v-else-if="row.item_code" class="font-mono text-[10px] text-[var(--color-text-muted)]">{{ row.item_code }}</div>
+                      <div v-if="row.is_new_item" class="text-xs font-bold uppercase text-[var(--color-warning,#f59e0b)]">New item</div>
+                      <div v-else-if="row.item_code" class="font-mono text-xs text-[var(--color-text-muted)]">{{ row.item_code }}</div>
                     </td>
-                    <td class="px-2 py-1.5">
+                    <td class="px-4 py-3">
                       <input
                         v-model="row.description"
                         type="text"
@@ -128,14 +128,14 @@
                         class="w-full bg-transparent text-[var(--color-text)] outline-none border-b border-transparent focus:border-[var(--color-info)]"
                       />
                     </td>
-                    <td class="px-1 text-center">
-                      <button class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition" @click="rows.splice(idx, 1)">&times;</button>
+                    <td class="px-3 text-center">
+                      <button class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition" @click="rows.splice(idx, 1)">&times;</button>
                     </td>
                   </tr>
 
                   <!-- New item row -->
                   <tr class="border-t border-[var(--color-border)] bg-[var(--color-info)]/5">
-                    <td class="px-2 py-1.5 relative">
+                    <td class="px-4 py-3 relative">
                       <input
                         ref="newItemInput"
                         v-model="newItem.query"
@@ -157,7 +157,7 @@
                         @close="showQuickItemSearch = false"
                       />
                     </td>
-                    <td class="px-2 py-1.5">
+                    <td class="px-4 py-3">
                       <input
                         ref="newDescInput"
                         v-model="newItem.description"
@@ -167,8 +167,8 @@
                         @keydown.enter.prevent="commitNewItem"
                       />
                     </td>
-                    <td class="px-1 text-center">
-                      <button class="font-bold text-[var(--color-info)]" title="Add item" @click="commitNewItem">+</button>
+                    <td class="px-3 text-center">
+                      <button class="text-2xl font-bold text-[var(--color-info)]" title="Add item" @click="commitNewItem">+</button>
                     </td>
                   </tr>
                 </tbody>
