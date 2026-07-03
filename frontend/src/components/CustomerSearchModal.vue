@@ -388,6 +388,10 @@ function tokenMatch(l, fields, tokens) {
   return tokens.every(t => haystack.includes(t))
 }
 
+// Busiest ledgers first (recent GL activity, provided by get_all_ledgers).
+// Must run before the result cap so busy ledgers aren't truncated away.
+const byActivity = (a, b) => (b.activity || 0) - (a.activity || 0)
+
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
   const tokens = q ? q.split(/\s+/) : []
@@ -422,11 +426,12 @@ const results = computed(() => {
     list = list.filter(l => !partyLinks.value[l.name]?.is_secondary)
   }
 
-  if (tokens.length === 0) return list.slice(0, 100)
-  
+  if (tokens.length === 0) return list.sort(byActivity).slice(0, 100)
+
   const searchFields = ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']
   return list
     .filter(l => tokenMatch(l, searchFields, tokens))
+    .sort(byActivity)
     .slice(0, 100)
 })
 
