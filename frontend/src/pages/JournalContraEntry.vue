@@ -42,17 +42,17 @@
       <div class="flex items-center gap-4">
         <!-- Account selection for Expense Entry -->
         <div v-if="entryType === 'Opening Entry'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-warning)]/40 shadow-sm transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-          <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-warning)] group-focus-within:text-[var(--color-text-on-focus)]">Account</label>
+          <label class="text-sm font-black uppercase tracking-widest text-[var(--color-warning)] group-focus-within:text-[var(--color-text-on-focus)]">Account</label>
           <div
             ref="balancingAccountRef"
             @click="showBalancingSearch = true"
             tabindex="0"
-            class="min-w-[200px] px-2 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-bold text-[var(--color-text)] cursor-pointer hover:border-[var(--color-focus)] transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-[var(--color-focus)] group-focus-within:border-black/20"
+            class="min-w-[300px] px-3 py-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-xl font-bold text-[var(--color-text)] cursor-pointer hover:border-[var(--color-focus)] transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-[var(--color-focus)] group-focus-within:border-black/20"
           >
             <span :class="!balancingAccount.name ? 'text-[var(--color-text-muted)] italic font-normal' : ''">
               {{ balancingAccount.label || 'Select Account...' }}
             </span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-focus-within:text-black/50"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-text-muted)] group-focus-within:text-black/50"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
         </div>
 
