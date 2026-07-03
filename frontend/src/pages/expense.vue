@@ -121,7 +121,7 @@
                 <th class="px-4 py-2 w-1/4">Remarks</th>
                 <th class="px-4 py-2 w-[350px]">Links</th>
                 <th class="px-6 py-2 text-right w-48">Balance</th>
-                <th class="px-6 py-2 text-right w-48">New Balance</th>
+                <th class="px-6 py-2 text-right w-48">New Bal</th>
               </tr>
             </thead>
             <tbody>
