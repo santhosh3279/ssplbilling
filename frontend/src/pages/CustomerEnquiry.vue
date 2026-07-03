@@ -61,7 +61,7 @@
                 v-model="customerQuery"
                 type="text"
                 placeholder="Type name or search customer..."
-                class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-1 text-3xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                 @input="onCustomerInput"
                 @focus="onCustomerFocus"
                 @keydown="handleCustomerKeydown"
