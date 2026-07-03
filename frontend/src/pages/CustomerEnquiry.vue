@@ -61,7 +61,7 @@
                 v-model="customerQuery"
                 type="text"
                 placeholder="Type name or search customer..."
-                class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-1 text-3xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-1 text-3xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase"
                 @input="onCustomerInput"
                 @focus="onCustomerFocus"
                 @keydown="handleCustomerKeydown"
@@ -347,8 +347,10 @@ function onCustomerInput() {
     form.value.customer_name = ''
     mobileFromCache.value = false
   }
-  form.value.new_customer = customerQuery.value.trim()
-  form.value.customer_name = customerQuery.value.trim()
+  const upperVal = customerQuery.value.toUpperCase()
+  customerQuery.value = upperVal
+  form.value.new_customer = upperVal.trim()
+  form.value.customer_name = upperVal.trim()
   searchCustomers()
 }
 
@@ -376,8 +378,9 @@ function handleCustomerKeydown(e) {
 function onCustomerSelected(c) {
   if (!c) return
   form.value.customer = c.name
-  form.value.customer_name = c.label || c.customer_name || c.name
-  customerQuery.value = c.label || c.customer_name || c.name
+  const upperName = (c.label || c.customer_name || c.name).toUpperCase()
+  form.value.customer_name = upperName
+  customerQuery.value = upperName
   form.value.new_customer = ''
   // Mobile number comes straight from the local customer cache
   form.value.mobile_no = c.mobile_no || ''
@@ -479,10 +482,12 @@ async function saveEnquiry() {
   }
   if (!rows.value.length) { alert('Add at least one enquired item'); return }
 
+  const upperFinalName = finalCustomerName.toUpperCase()
   if (!form.value.customer) {
-    form.value.new_customer = finalCustomerName
-    form.value.customer_name = finalCustomerName
+    form.value.new_customer = upperFinalName
+    form.value.customer_name = upperFinalName
   } else {
+    form.value.customer_name = upperFinalName
     form.value.new_customer = ''
   }
 
@@ -527,11 +532,12 @@ async function loadEnquiry(name) {
       enquiry_date: d.enquiry_date || today,
       cost_center: d.cost_center || '',
       customer: d.customer || '',
-      customer_name: d.customer_name || '',
-      new_customer: d.new_customer || '',
+      customer_name: (d.customer_name || '').toUpperCase(),
+      new_customer: (d.new_customer || '').toUpperCase(),
       mobile_no: d.mobile_no || '',
     }
-    customerQuery.value = d.customer ? (d.customer_name || d.customer) : (d.new_customer || d.customer_name || '')
+    const val = d.customer ? (d.customer_name || d.customer) : (d.new_customer || d.customer_name || '')
+    customerQuery.value = (val || '').toUpperCase()
     mobileFromCache.value = false
     rows.value = (d.items || []).map(r => ({ ...r }))
   } catch (e) {
