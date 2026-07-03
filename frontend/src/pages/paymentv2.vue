@@ -130,7 +130,7 @@
                       ref="partyInputRef"
                       v-model="partyQuery"
                       @click="openSearch('party')"
-                      @keydown.enter.prevent="openSearch('party')"
+                      @keydown="handlePartyKeydown"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       placeholder="Search Party..."
@@ -206,7 +206,7 @@
                       :ref="el => { if (el) mopAccountRefs[idx] = el }"
                       v-model="row.query"
                       @click="openSearch('mop', idx)"
-                      @keydown.enter.prevent="openSearch('mop', idx)"
+                      @keydown="handleMopKeydown($event, idx)"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       placeholder="Select Account..."
@@ -410,9 +410,10 @@
       :subtitle="modalSubtitle"
       :allowedTypes="allowedTypes"
       :initialType="initialSearchType"
+      :initialQuery="searchQuery"
       :skipDateFilter="true"
       :hideSecondary="true"
-      @close="showSearchModal = false"
+      @close="showSearchModal = false; searchQuery = ''"
       @select="handleSelect"
     />
 
@@ -693,6 +694,7 @@ function updateTime() {
 // --- Methods ---
 const searchTarget = ref('party')
 const showSearchModal = ref(false)
+const searchQuery = ref('')
 
 const modalTitle = computed(() => {
   const type = activeTab.value // Payment or Receipt
@@ -719,14 +721,39 @@ const initialSearchType = computed(() => {
   return 'Account'
 })
 
-function openSearch(target, idx = 0) {
+function openSearch(target, idx = 0, initialVal = '') {
   searchTarget.value = target
   currentMopRowIdx.value = idx
+  searchQuery.value = typeof initialVal === 'string' ? initialVal : ''
   showSearchModal.value = true
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
     custSearchModalRef.value?.focus()
   })
+}
+
+function handlePartyKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    openSearch('party')
+    return
+  }
+  if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault()
+    openSearch('party', 0, e.key)
+  }
+}
+
+function handleMopKeydown(e, idx) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    openSearch('mop', idx)
+    return
+  }
+  if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault()
+    openSearch('mop', idx, e.key)
+  }
 }
 
 function handleSelect(item) {
