@@ -825,6 +825,16 @@ export async function getQuotationSeries() {
 }
 
 /**
+ * Fetch Cashflow Report data.
+ */
+export async function getCashflowReport(fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_cashflow_report", {
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}
+
+/**
  * Fetch Quotation Tax Register data.
  */
 export async function getQuotationTaxRegister(series, fromDate, toDate) {

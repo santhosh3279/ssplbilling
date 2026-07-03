@@ -1003,3 +1003,114 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 "profit_price_lists": sorted(list(profit_price_lists)),
                 "item_profit_data": item_profit_results,
         }
+
+
+@frappe.whitelist()
+def get_cashflow_report(from_date=None, to_date=None):
+	"""Return Cost Center-wise Cash & Bank inflow, outflow, and net flow."""
+	if not from_date:
+		from_date = frappe.utils.today()
+	if not to_date:
+		to_date = frappe.utils.today()
+
+	# Get all Cash and Bank accounts
+	cash_bank_accounts = frappe.get_all(
+		"Account",
+		filters={"account_type": ["in", ["Cash", "Bank"]], "is_group": 0},
+		pluck="name"
+	)
+
+	if not cash_bank_accounts:
+		return {
+			"summary": [],
+			"breakdown": [],
+			"company_name": "",
+			"company_address_lines": []
+		}
+
+	# Get company info
+	company_details = get_company_details()
+	company_name = company_details.get("company_name", "")
+	company_address_lines = company_details.get("address_lines", [])
+
+	# 1. Summary grouped by Cost Center
+	summary_rows = frappe.db.sql(
+		"""
+		SELECT
+			COALESCE(gle.cost_center, '') as cost_center,
+			SUM(gle.debit) as inflow,
+			SUM(gle.credit) as outflow
+		FROM
+			`tabGL Entry` gle
+		WHERE
+			gle.posting_date BETWEEN %s AND %s
+			AND gle.is_cancelled = 0
+			AND gle.account IN %s
+		GROUP BY
+			gle.cost_center
+		ORDER BY
+			gle.cost_center ASC
+		""",
+		(from_date, to_date, tuple(cash_bank_accounts)),
+		as_dict=1
+	)
+
+	# 2. Breakdown grouped by Cost Center and Account
+	breakdown_rows = frappe.db.sql(
+		"""
+		SELECT
+			COALESCE(gle.cost_center, '') as cost_center,
+			gle.account,
+			SUM(gle.debit) as inflow,
+			SUM(gle.credit) as outflow
+		FROM
+			`tabGL Entry` gle
+		WHERE
+			gle.posting_date BETWEEN %s AND %s
+			AND gle.is_cancelled = 0
+			AND gle.account IN %s
+		GROUP BY
+			gle.cost_center, gle.account
+		ORDER BY
+			gle.cost_center ASC, gle.account ASC
+		""",
+		(from_date, to_date, tuple(cash_bank_accounts)),
+		as_dict=1
+	)
+
+	# Formulate result
+	summary = []
+	for r in summary_rows:
+		row = dict(r)
+		if row["cost_center"]:
+			cc_name = frappe.db.get_value("Cost Center", row["cost_center"], "cost_center_name")
+			row["cost_center_name"] = cc_name or row["cost_center"].split(" - ")[0]
+		else:
+			row["cost_center_name"] = "No Cost Center"
+			row["cost_center"] = "Unspecified"
+		row["inflow"] = float(row["inflow"] or 0)
+		row["outflow"] = float(row["outflow"] or 0)
+		row["net_flow"] = row["inflow"] - row["outflow"]
+		summary.append(row)
+
+	breakdown = []
+	for r in breakdown_rows:
+		row = dict(r)
+		if row["cost_center"]:
+			cc_name = frappe.db.get_value("Cost Center", row["cost_center"], "cost_center_name")
+			row["cost_center_name"] = cc_name or row["cost_center"].split(" - ")[0]
+		else:
+			row["cost_center_name"] = "No Cost Center"
+			row["cost_center"] = "Unspecified"
+		row["inflow"] = float(row["inflow"] or 0)
+		row["outflow"] = float(row["outflow"] or 0)
+		row["net_flow"] = row["inflow"] - row["outflow"]
+		breakdown.append(row)
+
+	return {
+		"summary": summary,
+		"breakdown": breakdown,
+		"company_name": company_name,
+		"company_address_lines": company_address_lines
+	}
+
