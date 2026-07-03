@@ -496,25 +496,30 @@ def get_billing_settings(user=None):
 
 
 @frappe.whitelist()
-def get_allowed_tiles():
-	"""Return the dashboard tiles allowed for the session user via SSPL Dashboard Tile Access.
+def get_allowed_tiles(user=None):
+	"""Return the dashboard tiles allowed via SSPL Dashboard Tile Access, resolved for
+	the inherited/specified user (admin only) or the session user as fallback.
 
 	Resolution: a user-level record wins outright; otherwise the union of all enabled
 	group-level records for User Groups the user belongs to. Returns configured=False
 	(tiles=None) when nothing applies, so the frontend falls back to role-based filtering.
 	"""
-	user = frappe.session.user
+	current_user = frappe.session.user
+	# Only Administrator/admin can request tiles for another user
+	if user and current_user not in ["Administrator", "admin"]:
+		user = current_user
+	target_user = user or current_user
 
 	access_names = []
 	user_record = frappe.db.get_value(
 		"SSPL Dashboard Tile Access",
-		{"applies_to": "User", "user": user, "enabled": 1},
+		{"applies_to": "User", "user": target_user, "enabled": 1},
 		"name",
 	)
 	if user_record:
 		access_names = [user_record]
 	else:
-		groups = frappe.get_all("User Group Member", filters={"user": user}, pluck="parent")
+		groups = frappe.get_all("User Group Member", filters={"user": target_user}, pluck="parent")
 		if groups:
 			access_names = frappe.get_all(
 				"SSPL Dashboard Tile Access",

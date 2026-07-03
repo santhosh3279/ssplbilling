@@ -623,9 +623,10 @@ const allTiles = [
 // Hydrated from localStorage so the grid doesn't flash all tiles before the fetch lands.
 const allowedTileIds = ref(JSON.parse(localStorage.getItem('wb-allowed-tiles') || 'null'))
 
-async function loadAllowedTiles() {
+async function loadAllowedTiles(user = null) {
   try {
-    const res = await fetchAllowedTiles()
+    // Resolve for the inherited user; server falls back to the logged-in user
+    const res = await fetchAllowedTiles(user)
     allowedTileIds.value = res?.configured ? res.tiles : null
     if (allowedTileIds.value) {
       localStorage.setItem('wb-allowed-tiles', JSON.stringify(allowedTileIds.value))
@@ -1066,8 +1067,9 @@ onMounted(async () => {
 
   // Settings/series/opening-cash/naming-series: fetch only on cache miss/expiry (see fetchSettings)
   fetchSettings(selectedUser.value)
-  // Per-user/group dashboard tile selection (SSPL Dashboard Tile Access)
-  loadAllowedTiles()
+  // Per-user/group dashboard tile selection (SSPL Dashboard Tile Access),
+  // resolved for the inherited settings user (falls back to logged-in user)
+  loadAllowedTiles(selectedUser.value !== session.user.value ? selectedUser.value : null)
   // Items: skip if already cached this session and still fresh (WebSocket keeps stock live).
   // Seed warehouse-scoped (user's default warehouse) so per-warehouse stock is correct from
   // load and the first Ctrl+I in Sales Entry — same warehouse — needs no re-scope refetch.

@@ -403,14 +403,15 @@ export async function fetchDashboardSettings(user = null) {
 }
 
 /**
- * Fetch the dashboard tiles allowed for the current user (SSPL Dashboard Tile Access).
+ * Fetch the dashboard tiles allowed via SSPL Dashboard Tile Access, resolved for the
+ * given (inherited) user — admin only; the server falls back to the logged-in user.
  * Returns { configured: bool, tiles: string[]|null }; tiles is null when no
  * user/group record applies and the caller should fall back to role-based filtering.
  *
  * PYTHON CALL: ssplbilling.api.dashboard_api.get_allowed_tiles
  */
-export async function fetchAllowedTiles() {
-  return frappeGet("ssplbilling.api.dashboard_api.get_allowed_tiles");
+export async function fetchAllowedTiles(user = null) {
+  return frappeGet("ssplbilling.api.dashboard_api.get_allowed_tiles", user ? { user } : {});
 }
 
 // ─── Cashier / Draft Invoice Helpers ─────────────────────────────────────────
