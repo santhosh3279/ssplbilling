@@ -495,6 +495,44 @@ def get_billing_settings(user=None):
 	}
 
 
+@frappe.whitelist()
+def get_allowed_tiles():
+	"""Return the dashboard tiles allowed for the session user via SSPL Dashboard Tile Access.
+
+	Resolution: a user-level record wins outright; otherwise the union of all enabled
+	group-level records for User Groups the user belongs to. Returns configured=False
+	(tiles=None) when nothing applies, so the frontend falls back to role-based filtering.
+	"""
+	user = frappe.session.user
+
+	access_names = []
+	user_record = frappe.db.get_value(
+		"SSPL Dashboard Tile Access",
+		{"applies_to": "User", "user": user, "enabled": 1},
+		"name",
+	)
+	if user_record:
+		access_names = [user_record]
+	else:
+		groups = frappe.get_all("User Group Member", filters={"user": user}, pluck="parent")
+		if groups:
+			access_names = frappe.get_all(
+				"SSPL Dashboard Tile Access",
+				filters={"applies_to": "User Group", "user_group": ["in", groups], "enabled": 1},
+				pluck="name",
+			)
+
+	if not access_names:
+		return {"configured": False, "tiles": None}
+
+	tiles = set()
+	for name in access_names:
+		doc = frappe.get_cached_doc("SSPL Dashboard Tile Access", name)
+		tiles.update(row.tile for row in doc.tiles if row.tile)
+
+	return {"configured": True, "tiles": sorted(tiles)}
+
+
 @frappe.whitelist(allow_guest=True)
 def get_frappe_site_name():
 	"""Return site name and socket.io port so the frontend can build the correct socket.io URL."""

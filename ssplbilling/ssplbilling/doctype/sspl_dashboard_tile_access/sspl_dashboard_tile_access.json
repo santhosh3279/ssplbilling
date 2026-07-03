@@ -1,0 +1,104 @@
+{
+ "actions": [],
+ "autoname": "format:DTA-{#####}",
+ "creation": "2026-07-03 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "applies_to",
+  "user",
+  "user_group",
+  "column_break_1",
+  "enabled",
+  "title",
+  "tiles_section",
+  "tiles"
+ ],
+ "fields": [
+  {
+   "fieldname": "applies_to",
+   "fieldtype": "Select",
+   "label": "Applies To",
+   "options": "User\nUser Group",
+   "default": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "depends_on": "eval:doc.applies_to=='User'",
+   "mandatory_depends_on": "eval:doc.applies_to=='User'",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "user_group",
+   "fieldtype": "Link",
+   "label": "User Group",
+   "options": "User Group",
+   "depends_on": "eval:doc.applies_to=='User Group'",
+   "mandatory_depends_on": "eval:doc.applies_to=='User Group'",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "tiles_section",
+   "fieldtype": "Section Break",
+   "label": "Allowed Tiles"
+  },
+  {
+   "fieldname": "tiles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Tiles",
+   "options": "SSPL Dashboard Tile Item",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-03 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Dashboard Tile Access",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "user,user_group",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

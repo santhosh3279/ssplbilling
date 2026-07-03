@@ -398,7 +398,7 @@ import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 
-import { fetchItemPrice, fetchItemStockForWarehouses, frappeGet, frappePost } from '../api.js'
+import { fetchItemPrice, fetchItemStockForWarehouses, fetchAllowedTiles, frappeGet, frappePost } from '../api.js'
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
@@ -598,8 +598,31 @@ const allTiles = [
   { id: 'reports',            bucket: 'report',   name: 'Reports',               desc: 'Business reports and analytics',           icon: '📈', shortcut: ''    },
 ]
 
+// Per-user/group tile selection from SSPL Dashboard Tile Access.
+// null = no record configured → fall back to role-based canAccessTile.
+// Hydrated from localStorage so the grid doesn't flash all tiles before the fetch lands.
+const allowedTileIds = ref(JSON.parse(localStorage.getItem('wb-allowed-tiles') || 'null'))
+
+async function loadAllowedTiles() {
+  try {
+    const res = await fetchAllowedTiles()
+    allowedTileIds.value = res?.configured ? res.tiles : null
+    if (allowedTileIds.value) {
+      localStorage.setItem('wb-allowed-tiles', JSON.stringify(allowedTileIds.value))
+    } else {
+      localStorage.removeItem('wb-allowed-tiles')
+    }
+  } catch (e) {
+    console.warn('[Dashboard] fetchAllowedTiles failed:', e)
+  }
+}
+
 const tiles = computed(() => {
   permissionTrigger.value
+  if (Array.isArray(allowedTileIds.value)) {
+    const allowed = new Set(allowedTileIds.value)
+    return allTiles.filter(t => allowed.has(t.id))
+  }
   return allTiles.filter(t => canAccessTile(t.id))
 })
 
@@ -992,6 +1015,8 @@ onMounted(async () => {
 
   // Settings/series/opening-cash/naming-series: fetch only on cache miss/expiry (see fetchSettings)
   fetchSettings(selectedUser.value)
+  // Per-user/group dashboard tile selection (SSPL Dashboard Tile Access)
+  loadAllowedTiles()
   // Items: skip if already cached this session and still fresh (WebSocket keeps stock live).
   // Seed warehouse-scoped (user's default warehouse) so per-warehouse stock is correct from
   // load and the first Ctrl+I in Sales Entry — same warehouse — needs no re-scope refetch.
