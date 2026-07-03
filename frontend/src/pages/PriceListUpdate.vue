@@ -219,9 +219,9 @@
               No previous history found for this supplier.
             </div>
             <div v-else class="max-h-60 overflow-y-auto custom-scrollbar">
-              <table class="w-full text-left text-base border-collapse">
+              <table class="w-full text-left text-lg border-collapse">
                 <thead>
-                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-xs uppercase font-bold">
+                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-sm uppercase font-bold">
                     <th class="py-2 pr-2">Bill No</th>
                     <th class="py-2 px-2">Date</th>
                     <th class="py-2 px-2 text-right">Qty</th>
@@ -229,7 +229,7 @@
                     <th class="py-2 pl-2 text-right">Disc%</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-[var(--color-border)]/30 font-mono text-sm">
+                <tbody class="divide-y divide-[var(--color-border)]/30 font-mono text-lg">
                   <tr v-for="(h, i) in sameSupplierHistory.slice(0, 10)" :key="i" class="hover:bg-[var(--color-surface-raised)]/20">
                     <td class="py-2 pr-2 leading-none truncate max-w-[120px]" :title="h.name">{{ h.name }}</td>
                     <td class="py-2 px-2 leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
@@ -252,9 +252,9 @@
               No previous history found.
             </div>
             <div v-else class="max-h-60 overflow-y-auto custom-scrollbar">
-              <table class="w-full text-left text-base border-collapse">
+              <table class="w-full text-left text-lg border-collapse">
                 <thead>
-                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-xs uppercase font-bold">
+                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-sm uppercase font-bold">
                     <th class="py-2 pr-2">Supplier</th>
                     <th class="py-2 px-2">Bill No</th>
                     <th class="py-2 px-2">Date</th>
@@ -262,7 +262,7 @@
                     <th class="py-2 pl-2 text-right">Rate</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-[var(--color-border)]/30 font-mono text-sm">
+                <tbody class="divide-y divide-[var(--color-border)]/30 font-mono text-lg">
                   <tr v-for="(h, i) in otherSuppliersItemHistory.slice(0, 10)" :key="i" class="hover:bg-[var(--color-surface-raised)]/20">
                     <td class="py-2 pr-2 leading-none truncate max-w-[200px] font-sans font-semibold text-[var(--color-text)]" :title="h.supplier_name || h.supplier">{{ h.supplier_name || h.supplier }}</td>
                     <td class="py-2 px-2 leading-none truncate max-w-[120px]" :title="h.name">{{ h.name }}</td>
