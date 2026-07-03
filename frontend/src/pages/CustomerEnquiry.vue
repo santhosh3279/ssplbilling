@@ -52,22 +52,22 @@
             </div>
           </div>
 
-          <!-- Existing customer -->
+          <!-- Customer -->
           <div class="flex flex-col gap-1 relative">
-            <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Customer <span class="normal-case font-normal">(from system)</span></label>
+            <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Customer Name</label>
             <div class="flex gap-2">
               <input
                 ref="customerInputRef"
                 v-model="customerQuery"
                 type="text"
-                placeholder="Type to search customer..."
+                placeholder="Type name or search customer..."
                 class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
                 @input="onCustomerInput"
                 @focus="onCustomerFocus"
                 @keydown="handleCustomerKeydown"
               />
               <button
-                v-if="form.customer"
+                v-if="form.customer || customerQuery"
                 class="rounded border border-[var(--color-border)] px-3 text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition"
                 title="Clear customer"
                 @click="clearCustomer"
@@ -83,19 +83,6 @@
               :anchor-el="customerInputRef"
               @select="onCustomerSelected"
               @close="showQuickSearch = false"
-            />
-          </div>
-
-          <!-- New customer -->
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-bold uppercase text-[var(--color-text-muted)]">New Customer <span class="normal-case font-normal">(if not in system)</span></label>
-            <input
-              v-model="form.new_customer"
-              type="text"
-              placeholder="Name of the new customer..."
-              class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-40"
-              :disabled="!!form.customer"
-              @input="onNewCustomerInput"
             />
           </div>
 
@@ -356,8 +343,12 @@ function searchCustomers() {
 
 function onCustomerInput() {
   if (form.value.customer) {
-    clearCustomer()
+    form.value.customer = ''
+    form.value.customer_name = ''
+    mobileFromCache.value = false
   }
+  form.value.new_customer = customerQuery.value.trim()
+  form.value.customer_name = customerQuery.value.trim()
   searchCustomers()
 }
 
@@ -398,16 +389,11 @@ function onCustomerSelected(c) {
 function clearCustomer() {
   form.value.customer = ''
   form.value.customer_name = ''
+  form.value.new_customer = ''
   customerQuery.value = ''
   form.value.mobile_no = ''
   mobileFromCache.value = false
   showQuickSearch.value = false
-}
-
-function onNewCustomerInput() {
-  // Typing a new customer name means no linked customer; mobile is manual
-  if (form.value.customer) clearCustomer()
-  mobileFromCache.value = false
 }
 
 // ── ITEM ENTRY (searches local item cache) ───────────────────────────
@@ -485,15 +471,27 @@ function commitNewItem() {
 async function saveEnquiry() {
   // Commit any half-typed item row before validating
   if (newItem.value.query.trim()) commitNewItem()
-  if (!form.value.customer && !form.value.new_customer.trim()) { alert('Select a customer or enter a New Customer name'); return }
+  
+  const finalCustomerName = form.value.customer ? form.value.customer_name : customerQuery.value.trim()
+  if (!form.value.customer && !finalCustomerName) {
+    alert('Select a customer or enter a customer name')
+    return
+  }
   if (!rows.value.length) { alert('Add at least one enquired item'); return }
+
+  if (!form.value.customer) {
+    form.value.new_customer = finalCustomerName
+    form.value.customer_name = finalCustomerName
+  } else {
+    form.value.new_customer = ''
+  }
 
   saving.value = true
   try {
     const payload = {
       name: docName.value,
       ...form.value,
-      customer_name: form.value.customer ? form.value.customer_name : form.value.new_customer.trim(),
+      customer_name: form.value.customer ? form.value.customer_name : form.value.new_customer,
       items: rows.value,
     }
     const method = docName.value ? 'update_enquiry' : 'create_enquiry'
@@ -533,7 +531,7 @@ async function loadEnquiry(name) {
       new_customer: d.new_customer || '',
       mobile_no: d.mobile_no || '',
     }
-    customerQuery.value = d.customer_name || d.customer || ''
+    customerQuery.value = d.customer ? (d.customer_name || d.customer) : (d.new_customer || d.customer_name || '')
     mobileFromCache.value = false
     rows.value = (d.items || []).map(r => ({ ...r }))
   } catch (e) {
