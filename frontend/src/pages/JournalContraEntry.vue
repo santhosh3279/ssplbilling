@@ -14,21 +14,21 @@
         <div class="flex rounded-xl bg-[var(--color-surface-raised)] p-1.5 shadow-inner">
           <button
             @click="entryType = 'Journal Entry'"
-            class="rounded-lg px-12 py-3 text-base font-black transition-all flex items-center gap-2"
+            class="rounded-lg px-6 py-1.5 text-3xl font-black transition-all flex items-center gap-2"
             :class="entryType === 'Journal Entry' ? 'bg-[var(--color-surface)] text-[var(--color-info)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
           >
             <span>Journal</span>
           </button>
           <button
             @click="entryType = 'Contra'"
-            class="rounded-lg px-12 py-3 text-base font-black transition-all flex items-center gap-2"
+            class="rounded-lg px-6 py-1.5 text-3xl font-black transition-all flex items-center gap-2"
             :class="entryType === 'Contra' ? 'bg-[var(--color-surface)] text-[var(--color-success)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
           >
             <span>Contra</span>
           </button>
           <button
             @click="entryType = 'Opening Entry'"
-            class="rounded-lg px-12 py-3 text-base font-black transition-all flex items-center gap-2"
+            class="rounded-lg px-6 py-1.5 text-3xl font-black transition-all flex items-center gap-2"
             :class="entryType === 'Opening Entry' ? 'bg-[var(--color-surface)] text-[var(--color-warning)] shadow-md' : 'text-[var(--color-text-muted)] hover:text(--color-text)'"
           >
             <span>Expense</span>
