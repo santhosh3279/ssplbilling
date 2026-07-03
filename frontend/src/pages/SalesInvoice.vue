@@ -581,6 +581,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
+import { loadCachedPanel, saveCachedPanel, applyPanelEvent } from '../services/billPanelCache.js'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -761,7 +762,21 @@ function handleDocDateChange(days) {
   invoiceDate.value = d.toISOString().split('T')[0]
 }
 
-async function fetchRecentInvoices() {
+function sidebarCacheParams() {
+  return { date: sidebarDate.value, series: sidebarSeries.value, draftOnly: draftOnly.value }
+}
+
+async function fetchRecentInvoices(force = false) {
+  // Default view (no search): serve from the bill-panel cache when fresh —
+  // socket upserts keep it current, so no server call is needed.
+  if (!force && !sidebarSearch.value) {
+    const cached = loadCachedPanel('Sales Invoice', sidebarCacheParams())
+    if (cached) {
+      recentInvoices.value = cached
+      return
+    }
+  }
+
   sidebarLoading.value = true
   try {
     recentInvoices.value = await frappeGet('ssplbilling.api.sales.get_sales_invoices', {
@@ -771,10 +786,24 @@ async function fetchRecentInvoices() {
       naming_series: sidebarSeries.value.join(','),
       draft_only: draftOnly.value
     })
+    if (!sidebarSearch.value) {
+      saveCachedPanel('Sales Invoice', sidebarCacheParams(), recentInvoices.value)
+    }
   } catch (e) {
     recentInvoices.value = []
   }
   sidebarLoading.value = false
+}
+
+// Patch the sidebar list in place from a bill_panel_update socket payload.
+// Returns true when handled, so onBillPanelUpdate skips the refetch.
+function applySidebarPanelEvent(data) {
+  if (sidebarSearch.value) return false // search results — let the refetch handle it
+  recentInvoices.value = applyPanelEvent(recentInvoices.value, data, {
+    date: sidebarDate.value,
+    draftOnly: draftOnly.value
+  })
+  return true
 }
 
 function handleSidebarDateChange(days) {
@@ -2494,16 +2523,19 @@ onMounted(() => {
   if (props.isSubwindow && props.invoiceName) {
     handleSelectSidebarItem({ name: props.invoiceName })
   } else {
-    fetchRecentInvoices()
-    fetchAllowedSeries('Sales Invoice')
+    // Resolve the series first: the sidebarSeries watcher fires the (cache-first)
+    // list fetch once, instead of an unfiltered fetch that gets thrown away.
+    fetchAllowedSeries('Sales Invoice').then((series) => {
+      if (!series?.length) fetchRecentInvoices()
+    })
     showSeriesModal.value = true
   }
-  
+
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }
 
-  _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, fetchRecentInvoices)
+  _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, () => fetchRecentInvoices(true), applySidebarPanelEvent)
 })
 
 let _billPanelCleanup = null
