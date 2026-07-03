@@ -601,11 +601,25 @@ function closeSubForm() {
 async function onSupplierSaved(result) {
   await preloadLedger(true)
   const savedName = result.name || result.supplier_name
-  const foundIdx = results.value.findIndex(c => c.name === savedName)
-  if (foundIdx !== -1) selectedIdx.value = foundIdx
+  const foundItem = allLedgers.value.find(c => c.name === savedName)
   if (showNewForm.value) {
-    handleSelect(results.value[selectedIdx.value])
+    if (foundItem) {
+      handleSelect(foundItem)
+    } else {
+      handleSelect({
+        name: result.name,
+        label: result.supplier_name || result.name,
+        type: 'Supplier',
+        mobile_no: result.mobile_no || '',
+        email: result.email_id || '',
+        gstin: result.gstin || '',
+        group: result.supplier_group || '',
+        balance: 0,
+      })
+    }
   } else {
+    const foundIdx = results.value.findIndex(c => c.name === savedName)
+    if (foundIdx !== -1) selectedIdx.value = foundIdx
     closeSubForm()
   }
 }
@@ -613,11 +627,25 @@ async function onSupplierSaved(result) {
 async function onEmployeeSaved(result) {
   await preloadLedger(true)
   const savedName = result.name || result.employee_name
-  const foundIdx = results.value.findIndex(c => c.name === savedName)
-  if (foundIdx !== -1) selectedIdx.value = foundIdx
+  const foundItem = allLedgers.value.find(c => c.name === savedName)
   if (showNewForm.value) {
-    handleSelect(results.value[selectedIdx.value])
+    if (foundItem) {
+      handleSelect(foundItem)
+    } else {
+      handleSelect({
+        name: result.name,
+        label: result.employee_name || result.name,
+        type: 'Employee',
+        mobile_no: result.cell_number || '',
+        email: result.personal_email || '',
+        gstin: '',
+        group: result.department || '',
+        balance: 0,
+      })
+    }
   } else {
+    const foundIdx = results.value.findIndex(c => c.name === savedName)
+    if (foundIdx !== -1) selectedIdx.value = foundIdx
     closeSubForm()
   }
 }
@@ -626,11 +654,26 @@ async function onEmployeeSaved(result) {
 async function onCustomerSaved(result) {
   await preloadLedger(true)
   const savedName = result.name || result.customer_name
-  const foundIdx = results.value.findIndex(c => c.name === savedName)
-  if (foundIdx !== -1) selectedIdx.value = foundIdx
+  const foundItem = allLedgers.value.find(c => c.name === savedName)
   if (showNewForm.value) {
-    handleSelect(results.value[selectedIdx.value])
+    if (foundItem) {
+      handleSelect(foundItem)
+    } else {
+      handleSelect({
+        name: result.name,
+        label: result.customer_name || result.name,
+        type: 'Customer',
+        mobile_no: result.mobile_no || '',
+        email: result.email_id || '',
+        gstin: result.gstin || '',
+        group: result.customer_group || '',
+        pricelist_multiplication_factor: result.pricelist_multiplication_factor || 1.0,
+        balance: 0,
+      })
+    }
   } else {
+    const foundIdx = results.value.findIndex(c => c.name === savedName)
+    if (foundIdx !== -1) selectedIdx.value = foundIdx
     closeSubForm()
   }
 }
