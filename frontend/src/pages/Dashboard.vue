@@ -669,8 +669,9 @@ async function loadAllowedTiles(user = null, force = false) {
 const tiles = computed(() => {
   permissionTrigger.value
   if (Array.isArray(allowedTileIds.value)) {
-    const allowed = new Set(allowedTileIds.value)
-    return allTiles.filter(t => allowed.has(t.id))
+    // Render in the order configured in SSPL Dashboard Tile Access
+    const byId = new Map(allTiles.map(t => [t.id, t]))
+    return allowedTileIds.value.map(id => byId.get(id)).filter(Boolean)
   }
   return allTiles.filter(t => canAccessTile(t.id))
 })
