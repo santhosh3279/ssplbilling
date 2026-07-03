@@ -730,7 +730,7 @@ const modalSubtitle = computed(() => {
 
 const allowedTypes = computed(() => {
   if (activeTab.value === 'Internal Transfer') return ['Account']
-  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee']
+  if (searchTarget.value === 'party') return ['Customer', 'Supplier', 'Employee', 'Account']
   return ['Account']
 })
 
@@ -892,6 +892,10 @@ function handleAmountEnter() {
 
 async function fetchInvoices(autoShowOnlyIfItems = false) {
   if (!form.party) return
+  if (!form.party_type || form.party_type === 'Account') {
+    continueAfterMop(currentMopRowIdx.value)
+    return
+  }
   
   loadingInvoices.value = true
   try {
@@ -927,7 +931,7 @@ async function fetchOutstanding() {
   try {
     const res = await frappeGet('ssplbilling.api.paymentv2_api.get_ledger', {
       ledger_name: form.party,
-      ledger_type: activeTab.value === 'Internal Transfer' ? 'Account' : form.party_type,
+      ledger_type: (activeTab.value === 'Internal Transfer' || !form.party_type || form.party_type === 'Account') ? 'Account' : form.party_type,
     })
     if (res && res.closing_balance !== undefined) {
       outstandingBalance.value = res.closing_balance
@@ -989,18 +993,30 @@ async function handleSubmit() {
   
   const createdEntries = []
   try {
-    let paymentType = 'Pay'
-    if (activeTab.value === 'Receipt') paymentType = 'Receive'
-    else if (activeTab.value === 'Internal Transfer') paymentType = 'Internal Transfer'
-
     for (const mopRow of form.mop_rows) {
+      const isTransfer = activeTab.value === 'Internal Transfer' || !form.party_type || form.party_type === 'Account'
+      const paymentType = isTransfer ? 'Internal Transfer' : (activeTab.value === 'Receipt' ? 'Receive' : 'Pay')
+      
+      let payloadParty = form.party
+      let payloadAccount = mopRow.account
+      
+      if (paymentType === 'Internal Transfer') {
+        if (activeTab.value === 'Receipt') {
+          payloadParty = form.party
+          payloadAccount = mopRow.account
+        } else {
+          payloadParty = mopRow.account
+          payloadAccount = form.party
+        }
+      }
+
       const payload = {
         payment_type: paymentType,
-        party_type: form.party_type,
-        party: activeTab.value === 'Internal Transfer' ? mopRow.account : form.party,
+        party_type: isTransfer ? '' : form.party_type,
+        party: payloadParty,
         amount: mopRow.amount,
         mode_of_payment: mopRow.type === 'Bank' ? 'Bank' : 'Cash',
-        account: activeTab.value === 'Internal Transfer' ? form.party : mopRow.account,
+        account: payloadAccount,
         posting_date: postingDate.value,
         reference_no: form.reference_no,
         reference_date: form.reference_date,
