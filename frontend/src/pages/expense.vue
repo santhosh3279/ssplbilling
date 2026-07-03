@@ -132,8 +132,7 @@
                       v-model="row.query"
                       :ref="el => { if (el) expenseSearchRefs[idx] = el }"
                       @click="openSearch(idx)"
-                      @keydown.enter="handleAccountEnter(idx)"
-                      @keydown.end.prevent="focusReferenceNo"
+                      @keydown="handlePartyKeydown($event, idx)"
                       readonly
                       class="w-full cursor-pointer bg-transparent text-4xl font-normal focus:outline-none placeholder:text-inherit"
                       placeholder="Select Party..."
@@ -298,9 +297,10 @@
       :subtitle="modalSubtitle"
       :allowedTypes="allowedTypes"
       :initialType="initialSearchType"
+      :initialQuery="searchQuery"
       :skipDateFilter="true"
       :hideSecondary="true"
-      @close="showSearchModal = false"
+      @close="showSearchModal = false; searchQuery = ''"
       @select="handleSelect"
     />
 
@@ -392,6 +392,7 @@ const referenceDateInput = ref(null)
 const postButtonRef = ref(null)
 const currentIdx = ref(0)
 const showSearchModal = ref(false)
+const searchQuery = ref('')
 const custSearchModalRef = ref(null)
 const submitting = ref(false)
 const showSuccess = ref(false)
@@ -482,13 +483,31 @@ async function fetchCashAccountDetails() {
   }
 }
 
-function openSearch(idx) {
+function openSearch(idx, initialVal = '') {
   currentIdx.value = idx
+  searchQuery.value = typeof initialVal === 'string' ? initialVal : ''
   showSearchModal.value = true
   nextTick(() => {
     custSearchModalRef.value?.closeSubForm()
     custSearchModalRef.value?.focus()
   })
+}
+
+function handlePartyKeydown(e, idx) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    handleAccountEnter(idx)
+    return
+  }
+  if (e.key === 'End') {
+    e.preventDefault()
+    focusReferenceNo()
+    return
+  }
+  if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault()
+    openSearch(idx, e.key)
+  }
 }
 
 function handleAccountEnter(idx) {
