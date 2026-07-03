@@ -55,6 +55,54 @@
       </div>
     </header>
 
+    <!-- Initial Selection Overlay -->
+    <div
+      v-if="showInitialSelection"
+      ref="selectionOverlayRef"
+      tabindex="0"
+      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md outline-none"
+      @keydown="onSelectionKeydown"
+    >
+      <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-12 text-center shadow-2xl border border-[var(--color-border)] relative text-[var(--color-text)]">
+        <!-- Close/Back -->
+        <button
+          @click="router.push('/')"
+          class="absolute top-6 left-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-midlight)]/20 hover:bg-[var(--color-midlight)] transition-colors"
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
+
+        <h2 class="mb-10 text-5xl font-black uppercase tracking-tight">Select Entry Type</h2>
+        <div class="grid grid-cols-2 gap-8 max-w-lg mx-auto">
+          <button
+            @click="selectEntryType('Payment')"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
+            :class="selectionIdx === 0
+              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
+              : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500'"
+          >
+            <span class="text-8xl">💸</span>
+            <span class="text-4xl font-black uppercase">Payment</span>
+          </button>
+          <button
+            @click="selectEntryType('Receipt')"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-2 transition-all"
+            :class="selectionIdx === 1
+              ? 'bg-[var(--color-focus)] border-[var(--color-focus)] text-[var(--color-text-on-focus)] scale-105 shadow-xl'
+              : 'bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20 hover:border-green-500'"
+          >
+            <span class="text-8xl">💰</span>
+            <span class="text-4xl font-black uppercase">Receipt</span>
+          </button>
+        </div>
+        <p class="mt-8 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+          ← → or Tab to navigate &nbsp;·&nbsp; Enter to select &nbsp;·&nbsp; Esc to go back
+        </p>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1 overflow-hidden p-4">
       <div class="flex h-full flex-col gap-4">
@@ -295,7 +343,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
@@ -309,6 +357,11 @@ const router = useRouter()
 // --- State ---
 const activeTab = ref('Payment') // 'Payment', 'Receipt'
 const showExitWarning = ref(false)
+
+const showInitialSelection = ref(true)
+const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt
+const ENTRY_TYPES = ['Payment', 'Receipt']
+const selectionOverlayRef = ref(null)
 
 useSubwindowWatcher(showExitWarning, {
   'ESCAPE': () => { showExitWarning.value = false }
@@ -704,13 +757,49 @@ function unlinkReference(idx, alloc) {
   }
 }
 
+function onSelectionKeydown(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') {
+    e.preventDefault()
+    selectionIdx.value = (selectionIdx.value + 1) % 2
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    selectionIdx.value = (selectionIdx.value + 1) % 2
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    selectEntryType(ENTRY_TYPES[selectionIdx.value])
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    router.push('/')
+  }
+}
+
+function selectEntryType(type) {
+  activeTab.value = type
+  showInitialSelection.value = false
+  form.rows = [
+    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
+  ]
+  nextTick(() => {
+    setTimeout(() => {
+      expenseSearchRefs.value[0]?.focus()
+    }, 50)
+  })
+}
+
+watch(showInitialSelection, (val) => {
+  if (val) {
+    selectionIdx.value = 0
+    nextTick(() => selectionOverlayRef.value?.focus())
+  }
+})
+
 onMounted(() => {
   fetchCashAccountDetails()
   useShortcuts({
     'F7': cycleTab,
     'ESCAPE': handleEscape,
   })
-  setTimeout(() => expenseSearchRefs.value[0]?.focus(), 300)
+  nextTick(() => selectionOverlayRef.value?.focus())
 })
 </script>
 
