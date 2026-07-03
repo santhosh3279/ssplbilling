@@ -177,23 +177,26 @@
       <div v-if="currentTab === 'dashboard'" class="flex flex-row items-start justify-between gap-8 px-10 py-10">
         <!-- Left: Bucketed Tiles -->
         <div class="flex-shrink-0 space-y-4">
-          <!-- Vertical list (no buckets) when tiles come from SSPL Dashboard Tile Access; ↑/↓ + Enter to navigate -->
-          <div v-if="isTileAccessMode" class="flex flex-col gap-2">
-            <div
-              v-for="(tile, idx) in tiles"
-              :key="tile.id"
-              :id="'wb-tile-' + idx"
-              class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
-              :class="idx === focusedTileIndex ? 'ring-4 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
-              :style="{ width: '70mm', height: '15mm' }"
-              @click="focusedTileIndex = idx; openModule(tile.id)"
-            >
-              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
-                {{ tile.icon }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
-                <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
+          <!-- Column table (no buckets) when tiles come from SSPL Dashboard Tile Access;
+               10 tiles per column, overflow flows into the next column; ↑/↓ + Enter to navigate -->
+          <div v-if="isTileAccessMode" class="flex flex-row items-start gap-4">
+            <div v-for="(col, colIdx) in tileColumns" :key="colIdx" class="flex flex-col gap-2">
+              <div
+                v-for="(tile, rowIdx) in col"
+                :key="tile.id"
+                :id="'wb-tile-' + (colIdx * TILES_PER_COLUMN + rowIdx)"
+                class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
+                :class="colIdx * TILES_PER_COLUMN + rowIdx === focusedTileIndex ? 'ring-4 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
+                :style="{ width: '70mm', height: '15mm' }"
+                @click="focusedTileIndex = colIdx * TILES_PER_COLUMN + rowIdx; openModule(tile.id)"
+              >
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
+                  {{ tile.icon }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
+                  <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -661,9 +664,19 @@ const tiles = computed(() => {
   return allTiles.filter(t => canAccessTile(t.id))
 })
 
-// ── Vertical tile list + ↑/↓/Enter navigation (only when tiles are doctype-configured) ──
+// ── Column tile table + ↑/↓/Enter navigation (only when tiles are doctype-configured) ──
 const isTileAccessMode = computed(() => Array.isArray(allowedTileIds.value))
 const focusedTileIndex = ref(0)
+
+// 10 tiles per column; overflow flows into the next column
+const TILES_PER_COLUMN = 10
+const tileColumns = computed(() => {
+  const cols = []
+  for (let i = 0; i < tiles.value.length; i += TILES_PER_COLUMN) {
+    cols.push(tiles.value.slice(i, i + TILES_PER_COLUMN))
+  }
+  return cols
+})
 
 function handleTileKeyNav(e) {
   if (!isTileAccessMode.value || currentTab.value !== 'dashboard' || showGeneralSettings.value) return
@@ -677,6 +690,12 @@ function handleTileKeyNav(e) {
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     focusedTileIndex.value = (focusedTileIndex.value - 1 + count) % count
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    if (focusedTileIndex.value + TILES_PER_COLUMN < count) focusedTileIndex.value += TILES_PER_COLUMN
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault()
+    if (focusedTileIndex.value - TILES_PER_COLUMN >= 0) focusedTileIndex.value -= TILES_PER_COLUMN
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const tile = tiles.value[focusedTileIndex.value]
