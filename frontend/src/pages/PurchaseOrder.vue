@@ -519,6 +519,7 @@
       :is-sub-window="true"
       :item-code="priceListUpdateItemCode"
       :selected-price-list="priceList"
+      :supplier="supplierId"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
     />

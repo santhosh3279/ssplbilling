@@ -722,6 +722,7 @@
       :initial-discount="priceListUpdateDiscount"
       :tax-rate="priceListUpdateTaxRate"
       :is-inclusive="isInclusiveTax"
+      :supplier="supplierId"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
     />

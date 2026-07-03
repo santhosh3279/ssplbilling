@@ -206,6 +206,75 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Purchase History Sections -->
+        <div v-if="currentItemCode" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-[var(--color-text)]">
+          <!-- Same Supplier History (only if props.supplier is present) -->
+          <div v-if="props.supplier" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
+            <h3 class="mb-3 text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex items-center justify-between">
+              <span>Purchase History (Same Supplier)</span>
+              <span v-if="historyLoading" class="text-xs text-[var(--color-info)] animate-pulse">Loading...</span>
+            </h3>
+            <div v-if="!historyLoading && !sameSupplierHistory.length" class="text-sm text-[var(--color-text-muted)] italic py-4 text-center bg-[var(--color-bg)]/20 rounded-lg">
+              No previous history found for this supplier.
+            </div>
+            <div v-else class="max-h-60 overflow-y-auto custom-scrollbar">
+              <table class="w-full text-left text-base border-collapse">
+                <thead>
+                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-xs uppercase font-bold">
+                    <th class="py-2 pr-2">Bill No</th>
+                    <th class="py-2 px-2">Date</th>
+                    <th class="py-2 px-2 text-right">Qty</th>
+                    <th class="py-2 px-2 text-right">Rate</th>
+                    <th class="py-2 pl-2 text-right">Disc%</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]/30 font-mono text-sm">
+                  <tr v-for="(h, i) in sameSupplierHistory.slice(0, 10)" :key="i" class="hover:bg-[var(--color-surface-raised)]/20">
+                    <td class="py-2 pr-2 leading-none truncate max-w-[120px]" :title="h.name">{{ h.name }}</td>
+                    <td class="py-2 px-2 leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
+                    <td class="py-2 px-2 text-right leading-none">{{ h.qty }}</td>
+                    <td class="py-2 px-2 text-right leading-none font-bold text-[var(--color-success)]">{{ h.rate.toFixed(2) }}</td>
+                    <td class="py-2 pl-2 text-right leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Different Suppliers / General Purchase History -->
+          <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm" :class="{ 'col-span-2': !props.supplier }">
+            <h3 class="mb-3 text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex items-center justify-between">
+              <span>{{ props.supplier ? 'Purchase History (Different Suppliers)' : 'Purchase History' }}</span>
+              <span v-if="otherSuppliersHistoryLoading" class="text-xs text-[var(--color-info)] animate-pulse">Loading...</span>
+            </h3>
+            <div v-if="!otherSuppliersHistoryLoading && !otherSuppliersItemHistory.length" class="text-sm text-[var(--color-text-muted)] italic py-4 text-center bg-[var(--color-bg)]/20 rounded-lg">
+              No previous history found.
+            </div>
+            <div v-else class="max-h-60 overflow-y-auto custom-scrollbar">
+              <table class="w-full text-left text-base border-collapse">
+                <thead>
+                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-xs uppercase font-bold">
+                    <th class="py-2 pr-2">Supplier</th>
+                    <th class="py-2 px-2">Bill No</th>
+                    <th class="py-2 px-2">Date</th>
+                    <th class="py-2 px-2 text-right">Qty</th>
+                    <th class="py-2 pl-2 text-right">Rate</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]/30 font-mono text-sm">
+                  <tr v-for="(h, i) in otherSuppliersItemHistory.slice(0, 10)" :key="i" class="hover:bg-[var(--color-surface-raised)]/20">
+                    <td class="py-2 pr-2 leading-none truncate max-w-[200px] font-sans font-semibold text-[var(--color-text)]" :title="h.supplier_name || h.supplier">{{ h.supplier_name || h.supplier }}</td>
+                    <td class="py-2 px-2 leading-none truncate max-w-[120px]" :title="h.name">{{ h.name }}</td>
+                    <td class="py-2 px-2 leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
+                    <td class="py-2 px-2 text-right leading-none">{{ h.qty }}</td>
+                    <td class="py-2 pl-2 text-right leading-none font-bold text-[var(--color-success)]">{{ h.rate.toFixed(2) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </main>
 
       <!-- Footer -->
@@ -251,6 +320,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { useItemCache } from '../services/itemCache.js'
+import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
@@ -261,7 +331,8 @@ const props = defineProps({
   initialUom: { type: String, default: '' },
   initialDiscount: { type: Number, default: 0 },
   taxRate: { type: Number, default: 0 },
-  isInclusive: { type: Boolean, default: false }
+  isInclusive: { type: Boolean, default: false },
+  supplier: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -294,6 +365,29 @@ const cachedItem = computed(() => {
   if (!currentItemCode.value) return null
   return lookupItemInCache(currentItemCode.value)
 })
+
+const {
+  fetchSupplierPurchaseHistory,
+  getSupplierItemHistoryFromCache,
+  fetchOtherSuppliersItemHistory,
+  otherSuppliersItemHistory,
+  historyLoading,
+  otherSuppliersHistoryLoading
+} = useCustomerHistory()
+
+const sameSupplierHistory = computed(() => {
+  if (!currentItemCode.value) return []
+  return getSupplierItemHistoryFromCache(currentItemCode.value)
+})
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = String(d.getFullYear()).slice(-2)
+  return `${day}-${month}-${year}`
+}
 
 function showToast(message, type = 'success') {
   toast.value = { message, type }
@@ -377,6 +471,11 @@ async function loadPrices(code) {
   if (!code) return
   loading.value = true
   try {
+    if (props.supplier) {
+      fetchSupplierPurchaseHistory(props.supplier)
+    }
+    fetchOtherSuppliersItemHistory(code, props.supplier)
+
     const cached = lookupItemInCache(code)
     let data
     if (cached) {
