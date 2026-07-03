@@ -425,6 +425,7 @@ import { fetchItemPrice, fetchItemStockForWarehouses, fetchAllowedTiles, frappeG
 import { searchCustomers } from '../customersearch.js'
 import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
+import { syncNamingSeries } from '../services/seriesCache.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
@@ -814,7 +815,6 @@ const systemSettings = ref(null)
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 const ALLOWED_SERIES_CACHE_KEY = 'wb-allowed-series-v1'
-const NAMING_SERIES_TS_KEY = 'wb-naming-series-ts-v1'
 const OPENING_CASH_DATE_KEY = 'wb-opening-box-cash-date'
 const GENERIC_CACHE_TTL = 30 * 60 * 1000 // 30 mins — series / naming series
 const ITEM_CACHE_TTL = 5 * 60 * 1000 // 5 mins — items / ledgers freshness window
@@ -1026,34 +1026,12 @@ async function fetchSettings(user = null, force = false) {
   }
 
   // 4. Fetch and store all naming series for the requested DocTypes.
-  //    Rarely changes → refetch on TTL only; consumers read the wb-series-* LS keys.
+  //    Rarely changes → seriesCache refetches on TTL expiry or when any
+  //    wb-series-* key is missing/empty; consumers read those LS keys.
   try {
-    const ts = Number(localStorage.getItem(NAMING_SERIES_TS_KEY) || 0)
-    if (!force && (Date.now() - ts) < GENERIC_CACHE_TTL && localStorage.getItem('wb-all-naming-series')) {
-      // Cached naming series still fresh — skip the network call.
-    } else {
-    const seriesMap = await dashboardApi.getAllNamingSeries()
-    if (seriesMap) {
-      // Store individual lists and a flattened list of all unique prefixes
-      const allPrefixes = new Set()
-      Object.keys(seriesMap).forEach(dt => {
-        const seriesList = seriesMap[dt] || []
-        const key = `wb-series-${dt.toLowerCase().replace(/ /g, '-')}`
-        localStorage.setItem(key, JSON.stringify(seriesList))
-        
-        seriesList.forEach(s => {
-          const val = typeof s === 'string' ? s : (s?.prefix || '')
-          const prefix = val.split('.')[0]
-          if (prefix) allPrefixes.add(prefix)
-        })
-      })
-      // Flattened array of all unique prefixes as requested
-      localStorage.setItem('wb-all-naming-series', JSON.stringify([...allPrefixes]))
-      localStorage.setItem(NAMING_SERIES_TS_KEY, String(Date.now()))
-    }
-    }
+    await syncNamingSeries(force)
   } catch (e) {
-    console.warn('[Dashboard] getAllNamingSeries failed:', e)
+    console.warn('[Dashboard] syncNamingSeries failed:', e)
   }
 }
 

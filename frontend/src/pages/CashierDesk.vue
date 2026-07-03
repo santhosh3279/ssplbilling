@@ -688,6 +688,7 @@ import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchD
 import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
 import { useLedgerCache } from '../services/ledgerCache'
+import { getSeriesForDoctype } from '../services/seriesCache.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
 import CashierEntry from '../components/CashierEntry.vue'
@@ -951,17 +952,16 @@ async function loadInvoices() {
 
 async function fetchSeriesList() {
   try {
-    // 1. Try to get intersection from localStorage
+    // 1. Try to get intersection from localStorage (seriesCache refetches when empty)
     const storedAllowed = localStorage.getItem('wb-allowed-series')
-    const storedDtSeries = localStorage.getItem('wb-series-sales-invoice')
-    
+    const dtSeries = await getSeriesForDoctype('Sales Invoice')
+
     let finalSeries = []
 
-    if (storedAllowed && storedDtSeries) {
+    if (storedAllowed && dtSeries.length) {
       try {
         const allowedPrefixes = JSON.parse(storedAllowed)
-        const dtSeries = JSON.parse(storedDtSeries)
-        if (Array.isArray(allowedPrefixes) && Array.isArray(dtSeries)) {
+        if (Array.isArray(allowedPrefixes)) {
           finalSeries = dtSeries
             .map(s => typeof s === 'string' ? s : s.prefix)
             .filter(s => 
