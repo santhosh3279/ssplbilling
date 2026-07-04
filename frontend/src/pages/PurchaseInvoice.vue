@@ -744,12 +744,51 @@
       :history="supplierPurchaseHistory"
     />
 
-    <CustomAddress
+    <!-- Remark Modal (F6) -->
+    <div
       v-if="showCustomAddressModal"
-      :initial-data="customAddress"
-      @saved="data => { customAddress = data }"
-      @close="showCustomAddressModal = false"
-    />
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      @click.self="showCustomAddressModal = false"
+    >
+      <div class="flex flex-col bg-[var(--color-bg)] rounded-2xl border border-[var(--color-border)] shadow-2xl overflow-hidden w-[600px]">
+        <!-- Header -->
+        <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
+          <span class="text-2xl font-bold uppercase tracking-tight text-[var(--color-text)]">Remark</span>
+          <button
+            class="text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition"
+            @click="showCustomAddressModal = false"
+          >✕</button>
+        </header>
+
+        <!-- Fields -->
+        <div class="flex flex-col gap-5 p-6">
+          <div class="flex flex-col gap-2">
+            <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Remark <span class="text-[var(--color-danger)]">*</span></label>
+            <input
+              ref="remarkInputRef"
+              v-model="remarkFormText"
+              type="text"
+              placeholder="Remark"
+              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
+              @keydown.enter.prevent="saveRemark"
+              @keydown.esc.prevent="showCustomAddressModal = false"
+            />
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end gap-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
+          <button
+            @click="showCustomAddressModal = false"
+            class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-8 py-3 text-2xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition"
+          >Cancel</button>
+          <button
+            @click="saveRemark"
+            class="rounded-xl px-10 py-3 text-2xl font-bold text-[var(--color-text-on-highlight)] transition-all active:scale-95 bg-[var(--color-highlight)]"
+          >Save</button>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -768,7 +807,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
-import CustomAddress from '../components/CustomAddress.vue'
+
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -869,6 +908,46 @@ const showHistoryModal = ref(false)
 const invoiceTemplateRef = ref(null)
 const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
 const showCustomAddressModal = ref(false)
+const remarkFormText = ref('')
+const remarkInputRef = ref(null)
+
+function handleRemarkKeydown(e) {
+  if (!showCustomAddressModal.value) return
+  if (e.key === 'End') {
+    e.preventDefault()
+    saveRemark()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    showCustomAddressModal.value = false
+  }
+}
+
+watch(showCustomAddressModal, (newVal) => {
+  if (newVal) {
+    remarkFormText.value = customAddress.value.customer_name || ''
+    window.addEventListener('keydown', handleRemarkKeydown)
+    nextTick(() => {
+      remarkInputRef.value?.focus()
+      remarkInputRef.value?.select()
+    })
+  } else {
+    window.removeEventListener('keydown', handleRemarkKeydown)
+  }
+})
+
+function saveRemark() {
+  if (!remarkFormText.value.trim()) {
+    remarkInputRef.value?.focus()
+    return
+  }
+  customAddress.value = {
+    customer_name: remarkFormText.value,
+    mobile_number: '',
+    address_line_1: '',
+    address_line_2: ''
+  }
+  showCustomAddressModal.value = false
+}
 const priceListSelectRef = ref(null)
 const taxTemplateRef = ref(null)
 const inclusiveTaxRef = ref(null)
@@ -2687,6 +2766,7 @@ let _billPanelCleanup = null
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalEscape)
+  window.removeEventListener('keydown', handleRemarkKeydown)
   window.removeEventListener('beforeunload', handleBeforeUnload)
   releaseLock()
   _billPanelCleanup?.()
