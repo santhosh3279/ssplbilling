@@ -59,7 +59,7 @@
               v-model="form.vehicle_no"
               type="text"
               placeholder="e.g. KL-09-AH-1234"
-              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
+              class="uppercase rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
               @keydown.enter.prevent="focusVehicleType"
               @keydown.esc.prevent="emit('close')"
             />
@@ -177,7 +177,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, watch } from 'vue'
 import { frappeGet } from '../api'
 
 const props = defineProps({
@@ -273,6 +273,15 @@ function focusLrNo() { nextTick(() => lrNoRef.value?.focus() ) }
 function focusLrDate() { nextTick(() => lrDateRef.value?.focus() ) }
 function focusSubmit() { nextTick(() => submitBtnRef.value?.focus() ) }
 
+watch(
+  () => form.value.vehicle_no,
+  (newVal) => {
+    if (newVal && newVal !== newVal.toUpperCase()) {
+      form.value.vehicle_no = newVal.toUpperCase()
+    }
+  }
+)
+
 function handleSubmit() {
   if (!form.value.distance) {
     alert('Distance (km) is required.')
@@ -283,6 +292,9 @@ function handleSubmit() {
     alert('Vehicle Number is required for transport by Road.')
     focusVehicleNo()
     return
+  }
+  if (form.value.vehicle_no) {
+    form.value.vehicle_no = form.value.vehicle_no.toUpperCase().trim()
   }
   emit('submit', form.value)
 }
