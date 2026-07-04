@@ -11,32 +11,42 @@
         <!-- Quick Filters -->
         <div class="grid grid-cols-5 gap-2">
           <button
+            ref="btnToday"
             @click="setDateRange('Today')"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+            @keydown="e => handleButtonKeydown(e, 0)"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none active:scale-95 transition-all shadow-sm"
           >
             Today
           </button>
           <button
+            ref="btnYesterday"
             @click="setDateRange('Yesterday')"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+            @keydown="e => handleButtonKeydown(e, 1)"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none active:scale-95 transition-all shadow-sm"
           >
             Y
           </button>
           <button
+            ref="btnCM"
             @click="setDateRange('CM')"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+            @keydown="e => handleButtonKeydown(e, 2)"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none active:scale-95 transition-all shadow-sm"
           >
             CM
           </button>
           <button
+            ref="btnLM"
             @click="setDateRange('LM')"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+            @keydown="e => handleButtonKeydown(e, 3)"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none active:scale-95 transition-all shadow-sm"
           >
             LM
           </button>
           <button
+            ref="btnFY"
             @click="setDateRange('FY')"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+            @keydown="e => handleButtonKeydown(e, 4)"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:outline-none active:scale-95 transition-all shadow-sm"
           >
             FY
           </button>
@@ -55,6 +65,7 @@
             @keydown.backspace="handleBackspace($event, 'from')"
             @keydown.enter.prevent="focusToDate"
             @keydown.down.prevent="focusToDate"
+            @keydown.up.prevent="focusQuickFilters"
             @keydown.esc.stop="$emit('close')"
           />
         </div>
@@ -100,6 +111,52 @@ const emit = defineEmits(['close', 'confirm'])
 
 const fromDateInput = ref(null)
 const toDateInput = ref(null)
+
+const btnToday = ref(null)
+const btnYesterday = ref(null)
+const btnCM = ref(null)
+const btnLM = ref(null)
+const btnFY = ref(null)
+
+function focusQuickFilters() {
+  nextTick(() => {
+    btnToday.value?.focus()
+  })
+}
+
+function handleButtonKeydown(e, index) {
+  if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    const nextIdx = (index + 1) % 5
+    focusButton(nextIdx)
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault()
+    const prevIdx = (index - 1 + 5) % 5
+    focusButton(prevIdx)
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    nextTick(() => {
+      fromDateInput.value?.focus()
+      fromDateInput.value?.select()
+    })
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    const ranges = ['Today', 'Yesterday', 'CM', 'LM', 'FY']
+    setDateRange(ranges[index])
+    confirmDate()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    emit('close')
+  }
+}
+
+function focusButton(index) {
+  const refs = [btnToday.value, btnYesterday.value, btnCM.value, btnLM.value, btnFY.value]
+  const target = refs[index]
+  if (target) {
+    target.focus()
+  }
+}
 
 const dateData = ref({
   fromDisplay: '', // DD/MM/YYYY
