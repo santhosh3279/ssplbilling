@@ -140,27 +140,27 @@
                     <button
                       v-if="chq.status === 'Pending'"
                       @click="openSettle(chq)"
-                      class="rounded-lg bg-[var(--color-success)] px-3 py-1.5 font-black uppercase tracking-widest text-white shadow-sm hover:brightness-110 active:scale-95 transition-all"
+                      class="rounded-lg bg-[var(--color-success)] px-2.5 py-1 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:brightness-110 active:scale-95 transition-all"
                     >
                       Settle
                     </button>
                     <button
                       v-if="chq.status === 'Pending'"
                       @click="markBounced(chq)"
-                      class="rounded-lg bg-[var(--color-danger)]/10 px-3 py-1.5 font-black uppercase tracking-widest text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white active:scale-95 transition-all"
+                      class="rounded-lg bg-[var(--color-danger)]/10 px-2.5 py-1 text-xs font-black uppercase tracking-widest text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white active:scale-95 transition-all"
                     >
                       Bounce
                     </button>
                     <button
                       v-if="chq.status === 'Pending'"
                       @click="markCancelled(chq)"
-                      class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] active:scale-95 transition-all"
+                      class="rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] active:scale-95 transition-all"
                     >
                       Cancel
                     </button>
                     <button
                       @click="triggerPrint(chq)"
-                      class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 font-black text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] hover:text-[var(--color-highlight)] active:scale-95 transition-all"
+                      class="rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs font-black text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] hover:text-[var(--color-highlight)] active:scale-95 transition-all"
                       title="Print Cheque"
                     >
                       🖨
