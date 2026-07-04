@@ -19,6 +19,7 @@
   "column_break_2",
   "amount",
   "remarks",
+  "amount_in_words",
   "links_section",
   "payment_entry",
   "clearance_entry",
@@ -117,6 +118,12 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "fieldname": "amount_in_words",
+   "fieldtype": "Small Text",
+   "label": "Amount in Words",
+   "read_only": 1
   },
   {
    "fieldname": "links_section",
