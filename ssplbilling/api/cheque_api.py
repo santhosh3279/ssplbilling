@@ -139,7 +139,14 @@ def create_cheque(data=None, **kwargs):
         frappe.throw("cheque_date is required")
 
     posting_date = data.get("posting_date") or frappe.utils.today()
-    party_name_field = "customer_name" if party_type == "Customer" else "supplier_name"
+    if party_type == "Customer":
+        party_name_field = "customer_name"
+    elif party_type == "Supplier":
+        party_name_field = "supplier_name"
+    elif party_type == "Employee":
+        party_name_field = "employee_name"
+    else:
+        party_name_field = "name"
     party_name = frappe.db.get_value(party_type, party, party_name_field) or party
 
     cheque = frappe.get_doc(

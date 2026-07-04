@@ -184,13 +184,13 @@
                 ? (d === 'Received' ? 'bg-[var(--color-success)] text-white border-[var(--color-success)] shadow-md' : 'bg-[var(--color-danger)] text-white border-[var(--color-danger)] shadow-md')
                 : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)]'"
             >
-              {{ d === 'Received' ? '⬇ Received (from Customer)' : '⬆ Issued (to Supplier)' }}
+              {{ d === 'Received' ? '⬇ Received' : '⬆ Issued' }}
             </button>
           </div>
 
           <!-- Party -->
           <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">{{ newForm.direction === 'Received' ? 'Customer' : 'Supplier' }} *</label>
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">{{ newForm.party_type }} *</label>
             <button
               @click="showPartySearch = true"
               class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-left font-bold text-[var(--color-highlight)] hover:border-[var(--color-highlight)] transition-all"
@@ -295,7 +295,7 @@
     <CustomerSearchModal
       ref="partySearchRef"
       :show="showPartySearch"
-      :allowedTypes="[newForm.direction === 'Received' ? 'Customer' : 'Supplier']"
+      :allowedTypes="['Customer', 'Supplier', 'Employee']"
       :initialType="newForm.direction === 'Received' ? 'Customer' : 'Supplier'"
       :skip-date-filter="true"
       @close="showPartySearch = false"
