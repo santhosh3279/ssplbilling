@@ -14,9 +14,9 @@
             ref="btnToday"
             @click="setDateRange('Today')"
             @keydown="e => handleButtonKeydown(e, 0)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'Today'
-              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] border-[var(--color-highlight)]'
+              ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/5 text-[var(--color-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)]'"
           >
             Today
@@ -25,9 +25,9 @@
             ref="btnYesterday"
             @click="setDateRange('Yesterday')"
             @keydown="e => handleButtonKeydown(e, 1)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'Yesterday'
-              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] border-[var(--color-highlight)]'
+              ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/5 text-[var(--color-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)]'"
           >
             Y
@@ -36,9 +36,9 @@
             ref="btnCM"
             @click="setDateRange('CM')"
             @keydown="e => handleButtonKeydown(e, 2)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'CM'
-              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] border-[var(--color-highlight)]'
+              ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/5 text-[var(--color-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)]'"
           >
             CM
@@ -47,9 +47,9 @@
             ref="btnLM"
             @click="setDateRange('LM')"
             @keydown="e => handleButtonKeydown(e, 3)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'LM'
-              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] border-[var(--color-highlight)]'
+              ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/5 text-[var(--color-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)]'"
           >
             LM
@@ -58,9 +58,9 @@
             ref="btnFY"
             @click="setDateRange('FY')"
             @keydown="e => handleButtonKeydown(e, 4)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'FY'
-              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] border-[var(--color-highlight)]'
+              ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/5 text-[var(--color-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:border-[var(--color-highlight)]'"
           >
             FY
