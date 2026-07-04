@@ -99,6 +99,46 @@
           </div>
         </div>
 
+        <!-- Quick range buttons -->
+        <div class="flex items-center gap-1.5">
+          <button
+            @click="setQuickRange('D')"
+            class="px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            :class="activeQuickRange === 'D'
+              ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+              : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
+          >
+            D
+          </button>
+          <button
+            @click="setQuickRange('CM')"
+            class="px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            :class="activeQuickRange === 'CM'
+              ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+              : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
+          >
+            CM
+          </button>
+          <button
+            @click="setQuickRange('LM')"
+            class="px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            :class="activeQuickRange === 'LM'
+              ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+              : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
+          >
+            LM
+          </button>
+          <button
+            @click="setQuickRange('FY')"
+            class="px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            :class="activeQuickRange === 'FY'
+              ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+              : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
+          >
+            FY
+          </button>
+        </div>
+
         <!-- Refresh Button -->
         <button
           @click="loadLedger"
@@ -589,6 +629,81 @@ function handleDateConfirm(dates) {
   fromDate.value = dates.from
   toDate.value = dates.to
   loadLedger()
+}
+
+function getLocalDateParts() {
+  const now = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options)
+  return formatter.format(now).split('-').map(Number)
+}
+
+const activeQuickRange = computed(() => {
+  const [y, m, d] = getLocalDateParts()
+  const todayISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
+
+  const isToday = fromDate.value === todayISO && toDate.value === todayISO
+  if (isToday) return 'D'
+
+  const currentMonthStart = `${y}-${m.toString().padStart(2, '0')}-01`
+  const isCM = fromDate.value === currentMonthStart && toDate.value === todayISO
+  if (isCM) return 'CM'
+
+  let lmYear = y
+  let lmMonth = m - 1
+  if (lmMonth === 0) {
+    lmMonth = 12
+    lmYear--
+  }
+  const lastDayOfLm = new Date(lmYear, lmMonth, 0).getDate()
+  const lmStart = `${lmYear}-${lmMonth.toString().padStart(2, '0')}-01`
+  const lmEnd = `${lmYear}-${lmMonth.toString().padStart(2, '0')}-${lastDayOfLm.toString().padStart(2, '0')}`
+  const isLM = fromDate.value === lmStart && toDate.value === lmEnd
+  if (isLM) return 'LM'
+
+  const fromYear = m < 4 ? y - 1 : y
+  const fyStart = `${fromYear}-04-01`
+  const isFY = fromDate.value === fyStart && toDate.value === todayISO
+  if (isFY) return 'FY'
+
+  return null
+})
+
+function setQuickRange(range) {
+  const [y, m, d] = getLocalDateParts()
+  const todayISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
+
+  let fromISO = todayISO
+  let toISO = todayISO
+
+  if (range === 'D') {
+    fromISO = todayISO
+    toISO = todayISO
+  } else if (range === 'CM') {
+    fromISO = `${y}-${m.toString().padStart(2, '0')}-01`
+    toISO = todayISO
+  } else if (range === 'LM') {
+    let lmYear = y
+    let lmMonth = m - 1
+    if (lmMonth === 0) {
+      lmMonth = 12
+      lmYear--
+    }
+    const lastDayOfLm = new Date(lmYear, lmMonth, 0).getDate()
+    fromISO = `${lmYear}-${lmMonth.toString().padStart(2, '0')}-01`
+    toISO = `${lmYear}-${lmMonth.toString().padStart(2, '0')}-${lastDayOfLm.toString().padStart(2, '0')}`
+  } else if (range === 'FY') {
+    const fromYear = m < 4 ? y - 1 : y
+    fromISO = `${fromYear}-04-01`
+    toISO = todayISO
+  }
+
+  fromDate.value = fromISO
+  toDate.value = toISO
+
+  nextTick(() => {
+    loadLedger()
+  })
 }
 
 // ── UI ──
