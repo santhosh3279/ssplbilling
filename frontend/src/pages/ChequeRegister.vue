@@ -186,15 +186,28 @@
           <!-- Direction toggle -->
           <div class="grid grid-cols-2 gap-3">
             <button
-              v-for="d in ['Received', 'Issued']"
-              :key="d"
-              @click="setDirection(d)"
-              class="py-3 rounded-2xl border text-sm font-black uppercase tracking-widest transition-all"
-              :class="newForm.direction === d
-                ? (d === 'Received' ? 'bg-[var(--color-success)] text-white border-[var(--color-success)] shadow-md' : 'bg-[var(--color-danger)] text-white border-[var(--color-danger)] shadow-md')
+              ref="receivedBtnRef"
+              @click="setDirection('Received')"
+              @keydown.right.prevent="setDirection('Issued'); focusIssuedBtn()"
+              @keydown.enter.prevent="showPartySearch = true"
+              class="py-3 rounded-2xl border text-sm font-black uppercase tracking-widest transition-all focus:outline-none focus:ring-4 focus:ring-[var(--color-highlight)]"
+              :class="newForm.direction === 'Received'
+                ? 'bg-[var(--color-success)] text-white border-[var(--color-success)] shadow-md'
                 : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)]'"
             >
-              {{ d === 'Received' ? '⬇ Received' : '⬆ Issued' }}
+              ⬇ Received
+            </button>
+            <button
+              ref="issuedBtnRef"
+              @click="setDirection('Issued')"
+              @keydown.left.prevent="setDirection('Received'); focusReceivedBtn()"
+              @keydown.enter.prevent="showPartySearch = true"
+              class="py-3 rounded-2xl border text-sm font-black uppercase tracking-widest transition-all focus:outline-none focus:ring-4 focus:ring-[var(--color-highlight)]"
+              :class="newForm.direction === 'Issued'
+                ? 'bg-[var(--color-danger)] text-white border-[var(--color-danger)] shadow-md'
+                : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)]'"
+            >
+              ⬆ Issued
             </button>
           </div>
 
@@ -213,25 +226,58 @@
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheque No *</label>
-              <input v-model="newForm.cheque_no" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-mono font-bold outline-none focus:border-[var(--color-highlight)]" placeholder="000123" />
+              <input
+                ref="chequeNoInputRef"
+                v-model="newForm.cheque_no"
+                @keydown.enter.prevent="chequeDateInputRef?.focus()"
+                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-mono font-bold outline-none focus:border-[var(--color-highlight)]"
+                placeholder="000123"
+              />
             </div>
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheque Date *</label>
-              <input v-model="newForm.cheque_date" type="date" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)]" />
+              <input
+                ref="chequeDateInputRef"
+                v-model="newForm.cheque_date"
+                type="date"
+                @keydown.enter.prevent="bankNameInputRef?.focus()"
+                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)]"
+              />
             </div>
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Bank Name</label>
-              <input v-model="newForm.bank_name" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)]" placeholder="e.g. SBI" />
+              <input
+                ref="bankNameInputRef"
+                v-model="newForm.bank_name"
+                @keydown.enter.prevent="amountInputRef?.focus()"
+                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)]"
+                placeholder="e.g. SBI"
+              />
             </div>
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Amount *</label>
-              <input v-model.number="newForm.amount" type="number" min="0" step="0.01" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-right font-mono text-lg font-black text-[var(--color-info)] outline-none focus:border-[var(--color-highlight)]" placeholder="0.00" />
+              <input
+                ref="amountInputRef"
+                v-model.number="newForm.amount"
+                type="number"
+                min="0"
+                step="0.01"
+                @keydown.enter.prevent="remarksInputRef?.focus()"
+                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-right font-mono text-lg font-black text-[var(--color-info)] outline-none focus:border-[var(--color-highlight)]"
+                placeholder="0.00"
+              />
             </div>
           </div>
 
           <div class="flex flex-col gap-1.5">
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Remarks</label>
-            <input v-model="newForm.remarks" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 outline-none focus:border-[var(--color-highlight)]" placeholder="Optional note" />
+            <input
+              ref="remarksInputRef"
+              v-model="newForm.remarks"
+              @keydown.enter.prevent="saveBtnRef?.focus()"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 outline-none focus:border-[var(--color-highlight)]"
+              placeholder="Optional note"
+            />
           </div>
         </div>
 
@@ -245,6 +291,7 @@
             🖨 Save &amp; Print
           </button>
           <button
+            ref="saveBtnRef"
             @click="submitNewCheque(false)"
             :disabled="isSaving || !canSaveNew"
             class="rounded-xl bg-[var(--color-highlight)] px-6 py-2 font-black uppercase tracking-widest text-[var(--color-text-on-highlight)] shadow-md hover:brightness-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
@@ -339,6 +386,23 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 const router = useRouter()
 
+const receivedBtnRef = ref(null)
+const issuedBtnRef = ref(null)
+const chequeNoInputRef = ref(null)
+const chequeDateInputRef = ref(null)
+const bankNameInputRef = ref(null)
+const amountInputRef = ref(null)
+const remarksInputRef = ref(null)
+const saveBtnRef = ref(null)
+
+function focusReceivedBtn() {
+  nextTick(() => receivedBtnRef.value?.focus())
+}
+
+function focusIssuedBtn() {
+  nextTick(() => issuedBtnRef.value?.focus())
+}
+
 const STATUSES = ['Pending', 'Cleared', 'Bounced', 'Cancelled', 'All']
 const STATUS_CLASSES = {
   Pending: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
@@ -410,6 +474,9 @@ async function loadCheques() {
 function openNewCheque() {
   newForm.value = emptyNewForm()
   showNewModal.value = true
+  nextTick(() => {
+    receivedBtnRef.value?.focus()
+  })
 }
 
 function triggerPrint(chq) {
@@ -430,6 +497,10 @@ function handlePartySelect(item) {
   newForm.value.party = item.name
   newForm.value.party_type = item.type || newForm.value.party_type
   newForm.value.party_label = item.label || item.name
+  nextTick(() => {
+    chequeNoInputRef.value?.focus()
+    chequeNoInputRef.value?.select()
+  })
 }
 
 async function submitNewCheque(andPrint = false) {
