@@ -175,6 +175,7 @@ doc_events = {
 	"Sales Invoice": {
 		"before_insert": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"before_save": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
+		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",
 		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_update": [
 			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
@@ -197,6 +198,7 @@ doc_events = {
 		],
 	},
 	"Purchase Invoice": {
+		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",
 		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_submit": [
@@ -213,6 +215,7 @@ doc_events = {
 		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 	},
 	"Sales Order": {
+		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",
 		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_submit": "ssplbilling.api.panel_sync.publish_bill_panel_update",
@@ -220,6 +223,7 @@ doc_events = {
 		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 	},
 	"Purchase Order": {
+		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",
 		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_submit": "ssplbilling.api.panel_sync.publish_bill_panel_update",
@@ -227,6 +231,7 @@ doc_events = {
 		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 	},
 	"Quotation": {
+		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",
 		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_submit": "ssplbilling.api.panel_sync.publish_bill_panel_update",

@@ -26,6 +26,24 @@ def enforce_ignore_pricing_rule(doc, method=None):
     """Always keep ignore_pricing_rule=1 on Sales Invoice before save."""
     doc.ignore_pricing_rule = 1
 
+def sync_gst_category(doc, method=None):
+    """Sync the latest gst_category from Customer/Supplier master on validation."""
+    party_type = None
+    party_field = None
+    if doc.doctype in ("Sales Invoice", "Sales Order", "Quotation"):
+        party_type = "Customer"
+        party_field = "customer" if doc.doctype != "Quotation" else "party_name"
+    elif doc.doctype in ("Purchase Invoice", "Purchase Order"):
+        party_type = "Supplier"
+        party_field = "supplier"
+
+    if party_type and party_field:
+        party = doc.get(party_field)
+        if party:
+            latest_gst_category = frappe.db.get_value(party_type, party, "gst_category")
+            if latest_gst_category:
+                doc.gst_category = latest_gst_category
+
 def _get_item_tax_rate(item_code):
     """Return the effective tax rate (%) for an item from its Item Tax Template."""
     today = frappe.utils.today()
