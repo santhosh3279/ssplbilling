@@ -235,13 +235,16 @@
               />
             </div>
             <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheque Date *</label>
+              <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheque Date (DD-MM-YYYY) *</label>
               <input
                 ref="chequeDateInputRef"
-                v-model="newForm.cheque_date"
-                type="date"
+                v-model="newForm.cheque_date_display"
+                @input="onChequeDateInput"
+                @blur="autoCompleteChequeDate"
                 @keydown.enter.prevent="bankNameInputRef?.focus()"
-                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)]"
+                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono"
+                placeholder="DD-MM-YYYY"
+                maxlength="10"
               />
             </div>
             <div class="flex flex-col gap-1.5">
@@ -323,8 +326,15 @@
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Clearance Date *</label>
-            <input v-model="settleForm.clearance_date" type="date" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)]" />
+            <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Clearance Date (DD-MM-YYYY) *</label>
+            <input
+              v-model="settleForm.clearance_date_display"
+              @input="onClearanceDateInput"
+              @blur="autoCompleteClearanceDate"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono"
+              placeholder="DD-MM-YYYY"
+              maxlength="10"
+            />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -428,6 +438,131 @@ const printTargetName = ref('')
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+function formatDateToDisplay(iso) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}-${m}-${y}`
+}
+
+function getLocalDateParts() {
+  const now = new Date()
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options)
+  return formatter.format(now).split('-').map(Number)
+}
+
+function onChequeDateInput(e) {
+  let val = e.target.value.replace(/\D/g, '')
+
+  if (val.length === 4) {
+    const day = parseInt(val.slice(0, 2))
+    const month = parseInt(val.slice(2, 4))
+    
+    if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
+      const [y, m] = getLocalDateParts()
+      let year = y
+
+      if (month > m) {
+        year--
+      }
+      
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = month.toString().padStart(2, '0')
+      
+      newForm.value.cheque_date = `${year}-${monthStr}-${dayStr}`
+      newForm.value.cheque_date_display = `${dayStr}-${monthStr}-${year}`
+      return
+    }
+  }
+
+  if (val.length > 2 && val.length <= 4) {
+    val = val.slice(0, 2) + '-' + val.slice(2)
+  } else if (val.length > 4) {
+    val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8)
+  }
+
+  newForm.value.cheque_date_display = val
+
+  if (val.length === 10) {
+    const [d, m, y] = val.split('-')
+    if (d && m && y && y.length === 4) {
+      newForm.value.cheque_date = `${y}-${m}-${d}`
+    }
+  }
+}
+
+function autoCompleteChequeDate() {
+  let val = newForm.value.cheque_date_display.replace(/\D/g, '')
+
+  if (val.length >= 1 && val.length <= 2) {
+    const day = parseInt(val)
+    if (!isNaN(day) && day >= 1 && day <= 31) {
+      const [y, m] = getLocalDateParts()
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = m.toString().padStart(2, '0')
+      
+      newForm.value.cheque_date = `${y}-${monthStr}-${dayStr}`
+      newForm.value.cheque_date_display = `${dayStr}-${monthStr}-${y}`
+    }
+  }
+}
+
+function onClearanceDateInput(e) {
+  let val = e.target.value.replace(/\D/g, '')
+
+  if (val.length === 4) {
+    const day = parseInt(val.slice(0, 2))
+    const month = parseInt(val.slice(2, 4))
+    
+    if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
+      const [y, m] = getLocalDateParts()
+      let year = y
+
+      if (month > m) {
+        year--
+      }
+      
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = month.toString().padStart(2, '0')
+      
+      settleForm.value.clearance_date = `${year}-${monthStr}-${dayStr}`
+      settleForm.value.clearance_date_display = `${dayStr}-${monthStr}-${year}`
+      return
+    }
+  }
+
+  if (val.length > 2 && val.length <= 4) {
+    val = val.slice(0, 2) + '-' + val.slice(2)
+  } else if (val.length > 4) {
+    val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8)
+  }
+
+  settleForm.value.clearance_date_display = val
+
+  if (val.length === 10) {
+    const [d, m, y] = val.split('-')
+    if (d && m && y && y.length === 4) {
+      settleForm.value.clearance_date = `${y}-${m}-${d}`
+    }
+  }
+}
+
+function autoCompleteClearanceDate() {
+  let val = settleForm.value.clearance_date_display.replace(/\D/g, '')
+
+  if (val.length >= 1 && val.length <= 2) {
+    const day = parseInt(val)
+    if (!isNaN(day) && day >= 1 && day <= 31) {
+      const [y, m] = getLocalDateParts()
+      const dayStr = day.toString().padStart(2, '0')
+      const monthStr = m.toString().padStart(2, '0')
+      
+      settleForm.value.clearance_date = `${y}-${monthStr}-${dayStr}`
+      settleForm.value.clearance_date_display = `${dayStr}-${monthStr}-${y}`
+    }
+  }
+}
+
 const emptyNewForm = () => ({
   direction: 'Received',
   party: '',
@@ -435,13 +570,18 @@ const emptyNewForm = () => ({
   party_label: '',
   cheque_no: '',
   cheque_date: today(),
+  cheque_date_display: formatDateToDisplay(today()),
   bank_name: '',
   amount: null,
   remarks: '',
 })
 
 const newForm = ref(emptyNewForm())
-const settleForm = ref({ clearance_date: today(), bank_account: '' })
+const settleForm = ref({
+  clearance_date: today(),
+  clearance_date_display: formatDateToDisplay(today()),
+  bank_account: ''
+})
 
 const canSaveNew = computed(() => {
   const f = newForm.value
@@ -531,7 +671,11 @@ async function submitNewCheque(andPrint = false) {
 }
 
 async function openSettle(chq) {
-  settleForm.value = { clearance_date: today(), bank_account: '' }
+  settleForm.value = {
+    clearance_date: today(),
+    clearance_date_display: formatDateToDisplay(today()),
+    bank_account: ''
+  }
   settleTarget.value = chq
   if (bankAccounts.value.length === 0) {
     try {
