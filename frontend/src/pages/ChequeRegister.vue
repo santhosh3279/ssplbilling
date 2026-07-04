@@ -88,7 +88,7 @@
         <div v-else class="flex-1 overflow-y-auto custom-scrollbar">
           <table class="w-full text-[21px]">
             <thead class="sticky top-0 bg-[var(--color-surface-raised)] z-10">
-              <tr class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+              <tr class="font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-3 text-left">Cheque No</th>
                 <th class="px-4 py-3 text-left">Direction</th>
                 <th class="px-4 py-3 text-left">Party</th>
@@ -109,7 +109,7 @@
                 <td class="px-4 py-3 font-mono font-bold">{{ chq.cheque_no }}</td>
                 <td class="px-4 py-3">
                   <span
-                    class="px-2 py-0.5 rounded text-[13.5px] font-black uppercase tracking-widest"
+                    class="px-2 py-0.5 rounded font-black uppercase tracking-widest"
                     :class="chq.direction === 'Received' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]'"
                   >
                     {{ chq.direction === 'Received' ? '⬇ Received' : '⬆ Issued' }}
@@ -118,18 +118,18 @@
                 <td class="px-4 py-3">
                   <div class="font-bold">{{ chq.party_name || chq.party }}</div>
                 </td>
-                <td class="px-4 py-3 text-[15px] text-[var(--color-text-muted)] uppercase tracking-wider">
+                <td class="px-4 py-3 text-[var(--color-text-muted)] uppercase tracking-wider">
                   {{ chq.party_type }}
                 </td>
                 <td class="px-4 py-3 text-[var(--color-text-muted)]">{{ chq.bank_name || '—' }}</td>
                 <td class="px-4 py-3 text-center font-semibold" :class="isPostDated(chq) ? 'text-[var(--color-warning)]' : ''">
                   {{ formatDate(chq.cheque_date) }}
-                  <div v-if="isPostDated(chq)" class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-warning)]">Post-dated</div>
+                  <div v-if="isPostDated(chq)" class="font-black uppercase tracking-widest text-[var(--color-warning)]">Post-dated</div>
                 </td>
-                <td class="px-4 py-3 text-right font-mono font-black text-[27px]">₹{{ fmt(chq.amount) }}</td>
+                <td class="px-4 py-3 text-right font-mono font-black">₹{{ fmt(chq.amount) }}</td>
                 <td class="px-4 py-3 text-center">
                   <span
-                    class="px-2.5 py-0.5 rounded-full text-[13.5px] font-black uppercase tracking-widest"
+                    class="px-2.5 py-0.5 rounded-full font-black uppercase tracking-widest"
                     :class="STATUS_CLASSES[chq.status] || ''"
                   >
                     {{ chq.status }}
@@ -139,19 +139,19 @@
                   <div v-if="chq.status === 'Pending'" class="flex justify-end gap-2">
                     <button
                       @click="openSettle(chq)"
-                      class="rounded-lg bg-[var(--color-success)] px-3 py-1.5 text-[15px] font-black uppercase tracking-widest text-white shadow-sm hover:brightness-110 active:scale-95 transition-all"
+                      class="rounded-lg bg-[var(--color-success)] px-3 py-1.5 font-black uppercase tracking-widest text-white shadow-sm hover:brightness-110 active:scale-95 transition-all"
                     >
                       Settle
                     </button>
                     <button
                       @click="markBounced(chq)"
-                      class="rounded-lg bg-[var(--color-danger)]/10 px-3 py-1.5 text-[15px] font-black uppercase tracking-widest text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white active:scale-95 transition-all"
+                      class="rounded-lg bg-[var(--color-danger)]/10 px-3 py-1.5 font-black uppercase tracking-widest text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white active:scale-95 transition-all"
                     >
                       Bounce
                     </button>
                     <button
                       @click="markCancelled(chq)"
-                      class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] active:scale-95 transition-all"
+                      class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] active:scale-95 transition-all"
                     >
                       Cancel
                     </button>
