@@ -142,11 +142,13 @@ function getLocalDateParts() {
 function initDates() {
   const [y, m, d] = getLocalDateParts()
   const todayISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
+  const fromYear = m < 4 ? y - 1 : y
+  const fromISO = `${fromYear}-04-01`
 
   dateData.value = {
-    fromISO: todayISO,
+    fromISO: fromISO,
     toISO: todayISO,
-    fromDisplay: formatDateToDisplay(todayISO),
+    fromDisplay: formatDateToDisplay(fromISO),
     toDisplay: formatDateToDisplay(todayISO)
   }
 }
