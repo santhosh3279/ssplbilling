@@ -97,7 +97,7 @@
                 <th class="px-4 py-3 text-center">Cheque Date</th>
                 <th class="px-4 py-3 text-right">Amount</th>
                 <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-right">Actions</th>
+                <th class="px-4 py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
