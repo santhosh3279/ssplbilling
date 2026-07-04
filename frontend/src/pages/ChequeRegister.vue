@@ -266,7 +266,7 @@
                 min="0"
                 step="0.01"
                 @keydown.enter.prevent="remarksInputRef?.focus()"
-                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-right font-mono text-lg font-black text-[var(--color-info)] outline-none focus:border-[var(--color-highlight)]"
+                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 h-[50px] py-0 text-right font-mono text-[27px] leading-[48px] font-black text-[var(--color-info)] outline-none focus:border-[var(--color-highlight)]"
                 placeholder="0.00"
               />
             </div>
