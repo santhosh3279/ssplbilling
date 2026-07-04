@@ -9,7 +9,7 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-lg font-bold tracking-tight text-[var(--color-text)] uppercase">{{ entryType === 'Contra' ? 'CONTRA ENTRY' : (entryType === 'Opening Entry' ? 'EXPENSE ENTRY' : 'JOURNAL ENTRY') }}</h1>
+        <h1 class="text-lg font-bold tracking-tight text-[var(--color-text)] uppercase">{{ entryType === 'Contra' ? 'CONTRA ENTRY' : (entryType === 'Opening Entry' ? 'OPENING ENTRY' : 'JOURNAL ENTRY') }}</h1>
         <div class="h-4 w-px bg-[var(--color-surface-raised)] mx-2"></div>
         <div class="flex rounded-xl bg-[var(--color-surface-raised)] p-1.5 shadow-inner">
           <button
@@ -31,7 +31,7 @@
             class="rounded-lg px-6 py-1.5 text-3xl font-black transition-all flex items-center gap-2"
             :class="entryType === 'Opening Entry' ? 'bg-[var(--color-surface)] text-[var(--color-warning)] shadow-md' : 'text-[var(--color-text-muted)] hover:text(--color-text)'"
           >
-            <span>Expense</span>
+            <span>Opening Entry</span>
           </button>
           <div class="flex items-center ml-4 px-3 border-l border-[var(--color-border)]">
             <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-bold text-[var(--color-text-muted)] shadow-sm">F7 to Cycle</kbd>
