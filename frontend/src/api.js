@@ -938,3 +938,35 @@ export async function calculateBillIncentive(doctype, name) {
   return frappeGet("ssplbilling.api.incentive_api.calculate_bill_incentive", { doctype, name });
 }
 
+/* ── Cheque register (clearing-account flow) ─────────────────────────── */
+
+export async function fetchCheques(status = "Pending", direction = "All") {
+  return frappeGet("ssplbilling.api.cheque_api.get_cheques", { status, direction });
+}
+
+export async function createCheque(payload) {
+  return frappePost("ssplbilling.api.cheque_api.create_cheque", {
+    data: JSON.stringify(payload),
+  });
+}
+
+export async function clearCheque(name, bankAccount, clearanceDate) {
+  return frappePost("ssplbilling.api.cheque_api.clear_cheque", {
+    name,
+    bank_account: bankAccount,
+    clearance_date: clearanceDate,
+  });
+}
+
+export async function bounceCheque(name) {
+  return frappePost("ssplbilling.api.cheque_api.bounce_cheque", { name });
+}
+
+export async function cancelCheque(name) {
+  return frappePost("ssplbilling.api.cheque_api.cancel_cheque", { name });
+}
+
+export async function fetchChequeBankAccounts() {
+  return frappeGet("ssplbilling.api.cheque_api.get_bank_accounts");
+}
+

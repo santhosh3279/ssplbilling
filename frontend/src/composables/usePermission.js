@@ -59,6 +59,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'IncentiveRedeem',
   'IncentiveEntry',
   'Unreconciled',
+  'ChequeRegister',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
@@ -74,6 +75,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'IncentiveEntry',
   'Unreconciled',
   'PurchaseOrder',
+  'ChequeRegister',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)

@@ -43,6 +43,7 @@ import OfferDisplay from './pages/OfferDisplay.vue'
 import OfferPage from './pages/OfferPage.vue'
 import Catelogue from './pages/catelogue.vue'
 import Unreconciled from './pages/unreconciled.vue'
+import ChequeRegister from './pages/ChequeRegister.vue'
 
 const routes = [
   {
@@ -294,6 +295,12 @@ const routes = [
     name: 'Unreconciled',
     component: Unreconciled,
     meta: { title: 'Unreconciled Entries' },
+  },
+  {
+    path: '/cheques',
+    name: 'ChequeRegister',
+    component: ChequeRegister,
+    meta: { title: 'Cheque Register' },
   },
 ]
 
