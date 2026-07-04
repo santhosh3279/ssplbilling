@@ -80,7 +80,21 @@
           </div>
         </div>
 
-        <!-- Row 3: Transporter ID and Transporter Name -->
+        <!-- Row 3: Company as transporter toggle -->
+        <label class="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 select-none transition-colors hover:border-[var(--color-highlight)]">
+          <input
+            type="checkbox"
+            :checked="useCompanyTransporter"
+            @change="toggleCompanyTransporter"
+            class="h-5 w-5 accent-[var(--color-info)]"
+          />
+          <span class="text-lg font-bold uppercase text-[var(--color-text)]">
+            Company as transporter
+            <span class="block text-sm font-medium normal-case text-[var(--color-text-muted)]">Keeps the company's name and GSTIN in the transporter fields</span>
+          </span>
+        </label>
+
+        <!-- Row 4: Transporter ID and Transporter Name -->
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5">
             <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Transporter ID / GSTIN</label>
@@ -89,7 +103,8 @@
               v-model="form.gst_transporter_id"
               type="text"
               placeholder="15-digit GSTIN"
-              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
+              :disabled="useCompanyTransporter"
+              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors disabled:opacity-60 disabled:bg-[var(--color-surface)]"
               @keydown.enter.prevent="focusTransporterName"
               @keydown.esc.prevent="emit('close')"
             />
@@ -102,14 +117,15 @@
               v-model="form.transporter_name"
               type="text"
               placeholder="Name of Transporter"
-              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
+              :disabled="useCompanyTransporter"
+              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors disabled:opacity-60 disabled:bg-[var(--color-surface)]"
               @keydown.enter.prevent="focusLrNo"
               @keydown.esc.prevent="emit('close')"
             />
           </div>
         </div>
 
-        <!-- Row 4: LR / Transport Doc No and Date -->
+        <!-- Row 5: LR / Transport Doc No and Date -->
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5">
             <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">LR / Doc Number</label>
@@ -162,6 +178,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
+import { frappeGet } from '../api'
 
 const props = defineProps({
   loading: { type: Boolean, default: false }
@@ -191,7 +208,39 @@ const lrNoRef = ref(null)
 const lrDateRef = ref(null)
 const submitBtnRef = ref(null)
 
+// "Company as transporter": keep the company's own name + GSTIN in the
+// transporter fields (own-vehicle dispatch). Persisted across sessions.
+const useCompanyTransporter = ref(localStorage.getItem('wb-company-as-transporter') === '1')
+let companyDetails = null
+
+async function applyCompanyTransporter() {
+  try {
+    if (!companyDetails) {
+      companyDetails = await frappeGet('ssplbilling.api.quotation_api.get_company_transporter_details')
+    }
+    form.value.gst_transporter_id = companyDetails.gstin || ''
+    form.value.transporter_name = companyDetails.company || ''
+  } catch (e) {
+    console.error('[EWayBillModal] Failed to fetch company transporter details:', e)
+    alert('Could not fetch company name / GSTIN.')
+    useCompanyTransporter.value = false
+    localStorage.setItem('wb-company-as-transporter', '0')
+  }
+}
+
+function toggleCompanyTransporter() {
+  useCompanyTransporter.value = !useCompanyTransporter.value
+  localStorage.setItem('wb-company-as-transporter', useCompanyTransporter.value ? '1' : '0')
+  if (useCompanyTransporter.value) {
+    applyCompanyTransporter()
+  } else {
+    form.value.gst_transporter_id = ''
+    form.value.transporter_name = ''
+  }
+}
+
 onMounted(() => {
+  if (useCompanyTransporter.value) applyCompanyTransporter()
   nextTick(() => {
     distanceRef.value?.focus()
   })
@@ -206,8 +255,20 @@ function focusVehicleNo() {
   }
 }
 function focusVehicleType() { nextTick(() => vehicleTypeRef.value?.focus() ) }
-function focusTransporterId() { nextTick(() => transporterIdRef.value?.focus() ) }
-function focusTransporterName() { nextTick(() => transporterNameRef.value?.focus() ) }
+function focusTransporterId() {
+  if (useCompanyTransporter.value) {
+    focusLrNo()
+  } else {
+    nextTick(() => transporterIdRef.value?.focus() )
+  }
+}
+function focusTransporterName() {
+  if (useCompanyTransporter.value) {
+    focusLrNo()
+  } else {
+    nextTick(() => transporterNameRef.value?.focus() )
+  }
+}
 function focusLrNo() { nextTick(() => lrNoRef.value?.focus() ) }
 function focusLrDate() { nextTick(() => lrDateRef.value?.focus() ) }
 function focusSubmit() { nextTick(() => submitBtnRef.value?.focus() ) }

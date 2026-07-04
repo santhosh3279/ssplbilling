@@ -558,6 +558,22 @@ def ensure_custom_fields_exist():
 
 
 @frappe.whitelist()
+def get_company_transporter_details(company=None):
+	"""Return the company name and GSTIN to prefill transporter details (own-vehicle dispatch)."""
+	company = (
+		company
+		or frappe.defaults.get_user_default("Company")
+		or frappe.db.get_single_value("Global Defaults", "default_company")
+	)
+	if not company:
+		return {}
+	return {
+		"company": company,
+		"gstin": frappe.get_cached_value("Company", company, "gstin") or "",
+	}
+
+
+@frappe.whitelist()
 def generate_eway_bill_for_quotation(
 	quotation_name,
 	mode_of_transport="Road",
