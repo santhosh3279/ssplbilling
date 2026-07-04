@@ -176,10 +176,10 @@
     <div class="flex justify-end gap-3 border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
       <button class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2 font-semibold text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-raised)]" @click="$emit('close')">Cancel</button>
       <button
-        class="rounded px-6 py-2 font-bold text-[var(--color-text-on-highlight)] shadow-md flex items-center gap-2 transition-all active:scale-95"
+        class="rounded px-6 py-2 font-bold text-[var(--color-text-on-highlight)] shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         :class="isEdit ? 'bg-[var(--color-supplier)] hover:bg-[var(--color-supplier)]' : 'bg-[var(--color-info)] hover:bg-[var(--color-info)]'"
         @click="submit"
-        :disabled="saving || editLoading"
+        :disabled="saving || editLoading || !canSubmit"
       >
         {{ saving ? (isEdit ? 'Updating...' : 'Saving...') : (isEdit ? 'Update Details' : 'Save & Select') }}
         <kbd class="rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm" :class="isEdit ? 'border-[var(--color-supplier)] bg-[var(--color-supplier)]' : 'border-[var(--color-info)] bg-[var(--color-info)]'">End</kbd>
@@ -189,7 +189,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
 import { validateGstin } from '../api.js'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
@@ -399,6 +399,14 @@ function applyGstData() {
   
   fetchedGstData.value = null
 }
+
+const canSubmit = computed(() => {
+  if (!form.value.customer_name || !form.value.customer_name.trim()) return false
+  if (!form.value.customer_group) return false
+  if (!props.isEdit && !/^\d{10}$/.test(form.value.mobile || '')) return false
+  if (!form.value.address_line1 || !form.value.address_line1.trim()) return false
+  return true
+})
 
 function validate() {
   if (!form.value.customer_name.trim()) { alert('Customer Name is required'); return false }
