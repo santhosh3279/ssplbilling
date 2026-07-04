@@ -288,9 +288,9 @@
         Cancel
       </button>
       <button
-        class="rounded px-6 py-2 font-bold text-[var(--color-text-on-highlight)] shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+        class="rounded px-6 py-2 font-bold text-[var(--color-text-on-highlight)] shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         :class="isEdit ? 'bg-[var(--color-supplier)] hover:bg-[var(--color-supplier)]' : 'bg-[var(--color-info)] hover:bg-[var(--color-info)]'"
-        :disabled="saving || loading"
+        :disabled="saving || loading || !canSubmit"
         @click="submit"
       >
         {{ saving ? (isEdit ? 'Updating...' : 'Saving...') : (isEdit ? 'Update Details' : 'Save & Select') }}
@@ -564,6 +564,13 @@ function resetForm() {
     primary_party_role: '',
   })
 }
+
+const canSubmit = computed(() => {
+  if (!form.supplier_name || !form.supplier_name.trim()) return false
+  if (!form.supplier_group) return false
+  if (!form.address_line1 || !form.address_line1.trim()) return false
+  return true
+})
 
 function validate() {
   if (!form.supplier_name.trim()) {
