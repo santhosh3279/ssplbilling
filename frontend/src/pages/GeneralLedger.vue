@@ -242,10 +242,10 @@
                 <span class="ml-1 opacity-60">(before {{ fmtDate(ledgerData.from_date) }})</span>
               </td>
               <td class="px-3 py-2 text-right text-[var(--color-success)] font-mono">
-                {{ ledgerData.opening_balance > 0 ? fmt(ledgerData.opening_balance) : '—' }}
+                —
               </td>
               <td class="px-3 py-2 text-right text-[var(--color-danger)] font-mono">
-                {{ ledgerData.opening_balance < 0 ? fmt(Math.abs(ledgerData.opening_balance)) : '—' }}
+                —
               </td>
               <td class="px-3 py-2 text-right font-mono font-semibold"
                 :class="ledgerData.opening_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
@@ -916,8 +916,8 @@ function exportExcel() {
   // Opening row
   rows.push([
     `Opening (before ${fmtDate(d.from_date)})`, '', '', '', '',
-    d.opening_balance > 0 ? d.opening_balance : '',
-    d.opening_balance < 0 ? Math.abs(d.opening_balance) : '',
+    '',
+    '',
     Math.abs(d.opening_balance),
   ])
 
