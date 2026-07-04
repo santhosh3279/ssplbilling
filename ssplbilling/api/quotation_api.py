@@ -1,4 +1,6 @@
 import json
+import re
+
 import frappe
 from frappe.model.naming import parse_naming_series
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
@@ -585,7 +587,17 @@ def generate_eway_bill_for_quotation(
 		si = make_sales_invoice(quotation_name)
 
 		# Set required transport details
-		si.name = "MOCK-QTN-INV"  # Must match GST_INVOICE_NUMBER_FORMAT (<= 16 chars)
+		# Use the real Quotation number as the document number on the e-Way Bill.
+		# GST requires <= 16 chars, alphanumeric + dash/slash, starting alphanumeric.
+		# Note: in sandbox mode India Compliance still overrides docNo with a random
+		# string (see EWaybillData.get_transaction_data) to avoid duplicates on the
+		# shared NIC sandbox; the real number is sent only in production mode.
+		from india_compliance.gst_india.constants import GST_INVOICE_NUMBER_FORMAT
+
+		doc_no = q.name
+		if len(doc_no) > 16 or not GST_INVOICE_NUMBER_FORMAT.match(doc_no):
+			doc_no = re.sub(r"[^A-Za-z0-9\-/]", "", doc_no)[-16:].lstrip("-/") or "QTN"
+		si.name = doc_no
 		si.posting_date = frappe.utils.today()
 		si.mode_of_transport = mode_of_transport
 
@@ -615,6 +627,20 @@ def generate_eway_bill_for_quotation(
 			log_and_process_e_waybill,
 		)
 		from india_compliance.gst_india.utils import parse_datetime
+		from india_compliance.gst_india.overrides.transaction import (
+			set_gst_tax_type,
+			update_taxable_values,
+			update_gst_details,
+		)
+
+		# The mock invoice never goes through validate/save, so India Compliance's
+		# per-item GST fields (taxable_value, cgst/sgst/igst/cess amounts) are unset.
+		# Without these, totalValue/cgstValue/... come out as 0 and the whole grand
+		# total lands in otherValue. Run the same GST computations a real save would.
+		si.calculate_taxes_and_totals()
+		set_gst_tax_type(si)
+		update_taxable_values(si)
+		update_gst_details(si)
 
 		# Build JSON payload entirely in-memory
 		data = EWaybillData(si).get_data(with_irn=False)
