@@ -8,6 +8,40 @@
         </div>
       </div>
       <div class="flex flex-col gap-4 px-6 py-5">
+        <!-- Quick Filters -->
+        <div class="grid grid-cols-5 gap-2">
+          <button
+            @click="setDateRange('Today')"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+          >
+            Today
+          </button>
+          <button
+            @click="setDateRange('Yesterday')"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+          >
+            Y
+          </button>
+          <button
+            @click="setDateRange('CM')"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+          >
+            CM
+          </button>
+          <button
+            @click="setDateRange('LM')"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+          >
+            LM
+          </button>
+          <button
+            @click="setDateRange('FY')"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-highlight)] active:scale-95 transition-all shadow-sm"
+          >
+            FY
+          </button>
+        </div>
+
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">From Date (DD/MM/YYYY)</label>
           <input
@@ -98,19 +132,61 @@ function formatDateToDisplay(iso) {
   return `${d}/${m}/${y}`
 }
 
-function initDates() {
+function getLocalDateParts() {
   const now = new Date()
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
-  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
-  const [y, m, d] = formatter.format(now).split('-').map(Number)
+  const formatter = new Intl.DateTimeFormat('en-CA', options)
+  return formatter.format(now).split('-').map(Number)
+}
 
-  // From Date: April 1st of the current fiscal year
-  // If we are in Jan/Feb/March, the fiscal year started in the previous calendar year
-  const fromYear = m < 4 ? y - 1 : y
-  const fromISO = `${fromYear}-04-01`
-  
-  // To Date: Today's date (local YYYY-MM-DD)
-  const toISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
+function initDates() {
+  const [y, m, d] = getLocalDateParts()
+  const todayISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
+
+  dateData.value = {
+    fromISO: todayISO,
+    toISO: todayISO,
+    fromDisplay: formatDateToDisplay(todayISO),
+    toDisplay: formatDateToDisplay(todayISO)
+  }
+}
+
+function setDateRange(range) {
+  const [y, m, d] = getLocalDateParts()
+  const todayISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
+
+  let fromISO = todayISO
+  let toISO = todayISO
+
+  if (range === 'Today') {
+    fromISO = todayISO
+    toISO = todayISO
+  } else if (range === 'Yesterday') {
+    const date = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+    date.setDate(date.getDate() - 1)
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
+    const formatter = new Intl.DateTimeFormat('en-CA', options)
+    const yesterdayISO = formatter.format(date)
+    fromISO = yesterdayISO
+    toISO = yesterdayISO
+  } else if (range === 'CM') {
+    fromISO = `${y}-${m.toString().padStart(2, '0')}-01`
+    toISO = todayISO
+  } else if (range === 'LM') {
+    let lmYear = y
+    let lmMonth = m - 1
+    if (lmMonth === 0) {
+      lmMonth = 12
+      lmYear--
+    }
+    const lastDayOfLm = new Date(lmYear, lmMonth, 0).getDate()
+    fromISO = `${lmYear}-${lmMonth.toString().padStart(2, '0')}-01`
+    toISO = `${lmYear}-${lmMonth.toString().padStart(2, '0')}-${lastDayOfLm.toString().padStart(2, '0')}`
+  } else if (range === 'FY') {
+    const fromYear = m < 4 ? y - 1 : y
+    fromISO = `${fromYear}-04-01`
+    toISO = todayISO
+  }
 
   dateData.value = {
     fromISO,
