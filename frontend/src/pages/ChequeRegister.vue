@@ -28,14 +28,14 @@
         <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheques in Hand (Pending Received)</span>
           <div class="flex items-baseline justify-between mt-1">
-            <span class="text-3xl font-mono font-black text-[var(--color-success)]">₹{{ fmt(summary.received_total) }}</span>
+            <span class="text-[45px] font-mono font-black text-[var(--color-success)]">₹{{ fmt(summary.received_total) }}</span>
             <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ summary.received_count }}</span>
           </div>
         </div>
         <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheques Issued (Pending Presentation)</span>
           <div class="flex items-baseline justify-between mt-1">
-            <span class="text-3xl font-mono font-black text-[var(--color-danger)]">₹{{ fmt(summary.issued_total) }}</span>
+            <span class="text-[45px] font-mono font-black text-[var(--color-danger)]">₹{{ fmt(summary.issued_total) }}</span>
             <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ summary.issued_count }}</span>
           </div>
         </div>
