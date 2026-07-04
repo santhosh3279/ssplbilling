@@ -764,15 +764,15 @@
         <div class="flex flex-col gap-5 p-6">
           <div class="flex flex-col gap-2">
             <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Remark <span class="text-[var(--color-danger)]">*</span></label>
-            <input
+            <textarea
               ref="remarkInputRef"
               v-model="remarkFormText"
-              type="text"
               placeholder="Remark"
-              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
-              @keydown.enter.prevent="saveRemark"
+              rows="3"
+              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors resize-none"
+              @keydown.enter.exact.prevent="saveRemark"
               @keydown.esc.prevent="showCustomAddressModal = false"
-            />
+            ></textarea>
           </div>
         </div>
 
