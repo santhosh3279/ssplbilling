@@ -14,7 +14,7 @@
             ref="btnToday"
             @click="setDateRange('Today')"
             @keydown="e => handleButtonKeydown(e, 0)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-4 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'Today'
               ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
@@ -25,7 +25,7 @@
             ref="btnYesterday"
             @click="setDateRange('Yesterday')"
             @keydown="e => handleButtonKeydown(e, 1)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-4 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'Yesterday'
               ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
@@ -36,7 +36,7 @@
             ref="btnCM"
             @click="setDateRange('CM')"
             @keydown="e => handleButtonKeydown(e, 2)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-4 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'CM'
               ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
@@ -47,7 +47,7 @@
             ref="btnLM"
             @click="setDateRange('LM')"
             @keydown="e => handleButtonKeydown(e, 3)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-4 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'LM'
               ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
@@ -58,7 +58,7 @@
             ref="btnFY"
             @click="setDateRange('FY')"
             @keydown="e => handleButtonKeydown(e, 4)"
-            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            class="py-2 text-xs font-black uppercase tracking-wider rounded-xl border-4 focus:outline-none active:scale-95 transition-all shadow-sm"
             :class="selectedRange === 'FY'
               ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] focus:bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
