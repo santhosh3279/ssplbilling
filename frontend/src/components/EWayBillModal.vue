@@ -104,7 +104,7 @@
               type="text"
               placeholder="15-digit GSTIN"
               :disabled="useCompanyTransporter"
-              class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors disabled:opacity-60 disabled:bg-[var(--color-surface)]"
+              class="uppercase rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors disabled:opacity-60 disabled:bg-[var(--color-surface)]"
               @keydown.enter.prevent="focusTransporterName"
               @keydown.esc.prevent="emit('close')"
             />
@@ -282,6 +282,15 @@ watch(
   }
 )
 
+watch(
+  () => form.value.gst_transporter_id,
+  (newVal) => {
+    if (newVal && newVal !== newVal.toUpperCase()) {
+      form.value.gst_transporter_id = newVal.toUpperCase()
+    }
+  }
+)
+
 function handleSubmit() {
   if (!form.value.distance) {
     alert('Distance (km) is required.')
@@ -295,6 +304,9 @@ function handleSubmit() {
   }
   if (form.value.vehicle_no) {
     form.value.vehicle_no = form.value.vehicle_no.toUpperCase().trim()
+  }
+  if (form.value.gst_transporter_id) {
+    form.value.gst_transporter_id = form.value.gst_transporter_id.toUpperCase().trim()
   }
   emit('submit', form.value)
 }
