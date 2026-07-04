@@ -86,7 +86,7 @@
           <p class="text-xs italic text-[var(--color-text-muted)]">No {{ statusFilter === 'All' ? '' : statusFilter.toLowerCase() + ' ' }}cheques found.</p>
         </div>
         <div v-else class="flex-1 overflow-y-auto custom-scrollbar">
-          <table class="w-full text-[21px]">
+          <table class="w-full text-[16px]">
             <thead class="sticky top-0 bg-[var(--color-surface-raised)] z-10">
               <tr class="font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                 <th class="px-4 py-3 text-left">Cheque No</th>
