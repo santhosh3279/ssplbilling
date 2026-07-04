@@ -189,11 +189,14 @@ def get_cheques(status="Pending", direction="All", party=None, limit=200):
     )
 
     summary = {"received_total": 0.0, "received_count": 0, "issued_total": 0.0, "issued_count": 0}
-    pending = frappe.get_all(
-        "SSPL Cheque",
-        filters={"status": "Pending"},
-        fields=["direction", "sum(amount) as total", "count(name) as cnt"],
-        group_by="direction",
+    pending = frappe.db.sql(
+        """
+        SELECT direction, SUM(amount) AS total, COUNT(*) AS cnt
+        FROM `tabSSPL Cheque`
+        WHERE status = 'Pending'
+        GROUP BY direction
+        """,
+        as_dict=True,
     )
     for p in pending:
         key = "received" if p.direction == "Received" else "issued"
