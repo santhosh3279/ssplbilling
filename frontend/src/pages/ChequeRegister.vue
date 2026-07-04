@@ -48,7 +48,7 @@
             v-for="s in STATUSES"
             :key="s"
             @click="statusFilter = s; loadCheques()"
-            class="px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border transition-all"
+            class="px-2 py-[3px] rounded-xl text-[18px] font-black uppercase tracking-widest border transition-all"
             :class="statusFilter === s
               ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] border-[var(--color-highlight)] shadow-md'
               : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-highlight)]'"
