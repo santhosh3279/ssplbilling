@@ -89,6 +89,7 @@ export const ADMIN_ROUTES = new Set([
   'IncentiveEntry',
   'CustomerEnquiry',
   'DiscountRule',
+  'ChequeRegister',
 ])
 
 /**
@@ -209,6 +210,7 @@ const TILE_ROUTE_MAP = {
   'offer-display':     'OfferDisplay',
   'catelogue':         'Catelogue',
   'unreconciled':      'Unreconciled',
+  'cheques':           'ChequeRegister',
 }
 
 export function canAccessTile(tileId) {
