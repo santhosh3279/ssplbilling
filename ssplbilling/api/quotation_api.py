@@ -530,7 +530,7 @@ def delete_quotation(quotation_name):
 
 
 def ensure_custom_fields_exist():
-	"""Ensure that ewaybill and e_waybill_status custom fields exist on the Quotation doctype."""
+	"""Ensure that e-waybill and transport detail custom fields exist on the Quotation doctype."""
 	if not frappe.db.exists("Custom Field", {"dt": "Quotation", "fieldname": "ewaybill"}):
 		from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 		create_custom_fields({
@@ -551,6 +551,94 @@ def ensure_custom_fields_exist():
 					"options": "\nPending\nGenerated\nCancelled\nFailed\nNot Applicable",
 					"allow_on_submit": 1,
 					"read_only": 1
+				}
+			]
+		})
+		frappe.db.commit()
+
+	# Transport details written back when an e-Way Bill is generated from the Quotation.
+	# Mirrors India Compliance's transport fields on Sales Invoice.
+	if not frappe.db.exists("Custom Field", {"dt": "Quotation", "fieldname": "gst_transporter_id"}):
+		from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+		create_custom_fields({
+			"Quotation": [
+				{
+					"fieldname": "transport_info_section",
+					"label": "Transport Information",
+					"fieldtype": "Section Break",
+					"insert_after": "e_waybill_status",
+					"collapsible": 1
+				},
+				{
+					"fieldname": "mode_of_transport",
+					"label": "Mode of Transport",
+					"fieldtype": "Select",
+					"options": "\nRoad\nAir\nRail\nShip",
+					"insert_after": "transport_info_section",
+					"allow_on_submit": 1,
+					"print_hide": 1
+				},
+				{
+					"fieldname": "distance",
+					"label": "Distance (in km)",
+					"fieldtype": "Float",
+					"insert_after": "mode_of_transport",
+					"allow_on_submit": 1,
+					"print_hide": 1
+				},
+				{
+					"fieldname": "vehicle_no",
+					"label": "Vehicle No",
+					"fieldtype": "Data",
+					"insert_after": "distance",
+					"allow_on_submit": 1,
+					"print_hide": 1
+				},
+				{
+					"fieldname": "gst_vehicle_type",
+					"label": "GST Vehicle Type",
+					"fieldtype": "Select",
+					"options": "Regular\nOver Dimensional Cargo (ODC)",
+					"insert_after": "vehicle_no",
+					"allow_on_submit": 1,
+					"print_hide": 1
+				},
+				{
+					"fieldname": "transport_info_col_break",
+					"fieldtype": "Column Break",
+					"insert_after": "gst_vehicle_type"
+				},
+				{
+					"fieldname": "gst_transporter_id",
+					"label": "GST Transporter ID",
+					"fieldtype": "Data",
+					"insert_after": "transport_info_col_break",
+					"allow_on_submit": 1,
+					"print_hide": 1
+				},
+				{
+					"fieldname": "transporter_name",
+					"label": "Transporter Name",
+					"fieldtype": "Data",
+					"insert_after": "gst_transporter_id",
+					"allow_on_submit": 1,
+					"print_hide": 1
+				},
+				{
+					"fieldname": "lr_no",
+					"label": "Transport Receipt No (LR)",
+					"fieldtype": "Data",
+					"insert_after": "transporter_name",
+					"allow_on_submit": 1,
+					"print_hide": 1
+				},
+				{
+					"fieldname": "lr_date",
+					"label": "Transport Receipt Date (LR)",
+					"fieldtype": "Date",
+					"insert_after": "lr_no",
+					"allow_on_submit": 1,
+					"print_hide": 1
 				}
 			]
 		})
@@ -686,10 +774,19 @@ def generate_eway_bill_for_quotation(
 		if not eway_bill_no:
 			frappe.throw("E-Way Bill generation failed: No e-Waybill number returned from the server.")
 
-		# Update Quotation directly in DB
+		# Update Quotation directly in DB, persisting the transport details that
+		# were used (real transporter ID, not the sandbox-mapped one)
 		q.db_set({
 			"ewaybill": eway_bill_no,
-			"e_waybill_status": eway_bill_status
+			"e_waybill_status": eway_bill_status,
+			"mode_of_transport": mode_of_transport,
+			"gst_transporter_id": gst_transporter_id or "",
+			"transporter_name": transporter_name or "",
+			"vehicle_no": vehicle_no or "",
+			"gst_vehicle_type": gst_vehicle_type or "",
+			"lr_no": lr_no or "",
+			"lr_date": lr_date or None,
+			"distance": float(distance) if distance else 0,
 		})
 
 		# Create the e-Waybill Log referencing the Quotation so tracking and PDF attachments work
