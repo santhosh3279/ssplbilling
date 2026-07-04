@@ -448,7 +448,7 @@
         <!-- Panel Footer -->
         <div class="border-t border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)]/30">
           <button
-            v-if="['Sales Invoice', 'Quotation'].includes(selectedEntry.voucher_type)"
+            v-if="['Sales Invoice', 'Quotation', 'Purchase Invoice'].includes(selectedEntry.voucher_type)"
             @click="openBillDetail"
             class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] py-2.5 text-xs font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-success)]/90 active:scale-95"
           >
@@ -522,6 +522,7 @@
         <div class="flex-1 overflow-hidden">
           <SalesInvoice v-if="billType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="billName" @close="showBillDetail = false" />
           <Quotation v-else-if="billType === 'Quotation'" :is-subwindow="true" :quotation-name="billName" @close="showBillDetail = false" />
+          <PurchaseInvoice v-else-if="billType === 'Purchase Invoice'" :is-subwindow="true" :invoice-name="billName" @close="showBillDetail = false" />
         </div>
       </div>
     </div>
@@ -539,6 +540,7 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import DateFilter from '../components/DateFilter.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
+import PurchaseInvoice from './PurchaseInvoice.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -725,7 +727,7 @@ function openBillDetail() {
 }
 
 function openInvoiceDetail(voucherType, voucherNo) {
-  if (voucherType === 'Sales Invoice') {
+  if (['Sales Invoice', 'Purchase Invoice'].includes(voucherType)) {
     billName.value = voucherNo
     billType.value = voucherType
     showBillDetail.value = true
