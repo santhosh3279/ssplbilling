@@ -92,11 +92,11 @@
                 <th class="px-4 py-3 text-left">Cheque No</th>
                 <th class="px-4 py-3 text-left">Direction</th>
                 <th class="px-4 py-3 text-left">Party</th>
+                <th class="px-4 py-3 text-left">Ledger Type</th>
                 <th class="px-4 py-3 text-left">Bank</th>
                 <th class="px-4 py-3 text-center">Cheque Date</th>
                 <th class="px-4 py-3 text-right">Amount</th>
                 <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-left">Vouchers</th>
                 <th class="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -117,7 +117,9 @@
                 </td>
                 <td class="px-4 py-3">
                   <div class="font-bold">{{ chq.party_name || chq.party }}</div>
-                  <div class="text-[15px] text-[var(--color-text-muted)] uppercase tracking-wider">{{ chq.party_type }}</div>
+                </td>
+                <td class="px-4 py-3 text-[15px] text-[var(--color-text-muted)] uppercase tracking-wider">
+                  {{ chq.party_type }}
                 </td>
                 <td class="px-4 py-3 text-[var(--color-text-muted)]">{{ chq.bank_name || '—' }}</td>
                 <td class="px-4 py-3 text-center font-semibold" :class="isPostDated(chq) ? 'text-[var(--color-warning)]' : ''">
@@ -132,10 +134,6 @@
                   >
                     {{ chq.status }}
                   </span>
-                </td>
-                <td class="px-4 py-3 text-[15px] font-semibold text-[var(--color-text-muted)]">
-                  <div v-if="chq.payment_entry">PE: {{ chq.payment_entry }}</div>
-                  <div v-if="chq.clearance_entry">JE: {{ chq.clearance_entry }} · {{ formatDate(chq.clearance_date) }}</div>
                 </td>
                 <td class="px-4 py-3">
                   <div v-if="chq.status === 'Pending'" class="flex justify-end gap-2">
