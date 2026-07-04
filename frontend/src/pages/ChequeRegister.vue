@@ -297,6 +297,7 @@
       :show="showPartySearch"
       :allowedTypes="[newForm.direction === 'Received' ? 'Customer' : 'Supplier']"
       :initialType="newForm.direction === 'Received' ? 'Customer' : 'Supplier'"
+      :skip-date-filter="true"
       @close="showPartySearch = false"
       @select="handlePartySelect"
     />
