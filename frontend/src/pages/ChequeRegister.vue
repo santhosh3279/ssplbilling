@@ -227,7 +227,14 @@
         <div class="flex justify-end gap-3 border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
           <button class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2 font-semibold" @click="showNewModal = false">Cancel</button>
           <button
-            @click="submitNewCheque"
+            @click="submitNewCheque(true)"
+            :disabled="isSaving || !canSaveNew"
+            class="rounded-xl bg-[var(--color-info)] px-6 py-2 font-black uppercase tracking-widest text-white shadow-md hover:brightness-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            🖨 Save &amp; Print
+          </button>
+          <button
+            @click="submitNewCheque(false)"
             :disabled="isSaving || !canSaveNew"
             class="rounded-xl bg-[var(--color-highlight)] px-6 py-2 font-black uppercase tracking-widest text-[var(--color-text-on-highlight)] shadow-md hover:brightness-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
@@ -293,6 +300,14 @@
       @close="showPartySearch = false"
       @select="handlePartySelect"
     />
+
+    <!-- Print Options Modal -->
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="printTargetName"
+      doctype="SSPL Cheque"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
@@ -308,6 +323,7 @@ import {
   fetchChequeBankAccounts,
 } from '../api'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
 const router = useRouter()
 
@@ -331,6 +347,8 @@ const showNewModal = ref(false)
 const showPartySearch = ref(false)
 const partySearchRef = ref(null)
 const settleTarget = ref(null)
+const showPrintModal = ref(false)
+const printTargetName = ref('')
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -397,11 +415,11 @@ function handlePartySelect(item) {
   newForm.value.party_label = item.label || item.name
 }
 
-async function submitNewCheque() {
+async function submitNewCheque(andPrint = false) {
   if (!canSaveNew.value || isSaving.value) return
   isSaving.value = true
   try {
-    await createCheque({
+    const res = await createCheque({
       direction: newForm.value.direction,
       party_type: newForm.value.party_type,
       party: newForm.value.party,
@@ -413,6 +431,10 @@ async function submitNewCheque() {
     })
     showNewModal.value = false
     await loadCheques()
+    if (andPrint && res && res.cheque) {
+      printTargetName.value = res.cheque
+      showPrintModal.value = true
+    }
   } catch (e) {
     alert('Failed to save cheque: ' + e.message)
   } finally {
