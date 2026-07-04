@@ -193,7 +193,8 @@
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">{{ newForm.party_type }} *</label>
             <button
               @click="showPartySearch = true"
-              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-left font-bold text-[var(--color-highlight)] hover:border-[var(--color-highlight)] transition-all"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-left font-bold hover:border-[var(--color-highlight)] transition-all"
+              :class="newForm.party ? 'text-[var(--color-text)] opacity-100' : 'text-[var(--color-highlight)] opacity-70'"
             >
               {{ newForm.party_label || 'Select party...' }}
             </button>
