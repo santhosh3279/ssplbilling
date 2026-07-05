@@ -38,7 +38,7 @@
               </select>
               <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">▾</span>
             </div>
-            <span v-if="!printers.length && !loadingResources" class="text-[10px] text-[var(--color-danger)]">No printers configured</span>
+            <span v-if="!printers.length && !loadingResources" class="text-[10px] text-[var(--color-danger)]">No barcode printers configured</span>
           </div>
 
           <!-- Template Select -->
@@ -245,7 +245,8 @@ async function loadResources() {
         limit: 50,
       }),
     ])
-    printers.value = p || []
+    // Only barcode printers are allowed here — label stock would ruin any other printer
+    printers.value = (p || []).filter(pr => /barcode/i.test(pr.printer_name || pr.name))
     templates.value = t || []
 
     const userDefault = localStorage.getItem('wb-default-printer')
