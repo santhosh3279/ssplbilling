@@ -35,7 +35,7 @@
           
           <!-- Right: Date & Print -->
           <div class="flex items-center gap-4 shrink-0">
-            <span class="text-[13.75px] font-bold text-[var(--color-text-muted)] whitespace-nowrap">{{ formatDate(selectedInvoice.posting_date) }}</span>
+            <span class="text-[13.75px] font-bold text-[var(--color-text-muted)] whitespace-nowrap">{{ formatDate(selectedInvoice.posting_date) }}<template v-if="formatTime(selectedInvoice.posting_time)"> · {{ formatTime(selectedInvoice.posting_time) }}</template></span>
             <button @click="showModifyModal = true" class="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[12.5px] font-black uppercase tracking-widest text-[var(--color-text)] hover:bg-[var(--color-border)] active:scale-95 transition-all flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
               Modify
@@ -199,7 +199,7 @@
                 <div class="flex items-center gap-3">
                   <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
                   <span class="text-[15px] font-medium" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                    {{ formatDate(inv.posting_date) }}
+                    {{ formatDate(inv.posting_date) }}<template v-if="formatTime(inv.posting_time)"> · {{ formatTime(inv.posting_time) }}</template>
                   </span>
                 </div>
               </div>
@@ -1009,6 +1009,16 @@ function formatDate(dateStr) {
   const month = months[date.getMonth()]
   const year = String(date.getFullYear()).slice(-2)
   return `${day}-${month}-${year}`
+}
+
+// "14:23:45.123456" → "2:23 PM"
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const [h, m] = String(timeStr).split(':')
+  const hh = parseInt(h, 10)
+  if (isNaN(hh) || m == null) return ''
+  const ampm = hh >= 12 ? 'PM' : 'AM'
+  return `${hh % 12 || 12}:${m} ${ampm}`
 }
 
 function adjustDate(days) {
