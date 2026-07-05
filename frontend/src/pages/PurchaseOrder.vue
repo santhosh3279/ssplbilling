@@ -155,6 +155,19 @@
             <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.safety_stock ?? 0 }}</span>
           </td>
 
+          <!-- max stock / max qty (click to edit, not in tab flow) -->
+          <td class="p-0 border-r border-[var(--color-border)] text-right" @click.stop="!isReadOnly && focusEditField('max_stock', index)">
+            <input v-if="editingRowIdx === index && editingField === 'max_stock'"
+              ref="editMaxStockInput"
+              v-model.number="item.custom_max_stock"
+              type="number" min="0" step="1"
+              tabindex="-1"
+              class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown="onEditMaxStockKeydown($event, index)"
+            />
+            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.custom_max_stock ?? 0 }}</span>
+          </td>
+
           <!-- min order qty (click to edit, not in tab flow) -->
           <td class="p-0 border-r border-[var(--color-border)] text-right" @click.stop="!isReadOnly && focusEditField('min_order_qty', index)">
             <input v-if="editingRowIdx === index && editingField === 'min_order_qty'"
@@ -172,13 +185,13 @@
           <td class="p-0 border-r border-[var(--color-border)] text-right" @click.stop="!isReadOnly && focusEditField('max_order_qty', index)">
             <input v-if="editingRowIdx === index && editingField === 'max_order_qty'"
               ref="editMaxOrderQtyInput"
-              v-model.number="item.custom_max_stock"
+              v-model.number="item.custom_max_order_qty"
               type="number" min="0" step="1"
               tabindex="-1"
               class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown="onEditMaxOrderQtyKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.custom_max_stock ?? 0 }}</span>
+            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.custom_max_order_qty ?? 0 }}</span>
           </td>
 
 
@@ -784,7 +797,8 @@ async function handleSelectSidebarItem(item) {
         _is_free: effectiveRate === 0,
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
         min_order_qty: getMinOrderQty(i.item_code),
-        custom_max_stock: getMaxOrderQty(i.item_code),
+        custom_max_stock: getMaxStock(i.item_code),
+        custom_max_order_qty: getMaxOrderQty(i.item_code),
         safety_stock: getSafetyStock(i.item_code),
       }
     })
@@ -849,6 +863,7 @@ const editDiscInput = ref(null)
 const editMinOrderQtyInput = ref(null)
 const editMaxOrderQtyInput = ref(null)
 const editSafetyStockInput = ref(null)
+const editMaxStockInput = ref(null)
 
 const activeItemCode = computed(() => {
   if (pendingItem.value) return pendingItem.value.item_code
@@ -1667,7 +1682,8 @@ function confirmPendingItem() {
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0, discount: p.discount || 0, tax_rate: p.tax_rate || 0,
     amount: parseFloat((p.qty * (p.rate || 0)).toFixed(2)), deleted: false,
     min_order_qty: getMinOrderQty(p.item_code),
-    custom_max_stock: getMaxOrderQty(p.item_code),
+    custom_max_stock: getMaxStock(p.item_code),
+    custom_max_order_qty: getMaxOrderQty(p.item_code),
     safety_stock: getSafetyStock(p.item_code),
   }
   items.value.push(newItem); pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
@@ -1723,7 +1739,8 @@ async function fetchSupplierItems() {
           amount: rate,
           deleted: false,
           min_order_qty: getMinOrderQty(match.item_code),
-          custom_max_stock: getMaxOrderQty(match.item_code),
+          custom_max_stock: getMaxStock(match.item_code),
+          custom_max_order_qty: getMaxOrderQty(match.item_code),
           safety_stock: getSafetyStock(match.item_code)
         }
         items.value.push(newItem)
@@ -1851,7 +1868,7 @@ function focusEditField(field, idx) {
     originalRowCode.value = items.value[idx].item_code
   }
   editingRowIdx.value = idx; editingField.value = field; selectedRowIdx.value = idx
-  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput, min_order_qty: editMinOrderQtyInput, max_order_qty: editMaxOrderQtyInput, safety_stock: editSafetyStockInput }
+  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput, min_order_qty: editMinOrderQtyInput, max_order_qty: editMaxOrderQtyInput, safety_stock: editSafetyStockInput, max_stock: editMaxStockInput }
   nextTick(() => {
     const el = inputMap[field]?.value; if (!el) return
     el.focus(); if (el.select) el.select(); if (field === 'uom' && el.showPicker) el.showPicker()
@@ -1874,7 +1891,8 @@ function getItemUoms(itemCode) { const cached = lookupItemInCache(itemCode); ret
 function getCachedStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.stock ?? 0) : 0 }
 function getSafetyStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.safety_stock ?? 0) : 0 }
 function getMinOrderQty(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.min_order_qty ?? 0) : 0 }
-function getMaxOrderQty(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.custom_max_stock ?? 0) : 0 }
+function getMaxStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.custom_max_stock ?? 0) : 0 }
+function getMaxOrderQty(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.custom_max_order_qty ?? 0) : 0 }
 
 function onEditMinOrderQtyKeydown(e, idx) {
   if (e.key === 'Enter' || e.key === 'Tab') {
@@ -1887,6 +1905,16 @@ function onEditMinOrderQtyKeydown(e, idx) {
 }
 
 function onEditMaxOrderQtyKeydown(e, idx) {
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault()
+    exitEditMode(idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  }
+}
+
+function onEditMaxStockKeydown(e, idx) {
   if (e.key === 'Enter' || e.key === 'Tab') {
     e.preventDefault()
     exitEditMode(idx)
@@ -1920,6 +1948,7 @@ async function mapAllItems() {
       item_code: item.item_code,
       min_order_qty: item.min_order_qty ?? 0,
       custom_max_stock: item.custom_max_stock ?? 0,
+      custom_max_order_qty: item.custom_max_order_qty ?? 0,
       safety_stock: item.safety_stock ?? 0
     }))
 
@@ -1933,6 +1962,7 @@ async function mapAllItems() {
         if (cached) {
           cached.min_order_qty = item.min_order_qty ?? 0
           cached.custom_max_stock = item.custom_max_stock ?? 0
+          cached.custom_max_order_qty = item.custom_max_order_qty ?? 0
           cached.safety_stock = item.safety_stock ?? 0
           patchItemInCache(item.item_code, cached)
         }
