@@ -270,7 +270,10 @@ def get_quotations(query="", limit=50, transaction_date=None, show_submitted=Fal
 		"Quotation",
 		filters=filters,
 		or_filters=or_filters,
-		fields=["name", "party_name", "customer_name", "grand_total", "rounded_total", "status", "docstatus", "transaction_date"],
+		fields=[
+			"name", "party_name", "customer_name", "custom_customer_name",
+			"grand_total", "rounded_total", "status", "docstatus", "transaction_date",
+		],
 		order_by="name desc",
 		limit_page_length=int(limit),
 	)
@@ -280,6 +283,7 @@ def get_quotations(query="", limit=50, transaction_date=None, show_submitted=Fal
 			"name": q.name,
 			"customer": q.party_name,
 			"customer_name": q.customer_name or q.party_name,
+			"custom_customer_name": q.custom_customer_name or "",
 			"grand_total": float(q.grand_total or 0),
 			"rounded_total": float(q.rounded_total or q.grand_total or 0),
 			"status": q.status or ("Draft" if q.docstatus == 0 else "Submitted"),
