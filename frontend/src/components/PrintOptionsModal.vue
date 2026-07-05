@@ -236,12 +236,15 @@ async function loadSettings() {
   try {
     const userRows = getUserPrinterSettings()
 
-    // Locked template mode: template is fixed by the caller, only the printer is selectable
+    // Locked template mode: template is fixed by the caller, only the printer is selectable.
+    // Output is an A4 PDF (e-Way Bill), so only PDF printers are shown — narrowed to the
+    // user's allowed printers, falling back to all PDF printers if none of theirs qualify.
     if (props.lockTemplate && props.initialTemplate) {
       const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
+      const pdfPrinters = (allPrinters || []).filter(pr => /pdf/i.test(pr.printer_name || pr.name))
       const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
-      const filteredPrinters = (allPrinters || []).filter(p => uniquePrinterNames.includes(p.name))
-      printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
+      const filteredPrinters = pdfPrinters.filter(p => uniquePrinterNames.includes(p.name))
+      printers.value  = filteredPrinters.length ? filteredPrinters : pdfPrinters
       templates.value = [{ name: props.initialTemplate }]
       selectedTemplate.value = props.initialTemplate
       syncPrinter()
