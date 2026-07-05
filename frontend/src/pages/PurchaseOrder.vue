@@ -134,9 +134,17 @@
             {{ getCachedStock(item.item_code) }}
           </td>
 
-          <!-- safety stock (read-only) -->
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-            {{ getSafetyStock(item.item_code) }}
+          <!-- safety stock (click to edit, not in tab flow) -->
+          <td class="p-0 border-r border-[var(--color-border)] text-right" @click.stop="!isReadOnly && focusEditField('safety_stock', index)">
+            <input v-if="editingRowIdx === index && editingField === 'safety_stock'"
+              ref="editSafetyStockInput"
+              v-model.number="item.safety_stock"
+              type="number" min="0" step="1"
+              tabindex="-1"
+              class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown="onEditSafetyStockKeydown($event, index)"
+            />
+            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.safety_stock ?? 0 }}</span>
           </td>
 
           <!-- min order qty (click to edit, not in tab flow) -->
@@ -780,6 +788,7 @@ async function handleSelectSidebarItem(item) {
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
         min_order_qty: getMinOrderQty(i.item_code),
         custom_max_order_qty: getMaxOrderQty(i.item_code),
+        safety_stock: getSafetyStock(i.item_code),
       }
     })
 
@@ -842,6 +851,7 @@ const editRateInput = ref(null)
 const editDiscInput = ref(null)
 const editMinOrderQtyInput = ref(null)
 const editMaxOrderQtyInput = ref(null)
+const editSafetyStockInput = ref(null)
 
 const activeItemCode = computed(() => {
   if (pendingItem.value) return pendingItem.value.item_code
@@ -1661,6 +1671,7 @@ function confirmPendingItem() {
     amount: parseFloat((p.qty * (p.rate || 0)).toFixed(2)), deleted: false,
     min_order_qty: getMinOrderQty(p.item_code),
     custom_max_order_qty: getMaxOrderQty(p.item_code),
+    safety_stock: getSafetyStock(p.item_code),
   }
   items.value.push(newItem); pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
   nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
@@ -1715,7 +1726,8 @@ async function fetchSupplierItems() {
           amount: rate,
           deleted: false,
           min_order_qty: getMinOrderQty(match.item_code),
-          custom_max_order_qty: getMaxOrderQty(match.item_code)
+          custom_max_order_qty: getMaxOrderQty(match.item_code),
+          safety_stock: getSafetyStock(match.item_code)
         }
         items.value.push(newItem)
         addedCount++
@@ -1842,7 +1854,7 @@ function focusEditField(field, idx) {
     originalRowCode.value = items.value[idx].item_code
   }
   editingRowIdx.value = idx; editingField.value = field; selectedRowIdx.value = idx
-  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput, min_order_qty: editMinOrderQtyInput, max_order_qty: editMaxOrderQtyInput }
+  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput, min_order_qty: editMinOrderQtyInput, max_order_qty: editMaxOrderQtyInput, safety_stock: editSafetyStockInput }
   nextTick(() => {
     const el = inputMap[field]?.value; if (!el) return
     el.focus(); if (el.select) el.select(); if (field === 'uom' && el.showPicker) el.showPicker()
@@ -1887,24 +1899,37 @@ function onEditMaxOrderQtyKeydown(e, idx) {
   }
 }
 
+function onEditSafetyStockKeydown(e, idx) {
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault()
+    exitEditMode(idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  }
+}
+
 async function mapOrderQuantities(item) {
   if (isReadOnly.value) return
   if (!item.item_code) return
   
   const minQty = item.min_order_qty ?? 0
   const maxQty = item.custom_max_order_qty ?? 0
+  const safetyStock = item.safety_stock ?? 0
   
   try {
     const res = await frappePost('ssplbilling.api.purchase_api.update_item_order_quantities', {
       item_code: item.item_code,
       min_order_qty: minQty,
-      max_order_qty: maxQty
+      max_order_qty: maxQty,
+      safety_stock: safetyStock
     })
     if (res && res.status === 'success') {
       const cached = lookupItemInCache(item.item_code)
       if (cached) {
         cached.min_order_qty = minQty
         cached.custom_max_order_qty = maxQty
+        cached.safety_stock = safetyStock
         patchItemInCache(item.item_code, cached)
       }
       alert(`Mapped order quantities successfully for ${item.item_code}`)
