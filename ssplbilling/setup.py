@@ -96,6 +96,43 @@ CUSTOM_FIELDS = {
 			"insert_after": "customer_name",
 		}
 	],
+	"Purchase Invoice": [
+		{
+			"fieldname": "custom_address_section",
+			"fieldtype": "Section Break",
+			"label": "Custom Address",
+			"insert_after": "supplier_name",
+			"collapsible": 1,
+		},
+		{
+			"fieldname": "custom_customer_name",
+			"fieldtype": "Data",
+			"label": "Custom Customer Name",
+			"insert_after": "custom_address_section",
+			"translatable": 0,
+		},
+		{
+			"fieldname": "custom_address_line1",
+			"fieldtype": "Data",
+			"label": "Address Line 1",
+			"insert_after": "custom_customer_name",
+			"translatable": 0,
+		},
+		{
+			"fieldname": "custom_address_line2",
+			"fieldtype": "Data",
+			"label": "Address Line 2",
+			"insert_after": "custom_address_line1",
+			"translatable": 0,
+		},
+		{
+			"fieldname": "custom_mobile_number",
+			"fieldtype": "Data",
+			"label": "Mobile Number",
+			"insert_after": "custom_address_line2",
+			"translatable": 0,
+		},
+	],
 }
 
 
