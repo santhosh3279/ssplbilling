@@ -796,20 +796,23 @@ async function fetchRecentInvoices(force = false) {
   if (!force && !sidebarSearch.value) {
     const cached = loadCachedPanel('Sales Invoice', sidebarCacheParams())
     if (cached) {
-      recentInvoices.value = cached
+      // Stale caches (e.g. written while this client was offline) may still hold
+      // invoices cancelled elsewhere — never show docstatus 2 in the modify panel
+      recentInvoices.value = cached.filter(inv => inv.docstatus !== 2)
       return
     }
   }
 
   sidebarLoading.value = true
   try {
-    recentInvoices.value = await frappeGet('ssplbilling.api.sales.get_sales_invoices', {
+    const invoices = await frappeGet('ssplbilling.api.sales.get_sales_invoices', {
       query: sidebarSearch.value,
       limit: 100,
       posting_date: sidebarDate.value,
       naming_series: sidebarSeries.value.join(','),
       draft_only: draftOnly.value
     })
+    recentInvoices.value = (invoices || []).filter(inv => inv.docstatus !== 2)
     if (!sidebarSearch.value) {
       saveCachedPanel('Sales Invoice', sidebarCacheParams(), recentInvoices.value)
     }
