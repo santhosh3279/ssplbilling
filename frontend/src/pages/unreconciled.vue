@@ -150,9 +150,11 @@
                   <div class="flex items-center gap-2">
                     <span
                       class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest"
-                      :class="pay.type === 'Payment Entry' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'bg-amber-500/10 text-amber-500'"
+                      :class="pay.type === 'Payment Entry' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                        : pay.type === 'Journal Entry' ? 'bg-amber-500/10 text-amber-500'
+                        : 'bg-purple-500/10 text-purple-500'"
                     >
-                      {{ pay.type === 'Payment Entry' ? 'PE' : 'JE' }}
+                      {{ pay.type === 'Payment Entry' ? 'PE' : pay.type === 'Journal Entry' ? 'JE' : (pay.type === 'Sales Invoice' ? 'CN' : 'DN') }}
                     </span>
                     <span class="text-sm font-black text-[var(--color-text)]">{{ pay.name }}</span>
                   </div>
@@ -440,9 +442,24 @@ async function fetchData() {
       type: 'Journal Entry',
       key: `je_${j.name}_${j.reference_row || ''}`
     }))
-    
-    payments.value = [...pes, ...jes]
-    invoices.value = outstandingRes.docs || []
+
+    // Return invoices (credit/debit notes) carry a negative outstanding — they are
+    // credits waiting to be linked, so show them on the payments side as positive
+    // amounts instead of negative rows on the invoice side.
+    const docs = outstandingRes.docs || []
+    const returns = docs
+      .filter(d => Number(d.outstanding_amount) < 0)
+      .map(d => ({
+        ...d,
+        type: d.doctype, // 'Sales Invoice' | 'Purchase Invoice'
+        key: `ret_${d.name}`,
+        unallocated_amount: Math.abs(Number(d.outstanding_amount)),
+        mode_of_payment: '',
+        remarks: d.doctype === 'Sales Invoice' ? 'Credit Note (Return)' : 'Debit Note (Return)',
+      }))
+
+    payments.value = [...pes, ...jes, ...returns]
+    invoices.value = docs.filter(d => Number(d.outstanding_amount) > 0)
   } catch (e) {
     alert('Failed to fetch entries: ' + e.message)
   } finally {
@@ -514,7 +531,9 @@ function removeAllocation(idx) {
   const alloc = queuedAllocations.value[idx]
   
   // Revert local values
-  const pay = payments.value.find(p => p.name === alloc.payment_name && p.reference_row === alloc.reference_row)
+  const pay = payments.value.find(
+    p => p.name === alloc.payment_name && (p.reference_row || null) === (alloc.reference_row || null)
+  )
   if (pay) pay.unallocated_amount += alloc.amount
   
   const inv = invoices.value.find(i => i.name === alloc.invoice_name)

@@ -53,8 +53,28 @@ def get_parties_with_unlinked_entries():
 		as_dict=True,
 	)
 
+	# Return invoices (credit/debit notes) carry negative outstanding — they are
+	# credits waiting to be linked, same as an unallocated payment.
+	ret_rows = frappe.db.sql(
+		"""
+		SELECT 'Customer' AS party_type, customer AS party,
+			COUNT(*) AS cnt, SUM(ABS(outstanding_amount)) AS amount
+		FROM `tabSales Invoice`
+		WHERE docstatus = 1 AND outstanding_amount < -0.005 AND company = %s
+		GROUP BY customer
+		UNION ALL
+		SELECT 'Supplier' AS party_type, supplier AS party,
+			COUNT(*) AS cnt, SUM(ABS(outstanding_amount)) AS amount
+		FROM `tabPurchase Invoice`
+		WHERE docstatus = 1 AND outstanding_amount < -0.005 AND company = %s
+		GROUP BY supplier
+		""",
+		(company, company),
+		as_dict=True,
+	)
+
 	combined = {}
-	for r in list(pe_rows) + list(je_rows):
+	for r in list(pe_rows) + list(je_rows) + list(ret_rows):
 		key = (r.party_type, r.party)
 		if key not in combined:
 			combined[key] = {"party_type": r.party_type, "party": r.party, "count": 0, "amount": 0.0}
@@ -71,7 +91,7 @@ def get_parties_with_unlinked_entries():
 			"""
 			SELECT DISTINCT customer FROM `tabSales Invoice`
 			WHERE docstatus = 1 AND customer IN %s
-				AND ABS(outstanding_amount) > 0.005 AND company = %s
+				AND outstanding_amount > 0.005 AND company = %s
 			""",
 			(tuple(customers), company),
 		)
@@ -81,7 +101,7 @@ def get_parties_with_unlinked_entries():
 			"""
 			SELECT DISTINCT supplier FROM `tabPurchase Invoice`
 			WHERE docstatus = 1 AND supplier IN %s
-				AND ABS(outstanding_amount) > 0.005 AND company = %s
+				AND outstanding_amount > 0.005 AND company = %s
 			""",
 			(tuple(suppliers), company),
 		)
