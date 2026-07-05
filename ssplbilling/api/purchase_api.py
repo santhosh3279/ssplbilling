@@ -638,13 +638,13 @@ def link_supplier_to_items(supplier, items):
 
 @frappe.whitelist()
 def update_item_order_quantities(item_code, min_order_qty, max_order_qty, safety_stock=None):
-	"""Update min_order_qty, custom_max_order_qty, and safety_stock in Item Master."""
+	"""Update min_order_qty, custom_max_stock, and safety_stock in Item Master."""
 	if not item_code:
 		frappe.throw("Item Code is required")
 
 	doc = frappe.get_doc("Item", item_code)
 	doc.min_order_qty = frappe.utils.flt(min_order_qty)
-	doc.custom_max_order_qty = frappe.utils.flt(max_order_qty)
+	doc.custom_max_stock = frappe.utils.flt(max_order_qty)
 	if safety_stock is not None:
 		doc.safety_stock = frappe.utils.flt(safety_stock)
 	doc.flags.ignore_permissions = True
@@ -654,7 +654,7 @@ def update_item_order_quantities(item_code, min_order_qty, max_order_qty, safety
 
 @frappe.whitelist()
 def update_items_order_quantities(items):
-	"""Update min_order_qty, custom_max_order_qty, and safety_stock in bulk for multiple items."""
+	"""Update min_order_qty, custom_max_stock, and safety_stock in bulk for multiple items."""
 	if isinstance(items, str):
 		items = json.loads(items)
 
@@ -669,7 +669,11 @@ def update_items_order_quantities(items):
 		if frappe.db.exists("Item", item_code):
 			doc = frappe.get_doc("Item", item_code)
 			doc.min_order_qty = frappe.utils.flt(item.get("min_order_qty"))
-			doc.custom_max_order_qty = frappe.utils.flt(item.get("custom_max_order_qty"))
+			
+			max_qty = item.get("custom_max_stock") if "custom_max_stock" in item else item.get("custom_max_order_qty")
+			if max_qty is not None:
+				doc.custom_max_stock = frappe.utils.flt(max_qty)
+
 			if item.get("safety_stock") is not None:
 				doc.safety_stock = frappe.utils.flt(item.get("safety_stock"))
 			doc.flags.ignore_permissions = True
