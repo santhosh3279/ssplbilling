@@ -124,6 +124,7 @@ DASHBOARD_TILES = [
 	("unreconciled", "Unreconciled Entries", "Accounts"),
 	("payment-reconciliation", "Payment Reconciliation", "Accounts"),
 	("journal-contra", "Journal Contra", "Accounts"),
+	("cheques", "Cheque Register", "Accounts"),
 	("outstanding-bills", "Outstanding", "Accounts"),
 	("incentive-redeem", "Incentive Redeem", "Accounts"),
 	("incentive-entry", "Incentive Entry", "Accounts"),

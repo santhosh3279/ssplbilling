@@ -675,6 +675,13 @@ const tiles = computed(() => {
   if (Array.isArray(allowedTileIds.value)) {
     // Render in the order configured in SSPL Dashboard Tile Access
     const byId = new Map(allTiles.map(t => [t.id, t]))
+    const unknown = allowedTileIds.value.filter(id => !byId.has(id))
+    if (unknown.length) {
+      console.warn(
+        '[Dashboard] SSPL Dashboard Tile Access grants tile ids unknown to this build '
+        + '(check tile_id spelling/case, or the deployed frontend is outdated):', unknown
+      )
+    }
     return allowedTileIds.value.map(id => byId.get(id)).filter(Boolean)
   }
   return allTiles.filter(t => canAccessTile(t.id))
