@@ -651,3 +651,29 @@ def update_item_order_quantities(item_code, min_order_qty, max_order_qty, safety
 	doc.save()
 	return {"status": "success", "message": "Updated successfully"}
 
+
+@frappe.whitelist()
+def update_items_order_quantities(items):
+	"""Update min_order_qty, custom_max_order_qty, and safety_stock in bulk for multiple items."""
+	if isinstance(items, str):
+		items = json.loads(items)
+
+	if not items:
+		return {"status": "error", "message": "Items are required"}
+
+	for item in items:
+		item_code = item.get("item_code")
+		if not item_code:
+			continue
+
+		if frappe.db.exists("Item", item_code):
+			doc = frappe.get_doc("Item", item_code)
+			doc.min_order_qty = frappe.safe_float(item.get("min_order_qty"))
+			doc.custom_max_order_qty = frappe.safe_float(item.get("custom_max_order_qty"))
+			if item.get("safety_stock") is not None:
+				doc.safety_stock = frappe.safe_float(item.get("safety_stock"))
+			doc.flags.ignore_permissions = True
+			doc.save()
+
+	return {"status": "success", "message": "Updated all items successfully"}
+

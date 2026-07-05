@@ -75,6 +75,14 @@
           >
             <span>📥</span> {{ fetchingSupplierItems ? 'Fetching...' : 'Fetch Items' }}
           </button>
+          <button
+            v-if="supplierId && !isReadOnly && !isSubmitted && activeItems.length > 0"
+            @click="mapAllItems"
+            :disabled="mappingAllItems"
+            class="flex items-center gap-2 rounded bg-[var(--color-success)] px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-[var(--color-success)]/80 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span>💾</span> {{ mappingAllItems ? 'Mapping...' : 'Map Items' }}
+          </button>
         </div>
       </template>
 
@@ -173,18 +181,6 @@
             <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.custom_max_order_qty ?? 0 }}</span>
           </td>
 
-          <!-- Map button to save to Item Master -->
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-center">
-            <button
-              v-if="!isReadOnly && !item.deleted && !item._is_free"
-              class="rounded bg-[var(--color-info)]/20 hover:bg-[var(--color-info)] text-[var(--color-info)] hover:text-white px-2 py-0.5 text-xs font-bold transition-all uppercase tracking-wider active:scale-95"
-              tabindex="-1"
-              @click.stop="mapOrderQuantities(item)"
-            >
-              Map
-            </button>
-            <span v-else class="text-3xl text-[var(--color-text-muted)]">-</span>
-          </td>
 
           <td class="p-0 border-r border-[var(--color-border)]">
             <select v-if="editingRowIdx === index && editingField === 'uom'"
@@ -638,6 +634,7 @@ const otherAmt = computed(() => parseFloat(otherEntry.value) || 0)
 
 const showSeriesModal = ref(false)
 const showSupplierModal = ref(false)
+const mappingAllItems = ref(false)
 const showShortcutPage = ref(false)
 const showClearWarning = ref(false)
 const showExitWarning = ref(false)
@@ -1909,36 +1906,46 @@ function onEditSafetyStockKeydown(e, idx) {
   }
 }
 
-async function mapOrderQuantities(item) {
+async function mapAllItems() {
   if (isReadOnly.value) return
-  if (!item.item_code) return
-  
-  const minQty = item.min_order_qty ?? 0
-  const maxQty = item.custom_max_order_qty ?? 0
-  const safetyStock = item.safety_stock ?? 0
-  
+  const validItems = items.value.filter(item => !item.deleted && !item._is_free && item.item_code)
+  if (!validItems.length) {
+    alert('No items to map.')
+    return
+  }
+
+  mappingAllItems.value = true
   try {
-    const res = await frappePost('ssplbilling.api.purchase_api.update_item_order_quantities', {
+    const payload = validItems.map(item => ({
       item_code: item.item_code,
-      min_order_qty: minQty,
-      max_order_qty: maxQty,
-      safety_stock: safetyStock
+      min_order_qty: item.min_order_qty ?? 0,
+      custom_max_order_qty: item.custom_max_order_qty ?? 0,
+      safety_stock: item.safety_stock ?? 0
+    }))
+
+    const res = await frappePost('ssplbilling.api.purchase_api.update_items_order_quantities', {
+      items: JSON.stringify(payload)
     })
+
     if (res && res.status === 'success') {
-      const cached = lookupItemInCache(item.item_code)
-      if (cached) {
-        cached.min_order_qty = minQty
-        cached.custom_max_order_qty = maxQty
-        cached.safety_stock = safetyStock
-        patchItemInCache(item.item_code, cached)
-      }
-      alert(`Mapped order quantities successfully for ${item.item_code}`)
+      validItems.forEach(item => {
+        const cached = lookupItemInCache(item.item_code)
+        if (cached) {
+          cached.min_order_qty = item.min_order_qty ?? 0
+          cached.custom_max_order_qty = item.custom_max_order_qty ?? 0
+          cached.safety_stock = item.safety_stock ?? 0
+          patchItemInCache(item.item_code, cached)
+        }
+      })
+      alert('Mapped all items order quantities successfully!')
     } else {
-      alert(`Failed to map quantities: ${res?.message || 'Unknown error'}`)
+      alert(`Failed to map items: ${res?.message || 'Unknown error'}`)
     }
   } catch (err) {
-    console.error('[PurchaseOrder] Map order quantities failed:', err)
-    alert(`Failed to map quantities: ${err.message || err}`)
+    console.error('[PurchaseOrder] Map all items failed:', err)
+    alert(`Failed to map items: ${err.message || err}`)
+  } finally {
+    mappingAllItems.value = false
   }
 }
 
