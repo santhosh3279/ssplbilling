@@ -61,6 +61,34 @@ def get_parties_with_unlinked_entries():
 		combined[key]["count"] += int(r.cnt or 0)
 		combined[key]["amount"] += float(r.amount or 0)
 
+	# Reconciliation needs both sides: an unlinked payment AND an open invoice to
+	# link it against. Drop parties that only have one side.
+	customers = [k[1] for k in combined if k[0] == "Customer"]
+	suppliers = [k[1] for k in combined if k[0] == "Supplier"]
+	has_open_invoice = set()
+	if customers:
+		rows = frappe.db.sql(
+			"""
+			SELECT DISTINCT customer FROM `tabSales Invoice`
+			WHERE docstatus = 1 AND customer IN %s
+				AND ABS(outstanding_amount) > 0.005 AND company = %s
+			""",
+			(tuple(customers), company),
+		)
+		has_open_invoice.update(("Customer", r[0]) for r in rows)
+	if suppliers:
+		rows = frappe.db.sql(
+			"""
+			SELECT DISTINCT supplier FROM `tabPurchase Invoice`
+			WHERE docstatus = 1 AND supplier IN %s
+				AND ABS(outstanding_amount) > 0.005 AND company = %s
+			""",
+			(tuple(suppliers), company),
+		)
+		has_open_invoice.update(("Supplier", r[0]) for r in rows)
+
+	combined = {k: v for k, v in combined.items() if k in has_open_invoice}
+
 	# Resolve display labels in bulk
 	labels = {}
 	customers = [k[1] for k in combined if k[0] == "Customer"]
