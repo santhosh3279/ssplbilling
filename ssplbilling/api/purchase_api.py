@@ -635,3 +635,17 @@ def link_supplier_to_items(supplier, items):
 
     return {"status": "success", "linked_count": linked_count}
 
+
+@frappe.whitelist()
+def update_item_order_quantities(item_code, min_order_qty, max_order_qty):
+	"""Update min_order_qty and custom_max_order_qty in Item Master."""
+	if not item_code:
+		frappe.throw("Item Code is required")
+
+	doc = frappe.get_doc("Item", item_code)
+	doc.min_order_qty = frappe.safe_float(min_order_qty)
+	doc.custom_max_order_qty = frappe.safe_float(max_order_qty)
+	doc.flags.ignore_permissions = True
+	doc.save()
+	return {"status": "success", "message": "Updated successfully"}
+

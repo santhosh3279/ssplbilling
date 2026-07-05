@@ -139,6 +139,45 @@
             {{ getSafetyStock(item.item_code) }}
           </td>
 
+          <!-- min order qty (click to edit, not in tab flow) -->
+          <td class="p-0 border-r border-[var(--color-border)] text-right" @click.stop="!isReadOnly && focusEditField('min_order_qty', index)">
+            <input v-if="editingRowIdx === index && editingField === 'min_order_qty'"
+              ref="editMinOrderQtyInput"
+              v-model.number="item.min_order_qty"
+              type="number" min="0" step="1"
+              tabindex="-1"
+              class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown="onEditMinOrderQtyKeydown($event, index)"
+            />
+            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.min_order_qty ?? 0 }}</span>
+          </td>
+
+          <!-- max order qty (click to edit, not in tab flow) -->
+          <td class="p-0 border-r border-[var(--color-border)] text-right" @click.stop="!isReadOnly && focusEditField('max_order_qty', index)">
+            <input v-if="editingRowIdx === index && editingField === 'max_order_qty'"
+              ref="editMaxOrderQtyInput"
+              v-model.number="item.custom_max_order_qty"
+              type="number" min="0" step="1"
+              tabindex="-1"
+              class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown="onEditMaxOrderQtyKeydown($event, index)"
+            />
+            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.custom_max_order_qty ?? 0 }}</span>
+          </td>
+
+          <!-- Map button to save to Item Master -->
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-center">
+            <button
+              v-if="!isReadOnly && !item.deleted && !item._is_free"
+              class="rounded bg-[var(--color-info)]/20 hover:bg-[var(--color-info)] text-[var(--color-info)] hover:text-white px-2 py-0.5 text-xs font-bold transition-all uppercase tracking-wider active:scale-95"
+              tabindex="-1"
+              @click.stop="mapOrderQuantities(item)"
+            >
+              Map
+            </button>
+            <span v-else class="text-3xl text-[var(--color-text-muted)]">-</span>
+          </td>
+
           <td class="p-0 border-r border-[var(--color-border)]">
             <select v-if="editingRowIdx === index && editingField === 'uom'"
               ref="editUomSelect"
@@ -539,7 +578,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
-import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, patchItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
 import { useShortcuts } from '../services/shortcutManager'
@@ -739,6 +778,8 @@ async function handleSelectSidebarItem(item) {
         deleted: false,
         _is_free: effectiveRate === 0,
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
+        min_order_qty: getMinOrderQty(i.item_code),
+        custom_max_order_qty: getMaxOrderQty(i.item_code),
       }
     })
 
@@ -799,6 +840,8 @@ const editQtyInput = ref(null)
 const editUomSelect = ref(null)
 const editRateInput = ref(null)
 const editDiscInput = ref(null)
+const editMinOrderQtyInput = ref(null)
+const editMaxOrderQtyInput = ref(null)
 
 const activeItemCode = computed(() => {
   if (pendingItem.value) return pendingItem.value.item_code
@@ -1616,6 +1659,8 @@ function confirmPendingItem() {
     item_code: p.item_code, item_name: p.item_name, qty: p.qty, uom: p.uom || 'Nos',
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0, discount: p.discount || 0, tax_rate: p.tax_rate || 0,
     amount: parseFloat((p.qty * (p.rate || 0)).toFixed(2)), deleted: false,
+    min_order_qty: getMinOrderQty(p.item_code),
+    custom_max_order_qty: getMaxOrderQty(p.item_code),
   }
   items.value.push(newItem); pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
   nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
@@ -1668,7 +1713,9 @@ async function fetchSupplierItems() {
           discount: 0,
           tax_rate: match.tax_rate || 0,
           amount: rate,
-          deleted: false
+          deleted: false,
+          min_order_qty: getMinOrderQty(match.item_code),
+          custom_max_order_qty: getMaxOrderQty(match.item_code)
         }
         items.value.push(newItem)
         addedCount++
@@ -1795,7 +1842,7 @@ function focusEditField(field, idx) {
     originalRowCode.value = items.value[idx].item_code
   }
   editingRowIdx.value = idx; editingField.value = field; selectedRowIdx.value = idx
-  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput }
+  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomSelect, rate: editRateInput, disc: editDiscInput, min_order_qty: editMinOrderQtyInput, max_order_qty: editMaxOrderQtyInput }
   nextTick(() => {
     const el = inputMap[field]?.value; if (!el) return
     el.focus(); if (el.select) el.select(); if (field === 'uom' && el.showPicker) el.showPicker()
@@ -1817,6 +1864,58 @@ function getItemUoms(itemCode) { const cached = lookupItemInCache(itemCode); ret
 
 function getCachedStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.stock ?? 0) : 0 }
 function getSafetyStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.safety_stock ?? 0) : 0 }
+function getMinOrderQty(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.min_order_qty ?? 0) : 0 }
+function getMaxOrderQty(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.custom_max_order_qty ?? 0) : 0 }
+
+function onEditMinOrderQtyKeydown(e, idx) {
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault()
+    exitEditMode(idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  }
+}
+
+function onEditMaxOrderQtyKeydown(e, idx) {
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault()
+    exitEditMode(idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode(idx, true)
+  }
+}
+
+async function mapOrderQuantities(item) {
+  if (isReadOnly.value) return
+  if (!item.item_code) return
+  
+  const minQty = item.min_order_qty ?? 0
+  const maxQty = item.custom_max_order_qty ?? 0
+  
+  try {
+    const res = await frappePost('ssplbilling.api.purchase_api.update_item_order_quantities', {
+      item_code: item.item_code,
+      min_order_qty: minQty,
+      max_order_qty: maxQty
+    })
+    if (res && res.status === 'success') {
+      const cached = lookupItemInCache(item.item_code)
+      if (cached) {
+        cached.min_order_qty = minQty
+        cached.custom_max_order_qty = maxQty
+        patchItemInCache(item.item_code, cached)
+      }
+      alert(`Mapped order quantities successfully for ${item.item_code}`)
+    } else {
+      alert(`Failed to map quantities: ${res?.message || 'Unknown error'}`)
+    }
+  } catch (err) {
+    console.error('[PurchaseOrder] Map order quantities failed:', err)
+    alert(`Failed to map quantities: ${err.message || err}`)
+  }
+}
 
 function onUomChange(idx) {
   const item = items.value[idx]; if (!item) return

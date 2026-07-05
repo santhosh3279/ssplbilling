@@ -264,6 +264,9 @@
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-16">Qty</th>
                 <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Stock</th>
                 <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Safety Stock</th>
+                <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Min Ord Qty</th>
+                <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Max Ord Qty</th>
+                <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-center text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-16">Map</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-14">UOM</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Rate</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Disc %</th>

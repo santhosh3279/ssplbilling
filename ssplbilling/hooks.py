@@ -22,6 +22,7 @@ fixtures = [
 				[
 					"item_print_name",
 					"custom_max_stock",
+					"custom_max_order_qty",
 					"incentive_section",
 					"incentive_system",
 					"total_incentive",

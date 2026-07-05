@@ -16,6 +16,12 @@ CUSTOM_FIELDS = {
 			"label": "Max Stock",
 			"fieldtype": "Float",
 			"insert_after": "safety_stock",
+		},
+		{
+			"fieldname": "custom_max_order_qty",
+			"label": "Max Order Qty",
+			"fieldtype": "Float",
+			"insert_after": "min_order_qty",
 		}
 	],
 	"Customer": [
