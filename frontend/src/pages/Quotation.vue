@@ -72,6 +72,9 @@
           <div v-if="ewaybill" class="flex items-center gap-2 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-xl px-4 py-1.5 font-mono text-2xl shrink-0 font-bold">
             E-Way Bill: {{ ewaybill }} ({{ ewaybillStatus }})
           </div>
+          <div v-else-if="ewaybillStatus === 'Cancelled'" class="flex items-center gap-2 bg-[var(--color-danger)]/10 text-[var(--color-danger)]/80 border border-[var(--color-danger)]/30 rounded-xl px-4 py-1.5 font-mono text-2xl shrink-0 font-bold">
+            E-Way Bill: Cancelled
+          </div>
           <span class="text-[var(--color-info)] font-bold uppercase tracking-widest">Quotation Mode</span>
         </div>
       </template>
