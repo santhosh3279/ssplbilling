@@ -20,9 +20,9 @@
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar with Buttons (Reorganized into Two Columns) -->
-      <aside class="w-[38rem] border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 overflow-y-auto">
-        <div class="grid grid-cols-2 gap-6 h-full align-top">
+      <!-- Sidebar with Buttons (Reorganized into Three Columns) -->
+      <aside class="w-[56rem] border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 overflow-y-auto">
+        <div class="grid grid-cols-3 gap-6 h-full align-top">
           
           <!-- Column 1: Tax Register -->
           <div class="flex flex-col gap-3">
@@ -69,18 +69,6 @@
               <div class="text-left">
                 <div class="text-lg font-semibold">Quotation HSN Summary</div>
                 <div class="text-base text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
-              </div>
-            </button>
-
-            <button
-              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-              :class="isStockReportActive ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]' : ''"
-              @click="selectStockReport"
-            >
-              <span class="text-xl">📈</span>
-              <div class="text-left">
-                <div class="text-lg font-semibold">Stock Status Report</div>
-                <div class="text-base text-[var(--color-text-muted)]">Check current item stock</div>
               </div>
             </button>
           </div>
@@ -141,6 +129,23 @@
               <div class="text-left">
                 <div class="text-lg font-semibold">Cashflow Report</div>
                 <div class="text-base text-[var(--color-text-muted)]">Cost Center-wise Cash & Bank Flow</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Column 3: Stock Report -->
+          <div class="flex flex-col gap-3">
+            <h3 class="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-2 mb-2">Stock Report</h3>
+            
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              :class="isStockReportActive ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]' : ''"
+              @click="selectStockReport"
+            >
+              <span class="text-xl">📈</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Stock Status Report</div>
+                <div class="text-base text-[var(--color-text-muted)]">Check current item stock</div>
               </div>
             </button>
           </div>
