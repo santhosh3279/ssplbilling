@@ -139,6 +139,18 @@
             <span class="text-3xl font-mono text-[var(--color-highlight)] truncate">{{ supplierLastInvDate }}</span>
           </div>
 
+          <!-- Remark Field -->
+          <div class="flex items-center gap-2">
+            <label class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Remark</label>
+            <input
+              v-model="customAddress.customer_name"
+              :disabled="isReadOnly"
+              placeholder="Remark (F6)"
+              class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-80"
+              @keydown.enter.prevent="supplierInvoiceNoRef?.focus()"
+            />
+          </div>
+
           <!-- Supplier Invoice Info & Bill Date (Right Aligned Container) -->
           <div class="flex items-center gap-8 ml-auto whitespace-nowrap">
             <!-- Supplier Invoice Info -->
