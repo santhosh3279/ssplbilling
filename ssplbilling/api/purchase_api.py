@@ -643,10 +643,10 @@ def update_item_order_quantities(item_code, min_order_qty, max_order_qty, safety
 		frappe.throw("Item Code is required")
 
 	doc = frappe.get_doc("Item", item_code)
-	doc.min_order_qty = frappe.utils.safe_float(min_order_qty)
-	doc.custom_max_order_qty = frappe.utils.safe_float(max_order_qty)
+	doc.min_order_qty = frappe.utils.flt(min_order_qty)
+	doc.custom_max_order_qty = frappe.utils.flt(max_order_qty)
 	if safety_stock is not None:
-		doc.safety_stock = frappe.utils.safe_float(safety_stock)
+		doc.safety_stock = frappe.utils.flt(safety_stock)
 	doc.flags.ignore_permissions = True
 	doc.save()
 	return {"status": "success", "message": "Updated successfully"}
@@ -668,10 +668,10 @@ def update_items_order_quantities(items):
 
 		if frappe.db.exists("Item", item_code):
 			doc = frappe.get_doc("Item", item_code)
-			doc.min_order_qty = frappe.utils.safe_float(item.get("min_order_qty"))
-			doc.custom_max_order_qty = frappe.utils.safe_float(item.get("custom_max_order_qty"))
+			doc.min_order_qty = frappe.utils.flt(item.get("min_order_qty"))
+			doc.custom_max_order_qty = frappe.utils.flt(item.get("custom_max_order_qty"))
 			if item.get("safety_stock") is not None:
-				doc.safety_stock = frappe.utils.safe_float(item.get("safety_stock"))
+				doc.safety_stock = frappe.utils.flt(item.get("safety_stock"))
 			doc.flags.ignore_permissions = True
 			doc.save()
 
