@@ -9,6 +9,12 @@ CUSTOM_FIELDS = {
 			"label": "Pricelist Percentages",
 			"fieldtype": "Table",
 			"options": "Item Price List Percentage",
+			"insert_after": "custom_max_stock",
+		},
+		{
+			"fieldname": "custom_max_stock",
+			"label": "Max Stock",
+			"fieldtype": "Float",
 			"insert_after": "safety_stock",
 		}
 	],
