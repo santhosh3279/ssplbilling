@@ -20,122 +20,131 @@
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar with Buttons -->
-      <aside class="w-80 border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 space-y-4 overflow-y-auto">
-        <h3 class="text-lg font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">Tax Register</h3>
-        <div class="flex flex-col gap-3">
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="openModal('invoice')"
-          >
-            <span class="text-xl">📊</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Sales Tax Register</div>
-              <div class="text-base text-[var(--color-text-muted)]">Submitted Sales Invoices</div>
-            </div>
-          </button>
+      <!-- Sidebar with Buttons (Reorganized into Two Columns) -->
+      <aside class="w-[38rem] border-r border-[var(--color-border)] bg-[var(--color-surface)]/30 p-6 overflow-y-auto">
+        <div class="grid grid-cols-2 gap-6 h-full align-top">
+          
+          <!-- Column 1: Tax Register -->
+          <div class="flex flex-col gap-3">
+            <h3 class="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-2 mb-2">Tax Register</h3>
+            
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('invoice')"
+            >
+              <span class="text-xl">📊</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Sales Tax Register</div>
+                <div class="text-base text-[var(--color-text-muted)]">Submitted Sales Invoices</div>
+              </div>
+            </button>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/50 hover:border-[var(--color-border)] hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="openModal('quotation')"
-          >
-            <span class="text-xl">📄</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Quotation Register</div>
-              <div class="text-base text-[var(--color-text-muted)]">All Quotations</div>
-            </div>
-          </button>
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/50 hover:border-[var(--color-border)] hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('quotation')"
+            >
+              <span class="text-xl">📄</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Quotation Register</div>
+                <div class="text-base text-[var(--color-text-muted)]">All Quotations</div>
+              </div>
+            </button>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="openModal('hsn')"
-          >
-            <span class="text-xl">📋</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">HSN Summary</div>
-              <div class="text-base text-[var(--color-text-muted)]">Sales HSN-wise summary</div>
-            </div>
-          </button>
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('hsn')"
+            >
+              <span class="text-xl">📋</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">HSN Summary</div>
+                <div class="text-base text-[var(--color-text-muted)]">Sales HSN-wise summary</div>
+              </div>
+            </button>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="openModal('quotation_hsn')"
-          >
-            <span class="text-xl">📊</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Quotation HSN Summary</div>
-              <div class="text-base text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
-            </div>
-          </button>
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('quotation_hsn')"
+            >
+              <span class="text-xl">📊</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Quotation HSN Summary</div>
+                <div class="text-base text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
+              </div>
+            </button>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="openModal('item_summary')"
-          >
-            <span class="text-xl">📦</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Item Sales Summary</div>
-              <div class="text-base text-[var(--color-text-muted)]">Total items sold by code</div>
-            </div>
-          </button>
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              :class="isStockReportActive ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]' : ''"
+              @click="selectStockReport"
+            >
+              <span class="text-xl">📈</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Stock Status Report</div>
+                <div class="text-base text-[var(--color-text-muted)]">Check current item stock</div>
+              </div>
+            </button>
+          </div>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="openModal('store_summary')"
-          >
-            <span class="text-xl">🏬</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Store Wise Item Sales</div>
-              <div class="text-base text-[var(--color-text-muted)]">Items sold by Store & Code</div>
-            </div>
-          </button>
+          <!-- Column 2: Sale Report -->
+          <div class="flex flex-col gap-3">
+            <h3 class="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-2 mb-2">Sale Report</h3>
+            
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border-[var(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('item_summary')"
+            >
+              <span class="text-xl">📦</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Item Sales Summary</div>
+                <div class="text-base text-[var(--color-text-muted)]">Total items sold by code</div>
+              </div>
+            </button>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="openModal('cashflow')"
-          >
-            <span class="text-xl">💸</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Cashflow Report</div>
-              <div class="text-base text-[var(--color-text-muted)]">Cost Center-wise Cash & Bank Flow</div>
-            </div>
-          </button>
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border-[var(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('store_summary')"
+            >
+              <span class="text-xl">🏬</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Store Wise Item Sales</div>
+                <div class="text-base text-[var(--color-text-muted)]">Items sold by Store & Code</div>
+              </div>
+            </button>
 
-          <hr class="border-[var(--color-border)] my-1" />
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="router.push('/store-sale-report')"
+            >
+              <span class="text-xl">🏪</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Store Sale Report</div>
+                <div class="text-base text-[var(--color-text-muted)]">Sales by store (Direct Income)</div>
+              </div>
+            </button>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="router.push('/store-sale-report')"
-          >
-            <span class="text-xl">🏪</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Store Sale Report</div>
-              <div class="text-base text-[var(--color-text-muted)]">Sales by store (Direct Income)</div>
-            </div>
-          </button>
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="router.push('/cost-center-sale-report')"
+            >
+              <span class="text-xl">🏢</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Cost Center Sale Report</div>
+                <div class="text-base text-[var(--color-text-muted)]">Sales by Cost Center (Direct Income)</div>
+              </div>
+            </button>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            @click="router.push('/cost-center-sale-report')"
-          >
-            <span class="text-xl">🏢</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Cost Center Sale Report</div>
-              <div class="text-base text-[var(--color-text-muted)]">Sales by Cost Center (Direct Income)</div>
-            </div>
-          </button>
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('cashflow')"
+            >
+              <span class="text-xl">💸</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Cashflow Report</div>
+                <div class="text-base text-[var(--color-text-muted)]">Cost Center-wise Cash & Bank Flow</div>
+              </div>
+            </button>
+          </div>
 
-          <button
-            class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-            :class="isStockReportActive ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]' : ''"
-            @click="selectStockReport"
-          >
-            <span class="text-xl">📈</span>
-            <div class="text-left">
-              <div class="text-lg font-semibold">Stock Status Report</div>
-              <div class="text-base text-[var(--color-text-muted)]">Check current item stock</div>
-            </div>
-          </button>
         </div>
       </aside>
 
