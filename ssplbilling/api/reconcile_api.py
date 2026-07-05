@@ -12,6 +12,74 @@ def _get_party_account(party_type, party):
 
 
 @frappe.whitelist()
+def get_parties_with_unlinked_entries():
+	"""Return Customer/Supplier parties that have unallocated Payment Entries or
+	unlinked Journal Entry rows, with count and total for the landing list."""
+	company = _get_company()
+
+	pe_rows = frappe.db.sql(
+		"""
+		SELECT party_type, party,
+			COUNT(*) AS cnt,
+			SUM(unallocated_amount) AS amount
+		FROM `tabPayment Entry`
+		WHERE docstatus = 1
+			AND party_type IN ('Customer', 'Supplier')
+			AND unallocated_amount > 0.005
+			AND company = %s
+		GROUP BY party_type, party
+		""",
+		(company,),
+		as_dict=True,
+	)
+
+	je_rows = frappe.db.sql(
+		"""
+		SELECT jea.party_type, jea.party,
+			COUNT(DISTINCT jea.parent) AS cnt,
+			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS amount
+		FROM `tabJournal Entry Account` jea
+		JOIN `tabJournal Entry` je  ON je.name  = jea.parent
+		JOIN `tabAccount`       acc ON acc.name = jea.account
+		WHERE je.docstatus = 1
+			AND jea.party_type IN ('Customer', 'Supplier')
+			AND (jea.reference_name IS NULL OR jea.reference_name = '')
+			AND acc.account_type IN ('Receivable', 'Payable')
+			AND je.company = %s
+			AND je.is_opening != 'Yes'
+		GROUP BY jea.party_type, jea.party
+		""",
+		(company,),
+		as_dict=True,
+	)
+
+	combined = {}
+	for r in list(pe_rows) + list(je_rows):
+		key = (r.party_type, r.party)
+		if key not in combined:
+			combined[key] = {"party_type": r.party_type, "party": r.party, "count": 0, "amount": 0.0}
+		combined[key]["count"] += int(r.cnt or 0)
+		combined[key]["amount"] += float(r.amount or 0)
+
+	# Resolve display labels in bulk
+	labels = {}
+	customers = [k[1] for k in combined if k[0] == "Customer"]
+	suppliers = [k[1] for k in combined if k[0] == "Supplier"]
+	if customers:
+		for d in frappe.get_all("Customer", filters={"name": ["in", customers]}, fields=["name", "customer_name"]):
+			labels[("Customer", d.name)] = d.customer_name or d.name
+	if suppliers:
+		for d in frappe.get_all("Supplier", filters={"name": ["in", suppliers]}, fields=["name", "supplier_name"]):
+			labels[("Supplier", d.name)] = d.supplier_name or d.name
+
+	result = list(combined.values())
+	for key, row in combined.items():
+		row["label"] = labels.get(key, row["party"])
+	result.sort(key=lambda r: r["amount"], reverse=True)
+	return result
+
+
+@frappe.whitelist()
 def get_unlinked_entries(party_type, party):
 	"""Return unallocated Payment Entries and Journal Entry rows for a party."""
 	company = _get_company()

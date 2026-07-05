@@ -12,6 +12,13 @@
           </svg>
         </button>
         <h1 class="text-2xl font-normal uppercase tracking-tight">Unreconciled Entries</h1>
+        <button
+          v-if="party"
+          @click="backToList"
+          class="ml-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] hover:text-[var(--color-highlight)] transition-all active:scale-95"
+        >
+          ← All Ledgers
+        </button>
       </div>
 
       <!-- Ledger Selection -->
@@ -31,20 +38,61 @@
 
     <!-- Main Content Area -->
     <main class="flex-1 overflow-hidden p-6">
-      <!-- Empty State -->
-      <div v-if="!party" class="h-full flex flex-col items-center justify-center">
-        <div class="max-w-md w-full text-center space-y-6 bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] shadow-xl">
-          <div class="text-6xl">🔗</div>
-          <h2 class="text-2xl font-black uppercase tracking-tight text-[var(--color-text)]">Reconcile Ledger Entries</h2>
-          <p class="text-xs text-[var(--color-text-muted)] leading-relaxed">
-            Select a Customer or Supplier ledger to view and match their unlinked payments or advances against outstanding invoices.
-          </p>
-          <button
-            @click="openSearch"
-            class="w-full py-4 bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] font-bold uppercase tracking-widest rounded-2xl shadow-lg hover:brightness-105 active:scale-98 transition-all"
-          >
-            Select Ledger
-          </button>
+      <!-- Landing: ledgers having unlinked payments -->
+      <div v-if="!party" class="h-full flex flex-col gap-4 overflow-hidden">
+        <div class="flex items-center justify-between shrink-0 gap-4">
+          <div class="flex items-center gap-3">
+            <h2 class="text-lg font-black uppercase tracking-tight text-[var(--color-text)]">Ledgers with Unlinked Payments</h2>
+            <span class="px-2.5 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-[10px] font-black uppercase tracking-wider">{{ filteredParties.length }}</span>
+          </div>
+          <input
+            v-model="partyFilter"
+            type="text"
+            placeholder="Filter ledgers…"
+            class="w-72 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
+          />
+        </div>
+
+        <div v-if="partiesLoading" class="flex-1 flex flex-col items-center justify-center gap-4">
+          <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-highlight)] border-t-transparent"></div>
+          <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Finding ledgers with unlinked payments...</p>
+        </div>
+
+        <div v-else-if="!unlinkedParties.length" class="flex-1 flex items-center justify-center">
+          <div class="max-w-md w-full text-center space-y-4 bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] shadow-xl">
+            <div class="text-6xl">✅</div>
+            <h2 class="text-xl font-black uppercase tracking-tight text-[var(--color-text)]">No Unlinked Payments</h2>
+            <p class="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Every payment is allocated. You can still open any ledger manually.
+            </p>
+            <button
+              @click="openSearch"
+              class="w-full py-3 bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] font-bold uppercase tracking-widest rounded-2xl shadow-lg hover:brightness-105 active:scale-98 transition-all"
+            >
+              Select Ledger
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="flex-1 overflow-y-auto custom-scrollbar pr-1">
+          <div class="grid grid-cols-3 gap-4 content-start">
+            <div
+              v-for="p in filteredParties"
+              :key="p.party_type + '::' + p.party"
+              @click="selectLedgerFromList(p)"
+              class="p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] cursor-pointer transition-all hover:border-[var(--color-highlight)] hover:shadow-md active:scale-[0.99] flex flex-col gap-2"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest shrink-0"
+                  :class="p.party_type === 'Customer' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'bg-[var(--color-supplier)]/10 text-[var(--color-supplier)]'"
+                >{{ p.party_type }}</span>
+                <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">{{ p.count }} unlinked</span>
+              </div>
+              <span class="text-sm font-black text-[var(--color-text)] truncate" :title="p.label">{{ p.label }}</span>
+              <span class="text-xl font-mono font-black text-[var(--color-warning)]">₹{{ fmt(p.amount) }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -249,7 +297,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
@@ -275,6 +323,55 @@ const selectedInvoiceName = ref('')
 const allocAmount = ref(0)
 
 const ledgerBtnRef = ref(null)
+
+// ── Landing list: ledgers having unlinked payments ──
+const unlinkedParties = ref([])
+const partiesLoading = ref(false)
+const partyFilter = ref('')
+
+const filteredParties = computed(() => {
+  const q = partyFilter.value.trim().toLowerCase()
+  if (!q) return unlinkedParties.value
+  return unlinkedParties.value.filter(p =>
+    (p.label || '').toLowerCase().includes(q) || (p.party || '').toLowerCase().includes(q)
+  )
+})
+
+async function loadParties() {
+  partiesLoading.value = true
+  try {
+    unlinkedParties.value = await frappeGet('ssplbilling.api.reconcile_api.get_parties_with_unlinked_entries')
+  } catch (e) {
+    console.error('[Unreconciled] Failed to load parties:', e)
+    unlinkedParties.value = []
+  } finally {
+    partiesLoading.value = false
+  }
+}
+
+async function selectLedgerFromList(p) {
+  partyType.value = p.party_type
+  party.value = p.party
+  selectedLedgerName.value = p.label || p.party
+  selectedPaymentKey.value = ''
+  selectedInvoiceName.value = ''
+  allocAmount.value = 0
+  queuedAllocations.value = []
+  await fetchData()
+}
+
+function backToList() {
+  party.value = ''
+  partyType.value = ''
+  selectedLedgerName.value = ''
+  selectedPaymentKey.value = ''
+  selectedInvoiceName.value = ''
+  allocAmount.value = 0
+  queuedAllocations.value = []
+  loadParties()
+}
+
+onMounted(loadParties)
 
 const selectedPaymentObj = computed(() => {
   return payments.value.find(p => p.key === selectedPaymentKey.value)
@@ -356,11 +453,20 @@ async function fetchData() {
 function selectPayment(pay) {
   selectedPaymentKey.value = pay.key
   updateDefaultAllocAmount()
+  autoQueueIfPaired()
 }
 
 function selectInvoice(inv) {
   selectedInvoiceName.value = inv.name
   updateDefaultAllocAmount()
+  autoQueueIfPaired()
+}
+
+// Clicking one entry on each side allocates immediately (min of the two amounts)
+function autoQueueIfPaired() {
+  if (selectedPaymentObj.value && selectedInvoiceObj.value && allocAmount.value > 0) {
+    addAllocation()
+  }
 }
 
 function updateDefaultAllocAmount() {
@@ -439,6 +545,7 @@ async function submitReconciliation() {
       alert('Reconciliation successfully applied!')
       queuedAllocations.value = []
       await fetchData()
+      loadParties() // keep the landing list totals current
     }
   } catch (e) {
     alert('Reconciliation failed: ' + e.message)
