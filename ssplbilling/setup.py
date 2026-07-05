@@ -163,9 +163,12 @@ DASHBOARD_TILES = [
 	("naming-settings", "Naming Settings", "SSPL Special"),
 	("barcode-print", "Print Barcodes", "SSPL Special"),
 	("catelogue", "Catalogues", "SSPL Special"),
+	("offer-display", "Offer Display", "SSPL Special"),
 	# Report
 	("daily-report", "Daily Report", "Report"),
 	("reports", "Reports", "Report"),
+	("store-sale-report", "Store Sale Report", "Report"),
+	("cost-center-sale-report", "Cost Center Sale Report", "Report"),
 ]
 
 
