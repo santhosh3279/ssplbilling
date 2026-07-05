@@ -1894,10 +1894,27 @@ function getMinOrderQty(itemCode) { const cached = lookupItemInCache(itemCode); 
 function getMaxStock(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.custom_max_stock ?? 0) : 0 }
 function getMaxOrderQty(itemCode) { const cached = lookupItemInCache(itemCode); return cached ? (cached.custom_max_order_qty ?? 0) : 0 }
 
+function transitionExtraFields(field, idx) {
+  if (field === 'safety_stock') {
+    focusEditField('max_stock', idx)
+  } else if (field === 'max_stock') {
+    focusEditField('min_order_qty', idx)
+  } else if (field === 'min_order_qty') {
+    focusEditField('max_order_qty', idx)
+  } else if (field === 'max_order_qty') {
+    if (idx < items.value.length - 1) {
+      focusEditField('safety_stock', idx + 1)
+    } else {
+      exitEditMode(idx)
+      focusBarcodeInput()
+    }
+  }
+}
+
 function onEditMinOrderQtyKeydown(e, idx) {
   if (e.key === 'Enter' || e.key === 'Tab') {
     e.preventDefault()
-    exitEditMode(idx)
+    transitionExtraFields('min_order_qty', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     exitEditMode(idx, true)
@@ -1907,7 +1924,7 @@ function onEditMinOrderQtyKeydown(e, idx) {
 function onEditMaxOrderQtyKeydown(e, idx) {
   if (e.key === 'Enter' || e.key === 'Tab') {
     e.preventDefault()
-    exitEditMode(idx)
+    transitionExtraFields('max_order_qty', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     exitEditMode(idx, true)
@@ -1917,7 +1934,7 @@ function onEditMaxOrderQtyKeydown(e, idx) {
 function onEditMaxStockKeydown(e, idx) {
   if (e.key === 'Enter' || e.key === 'Tab') {
     e.preventDefault()
-    exitEditMode(idx)
+    transitionExtraFields('max_stock', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     exitEditMode(idx, true)
@@ -1927,7 +1944,7 @@ function onEditMaxStockKeydown(e, idx) {
 function onEditSafetyStockKeydown(e, idx) {
   if (e.key === 'Enter' || e.key === 'Tab') {
     e.preventDefault()
-    exitEditMode(idx)
+    transitionExtraFields('safety_stock', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     exitEditMode(idx, true)
