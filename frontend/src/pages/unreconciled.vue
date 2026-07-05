@@ -242,9 +242,12 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span
-                      class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500"
+                      class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest"
+                      :class="inv.doctype === 'Journal Entry' ? 'bg-amber-500/10 text-amber-500'
+                        : inv.doctype === 'Payment Entry' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                        : 'bg-emerald-500/10 text-emerald-500'"
                     >
-                      INV
+                      {{ inv.doctype === 'Journal Entry' ? 'JE' : inv.doctype === 'Payment Entry' ? 'PE' : 'INV' }}
                     </span>
                     <span class="text-sm font-black text-[var(--color-text)]">{{ inv.name }}</span>
                   </div>
@@ -458,8 +461,30 @@ async function fetchData() {
         remarks: d.doctype === 'Sales Invoice' ? 'Credit Note (Return)' : 'Debit Note (Return)',
       }))
 
-    payments.value = [...pes, ...jes, ...returns]
-    invoices.value = docs.filter(d => Number(d.outstanding_amount) > 0)
+    // Only rows that move in the payment direction (Cr for Customer, Dr for
+    // Supplier) are payments. Opposite-direction PE/JE rows are bill-like —
+    // reconciling them as payments unbalances the JE — so they belong on the
+    // outstanding side, linkable against real payments.
+    const payDir = partyType.value === 'Customer' ? 'Cr' : 'Dr'
+    const paySide = []
+    const oppSide = []
+    for (const row of [...pes, ...jes]) {
+      if ((row.direction || payDir) === payDir) {
+        paySide.push(row)
+      } else {
+        oppSide.push({
+          name: row.name,
+          doctype: row.type, // 'Payment Entry' | 'Journal Entry'
+          posting_date: row.posting_date,
+          grand_total: Number(row.total_amount || row.unallocated_amount),
+          outstanding_amount: Number(row.unallocated_amount),
+          reference_row: row.reference_row || null,
+        })
+      }
+    }
+
+    payments.value = [...paySide, ...returns]
+    invoices.value = [...docs.filter(d => Number(d.outstanding_amount) > 0), ...oppSide]
   } catch (e) {
     alert('Failed to fetch entries: ' + e.message)
   } finally {
