@@ -378,7 +378,7 @@
           </div>
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>          </div>
-          <div v-if="isSubmitted" class="flex gap-2">
+          <div v-if="isSubmitted && (ewaybill || meetsEwayThreshold)" class="flex gap-2">
             <button v-if="!ewaybill" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
             <button v-else @click="showEWayOptionsModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Options</button>
           </div>
@@ -736,6 +736,14 @@ const ewaybillStatus = ref('')
 const showEWayBillModal = ref(false)
 const showEWayOptionsModal = ref(false)
 const ewaybillLoading = ref(false)
+
+// GST Settings "Invoice Value Threshold for e-Waybill Generation" — the generate
+// button only appears when the invoice total reaches it (0 = always show)
+const ewayThreshold = ref(0)
+frappeGet('ssplbilling.api.ewaybill_api.get_eway_threshold')
+  .then(v => { ewayThreshold.value = parseFloat(v) || 0 })
+  .catch(e => console.warn('[SalesInvoice] get_eway_threshold failed:', e))
+const meetsEwayThreshold = computed(() => parseFloat(totalAmount.value) >= ewayThreshold.value)
 
 let tabId = sessionStorage.getItem('wb_tab_id')
 if (!tabId) {

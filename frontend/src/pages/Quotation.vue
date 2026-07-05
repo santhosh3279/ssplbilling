@@ -358,8 +358,8 @@
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
             <button v-if="isReadOnly && !isSubmitted" @click="handleSubmit" class="flex-1 rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition-all uppercase active:scale-95">Submit</button>
-            <button v-else-if="isSubmitted && !ewaybill" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
-            <button v-else-if="isSubmitted" @click="showEWayOptionsModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Options</button>
+            <button v-else-if="isSubmitted && !ewaybill && meetsEwayThreshold" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
+            <button v-else-if="isSubmitted && ewaybill" @click="showEWayOptionsModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Options</button>
           </div>
         </div>
       </template>
@@ -685,6 +685,14 @@ const ewaybillStatus = ref('')
 const showEWayBillModal = ref(false)
 const showEWayOptionsModal = ref(false)
 const ewaybillLoading = ref(false)
+
+// GST Settings "Invoice Value Threshold for e-Waybill Generation" — the generate
+// button only appears when the quotation total reaches it (0 = always show)
+const ewayThreshold = ref(0)
+frappeGet('ssplbilling.api.ewaybill_api.get_eway_threshold')
+  .then(v => { ewayThreshold.value = parseFloat(v) || 0 })
+  .catch(e => console.warn('[Quotation] get_eway_threshold failed:', e))
+const meetsEwayThreshold = computed(() => parseFloat(totalAmount.value) >= ewayThreshold.value)
 let tabId = sessionStorage.getItem('wb_tab_id')
 if (!tabId) {
   tabId = Math.random().toString(36).substring(2, 15)

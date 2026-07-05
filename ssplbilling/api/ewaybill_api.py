@@ -13,6 +13,12 @@ EWAY_PRINT_TEMPLATES = {
 
 
 @frappe.whitelist()
+def get_eway_threshold():
+	"""Return GST Settings' "Invoice Value Threshold for e-Waybill Generation"."""
+	return frappe.utils.flt(frappe.get_cached_value("GST Settings", "GST Settings", "e_waybill_threshold"))
+
+
+@frappe.whitelist()
 def get_eway_print_templates():
 	"""
 	Ensure Print Template records exist for printing e-Way Bills (e-Waybill Log)
