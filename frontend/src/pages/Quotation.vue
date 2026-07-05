@@ -358,7 +358,8 @@
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
             <button v-if="isReadOnly && !isSubmitted" @click="handleSubmit" class="flex-1 rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition-all uppercase active:scale-95">Submit</button>
-            <button v-else-if="isSubmitted" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
+            <button v-else-if="isSubmitted && !ewaybill" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
+            <button v-else-if="isSubmitted" @click="showEWayOptionsModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Options</button>
           </div>
         </div>
       </template>
@@ -528,6 +529,16 @@
       @submit="handleEWayBillSubmit"
     />
 
+    <EWayBillOptionsModal
+      v-if="showEWayOptionsModal"
+      doctype="Quotation"
+      :docname="invoiceNo"
+      :ewaybill="ewaybill"
+      :status="ewaybillStatus"
+      @close="showEWayOptionsModal = false"
+      @cancelled="handleEWayBillCancelled"
+    />
+
     <ShortcutPage
       :show="showShortcutPage"
       extra-title="Quotation"
@@ -566,6 +577,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
 import CustomAddress from '../components/CustomAddress.vue'
 import EWayBillModal from '../components/EWayBillModal.vue'
+import EWayBillOptionsModal from '../components/EWayBillOptionsModal.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice } from '../encryption.js'
@@ -671,6 +683,7 @@ const isSubmitted = ref(false)
 const ewaybill = ref('')
 const ewaybillStatus = ref('')
 const showEWayBillModal = ref(false)
+const showEWayOptionsModal = ref(false)
 const ewaybillLoading = ref(false)
 let tabId = sessionStorage.getItem('wb_tab_id')
 if (!tabId) {
@@ -1333,6 +1346,13 @@ async function handleEWayBillSubmit(transportData) {
   } finally {
     ewaybillLoading.value = false
   }
+}
+
+function handleEWayBillCancelled() {
+  ewaybill.value = ''
+  ewaybillStatus.value = 'Cancelled'
+  showEWayOptionsModal.value = false
+  fetchRecentQuotations()
 }
 
 function handleCancel() {
