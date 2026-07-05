@@ -199,7 +199,7 @@
                 <div class="flex items-center gap-3">
                   <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
                   <span class="text-[15px] font-medium" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                    {{ formatDate(inv.posting_date) }}<template v-if="formatTime(inv.posting_time)"> · {{ formatTime(inv.posting_time) }}</template>
+                    {{ formatDate(inv.posting_date) }}
                   </span>
                 </div>
               </div>
