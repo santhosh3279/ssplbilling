@@ -684,3 +684,62 @@ def update_items_order_quantities(items):
 
 	return {"status": "success", "message": "Updated all items successfully"}
 
+
+@frappe.whitelist()
+def get_stock_report_filters():
+	"""Returns list of warehouses and suppliers for the filters."""
+	warehouses = frappe.get_all("Warehouse", filters={"disabled": 0}, fields=["name"], order_by="name asc")
+	suppliers = frappe.get_all("Supplier", filters={"disabled": 0}, fields=["name", "supplier_name"], order_by="supplier_name asc")
+	return {
+		"warehouses": [w.name for w in warehouses],
+		"suppliers": [{"id": s.name, "name": s.supplier_name} for s in suppliers]
+	}
+
+
+@frappe.whitelist()
+def get_stock_report_data(warehouse=None, supplier=None, negative_only=False):
+	"""Returns stock report data with filters for warehouse, supplier, and negative stock."""
+	conditions = []
+	values = {}
+
+	query = """
+		SELECT 
+			bin.item_code,
+			item.item_name,
+			item.stock_uom,
+			bin.warehouse,
+			bin.actual_qty as actual_stock,
+			item.safety_stock,
+			item.custom_max_stock as max_stock,
+			(SELECT GROUP_CONCAT(supplier SEPARATOR ', ') FROM `tabItem Supplier` WHERE parent = bin.item_code) as suppliers
+		FROM 
+			`tabBin` bin
+		INNER JOIN 
+			`tabItem` item ON bin.item_code = item.item_code
+	"""
+
+	if warehouse:
+		conditions.append("bin.warehouse = %(warehouse)s")
+		values["warehouse"] = warehouse
+
+	# convert javascript/frontend boolean to python boolean/int
+	if str(negative_only).lower() in ["true", "1"]:
+		conditions.append("bin.actual_qty < 0")
+
+	if supplier:
+		conditions.append("""
+			bin.item_code IN (
+				SELECT parent FROM `tabItem Supplier` WHERE supplier = %(supplier)s
+			)
+		""")
+		values["supplier"] = supplier
+
+	if conditions:
+		query += " WHERE " + " AND ".join(conditions)
+
+	query += " ORDER BY bin.item_code ASC, bin.warehouse ASC"
+
+	data = frappe.db.sql(query, values, as_dict=True)
+	return data
+
+
