@@ -1,5 +1,6 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+  <!-- z-[2000]: errors must overlay every other layer (ItemSearch/Calculator 999, CommandLine 1000) -->
+  <div v-if="show" class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm">
     <div 
       class="w-[500px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border shadow-2xl"
       :class="type === 'success' ? 'border-[var(--color-success)]/50' : 'border-[var(--color-danger)]/50'"
