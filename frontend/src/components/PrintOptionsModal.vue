@@ -14,7 +14,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
           <div>
-            <div class="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)]">Bill Saved</div>
+            <div class="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)]">{{ headerLabel }}</div>
             <div class="font-mono text-xl font-bold text-[var(--color-success)]">{{ invoiceName }}</div>
           </div>
           <button
@@ -38,12 +38,13 @@
               <div>
                 <div class="mb-1 flex items-center justify-between">
                   <label class="block text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">Template</label>
-                  <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[9px] text-[var(--color-text-muted)]">F2</kbd>
+                  <kbd v-if="!lockTemplate" class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[9px] text-[var(--color-text-muted)]">F2</kbd>
                 </div>
                 <select
                   ref="templateSelect"
                   v-model="selectedTemplate"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-all shadow-sm focus:border-[var(--color-info)]"
+                  :disabled="lockTemplate"
+                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-all shadow-sm focus:border-[var(--color-info)] disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-[var(--color-surface-raised)]"
                 >
                   <option v-for="t in templates" :key="t.name" :value="t.name">{{ t.name }}</option>
                   <option v-if="!templates.length" disabled value="">No templates found</option>
@@ -116,6 +117,9 @@ const props = defineProps({
   doctype:     { type: String, default: 'Sales Invoice' },
   initialTemplate: { type: String, default: '' },
   series:      { type: String, default: '' },
+  // Fix the template to initialTemplate: select is greyed out, only the printer can be changed
+  lockTemplate: { type: Boolean, default: false },
+  headerLabel: { type: String, default: 'Bill Saved' },
 })
 const emit = defineEmits(['close'])
 
@@ -194,7 +198,7 @@ function handleKeydown(e) {
     }
   } else if (e.key === 'F2') {
     e.preventDefault()
-    templateSelect.value?.focus()
+    if (!props.lockTemplate) templateSelect.value?.focus()
   } else if (e.key.toLowerCase() === 'p') {
     e.preventDefault()
     openPreview()
@@ -221,7 +225,19 @@ async function loadSettings() {
   error.value = ''
   try {
     const userRows = getUserPrinterSettings()
-    
+
+    // Locked template mode: template is fixed by the caller, only the printer is selectable
+    if (props.lockTemplate && props.initialTemplate) {
+      const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
+      const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
+      const filteredPrinters = (allPrinters || []).filter(p => uniquePrinterNames.includes(p.name))
+      printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
+      templates.value = [{ name: props.initialTemplate }]
+      selectedTemplate.value = props.initialTemplate
+      syncPrinter()
+      return
+    }
+
     // 1. Fetch all valid print templates for this doctype to ensure we only show relevant ones
     const validTemplates = await frappeGet('frappe.client.get_list', {
       doctype: 'Print Template',

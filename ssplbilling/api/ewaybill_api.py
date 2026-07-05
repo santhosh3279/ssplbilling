@@ -4,6 +4,38 @@ from frappe.utils import add_to_date, get_datetime, now_datetime
 
 ALLOWED_DOCTYPES = ("Sales Invoice", "Quotation")
 
+# Print Template (printer_server_configuration) records for printing e-Way Bills
+# through the CUPS pipeline. Each wraps an india_compliance Print Format on e-Waybill Log.
+EWAY_PRINT_TEMPLATES = {
+	"standard": {"template_name": "E-WAY BILL", "print_format": "e-Waybill"},
+	"detailed": {"template_name": "E-WAY BILL DETAILED", "print_format": "e-Waybill Detailed"},
+}
+
+
+@frappe.whitelist()
+def get_eway_print_templates():
+	"""
+	Ensure Print Template records exist for printing e-Way Bills (e-Waybill Log)
+	and return their names, keyed by variant ("standard" / "detailed").
+	"""
+	result = {}
+	for key, spec in EWAY_PRINT_TEMPLATES.items():
+		name = spec["template_name"]
+		if not frappe.db.exists("Print Template", name):
+			frappe.get_doc(
+				{
+					"doctype": "Print Template",
+					"template_name": name,
+					"source_type": "DocType",
+					"document_type": "e-Waybill Log",
+					"format_type": "PDF",
+					"print_format": spec["print_format"],
+				}
+			).insert(ignore_permissions=True)
+			frappe.db.commit()
+		result[key] = name
+	return result
+
 
 @frappe.whitelist()
 def cancel_eway_bill(doctype, docname, reason, remark=None):

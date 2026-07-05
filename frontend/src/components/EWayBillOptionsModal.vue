@@ -1,8 +1,8 @@
 <template>
   <div
     class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-    @click.self="emit('close')"
-    @keydown.esc.prevent="emit('close')"
+    @click.self="!showPrintModal && emit('close')"
+    @keydown.esc.prevent="!showPrintModal && emit('close')"
   >
     <div class="flex flex-col bg-[var(--color-bg)] rounded-2xl border border-[var(--color-border)] shadow-2xl overflow-hidden w-[560px]">
 
@@ -30,15 +30,17 @@
           <div class="grid grid-cols-2 gap-4">
             <button
               ref="printBtnRef"
-              @click="openPrint('e-Waybill')"
-              class="flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-info)]/15 px-4 py-5 text-2xl font-bold uppercase text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all active:scale-95"
+              @click="openPrint('standard')"
+              :disabled="printLoading"
+              class="flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-info)]/15 px-4 py-5 text-2xl font-bold uppercase text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all active:scale-95 disabled:opacity-50"
             >
               🖨️ Print
               <span class="text-sm font-medium normal-case text-[var(--color-text-muted)]">Standard e-Way Bill</span>
             </button>
             <button
-              @click="openPrint('e-Waybill Detailed')"
-              class="flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-info)]/15 px-4 py-5 text-2xl font-bold uppercase text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all active:scale-95"
+              @click="openPrint('detailed')"
+              :disabled="printLoading"
+              class="flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-info)]/15 px-4 py-5 text-2xl font-bold uppercase text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all active:scale-95 disabled:opacity-50"
             >
               🖨️ Print Detailed
               <span class="text-sm font-medium normal-case text-[var(--color-text-muted)]">With item details</span>
@@ -112,12 +114,23 @@
       </footer>
 
     </div>
+
+    <PrintOptionsModal
+      v-if="showPrintModal"
+      :invoice-name="ewaybill"
+      doctype="e-Waybill Log"
+      :initial-template="activePrintTemplate"
+      lock-template
+      header-label="E-Way Bill"
+      @close="showPrintModal = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, nextTick, watch, onMounted } from 'vue'
-import { frappePost } from '../api'
+import { frappeGet, frappePost } from '../api'
+import PrintOptionsModal from './PrintOptionsModal.vue'
 
 const props = defineProps({
   doctype: { type: String, required: true },   // 'Sales Invoice' | 'Quotation'
@@ -130,6 +143,10 @@ const emit = defineEmits(['close', 'cancelled'])
 
 const mode = ref('menu') // 'menu' | 'cancel'
 const cancelling = ref(false)
+const printLoading = ref(false)
+const showPrintModal = ref(false)
+const activePrintTemplate = ref('')
+let printTemplates = null // { standard, detailed } — Print Template names, fetched once
 
 const printBtnRef = ref(null)
 const reasonRef = ref(null)
@@ -147,11 +164,21 @@ watch(mode, (m) => {
   if (m === 'cancel') nextTick(() => reasonRef.value?.focus())
 })
 
-function openPrint(format) {
-  // e-Waybill Log is keyed by the e-way bill number; india_compliance ships
-  // "e-Waybill" and "e-Waybill Detailed" print formats for it.
-  const url = `/printview?doctype=${encodeURIComponent('e-Waybill Log')}&name=${encodeURIComponent(props.ewaybill)}&format=${encodeURIComponent(format)}&trigger_print=1`
-  window.open(url, '_blank')
+async function openPrint(variant) {
+  if (printLoading.value) return
+  printLoading.value = true
+  try {
+    // Ensures the e-Way Bill Print Templates (on e-Waybill Log) exist and returns their names
+    if (!printTemplates) {
+      printTemplates = await frappeGet('ssplbilling.api.ewaybill_api.get_eway_print_templates')
+    }
+    activePrintTemplate.value = printTemplates[variant]
+    showPrintModal.value = true
+  } catch (e) {
+    alert(e.message || 'Failed to load e-Way Bill print templates.')
+  } finally {
+    printLoading.value = false
+  }
 }
 
 async function handleCancelEWayBill() {
