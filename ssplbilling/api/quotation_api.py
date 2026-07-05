@@ -252,6 +252,9 @@ def get_quotations(query="", limit=50, transaction_date=None, show_submitted=Fal
 		filters["transaction_date"] = transaction_date
 	if not (frappe.parse_json(show_submitted) if isinstance(show_submitted, str) else show_submitted):
 		filters["docstatus"] = 0
+	else:
+		# never list cancelled (docstatus=2) quotations — they cannot be modified
+		filters["docstatus"] = ["!=", 2]
 
 	or_filters = None
 	if query:
