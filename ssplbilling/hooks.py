@@ -33,6 +33,7 @@ fixtures = [
 					"custom_address_line1",
 					"custom_address_line2",
 					"custom_mobile_number",
+					"custom_remarks",
 					"customer_rate_multiplier",
 					"custom_half_tax_discount",
 					"mop",

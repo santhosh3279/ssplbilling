@@ -286,8 +286,8 @@ def get_voucher_detail(voucher_type, voucher_no):
         base["party_name"] = doc.supplier_name
         base["total_amount"] = float(doc.grand_total)
         base["outstanding_amount"] = float(doc.outstanding_amount)
-        # PI stores a free-text note in the first custom-address field; shown as Remarks
-        base["custom_remarks"] = doc.get("custom_customer_name") or ""
+        # PI stores a free-text note in the custom remarks field
+        base["custom_remarks"] = doc.get("custom_remarks") or ""
     elif voucher_type == "Payment Entry":
         base["items"] = [{"reference_doctype": r.reference_doctype, "reference_name": r.reference_name, "allocated_amount": float(r.allocated_amount)} for r in doc.references]
         base["party_name"] = doc.party_name

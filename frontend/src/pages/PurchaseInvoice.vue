@@ -143,7 +143,7 @@
           <div class="flex items-center gap-2">
             <label class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Remark</label>
             <input
-              v-model="customAddress.customer_name"
+              v-model="customRemarks"
               :disabled="isReadOnly"
               placeholder="Remark (F6)"
               class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-80"
@@ -918,7 +918,7 @@ const showExitWarning = ref(false)
 const supplierInitialQuery = ref('')
 const showHistoryModal = ref(false)
 const invoiceTemplateRef = ref(null)
-const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
+const customRemarks = ref('')
 const showCustomAddressModal = ref(false)
 const remarkFormText = ref('')
 const remarkInputRef = ref(null)
@@ -936,7 +936,7 @@ function handleRemarkKeydown(e) {
 
 watch(showCustomAddressModal, (newVal) => {
   if (newVal) {
-    remarkFormText.value = customAddress.value.customer_name || ''
+    remarkFormText.value = customRemarks.value || ''
     window.addEventListener('keydown', handleRemarkKeydown)
     nextTick(() => {
       remarkInputRef.value?.focus()
@@ -952,12 +952,7 @@ function saveRemark() {
     remarkInputRef.value?.focus()
     return
   }
-  customAddress.value = {
-    customer_name: remarkFormText.value,
-    mobile_number: '',
-    address_line_1: '',
-    address_line_2: ''
-  }
+  customRemarks.value = remarkFormText.value
   showCustomAddressModal.value = false
 }
 const priceListSelectRef = ref(null)
@@ -1189,12 +1184,7 @@ async function handleSelectSidebarItem(item) {
     supplierName.value = data.supplier_name || data.customer_name || 'Select Supplier...'
     supplierState.value = data.state || ''
 
-    customAddress.value = {
-      customer_name: data.custom_customer_name || '',
-      mobile_number: data.custom_mobile_number || '',
-      address_line_1: data.custom_address_line1 || '',
-      address_line_2: data.custom_address_line2 || '',
-    }
+    customRemarks.value = data.custom_remarks || ''
 
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
@@ -1503,7 +1493,7 @@ async function clearBill() {
   supplierInvoiceNo.value = ''
   supplierInvoiceDate.value = new Date().toISOString().split('T')[0]
   clearHistory()
-  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  customRemarks.value = ''
   invoiceNo.value = 'NEW'
   postingTime.value = ''
   isReturn.value = false
@@ -1609,10 +1599,7 @@ async function handleSave() {
     update_stock: 1,
     date: invoiceDate.value,
     price_list: priceList.value,
-    custom_customer_name: customAddress.value.customer_name || '',
-    custom_address_line1: customAddress.value.address_line_1 || '',
-    custom_address_line2: customAddress.value.address_line_2 || '',
-    custom_mobile_number: customAddress.value.mobile_number || '',
+    custom_remarks: customRemarks.value || '',
     discount_percentage: discountPct.value,
     tax_template: taxTemplate.value,
     cost_center: costCenter.value,
