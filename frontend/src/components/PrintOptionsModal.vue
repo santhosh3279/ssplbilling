@@ -164,14 +164,24 @@ function syncPrinter() {
 
   if (targetPrinter && printers.value.some(pr => pr.name === targetPrinter)) {
     selectedPrinter.value = targetPrinter
-  } else {
-    const userDefault = localStorage.getItem('wb-default-printer') || localStorage.getItem('wb-printer')
-    if (userDefault && printers.value.some(pr => pr.name === userDefault)) {
-      selectedPrinter.value = userDefault
-    } else {
-      const def = printers.value.find(pr => pr.is_default) || printers.value[0]
-      if (def) selectedPrinter.value = def.name
+    return
+  }
+
+  // Locked-template mode (e.g. e-Way Bill): default to a PDF printer if one exists
+  if (props.lockTemplate) {
+    const pdfPrinter = printers.value.find(pr => /pdf/i.test(pr.printer_name || pr.name))
+    if (pdfPrinter) {
+      selectedPrinter.value = pdfPrinter.name
+      return
     }
+  }
+
+  const userDefault = localStorage.getItem('wb-default-printer') || localStorage.getItem('wb-printer')
+  if (userDefault && printers.value.some(pr => pr.name === userDefault)) {
+    selectedPrinter.value = userDefault
+  } else {
+    const def = printers.value.find(pr => pr.is_default) || printers.value[0]
+    if (def) selectedPrinter.value = def.name
   }
 }
 
