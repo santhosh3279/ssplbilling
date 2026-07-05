@@ -364,6 +364,20 @@
               <span class="text-[var(--color-text-muted)]">Party</span>
               <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.party_name }}</span>
             </div>
+            <!-- Sales Invoice: custom customer name + address -->
+            <div v-if="voucherDetail.custom_customer_name" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Customer Name</span>
+              <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.custom_customer_name }}</span>
+            </div>
+            <div v-if="voucherDetail.custom_address" class="flex justify-between gap-3">
+              <span class="text-[var(--color-text-muted)] shrink-0">Address</span>
+              <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.custom_address }}</span>
+            </div>
+            <!-- Purchase Invoice: first custom field shown as remarks -->
+            <div v-if="voucherDetail.custom_remarks" class="flex justify-between gap-3">
+              <span class="text-[var(--color-text-muted)] shrink-0">Remarks</span>
+              <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.custom_remarks }}</span>
+            </div>
             <div class="flex justify-between border-t border-[var(--color-border)] pt-2 mt-2">
               <span class="text-[var(--color-text-muted)] font-bold uppercase">Total Amount</span>
               <span class="font-bold text-[var(--color-info)]">₹{{ fmt(voucherDetail.total_amount) }}</span>

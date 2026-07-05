@@ -277,6 +277,17 @@ def get_voucher_detail(voucher_type, voucher_no):
         base["party_name"] = doc.customer_name
         base["total_amount"] = float(doc.grand_total)
         base["outstanding_amount"] = float(doc.outstanding_amount)
+        base["custom_customer_name"] = doc.get("custom_customer_name") or ""
+        base["custom_address"] = ", ".join(
+            filter(None, [doc.get("custom_address_line1"), doc.get("custom_address_line2")])
+        )
+    elif voucher_type == "Purchase Invoice":
+        base["items"] = [{"item_code": r.item_code, "item_name": r.item_name, "qty": float(r.qty), "rate": float(r.rate), "amount": float(r.amount), "uom": r.uom or r.stock_uom or ""} for r in doc.items]
+        base["party_name"] = doc.supplier_name
+        base["total_amount"] = float(doc.grand_total)
+        base["outstanding_amount"] = float(doc.outstanding_amount)
+        # PI stores a free-text note in the first custom-address field; shown as Remarks
+        base["custom_remarks"] = doc.get("custom_customer_name") or ""
     elif voucher_type == "Payment Entry":
         base["items"] = [{"reference_doctype": r.reference_doctype, "reference_name": r.reference_name, "allocated_amount": float(r.allocated_amount)} for r in doc.references]
         base["party_name"] = doc.party_name
