@@ -55,7 +55,7 @@
               </select>
               <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">▾</span>
             </div>
-            <p v-if="!printers.length && !loadingResources" class="mt-1.5 text-[10px] text-[var(--color-danger)]">No printers configured</p>
+            <p v-if="!printers.length && !loadingResources" class="mt-1.5 text-[10px] text-[var(--color-danger)]">No barcode printers configured</p>
           </div>
 
           <!-- Template select -->
@@ -406,6 +406,10 @@ async function fetchBarcodeForItem(itemCode) {
   }
 }
 
+function onlyBarcodePrinters(list) {
+  return (list || []).filter(pr => /barcode/i.test(pr.printer_name || pr.name))
+}
+
 function getUserPrinterSettings() {
   try {
     const cachedTemplates = JSON.parse(localStorage.getItem('wb-printer-templates') || '[]')
@@ -467,15 +471,17 @@ async function loadResources() {
       const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
 
       const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
-      const filteredPrinters = (allPrinters || []).filter(p => uniquePrinterNames.includes(p.name))
-      
-      printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
+      // Only barcode printers are usable here — label stock would ruin any other printer
+      const barcodePrinters = onlyBarcodePrinters(allPrinters)
+      const filteredPrinters = barcodePrinters.filter(p => uniquePrinterNames.includes(p.name))
+
+      printers.value  = filteredPrinters.length ? filteredPrinters : barcodePrinters
       templates.value = uniqueTemplates.length ? uniqueTemplates : validTemplates
     } else {
       const [p] = await Promise.all([
         frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
       ])
-      printers.value  = p || []
+      printers.value  = onlyBarcodePrinters(p)
       templates.value = validTemplates
     }
 
