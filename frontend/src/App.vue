@@ -13,9 +13,9 @@
       <GlobalModals />
       <ErrorWindow :show="showError" :message="errorMessage" :type="errorType" :title="errorTitle" @close="showError = false" />
       
-      <!-- Global Toast Stack -->
-      <div class="fixed bottom-6 right-6 z-[300] flex flex-col gap-3 pointer-events-none">
-        <TransitionGroup name="toast-fade" tag="div" class="flex flex-col gap-3">
+      <!-- Global Toast Stack (top-center for visibility) -->
+      <div class="fixed top-6 left-1/2 -translate-x-1/2 z-[300] flex flex-col items-center gap-3 pointer-events-none">
+        <TransitionGroup name="toast-fade" tag="div" class="flex flex-col items-center gap-3">
           <div 
             v-for="t in toasts" 
             :key="t.id"
@@ -258,11 +258,11 @@ onUnmounted(() => {
 }
 .toast-fade-enter-from {
   opacity: 0;
-  transform: translateY(20px) scale(0.9);
+  transform: translateY(-20px) scale(0.9);
 }
 .toast-fade-leave-to {
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateY(-40px);
 }
 .toast-fade-move {
   transition: transform 0.3s ease;
