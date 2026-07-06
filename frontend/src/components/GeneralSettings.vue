@@ -437,6 +437,7 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (settings.user_defaults?.warehouse)      localStorage.setItem('wb-warehouse',      settings.user_defaults.warehouse)
   if (settings.user_defaults?.cost_center)    localStorage.setItem('wb-cost-center',    settings.user_defaults.cost_center)
   if (settings.user_defaults?.income_account) localStorage.setItem('wb-income-account', settings.user_defaults.income_account)
+  if (settings.user_defaults?.company)        localStorage.setItem('wb-company',        settings.user_defaults.company)
   if (settings.user_defaults?.default_printer) localStorage.setItem('wb-default-printer', settings.user_defaults.default_printer)
 
   // Set billing defaults from the first visible series row

@@ -1003,6 +1003,7 @@ async function fetchSettings(user = null, force = false) {
       }
       if (defaults.cost_center) localStorage.setItem('wb-cost-center', defaults.cost_center)
       if (defaults.income_account) localStorage.setItem('wb-income-account', defaults.income_account)
+      if (defaults.company) localStorage.setItem('wb-company', defaults.company)
     }
 
     // Printer & Template mapping from settings

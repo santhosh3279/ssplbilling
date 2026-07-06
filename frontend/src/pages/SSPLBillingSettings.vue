@@ -34,6 +34,7 @@
       <datalist id="dl-tax-templates"><option v-for="o in lists.taxTemplates" :key="o" :value="o"></option></datalist>
       <datalist id="dl-warehouses"><option v-for="o in lists.warehouses" :key="o" :value="o"></option></datalist>
       <datalist id="dl-cost-centers"><option v-for="o in lists.costCenters" :key="o" :value="o"></option></datalist>
+      <datalist id="dl-companies"><option v-for="o in lists.companies" :key="o" :value="o"></option></datalist>
       <datalist id="dl-series"><option v-for="o in lists.series" :key="o" :value="o"></option></datalist>
       <datalist id="dl-themes"><option value="Light"></option><option value="Dark"></option></datalist>
 
@@ -167,6 +168,7 @@
                 <th class="px-2 py-2">Warehouse</th>
                 <th class="px-2 py-2">Cost Center</th>
                 <th class="px-2 py-2">Income</th>
+                <th class="px-2 py-2">Company</th>
                 <th class="px-2 py-2 text-center" title="Admin">A</th>
                 <th class="px-2 py-2 text-center" title="Cashier">C</th>
                 <th class="px-2 py-2 text-center" title="Biller">B</th>
@@ -188,6 +190,7 @@
                 <td class="px-1 py-2"><input v-model="row.warehouse" list="dl-warehouses" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.cost_center" list="dl-cost-centers" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2"><input v-model="row.income_account" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-1 py-2"><input v-model="row.company" list="dl-companies" class="w-full min-w-[100px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.admin" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.cashier" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.biller" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
@@ -275,6 +278,7 @@ const lists = ref({
   taxTemplates: [],
   warehouses: [],
   costCenters: [],
+  companies: [],
   series: []
 })
 
@@ -286,7 +290,7 @@ onMounted(async () => {
 
 async function fetchLists() {
   try {
-    const [acc, usr, pf, pl, tax, wh, cc, serSI, serQT, prn] = await Promise.all([
+    const [acc, usr, pf, pl, tax, wh, cc, comp, serSI, serQT, prn] = await Promise.all([
       frappeGet('frappe.client.get_list', { doctype: 'Account', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'User', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'Print Template', fields: ['name'], limit_page_length: 0 }),
@@ -294,6 +298,7 @@ async function fetchLists() {
       frappeGet('frappe.client.get_list', { doctype: 'Sales Taxes and Charges Template', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'Warehouse', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'Cost Center', fields: ['name'], limit_page_length: 0 }),
+      frappeGet('frappe.client.get_list', { doctype: 'Company', fields: ['name'], limit_page_length: 0 }),
       frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' }).catch(() => ({allowed_series: []})),
       frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Quotation' }).catch(() => ({allowed_series: []})),
       frappeGet('frappe.client.get_list', { doctype: 'Printer', fields: ['name'], limit_page_length: 0 }).catch(() => [])
@@ -306,6 +311,7 @@ async function fetchLists() {
     lists.value.taxTemplates = tax.map(t => t.name)
     lists.value.warehouses = wh.map(w => w.name)
     lists.value.costCenters = cc.map(c => c.name)
+    lists.value.companies = comp.map(c => c.name)
     lists.value.printers = prn.map(p => p.name)
     
     const s1 = serSI.allowed_series || []

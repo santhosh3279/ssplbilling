@@ -421,6 +421,7 @@ def get_billing_settings(user=None):
 		"warehouse": (user_row.warehouse or "") if user_row else "",
 		"cost_center": (user_row.cost_center or "") if user_row else "",
 		"income_account": (user_row.income_account or "") if user_row else "",
+		"company": (user_row.company or "") if user_row else "",
 		"default_printer": (user_row.default_printer or "") if user_row else "",
 		"theme": user_theme,
 	}
@@ -468,6 +469,7 @@ def get_billing_settings(user=None):
 				"warehouse": r.warehouse or "",
 				"cost_center": r.cost_center or "",
 				"income_account": r.income_account or "",
+				"company": r.company or "",
 				"admin": r.admin or 0,
 				"cashier": r.cashier or 0,
 				"biller": r.biller or 0,
