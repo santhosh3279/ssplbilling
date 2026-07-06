@@ -395,6 +395,29 @@ const byActivity = (a, b) => {
   return (a.label || '').localeCompare(b.label || '')
 }
 
+const TYPE_PRIORITY = { Customer: 0, Supplier: 1 }
+
+// Sub-sorts the top 3 activity ledgers: Customer first, Supplier second, and Accounts/others third.
+function applyTopThreeSubSort(list) {
+  if (list.length <= 1) return list
+  const count = Math.min(3, list.length)
+  const topThree = list.slice(0, count)
+  const remainder = list.slice(count)
+
+  topThree.sort((a, b) => {
+    const pa = TYPE_PRIORITY[a.type] ?? 2
+    const pb = TYPE_PRIORITY[b.type] ?? 2
+    if (pa !== pb) return pa - pb
+    
+    // Preserve activity ranking if types are equal
+    const actDiff = (b.activity || 0) - (a.activity || 0)
+    if (actDiff !== 0) return actDiff
+    return (a.label || '').localeCompare(b.label || '')
+  })
+
+  return [...topThree, ...remainder]
+}
+
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
   const tokens = q ? q.split(/\s+/) : []
@@ -429,13 +452,14 @@ const results = computed(() => {
     list = list.filter(l => !partyLinks.value[l.name]?.is_secondary)
   }
 
-  if (tokens.length === 0) return list.sort(byActivity).slice(0, 100)
+  if (tokens.length === 0) {
+    const sorted = list.sort(byActivity)
+    return applyTopThreeSubSort(sorted).slice(0, 100)
+  }
 
   const searchFields = ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']
-  return list
-    .filter(l => tokenMatch(l, searchFields, tokens))
-    .sort(byActivity)
-    .slice(0, 100)
+  const filtered = list.filter(l => tokenMatch(l, searchFields, tokens)).sort(byActivity)
+  return applyTopThreeSubSort(filtered).slice(0, 100)
 })
 
 watch([query, activeType], () => { selectedIdx.value = 0 })
