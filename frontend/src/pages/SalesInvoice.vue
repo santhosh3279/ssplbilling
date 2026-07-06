@@ -322,6 +322,10 @@
               <input type="checkbox" v-model="isReturn" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Sale Return</span>
             </label>
+            <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
+              <input ref="halfTaxDiscountRef" type="checkbox" v-model="halfTaxDiscount" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-success)] disabled:opacity-50" />
+              <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Half Tax Discount</span>
+            </label>
           </div>
 
           <!-- Additional Info -->
@@ -670,6 +674,8 @@ const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenter
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
 const isInclusiveTax = ref(localStorage.getItem('wb-tax-type-incl') === '1')
 const isReturn = ref(false)
+const halfTaxDiscountRef = ref(null)
+const halfTaxDiscount = ref(false)
 
 // --- Additional Charges ---
 const freightEntry = ref('')
@@ -892,6 +898,7 @@ async function handleSelectSidebarItem(item) {
       isInclusiveTax.value = data.is_inclusive === 1
     })
     isReturn.value = data.is_return === 1
+    halfTaxDiscount.value = false
     ignoreModifier.value = data.customer_rate_multiplier === 0
     if (data.cost_center) costCenter.value = data.cost_center
     if (data.warehouse) warehouse.value = data.warehouse
@@ -1186,6 +1193,7 @@ async function clearBill() {
   invoiceNo.value = 'NEW'
   postingTime.value = ''
   isReturn.value = false
+  halfTaxDiscount.value = false
   isReadOnly.value = false
   isSaved.value = false
   isSubmitted.value = false
@@ -1981,6 +1989,20 @@ watch(ignoreModifier, () => {
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
     item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2))
+  })
+})
+
+watch(halfTaxDiscount, (enabled) => {
+  if (isLoadingBill.value) return
+  items.value = items.value.map(item => {
+    if (item.deleted) return item
+    if (enabled) {
+      const t = item.tax_rate || 0
+      const disc = t > 0 ? parseFloat(((t / (2 * (100 + t))) * 100).toFixed(4)) : 0
+      return { ...item, discount: disc }
+    } else {
+      return { ...item, discount: 0 }
+    }
   })
 })
 
