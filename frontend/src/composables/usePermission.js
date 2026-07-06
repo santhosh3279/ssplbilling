@@ -155,6 +155,10 @@ export function canAccessRoute(routeName) {
     const allowed = new Set(tileIds.map((id) => TILE_ROUTE_MAP[id]).filter(Boolean))
     // Tiles that reach pages indirectly (via search modals) rather than TILE_ROUTE_MAP
     if (tileIds.includes('outstanding-bills')) allowed.add('CustomerLedger')
+    if (allowed.has('Reports')) {
+      allowed.add('StoreSalesReport')
+      allowed.add('CostCenterSalesReport')
+    }
     return allowed.has(routeName)
   }
 
