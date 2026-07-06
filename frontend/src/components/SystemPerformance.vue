@@ -151,35 +151,35 @@
         </div>
 
         <!-- Terminal -->
-        <div v-if="terminalVisible" class="rounded-xl border border-[var(--color-border)] bg-black overflow-hidden shadow-2xl">
+        <div v-if="terminalVisible" class="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xl">
           <!-- Title bar -->
-          <div class="flex items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
-            <span class="h-3 w-3 rounded-full bg-[var(--color-danger)]"></span>
-            <span class="h-3 w-3 rounded-full bg-[var(--color-warning)]"></span>
-            <span class="h-3 w-3 rounded-full bg-[var(--color-success)]"></span>
-            <span class="ml-2 text-[11px] font-semibold text-[var(--color-text-muted)]">bash — root@container</span>
+          <div class="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2">
+            <span class="h-3 w-3 rounded-full bg-red-500"></span>
+            <span class="h-3 w-3 rounded-full bg-amber-500"></span>
+            <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+            <span class="ml-2 text-[11px] font-semibold text-slate-500">bash — root@container</span>
           </div>
           <!-- Output -->
-          <div ref="terminalEl" @click="focusInput" class="min-h-32 max-h-72 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed cursor-text">
+          <div ref="terminalEl" @click="focusInput" class="min-h-32 max-h-72 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed cursor-text text-slate-800">
             <div v-for="(line, i) in terminalLines" :key="i">
               <!-- prompt + command line -->
               <div v-if="line.type === 'cmd'" class="flex">
-                <span class="select-none text-[var(--color-success)] font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
-                <span class="text-[var(--color-text)]">{{ line.text }}</span>
-                <span v-if="i === terminalLines.length - 1 && line.typing" class="animate-pulse text-[var(--color-text)]">▌</span>
+                <span class="select-none text-emerald-700 font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
+                <span class="text-slate-900">{{ line.text }}</span>
+                <span v-if="i === terminalLines.length - 1 && line.typing" class="animate-pulse text-slate-955">▌</span>
               </div>
               <!-- stdout output -->
-              <div v-else-if="line.type === 'out'" class="text-[var(--color-text)] whitespace-pre">{{ line.text }}</div>
+              <div v-else-if="line.type === 'out'" class="text-slate-800 whitespace-pre">{{ line.text }}</div>
               <!-- success -->
-              <div v-else-if="line.type === 'ok'" class="text-[var(--color-success)]">{{ line.text }}</div>
+              <div v-else-if="line.type === 'ok'" class="text-emerald-700 font-semibold">{{ line.text }}</div>
               <!-- error -->
-              <div v-else-if="line.type === 'err'" class="text-[var(--color-danger)]">{{ line.text }}</div>
+              <div v-else-if="line.type === 'err'" class="text-rose-600 font-semibold">{{ line.text }}</div>
               <!-- blank -->
               <div v-else>&nbsp;</div>
             </div>
             <!-- Interactive input line -->
             <div v-if="terminalDone" class="flex items-center">
-              <span class="select-none text-[var(--color-success)] font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
+              <span class="select-none text-emerald-700 font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
               <input
                 ref="inputEl"
                 v-model="cmdInput"
@@ -187,7 +187,7 @@
                 @keydown.up.prevent="navigateHistory('up')"
                 @keydown.down.prevent="navigateHistory('down')"
                 type="text"
-                class="flex-1 bg-transparent text-[var(--color-text)] outline-none border-none p-0 font-mono text-[12px] focus:ring-0 focus:outline-none"
+                class="flex-1 bg-transparent text-slate-900 outline-none border-none p-0 font-mono text-[12px] focus:ring-0 focus:outline-none"
                 placeholder=""
                 autofocus
               />
