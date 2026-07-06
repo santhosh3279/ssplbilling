@@ -116,11 +116,11 @@
         v-for="tab in tabs"
         :key="tab.value"
         @click="activeTab = tab.value"
-        class="px-6 py-3 text-[14px] font-normal transition-all relative shrink-0"
+        class="px-[36px] py-[18px] text-[21px] font-normal transition-all relative shrink-0"
         :class="activeTab === tab.value ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
       >
         {{ tab.label }}
-        <div v-if="activeTab === tab.value" class="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-info)]"></div>
+        <div v-if="activeTab === tab.value" class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--color-info)]"></div>
       </button>
     </div>
 
