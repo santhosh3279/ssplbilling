@@ -167,7 +167,7 @@
             <div class="flex flex-col">
               <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Total Debit</span>
               <span class="text-3xl font-mono leading-none text-[var(--color-success)]">
-                {{ fmt(ledgerData.total_debit) }}
+                {{ fmt(totalDebit) }}
               </span>
             </div>
 
@@ -176,7 +176,7 @@
             <div class="flex flex-col">
               <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">Total Credit</span>
               <span class="text-3xl font-mono leading-none text-[var(--color-danger)]">
-                {{ fmt(ledgerData.total_credit) }}
+                {{ fmt(totalCredit) }}
               </span>
             </div>
 
@@ -314,8 +314,8 @@
               <td colspan="2" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
               </td>
-              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-success)]">{{ fmt(ledgerData.total_debit) }}</td>
-              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-danger)]">{{ fmt(ledgerData.total_credit) }}</td>
+              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-success)]">{{ fmt(totalDebit) }}</td>
+              <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-danger)]">{{ fmt(totalCredit) }}</td>
               <td class="px-3 py-2 text-right font-mono font-bold"
                 :class="ledgerData.closing_balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                 {{ fmt(Math.abs(ledgerData.closing_balance)) }}
@@ -632,6 +632,16 @@ const ledgerData = ref(null)
 const loading = ref(false)
 const error = ref('')
 const expandedIdx = ref(null)
+
+const totalDebit = computed(() => {
+  if (!ledgerData.value || !ledgerData.value.entries) return 0
+  return ledgerData.value.entries.reduce((sum, entry) => sum + (Number(entry.debit) || 0), 0)
+})
+
+const totalCredit = computed(() => {
+  if (!ledgerData.value || !ledgerData.value.entries) return 0
+  return ledgerData.value.entries.reduce((sum, entry) => sum + (Number(entry.credit) || 0), 0)
+})
 
 // ── Detail panel state ──
 const selectedEntry = ref(null)
@@ -962,8 +972,8 @@ function exportExcel() {
   rows.push([])
   rows.push([
     'Closing Balance', '', '', '', '',
-    d.total_debit,
-    d.total_credit,
+    totalDebit.value,
+    totalCredit.value,
     Math.abs(d.closing_balance),
   ])
 
