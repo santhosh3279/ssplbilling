@@ -23,7 +23,7 @@
             tabindex="0"
             @click="openSearchAccount"
             @keydown.enter.prevent="openSearchAccount"
-            class="ml-4 text-2xl font-normal text-black bg-black/5 hover:bg-black/10 focus:bg-black/10 focus:ring-2 focus:ring-black/20 focus:outline-none cursor-pointer px-4 py-1.5 rounded-full border border-black/10 shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500 inline-flex items-center gap-2"
+            class="ml-4 text-2xl font-normal text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-midlight)] focus:bg-[var(--color-midlight)] focus:ring-2 focus:ring-[var(--color-focus)] focus:outline-none cursor-pointer px-4 py-1.5 rounded-full border border-[var(--color-border)] shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500 inline-flex items-center gap-2"
           >
             <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> 
             <span>{{ cashAccount.name }}</span>
