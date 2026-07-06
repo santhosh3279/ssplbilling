@@ -227,7 +227,7 @@
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
-              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Remarks</th>
+              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Created</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Credit (Cr)</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
@@ -289,10 +289,7 @@
                 >{{ entry.voucher_no }}</button>
               </td>
               <td class="px-3 py-2 max-w-[200px] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
-              <td class="px-3 py-2 max-w-[220px]" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                <span v-if="expandedIdx === idx" class="whitespace-pre-wrap break-words">{{ entry.remarks || '—' }}</span>
-                <span v-else class="block truncate">{{ entry.remarks || '—' }}</span>
-              </td>
+              <td class="px-3 py-2 whitespace-nowrap font-mono" :title="entry.creation" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtTime(entry.creation) }}</td>
               <td class="px-3 py-2 text-right font-mono">
                 <span v-if="entry.debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.debit) }}</span>
                 <span v-else :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]'">—</span>
@@ -641,7 +638,6 @@ onUnmounted(() => {
 const ledgerData = ref(null)
 const loading = ref(false)
 const error = ref('')
-const expandedIdx = ref(null)
 
 const totalDebit = computed(() => {
   if (!ledgerData.value || !ledgerData.value.entries) return 0
@@ -819,7 +815,6 @@ async function loadLedger() {
   }
   loading.value = true
   error.value = ''
-  expandedIdx.value = null
   closeDetail()
   try {
     const data = await frappeGet('ssplbilling.api.ledger_api.get_general_ledger', {
@@ -847,11 +842,7 @@ async function loadLedger() {
 // ── Row selection & Preview ──
 async function onRowClick(entry, idx) {
   focusedIdx.value = idx
-  if (selectedEntry.value === entry) {
-    // If already open, clicking same row toggles remarks expansion
-    toggleExpand(idx)
-    return
-  }
+  if (selectedEntry.value === entry) return
   selectedEntry.value = entry
   voucherDetail.value = null
   loadingDetail.value = true
@@ -911,11 +902,6 @@ function scrollRowIntoView(idx) {
   })
 }
 
-// ── Row expand (keep as fallback for remarks) ──
-function toggleExpand(idx) {
-  expandedIdx.value = expandedIdx.value === idx ? null : idx
-}
-
 // ── Formatting ──
 function fmt(n) {
   return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -925,6 +911,15 @@ function fmtDate(d) {
   if (!d) return '—'
   const [y, m, day] = d.split('-')
   return `${day}-${m}-${y}`
+}
+
+function fmtTime(dt) {
+  if (!dt) return '—'
+  const time = (dt.split(' ')[1] || '').split('.')[0]
+  const [h, m] = time.split(':')
+  if (h === undefined || m === undefined) return '—'
+  const hh = Number(h)
+  return `${hh % 12 || 12}:${m} ${hh >= 12 ? 'PM' : 'AM'}`
 }
 
 function voucherLabel(type) {
@@ -960,7 +955,7 @@ function exportExcel() {
   rows.push([])
 
   // Header
-  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Against', 'Remarks', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
+  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Against', 'Created', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
 
   // Opening row
   rows.push([
@@ -977,7 +972,7 @@ function exportExcel() {
       e.voucher_type,
       e.voucher_no,
       e.against,
-      e.remarks,
+      e.creation || '',
       e.debit || '',
       e.credit || '',
       Math.abs(e.balance),

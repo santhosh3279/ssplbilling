@@ -382,6 +382,18 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None):
             "remarks": row.get("remarks") or "",
         })
 
+    # Attach voucher creation timestamps (batched per voucher type)
+    vouchers_by_type = {}
+    for e in entries:
+        if e["voucher_type"] and e["voucher_no"]:
+            vouchers_by_type.setdefault(e["voucher_type"], set()).add(e["voucher_no"])
+    creation_map = {}
+    for vtype, names in vouchers_by_type.items():
+        for r in frappe.get_all(vtype, filters={"name": ["in", list(names)]}, fields=["name", "creation"]):
+            creation_map[(vtype, r.name)] = str(r.creation)
+    for e in entries:
+        e["creation"] = creation_map.get((e["voucher_type"], e["voucher_no"]), "")
+
     return {
         "party_type": party_type,
         "party": party,
