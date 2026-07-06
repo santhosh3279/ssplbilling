@@ -99,17 +99,17 @@
           <p class="text-sm">No items found matching the selected filters.</p>
         </div>
 
-        <table v-else class="w-full border-collapse text-left text-sm whitespace-nowrap">
+        <table v-else class="w-full border-collapse text-left text-xl whitespace-nowrap">
           <thead class="sticky top-0 bg-[var(--color-lowlight)] border-b border-[var(--color-border)] z-10 text-[var(--color-text)]">
             <tr>
-              <th class="px-4 py-3 font-semibold">Item Code</th>
-              <th class="px-4 py-3 font-semibold">Item Name</th>
-              <th class="px-4 py-3 font-semibold">Warehouse</th>
-              <th class="px-4 py-3 font-semibold text-right">Actual Stock</th>
-              <th class="px-4 py-3 font-semibold text-right">Safety Stock</th>
-              <th class="px-4 py-3 font-semibold text-right">Max Stock</th>
-              <th class="px-4 py-3 font-semibold">UOM</th>
-              <th class="px-4 py-3 font-semibold">Linked Suppliers</th>
+              <th class="px-2 py-1.5 font-semibold">Item Code</th>
+              <th class="px-2 py-1.5 font-semibold">Item Name</th>
+              <th class="px-2 py-1.5 font-semibold">Warehouse</th>
+              <th class="px-2 py-1.5 font-semibold text-right">Actual Stock</th>
+              <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
+              <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
+              <th class="px-2 py-1.5 font-semibold">UOM</th>
+              <th class="px-2 py-1.5 font-semibold">Linked Suppliers</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--color-border)] text-[var(--color-text)] font-mono">
@@ -118,16 +118,16 @@
               :key="row.item_code + '_' + row.warehouse"
               class="hover:bg-[var(--color-surface-raised)]/30 transition-colors"
             >
-              <td class="px-4 py-2 font-bold">{{ row.item_code }}</td>
-              <td class="px-4 py-2 font-sans">{{ row.item_name }}</td>
-              <td class="px-4 py-2 font-sans text-[var(--color-text-muted)]">{{ row.warehouse }}</td>
-              <td class="px-4 py-2 text-right font-semibold tabular-nums" :class="row.actual_stock < 0 ? 'text-[var(--color-danger)]' : ''">
+              <td class="px-2 py-1 font-bold">{{ row.item_code }}</td>
+              <td class="px-2 py-1 font-sans">{{ row.item_name }}</td>
+              <td class="px-2 py-1 font-sans text-[var(--color-text-muted)]">{{ row.warehouse }}</td>
+              <td class="px-2 py-1 text-right font-semibold tabular-nums" :class="row.actual_stock < 0 ? 'text-[var(--color-danger)]' : ''">
                 {{ row.actual_stock }}
               </td>
-              <td class="px-4 py-2 text-right tabular-nums text-[var(--color-text-muted)]">{{ row.safety_stock }}</td>
-              <td class="px-4 py-2 text-right tabular-nums text-[var(--color-text-muted)]">{{ row.max_stock }}</td>
-              <td class="px-4 py-2 font-sans text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{{ row.stock_uom }}</td>
-              <td class="px-4 py-2 font-sans text-xs max-w-xs truncate" :title="row.suppliers">{{ row.suppliers || '—' }}</td>
+              <td class="px-2 py-1 text-right tabular-nums text-[var(--color-text-muted)]">{{ row.safety_stock }}</td>
+              <td class="px-2 py-1 text-right tabular-nums text-[var(--color-text-muted)]">{{ row.max_stock }}</td>
+              <td class="px-2 py-1 font-sans uppercase tracking-wider text-[var(--color-text-muted)]">{{ row.stock_uom }}</td>
+              <td class="px-2 py-1 font-sans max-w-xs truncate" :title="row.suppliers">{{ row.suppliers || '—' }}</td>
             </tr>
           </tbody>
         </table>
