@@ -28,7 +28,43 @@
         <!-- Series Filter (only for Invoice tabs) -->
         <div v-if="activeTab === 'Sales Invoice' || activeTab === 'Purchase Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Series</label>
+          
+          <!-- Sales Invoice Series Multi-select -->
+          <div v-if="activeTab === 'Sales Invoice'" ref="seriesDropdownRef" class="relative series-dropdown-container">
+            <button
+              @click="showSeriesDropdown = !showSeriesDropdown"
+              class="bg-transparent text-[14px] font-normal text-[var(--color-text)] outline-none focus:text-[var(--color-info)] min-w-[120px] text-left flex justify-between items-center gap-2 cursor-pointer select-none"
+            >
+              <span class="truncate">
+                {{ selectedSeriesList.length === availableSeries.length ? 'All Series' : (selectedSeriesList.length > 0 ? selectedSeriesList[0] + (selectedSeriesList.length > 1 ? '...' : '') : 'None') }}
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            
+            <!-- Dropdown Menu -->
+            <div v-if="showSeriesDropdown" class="absolute top-full left-0 mt-1 min-w-[160px] max-w-[240px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
+              <div class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 cursor-pointer select-none hover:bg-[var(--color-surface-raised)]" @click="toggleAllSeries">
+                <input 
+                  type="checkbox" 
+                  :checked="selectedSeriesList.length === availableSeries.length" 
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+                />
+                <span class="text-[13px] font-normal uppercase tracking-wider">All Series</span>
+              </div>
+              <div v-for="s in availableSeries" :key="s" class="px-3 py-1.5 flex items-center gap-2 cursor-pointer select-none hover:bg-[var(--color-surface-raised)]" @click="toggleSeries(s)">
+                <input 
+                  type="checkbox" 
+                  :checked="isSeriesSelected(s)" 
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+                />
+                <span class="text-[13px] font-normal uppercase tracking-wider">{{ s }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purchase Invoice Series Single-select -->
           <select 
+            v-else
             v-model="seriesFilter"
             class="bg-transparent text-[14px] font-normal text-[var(--color-text)] outline-none focus:text-[var(--color-info)] min-w-[120px]"
             @change="fetchReport"
@@ -177,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import SalesInvoice from './SalesInvoice.vue'
@@ -226,6 +262,9 @@ const fromDate = ref(getTodayIST())
 const toDate = ref(getTodayIST())
 const seriesFilter = ref('')
 const availableSeries = ref([])
+const showSeriesDropdown = ref(false)
+const seriesDropdownRef = ref(null)
+const selectedSeriesList = ref([])
 const activeTab = ref('Invoice')
 const reportData = ref([])
 const loading = ref(false)
@@ -385,11 +424,21 @@ function adjustDate(type, days) {
 async function fetchReport() {
   loading.value = true
   try {
+    let namingSeriesParam = seriesFilter.value
+    if (activeTab.value === 'Sales Invoice') {
+      if (selectedSeriesList.value.length === availableSeries.value.length) {
+        namingSeriesParam = ''
+      } else if (selectedSeriesList.value.length === 0) {
+        namingSeriesParam = ['']
+      } else {
+        namingSeriesParam = selectedSeriesList.value
+      }
+    }
     const data = await frappeGet('ssplbilling.api.daily_report_api.get_daily_reports', {
       report_type: activeTab.value,
       from_date: fromDate.value,
       to_date: toDate.value,
-      naming_series: seriesFilter.value
+      naming_series: namingSeriesParam
     })
     reportData.value = (data || []).map(row => {
       let display_amount = 0
@@ -427,6 +476,7 @@ async function fetchReport() {
 
 async function fetchAvailableSeries() {
   seriesFilter.value = ''
+  selectedSeriesList.value = []
   if (activeTab.value !== 'Sales Invoice' && activeTab.value !== 'Purchase Invoice') {
     availableSeries.value = []
     return
@@ -434,9 +484,37 @@ async function fetchAvailableSeries() {
   try {
     const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: activeTab.value })
     availableSeries.value = res.allowed_series || []
+    if (activeTab.value === 'Sales Invoice') {
+      selectedSeriesList.value = [...availableSeries.value]
+    }
   } catch (e) {
     console.warn('Failed to fetch series for filter:', e)
   }
+}
+
+function toggleAllSeries() {
+  if (selectedSeriesList.value.length === availableSeries.value.length) {
+    selectedSeriesList.value = []
+  } else {
+    selectedSeriesList.value = [...availableSeries.value]
+  }
+  fetchReport()
+}
+
+function toggleSeries(s) {
+  const current = [...selectedSeriesList.value]
+  const idx = current.indexOf(s)
+  if (idx > -1) {
+    current.splice(idx, 1)
+  } else {
+    current.push(s)
+  }
+  selectedSeriesList.value = current
+  fetchReport()
+}
+
+function isSeriesSelected(s) {
+  return selectedSeriesList.value.includes(s)
 }
 
 function handleRowClick(row) {
@@ -457,6 +535,17 @@ watch(activeTab, () => {
 onMounted(() => {
   fetchAvailableSeries()
   fetchReport()
+
+  const handleClickOutside = (e) => {
+    if (seriesDropdownRef.value && !seriesDropdownRef.value.contains(e.target)) {
+      showSeriesDropdown.value = false
+    }
+  }
+  window.addEventListener('click', handleClickOutside)
+
+  onUnmounted(() => {
+    window.removeEventListener('click', handleClickOutside)
+  })
 })
 </script>
 
