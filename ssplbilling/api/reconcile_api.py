@@ -12,10 +12,14 @@ def _get_party_account(party_type, party):
 
 
 @frappe.whitelist()
-def get_parties_with_unlinked_entries():
+def get_parties_with_unlinked_entries(show_all=False):
 	"""Return Customer/Supplier parties that have unallocated Payment Entries or
 	unlinked Journal Entry rows, with count and total for the landing list."""
 	company = _get_company()
+
+	if isinstance(show_all, str):
+		show_all = frappe.parse_json(show_all)
+	show_all = bool(show_all)
 
 	pe_rows = frappe.db.sql(
 		"""
@@ -73,41 +77,61 @@ def get_parties_with_unlinked_entries():
 		as_dict=True,
 	)
 
+	# Outstanding invoices (outstanding_amount > 0.005)
+	outstanding_rows = frappe.db.sql(
+		"""
+		SELECT 'Customer' AS party_type, customer AS party,
+			COUNT(*) AS cnt, SUM(outstanding_amount) AS amount
+		FROM `tabSales Invoice`
+		WHERE docstatus = 1 AND outstanding_amount > 0.005 AND company = %s
+		GROUP BY customer
+		UNION ALL
+		SELECT 'Supplier' AS party_type, supplier AS party,
+			COUNT(*) AS cnt, SUM(outstanding_amount) AS amount
+		FROM `tabPurchase Invoice`
+		WHERE docstatus = 1 AND outstanding_amount > 0.005 AND company = %s
+		GROUP BY supplier
+		""",
+		(company, company),
+		as_dict=True,
+	)
+
 	combined = {}
+	# Add unlinked payments / journals / returns
 	for r in list(pe_rows) + list(je_rows) + list(ret_rows):
 		key = (r.party_type, r.party)
 		if key not in combined:
-			combined[key] = {"party_type": r.party_type, "party": r.party, "count": 0, "amount": 0.0}
-		combined[key]["count"] += int(r.cnt or 0)
-		combined[key]["amount"] += float(r.amount or 0)
+			combined[key] = {
+				"party_type": r.party_type,
+				"party": r.party,
+				"unlinked_count": 0,
+				"unlinked_amount": 0.0,
+				"outstanding_count": 0,
+				"outstanding_amount": 0.0,
+			}
+		combined[key]["unlinked_count"] += int(r.cnt or 0)
+		combined[key]["unlinked_amount"] += float(r.amount or 0)
 
-	# Reconciliation needs both sides: an unlinked payment AND an open invoice to
-	# link it against. Drop parties that only have one side.
-	customers = [k[1] for k in combined if k[0] == "Customer"]
-	suppliers = [k[1] for k in combined if k[0] == "Supplier"]
-	has_open_invoice = set()
-	if customers:
-		rows = frappe.db.sql(
-			"""
-			SELECT DISTINCT customer FROM `tabSales Invoice`
-			WHERE docstatus = 1 AND customer IN %s
-				AND outstanding_amount > 0.005 AND company = %s
-			""",
-			(tuple(customers), company),
-		)
-		has_open_invoice.update(("Customer", r[0]) for r in rows)
-	if suppliers:
-		rows = frappe.db.sql(
-			"""
-			SELECT DISTINCT supplier FROM `tabPurchase Invoice`
-			WHERE docstatus = 1 AND supplier IN %s
-				AND outstanding_amount > 0.005 AND company = %s
-			""",
-			(tuple(suppliers), company),
-		)
-		has_open_invoice.update(("Supplier", r[0]) for r in rows)
+	# Add outstanding invoices
+	for r in list(outstanding_rows):
+		key = (r.party_type, r.party)
+		if key not in combined:
+			if show_all:
+				combined[key] = {
+					"party_type": r.party_type,
+					"party": r.party,
+					"unlinked_count": 0,
+					"unlinked_amount": 0.0,
+					"outstanding_count": int(r.cnt or 0),
+					"outstanding_amount": float(r.amount or 0),
+				}
+		else:
+			combined[key]["outstanding_count"] = int(r.cnt or 0)
+			combined[key]["outstanding_amount"] = float(r.amount or 0)
 
-	combined = {k: v for k, v in combined.items() if k in has_open_invoice}
+	# If show_all is False, filter to only keep parties that have both unlinked entries AND outstanding invoices
+	if not show_all:
+		combined = {k: v for k, v in combined.items() if v["outstanding_count"] > 0}
 
 	# Resolve display labels in bulk
 	labels = {}
@@ -123,6 +147,10 @@ def get_parties_with_unlinked_entries():
 	result = list(combined.values())
 	for key, row in combined.items():
 		row["label"] = labels.get(key, row["party"])
+		# Compatibility and sorting fields
+		row["count"] = row["unlinked_count"] if row["unlinked_count"] > 0 else row["outstanding_count"]
+		row["amount"] = row["unlinked_amount"] if row["unlinked_amount"] > 0 else row["outstanding_amount"]
+
 	result.sort(key=lambda r: r["amount"], reverse=True)
 	return result
 

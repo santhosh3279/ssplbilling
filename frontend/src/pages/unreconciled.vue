@@ -42,28 +42,45 @@
       <div v-if="!party" class="h-full flex flex-col gap-4 overflow-hidden">
         <div class="flex items-center justify-between shrink-0 gap-4">
           <div class="flex items-center gap-3">
-            <h2 class="text-lg font-black uppercase tracking-tight text-[var(--color-text)]">Ledgers with Unlinked Payments</h2>
+            <h2 class="text-lg font-black uppercase tracking-tight text-[var(--color-text)]">
+              {{ showAllLedgers ? 'All Unlinked / Outstanding Ledgers' : 'Ledgers Ready for Reconciliation' }}
+            </h2>
             <span class="px-2.5 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-[10px] font-black uppercase tracking-wider">{{ filteredParties.length }}</span>
           </div>
-          <input
-            v-model="partyFilter"
-            type="text"
-            placeholder="Filter ledgers…"
-            class="w-72 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
-          />
+          <div class="flex items-center gap-3">
+            <!-- Toggle Button -->
+            <button
+              @click="showAllLedgers = !showAllLedgers; loadParties()"
+              class="flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-black uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+              :class="showAllLedgers 
+                ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/10 text-[var(--color-highlight)] shadow-sm' 
+                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-text-muted)]'"
+            >
+              <span class="h-2 w-2 rounded-full" :class="showAllLedgers ? 'bg-[var(--color-highlight)] animate-pulse' : 'bg-slate-400'"></span>
+              Show All Ledgers
+            </button>
+            <input
+              v-model="partyFilter"
+              type="text"
+              placeholder="Filter ledgers…"
+              class="w-72 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
+            />
+          </div>
         </div>
 
         <div v-if="partiesLoading" class="flex-1 flex flex-col items-center justify-center gap-4">
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-highlight)] border-t-transparent"></div>
-          <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Finding ledgers with unlinked payments...</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Finding ledgers...</p>
         </div>
 
         <div v-else-if="!unlinkedParties.length" class="flex-1 flex items-center justify-center">
           <div class="max-w-md w-full text-center space-y-4 bg-[var(--color-surface)] p-8 rounded-3xl border border-[var(--color-border)] shadow-xl">
             <div class="text-6xl">✅</div>
-            <h2 class="text-xl font-black uppercase tracking-tight text-[var(--color-text)]">No Unlinked Payments</h2>
+            <h2 class="text-xl font-black uppercase tracking-tight text-[var(--color-text)]">
+              {{ showAllLedgers ? 'No Entries Found' : 'No Actionable Ledgers' }}
+            </h2>
             <p class="text-xs text-[var(--color-text-muted)] leading-relaxed">
-              Every payment is allocated. You can still open any ledger manually.
+              {{ showAllLedgers ? 'There are no ledger entries in the system.' : 'Every payment is allocated. Toggle "Show All Ledgers" or select manually.' }}
             </p>
             <button
               @click="openSearch"
@@ -87,10 +104,25 @@
                   class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest shrink-0"
                   :class="p.party_type === 'Customer' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'bg-[var(--color-supplier)]/10 text-[var(--color-supplier)]'"
                 >{{ p.party_type }}</span>
-                <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">{{ p.count }} unlinked</span>
+                <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">
+                  <template v-if="p.unlinked_count > 0 && p.outstanding_count > 0">
+                    {{ p.unlinked_count }} Pay · {{ p.outstanding_count }} Inv
+                  </template>
+                  <template v-else-if="p.unlinked_count > 0">
+                    {{ p.unlinked_count }} Pay
+                  </template>
+                  <template v-else>
+                    {{ p.outstanding_count }} Inv
+                  </template>
+                </span>
               </div>
               <span class="text-sm font-black text-[var(--color-text)] truncate" :title="p.label">{{ p.label }}</span>
-              <span class="text-xl font-mono font-black text-[var(--color-warning)]">₹{{ fmt(p.amount) }}</span>
+              <span
+                class="text-xl font-mono font-black"
+                :class="p.unlinked_amount > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'"
+              >
+                ₹{{ fmt(p.amount) }}
+              </span>
             </div>
           </div>
         </div>
@@ -333,6 +365,7 @@ const ledgerBtnRef = ref(null)
 const unlinkedParties = ref([])
 const partiesLoading = ref(false)
 const partyFilter = ref('')
+const showAllLedgers = ref(false)
 
 const filteredParties = computed(() => {
   const q = partyFilter.value.trim().toLowerCase()
@@ -345,7 +378,9 @@ const filteredParties = computed(() => {
 async function loadParties() {
   partiesLoading.value = true
   try {
-    unlinkedParties.value = await frappeGet('ssplbilling.api.reconcile_api.get_parties_with_unlinked_entries')
+    unlinkedParties.value = await frappeGet('ssplbilling.api.reconcile_api.get_parties_with_unlinked_entries', {
+      show_all: showAllLedgers.value ? 1 : 0
+    })
   } catch (e) {
     console.error('[Unreconciled] Failed to load parties:', e)
     unlinkedParties.value = []
