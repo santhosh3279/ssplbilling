@@ -110,11 +110,10 @@
 
     <!-- MAIN CONTENT -->
     <div class="flex flex-1 flex-col overflow-hidden bg-[var(--color-bg)]">
-      <!-- Top Nav Bar -->
       <div
-        class="flex items-center justify-between border-b border-[var(--color-border)]/60 px-4 py-2"
-        :style="titleBarColor ? { backgroundColor: titleBarColor } : {}"
-        :class="!titleBarColor ? 'bg-[var(--color-surface-raised)]/60' : ''"
+        class="flex items-center justify-between border-b border-[var(--color-border)]/60 px-4 py-2 transition-colors"
+        :style="isReturn ? { backgroundColor: '#ef4444' } : (titleBarColor ? { backgroundColor: titleBarColor } : {})"
+        :class="!isReturn && !titleBarColor ? 'bg-[var(--color-surface-raised)]/60' : ''"
       >
         <div class="flex items-center gap-3">
           <!-- Sidebar Toggle (Collapsible) -->
@@ -521,12 +520,20 @@
           <div class="flex-[51] bg-[var(--color-bg)] overflow-y-auto custom-scrollbar px-2">
             <slot name="actions">
               <div class="flex flex-col gap-2 h-full py-2">
-                <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
+                <div 
+                  class="rounded-xl border p-3.5 shadow-2xl transition-colors"
+                  :class="isReturn 
+                    ? 'border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10' 
+                    : 'border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10'"
+                >
                   <div class="flex justify-between items-start mb-1">
-                    <div class="text-lg font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
+                    <div 
+                      class="text-lg font-black uppercase tracking-[0.3em]"
+                      :class="isReturn ? 'text-[var(--color-danger)]' : 'text-[var(--color-highlight)]'"
+                    >Total Amount</div>
                     <div class="text-xl font-bold text-[var(--color-text-muted)] tabular-nums">{{ items.length }} items</div>
                   </div>
-                  <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                  <div class="flex items-baseline gap-2 font-bold" :class="isReturn ? 'text-[var(--color-danger)]' : (parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">
                     <span class="text-[9mm] font-black">₹</span>
                     <span class="font-mono text-[15.75mm] font-black leading-none">{{ format(totalAmount) }}</span>
                   </div>
