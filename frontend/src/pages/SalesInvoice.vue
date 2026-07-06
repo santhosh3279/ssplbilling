@@ -2523,6 +2523,9 @@ function handleOpenGstBillCreator() {
     alert('Please save the sales invoice first.')
     return
   }
+  if (!isReadOnly.value) {
+    return
+  }
   showGstBillCreator.value = true
 }
 

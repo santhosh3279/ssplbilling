@@ -2335,6 +2335,9 @@ function handleOpenGstBillCreator() {
     alert('Please save the quotation first.')
     return
   }
+  if (!isReadOnly.value) {
+    return
+  }
   showGstBillCreator.value = true
 }
 
