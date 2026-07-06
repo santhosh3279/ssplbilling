@@ -209,6 +209,8 @@ def create_purchase_order(data=None, **kwargs):
 
     po = frappe.new_doc("Purchase Order")
     po.supplier = data["supplier"]
+    if data.get("company"):
+        po.company = data["company"]
     po.transaction_date = data.get("date", frappe.utils.today())
     po.naming_series = data.get("naming_series", "PUR-ORD-.YY.-")
     po.is_subcontracted = data.get("is_subcontracted", 0)

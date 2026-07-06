@@ -1145,6 +1145,7 @@ async function handleSave() {
   const payload = {
     naming_series: selectedSeries.value,
     customer: customerId.value,
+    company: localStorage.getItem('wb-company') || null,
     date: invoiceDate.value,
     discount_percentage: parseFloat(discountPct.value) || 0,
     additional_discount_amount: parseFloat(discountDirectAmt.value) || 0,

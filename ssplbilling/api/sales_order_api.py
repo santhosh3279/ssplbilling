@@ -278,6 +278,8 @@ def create_sales_order(data):
 		data = json.loads(data)
 
 	so = frappe.new_doc("Sales Order")
+	if data.get("company"):
+		so.company = data["company"]
 	so.naming_series = data.get("naming_series", "SSPL-SO-.YYYY.-")
 	so.customer = data["customer"]
 	so.transaction_date = data.get("date") or frappe.utils.today()

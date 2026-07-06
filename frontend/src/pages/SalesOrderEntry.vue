@@ -1267,6 +1267,7 @@ async function saveOrder() {
 
   const payload = {
     customer: customer.value,
+    company: localStorage.getItem('wb-company') || null,
     date: billDate.value,
     delivery_date: deliveryDate.value,
     naming_series: billSeries.value,
