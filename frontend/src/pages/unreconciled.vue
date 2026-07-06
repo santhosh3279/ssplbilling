@@ -25,13 +25,29 @@
       <div class="flex items-center gap-4">
         <div class="flex flex-col items-end">
           <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">Ledger Name (Customer/Supplier)</span>
-          <button 
-            ref="ledgerBtnRef"
-            @click="openSearch"
-            class="mt-1 cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-right"
-          >
-            {{ selectedLedgerName || 'Select Ledger...' }}
-          </button>
+          <div class="flex items-center gap-3 mt-1">
+            <!-- Apply Reconcile Button -->
+            <button
+              v-if="party"
+              @click="submitReconciliation"
+              :disabled="queuedAllocations.length === 0 || isSubmitting"
+              class="h-11 cursor-pointer rounded-xl bg-[var(--color-success)] px-6 text-xs font-black uppercase tracking-widest text-white hover:brightness-105 active:scale-95 disabled:opacity-30 transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <span v-if="isSubmitting">Reconciling...</span>
+              <template v-else>
+                <span>Apply Reconcile</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </template>
+            </button>
+
+            <button 
+              ref="ledgerBtnRef"
+              @click="openSearch"
+              class="cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-right"
+            >
+              {{ selectedLedgerName || 'Select Ledger...' }}
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -238,18 +254,6 @@
               </button>
             </div>
 
-            <!-- Global Action -->
-            <button
-              @click="submitReconciliation"
-              :disabled="queuedAllocations.length === 0 || isSubmitting"
-              class="w-full py-4 bg-[var(--color-success)] text-white text-sm font-black uppercase tracking-widest rounded-2xl hover:brightness-105 active:scale-[0.98] disabled:opacity-30 transition-all shadow-lg flex items-center justify-center gap-2"
-            >
-              <span v-if="isSubmitting">Reconciling...</span>
-              <template v-else>
-                <span>Apply Reconcile</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-              </template>
-            </button>
           </div>
 
           <!-- Right Column: Outstanding Invoices -->
