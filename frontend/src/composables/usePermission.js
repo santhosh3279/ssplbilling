@@ -76,6 +76,8 @@ export const ACCOUNTS_ROUTES = new Set([
   'Unreconciled',
   'PurchaseOrder',
   'ChequeRegister',
+  'StoreSalesReport',
+  'CostCenterSalesReport',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -159,7 +161,7 @@ export function canAccessRoute(routeName) {
   if (['DailyReport', 'Catelogue'].includes(routeName)) return true
 
   const role = getUserRole()
-  if (role === 'admin') return ADMIN_ROUTES.has(routeName)
+  if (role === 'admin') return true
   if (role === 'accounts') return ACCOUNTS_ROUTES.has(routeName)
   if (role === 'cashier') return CASHIER_ROUTES.has(routeName)
   if (role === 'biller') return BILLER_ROUTES.has(routeName)
