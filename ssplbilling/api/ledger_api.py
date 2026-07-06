@@ -293,6 +293,7 @@ def get_voucher_detail(voucher_type, voucher_no):
         base["party_name"] = doc.party_name
         base["total_amount"] = float(doc.paid_amount)
         base["mode_of_payment"] = doc.mode_of_payment
+        base["payment_type"] = doc.payment_type or ""
     elif voucher_type == "Journal Entry":
         base["items"] = [{"account": r.account, "debit": float(r.debit_in_account_currency), "credit": float(r.credit_in_account_currency), "party_type": r.party_type or "", "party": r.party or "", "reference_type": r.reference_type or "", "reference_name": r.reference_name or ""} for r in doc.accounts]
         base["total_amount"] = float(doc.total_debit)

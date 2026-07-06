@@ -373,6 +373,15 @@
               <span class="text-[var(--color-text-muted)] shrink-0">Address</span>
               <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.custom_address }}</span>
             </div>
+            <!-- Payment Entry: payment type + mode of payment -->
+            <div v-if="voucherDetail.payment_type" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Payment Type</span>
+              <span class="font-semibold text-right" :class="voucherDetail.payment_type === 'Receive' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ voucherDetail.payment_type }}</span>
+            </div>
+            <div v-if="voucherDetail.mode_of_payment" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Mode of Payment</span>
+              <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.mode_of_payment }}</span>
+            </div>
             <!-- Purchase Invoice: first custom field shown as remarks -->
             <div v-if="voucherDetail.custom_remarks" class="flex justify-between gap-3">
               <span class="text-[var(--color-text-muted)] shrink-0">Remarks</span>
