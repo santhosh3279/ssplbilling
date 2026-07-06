@@ -15,19 +15,19 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
                         "posting_date": ["between", [from_date, to_date]],
                         "docstatus": ["<", 2]
                 }
-        if naming_series:
-                if isinstance(naming_series, str):
-                        if naming_series.startswith("[") and naming_series.endswith("]"):
-                                import json
-                                try:
-                                        naming_series = json.loads(naming_series)
-                                except Exception:
-                                        pass
-                if isinstance(naming_series, list):
-                        if len(naming_series) > 0:
-                                filters["naming_series"] = ["in", naming_series]
-                else:
-                        filters["naming_series"] = naming_series
+                if naming_series:
+                        if isinstance(naming_series, str):
+                                if naming_series.startswith("[") and naming_series.endswith("]"):
+                                        import json
+                                        try:
+                                                naming_series = json.loads(naming_series)
+                                        except Exception:
+                                                pass
+                        if isinstance(naming_series, list):
+                                if len(naming_series) > 0:
+                                        filters["naming_series"] = ["in", naming_series]
+                        else:
+                                filters["naming_series"] = naming_series
 
                 return frappe.get_all(
                         "Sales Invoice",
