@@ -680,6 +680,7 @@ async function handleSubmit() {
         reference_no: form.reference_no,
         reference_date: form.reference_date,
         cost_center: localStorage.getItem('wb-cost-center'),
+        company: localStorage.getItem('wb-company') || null,
         remarks: row.remarks || '',
         "Custom Remarks": 1,
         references: invoiceRefs

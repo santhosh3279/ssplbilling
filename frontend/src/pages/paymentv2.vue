@@ -1028,6 +1028,7 @@ async function handleSubmit() {
         reference_no: form.reference_no,
         reference_date: form.reference_date,
         cost_center: localStorage.getItem('wb-cost-center') || null,
+        company: localStorage.getItem('wb-company') || null,
         remarks: form.remarks,
         "Custom Remarks": 1,
         references: (mopRow.allocations || []).map(r => ({

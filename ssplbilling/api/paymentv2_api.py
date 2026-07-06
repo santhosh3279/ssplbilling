@@ -165,7 +165,10 @@ def create_payment_entry(data=None, **kwargs):
     pe.reference_no = data.get("reference_no")
     pe.reference_date = data.get("reference_date")
     pe.posting_date = data.get("posting_date") or frappe.utils.today()
-    
+
+    company = data.get("company") or frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+    pe.company = company
+
     # Explicitly set currencies and exchange rates to INR
     pe.paid_from_account_currency = "INR"
     pe.paid_to_account_currency = "INR"
@@ -176,7 +179,7 @@ def create_payment_entry(data=None, **kwargs):
     # 1. Resolve MOP account (Bank/Cash)
     mop_account = data.get("mop_account") or data.get("account")
     if not mop_account and pe.mode_of_payment:
-        mop_account = _get_mop_account(pe.mode_of_payment)
+        mop_account = _get_mop_account(pe.mode_of_payment, company)
 
     # 2. Resolve Party account (Debtors/Creditors)
     # If account was provided but we used it as mop_account, we should resolve party_account automatically
@@ -184,7 +187,7 @@ def create_payment_entry(data=None, **kwargs):
     if not party_account and pe.payment_type != "Internal Transfer":
         # If 'account' was provided, check if it looks like a party account or MOP account
         # But to be safe and follow the new convention, we resolve it from party if not explicitly given as party_account
-        party_account = _get_party_account(pe.party_type, pe.party)
+        party_account = _get_party_account(pe.party_type, pe.party, company)
 
     if pe.payment_type == "Receive":
         pe.paid_from = party_account
@@ -227,16 +230,16 @@ def create_payment_entry(data=None, **kwargs):
     pe.submit()
     return {"payment_entry": pe.name}
 
-def _get_party_account(party_type, party):
+def _get_party_account(party_type, party, company=None):
     """Get the default receivable/payable account for a party."""
     from erpnext.accounts.party import get_party_account
-    company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+    company = company or frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
     return get_party_account(party_type, party, company)
 
-def _get_mop_account(mode_of_payment):
+def _get_mop_account(mode_of_payment, company=None):
     """Get the default bank/cash account for a mode of payment."""
     if not mode_of_payment: return None
-    company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+    company = company or frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
     return frappe.db.get_value("Mode of Payment Account", 
         {"parent": mode_of_payment, "company": company}, "default_account")
 
