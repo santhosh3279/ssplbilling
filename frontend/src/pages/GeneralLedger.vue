@@ -552,6 +552,7 @@ import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import DateFilter from '../components/DateFilter.vue'
+import { getUserRole } from '../composables/usePermission.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 import PurchaseInvoice from './PurchaseInvoice.vue'
@@ -801,6 +802,12 @@ function clearSelection() {
 // ── Refresh ledger ──
 async function loadLedger() {
   if (!selectedParty.value || loading.value) return
+  if (partyType.value === 'Employee' && getUserRole() !== 'admin') {
+    error.value = 'General ledger of employees is accessible only to administrators.'
+    selectedParty.value = null
+    ledgerData.value = null
+    return
+  }
   loading.value = true
   error.value = ''
   expandedIdx.value = null

@@ -301,6 +301,20 @@ def get_voucher_detail(voucher_type, voucher_no):
 @frappe.whitelist()
 def get_general_ledger(party_type, party, from_date=None, to_date=None):
     """Return GL entries using ERPNext's built-in General Ledger report engine."""
+    if party_type == "Employee":
+        current_user = frappe.session.user
+        is_admin = False
+        if current_user in ["Administrator", "admin"]:
+            is_admin = True
+        else:
+            settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+            user_row = next((r for r in settings.user_series if r.user == current_user), None)
+            if user_row and user_row.admin:
+                is_admin = True
+        
+        if not is_admin:
+            frappe.throw("General ledger of employees is accessible only to administrators.")
+
     from erpnext.accounts.report.general_ledger.general_ledger import execute as _gl_execute
     from erpnext import get_default_company
 
