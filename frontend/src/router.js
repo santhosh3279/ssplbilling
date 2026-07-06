@@ -25,6 +25,7 @@ import IncentiveEntry from './pages/IncentiveEntry.vue'
 import Reports from './pages/Reports.vue'
 import StoreSalesReport from './pages/StoreSalesReport.vue'
 import CostCenterSalesReport from './pages/CostCenterSalesReport.vue'
+import StockStatusReport from './pages/StockStatusReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
@@ -247,6 +248,12 @@ const routes = [
     name: 'CostCenterSalesReport',
     component: CostCenterSalesReport,
     meta: { title: 'Cost Center Sales' },
+  },
+  {
+    path: '/stock-status-report',
+    name: 'StockStatusReport',
+    component: StockStatusReport,
+    meta: { title: 'Stock Status' },
   },
   {
     path: '/loading-receipt',
