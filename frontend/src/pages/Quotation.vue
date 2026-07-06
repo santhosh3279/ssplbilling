@@ -762,91 +762,94 @@ watch(sidebarSearch, () => {
   searchTimeout = setTimeout(fetchRecentQuotations, 300)
 })
 
+async function loadQuotationData(data, forceHalfTaxFalse = false) {
+  // Header
+  invoiceNo.value = data.name
+  selectedSeries.value = data.naming_series || selectedSeries.value
+  invoiceDate.value = data.transaction_date || invoiceDate.value
+
+  // Customer
+  customerId.value = data.customer || ''
+  customerName.value = data.customer_name || 'Select Customer...'
+  customerState.value = data.state || ''
+
+  if (data.customer) {
+    try {
+      const custDetails = await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
+      customerMobile.value = custDetails.mobile_no || ''
+      customerDetails.value = custDetails.mobile_no || ''
+      customerBalance.value = custDetails.gst_balance ?? 0
+      customerModifier.value = custDetails.pricelist_multiplication_factor ?? null
+      if (custDetails.last_invoice_date) {
+        const d = new Date(custDetails.last_invoice_date)
+        customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+      } else {
+        customerLastInvDate.value = 'None'
+      }
+    } catch (err) {
+      console.error('Failed to load customer details:', err)
+    }
+  }
+
+  // Settings
+  if (data.price_list) priceList.value = data.price_list
+  if (data.tax_template) taxTemplate.value = data.tax_template
+  nextTick(() => {
+    isInclusiveTax.value = data.is_inclusive === 1
+  })
+  halfTaxDiscount.value = forceHalfTaxFalse ? false : (data.custom_half_tax_discount === 1)
+  if (data.cost_center) costCenter.value = data.cost_center
+
+  // Charges
+  freightEntry.value = data.freight_amount || ''
+  packingEntry.value = data.packing_amount || ''
+  loadingEntry.value = data.loading_amount || ''
+  otherEntry.value = data.other_charges_amount || ''
+
+  // Discounts
+  discountPct.value = data.discount_percentage || ''
+  discountDirectAmt.value = data.additional_discount_amount || ''
+
+  // Custom address
+  customAddress.value = {
+    customer_name: data.custom_customer_name || '',
+    mobile_number: data.custom_mobile_number || '',
+    address_line_1: data.custom_address_line1 || '',
+    address_line_2: data.custom_address_line2 || '',
+  }
+  ewaybill.value = data.ewaybill || ''
+  ewaybillStatus.value = data.e_waybill_status || ''
+
+  // Items — reverse-calc pre-discount rate from stored effective rate + discount%
+  items.value = (data.items || []).map(i => {
+    const discount = i.discount || 0
+    const effectiveRate = i.rate || 0
+    const preDiscountRate = discount > 0
+      ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(2))
+      : effectiveRate
+    return {
+      item_code: i.item_code,
+      item_name: i.item_name,
+      qty: i.qty,
+      rate: preDiscountRate,
+      _base_rate: i.price_list_rate || preDiscountRate,
+      price_list_rate: i.price_list_rate || preDiscountRate,
+      discount,
+      uom: i.uom || 'Nos',
+      tax_rate: i.tax_rate || 0,
+      deleted: false,
+      _is_free: effectiveRate === 0,
+      amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
+    }
+  })
+}
+
 async function handleSelectSidebarItem(item) {
   await releaseLock()
   try {
     isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.quotation_api.get_quotation', { quotation_name: item.name })
-
-    // Header
-    invoiceNo.value = data.name
-    selectedSeries.value = data.naming_series || selectedSeries.value
-    invoiceDate.value = data.transaction_date || invoiceDate.value
-
-    // Customer
-    customerId.value = data.customer || ''
-    customerName.value = data.customer_name || 'Select Customer...'
-    customerState.value = data.state || ''
-
-    if (data.customer) {
-      try {
-        const custDetails = await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
-        customerMobile.value = custDetails.mobile_no || ''
-        customerDetails.value = custDetails.mobile_no || ''
-        customerBalance.value = custDetails.gst_balance ?? 0
-        customerModifier.value = custDetails.pricelist_multiplication_factor ?? null
-        if (custDetails.last_invoice_date) {
-          const d = new Date(custDetails.last_invoice_date)
-          customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
-        } else {
-          customerLastInvDate.value = 'None'
-        }
-      } catch (err) {
-        console.error('Failed to load customer details:', err)
-      }
-    }
-
-    // Settings
-    if (data.price_list) priceList.value = data.price_list
-    if (data.tax_template) taxTemplate.value = data.tax_template
-    nextTick(() => {
-      isInclusiveTax.value = data.is_inclusive === 1
-    })
-    halfTaxDiscount.value = data.custom_half_tax_discount === 1
-    if (data.cost_center) costCenter.value = data.cost_center
-
-    // Charges
-    freightEntry.value = data.freight_amount || ''
-    packingEntry.value = data.packing_amount || ''
-    loadingEntry.value = data.loading_amount || ''
-    otherEntry.value = data.other_charges_amount || ''
-
-    // Discounts
-    discountPct.value = data.discount_percentage || ''
-    discountDirectAmt.value = data.additional_discount_amount || ''
-
-    // Custom address
-    customAddress.value = {
-      customer_name: data.custom_customer_name || '',
-      mobile_number: data.custom_mobile_number || '',
-      address_line_1: data.custom_address_line1 || '',
-      address_line_2: data.custom_address_line2 || '',
-    }
-    ewaybill.value = data.ewaybill || ''
-    ewaybillStatus.value = data.e_waybill_status || ''
-
-    // Items — reverse-calc pre-discount rate from stored effective rate + discount%
-    items.value = (data.items || []).map(i => {
-      const discount = i.discount || 0
-      const effectiveRate = i.rate || 0
-      const preDiscountRate = discount > 0
-        ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(2))
-        : effectiveRate
-      return {
-        item_code: i.item_code,
-        item_name: i.item_name,
-        qty: i.qty,
-        rate: preDiscountRate,
-        _base_rate: i.price_list_rate || preDiscountRate,
-        price_list_rate: i.price_list_rate || preDiscountRate,
-        discount,
-        uom: i.uom || 'Nos',
-        tax_rate: i.tax_rate || 0,
-        deleted: false,
-        _is_free: effectiveRate === 0,
-        amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
-      }
-    })
+    await loadQuotationData(data, false)
 
     selectedRowIdx.value = -1
     editingRowIdx.value = -1
@@ -1266,6 +1269,22 @@ async function handleModify() {
     console.error(err)
     alert(err.message || 'Failed to check bill editing status.')
     return
+  }
+
+  try {
+    isLoadingBill.value = true
+    const data = await frappeGet('ssplbilling.api.quotation_api.get_quotation', { quotation_name: invoiceNo.value })
+    await loadQuotationData(data, true)
+  } catch (e) {
+    console.error('Failed to load quotation details for modification:', e)
+    alert('Failed to load latest data from server: ' + e.message)
+    await releaseLock()
+    isLoadingBill.value = false
+    return
+  } finally {
+    nextTick(() => {
+      isLoadingBill.value = false
+    })
   }
 
   isReadOnly.value = false
@@ -1829,6 +1848,7 @@ watch(ignoreModifier, () => {
 })
 
 watch(halfTaxDiscount, (enabled) => {
+  if (isLoadingBill.value) return
   items.value = items.value.map(item => {
     if (item.deleted) return item
     if (enabled) {
