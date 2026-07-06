@@ -477,6 +477,12 @@ function handleGlobalKeydown(e) {
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
+  } else if (e.key === 'Home') {
+    e.preventDefault()
+    selectedIdx.value = 0
+  } else if (e.key === 'End') {
+    e.preventDefault()
+    selectedIdx.value = results.value.length - 1
   } else if (e.key === 'Enter') {
     const item = results.value[selectedIdx.value]
     if (item) {
