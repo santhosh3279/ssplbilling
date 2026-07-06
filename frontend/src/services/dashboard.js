@@ -86,6 +86,13 @@ export const dashboardApi = {
   },
 
   /**
+   * Run an arbitrary bash command in the container.
+   */
+  runTerminalCommand: (command, cwd = null) => {
+    return frappePost(`${API_BASE}.run_terminal_command`, { command, cwd })
+  },
+
+  /**
    * Return all active site names in this bench.
    */
   getActiveSites: () => {

@@ -395,6 +395,66 @@ def run_manual_backup():
 
 
 @frappe.whitelist()
+def run_terminal_command(command, cwd=None):
+	"""Execute an arbitrary bash command inside the docker container/root container."""
+	if frappe.session.user not in ["Administrator", "admin"] and "System Manager" not in frappe.get_roles():
+		frappe.throw("Not permitted", frappe.PermissionError)
+
+	import subprocess
+	import os
+
+	# Execute command in the specified directory if provided, otherwise default to bench path
+	exec_cwd = cwd or frappe.utils.get_bench_path()
+
+	# Handle cd command
+	cmd_parts = command.strip().split()
+	if cmd_parts and cmd_parts[0] == "cd":
+		target_dir = cmd_parts[1] if len(cmd_parts) > 1 else frappe.utils.get_bench_path()
+		resolved_path = os.path.abspath(os.path.join(exec_cwd, target_dir))
+		if os.path.exists(resolved_path) and os.path.isdir(resolved_path):
+			return {
+				"success": True,
+				"stdout": "",
+				"stderr": "",
+				"returncode": 0,
+				"cwd": resolved_path
+			}
+		else:
+			return {
+				"success": False,
+				"stdout": "",
+				"stderr": f"cd: {target_dir}: No such file or directory",
+				"returncode": 1,
+				"cwd": exec_cwd
+			}
+
+	try:
+		result = subprocess.run(
+			command,
+			shell=True,
+			cwd=exec_cwd,
+			capture_output=True,
+			text=True,
+			timeout=30
+		)
+		return {
+			"success": result.returncode == 0,
+			"stdout": result.stdout,
+			"stderr": result.stderr,
+			"returncode": result.returncode,
+			"cwd": exec_cwd
+		}
+	except Exception as e:
+		return {
+			"success": False,
+			"stdout": "",
+			"stderr": str(e),
+			"returncode": -1,
+			"cwd": exec_cwd
+		}
+
+
+@frappe.whitelist()
 def get_billing_settings(user=None):
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user."""
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

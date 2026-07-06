@@ -157,14 +157,14 @@
             <span class="h-3 w-3 rounded-full bg-[var(--color-danger)]"></span>
             <span class="h-3 w-3 rounded-full bg-[var(--color-warning)]"></span>
             <span class="h-3 w-3 rounded-full bg-[var(--color-success)]"></span>
-            <span class="ml-2 text-[11px] font-semibold text-[var(--color-text-muted)]">bash — erpdev@server</span>
+            <span class="ml-2 text-[11px] font-semibold text-[var(--color-text-muted)]">bash — root@container</span>
           </div>
           <!-- Output -->
-          <div ref="terminalEl" class="min-h-32 max-h-72 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed">
+          <div ref="terminalEl" @click="focusInput" class="min-h-32 max-h-72 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed cursor-text">
             <div v-for="(line, i) in terminalLines" :key="i">
               <!-- prompt + command line -->
               <div v-if="line.type === 'cmd'" class="flex">
-                <span class="select-none text-[var(--color-success)]">erpdev@server:~$&nbsp;</span>
+                <span class="select-none text-[var(--color-success)] font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
                 <span class="text-[var(--color-text)]">{{ line.text }}</span>
                 <span v-if="i === terminalLines.length - 1 && line.typing" class="animate-pulse text-[var(--color-text)]">▌</span>
               </div>
@@ -177,10 +177,20 @@
               <!-- blank -->
               <div v-else>&nbsp;</div>
             </div>
-            <!-- idle cursor after all done -->
-            <div v-if="terminalDone" class="flex">
-              <span class="select-none text-[var(--color-success)]">erpdev@server:~$&nbsp;</span>
-              <span class="animate-pulse text-[var(--color-text)]">▌</span>
+            <!-- Interactive input line -->
+            <div v-if="terminalDone" class="flex items-center">
+              <span class="select-none text-[var(--color-success)] font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
+              <input
+                ref="inputEl"
+                v-model="cmdInput"
+                @keydown.enter="submitCmd"
+                @keydown.up.prevent="navigateHistory('up')"
+                @keydown.down.prevent="navigateHistory('down')"
+                type="text"
+                class="flex-1 bg-transparent text-[var(--color-text)] outline-none border-none p-0 font-mono text-[12px] focus:ring-0 focus:outline-none"
+                placeholder=""
+                autofocus
+              />
             </div>
           </div>
         </div>
@@ -205,10 +215,25 @@ const clearing = ref(false)
 const backing = ref(false)
 
 // Terminal state
-const terminalVisible = ref(false)
+const terminalVisible = ref(true)
 const terminalLines = ref([])
-const terminalDone = ref(false)
+const terminalDone = ref(true)
 const terminalEl = ref(null)
+
+const cmdInput = ref('')
+const inputEl = ref(null)
+const cmdCwd = ref('/home/erpdev/frappe/frappe-bench-v16')
+const cmdHistory = ref([])
+const cmdHistoryIdx = ref(-1)
+
+const shortCwd = computed(() => {
+  const base = '/home/erpdev/frappe/frappe-bench-v16'
+  if (cmdCwd.value === base) return '~'
+  if (cmdCwd.value.startsWith(base)) {
+    return '~' + cmdCwd.value.substring(base.length)
+  }
+  return cmdCwd.value
+})
 
 let pollInterval = null
 
@@ -350,6 +375,76 @@ async function runBackup() {
   await scrollBottom()
 }
 
+function focusInput() {
+  if (inputEl.value) {
+    inputEl.value.focus()
+  }
+}
+
+async function submitCmd() {
+  const cmd = cmdInput.value.trim()
+  if (!cmd) return
+
+  cmdInput.value = ''
+  
+  // Add to command history
+  cmdHistory.value.push(cmd)
+  cmdHistoryIdx.value = cmdHistory.value.length
+
+  // Add command to output
+  terminalLines.value.push({ type: 'cmd', text: cmd })
+  await scrollBottom()
+
+  if (cmd === 'clear') {
+    terminalLines.value = []
+    return
+  }
+
+  if (cmd === 'help') {
+    terminalLines.value.push({
+      type: 'out',
+      text: 'Available commands:\n  cd <dir>  Change directory\n  clear     Clear terminal screen\n  help      Show this help message\n  Any standard shell command (ls, cat, whoami, ps, etc.)'
+    })
+    await scrollBottom()
+    return
+  }
+
+  try {
+    const res = await dashboardApi.runTerminalCommand(cmd, cmdCwd.value)
+    if (res.cwd) {
+      cmdCwd.value = res.cwd
+    }
+    if (res.stdout) {
+      terminalLines.value.push({ type: 'out', text: res.stdout })
+    }
+    if (res.stderr) {
+      terminalLines.value.push({ type: 'err', text: res.stderr })
+    }
+  } catch (e) {
+    terminalLines.value.push({ type: 'err', text: `Error: ${e.message || e}` })
+  }
+  await scrollBottom()
+}
+
+function navigateHistory(direction) {
+  if (cmdHistory.value.length === 0) return
+
+  if (direction === 'up') {
+    if (cmdHistoryIdx.value > 0) {
+      cmdHistoryIdx.value--
+      cmdInput.value = cmdHistory.value[cmdHistoryIdx.value]
+    }
+  } else if (direction === 'down') {
+    if (cmdHistoryIdx.value < cmdHistory.value.length - 1) {
+      cmdHistoryIdx.value++
+      cmdInput.value = cmdHistory.value[cmdHistoryIdx.value]
+    } else {
+      cmdHistoryIdx.value = cmdHistory.value.length
+      cmdInput.value = ''
+    }
+  }
+}
+
 // ── polling ──────────────────────────────────────────────────────────────────
 
 async function fetchStats() {
@@ -379,11 +474,18 @@ function stopPolling() {
 
 watch(() => props.show, (val) => {
   if (val) {
-    terminalVisible.value = false
-    terminalLines.value = []
-    terminalDone.value = false
+    terminalVisible.value = true
+    terminalLines.value = [
+      { type: 'out', text: 'Welcome to ERPNext Interactive Terminal.' },
+      { type: 'out', text: 'Type "help" for a list of available commands.' }
+    ]
+    terminalDone.value = true
+    cmdCwd.value = '/home/erpdev/frappe/frappe-bench-v16'
+    cmdInput.value = ''
     startPolling()
-
+    nextTick(() => {
+      focusInput()
+    })
   } else {
     stopPolling()
   }
