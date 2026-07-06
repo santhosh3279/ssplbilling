@@ -150,6 +150,9 @@ function getConfiguredTileIds() {
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
 
+  const role = getUserRole()
+  if (role === 'admin') return true
+
   // Tile access configured → the tile list is the sole authority; the role
   // matrix (and its always-allowed extras) is fully suppressed.
   const tileIds = getConfiguredTileIds()
@@ -167,8 +170,6 @@ export function canAccessRoute(routeName) {
 
   if (['DailyReport', 'Catelogue'].includes(routeName)) return true
 
-  const role = getUserRole()
-  if (role === 'admin') return true
   if (role === 'accounts') return ACCOUNTS_ROUTES.has(routeName)
   if (role === 'cashier') return CASHIER_ROUTES.has(routeName)
   if (role === 'biller') return BILLER_ROUTES.has(routeName)
