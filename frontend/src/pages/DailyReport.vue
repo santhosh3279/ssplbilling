@@ -29,8 +29,8 @@
         <div v-if="activeTab === 'Sales Invoice' || activeTab === 'Purchase Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Series</label>
           
-          <!-- Sales Invoice Series Multi-select -->
-          <div v-if="activeTab === 'Sales Invoice'" ref="seriesDropdownRef" class="relative series-dropdown-container">
+          <!-- Series Multi-select -->
+          <div ref="seriesDropdownRef" class="relative series-dropdown-container">
             <button
               @click="showSeriesDropdown = !showSeriesDropdown"
               class="bg-transparent text-[14px] font-normal text-[var(--color-text)] outline-none focus:text-[var(--color-info)] min-w-[120px] text-left flex justify-between items-center gap-2 cursor-pointer select-none"
@@ -61,17 +61,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Purchase Invoice Series Single-select -->
-          <select 
-            v-else
-            v-model="seriesFilter"
-            class="bg-transparent text-[14px] font-normal text-[var(--color-text)] outline-none focus:text-[var(--color-info)] min-w-[120px]"
-            @change="fetchReport"
-          >
-            <option value="">All Series</option>
-            <option v-for="s in availableSeries" :key="s" :value="s">{{ s }}</option>
-          </select>
         </div>
 
         <div class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
@@ -425,7 +414,7 @@ async function fetchReport() {
   loading.value = true
   try {
     let namingSeriesParam = seriesFilter.value
-    if (activeTab.value === 'Sales Invoice') {
+    if (activeTab.value === 'Sales Invoice' || activeTab.value === 'Purchase Invoice') {
       if (selectedSeriesList.value.length === availableSeries.value.length) {
         namingSeriesParam = ''
       } else if (selectedSeriesList.value.length === 0) {
@@ -484,7 +473,7 @@ async function fetchAvailableSeries() {
   try {
     const res = await frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: activeTab.value })
     availableSeries.value = res.allowed_series || []
-    if (activeTab.value === 'Sales Invoice') {
+    if (activeTab.value === 'Sales Invoice' || activeTab.value === 'Purchase Invoice') {
       selectedSeriesList.value = [...availableSeries.value]
     }
   } catch (e) {
