@@ -436,7 +436,6 @@ const currentSeriesList = computed(() => {
 })
 
 function openModal(type) {
-  isStockReportActive.value = false
   reportType.value = type
   modalError.value = ''
   selectedIncomeAccount.value = ''
