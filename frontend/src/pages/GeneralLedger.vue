@@ -803,6 +803,13 @@ async function loadLedger() {
       to_date: toDate.value,
     })
     ledgerData.value = data
+    if (data && data.entries && data.entries.length > 0) {
+      nextTick(() => {
+        const lastIdx = data.entries.length - 1
+        onRowClick(data.entries[lastIdx], lastIdx)
+        scrollRowIntoView(lastIdx)
+      })
+    }
   } catch (e) {
     console.error('Failed to load GL ledger:', e)
     error.value = e?.message || 'Failed to refresh ledger. Check console for details.'
