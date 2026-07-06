@@ -32,21 +32,21 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] mb-4">
         <!-- Search -->
         <div>
-          <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Search Item</label>
+          <label class="mb-1 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Search Item</label>
           <input
             v-model="stockFilters.search"
             type="text"
             placeholder="Code or Name..."
-            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
           />
         </div>
 
         <!-- Warehouse -->
         <div>
-          <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</label>
+          <label class="mb-1 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</label>
           <select
             v-model="stockFilters.warehouse"
-            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
           >
             <option value="">— All Warehouses —</option>
             <option v-for="wh in filterOptions.warehouses" :key="wh" :value="wh">{{ wh }}</option>
@@ -55,10 +55,10 @@
 
         <!-- Supplier -->
         <div>
-          <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier</label>
+          <label class="mb-1 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier</label>
           <select
             v-model="stockFilters.supplier"
-            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
           >
             <option value="">— All Suppliers —</option>
             <option v-for="sup in filterOptions.suppliers" :key="sup.id" :value="sup.id">{{ sup.name }}</option>
@@ -67,18 +67,18 @@
 
         <!-- Negative Stock and Reset -->
         <div class="flex items-center justify-between pt-5">
-          <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-[var(--color-text)]">
+          <label class="flex items-center gap-2 cursor-pointer select-none text-xl text-[var(--color-text)]">
             <input
               v-model="stockFilters.negativeOnly"
               type="checkbox"
-              class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)]"
+              class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)] w-5 h-5"
             />
             <span>Negative Stock Only</span>
           </label>
           
           <button
             @click="resetStockFilters"
-            class="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-colors underline"
+            class="text-base text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-colors underline"
           >
             Clear Filters
           </button>
