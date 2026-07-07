@@ -111,10 +111,10 @@
                 <td class="px-6 py-2 text-right font-mono text-lg" :class="row.average_age > 90 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
                   {{ formatQty(row.average_age) }}
                 </td>
-                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-text)]">{{ formatQty(row.range1) || '—' }}</td>
-                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-text)]">{{ formatQty(row.range2) || '—' }}</td>
-                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-warning)]">{{ formatQty(row.range3) || '—' }}</td>
-                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-danger)]">{{ formatQty(row.range4) || '—' }}</td>
+                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-text)]">{{ row.range1 ? formatQty(row.range1) : '—' }}</td>
+                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-text)]">{{ row.range2 ? formatQty(row.range2) : '—' }}</td>
+                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-warning)]">{{ row.range3 ? formatQty(row.range3) : '—' }}</td>
+                <td class="px-6 py-2 text-right font-mono text-lg text-[var(--color-danger)]">{{ row.range4 ? formatQty(row.range4) : '—' }}</td>
                 <td class="px-6 py-2 text-lg text-[var(--color-text-muted)]">{{ row.uom }}</td>
               </tr>
             </tbody>
