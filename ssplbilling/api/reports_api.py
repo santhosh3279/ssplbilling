@@ -1141,3 +1141,35 @@ def get_stock_aging_report(to_date=None, warehouse=None):
 
 	return {"rows": rows, "as_on_date": to_date}
 
+
+@frappe.whitelist()
+def get_outstanding_customers_report(as_on_date=None):
+	"""Receivable balance per customer as on a given date, from the GL party ledger."""
+	as_on_date = as_on_date or frappe.utils.today()
+
+	rows = frappe.db.sql(
+		"""
+		SELECT
+			gle.party AS customer,
+			COALESCE(cust.customer_name, gle.party) AS customer_name,
+			SUM(gle.debit) - SUM(gle.credit) AS outstanding_amount,
+			MAX(gle.posting_date) AS last_transaction_date
+		FROM `tabGL Entry` gle
+		LEFT JOIN `tabCustomer` cust ON cust.name = gle.party
+		WHERE gle.party_type = 'Customer'
+		  AND gle.is_cancelled = 0
+		  AND gle.posting_date <= %s
+		GROUP BY gle.party
+		HAVING ABS(SUM(gle.debit) - SUM(gle.credit)) > 0.005
+		ORDER BY outstanding_amount DESC
+		""",
+		(as_on_date,),
+		as_dict=True,
+	)
+
+	for r in rows:
+		r["outstanding_amount"] = float(r["outstanding_amount"] or 0)
+		r["last_transaction_date"] = str(r["last_transaction_date"]) if r["last_transaction_date"] else ""
+
+	return {"rows": rows, "as_on_date": as_on_date}
+

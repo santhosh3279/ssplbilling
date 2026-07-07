@@ -163,6 +163,17 @@
                 <div class="text-base text-[var(--color-text-muted)]">Cost Center-wise Cash & Bank Flow</div>
               </div>
             </button>
+
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-danger)]/20 hover:border-[var(--color-danger)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="router.push('/outstanding-customers-report')"
+            >
+              <span class="text-xl">⚖️</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Outstanding Balance - Customers</div>
+                <div class="text-base text-[var(--color-text-muted)]">Receivable balance per customer</div>
+              </div>
+            </button>
           </div>
 
         </div>

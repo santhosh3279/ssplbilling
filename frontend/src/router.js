@@ -27,6 +27,7 @@ import StoreSalesReport from './pages/StoreSalesReport.vue'
 import CostCenterSalesReport from './pages/CostCenterSalesReport.vue'
 import StockStatusReport from './pages/StockStatusReport.vue'
 import StockAgingReport from './pages/StockAgingReport.vue'
+import OutstandingCustomersReport from './pages/OutstandingCustomersReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
@@ -261,6 +262,12 @@ const routes = [
     name: 'StockAgingReport',
     component: StockAgingReport,
     meta: { title: 'Stock Aging' },
+  },
+  {
+    path: '/outstanding-customers-report',
+    name: 'OutstandingCustomersReport',
+    component: OutstandingCustomersReport,
+    meta: { title: 'Outstanding Customers' },
   },
   {
     path: '/loading-receipt',
