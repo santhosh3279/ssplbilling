@@ -141,7 +141,7 @@
 
         <!-- Refresh Button -->
         <button
-          @click="loadLedger"
+          @click="refreshLedger"
           :disabled="!selectedParty || loading"
           class="rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-sm active:scale-95"
           :class="selectedParty && !loading
@@ -342,14 +342,8 @@
           <button @click="closeDetail" class="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-colors">✕</button>
         </div>
 
-        <!-- Loading detail -->
-        <div v-if="loadingDetail" class="flex flex-1 items-center justify-center text-sm text-[var(--color-text-muted)]">
-          <div class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></div>
-          Fetching details…
-        </div>
-
         <!-- Detail Content -->
-        <div v-else-if="voucherDetail" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <div v-if="voucherDetail" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
           
           <!-- Summary Card -->
           <div class="mb-4 space-y-2 rounded-lg bg-[var(--color-surface-raised)] p-3 text-[11px]">
@@ -553,7 +547,7 @@
 <script setup>
 import { ref, onMounted, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { frappeGet, fetchVoucherDetail } from '../api.js'
+import { frappeGet } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
@@ -652,15 +646,79 @@ const totalCredit = computed(() => {
 // ── Detail panel state ──
 const selectedEntry = ref(null)
 const voucherDetail = ref(null)
-const loadingDetail = ref(false)
 const focusedIdx = ref(-1)
+
+// ── GL cache: one server call covers a wide date range; date-filter changes are
+// applied locally against it. Only refetched when the requested range falls outside
+// what's cached, or on an explicit Refresh. ──
+const ledgerCache = ref(null) // { partyKey, from, to, opening_balance, entries, label, party, party_type }
+
+function partyKey() {
+  return `${partyType.value}:${selectedParty.value?.name}`
+}
+
+function cacheCovers(from, to) {
+  const c = ledgerCache.value
+  return !!c && c.partyKey === partyKey() && from >= c.from && to <= c.to
+}
+
+async function fetchAndCache(from, to) {
+  const data = await frappeGet('ssplbilling.api.ledger_api.get_general_ledger', {
+    party_type: partyType.value,
+    party: selectedParty.value.name,
+    from_date: from,
+    to_date: to,
+  })
+  ledgerCache.value = {
+    partyKey: partyKey(),
+    from,
+    to,
+    opening_balance: data.opening_balance,
+    entries: data.entries,
+    label: data.label,
+    party: data.party,
+    party_type: data.party_type,
+  }
+}
+
+// Derive the entries/opening/closing for a sub-range from the cached wide-range fetch.
+// Per-entry `balance` is already an absolute running balance (from ERPNext's GL report
+// engine), so it needs no recomputation — only the window's opening balance does.
+function computeWindow(cache, from, to) {
+  let opening = cache.opening_balance
+  const windowEntries = []
+  for (const e of cache.entries) {
+    if (e.date < from) {
+      opening += e.debit - e.credit
+    } else if (e.date <= to) {
+      windowEntries.push(e)
+    }
+  }
+  const closing = windowEntries.length ? windowEntries[windowEntries.length - 1].balance : opening
+  return {
+    party_type: cache.party_type,
+    party: cache.party,
+    label: cache.label,
+    from_date: from,
+    to_date: to,
+    opening_balance: opening,
+    closing_balance: closing,
+    entries: windowEntries,
+  }
+}
+
+function fyStartISO() {
+  const [y, m] = getLocalDateParts()
+  const fromYear = m < 4 ? y - 1 : y
+  return `${fromYear}-04-01`
+}
 
 const showDateModal = ref(false)
 
 function handleDateConfirm(dates) {
   fromDate.value = dates.from
   toDate.value = dates.to
-  loadLedger()
+  applyDateRange()
 }
 
 function getLocalDateParts() {
@@ -668,6 +726,11 @@ function getLocalDateParts() {
   const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options)
   return formatter.format(now).split('-').map(Number)
+}
+
+function todayISO() {
+  const [y, m, d] = getLocalDateParts()
+  return `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
 }
 
 const activeQuickRange = computed(() => {
@@ -734,7 +797,7 @@ function setQuickRange(range) {
   toDate.value = toISO
 
   nextTick(() => {
-    loadLedger()
+    applyDateRange()
   })
 }
 
@@ -804,8 +867,8 @@ function clearSelection() {
   closeDetail()
 }
 
-// ── Refresh ledger ──
-async function loadLedger() {
+// ── Open/refresh ledger: (re)builds the wide-range cache, then applies the current filter ──
+async function loadLedger({ forceRefresh = false } = {}) {
   if (!selectedParty.value || loading.value) return
   if (partyType.value === 'Employee' && getUserRole() !== 'admin') {
     error.value = 'General ledger of employees is accessible only to administrators.'
@@ -817,20 +880,15 @@ async function loadLedger() {
   error.value = ''
   closeDetail()
   try {
-    const data = await frappeGet('ssplbilling.api.ledger_api.get_general_ledger', {
-      party_type: partyType.value,
-      party: selectedParty.value.name,
-      from_date: fromDate.value,
-      to_date: toDate.value,
-    })
-    ledgerData.value = data
-    if (data && data.entries && data.entries.length > 0) {
-      nextTick(() => {
-        const lastIdx = data.entries.length - 1
-        onRowClick(data.entries[lastIdx], lastIdx)
-        scrollRowIntoView(lastIdx)
-      })
+    // Cache the whole financial year (or wider, if the current filter already extends
+    // past it) up front, so quick-range and date-filter changes stay local afterwards.
+    const today = todayISO()
+    const wideFrom = fromDate.value < fyStartISO() ? fromDate.value : fyStartISO()
+    const wideTo = toDate.value > today ? toDate.value : today
+    if (forceRefresh || !cacheCovers(wideFrom, wideTo)) {
+      await fetchAndCache(wideFrom, wideTo)
     }
+    applyCachedWindow()
   } catch (e) {
     console.error('Failed to load GL ledger:', e)
     error.value = e?.message || 'Failed to refresh ledger. Check console for details.'
@@ -839,20 +897,54 @@ async function loadLedger() {
   }
 }
 
-// ── Row selection & Preview ──
-async function onRowClick(entry, idx) {
+function refreshLedger() {
+  loadLedger({ forceRefresh: true })
+}
+
+// ── Apply the selected from/to dates: filters the cache locally, only hitting the
+// server if the requested range isn't already covered. ──
+async function applyDateRange() {
+  if (!selectedParty.value || loading.value) return
+  if (!cacheCovers(fromDate.value, toDate.value)) {
+    loading.value = true
+    error.value = ''
+    closeDetail()
+    try {
+      const c = ledgerCache.value
+      const sameParty = c && c.partyKey === partyKey()
+      const unionFrom = sameParty && c.from < fromDate.value ? c.from : fromDate.value
+      const unionTo = sameParty && c.to > toDate.value ? c.to : toDate.value
+      await fetchAndCache(unionFrom, unionTo)
+    } catch (e) {
+      console.error('Failed to load GL ledger:', e)
+      error.value = e?.message || 'Failed to refresh ledger. Check console for details.'
+      loading.value = false
+      return
+    }
+    loading.value = false
+  }
+  applyCachedWindow()
+}
+
+function applyCachedWindow() {
+  closeDetail()
+  const data = computeWindow(ledgerCache.value, fromDate.value, toDate.value)
+  ledgerData.value = data
+  if (data.entries.length > 0) {
+    nextTick(() => {
+      const lastIdx = data.entries.length - 1
+      onRowClick(data.entries[lastIdx], lastIdx)
+      scrollRowIntoView(lastIdx)
+    })
+  }
+}
+
+// ── Row selection & Preview (detail is pre-loaded per entry — no per-row server call) ──
+function onRowClick(entry, idx) {
   focusedIdx.value = idx
   if (selectedEntry.value === entry) return
   selectedEntry.value = entry
-  voucherDetail.value = null
-  loadingDetail.value = true
-  try {
-    voucherDetail.value = await fetchVoucherDetail(entry.voucher_type, entry.voucher_no)
-  } catch (e) {
-    console.warn('Failed to fetch voucher detail:', e)
-  } finally {
-    loadingDetail.value = false
-  }
+  voucherDetail.value = entry.detail || null
 }
 
 function closeDetail() {

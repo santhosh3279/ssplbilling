@@ -394,6 +394,12 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None):
     for e in entries:
         e["creation"] = creation_map.get((e["voucher_type"], e["voucher_no"]), "")
 
+    # Pre-load voucher line-item detail for every entry so the frontend never needs a
+    # follow-up call per row click / keyboard navigation (same pattern as the stock ledger).
+    voucher_details = _batch_voucher_details(entries)
+    for e in entries:
+        e["detail"] = voucher_details.get(e["voucher_no"])
+
     return {
         "party_type": party_type,
         "party": party,
@@ -475,14 +481,21 @@ def _batch_voucher_details(entries):
         "Purchase Receipt": ("Purchase Receipt Item", "supplier_name",  "grand_total",  "uom",        "rate"),
     }
 
+    # Extra header fields needed by the ledger detail panel, on top of the generic set above
+    EXTRA_HEADER_FIELDS = {
+        "Sales Invoice": ["custom_customer_name", "custom_address_line1", "custom_address_line2"],
+        "Purchase Invoice": ["custom_remarks"],
+    }
+
     for vtype, (child_dt, party_field, total_field, uom_field, rate_field) in VOUCHER_MAP.items():
         if not by_type.get(vtype):
             continue
         names = list(set(by_type[vtype]))
+        extra_fields = EXTRA_HEADER_FIELDS.get(vtype, [])
         headers = {r.name: r for r in frappe.get_all(
             vtype,
             filters={"name": ["in", names]},
-            fields=["name", party_field, total_field, "posting_date"],
+            fields=["name", party_field, total_field, "posting_date", *extra_fields],
         )}
         items_rows = frappe.get_all(
             child_dt,
@@ -501,12 +514,20 @@ def _batch_voucher_details(entries):
             })
         for name in names:
             h = headers.get(name, {})
-            details[name] = {
+            detail = {
                 "voucher_type": vtype,
                 "party_name": h.get(party_field) or "",
                 "total_amount": float(h.get(total_field) or 0), "posting_date": str(h.get("posting_date") or "" ),
                 "items": items_map.get(name, []),
             }
+            if vtype == "Sales Invoice":
+                detail["custom_customer_name"] = h.get("custom_customer_name") or ""
+                detail["custom_address"] = ", ".join(
+                    filter(None, [h.get("custom_address_line1"), h.get("custom_address_line2")])
+                )
+            elif vtype == "Purchase Invoice":
+                detail["custom_remarks"] = h.get("custom_remarks") or ""
+            details[name] = detail
 
     # Stock Entry
     if by_type.get("Stock Entry"):
@@ -570,6 +591,75 @@ def _batch_voucher_details(entries):
                 "voucher_type": "Stock Reconciliation",
                 "party_name": h.get("purpose") or "Stock Reconciliation",
                 "total_amount": float(h.get("difference_amount") or 0),
+                "posting_date": str(h.get("posting_date", "")),
+                "items": items_map.get(name, []),
+            }
+
+    # Payment Entry (dominant voucher type in customer/supplier GL — references, not line items)
+    if by_type.get("Payment Entry"):
+        names = list(set(by_type["Payment Entry"]))
+        pe_refs = frappe.get_all("Payment Entry Reference",
+            filters={"parent": ["in", names]},
+            fields=["parent", "reference_doctype", "reference_name", "allocated_amount"],
+        )
+        headers = {r.name: r for r in frappe.get_all(
+            "Payment Entry",
+            filters={"name": ["in", names]},
+            fields=["name", "posting_date", "paid_amount", "mode_of_payment", "payment_type", "party_name"],
+        )}
+        items_map = defaultdict(list)
+        for r in pe_refs:
+            items_map[r.parent].append({
+                "reference_doctype": r.reference_doctype,
+                "reference_name": r.reference_name,
+                "allocated_amount": float(r.allocated_amount or 0),
+            })
+        for name in names:
+            h = headers.get(name, {})
+            details[name] = {
+                "voucher_type": "Payment Entry",
+                "party_name": h.get("party_name") or "",
+                "total_amount": float(h.get("paid_amount") or 0),
+                "posting_date": str(h.get("posting_date", "")),
+                "mode_of_payment": h.get("mode_of_payment") or "",
+                "payment_type": h.get("payment_type") or "",
+                "items": items_map.get(name, []),
+            }
+
+    # Journal Entry (dominant voucher type in customer/supplier GL, alongside Payment Entry)
+    if by_type.get("Journal Entry"):
+        names = list(set(by_type["Journal Entry"]))
+        je_items = frappe.get_all("Journal Entry Account",
+            filters={"parent": ["in", names]},
+            fields=[
+                "parent", "account",
+                "debit_in_account_currency as debit",
+                "credit_in_account_currency as credit",
+                "party_type", "party",
+                "reference_type", "reference_name",
+            ],
+        )
+        headers = {r.name: r for r in frappe.get_all(
+            "Journal Entry",
+            filters={"name": ["in", names]},
+            fields=["name", "posting_date", "total_debit"],
+        )}
+        items_map = defaultdict(list)
+        for r in je_items:
+            items_map[r.parent].append({
+                "account": r.account,
+                "debit": float(r.debit or 0),
+                "credit": float(r.credit or 0),
+                "party_type": r.party_type or "",
+                "party": r.party or "",
+                "reference_type": r.reference_type or "",
+                "reference_name": r.reference_name or "",
+            })
+        for name in names:
+            h = headers.get(name, {})
+            details[name] = {
+                "voucher_type": "Journal Entry",
+                "total_amount": float(h.get("total_debit") or 0),
                 "posting_date": str(h.get("posting_date", "")),
                 "items": items_map.get(name, []),
             }
