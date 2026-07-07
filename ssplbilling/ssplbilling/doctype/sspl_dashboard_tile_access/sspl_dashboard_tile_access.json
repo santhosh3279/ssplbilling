@@ -70,14 +70,14 @@
   },
   {
    "fieldname": "tiles",
-   "fieldtype": "Table MultiSelect",
+   "fieldtype": "Table",
    "label": "Tiles",
    "options": "SSPL Dashboard Tile Item",
    "reqd": 1
   }
  ],
  "links": [],
- "modified": "2026-07-03 00:00:00.000000",
+ "modified": "2026-07-07 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Dashboard Tile Access",
