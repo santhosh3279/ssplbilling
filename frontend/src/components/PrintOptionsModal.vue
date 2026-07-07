@@ -139,6 +139,19 @@ const success        = ref('')
 
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 
+// Print Template.format_type -> keyword to match against Printer.printer_name, so the
+// printer dropdown only shows printers built for the selected template's output type
+// (same convention as the barcode-only filter in BarcodePrintPage.vue).
+const FORMAT_TYPE_KEYWORD = {
+  'Thermal': 'thermal',
+  'PDF': 'pdf',
+  'Custom PDF': 'pdf',
+  'Barcode': 'barcode',
+}
+
+const allPrinters = ref([])       // unfiltered printer list for this doctype
+const templateFormatMap = ref({}) // template name -> format_type
+
 // Returns printer_settings rows for the current user from the billing settings cache
 function getUserPrinterSettings() {
   try {
@@ -152,6 +165,25 @@ function getUserPrinterSettings() {
   } catch (e) {
     return []
   }
+}
+
+// Narrows `printers` to those matching the selected template's format_type (Thermal/PDF/
+// Custom PDF/Barcode), then further to the user's saved printers within that type when any
+// qualify. Locked-template mode keeps its own dedicated PDF-only filtering (no format is
+// being "selected" there), so this is a no-op for it.
+function filterPrintersForTemplate(templateName) {
+  if (props.lockTemplate || !allPrinters.value.length) return
+
+  const keyword = FORMAT_TYPE_KEYWORD[templateFormatMap.value[templateName]]
+  const typeMatched = keyword
+    ? allPrinters.value.filter(pr => new RegExp(keyword, 'i').test(pr.printer_name || pr.name))
+    : allPrinters.value
+  const typeFiltered = typeMatched.length ? typeMatched : allPrinters.value
+
+  const uniquePrinterNames = new Set(getUserPrinterSettings().map(r => r.printer).filter(Boolean))
+  const userFiltered = typeFiltered.filter(p => uniquePrinterNames.has(p.name))
+
+  printers.value = userFiltered.length ? userFiltered : typeFiltered
 }
 
 function syncPrinter() {
@@ -185,7 +217,10 @@ function syncPrinter() {
   }
 }
 
-watch(selectedTemplate, () => syncPrinter())
+watch(selectedTemplate, () => {
+  filterPrintersForTemplate(selectedTemplate.value)
+  syncPrinter()
+})
 // Note: no watch on selectedPrinter — changing printer must not auto-change the template
 
 function handleKeydown(e) {
@@ -240,8 +275,8 @@ async function loadSettings() {
     // Output is an A4 PDF (e-Way Bill), so only PDF printers are shown — narrowed to the
     // user's allowed printers, falling back to all PDF printers if none of theirs qualify.
     if (props.lockTemplate && props.initialTemplate) {
-      const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
-      const pdfPrinters = (allPrinters || []).filter(pr => /pdf/i.test(pr.printer_name || pr.name))
+      const fetchedPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
+      const pdfPrinters = (fetchedPrinters || []).filter(pr => /pdf/i.test(pr.printer_name || pr.name))
       const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
       const filteredPrinters = pdfPrinters.filter(p => uniquePrinterNames.includes(p.name))
       printers.value  = filteredPrinters.length ? filteredPrinters : pdfPrinters
@@ -251,43 +286,33 @@ async function loadSettings() {
       return
     }
 
-    // 1. Fetch all valid print templates for this doctype to ensure we only show relevant ones
+    // 1. Fetch all valid print templates for this doctype, including their format_type
+    //    (Thermal/PDF/Custom PDF/Barcode), so the printer list can be narrowed to printers
+    //    built for whichever format the selected template uses.
     const validTemplates = await frappeGet('frappe.client.get_list', {
       doctype: 'Print Template',
       filters: { document_type: props.doctype },
-      fields: ['name'],
+      fields: ['name', 'format_type'],
       limit: 100
     })
     const validTemplateNames = validTemplates.map(f => f.name)
+    templateFormatMap.value = Object.fromEntries(validTemplates.map(t => [t.name, t.format_type]))
+
+    allPrinters.value = (await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')) || []
 
     if (userRows.length) {
       // 2. Filter cached user templates to only those that exist for this doctype
       const filteredTemplates = userRows
         .filter(r => r.template && validTemplateNames.includes(r.template))
         .map(r => ({ name: r.template }))
-      
+
       // Deduplicate
       const uniqueTemplates = [...new Map(filteredTemplates.map(t => [t.name, t])).values()]
-      
-      const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
 
-      // Fetch all printers for status info, then filter to user's printers
-      const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
-      const filteredPrinters = (allPrinters || []).filter(p => uniquePrinterNames.includes(p.name))
-      
-      printers.value  = filteredPrinters.length ? filteredPrinters : (allPrinters || [])
-      templates.value = uniqueTemplates
-      
       // If no cached templates matched the doctype, fall back to all valid templates
-      if (!templates.value.length) {
-        templates.value = validTemplates
-      }
+      templates.value = uniqueTemplates.length ? uniqueTemplates : validTemplates
     } else {
-      // No user-specific rows — fall back to fetching all printers + templates for this doctype
-      const [p] = await Promise.all([
-        frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
-      ])
-      printers.value  = p || []
+      // No user-specific rows — fall back to all templates for this doctype
       templates.value = validTemplates
     }
 
@@ -318,6 +343,7 @@ async function loadSettings() {
       selectedTemplate.value = templates.value[0].name
     }
 
+    filterPrintersForTemplate(selectedTemplate.value)
     syncPrinter()
   } catch (e) {
     error.value = e.message
