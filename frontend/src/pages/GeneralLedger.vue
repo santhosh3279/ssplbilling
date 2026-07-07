@@ -958,7 +958,8 @@ function closeDetail() {
 }
 
 function onGlobalKeydown(e) {
-  if (showCustomerSearchModal.value || printModalVisible.value || showBillDetail.value) return
+  if (showCustomerSearchModal.value || printModalVisible.value || showBillDetail.value || showDateModal.value) return
+  if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return
   if (!ledgerData.value || !ledgerData.value.entries.length) return
 
   const len = ledgerData.value.entries.length
@@ -973,6 +974,15 @@ function onGlobalKeydown(e) {
     const prevIdx = Math.max(focusedIdx.value - 1, 0)
     onRowClick(ledgerData.value.entries[prevIdx], prevIdx)
     scrollRowIntoView(prevIdx)
+  } else if (e.key === 'Home') {
+    e.preventDefault()
+    onRowClick(ledgerData.value.entries[0], 0)
+    scrollRowIntoView(0)
+  } else if (e.key === 'End') {
+    e.preventDefault()
+    const lastIdx = len - 1
+    onRowClick(ledgerData.value.entries[lastIdx], lastIdx)
+    scrollRowIntoView(lastIdx)
   } else if (e.key === 'F4') {
     e.preventDefault()
     showDateModal.value = true
