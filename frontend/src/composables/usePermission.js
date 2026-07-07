@@ -79,6 +79,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'StoreSalesReport',
   'CostCenterSalesReport',
   'StockStatusReport',
+  'StockAgingReport',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -89,6 +90,7 @@ export const ADMIN_ROUTES = new Set([
   'StoreSalesReport',
   'CostCenterSalesReport',
   'StockStatusReport',
+  'StockAgingReport',
   'IncentiveLedger',
   'IncentiveEntry',
   'CustomerEnquiry',
@@ -164,6 +166,7 @@ export function canAccessRoute(routeName) {
       allowed.add('StoreSalesReport')
       allowed.add('CostCenterSalesReport')
       allowed.add('StockStatusReport')
+      allowed.add('StockAgingReport')
     }
     return allowed.has(routeName)
   }
@@ -203,6 +206,7 @@ const TILE_ROUTE_MAP = {
   'store-sale-report': 'StoreSalesReport',
   'cost-center-sale-report': 'CostCenterSalesReport',
   'stock-status-report': 'StockStatusReport',
+  'stock-aging-report': 'StockAgingReport',
   'Cashier-Management':'CashierManagement',
   'cancellation':      'Cancellation',
   'pricing-rules':     'DiscountRule',

@@ -980,3 +980,7 @@ export async function fetchStockReportData(filters = {}) {
   return frappeGet("ssplbilling.api.purchase_api.get_stock_report_data", filters);
 }
 
+export async function getStockAgingReport(toDate, warehouse) {
+  return frappeGet("ssplbilling.api.reports_api.get_stock_aging_report", { to_date: toDate, warehouse });
+}
+

@@ -1114,3 +1114,30 @@ def get_cashflow_report(from_date=None, to_date=None):
 		"company_address_lines": company_address_lines
 	}
 
+
+@frappe.whitelist()
+def get_stock_aging_report(to_date=None, warehouse=None):
+	"""FIFO-based stock ageing (0-30 / 31-60 / 61-90 / 91+ day buckets), item x warehouse-wise.
+
+	Reuses ERPNext's Stock Ageing report logic instead of reimplementing FIFO queue math.
+	"""
+	from erpnext import get_default_company
+	from erpnext.stock.report.stock_ageing.stock_ageing import execute as run_stock_ageing
+
+	to_date = to_date or frappe.utils.nowdate()
+	company = frappe.defaults.get_global_default("company") or get_default_company()
+
+	filters = frappe._dict({
+		"to_date": to_date,
+		"range": "30,60,90",
+		"company": company,
+		"warehouse": warehouse or None,
+		"show_warehouse_wise_stock": 1,
+	})
+
+	columns, data, _, _ = run_stock_ageing(filters)
+	fieldnames = [c["fieldname"] for c in columns]
+	rows = [dict(zip(fieldnames, row)) for row in data]
+
+	return {"rows": rows, "as_on_date": to_date}
+

@@ -136,6 +136,17 @@
                 <div class="text-base text-[var(--color-text-muted)]">Check current item stock</div>
               </div>
             </button>
+
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="router.push('/stock-aging-report')"
+            >
+              <span class="text-xl">⏳</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Stock Aging Report</div>
+                <div class="text-base text-[var(--color-text-muted)]">FIFO ageing by item & warehouse</div>
+              </div>
+            </button>
           </div>
 
           <!-- Column 4: Accounts -->
