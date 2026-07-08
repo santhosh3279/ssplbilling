@@ -619,7 +619,7 @@ function fmtDate(d) {
   const parts = datePart.split('-')
   if (parts.length === 3) {
     const [yyyy, mm, dd] = parts
-    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`
+    return `${dd.padStart(2, '0')}-${mm.padStart(2, '0')}-${yyyy}`
   }
   return d
 }
