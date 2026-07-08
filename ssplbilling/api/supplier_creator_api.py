@@ -58,6 +58,7 @@ def create_supplier_full(data):
 	sup.email_id = data.get("email") or ""
 	sup.gstin = data.get("gstin") or ""
 	sup.gst_category = _resolve_gst_category(sup.gstin)
+	sup.disabled = 1 if data.get("disabled") else 0
 	sup.insert(ignore_permissions=True)
 
 	addr = frappe.new_doc("Address")
@@ -116,6 +117,7 @@ def get_supplier_details(supplier):
 		"state": "",
 		"primary_party": "",
 		"primary_party_role": "",
+		"disabled": sup.disabled or 0,
 	}
 
 	# Fetch WhatsApp from Contact phone_nos row 1
@@ -186,6 +188,7 @@ def update_supplier_full(data):
 	sup.email_id = data.get("email") or ""
 	sup.gstin = data.get("gstin") or ""
 	sup.gst_category = _resolve_gst_category(sup.gstin)
+	sup.disabled = 1 if data.get("disabled") else 0
 	sup.save(ignore_permissions=True)
 
 	if "whatsapp" in data:

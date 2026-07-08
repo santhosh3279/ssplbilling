@@ -128,6 +128,7 @@ export async function createCustomer(data) {
     email_id: data.email || '',
     gstin: data.gstin || '',
     gst_category: data.gstin ? 'Registered Regular' : 'Unregistered',
+    disabled: data.disabled ? 1 : 0,
     pricelist_multiplication_factor: data.pricelist_modifier != null
       ? (1 + data.pricelist_modifier / 100)
       : 1.0,
@@ -157,6 +158,7 @@ export async function fetchCustomerDetails(customerId) {
     name: customerId,
     customer_name: '',
     customer_print_name: '',
+    disabled: 0,
     mobile: '',
     whatsapp: '',
     email: '',
@@ -183,6 +185,7 @@ export async function fetchCustomerDetails(customerId) {
     result.mobile = cust.mobile_no || ''
     result.email = cust.email_id || ''
     result.gstin = cust.gstin || ''
+    result.disabled = cust.disabled || 0
     result.pricelist_multiplication_factor = cust.pricelist_multiplication_factor !== undefined ? cust.pricelist_multiplication_factor : null
 
     // 2. Fetch linked Address

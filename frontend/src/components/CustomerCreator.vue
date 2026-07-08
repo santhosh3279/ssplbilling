@@ -133,6 +133,18 @@
             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
           </div>
         </div>
+
+        <div class="flex items-center gap-2 mt-2">
+          <input
+            id="customer_disabled"
+            v-model="form.disabled"
+            type="checkbox"
+            class="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-info)] focus:ring-[var(--color-info)]"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="handleFormEnter"
+          />
+          <label for="customer_disabled" class="text-base font-semibold uppercase tracking-wider text-[var(--color-text)] cursor-pointer">Disabled</label>
+        </div>
       </div>
 
       <!-- Column 2: Contact & Tax -->
@@ -251,6 +263,7 @@ const defaultForm = () => ({
   pricelist_modifier: null,
   primary_party: '',
   primary_party_role: '',
+  disabled: 0,
 })
 
 const form = ref(defaultForm())
@@ -285,6 +298,7 @@ onMounted(async () => {
       pricelist_modifier: null,
       primary_party:  '',
       primary_party_role: '',
+      disabled:       row.disabled       || 0,
     }
     primaryPartyQuery.value = ''
     editLoading.value = true

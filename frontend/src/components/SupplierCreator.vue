@@ -174,6 +174,18 @@
             </div>
           </div>
         </div>
+
+        <div class="flex items-center gap-2 mt-2">
+          <input
+            id="supplier_disabled"
+            v-model="form.disabled"
+            type="checkbox"
+            class="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-info)] focus:ring-[var(--color-info)]"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
+          />
+          <label for="supplier_disabled" class="text-base font-semibold uppercase tracking-wider text-[var(--color-text)] cursor-pointer">Disabled</label>
+        </div>
       </div>
 
       <!-- Column 2: Contact & Tax -->
@@ -366,6 +378,7 @@ const form = reactive({
   state: 'Kerala',
   primary_party: '',
   primary_party_role: '',
+  disabled: 0,
 })
 
 const saving = ref(false)
@@ -543,6 +556,7 @@ async function initForm() {
       state:         props.supplierRow.state        || 'Kerala',
       primary_party: '',
       primary_party_role: '',
+      disabled:      props.supplierRow.disabled     || 0,
     })
     loading.value = true
     try {
@@ -581,6 +595,7 @@ function resetForm() {
     city: 'Palakkad', pincode: '678000', state: 'Kerala',
     primary_party: '',
     primary_party_role: '',
+    disabled: 0,
   })
 }
 

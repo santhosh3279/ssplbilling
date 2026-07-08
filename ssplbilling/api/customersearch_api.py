@@ -542,6 +542,7 @@ def update_customer_full(data):
 	cust.email_id = data.get("email") or ""
 	cust.gstin = data.get("gstin") or ""
 	cust.gst_category = "Registered Regular" if cust.gstin else "Unregistered"
+	cust.disabled = 1 if data.get("disabled") else 0
 	
 	if "pricelist_modifier" in data:
 		mod = float(data.get("pricelist_modifier") or 0)
