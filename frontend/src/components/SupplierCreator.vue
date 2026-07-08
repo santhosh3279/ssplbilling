@@ -577,6 +577,14 @@ async function initForm() {
   focusFirst()
 }
 
+watch(() => form.supplier_name, (newVal, oldVal) => {
+  if (!props.isEdit) {
+    if (!form.supplier_print_name || form.supplier_print_name === oldVal) {
+      form.supplier_print_name = newVal
+    }
+  }
+})
+
 watch(() => props.show, initForm, { immediate: true })
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

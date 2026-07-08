@@ -213,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
 import { validateGstin } from '../api.js'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
@@ -267,6 +267,14 @@ const defaultForm = () => ({
 })
 
 const form = ref(defaultForm())
+
+watch(() => form.value.customer_name, (newVal, oldVal) => {
+  if (!props.isEdit) {
+    if (!form.value.customer_print_name || form.value.customer_print_name === oldVal) {
+      form.value.customer_print_name = newVal
+    }
+  }
+})
 
 onMounted(async () => {
   // Fetch customer groups
