@@ -101,7 +101,7 @@
             class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="Search party..."
             style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
-            @focus="showPartyDropdown = true"
+            @focus="onPartyFocus"
             @keydown="quickLedgerSearchRef?.handleKeydown($event)"
           />
           <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">Customer / Supplier</label>
@@ -594,6 +594,11 @@ function handleClickOutside(e) {
   }
 }
 
+function onPartyFocus() {
+  partySearchQuery.value = ''
+  showPartyDropdown.value = true
+}
+
 // ─── Detail panel state ───────────────────────────────────────────────────────
 const selectedEntry = ref(null)
 const voucherDetail = ref(null)
@@ -760,8 +765,7 @@ function onGlobalKeydown(e) {
   if (e.key === 'F7') {
     e.preventDefault()
     partyInputRef.value?.focus()
-    partyInputRef.value?.select()
-    showPartyDropdown.value = true
+    onPartyFocus()
     return
   }
 
