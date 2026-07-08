@@ -734,9 +734,11 @@ export async function updateItem(data) {
  */
 export async function createSalesInvoice(payload) {
   const isCash = payload.paymentType === "Cash";
+  const company = localStorage.getItem("wb-company") || undefined;
 
   const doc = {
     doctype: "Sales Invoice",
+    company,
     naming_series: payload.namingSeries,
     customer: payload.customer,
     customer_address: payload.customer_address,

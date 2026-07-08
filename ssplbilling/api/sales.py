@@ -66,6 +66,8 @@ def post_sales_invoice(payload):
 
 def _apply_payload_to_doc(doc, payload):
     """Shared helper: populate a Sales Invoice doc from the given payload dict."""
+    if payload.get("company"):
+        doc.company = payload.get("company")
     doc.customer = payload.get("customer")
     doc.mop = payload.get("mop")
     doc.update_stock = frappe.utils.cint(payload.get("update_stock", 1))
