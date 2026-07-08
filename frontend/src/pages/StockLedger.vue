@@ -92,19 +92,52 @@
           </div>
         </div>
 
-        <!-- Customer / Supplier Filter -->
-        <div class="relative min-w-[200px]">
-          <select
-            v-model="partyFilter"
-            class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none"
+        <!-- Customer / Supplier Filter (Searchable Autocomplete) -->
+        <div class="relative min-w-[220px]" ref="partyDropdownRef">
+          <input
+            v-model="partySearchQuery"
+            type="text"
+            class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Search party..."
             style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
-          >
-            <option value="">All Parties</option>
-            <option v-for="p in relatedParties" :key="p.id" :value="p.id">{{ p.name }}</option>
-          </select>
+            @focus="showPartyDropdown = true"
+            @keydown.down.prevent="navigatePartyDropdown(1)"
+            @keydown.up.prevent="navigatePartyDropdown(-1)"
+            @keydown.enter.prevent="selectHighlightedParty"
+            @keydown.esc.prevent="showPartyDropdown = false"
+          />
           <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">Customer / Supplier</label>
-          <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-text-muted)]">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <button
+              v-if="partyFilter"
+              @click="clearPartyFilter"
+              class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] cursor-pointer h-5 w-5 flex items-center justify-center rounded-full hover:bg-[var(--color-surface-raised)]"
+              title="Clear Filter"
+            >
+              ✕
+            </button>
+            <span v-else class="text-[var(--color-text-muted)] pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </div>
+
+          <!-- Dropdown List Overlay -->
+          <div
+            v-if="showPartyDropdown && filteredPartiesList.length"
+            class="absolute left-0 right-0 top-[48px] z-50 max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl custom-scrollbar py-1"
+          >
+            <div
+              v-for="(p, idx) in filteredPartiesList"
+              :key="p.id"
+              class="cursor-pointer px-4 py-2 text-sm font-semibold hover:bg-[var(--color-surface-raised)] transition-colors"
+              :class="{
+                'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)]/90': p.id === partyFilter,
+                'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]': idx === highlightedPartyIdx && p.id !== partyFilter
+              }"
+              @click="selectParty(p)"
+            >
+              {{ p.name }}
+            </div>
           </div>
         </div>
 
@@ -484,6 +517,10 @@ const selectedItem = ref(null)
 const selectedWarehouse = ref('')
 const allowedWarehouses = ref([])
 const partyFilter = ref('')
+const partyDropdownRef = ref(null)
+const showPartyDropdown = ref(false)
+const partySearchQuery = ref('')
+const highlightedPartyIdx = ref(-1)
 
 // ─── Ledger state ─────────────────────────────────────────────────────────────
 const loading = ref(false)
@@ -520,6 +557,60 @@ const relatedParties = computed(() => {
   }
   return list.sort((a, b) => a.name.localeCompare(b.name))
 })
+
+const filteredPartiesList = computed(() => {
+  const query = partySearchQuery.value.trim().toLowerCase()
+  const base = [{ id: '', name: 'All Parties' }]
+  const list = [...base, ...relatedParties.value]
+  if (!query) return list
+  return list.filter(p => p.name.toLowerCase().includes(query))
+})
+
+function selectParty(p) {
+  partyFilter.value = p.id
+  partySearchQuery.value = p.id ? p.name : ''
+  showPartyDropdown.value = false
+  highlightedPartyIdx.value = -1
+}
+
+function clearPartyFilter() {
+  partyFilter.value = ''
+  partySearchQuery.value = ''
+  showPartyDropdown.value = false
+  highlightedPartyIdx.value = -1
+}
+
+function navigatePartyDropdown(dir) {
+  if (!showPartyDropdown.value) {
+    showPartyDropdown.value = true
+    highlightedPartyIdx.value = 0
+    return
+  }
+  const len = filteredPartiesList.value.length
+  if (!len) return
+  highlightedPartyIdx.value = (highlightedPartyIdx.value + dir + len) % len
+  
+  nextTick(() => {
+    const el = partyDropdownRef.value?.querySelector(`.custom-scrollbar > div:nth-child(${highlightedPartyIdx.value + 1})`)
+    el?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+function selectHighlightedParty() {
+  if (!showPartyDropdown.value) return
+  const p = filteredPartiesList.value[highlightedPartyIdx.value]
+  if (p) {
+    selectParty(p)
+  }
+}
+
+function handleClickOutside(e) {
+  if (partyDropdownRef.value && !partyDropdownRef.value.contains(e.target)) {
+    showPartyDropdown.value = false
+    const current = relatedParties.value.find(p => p.id === partyFilter.value)
+    partySearchQuery.value = current ? current.name : ''
+  }
+}
 
 // ─── Detail panel state ───────────────────────────────────────────────────────
 const selectedEntry = ref(null)
@@ -577,6 +668,7 @@ async function loadLedger() {
   voucherDetail.value = null
   focusedIdx.value = -1
   partyFilter.value = ''
+  partySearchQuery.value = ''
 
   try {
     ledgerData.value = await fetchStockLedger(
@@ -712,6 +804,7 @@ const handleDateFocus = () => dateInput.value?.focus();
 onMounted(async () => {
   window.addEventListener('wb-global-date-focus', handleDateFocus);
   window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('click', handleClickOutside)
 
   // Load all warehouses from ERPNext
   try {
@@ -739,6 +832,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('wb-global-date-focus', handleDateFocus);
   window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('click', handleClickOutside)
 })
 </script>
 
