@@ -30,7 +30,7 @@
             <span v-if="selectedItem" class="ml-3 text-xl text-[var(--color-text-muted)] font-medium">— {{ selectedItem.item_code }} - {{ selectedItem.item_name }}</span>
           </h1>
           <span v-if="ledgerData" class="rounded-lg bg-[var(--color-info)]/20 px-3 py-1 text-lg font-bold text-[var(--color-info)] shadow-sm">
-            {{ ledgerData.entries.length }} entries
+            {{ partyFilter.trim() ? `${filteredEntries.length} of ${ledgerData.entries.length} entries` : `${ledgerData.entries.length} entries` }}
           </span>
         </div>
 
@@ -90,6 +90,26 @@
           <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-text-muted)]">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </div>
+        </div>
+
+        <!-- Customer / Supplier Filter -->
+        <div class="relative min-w-[220px]">
+          <input
+            v-model="partyFilter"
+            type="text"
+            class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            placeholder="Type name or ID..."
+            style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
+          />
+          <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">Customer / Supplier</label>
+          <button
+            v-if="partyFilter"
+            @click="partyFilter = ''"
+            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 rounded-full hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+            title="Clear filter"
+          >
+            ✕
+          </button>
         </div>
 
         <!-- Refresh Button -->
@@ -181,7 +201,7 @@
             </thead>
             <tbody ref="tableBodyRef">
               <!-- No entries message -->
-              <tr v-if="!ledgerData.entries.length">
+              <tr v-if="!filteredEntries.length">
                 <td colspan="7" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
                   No stock transactions found for the selected period.
                 </td>
@@ -189,7 +209,7 @@
 
               <!-- Ledger rows -->
               <tr
-                v-for="(entry, idx) in ledgerData.entries"
+                v-for="(entry, idx) in filteredEntries"
                 :key="idx"
                 :data-idx="idx"
                 @click="onRowClick(entry, idx)"
@@ -467,11 +487,24 @@ const dateInput = ref(null)
 const selectedItem = ref(null)
 const selectedWarehouse = ref('')
 const allowedWarehouses = ref([])
+const partyFilter = ref('')
 
 // ─── Ledger state ─────────────────────────────────────────────────────────────
 const loading = ref(false)
 const error = ref('')
 const ledgerData = ref(null)
+
+const filteredEntries = computed(() => {
+  if (!ledgerData.value) return []
+  const filter = partyFilter.value.trim().toLowerCase()
+  if (!filter) return ledgerData.value.entries
+  return ledgerData.value.entries.filter(e => {
+    const partyName = (e.detail?.party_name || '').toLowerCase()
+    const party = (e.detail?.party || '').toLowerCase()
+    const voucherNo = (e.voucher_no || '').toLowerCase()
+    return partyName.includes(filter) || party.includes(filter) || voucherNo.includes(filter)
+  })
+})
 
 // ─── Detail panel state ───────────────────────────────────────────────────────
 const selectedEntry = ref(null)
@@ -602,22 +635,22 @@ function closeDetail() {
 
 // ─── Keyboard navigation for ledger rows ──────────────────────────────────────
 function onTableKeydown(e) {
-  if (!ledgerData.value?.entries?.length) return
-  const len = ledgerData.value.entries.length
+  if (!filteredEntries.value?.length) return
+  const len = filteredEntries.value.length
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     const nextIdx = Math.min(focusedIdx.value + 1, len - 1)
-    updatePreview(ledgerData.value.entries[nextIdx], nextIdx)
+    updatePreview(filteredEntries.value[nextIdx], nextIdx)
     scrollRowIntoView(nextIdx)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     const prevIdx = Math.max(focusedIdx.value - 1, 0)
-    updatePreview(ledgerData.value.entries[prevIdx], prevIdx)
+    updatePreview(filteredEntries.value[prevIdx], prevIdx)
     scrollRowIntoView(prevIdx)
   } else if (e.key === 'Enter' && focusedIdx.value >= 0) {
     e.preventDefault()
-    const entry = ledgerData.value.entries[focusedIdx.value]
+    const entry = filteredEntries.value[focusedIdx.value]
     if (['Sales Invoice', 'Quotation'].includes(entry.voucher_type)) {
       openBillDetail(entry.voucher_type, entry.voucher_no)
     } else {
@@ -647,6 +680,11 @@ function onGlobalKeydown(e) {
       closeDetail()
       return
     }
+  }
+
+  // Ignore table navigation keys if we are typing in an input/textarea/select
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+    return
   }
 
   if (!ledgerData.value) return
