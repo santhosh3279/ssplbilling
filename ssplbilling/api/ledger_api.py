@@ -446,14 +446,17 @@ def search_accounts(query="", account_type=None):
     return _impl(query, account_type)
 
 @frappe.whitelist()
-def get_warehouses():
-    """Return all enabled, non-group warehouses."""
-    return [r.name for r in frappe.get_all(
-        "Warehouse",
-        filters={"disabled": 0, "is_group": 0},
-        fields=["name"],
-        order_by="name asc",
-    )]
+def get_warehouses(company=None):
+	"""Return all enabled, non-group warehouses."""
+	filters = {"disabled": 0, "is_group": 0}
+	if company:
+		filters["company"] = company
+	return [r.name for r in frappe.get_all(
+		"Warehouse",
+		filters=filters,
+		fields=["name"],
+		order_by="name asc",
+	)]
 
 
 def _batch_voucher_details(entries):

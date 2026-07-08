@@ -802,7 +802,8 @@ onMounted(async () => {
 
   // Load all warehouses from ERPNext
   try {
-    const warehouses = await frappeGet('ssplbilling.api.ledger_api.get_warehouses')
+    const company = localStorage.getItem('wb-company') || ''
+    const warehouses = await frappeGet('ssplbilling.api.ledger_api.get_warehouses', { company })
     if (warehouses?.length) {
       allowedWarehouses.value = warehouses
       const defaultWh = localStorage.getItem('wb-warehouse') || ''
