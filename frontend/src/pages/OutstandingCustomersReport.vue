@@ -11,11 +11,22 @@
             &larr; Back
           </button>
           <div>
-            <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Outstanding Balance - Customers</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">Receivable balance per customer as on a given date</p>
+            <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Outstanding Balance - {{ partyType === 'Customer' ? 'Customers' : 'Suppliers' }}</h1>
+            <p class="text-xs text-[var(--color-text-muted)]">{{ partyType === 'Customer' ? 'Receivable balance per customer' : 'Payable balance per supplier' }} as on a given date</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Party Type</label>
+            <select
+              v-model="partyType"
+              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1.5 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none cursor-pointer"
+              @change="fetchData"
+            >
+              <option value="Customer">Customer</option>
+              <option value="Supplier">Supplier</option>
+            </select>
+          </div>
           <div class="flex items-center gap-2">
             <label class="text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">As On</label>
             <input
@@ -62,7 +73,7 @@
             📭
           </div>
           <h3 class="text-lg font-bold text-[var(--color-text)] mb-1">No outstanding balances</h3>
-          <p class="text-sm text-[var(--color-text-muted)] leading-relaxed">No customers have an outstanding balance as on {{ asOnDate }}.</p>
+          <p class="text-sm text-[var(--color-text-muted)] leading-relaxed">No {{ partyType === 'Customer' ? 'customers' : 'suppliers' }} have an outstanding balance as on {{ asOnDate }}.</p>
         </div>
       </div>
 
@@ -82,7 +93,7 @@
             </p>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
-            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Customers with Balance</p>
+            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{{ partyType === 'Customer' ? 'Customers' : 'Suppliers' }} with Balance</p>
             <p class="text-3xl font-black text-[var(--color-text)]">{{ rows.length }}</p>
           </div>
         </div>
@@ -93,7 +104,7 @@
             <thead>
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
                 <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
-                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Customer</th>
+                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{{ partyType === 'Customer' ? 'Customer' : 'Supplier' }}</th>
                 <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
                 <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
                 <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Last Transaction</th>
@@ -153,6 +164,7 @@ const loading = ref(false)
 const error = ref('')
 const rows = ref([])
 const asOnDate = ref(new Date().toISOString().slice(0, 10))
+const partyType = ref('Customer')
 
 const totalOutstanding = computed(() => rows.value.reduce((sum, r) => sum + (r.outstanding_amount || 0), 0))
 const totalDebit = computed(() => rows.value.reduce((sum, r) => sum + (r.outstanding_amount > 0 ? r.outstanding_amount : 0), 0))
@@ -162,10 +174,10 @@ async function fetchData() {
   loading.value = true
   error.value = ''
   try {
-    const res = await getOutstandingCustomersReport(asOnDate.value)
+    const res = await getOutstandingCustomersReport(asOnDate.value, partyType.value)
     rows.value = res.rows || []
   } catch (e) {
-    error.value = e.message || 'Failed to fetch outstanding customers report'
+    error.value = e.message || 'Failed to fetch outstanding balances report'
   } finally {
     loading.value = false
   }
@@ -178,7 +190,8 @@ function formatCurrency(val) {
 function exportToExcel() {
   if (!rows.value.length) return
 
-  const headers = ['S.No', 'Customer Code', 'Customer Name', 'Debit (Dr)', 'Credit (Cr)', 'Last Transaction Date']
+  const isCust = partyType.value === 'Customer'
+  const headers = ['S.No', isCust ? 'Customer Code' : 'Supplier Code', isCust ? 'Customer Name' : 'Supplier Name', 'Debit (Dr)', 'Credit (Cr)', 'Last Transaction Date']
   const data = rows.value.map((r, idx) => {
     const isCr = (r.outstanding_amount || 0) < 0
     const amt = Math.abs(Math.round(r.outstanding_amount || 0))
@@ -196,9 +209,9 @@ function exportToExcel() {
   const wb = utils.book_new()
   const ws = utils.aoa_to_sheet([headers, ...data])
   ws['!cols'] = [{ wch: 8 }, { wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, { wch: 18 }]
-  utils.book_append_sheet(wb, ws, 'Outstanding Customers')
+  utils.book_append_sheet(wb, ws, isCust ? 'Outstanding Customers' : 'Outstanding Suppliers')
 
-  writeFile(wb, `OutstandingCustomers_asOn_${asOnDate.value}.xlsx`)
+  writeFile(wb, `Outstanding${partyType.value}s_asOn_${asOnDate.value}.xlsx`)
 }
 
 onMounted(() => {

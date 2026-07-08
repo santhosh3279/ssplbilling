@@ -984,7 +984,7 @@ export async function getStockAgingReport(toDate, warehouse) {
   return frappeGet("ssplbilling.api.reports_api.get_stock_aging_report", { to_date: toDate, warehouse });
 }
 
-export async function getOutstandingCustomersReport(asOnDate) {
-  return frappeGet("ssplbilling.api.reports_api.get_outstanding_customers_report", { as_on_date: asOnDate });
+export async function getOutstandingCustomersReport(asOnDate, partyType = "Customer") {
+  return frappeGet("ssplbilling.api.reports_api.get_outstanding_customers_report", { as_on_date: asOnDate, party_type: partyType });
 }
 
