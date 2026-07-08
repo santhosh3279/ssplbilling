@@ -184,14 +184,68 @@
         <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
           <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
             <thead>
-              <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
+              <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)] select-none">
                 <th class="w-16 px-4 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] text-center">S.No</th>
-                <th class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Store (Income Account)</th>
-                <th class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Item Code</th>
-                <th class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Item Name</th>
-                <th class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] text-center">UOM</th>
-                <th class="px-6 py-3 text-right text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Quantity</th>
-                <th class="px-6 py-3 text-right text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Total Taxable Value</th>
+                <th
+                  @click="sortBy('income_account')"
+                  class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
+                >
+                  <div class="flex items-center gap-1.5">
+                    Store (Income Account)
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'income_account'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
+                  </div>
+                </th>
+                <th
+                  @click="sortBy('item_code')"
+                  class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
+                >
+                  <div class="flex items-center gap-1.5">
+                    Item Code
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'item_code'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
+                  </div>
+                </th>
+                <th
+                  @click="sortBy('item_name')"
+                  class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
+                >
+                  <div class="flex items-center gap-1.5">
+                    Item Name
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'item_name'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
+                  </div>
+                </th>
+                <th
+                  @click="sortBy('stock_uom')"
+                  class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] text-center cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
+                >
+                  <div class="flex items-center justify-center gap-1.5">
+                    UOM
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'stock_uom'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
+                  </div>
+                </th>
+                <th
+                  @click="sortBy('total_qty')"
+                  class="px-6 py-3 text-right text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
+                >
+                  <div class="flex items-center justify-end gap-1.5">
+                    Total Quantity
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'total_qty'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
+                  </div>
+                </th>
+                <th
+                  @click="sortBy('total_taxable_value')"
+                  class="px-6 py-3 text-right text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
+                >
+                  <div class="flex items-center justify-end gap-1.5">
+                    Total Taxable Value
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'total_taxable_value'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/10">
@@ -290,14 +344,48 @@ async function fetchData() {
   }
 }
 
+const sortKey = ref('item_name')
+const sortAsc = ref(true)
+
+function sortBy(key) {
+  if (sortKey.value === key) {
+    sortAsc.value = !sortAsc.value
+  } else {
+    sortKey.value = key
+    sortAsc.value = true
+  }
+}
+
 const filteredData = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return reportData.value
-  return reportData.value.filter(r => 
-    (r.income_account || '').toLowerCase().includes(query) ||
-    (r.item_code || '').toLowerCase().includes(query) || 
-    (r.item_name || '').toLowerCase().includes(query)
-  )
+  let result = reportData.value
+  
+  if (query) {
+    result = result.filter(r => 
+      (r.income_account || '').toLowerCase().includes(query) ||
+      (r.item_code || '').toLowerCase().includes(query) || 
+      (r.item_name || '').toLowerCase().includes(query)
+    )
+  }
+
+  const key = sortKey.value
+  const asc = sortAsc.value ? 1 : -1
+
+  return [...result].sort((a, b) => {
+    let valA = a[key]
+    let valB = b[key]
+
+    if (valA === undefined || valA === null) valA = ''
+    if (valB === undefined || valB === null) valB = ''
+
+    if (typeof valA === 'string' && typeof valB === 'string') {
+      return valA.localeCompare(valB) * asc
+    }
+    
+    if (valA < valB) return -1 * asc
+    if (valA > valB) return 1 * asc
+    return 0
+  })
 })
 
 const grandTotalQty = computed(() => {
