@@ -39,8 +39,7 @@
               @input="onEmpInput"
               @focus="showEmpDrop = true"
               @blur="setTimeout(() => { showEmpDrop = false }, 150)"
-              @keydown.escape="clearEmployee"
-              @keydown.enter.prevent="empOptions.length ? pickEmployee(empOptions[0]) : null"
+              @keydown="quickLedgerSearchRef?.handleKeydown($event)"
             />
             <button
               v-if="selectedEmployee"
@@ -48,23 +47,19 @@
               @click.prevent="clearEmployee"
               tabindex="-1"
             >&times;</button>
-            <div
+
+            <!-- Quick Ledger Search -->
+            <QuickLedgerSearch
+              ref="quickLedgerSearchRef"
+              :results="empOptions"
+              :query="empSearch"
+              :anchorEl="empInput"
+              balanceLabel="Points Total"
+              :isPoints="true"
               v-if="showEmpDrop && empOptions.length"
-              class="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl"
-            >
-              <button
-                v-for="emp in empOptions"
-                :key="emp.name"
-                class="w-full px-3 py-2 text-left text-xl hover:bg-[var(--color-info)]/30 flex items-center justify-between"
-                @mousedown.prevent="pickEmployee(emp)"
-              >
-                <div>
-                  <div class="font-semibold text-[var(--color-text)]">{{ emp.employee_name }}</div>
-                  <div class="text-[20px] text-[var(--color-text-muted)]">{{ emp.name }} · {{ emp.designation || '—' }}</div>
-                </div>
-                <span class="ml-3 text-lg font-mono text-[var(--color-success)]">{{ fmtPts(emp.balance_incentive) }} pts</span>
-              </button>
-            </div>
+              @select="pickEmployee"
+              @close="showEmpDrop = false"
+            />
           </div>
         </div>
 
@@ -209,9 +204,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 
 const router = useRouter()
 
@@ -225,7 +221,16 @@ const toDate = ref('')
 const isLoading = ref(false)
 const ledgerData = ref(null)
 
+const empInput = ref(null)
+const quickLedgerSearchRef = ref(null)
+
 let empSearchTimer = null
+
+onMounted(() => {
+  nextTick(() => {
+    empInput.value?.focus()
+  })
+})
 
 // ── Employee search ─────────────────────────────────────────────────────────
 function onEmpInput(e) {
@@ -237,14 +242,21 @@ function onEmpInput(e) {
   if (!q.trim()) { empOptions.value = []; return }
   empSearchTimer = setTimeout(async () => {
     try {
-      empOptions.value = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q, limit: 15 })
+      const raw = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q, limit: 15 })
+      empOptions.value = raw.map(e => ({
+        ...e,
+        label: e.employee_name,
+        balance: e.balance_incentive,
+        type: 'Employee',
+        group: e.designation
+      }))
     } catch { empOptions.value = [] }
   }, 250)
 }
 
 function pickEmployee(emp) {
   selectedEmployee.value = emp.name
-  empSearch.value = emp.employee_name
+  empSearch.value = emp.label || emp.employee_name
   empOptions.value = []
   showEmpDrop.value = false
   loadLedger()
