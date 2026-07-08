@@ -4,6 +4,7 @@
     <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-sm shrink-0">
       <div class="flex items-center gap-3">
         <button
+          v-if="!party"
           @click="router.push('/')"
           class="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-[var(--color-midlight)] transition-colors"
         >
