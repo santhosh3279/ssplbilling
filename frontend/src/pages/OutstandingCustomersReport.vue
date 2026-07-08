@@ -68,12 +68,17 @@
 
       <div v-else class="w-full">
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-3xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-5xl mx-auto">
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
-            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Outstanding</p>
-            <p class="text-3xl font-black" :class="totalOutstanding < 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-              {{ formatCurrency(Math.abs(totalOutstanding)) }}
-              <span class="text-lg font-medium ml-1">{{ totalOutstanding < 0 ? 'Cr' : 'Dr' }}</span>
+            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Debit (Dr)</p>
+            <p class="text-3xl font-black text-[var(--color-danger)]">
+              {{ formatCurrency(totalDebit) }}
+            </p>
+          </div>
+          <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
+            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Credit (Cr)</p>
+            <p class="text-3xl font-black text-[var(--color-success)]">
+              {{ formatCurrency(totalCredit) }}
             </p>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
