@@ -174,6 +174,17 @@
                 <div class="text-base text-[var(--color-text-muted)]">Receivable balance per customer</div>
               </div>
             </button>
+
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('ledger_sales_purchase')"
+            >
+              <span class="text-xl">📊</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Ledger Sales & Purchase</div>
+                <div class="text-base text-[var(--color-text-muted)]">Ledger-wise sales & purchase summary</div>
+              </div>
+            </button>
           </div>
 
         </div>
@@ -206,7 +217,7 @@
           <!-- Modal body -->
           <div class="px-6 py-5 space-y-4">
             <!-- Series selector -->
-            <div v-if="reportType !== 'store_summary' && reportType !== 'cashflow'">
+            <div v-if="reportType !== 'store_summary' && reportType !== 'cashflow' && reportType !== 'ledger_sales_purchase'">
               <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {{ modalConfig.seriesLabel }}
               </label>
@@ -277,7 +288,7 @@
             <button
               class="flex items-center gap-2 rounded-lg px-5 py-2 text-lg font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
               :class="modalConfig.btnClass"
-              :disabled="generating || (!selectedSeries && reportType !== 'store_summary' && reportType !== 'cashflow')"
+              :disabled="generating || (!selectedSeries && reportType !== 'store_summary' && reportType !== 'cashflow' && reportType !== 'ledger_sales_purchase')"
               @click="generateReport"
             >
               <span v-if="generating" class="animate-spin">⏳</span>
@@ -296,7 +307,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
 import ExcelJS from 'exceljs'
-import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport, getStoreWiseItemSalesReport, getIncomeAccounts, getCashflowReport } from '../api.js'
+import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport, getStoreWiseItemSalesReport, getIncomeAccounts, getCashflowReport, getLedgerWiseSalesPurchaseReport } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
@@ -440,6 +451,18 @@ const modalConfig = computed(() => {
       docLabel: 'Cost Center',
     }
   }
+  if (reportType.value === 'ledger_sales_purchase') {
+    return {
+      title: 'Ledger Sales & Purchase',
+      subtitle: 'Ledger-wise sales and purchase summary',
+      seriesLabel: '',
+      btnClass: 'bg-[var(--color-info)] hover:bg-[var(--color-info)]',
+      sheetName: 'Sales Ledger Wise',
+      filePrefix: 'LedgerSalesPurchase',
+      noDataMsg: 'No sales or purchase data found for the selected criteria.',
+      docLabel: 'Account',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -475,7 +498,7 @@ function openModal(type) {
 // ── Report generation ─────────────────────────────────────────────────────────
 async function generateReport() {
   modalError.value = ''
-  if (!selectedSeries.value && reportType.value !== 'store_summary') {
+  if (!selectedSeries.value && reportType.value !== 'store_summary' && reportType.value !== 'cashflow' && reportType.value !== 'ledger_sales_purchase') {
     modalError.value = 'Please select a series.'
     return
   }
@@ -503,6 +526,15 @@ async function generateReport() {
       rows = await getItemSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
     } else if (reportType.value === 'store_summary') {
       rows = await getStoreWiseItemSalesReport(fromDate.value, toDate.value, selectedIncomeAccount.value)
+    } else if (reportType.value === 'ledger_sales_purchase') {
+      const res = await getLedgerWiseSalesPurchaseReport(fromDate.value, toDate.value)
+      if ((!res.sales || res.sales.length === 0) && (!res.purchase || res.purchase.length === 0)) {
+        modalError.value = modalConfig.value.noDataMsg
+        return
+      }
+      buildLedgerSalesPurchaseExcel(res)
+      showModal.value = false
+      return
     } else if (reportType.value === 'cashflow') {
       const res = await getCashflowReport(fromDate.value, toDate.value)
       const summary = res.summary || []
@@ -546,6 +578,48 @@ async function generateReport() {
 // ── Excel builder ─────────────────────────────────────────────────────────────
 function fmt(n) {
   return Number(Number(n || 0).toFixed(2))
+}
+
+function buildLedgerSalesPurchaseExcel(res) {
+  const sales = res.sales || []
+  const purchase = res.purchase || []
+
+  const getSheetData = (rows) => {
+    const headers = ['Account', 'Debit (Dr)', 'Credit (Cr)', 'Net Amount']
+    const data = rows.map(r => [
+      r.account,
+      fmt(r.debit),
+      fmt(r.credit),
+      fmt(r.net_amount),
+    ])
+
+    const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
+    const totals = [
+      'GRAND TOTAL',
+      fmt(sum('debit')),
+      fmt(sum('credit')),
+      fmt(sum('net_amount')),
+    ]
+
+    return { headers, data, totals }
+  }
+
+  const salesInfo = getSheetData(sales)
+  const purchaseInfo = getSheetData(purchase)
+
+  const wb = utils.book_new()
+
+  const wsSales = utils.aoa_to_sheet([salesInfo.headers, ...salesInfo.data, salesInfo.totals])
+  wsSales['!cols'] = [{ wch: 45 }, { wch: 20 }, { wch: 20 }, { wch: 20 }]
+  utils.book_append_sheet(wb, wsSales, 'Sales Ledger Wise')
+
+  const wsPurchase = utils.aoa_to_sheet([purchaseInfo.headers, ...purchaseInfo.data, purchaseInfo.totals])
+  wsPurchase['!cols'] = [{ wch: 45 }, { wch: 20 }, { wch: 20 }, { wch: 20 }]
+  utils.book_append_sheet(wb, wsPurchase, 'Purchase Ledger Wise')
+
+  const from = fromDate.value || 'all'
+  const to = toDate.value || 'all'
+  writeFile(wb, `LedgerSalesPurchase_${from}_to_${to}.xlsx`)
 }
 
 function buildStoreWiseItemSummaryExcel(rows) {

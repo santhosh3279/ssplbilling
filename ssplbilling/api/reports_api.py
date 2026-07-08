@@ -1182,3 +1182,67 @@ def get_outstanding_customers_report(as_on_date=None, party_type="Customer"):
 
 	return {"rows": rows, "as_on_date": as_on_date}
 
+
+@frappe.whitelist()
+def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None):
+	"""Get sales and purchase ledger-wise summary report for a date range."""
+	if not from_date:
+		from_date = frappe.utils.today()
+	if not to_date:
+		to_date = frappe.utils.today()
+
+	sales_rows = frappe.db.sql(
+		"""
+		SELECT
+			gle.account,
+			SUM(gle.debit) AS debit,
+			SUM(gle.credit) AS credit,
+			SUM(gle.credit) - SUM(gle.debit) AS net_amount
+		FROM `tabGL Entry` gle
+		WHERE gle.voucher_type = 'Sales Invoice'
+		  AND gle.is_cancelled = 0
+		  AND gle.posting_date BETWEEN %s AND %s
+		GROUP BY gle.account
+		HAVING ABS(SUM(gle.debit)) > 0.005 OR ABS(SUM(gle.credit)) > 0.005
+		ORDER BY net_amount DESC, gle.account
+		""",
+		(from_date, to_date),
+		as_dict=True,
+	)
+
+	purchase_rows = frappe.db.sql(
+		"""
+		SELECT
+			gle.account,
+			SUM(gle.debit) AS debit,
+			SUM(gle.credit) AS credit,
+			SUM(gle.debit) - SUM(gle.credit) AS net_amount
+		FROM `tabGL Entry` gle
+		WHERE gle.voucher_type = 'Purchase Invoice'
+		  AND gle.is_cancelled = 0
+		  AND gle.posting_date BETWEEN %s AND %s
+		GROUP BY gle.account
+		HAVING ABS(SUM(gle.debit)) > 0.005 OR ABS(SUM(gle.credit)) > 0.005
+		ORDER BY net_amount DESC, gle.account
+		""",
+		(from_date, to_date),
+		as_dict=True,
+	)
+
+	for r in sales_rows:
+		r["debit"] = float(r["debit"] or 0)
+		r["credit"] = float(r["credit"] or 0)
+		r["net_amount"] = float(r["net_amount"] or 0)
+
+	for r in purchase_rows:
+		r["debit"] = float(r["debit"] or 0)
+		r["credit"] = float(r["credit"] or 0)
+		r["net_amount"] = float(r["net_amount"] or 0)
+
+	return {
+		"sales": sales_rows,
+		"purchase": purchase_rows,
+		"from_date": from_date,
+		"to_date": to_date
+	}
+
