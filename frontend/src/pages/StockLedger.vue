@@ -552,14 +552,22 @@ const relatedParties = computed(() => {
 })
 
 const quickSearchResults = computed(() => {
-  const q = (partySearchQuery.value || '').trim()
+  const q = (partySearchQuery.value || '').trim().toLowerCase()
+  const mappedRelated = relatedParties.value.map(p => {
+    const cached = searchLedgersInCache(p.id)[0]
+    return cached || { name: p.id, label: p.name, type: 'Customer', balance: 0 }
+  })
+
   if (!q) {
-    return relatedParties.value.map(p => {
-      const cached = searchLedgersInCache(p.id)[0]
-      return cached || { name: p.id, label: p.name, type: 'Customer', balance: 0 }
-    })
+    return mappedRelated
   }
-  return searchLedgersInCache(q)
+
+  return mappedRelated.filter(p => {
+    return (
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.label || '').toLowerCase().includes(q)
+    )
+  })
 })
 
 function selectParty(p) {
