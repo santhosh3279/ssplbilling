@@ -11,8 +11,8 @@
             &larr; Back
           </button>
           <div>
-            <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Outstanding Balance - {{ partyType === 'Customer' ? 'Customers' : 'Suppliers' }}</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">{{ partyType === 'Customer' ? 'Receivable balance per customer' : 'Payable balance per supplier' }} as on a given date</p>
+            <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Outstanding Balance - {{ partyType === 'Customer' ? 'Customers' : (partyType === 'Supplier' ? 'Suppliers' : 'Employees') }}</h1>
+            <p class="text-xs text-[var(--color-text-muted)]">{{ partyType === 'Customer' ? 'Receivable balance per customer' : (partyType === 'Supplier' ? 'Payable balance per supplier' : 'Outstanding balance per employee') }} as on a given date</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
@@ -25,6 +25,7 @@
             >
               <option value="Customer">Customer</option>
               <option value="Supplier">Supplier</option>
+              <option value="Employee">Employee</option>
             </select>
           </div>
           <div class="flex items-center gap-2">
@@ -73,7 +74,7 @@
             📭
           </div>
           <h3 class="text-lg font-bold text-[var(--color-text)] mb-1">No outstanding balances</h3>
-          <p class="text-sm text-[var(--color-text-muted)] leading-relaxed">No {{ partyType === 'Customer' ? 'customers' : 'suppliers' }} have an outstanding balance as on {{ asOnDate }}.</p>
+          <p class="text-sm text-[var(--color-text-muted)] leading-relaxed">No {{ partyType === 'Customer' ? 'customers' : (partyType === 'Supplier' ? 'suppliers' : 'employees') }} have an outstanding balance as on {{ asOnDate }}.</p>
         </div>
       </div>
 
@@ -93,7 +94,7 @@
             </p>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
-            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{{ partyType === 'Customer' ? 'Customers' : 'Suppliers' }} with Balance</p>
+            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">{{ partyType === 'Customer' ? 'Customers' : (partyType === 'Supplier' ? 'Suppliers' : 'Employees') }} with Balance</p>
             <p class="text-3xl font-black text-[var(--color-text)]">{{ rows.length }}</p>
           </div>
         </div>
@@ -104,7 +105,7 @@
             <thead>
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
                 <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
-                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{{ partyType === 'Customer' ? 'Customer' : 'Supplier' }}</th>
+                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{{ partyType === 'Customer' ? 'Customer' : (partyType === 'Supplier' ? 'Supplier' : 'Employee') }}</th>
                 <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
                 <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
                 <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Last Transaction</th>
@@ -190,8 +191,11 @@ function formatCurrency(val) {
 function exportToExcel() {
   if (!rows.value.length) return
 
-  const isCust = partyType.value === 'Customer'
-  const headers = ['S.No', isCust ? 'Customer Code' : 'Supplier Code', isCust ? 'Customer Name' : 'Supplier Name', 'Debit (Dr)', 'Credit (Cr)', 'Last Transaction Date']
+  const labelCode = partyType.value === 'Customer' ? 'Customer Code' : (partyType.value === 'Supplier' ? 'Supplier Code' : 'Employee Code')
+  const labelName = partyType.value === 'Customer' ? 'Customer Name' : (partyType.value === 'Supplier' ? 'Supplier Name' : 'Employee Name')
+  const sheetTitle = partyType.value === 'Customer' ? 'Outstanding Customers' : (partyType.value === 'Supplier' ? 'Outstanding Suppliers' : 'Outstanding Employees')
+
+  const headers = ['S.No', labelCode, labelName, 'Debit (Dr)', 'Credit (Cr)', 'Last Transaction Date']
   const data = rows.value.map((r, idx) => {
     const isCr = (r.outstanding_amount || 0) < 0
     const amt = Math.abs(Math.round(r.outstanding_amount || 0))
@@ -209,7 +213,7 @@ function exportToExcel() {
   const wb = utils.book_new()
   const ws = utils.aoa_to_sheet([headers, ...data])
   ws['!cols'] = [{ wch: 8 }, { wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, { wch: 18 }]
-  utils.book_append_sheet(wb, ws, isCust ? 'Outstanding Customers' : 'Outstanding Suppliers')
+  utils.book_append_sheet(wb, ws, sheetTitle)
 
   writeFile(wb, `Outstanding${partyType.value}s_asOn_${asOnDate.value}.xlsx`)
 }

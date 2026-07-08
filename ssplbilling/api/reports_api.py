@@ -1144,12 +1144,17 @@ def get_stock_aging_report(to_date=None, warehouse=None):
 
 @frappe.whitelist()
 def get_outstanding_customers_report(as_on_date=None, party_type="Customer"):
-	"""Outstanding balance per customer/supplier as on a given date, from the GL party ledger."""
+	"""Outstanding balance per customer/supplier/employee as on a given date, from the GL party ledger."""
 	as_on_date = as_on_date or frappe.utils.today()
-	party_type = party_type if party_type in ["Customer", "Supplier"] else "Customer"
+	party_type = party_type if party_type in ["Customer", "Supplier", "Employee"] else "Customer"
 
 	join_table = f"tab{party_type}"
-	name_field = "customer_name" if party_type == "Customer" else "supplier_name"
+	if party_type == "Customer":
+		name_field = "customer_name"
+	elif party_type == "Supplier":
+		name_field = "supplier_name"
+	else:
+		name_field = "employee_name"
 
 	rows = frappe.db.sql(
 		f"""
