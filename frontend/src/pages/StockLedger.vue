@@ -93,23 +93,19 @@
         </div>
 
         <!-- Customer / Supplier Filter -->
-        <div class="relative min-w-[220px]">
-          <input
+        <div class="relative min-w-[200px]">
+          <select
             v-model="partyFilter"
-            type="text"
-            class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-            placeholder="Type name or ID..."
+            class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none"
             style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
-          />
-          <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">Customer / Supplier</label>
-          <button
-            v-if="partyFilter"
-            @click="partyFilter = ''"
-            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 rounded-full hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
-            title="Clear filter"
           >
-            ✕
-          </button>
+            <option value="">All Parties</option>
+            <option v-for="p in relatedParties" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+          <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">Customer / Supplier</label>
+          <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-text-muted)]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
         </div>
 
         <!-- Refresh Button -->
@@ -496,14 +492,33 @@ const ledgerData = ref(null)
 
 const filteredEntries = computed(() => {
   if (!ledgerData.value) return []
-  const filter = partyFilter.value.trim().toLowerCase()
+  const filter = partyFilter.value
   if (!filter) return ledgerData.value.entries
   return ledgerData.value.entries.filter(e => {
-    const partyName = (e.detail?.party_name || '').toLowerCase()
-    const party = (e.detail?.party || '').toLowerCase()
-    const voucherNo = (e.voucher_no || '').toLowerCase()
-    return partyName.includes(filter) || party.includes(filter) || voucherNo.includes(filter)
+    const partyName = e.detail?.party_name
+    const partyId = e.detail?.party
+    return partyName === filter || partyId === filter
   })
+})
+
+const relatedParties = computed(() => {
+  if (!ledgerData.value?.entries) return []
+  const parties = new Set()
+  const list = []
+  for (const entry of ledgerData.value.entries) {
+    const name = entry.detail?.party_name || entry.detail?.party
+    if (name) {
+      const id = entry.detail.party || entry.detail.party_name
+      if (!parties.has(id)) {
+        parties.add(id)
+        list.push({
+          id: id,
+          name: entry.detail.party_name || entry.detail.party
+        })
+      }
+    }
+  }
+  return list.sort((a, b) => a.name.localeCompare(b.name))
 })
 
 // ─── Detail panel state ───────────────────────────────────────────────────────
@@ -561,6 +576,7 @@ async function loadLedger() {
   selectedEntry.value = null
   voucherDetail.value = null
   focusedIdx.value = -1
+  partyFilter.value = ''
 
   try {
     ledgerData.value = await fetchStockLedger(
