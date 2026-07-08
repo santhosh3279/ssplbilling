@@ -12,7 +12,7 @@
           </button>
           <div>
             <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Ledger Sales & Purchase</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">Ledger-wise summary of sales and purchase transactions</p>
+            <p class="text-xs text-[var(--color-text-muted)]">Customer and Supplier-wise summary of sales and purchase transactions</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
@@ -91,13 +91,13 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
           <!-- Sales Ledgers -->
           <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider border-b border-[var(--color-border)] pb-2">Sales Ledgers</h2>
+            <h2 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider border-b border-[var(--color-border)] pb-2">Sales (Customer Wise)</h2>
             <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
               <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
                 <thead>
                   <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
                     <th class="w-12 px-3 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
-                    <th class="px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Account</th>
+                    <th class="px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Customer</th>
                     <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
                     <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
                     <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Net Amount</th>
@@ -106,11 +106,14 @@
                 <tbody class="divide-y divide-slate-700/50">
                   <tr
                     v-for="(row, idx) in salesRows"
-                    :key="row.account"
+                    :key="row.customer"
                     class="hover:bg-[var(--color-surface-raised)]/30 transition-colors"
                   >
                     <td class="w-12 px-3 py-2 font-mono text-base text-[var(--color-text-muted)] text-center">{{ idx + 1 }}</td>
-                    <td class="px-4 py-2 text-base font-semibold text-[var(--color-text)] truncate max-w-[200px]" :title="row.account">{{ row.account }}</td>
+                    <td class="px-4 py-2 text-base font-semibold text-[var(--color-text)] truncate max-w-[200px]" :title="row.customer_name">
+                      <div>{{ row.customer_name }}</div>
+                      <div class="text-xs text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.customer }}</div>
+                    </td>
                     <td class="px-4 py-2 text-right font-mono text-base text-[var(--color-text-muted)]">{{ formatCurrency(row.debit) }}</td>
                     <td class="px-4 py-2 text-right font-mono text-base text-[var(--color-text-muted)]">{{ formatCurrency(row.credit) }}</td>
                     <td class="px-4 py-2 text-right font-mono text-base font-bold text-[var(--color-success)]">{{ formatCurrency(row.net_amount) }}</td>
@@ -131,13 +134,13 @@
 
           <!-- Purchase Ledgers -->
           <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider border-b border-[var(--color-border)] pb-2">Purchase Ledgers</h2>
+            <h2 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider border-b border-[var(--color-border)] pb-2">Purchase (Supplier Wise)</h2>
             <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
               <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
                 <thead>
                   <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
                     <th class="w-12 px-3 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
-                    <th class="px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Account</th>
+                    <th class="px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Supplier</th>
                     <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
                     <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
                     <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Net Amount</th>
@@ -146,11 +149,14 @@
                 <tbody class="divide-y divide-slate-700/50">
                   <tr
                     v-for="(row, idx) in purchaseRows"
-                    :key="row.account"
+                    :key="row.supplier"
                     class="hover:bg-[var(--color-surface-raised)]/30 transition-colors"
                   >
                     <td class="w-12 px-3 py-2 font-mono text-base text-[var(--color-text-muted)] text-center">{{ idx + 1 }}</td>
-                    <td class="px-4 py-2 text-base font-semibold text-[var(--color-text)] truncate max-w-[200px]" :title="row.account">{{ row.account }}</td>
+                    <td class="px-4 py-2 text-base font-semibold text-[var(--color-text)] truncate max-w-[200px]" :title="row.supplier_name">
+                      <div>{{ row.supplier_name }}</div>
+                      <div class="text-xs text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.supplier }}</div>
+                    </td>
                     <td class="px-4 py-2 text-right font-mono text-base text-[var(--color-text-muted)]">{{ formatCurrency(row.debit) }}</td>
                     <td class="px-4 py-2 text-right font-mono text-base text-[var(--color-text-muted)]">{{ formatCurrency(row.credit) }}</td>
                     <td class="px-4 py-2 text-right font-mono text-base font-bold text-[var(--color-danger)]">{{ formatCurrency(row.net_amount) }}</td>
@@ -224,10 +230,11 @@ function fmt(n) {
 }
 
 function exportToExcel() {
-  const getSheetData = (rows) => {
-    const headers = ['Account', 'Debit (Dr)', 'Credit (Cr)', 'Net Amount']
+  const getSalesSheetData = (rows) => {
+    const headers = ['Customer Code', 'Customer Name', 'Debit (Dr)', 'Credit (Cr)', 'Net Amount']
     const data = rows.map(r => [
-      r.account,
+      r.customer,
+      r.customer_name,
       fmt(r.debit),
       fmt(r.credit),
       fmt(r.net_amount),
@@ -236,6 +243,7 @@ function exportToExcel() {
     const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
     const totals = [
       'GRAND TOTAL',
+      '',
       fmt(sum('debit')),
       fmt(sum('credit')),
       fmt(sum('net_amount')),
@@ -244,20 +252,42 @@ function exportToExcel() {
     return { headers, data, totals }
   }
 
-  const salesInfo = getSheetData(salesRows.value)
-  const purchaseInfo = getSheetData(purchaseRows.value)
+  const getPurchaseSheetData = (rows) => {
+    const headers = ['Supplier Code', 'Supplier Name', 'Debit (Dr)', 'Credit (Cr)', 'Net Amount']
+    const data = rows.map(r => [
+      r.supplier,
+      r.supplier_name,
+      fmt(r.debit),
+      fmt(r.credit),
+      fmt(r.net_amount),
+    ])
+
+    const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
+    const totals = [
+      'GRAND TOTAL',
+      '',
+      fmt(sum('debit')),
+      fmt(sum('credit')),
+      fmt(sum('net_amount')),
+    ]
+
+    return { headers, data, totals }
+  }
+
+  const salesInfo = getSalesSheetData(salesRows.value)
+  const purchaseInfo = getPurchaseSheetData(purchaseRows.value)
 
   const wb = utils.book_new()
 
   const wsSales = utils.aoa_to_sheet([salesInfo.headers, ...salesInfo.data, salesInfo.totals])
-  wsSales['!cols'] = [{ wch: 45 }, { wch: 20 }, { wch: 20 }, { wch: 20 }]
-  utils.book_append_sheet(wb, wsSales, 'Sales Ledger Wise')
+  wsSales['!cols'] = [{ wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, { wch: 20 }]
+  utils.book_append_sheet(wb, wsSales, 'Sales Customer Wise')
 
   const wsPurchase = utils.aoa_to_sheet([purchaseInfo.headers, ...purchaseInfo.data, purchaseInfo.totals])
-  wsPurchase['!cols'] = [{ wch: 45 }, { wch: 20 }, { wch: 20 }, { wch: 20 }]
-  utils.book_append_sheet(wb, wsPurchase, 'Purchase Ledger Wise')
+  wsPurchase['!cols'] = [{ wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, { wch: 20 }]
+  utils.book_append_sheet(wb, wsPurchase, 'Purchase Supplier Wise')
 
-  writeFile(wb, `LedgerSalesPurchase_${fromDate.value}_to_${toDate.value}.xlsx`)
+  writeFile(wb, `SalesPurchase_CustSupplierWise_${fromDate.value}_to_${toDate.value}.xlsx`)
 }
 
 onMounted(() => {
