@@ -70,6 +70,18 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Print Name</label>
+          <input
+            v-model="form.customer_print_name"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
+            placeholder="Name as it appears on print"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="handleFormEnter"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1.5">
           <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Group *</label>
           <select
             v-model="form.customer_group"
@@ -232,7 +244,7 @@ const indianStates = [
 ]
 
 const defaultForm = () => ({
-  customer_name: '', customer_group: '',
+  customer_name: '', customer_print_name: '', customer_group: '',
   mobile: '', whatsapp: '', email: '', gstin: '',
   address_name: '', address_line1: '', address_line2: '',
   city: 'Palakkad', pincode: '678000', state: 'Kerala',
@@ -258,6 +270,7 @@ onMounted(async () => {
     form.value = {
       name:           row.name,
       customer_name:  row.label          || '',
+      customer_print_name: row.customer_print_name || '',
       customer_group: row.customer_group || 'All Customer Groups',
       mobile:         row.mobile_no      || '',
       whatsapp:       row.whatsapp       || '',
@@ -387,6 +400,7 @@ function applyGstData() {
   if (!fetchedGstData.value) return
   const d = fetchedGstData.value
   form.value.customer_name = d.business_name
+  form.value.customer_print_name = d.business_name
   form.value.address_line1 = d.address_line1
   form.value.address_line2 = d.address_line2
   form.value.city = d.city

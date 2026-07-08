@@ -120,6 +120,7 @@ export async function createCustomer(data) {
   const customerDoc = {
     doctype: 'Customer',
     customer_name: data.customer_name,
+    customer_print_name: data.customer_print_name || '',
     customer_type: 'Individual',
     customer_group: data.customer_group || 'All Customer Groups',
     territory: 'All Territories',
@@ -155,6 +156,7 @@ export async function fetchCustomerDetails(customerId) {
   const result = {
     name: customerId,
     customer_name: '',
+    customer_print_name: '',
     mobile: '',
     whatsapp: '',
     email: '',
@@ -176,6 +178,7 @@ export async function fetchCustomerDetails(customerId) {
       name: customerId,
     })
     result.customer_name = cust.customer_name || ''
+    result.customer_print_name = cust.customer_print_name || ''
     result.customer_group = cust.customer_group || ''
     result.mobile = cust.mobile_no || ''
     result.email = cust.email_id || ''
