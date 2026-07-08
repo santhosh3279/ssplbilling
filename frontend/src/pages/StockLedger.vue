@@ -95,16 +95,14 @@
         <!-- Customer / Supplier Filter (Searchable Autocomplete) -->
         <div class="relative min-w-[220px]" ref="partyDropdownRef">
           <input
+            ref="partyInputRef"
             v-model="partySearchQuery"
             type="text"
             class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             placeholder="Search party..."
             style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
             @focus="showPartyDropdown = true"
-            @keydown.down.prevent="navigatePartyDropdown(1)"
-            @keydown.up.prevent="navigatePartyDropdown(-1)"
-            @keydown.enter.prevent="selectHighlightedParty"
-            @keydown.esc.prevent="showPartyDropdown = false"
+            @keydown="quickLedgerSearchRef?.handleKeydown($event)"
           />
           <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">Customer / Supplier</label>
           <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -121,24 +119,16 @@
             </span>
           </div>
 
-          <!-- Dropdown List Overlay -->
-          <div
-            v-if="showPartyDropdown && filteredPartiesList.length"
-            class="absolute left-0 right-0 top-[48px] z-50 max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl custom-scrollbar py-1"
-          >
-            <div
-              v-for="(p, idx) in filteredPartiesList"
-              :key="p.id"
-              class="cursor-pointer px-4 py-2 text-sm font-semibold hover:bg-[var(--color-surface-raised)] transition-colors"
-              :class="{
-                'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)]/90': p.id === partyFilter,
-                'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]': idx === highlightedPartyIdx && p.id !== partyFilter
-              }"
-              @click="selectParty(p)"
-            >
-              {{ p.name }}
-            </div>
-          </div>
+          <!-- Quick Ledger Search Overlay -->
+          <QuickLedgerSearch
+            ref="quickLedgerSearchRef"
+            :results="quickSearchResults"
+            :query="partySearchQuery"
+            :anchorEl="partyInputRef"
+            v-if="showPartyDropdown && quickSearchResults.length"
+            @select="selectParty"
+            @close="showPartyDropdown = false"
+          />
         </div>
 
         <!-- Refresh Button -->
@@ -420,6 +410,8 @@ import { fetchStockLedger, frappeGet } from '../api.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
+import { searchLedgersInCache } from '../services/ledgerCache'
 import { useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -518,9 +510,10 @@ const selectedWarehouse = ref('')
 const allowedWarehouses = ref([])
 const partyFilter = ref('')
 const partyDropdownRef = ref(null)
+const partyInputRef = ref(null)
+const quickLedgerSearchRef = ref(null)
 const showPartyDropdown = ref(false)
 const partySearchQuery = ref('')
-const highlightedPartyIdx = ref(-1)
 
 // ─── Ledger state ─────────────────────────────────────────────────────────────
 const loading = ref(false)
@@ -558,57 +551,38 @@ const relatedParties = computed(() => {
   return list.sort((a, b) => a.name.localeCompare(b.name))
 })
 
-const filteredPartiesList = computed(() => {
-  const query = partySearchQuery.value.trim().toLowerCase()
-  const base = [{ id: '', name: 'All Parties' }]
-  const list = [...base, ...relatedParties.value]
-  if (!query) return list
-  return list.filter(p => p.name.toLowerCase().includes(query))
+const quickSearchResults = computed(() => {
+  const q = (partySearchQuery.value || '').trim()
+  if (!q) {
+    return relatedParties.value.map(p => {
+      const cached = searchLedgersInCache(p.id)[0]
+      return cached || { name: p.id, label: p.name, type: 'Customer', balance: 0 }
+    })
+  }
+  return searchLedgersInCache(q)
 })
 
 function selectParty(p) {
-  partyFilter.value = p.id
-  partySearchQuery.value = p.id ? p.name : ''
+  partyFilter.value = p.name
+  partySearchQuery.value = p.label
   showPartyDropdown.value = false
-  highlightedPartyIdx.value = -1
 }
 
 function clearPartyFilter() {
   partyFilter.value = ''
   partySearchQuery.value = ''
   showPartyDropdown.value = false
-  highlightedPartyIdx.value = -1
-}
-
-function navigatePartyDropdown(dir) {
-  if (!showPartyDropdown.value) {
-    showPartyDropdown.value = true
-    highlightedPartyIdx.value = 0
-    return
-  }
-  const len = filteredPartiesList.value.length
-  if (!len) return
-  highlightedPartyIdx.value = (highlightedPartyIdx.value + dir + len) % len
-  
-  nextTick(() => {
-    const el = partyDropdownRef.value?.querySelector(`.custom-scrollbar > div:nth-child(${highlightedPartyIdx.value + 1})`)
-    el?.scrollIntoView({ block: 'nearest' })
-  })
-}
-
-function selectHighlightedParty() {
-  if (!showPartyDropdown.value) return
-  const p = filteredPartiesList.value[highlightedPartyIdx.value]
-  if (p) {
-    selectParty(p)
-  }
 }
 
 function handleClickOutside(e) {
   if (partyDropdownRef.value && !partyDropdownRef.value.contains(e.target)) {
     showPartyDropdown.value = false
-    const current = relatedParties.value.find(p => p.id === partyFilter.value)
-    partySearchQuery.value = current ? current.name : ''
+    if (partyFilter.value) {
+      const activeLedger = searchLedgersInCache(partyFilter.value)[0]
+      partySearchQuery.value = activeLedger ? activeLedger.label : partyFilter.value
+    } else {
+      partySearchQuery.value = ''
+    }
   }
 }
 
@@ -775,6 +749,14 @@ function scrollRowIntoView(idx) {
 }
 
 function onGlobalKeydown(e) {
+  if (e.key === 'F7') {
+    e.preventDefault()
+    partyInputRef.value?.focus()
+    partyInputRef.value?.select()
+    showPartyDropdown.value = true
+    return
+  }
+
   if (showItemSearchModal.value || showBillDetail.value) {
     if (e.key === 'Escape' && showItemSearchModal.value) {
       showItemSearchModal.value = false
