@@ -238,6 +238,7 @@ function onEmpInput(e) {
   empSearch.value = q
   selectedEmployee.value = ''
   ledgerData.value = null
+  showEmpDrop.value = true
   clearTimeout(empSearchTimer)
   if (!q.trim()) { empOptions.value = []; return }
   empSearchTimer = setTimeout(async () => {
