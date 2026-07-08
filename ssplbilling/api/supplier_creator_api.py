@@ -51,6 +51,7 @@ def create_supplier_full(data):
 
 	sup = frappe.new_doc("Supplier")
 	sup.supplier_name = supplier_name
+	sup.supplier_print_name = data.get("supplier_print_name") or ""
 	sup.supplier_type = data.get("supplier_type") or "Individual"
 	sup.supplier_group = data.get("supplier_group") or "All Supplier Groups"
 	sup.mobile_no = data.get("mobile") or ""
@@ -99,6 +100,7 @@ def get_supplier_details(supplier):
 	result = {
 		"name": sup.name,
 		"supplier_name": sup.supplier_name,
+		"supplier_print_name": sup.supplier_print_name or "",
 		"supplier_type": sup.supplier_type or "Individual",
 		"supplier_group": sup.supplier_group or "",
 		"mobile": sup.mobile_no or "",
@@ -177,6 +179,7 @@ def update_supplier_full(data):
 
 	sup = frappe.get_doc("Supplier", supplier_id)
 	sup.supplier_name = data.get("supplier_name") or sup.supplier_name
+	sup.supplier_print_name = data.get("supplier_print_name") or ""
 	sup.supplier_type = data.get("supplier_type") or sup.supplier_type or "Individual"
 	sup.supplier_group = data.get("supplier_group") or sup.supplier_group or "All Supplier Groups"
 	sup.mobile_no = data.get("mobile") or ""

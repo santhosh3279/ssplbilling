@@ -131,6 +131,19 @@
           />
         </div>
 
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier Print Name</label>
+          <input
+            ref="printNameInput"
+            v-model="form.supplier_print_name"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+            style="font-size: 1.5rem; padding: 0.2em;"
+            placeholder="Name as it appears on print"
+            @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
+          />
+        </div>
+
         <!-- Primary Party (Party Link) -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Primary Party (Link)</label>
@@ -340,6 +353,7 @@ const form = reactive({
   supplier_type: 'Individual',
   supplier_group: '',
   supplier_name: '',
+  supplier_print_name: '',
   mobile: '',
   whatsapp: '',
   email: '',
@@ -368,6 +382,7 @@ const gstCategory = computed(() =>
 const typeInput            = ref(null)
 const groupInput           = ref(null)
 const nameInput            = ref(null)
+const printNameInput       = ref(null)
 const primaryPartyInputRef = ref(null)
 const quickSearchRef       = ref(null)
 const mobileInput          = ref(null)
@@ -388,6 +403,7 @@ const fieldOrder = [
   typeInput,
   groupInput,
   nameInput,
+  printNameInput,
   primaryPartyInputRef,
   mobileInput,
   whatsappInput,
@@ -471,6 +487,7 @@ function applyGstData() {
   if (!fetchedGstData.value) return
   const d = fetchedGstData.value
   form.supplier_name = d.business_name
+  form.supplier_print_name = d.business_name
   form.address_line1 = d.address_line1
   form.address_line2 = d.address_line2
   form.city = d.city
@@ -514,7 +531,8 @@ async function initForm() {
   if (props.isEdit && props.supplierRow) {
     Object.assign(form, {
       name:          props.supplierRow.name,
-      supplier_name: props.supplierRow.label        || '',
+      supplier_name: props.supplierRow.supplier_name || props.supplierRow.label || '',
+      supplier_print_name: props.supplierRow.supplier_print_name || '',
       mobile:        props.supplierRow.mobile_no    || '',
       whatsapp:      props.supplierRow.whatsapp     || '',
       email:         props.supplierRow.email        || '',
@@ -557,6 +575,7 @@ function resetForm() {
     supplier_type: 'Individual',
     supplier_group: supplierGroups.value[0]?.name || '',
     supplier_name: '',
+    supplier_print_name: '',
     mobile: '', whatsapp: '', email: '', gstin: '',
     address_name: '', address_line1: '', address_line2: '',
     city: 'Palakkad', pincode: '678000', state: 'Kerala',
