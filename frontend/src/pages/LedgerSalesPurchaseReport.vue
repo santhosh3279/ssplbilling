@@ -95,12 +95,12 @@
             <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
               <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
                 <thead>
-                  <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
-                    <th class="w-12 px-3 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
-                    <th class="px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Customer</th>
-                    <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
-                    <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
-                    <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Net Amount</th>
+                  <tr class="bg-[var(--color-surface-raised)]">
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] w-12 px-3 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Customer</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Net Amount</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-700/50">
@@ -138,12 +138,12 @@
             <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
               <table class="w-full text-left whitespace-nowrap border-separate border-spacing-0">
                 <thead>
-                  <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
-                    <th class="w-12 px-3 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
-                    <th class="px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Supplier</th>
-                    <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
-                    <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
-                    <th class="px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Net Amount</th>
+                  <tr class="bg-[var(--color-surface-raised)]">
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] w-12 px-3 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Supplier</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
+                    <th class="sticky top-0 z-10 bg-[var(--color-surface-raised)] border-b border-[var(--color-border)] px-4 py-2 text-right text-base font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Net Amount</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-700/50">
