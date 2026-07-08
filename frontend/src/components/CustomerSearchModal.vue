@@ -378,14 +378,16 @@ const allowedAccountSet = computed(() => {
 function tokenMatch(l, fields, tokens) {
   if (tokens.length === 0) return true
   
-  // Create a single searchable string for this item once per match call
-  let haystack = ''
+  const words = []
   for (const f of fields) {
     const val = l[f]
-    if (val) haystack += ' ' + val.toLowerCase()
+    if (val) {
+      const fieldWords = String(val).toLowerCase().split(/[^a-zA-Z0-9]+/).filter(Boolean)
+      words.push(...fieldWords)
+    }
   }
   
-  return tokens.every(t => haystack.includes(t))
+  return tokens.every(t => words.some(w => w.startsWith(t)))
 }
 
 // Rank based on ledger activity only (busiest ledgers first).
