@@ -31,6 +31,7 @@ import OutstandingCustomersReport from './pages/OutstandingCustomersReport.vue'
 import LedgerSalesPurchaseReport from './pages/LedgerSalesPurchaseReport.vue'
 import ItemSalesSummary from './pages/ItemSalesSummary.vue'
 import StoreWiseItemSales from './pages/StoreWiseItemSales.vue'
+import FastMovingItems from './pages/FastMovingItems.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
@@ -289,6 +290,12 @@ const routes = [
     name: 'StoreWiseItemSales',
     component: StoreWiseItemSales,
     meta: { title: 'Store Wise Item Sales' },
+  },
+  {
+    path: '/fast-moving-items',
+    name: 'FastMovingItems',
+    component: FastMovingItems,
+    meta: { title: 'Fast Moving Items' },
   },
   {
     path: '/loading-receipt',

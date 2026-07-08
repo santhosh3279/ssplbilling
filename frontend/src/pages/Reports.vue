@@ -100,6 +100,17 @@
             </button>
 
             <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border-[var(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="router.push('/fast-moving-items')"
+            >
+              <span class="text-xl">⚡</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Fast Moving Items</div>
+                <div class="text-base text-[var(--color-text-muted)]">Top selling items by quantity</div>
+              </div>
+            </button>
+
+            <button
               class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
               @click="router.push('/store-sale-report')"
             >

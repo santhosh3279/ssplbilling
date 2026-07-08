@@ -440,6 +440,74 @@ def get_item_summary_report(series, from_date=None, to_date=None):
 	return result
 
 
+
+@frappe.whitelist()
+def get_fast_moving_items_report(from_date=None, to_date=None, series=None, income_account=None, limit=50):
+	"""Return Fast Moving Items Report.
+	Ordered by total quantity sold descending.
+	"""
+	query_filters = []
+	conditions = []
+
+	if from_date:
+		conditions.append("inv.posting_date >= %s")
+		query_filters.append(from_date)
+	if to_date:
+		conditions.append("inv.posting_date <= %s")
+		query_filters.append(to_date)
+	if series:
+		conditions.append("inv.naming_series = %s")
+		query_filters.append(series)
+	if income_account:
+		conditions.append("it.income_account = %s")
+		query_filters.append(income_account)
+
+	where_clause = " AND ".join(conditions)
+	if where_clause:
+		where_clause = "AND " + where_clause
+
+	# Parse limit safely
+	try:
+		limit_val = int(limit)
+	except (TypeError, ValueError):
+		limit_val = 50
+
+	query = f"""
+		SELECT 
+			it.item_code,
+			it.item_name,
+			it.stock_uom,
+			SUM(it.qty) as total_qty,
+			SUM(it.taxable_value) as total_taxable_value,
+			COUNT(DISTINCT inv.name) as transaction_count
+		FROM 
+			`tabSales Invoice` inv
+		JOIN 
+			`tabSales Invoice Item` it ON it.parent = inv.name
+		WHERE 
+			inv.docstatus = 1
+			{where_clause}
+		GROUP BY 
+			it.item_code, it.item_name, it.stock_uom
+		ORDER BY 
+			total_qty DESC
+		LIMIT %s
+	"""
+	query_filters.append(limit_val)
+
+	rows = frappe.db.sql(query, tuple(query_filters), as_dict=1)
+
+	result = []
+	for row in rows:
+		r = dict(row)
+		r["total_qty"] = float(r.get("total_qty") or 0)
+		r["total_taxable_value"] = float(r.get("total_taxable_value") or 0)
+		r["transaction_count"] = int(r.get("transaction_count") or 0)
+		result.append(r)
+
+	return result
+
+
 @frappe.whitelist()
 def get_store_sale_report(from_date=None, to_date=None):
         """

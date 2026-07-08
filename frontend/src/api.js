@@ -890,14 +890,24 @@ export async function getItemSummaryReport(series, fromDate, toDate) {
   });
 }
 
-/**
- * Fetch Store Wise Item Sales Report.
- */
 export async function getStoreWiseItemSalesReport(fromDate, toDate, incomeAccount) {
   return frappeGet("ssplbilling.api.reports_api.get_store_wise_item_sales_report", {
     from_date: fromDate,
     to_date: toDate,
     income_account: incomeAccount,
+  });
+}
+
+/**
+ * Fetch Fast Moving Items Report.
+ */
+export async function getFastMovingItemsReport(fromDate, toDate, series, incomeAccount, limit) {
+  return frappeGet("ssplbilling.api.reports_api.get_fast_moving_items_report", {
+    from_date: fromDate,
+    to_date: toDate,
+    series: series,
+    income_account: incomeAccount,
+    limit: limit,
   });
 }
 
