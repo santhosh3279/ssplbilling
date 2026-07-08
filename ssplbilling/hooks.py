@@ -203,19 +203,27 @@ doc_events = {
 	"Purchase Invoice": {
 		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",
 		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
-		"on_update": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_update": [
+			"ssplbilling.api.stock_utils.clear_draft_purchase_qtys_cache",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
+		],
 		"on_submit": [
+			"ssplbilling.api.stock_utils.clear_draft_purchase_qtys_cache",
 			"ssplbilling.api.stock_utils.publish_stock_updates",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
 		"on_cancel": [
 			"ssplbilling.incentive_utils.cancel_linked_invoice_incentives",
+			"ssplbilling.api.stock_utils.clear_draft_purchase_qtys_cache",
 			"ssplbilling.api.stock_utils.publish_stock_updates",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
-		"on_trash": "ssplbilling.api.panel_sync.publish_bill_panel_update",
+		"on_trash": [
+			"ssplbilling.api.stock_utils.clear_draft_purchase_qtys_cache",
+			"ssplbilling.api.panel_sync.publish_bill_panel_update",
+		],
 	},
 	"Sales Order": {
 		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",

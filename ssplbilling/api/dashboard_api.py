@@ -310,6 +310,15 @@ def clear_and_rebuild_draft_invoice_cache():
 
 
 @frappe.whitelist()
+def clear_and_rebuild_draft_purchase_cache():
+	"""Clear the draft Purchase Invoice quantities Redis cache and rebuild it from current draft Purchase Invoices."""
+	from ssplbilling.api.stock_utils import clear_draft_purchase_qtys_cache, get_draft_purchase_qtys_from_redis
+	clear_draft_purchase_qtys_cache()
+	new_qtys = get_draft_purchase_qtys_from_redis()
+	return {"status": "success", "count": len(new_qtys)}
+
+
+@frappe.whitelist()
 def get_active_sessions():
 	"""Return users currently active on this site."""
 	rows = frappe.db.sql(

@@ -880,11 +880,12 @@ async function handleClearRedisCache() {
   isClearingRedis.value = true
   try {
     const res = await dashboardApi.clearDraftInvoiceCache()
-    if (res?.status === 'success') {
-      alert(`Success: Redis stock cache cleared & rebuilt successfully (${res.count} items cached).`)
+    const resPur = await dashboardApi.clearDraftPurchaseCache()
+    if (res?.status === 'success' && resPur?.status === 'success') {
+      alert(`Success: Redis stock cache cleared & rebuilt successfully (${res.count} sales, ${resPur.count} purchase items cached).`)
       await refreshItemCache('Sales', null, defaultWarehouse.value || null)
     } else {
-      alert('Failed to clear Redis cache: ' + (res?.message || 'Unknown error'))
+      alert('Failed to clear Redis cache: ' + (res?.message || resPur?.message || 'Unknown error'))
     }
   } catch (e) {
     console.error('[Dashboard] clearDraftInvoiceCache failed:', e)

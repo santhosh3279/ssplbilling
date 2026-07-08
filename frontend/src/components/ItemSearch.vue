@@ -59,6 +59,9 @@
                 <span v-if="results[selectedIdx].redis_stock" class="text-xl font-normal text-[var(--color-text-muted)] ml-2">
                   ({{ results[selectedIdx].redis_stock }})
                 </span>
+                <span v-if="results[selectedIdx].redis_purchase_stock" class="text-xl font-normal text-[var(--color-success)] ml-2">
+                  (+{{ results[selectedIdx].redis_purchase_stock }})
+                </span>
               </span>
             </div>
             <div v-if="warehouse" class="flex flex-col min-w-[150px] max-w-[250px]">
@@ -129,6 +132,9 @@
                 </span>
                 <span v-if="item.redis_stock" class="text-2xl ml-2 font-normal" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]/80' : 'text-[var(--color-text-muted)]'">
                   ({{ item.redis_stock }})
+                </span>
+                <span v-if="item.redis_purchase_stock" class="text-2xl ml-2 font-normal text-[var(--color-success)]" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]/80' : ''">
+                  (+{{ item.redis_purchase_stock }})
                 </span>
               </td>
             </tr>

@@ -67,7 +67,7 @@ export function initItemSync() {
   _stockHandler = (data) => {
     if (!data?.item_code || !data?.warehouse) return
     console.log('[useItemSync] received stock_update:', data)
-    updateItemStockInCache(data.item_code, data.warehouse, data.qty, data.redis_stock)
+    updateItemStockInCache(data.item_code, data.warehouse, data.qty, data.redis_stock, data.redis_purchase_stock)
     window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
   }
   socket.on('stock_update', _stockHandler)

@@ -241,7 +241,7 @@ export function updateItemPriceInCache(itemCode, priceList, rate, uom) {
  * qty, recomputes the item's total stock, and updates its redis (draft) stock figure.
  * Ignored if the cache is currently scoped to a different single warehouse.
  */
-export function updateItemStockInCache(itemCode, warehouse, qty, redisStock) {
+export function updateItemStockInCache(itemCode, warehouse, qty, redisStock, redisPurchaseStock) {
   const { warehouse: activeWarehouse } = lastParams.value
   if (activeWarehouse && activeWarehouse !== warehouse) return
 
@@ -260,6 +260,7 @@ export function updateItemStockInCache(itemCode, warehouse, qty, redisStock) {
   item.warehouse_stock = warehouseStock
   item.stock = warehouseStock.reduce((sum, w) => sum + (w.qty || 0), 0)
   item.redis_stock = redisStock
+  item.redis_purchase_stock = redisPurchaseStock
 
   items.value.splice(idx, 1, item)
   lastSync.value = Date.now()
