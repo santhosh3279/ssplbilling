@@ -177,7 +177,7 @@
 
             <button
               class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-              @click="openModal('ledger_sales_purchase')"
+              @click="router.push('/ledger-sales-purchase-report')"
             >
               <span class="text-xl">📊</span>
               <div class="text-left">

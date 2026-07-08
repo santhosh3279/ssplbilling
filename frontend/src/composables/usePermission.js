@@ -81,6 +81,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'StockStatusReport',
   'StockAgingReport',
   'OutstandingCustomersReport',
+  'LedgerSalesPurchaseReport',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -93,6 +94,7 @@ export const ADMIN_ROUTES = new Set([
   'StockStatusReport',
   'StockAgingReport',
   'OutstandingCustomersReport',
+  'LedgerSalesPurchaseReport',
   'IncentiveLedger',
   'IncentiveEntry',
   'CustomerEnquiry',
@@ -234,6 +236,7 @@ const TILE_ROUTE_MAP = {
   'catelogue':         'Catelogue',
   'unreconciled':      'Unreconciled',
   'cheques':           'ChequeRegister',
+  'ledger-sales-purchase-report': 'LedgerSalesPurchaseReport',
 }
 
 export function canAccessTile(tileId) {

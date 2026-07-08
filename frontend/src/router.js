@@ -28,6 +28,7 @@ import CostCenterSalesReport from './pages/CostCenterSalesReport.vue'
 import StockStatusReport from './pages/StockStatusReport.vue'
 import StockAgingReport from './pages/StockAgingReport.vue'
 import OutstandingCustomersReport from './pages/OutstandingCustomersReport.vue'
+import LedgerSalesPurchaseReport from './pages/LedgerSalesPurchaseReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
@@ -268,6 +269,12 @@ const routes = [
     name: 'OutstandingCustomersReport',
     component: OutstandingCustomersReport,
     meta: { title: 'Outstanding Customers' },
+  },
+  {
+    path: '/ledger-sales-purchase-report',
+    name: 'LedgerSalesPurchaseReport',
+    component: LedgerSalesPurchaseReport,
+    meta: { title: 'Ledger Sales & Purchase' },
   },
   {
     path: '/loading-receipt',
