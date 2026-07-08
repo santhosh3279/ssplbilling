@@ -82,6 +82,8 @@ export const ACCOUNTS_ROUTES = new Set([
   'StockAgingReport',
   'OutstandingCustomersReport',
   'LedgerSalesPurchaseReport',
+  'ItemSalesSummary',
+  'StoreWiseItemSales',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -95,6 +97,8 @@ export const ADMIN_ROUTES = new Set([
   'StockAgingReport',
   'OutstandingCustomersReport',
   'LedgerSalesPurchaseReport',
+  'ItemSalesSummary',
+  'StoreWiseItemSales',
   'IncentiveLedger',
   'IncentiveEntry',
   'CustomerEnquiry',
@@ -172,6 +176,8 @@ export function canAccessRoute(routeName) {
       allowed.add('StockStatusReport')
       allowed.add('StockAgingReport')
       allowed.add('OutstandingCustomersReport')
+      allowed.add('ItemSalesSummary')
+      allowed.add('StoreWiseItemSales')
     }
     return allowed.has(routeName)
   }
@@ -237,6 +243,8 @@ const TILE_ROUTE_MAP = {
   'unreconciled':      'Unreconciled',
   'cheques':           'ChequeRegister',
   'ledger-sales-purchase-report': 'LedgerSalesPurchaseReport',
+  'item-sales-summary': 'ItemSalesSummary',
+  'store-wise-item-sales': 'StoreWiseItemSales',
 }
 
 export function canAccessTile(tileId) {

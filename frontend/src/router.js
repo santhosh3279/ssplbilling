@@ -29,6 +29,8 @@ import StockStatusReport from './pages/StockStatusReport.vue'
 import StockAgingReport from './pages/StockAgingReport.vue'
 import OutstandingCustomersReport from './pages/OutstandingCustomersReport.vue'
 import LedgerSalesPurchaseReport from './pages/LedgerSalesPurchaseReport.vue'
+import ItemSalesSummary from './pages/ItemSalesSummary.vue'
+import StoreWiseItemSales from './pages/StoreWiseItemSales.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
@@ -275,6 +277,18 @@ const routes = [
     name: 'LedgerSalesPurchaseReport',
     component: LedgerSalesPurchaseReport,
     meta: { title: 'Ledger Sales & Purchase' },
+  },
+  {
+    path: '/item-sales-summary',
+    name: 'ItemSalesSummary',
+    component: ItemSalesSummary,
+    meta: { title: 'Item Sales Summary' },
+  },
+  {
+    path: '/store-wise-item-sales',
+    name: 'StoreWiseItemSales',
+    component: StoreWiseItemSales,
+    meta: { title: 'Store Wise Item Sales' },
   },
   {
     path: '/loading-receipt',

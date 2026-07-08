@@ -79,7 +79,7 @@
             
             <button
               class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border-[var(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-              @click="openModal('item_summary')"
+              @click="router.push('/item-sales-summary')"
             >
               <span class="text-xl">📦</span>
               <div class="text-left">
@@ -90,7 +90,7 @@
 
             <button
               class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-warning)]/20 hover:border-[var(--color-warning)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-              @click="openModal('store_summary')"
+              @click="router.push('/store-wise-item-sales')"
             >
               <span class="text-xl">🏬</span>
               <div class="text-left">
