@@ -81,6 +81,7 @@
           <select
             v-model="selectedWarehouse"
             class="h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 px-4 pt-4 pb-1 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none"
+            style="-webkit-appearance: none; -moz-appearance: none; appearance: none;"
           >
             <option value="">All Warehouses</option>
             <option v-for="w in allowedWarehouses" :key="w" :value="w">{{ w }}</option>
