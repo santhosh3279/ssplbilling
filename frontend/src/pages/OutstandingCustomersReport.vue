@@ -71,7 +71,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-3xl mx-auto">
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
             <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Outstanding</p>
-            <p class="text-3xl font-black text-[var(--color-danger)]">{{ formatCurrency(totalOutstanding) }}</p>
+            <p class="text-3xl font-black" :class="totalOutstanding < 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+              {{ formatCurrency(Math.abs(totalOutstanding)) }}
+              <span class="text-lg font-medium ml-1">{{ totalOutstanding < 0 ? 'Cr' : 'Dr' }}</span>
+            </p>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
             <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Customers with Balance</p>
@@ -87,6 +90,7 @@
                 <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
                 <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Customer</th>
                 <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Outstanding Amount</th>
+                <th class="px-4 py-2 text-center text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Cr/Dr</th>
                 <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Last Transaction</th>
               </tr>
             </thead>
@@ -102,7 +106,10 @@
                   <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.customer }}</div>
                 </td>
                 <td class="px-6 py-2 text-right font-mono text-xl font-bold" :class="row.outstanding_amount < 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                  {{ formatCurrency(row.outstanding_amount) }}
+                  {{ formatCurrency(Math.abs(row.outstanding_amount)) }}
+                </td>
+                <td class="px-4 py-2 text-center font-bold text-lg font-mono" :class="row.outstanding_amount < 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                  {{ row.outstanding_amount < 0 ? 'Cr' : 'Dr' }}
                 </td>
                 <td class="px-6 py-2 text-lg text-[var(--color-text-muted)]">{{ row.last_transaction_date }}</td>
               </tr>
@@ -111,7 +118,10 @@
               <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
                 <td class="w-12 px-2 py-1.5"></td>
                 <td class="px-6 py-1.5 text-lg">GRAND TOTAL</td>
-                <td class="px-6 py-1.5 text-right font-mono text-2xl text-[var(--color-danger)]">{{ formatCurrency(totalOutstanding) }}</td>
+                <td class="px-6 py-1.5 text-right font-mono text-2xl" :class="totalOutstanding < 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ formatCurrency(Math.abs(totalOutstanding)) }}</td>
+                <td class="px-4 py-1.5 text-center font-mono text-2xl" :class="totalOutstanding < 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                  {{ totalOutstanding < 0 ? 'Cr' : 'Dr' }}
+                </td>
                 <td class="px-6 py-1.5"></td>
               </tr>
             </tfoot>
@@ -157,19 +167,20 @@ function formatCurrency(val) {
 function exportToExcel() {
   if (!rows.value.length) return
 
-  const headers = ['S.No', 'Customer Code', 'Customer Name', 'Outstanding Amount', 'Last Transaction Date']
+  const headers = ['S.No', 'Customer Code', 'Customer Name', 'Outstanding Amount', 'Cr/Dr', 'Last Transaction Date']
   const data = rows.value.map((r, idx) => [
     idx + 1,
     r.customer,
     r.customer_name,
-    Math.round(r.outstanding_amount || 0),
+    Math.abs(Math.round(r.outstanding_amount || 0)),
+    (r.outstanding_amount || 0) < 0 ? 'Cr' : 'Dr',
     r.last_transaction_date,
   ])
-  data.push(['', '', 'GRAND TOTAL', Math.round(totalOutstanding.value || 0), ''])
+  data.push(['', '', 'GRAND TOTAL', Math.abs(Math.round(totalOutstanding.value || 0)), totalOutstanding.value < 0 ? 'Cr' : 'Dr', ''])
 
   const wb = utils.book_new()
   const ws = utils.aoa_to_sheet([headers, ...data])
-  ws['!cols'] = [{ wch: 8 }, { wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 18 }]
+  ws['!cols'] = [{ wch: 8 }, { wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 10 }, { wch: 18 }]
   utils.book_append_sheet(wb, ws, 'Outstanding Customers')
 
   writeFile(wb, `OutstandingCustomers_asOn_${asOnDate.value}.xlsx`)
