@@ -675,6 +675,16 @@ async function loadLedger() {
 watch(() => props.initialFromDate, (newV) => { if (newV) fromDate.value = newV })
 watch(() => props.initialToDate, (newV) => { if (newV) toDate.value = newV })
 watch(() => props.itemCode, (newV) => { if (newV) autoLoadItem(newV) })
+watch(selectedWarehouse, (newWh) => {
+  if (newWh) {
+    localStorage.setItem('wb-warehouse', newWh)
+  } else {
+    localStorage.removeItem('wb-warehouse')
+  }
+  if (selectedItem.value) {
+    loadLedger()
+  }
+})
 
 async function autoLoadItem(code) {
   if (!code || code === selectedItem.value?.item_code) return
