@@ -16,13 +16,26 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
+          <!-- Date shortcut buttons -->
+          <div class="flex items-center gap-1 bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-lg p-1">
+            <button
+              v-for="opt in dateShortcuts"
+              :key="opt.label"
+              class="rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wider transition-all"
+              :class="activeDateShortcut === opt.value ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
+              @click="setDateShortcut(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+
           <div class="flex items-center gap-2">
             <label class="text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">From</label>
             <input
               v-model="fromDate"
               type="date"
               class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1.5 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              @change="fetchData"
+              @change="onDateManualChange"
             />
           </div>
           <div class="flex items-center gap-2">
@@ -31,7 +44,7 @@
               v-model="toDate"
               type="date"
               class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1.5 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              @change="fetchData"
+              @change="onDateManualChange"
             />
           </div>
           <button
@@ -199,6 +212,15 @@ const fy = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1
 const fromDate = ref(`${fy}-04-01`)
 const toDate = ref(today.toISOString().slice(0, 10))
 
+const dateShortcuts = [
+  { label: 'CD', value: 'CD' },
+  { label: 'YD', value: 'YD' },
+  { label: 'CM', value: 'CM' },
+  { label: 'LM', value: 'LM' },
+  { label: 'FY', value: 'FY' },
+]
+const activeDateShortcut = ref('FY')
+
 const totalSales = computed(() => salesRows.value.reduce((sum, r) => sum + (r.net_amount || 0), 0))
 const totalSalesDr = computed(() => salesRows.value.reduce((sum, r) => sum + (r.debit || 0), 0))
 const totalSalesCr = computed(() => salesRows.value.reduce((sum, r) => sum + (r.credit || 0), 0))
@@ -206,6 +228,46 @@ const totalSalesCr = computed(() => salesRows.value.reduce((sum, r) => sum + (r.
 const totalPurchases = computed(() => purchaseRows.value.reduce((sum, r) => sum + (r.net_amount || 0), 0))
 const totalPurchaseDr = computed(() => purchaseRows.value.reduce((sum, r) => sum + (r.debit || 0), 0))
 const totalPurchaseCr = computed(() => purchaseRows.value.reduce((sum, r) => sum + (r.credit || 0), 0))
+
+function setDateShortcut(value) {
+  activeDateShortcut.value = value
+  const today = new Date()
+  const fmt = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  if (value === 'CD') {
+    fromDate.value = fmt(today)
+    toDate.value = fmt(today)
+  } else if (value === 'YD') {
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    fromDate.value = fmt(yesterday)
+    toDate.value = fmt(yesterday)
+  } else if (value === 'CM') {
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
+    fromDate.value = fmt(firstDay)
+    toDate.value = fmt(today)
+  } else if (value === 'LM') {
+    const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    const lastDayPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0)
+    fromDate.value = fmt(firstDayPrevMonth)
+    toDate.value = fmt(lastDayPrevMonth)
+  } else if (value === 'FY') {
+    const fyYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1
+    fromDate.value = `${fyYear}-04-01`
+    toDate.value = fmt(today)
+  }
+  fetchData()
+}
+
+function onDateManualChange() {
+  activeDateShortcut.value = ''
+  fetchData()
+}
 
 async function fetchData() {
   loading.value = true
