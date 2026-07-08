@@ -24,6 +24,7 @@ def get_parties_with_unlinked_entries(show_all=False):
 	pe_rows = frappe.db.sql(
 		"""
 		SELECT party_type, party,
+			CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction,
 			COUNT(*) AS cnt,
 			SUM(unallocated_amount) AS amount
 		FROM `tabPayment Entry`
@@ -31,7 +32,8 @@ def get_parties_with_unlinked_entries(show_all=False):
 			AND party_type IN ('Customer', 'Supplier')
 			AND unallocated_amount > 0.005
 			AND company = %s
-		GROUP BY party_type, party
+		GROUP BY party_type, party,
+			(CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END)
 		""",
 		(company,),
 		as_dict=True,
@@ -40,6 +42,7 @@ def get_parties_with_unlinked_entries(show_all=False):
 	je_rows = frappe.db.sql(
 		"""
 		SELECT jea.party_type, jea.party,
+			CASE WHEN jea.credit_in_account_currency > jea.debit_in_account_currency THEN 'Cr' ELSE 'Dr' END AS direction,
 			COUNT(DISTINCT jea.parent) AS cnt,
 			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS amount
 		FROM `tabJournal Entry Account` jea
@@ -51,7 +54,8 @@ def get_parties_with_unlinked_entries(show_all=False):
 			AND acc.account_type IN ('Receivable', 'Payable')
 			AND je.company = %s
 			AND je.is_opening != 'Yes'
-		GROUP BY jea.party_type, jea.party
+		GROUP BY jea.party_type, jea.party,
+			(CASE WHEN jea.credit_in_account_currency > jea.debit_in_account_currency THEN 'Cr' ELSE 'Dr' END)
 		""",
 		(company,),
 		as_dict=True,
@@ -61,13 +65,13 @@ def get_parties_with_unlinked_entries(show_all=False):
 	# credits waiting to be linked, same as an unallocated payment.
 	ret_rows = frappe.db.sql(
 		"""
-		SELECT 'Customer' AS party_type, customer AS party,
+		SELECT 'Customer' AS party_type, customer AS party, 'Cr' AS direction,
 			COUNT(*) AS cnt, SUM(ABS(outstanding_amount)) AS amount
 		FROM `tabSales Invoice`
 		WHERE docstatus = 1 AND outstanding_amount < -0.005 AND company = %s
 		GROUP BY customer
 		UNION ALL
-		SELECT 'Supplier' AS party_type, supplier AS party,
+		SELECT 'Supplier' AS party_type, supplier AS party, 'Dr' AS direction,
 			COUNT(*) AS cnt, SUM(ABS(outstanding_amount)) AS amount
 		FROM `tabPurchase Invoice`
 		WHERE docstatus = 1 AND outstanding_amount < -0.005 AND company = %s
@@ -80,13 +84,13 @@ def get_parties_with_unlinked_entries(show_all=False):
 	# Outstanding invoices (outstanding_amount > 0.005)
 	outstanding_rows = frappe.db.sql(
 		"""
-		SELECT 'Customer' AS party_type, customer AS party,
+		SELECT 'Customer' AS party_type, customer AS party, 'Dr' AS direction,
 			COUNT(*) AS cnt, SUM(outstanding_amount) AS amount
 		FROM `tabSales Invoice`
 		WHERE docstatus = 1 AND outstanding_amount > 0.005 AND company = %s
 		GROUP BY customer
 		UNION ALL
-		SELECT 'Supplier' AS party_type, supplier AS party,
+		SELECT 'Supplier' AS party_type, supplier AS party, 'Cr' AS direction,
 			COUNT(*) AS cnt, SUM(outstanding_amount) AS amount
 		FROM `tabPurchase Invoice`
 		WHERE docstatus = 1 AND outstanding_amount > 0.005 AND company = %s
@@ -97,41 +101,29 @@ def get_parties_with_unlinked_entries(show_all=False):
 	)
 
 	combined = {}
-	# Add unlinked payments / journals / returns
-	for r in list(pe_rows) + list(je_rows) + list(ret_rows):
+	# Group all entries by party and accumulate Cr vs Dr counts & amounts
+	all_rows = list(pe_rows) + list(je_rows) + list(ret_rows) + list(outstanding_rows)
+	for r in all_rows:
 		key = (r.party_type, r.party)
 		if key not in combined:
 			combined[key] = {
 				"party_type": r.party_type,
 				"party": r.party,
-				"unlinked_count": 0,
-				"unlinked_amount": 0.0,
-				"outstanding_count": 0,
-				"outstanding_amount": 0.0,
+				"cr_count": 0,
+				"cr_amount": 0.0,
+				"dr_count": 0,
+				"dr_amount": 0.0,
 			}
-		combined[key]["unlinked_count"] += int(r.cnt or 0)
-		combined[key]["unlinked_amount"] += float(r.amount or 0)
-
-	# Add outstanding invoices
-	for r in list(outstanding_rows):
-		key = (r.party_type, r.party)
-		if key not in combined:
-			if show_all:
-				combined[key] = {
-					"party_type": r.party_type,
-					"party": r.party,
-					"unlinked_count": 0,
-					"unlinked_amount": 0.0,
-					"outstanding_count": int(r.cnt or 0),
-					"outstanding_amount": float(r.amount or 0),
-				}
+		if r.direction == "Cr":
+			combined[key]["cr_count"] += int(r.cnt or 0)
+			combined[key]["cr_amount"] += float(r.amount or 0)
 		else:
-			combined[key]["outstanding_count"] = int(r.cnt or 0)
-			combined[key]["outstanding_amount"] = float(r.amount or 0)
+			combined[key]["dr_count"] += int(r.cnt or 0)
+			combined[key]["dr_amount"] += float(r.amount or 0)
 
-	# If show_all is False, filter to only keep parties that have both unlinked entries AND outstanding invoices
+	# If show_all is False, filter to only keep parties that have both unlinked Cr AND unlinked Dr
 	if not show_all:
-		combined = {k: v for k, v in combined.items() if v["outstanding_count"] > 0}
+		combined = {k: v for k, v in combined.items() if v["cr_count"] > 0 and v["dr_count"] > 0}
 
 	# Resolve display labels in bulk
 	labels = {}
@@ -147,6 +139,18 @@ def get_parties_with_unlinked_entries(show_all=False):
 	result = list(combined.values())
 	for key, row in combined.items():
 		row["label"] = labels.get(key, row["party"])
+		# Map cr/dr back to unlinked/outstanding for frontend compatibility
+		if row["party_type"] == "Customer":
+			row["unlinked_count"] = row["cr_count"]
+			row["unlinked_amount"] = row["cr_amount"]
+			row["outstanding_count"] = row["dr_count"]
+			row["outstanding_amount"] = row["dr_amount"]
+		else:
+			row["unlinked_count"] = row["dr_count"]
+			row["unlinked_amount"] = row["dr_amount"]
+			row["outstanding_count"] = row["cr_count"]
+			row["outstanding_amount"] = row["cr_amount"]
+
 		# Compatibility and sorting fields
 		row["count"] = row["unlinked_count"] if row["unlinked_count"] > 0 else row["outstanding_count"]
 		row["amount"] = row["unlinked_amount"] if row["unlinked_amount"] > 0 else row["outstanding_amount"]
