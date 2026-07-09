@@ -96,10 +96,11 @@
                     :ref="el => { if (el) expensePaymentRefs[idx] = el }"
                     v-model.number="row.payment"
                     type="number" step="0.01"
+                    :disabled="row.receipt > 0"
                     @input="row.receipt = null"
-                    @keydown.enter.prevent="expenseReceiptRefs[idx]?.focus()"
+                    @keydown.enter.prevent="row.payment > 0 ? handleAmountEnter(idx) : expenseReceiptRefs[idx]?.focus()"
                     @keydown.end.prevent="focusReferenceNo"
-                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit disabled:opacity-20 disabled:cursor-not-allowed"
                     placeholder="0.00"
                   />
                 </td>
@@ -110,10 +111,11 @@
                     :ref="el => { if (el) expenseReceiptRefs[idx] = el }"
                     v-model.number="row.receipt"
                     type="number" step="0.01"
+                    :disabled="row.payment > 0"
                     @input="row.payment = null"
                     @keydown.enter.prevent="handleAmountEnter(idx)"
                     @keydown.end.prevent="focusReferenceNo"
-                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit disabled:opacity-20 disabled:cursor-not-allowed"
                     placeholder="0.00"
                   />
                 </td>
