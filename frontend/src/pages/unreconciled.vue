@@ -640,6 +640,9 @@ async function submitReconciliation() {
       queuedAllocations.value = []
       await fetchData()
       loadParties() // keep the landing list totals current
+      if (payments.value.length === 0) {
+        backToList()
+      }
     }
   } catch (e) {
     alert('Reconciliation failed: ' + e.message)
