@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "creation": "2026-07-09 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "alternative_company",
+  "warehouse",
+  "section_break_tables",
+  "series",
+  "accounts"
+ ],
+ "fields": [
+  {
+   "fieldname": "alternative_company",
+   "fieldtype": "Link",
+   "label": "Alternative Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "section_break_tables",
+   "fieldtype": "Section Break",
+   "label": "Tables Settings"
+  },
+  {
+   "fieldname": "series",
+   "fieldtype": "Table",
+   "label": "Series Table",
+   "options": "Automatic Entry Series"
+  },
+  {
+   "fieldname": "accounts",
+   "fieldtype": "Table",
+   "label": "Accounts Table",
+   "options": "Automatic Entry Account"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-07-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "Automatic Entries",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
