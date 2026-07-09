@@ -64,23 +64,55 @@ def get_parties_with_unlinked_entries(show_all=False):
 	je_rows = []
 	if je_entries:
 		je_names = list(set(r["name"] for r in je_entries))
+		
+		# Fetch referenced names set for each JE account row to prevent double-subtracting
+		# already-allocated rows' links from the unallocated rows.
+		je_rows_ref = frappe.db.sql(
+			"""
+			SELECT parent, account, party, reference_name
+			FROM `tabJournal Entry Account`
+			WHERE parent IN %s
+				AND reference_name IS NOT NULL
+				AND reference_name != ''
+			""",
+			(tuple(je_names),),
+			as_dict=True,
+		)
+		ref_map = {}
+		for r in je_rows_ref:
+			k = (r["parent"], r["account"], r["party"])
+			if k not in ref_map:
+				ref_map[k] = set()
+			ref_map[k].add(r["reference_name"])
+
 		pl_links = frappe.db.sql(
 			"""
 			SELECT 
 				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END as name,
 				account,
 				party,
-				SUM(ABS(amount_in_account_currency)) as linked_amount
+				voucher_no,
+				against_voucher_no,
+				amount_in_account_currency
 			FROM `tabPayment Ledger Entry`
 			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
 			  AND against_voucher_no != voucher_no
 			  AND delinked = 0
-			GROUP BY name, account, party
 			""",
 			(tuple(je_names), tuple(je_names), tuple(je_names)),
 			as_dict=True,
 		)
-		links_map = {(r["name"], r["account"], r["party"]): float(r["linked_amount"]) for r in pl_links}
+
+		links_map = {}
+		for r in pl_links:
+			je_name = r["name"]
+			acc = r["account"]
+			pty = r["party"]
+			k = (je_name, acc, pty)
+			linked_doc = r["against_voucher_no"] if r["voucher_no"] == je_name else r["voucher_no"]
+			if k in ref_map and linked_doc in ref_map[k]:
+				continue
+			links_map[k] = links_map.get(k, 0.0) + abs(float(r["amount_in_account_currency"] or 0.0))
 
 		grouped_je = {}
 		for je in je_entries:
@@ -264,24 +296,56 @@ def get_unlinked_entries(party_type, party):
 	# Accurate unallocated_amount calculation via Payment Ledger
 	if je_entries:
 		je_names = list(set(r["name"] for r in je_entries))
+		
+		# Fetch referenced names set for each JE account row to prevent double-subtracting
+		# already-allocated rows' links from the unallocated rows.
+		je_rows_ref = frappe.db.sql(
+			"""
+			SELECT parent, account, party, reference_name
+			FROM `tabJournal Entry Account`
+			WHERE parent IN %s
+				AND reference_name IS NOT NULL
+				AND reference_name != ''
+			""",
+			(tuple(je_names),),
+			as_dict=True,
+		)
+		ref_map = {}
+		for r in je_rows_ref:
+			k = (r["parent"], r["account"], r["party"])
+			if k not in ref_map:
+				ref_map[k] = set()
+			ref_map[k].add(r["reference_name"])
+
 		# Sum of all reconciled amounts for these JEs, this party, and these specific accounts.
 		pl_links = frappe.db.sql(
 			"""
 			SELECT 
 				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END as name,
 				account,
-				SUM(ABS(amount_in_account_currency)) as linked_amount
+				party,
+				voucher_no,
+				against_voucher_no,
+				amount_in_account_currency
 			FROM `tabPayment Ledger Entry`
 			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
 			  AND against_voucher_no != voucher_no
 			  AND party = %s AND delinked = 0
-			GROUP BY name, account
 			""",
 			(tuple(je_names), tuple(je_names), tuple(je_names), party),
 			as_dict=True,
 		)
 
-		links_map = {(r["name"], r["account"]): float(r["linked_amount"]) for r in pl_links}
+		links_map = {}
+		for r in pl_links:
+			je_name = r["name"]
+			acc = r["account"]
+			pty = r["party"]
+			k = (je_name, acc, pty)
+			linked_doc = r["against_voucher_no"] if r["voucher_no"] == je_name else r["voucher_no"]
+			if k in ref_map and linked_doc in ref_map[k]:
+				continue
+			links_map[(je_name, acc)] = links_map.get((je_name, acc), 0.0) + abs(float(r["amount_in_account_currency"] or 0.0))
 		
 		processed_jes = []
 		for je in je_entries:
