@@ -1012,6 +1012,15 @@ async function fetchSettings(user = null, force = false) {
        localStorage.setItem('wb-printer-templates', JSON.stringify(settings.printer_settings))
     }
 
+    // Sync Automatic Entries (single doctype) values to localStorage under ae-* keys
+    if (settings && settings.automatic_entries) {
+      const ae = settings.automatic_entries
+      localStorage.setItem('ae-alternative_company', ae.alternative_company || '')
+      localStorage.setItem('ae-warehouse', ae.warehouse || '')
+      localStorage.setItem('ae-series', JSON.stringify(ae.series || []))
+      localStorage.setItem('ae-accounts', JSON.stringify(ae.accounts || []))
+    }
+
   } catch (e) {
     console.warn('[Dashboard] getBillingSettings failed:', e)
   }

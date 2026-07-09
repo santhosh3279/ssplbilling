@@ -473,11 +473,13 @@ def get_billing_settings(user=None):
 	target_user = user or current_user
 	user_row = next((r for r in settings.user_series if r.user == target_user), None)
 
-	mop_accounts = frappe.get_all("Mode of Payment Account", 
-		filters={"company": "Sundaram and Sons Private Ltd"}, 
+	mop_accounts = frappe.get_all("Mode of Payment Account",
+		filters={"company": "Sundaram and Sons Private Ltd"},
 		fields=["parent", "default_account"])
 	mop_map = {r.parent: r.default_account for r in mop_accounts}
 	company_state = frappe.db.get_value("Address", {"is_your_company_address": 1}, "state") or ""
+
+	automatic_entries = frappe.get_cached_doc("Automatic Entries", "Automatic Entries")
 
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
 	user_theme = (user_row.theme or "Light") if user_row else "Light"
@@ -563,6 +565,24 @@ def get_billing_settings(user=None):
 			}
 			for r in (settings.visible_accounts or [])
 		],
+		"automatic_entries": {
+			"alternative_company": automatic_entries.alternative_company or "",
+			"warehouse": automatic_entries.warehouse or "",
+			"series": [
+				{
+					"sales_invoice_series": r.sales_invoice_series or "",
+					"purchase_invoice_series": r.purchase_invoice_series or "",
+				}
+				for r in (automatic_entries.series or [])
+			],
+			"accounts": [
+				{
+					"account": r.account or "",
+					"alternative_account": r.alternative_account or "",
+				}
+				for r in (automatic_entries.accounts or [])
+			],
+		},
 	}
 
 
