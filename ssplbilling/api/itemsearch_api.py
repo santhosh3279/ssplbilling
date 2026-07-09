@@ -103,7 +103,10 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 		price_list = "Standard Selling" if search_type == "Sales" else "Standard Buying"
 
 	# Prices
-	pl_names = [pl.name for pl in frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])]
+	enabled_price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name", "buying", "selling"])
+	pl_names = [pl.name for pl in enabled_price_lists]
+	pl_map = {pl.name: {"buying": bool(pl.buying), "selling": bool(pl.selling)} for pl in enabled_price_lists}
+
 	for r in frappe.get_all(
 		"Item Price",
 		filters={"item_code": item_code, "price_list": ["in", pl_names]},
@@ -115,7 +118,13 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 		else:
 			if r.price_list == price_list:
 				item["price"] = rate_val
-			item["price_lists"].append({"name": r.price_list, "rate": rate_val})
+			pl_info = pl_map.get(r.price_list, {"buying": False, "selling": False})
+			item["price_lists"].append({
+				"name": r.price_list,
+				"rate": rate_val,
+				"buying": pl_info["buying"],
+				"selling": pl_info["selling"],
+			})
 
 	# Stock
 	bin_filters = {"item_code": item_code}
@@ -218,8 +227,9 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		i["price_lists"] = []
 
 	# 1. Batch fetch ALL rates for active price lists (including per-UOM records)
-	enabled_price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])
+	enabled_price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name", "buying", "selling"])
 	pl_names = [pl.name for pl in enabled_price_lists]
+	pl_map = {pl.name: {"buying": bool(pl.buying), "selling": bool(pl.selling)} for pl in enabled_price_lists}
 
 	all_rates = frappe.get_all(
 		"Item Price",
@@ -250,7 +260,13 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 			# Base (stock-UOM) rate
 			if r.price_list == price_list:
 				item_map[code]["price"] = rate_val
-			item_map[code]["price_lists"].append({"name": r.price_list, "rate": rate_val})
+			pl_info = pl_map.get(r.price_list, {"buying": False, "selling": False})
+			item_map[code]["price_lists"].append({
+				"name": r.price_list,
+				"rate": rate_val,
+				"buying": pl_info["buying"],
+				"selling": pl_info["selling"],
+			})
 
 	# 2. Batch fetch stock
 	stock_filters = {"item_code": ["in", item_codes]}

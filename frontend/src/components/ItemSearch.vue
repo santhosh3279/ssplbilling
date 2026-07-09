@@ -402,7 +402,6 @@ function updateItemInsight(item) {
   if (!itemUoms.includes(item.uom)) itemUoms.unshift(item.uom)
   
   // Prepare a grid: { pl_name: { uom: rate } }
-  const allPriceLists = (item.price_lists || []).map(pl => pl.name)
   const uomPricesMap = {}
   
   // Initialize with base rates
@@ -420,11 +419,57 @@ function updateItemInsight(item) {
     }
   }
 
+  // Collect and sort price list metadata
+  const priceListsMeta = []
+  const plNamesSeen = new Set()
+
+  for (const pl of item.price_lists || []) {
+    if (!plNamesSeen.has(pl.name)) {
+      plNamesSeen.add(pl.name)
+      priceListsMeta.push({
+        name: pl.name,
+        buying: !!pl.buying,
+        selling: !!pl.selling,
+        rate: Number(pl.rate || 0)
+      })
+    }
+  }
+
+  if (item.uom_price_lists) {
+    for (const [plName, uomMap] of Object.entries(item.uom_price_lists)) {
+      if (!plNamesSeen.has(plName)) {
+        plNamesSeen.add(plName)
+        const rate = Number(Object.values(uomMap)[0] || 0)
+        priceListsMeta.push({
+          name: plName,
+          buying: false,
+          selling: false,
+          rate
+        })
+      }
+    }
+  }
+
+  priceListsMeta.sort((a, b) => {
+    const isBuyingA = a.buying ? 1 : 0
+    const isBuyingB = b.buying ? 1 : 0
+
+    if (isBuyingA !== isBuyingB) {
+      return isBuyingB - isBuyingA
+    }
+
+    if (a.rate !== b.rate) {
+      return a.rate - b.rate
+    }
+
+    return a.name.localeCompare(b.name)
+  })
+
   insightData.value = {
     uoms: itemUoms,
-    priceLists: Object.keys(uomPricesMap).map(name => ({
-      name,
-      rates: uomPricesMap[name]
+    priceLists: priceListsMeta.map(meta => ({
+      name: meta.name,
+      rates: uomPricesMap[meta.name] || {}
     }))
   }
 }
