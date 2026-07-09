@@ -107,10 +107,10 @@
             >
               <div class="flex items-center justify-between gap-2">
                 <span
-                  class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest shrink-0"
+                  class="px-2 py-0.5 rounded text-[13.5px] font-black uppercase tracking-widest shrink-0"
                   :class="p.party_type === 'Customer' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'bg-[var(--color-supplier)]/10 text-[var(--color-supplier)]'"
                 >{{ p.party_type }}</span>
-                <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">
+                <span class="text-[15px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">
                   <template v-if="p.unlinked_count > 0 && p.outstanding_count > 0">
                     {{ p.unlinked_count }} Pay · {{ p.outstanding_count }} Inv
                   </template>
@@ -122,9 +122,9 @@
                   </template>
                 </span>
               </div>
-              <span class="text-sm font-black text-[var(--color-text)] truncate" :title="p.label">{{ p.label }}</span>
+              <span class="text-[21px] font-black text-[var(--color-text)] truncate" :title="p.label">{{ p.label }}</span>
               <span
-                class="text-xl font-mono font-black"
+                class="text-[30px] font-mono font-black"
                 :class="p.unlinked_amount > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'"
               >
                 ₹{{ fmt(p.amount) }}
@@ -145,22 +145,22 @@
         <!-- Dashboard Summary Bar -->
         <div class="grid grid-cols-3 gap-6 shrink-0">
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Unlinked Payments</span>
+            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Unlinked Payments</span>
             <div class="flex items-baseline justify-between mt-1">
-              <span class="text-3xl font-mono font-black text-[var(--color-warning)]">₹{{ fmt(totalUnlinkedAmount) }}</span>
-              <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ payments.length }}</span>
+              <span class="text-[45px] font-mono font-black text-[var(--color-warning)]">₹{{ fmt(totalUnlinkedAmount) }}</span>
+              <span class="text-[18px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ payments.length }}</span>
             </div>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Outstanding Invoices</span>
+            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Outstanding Invoices</span>
             <div class="flex items-baseline justify-between mt-1">
-              <span class="text-3xl font-mono font-black text-[var(--color-danger)]">₹{{ fmt(totalOutstandingAmount) }}</span>
-              <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ invoices.length }}</span>
+              <span class="text-[45px] font-mono font-black text-[var(--color-danger)]">₹{{ fmt(totalOutstandingAmount) }}</span>
+              <span class="text-[18px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ invoices.length }}</span>
             </div>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allocations Ready</span>
-            <span class="text-3xl font-mono font-black text-[var(--color-success)] mt-1">₹{{ fmt(totalAllocatedAmount) }}</span>
+            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Allocations Ready</span>
+            <span class="text-[45px] font-mono font-black text-[var(--color-success)] mt-1">₹{{ fmt(totalAllocatedAmount) }}</span>
           </div>
         </div>
 
@@ -187,18 +187,18 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span
-                      class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest"
+                      class="px-2 py-0.5 rounded text-[13.5px] font-black uppercase tracking-widest"
                       :class="pay.type === 'Payment Entry' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
                         : pay.type === 'Journal Entry' ? 'bg-amber-500/10 text-amber-500'
                         : 'bg-purple-500/10 text-purple-500'"
                     >
                       {{ pay.type === 'Payment Entry' ? 'PE' : pay.type === 'Journal Entry' ? 'JE' : (pay.type === 'Sales Invoice' ? 'CN' : 'DN') }}
                     </span>
-                    <span class="text-sm font-black text-[var(--color-text)]">{{ pay.name }}</span>
+                    <span class="text-[21px] font-black text-[var(--color-text)]">{{ pay.name }}</span>
                   </div>
-                  <span class="text-lg font-mono font-black text-[var(--color-warning)]">₹{{ fmt(pay.unallocated_amount) }}</span>
+                  <span class="text-[27px] font-mono font-black text-[var(--color-warning)]">₹{{ fmt(pay.unallocated_amount) }}</span>
                 </div>
-                <div class="flex justify-between items-center text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
+                <div class="flex justify-between items-center text-[15px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
                   <span>{{ formatDate(pay.posting_date) }} <span v-if="pay.mode_of_payment">· {{ pay.mode_of_payment }}</span></span>
                   <span v-if="pay.remarks" class="normal-case italic truncate max-w-[200px]">{{ pay.remarks }}</span>
                 </div>
@@ -210,25 +210,25 @@
           <div class="w-80 shrink-0 flex flex-col gap-6 justify-center">
             <!-- Linking Form -->
             <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 shadow-md space-y-4">
-              <h4 class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] text-center">New Allocation</h4>
+              <h4 class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text-muted)] text-center">New Allocation</h4>
               
               <div class="space-y-3">
                 <div class="rounded-xl bg-[var(--color-bg)]/50 p-3 border border-[var(--color-border)]/50">
-                  <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">Selected Payment</span>
-                  <span class="text-sm font-black text-[var(--color-text)] truncate block mt-0.5">{{ selectedPaymentObj?.name || 'None' }}</span>
+                  <span class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">Selected Payment</span>
+                  <span class="text-[21px] font-black text-[var(--color-text)] truncate block mt-0.5">{{ selectedPaymentObj?.name || 'None' }}</span>
                 </div>
 
                 <div class="rounded-xl bg-[var(--color-bg)]/50 p-3 border border-[var(--color-border)]/50">
-                  <span class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">Selected Invoice</span>
-                  <span class="text-sm font-black text-[var(--color-text)] truncate block mt-0.5">{{ selectedInvoiceObj?.name || 'None' }}</span>
+                  <span class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">Selected Invoice</span>
+                  <span class="text-[21px] font-black text-[var(--color-text)] truncate block mt-0.5">{{ selectedInvoiceObj?.name || 'None' }}</span>
                 </div>
 
                 <div class="space-y-1">
-                  <label class="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Amount to Allocate</label>
+                  <label class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Amount to Allocate</label>
                   <input
                     type="number"
                     v-model.number="allocAmount"
-                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 px-4 text-right font-mono text-xl font-black text-[var(--color-info)] focus:border-[var(--color-focus)] outline-none"
+                    class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 px-4 text-right font-mono text-[30px] font-black text-[var(--color-info)] focus:border-[var(--color-focus)] outline-none"
                     placeholder="0.00"
                     :disabled="!selectedPaymentObj || !selectedInvoiceObj"
                   />
@@ -238,7 +238,7 @@
               <button
                 @click="addAllocation"
                 :disabled="!selectedPaymentObj || !selectedInvoiceObj || !allocAmount || allocAmount <= 0"
-                class="w-full py-3 bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] text-xs font-black uppercase tracking-widest rounded-xl hover:brightness-105 active:scale-98 disabled:opacity-30 transition-all shadow-md"
+                class="w-full py-3 bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] text-[18px] font-black uppercase tracking-widest rounded-xl hover:brightness-105 active:scale-98 disabled:opacity-30 transition-all shadow-md"
               >
                 Queue Allocation
               </button>
@@ -268,18 +268,18 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span
-                      class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest"
+                      class="px-2 py-0.5 rounded text-[13.5px] font-black uppercase tracking-widest"
                       :class="inv.doctype === 'Journal Entry' ? 'bg-amber-500/10 text-amber-500'
                         : inv.doctype === 'Payment Entry' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
                         : 'bg-emerald-500/10 text-emerald-500'"
                     >
                       {{ inv.doctype === 'Journal Entry' ? 'JE' : inv.doctype === 'Payment Entry' ? 'PE' : 'INV' }}
                     </span>
-                    <span class="text-sm font-black text-[var(--color-text)]">{{ inv.name }}</span>
+                    <span class="text-[21px] font-black text-[var(--color-text)]">{{ inv.name }}</span>
                   </div>
-                  <span class="text-lg font-mono font-black text-[var(--color-danger)]">₹{{ fmt(inv.outstanding_amount) }}</span>
+                  <span class="text-[27px] font-mono font-black text-[var(--color-danger)]">₹{{ fmt(inv.outstanding_amount) }}</span>
                 </div>
-                <div class="flex justify-between items-center text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
+                <div class="flex justify-between items-center text-[15px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
                   <span>{{ formatDate(inv.posting_date) }}</span>
                   <span>Total: ₹{{ fmt(inv.grand_total) }}</span>
                 </div>
@@ -291,14 +291,14 @@
         <!-- Proposed Allocations Queue -->
         <div v-if="queuedAllocations.length > 0" class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-4 shrink-0 flex flex-col gap-3 shadow-md max-h-48 overflow-hidden">
           <div class="flex items-center justify-between px-2 border-b border-[var(--color-border)] pb-2">
-            <h4 class="text-xs font-black uppercase tracking-widest text-[var(--color-text)]">Proposed Allocations ({{ queuedAllocations.length }})</h4>
-            <button @click="clearQueue" class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-danger)] hover:underline">Clear All</button>
+            <h4 class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text)]">Proposed Allocations ({{ queuedAllocations.length }})</h4>
+            <button @click="clearQueue" class="text-[15px] font-bold uppercase tracking-widest text-[var(--color-danger)] hover:underline">Clear All</button>
           </div>
           <div class="overflow-y-auto space-y-2 flex-1 custom-scrollbar">
             <div
               v-for="(alloc, idx) in queuedAllocations"
               :key="idx"
-              class="flex items-center justify-between bg-[var(--color-bg)]/50 px-4 py-2 rounded-xl border border-[var(--color-border)]/50 text-xs"
+              class="flex items-center justify-between bg-[var(--color-bg)]/50 px-4 py-2 rounded-xl border border-[var(--color-border)]/50 text-[18px]"
             >
               <div class="flex items-center gap-3">
                 <span class="font-black text-[var(--color-warning)]">{{ alloc.payment_name }}</span>
