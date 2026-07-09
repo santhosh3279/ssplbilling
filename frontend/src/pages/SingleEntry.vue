@@ -663,7 +663,7 @@ async function handleSubmit() {
         mode_of_payment: 'Cash',
         account: account,
         posting_date: row.posting_date || postingDate.value,
-        reference_no: form.reference_no,
+        reference_no: form.reference_no ? form.reference_no.trim() : 'Single Entry',
         reference_date: form.reference_date,
         company: localStorage.getItem('wb-company') || null,
         cost_center: localStorage.getItem('wb-cost-center'),
