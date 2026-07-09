@@ -1,10 +1,12 @@
 import frappe
 import json
 
-def _get_party_account(party_type, party):
+def _get_party_account(party_type, party, company=None):
     """Get the default receivable/payable account for a party."""
     from erpnext.accounts.party import get_party_account
-    return get_party_account(party_type, party, frappe.defaults.get_global_default("company"))
+    if not company:
+        company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+    return get_party_account(party_type, party, company)
 
 @frappe.whitelist()
 def get_journal_entry_types():
@@ -23,7 +25,10 @@ def create_journal_contra_entry(data):
     if not accounts:
         frappe.throw("At least two accounts are required for a Journal Entry")
         
-    company = frappe.defaults.get_global_default("company")
+    company = data.get("company")
+    if not company:
+        company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+        
     voucher_type = data.get("voucher_type") or "Journal Entry"
     # Map frontend shorthand to ERPNext's exact select option
     if voucher_type == "Contra":
@@ -55,7 +60,7 @@ def create_journal_contra_entry(data):
             if account_type in ["Customer", "Supplier", "Employee"]:
                 party_type = account_type
                 party = row_account
-                row_account = _get_party_account(party_type, party)
+                row_account = _get_party_account(party_type, party, company)
 
             debit = float(acc.get("debit_in_account_currency") or 0)
             credit = float(acc.get("credit_in_account_currency") or 0)

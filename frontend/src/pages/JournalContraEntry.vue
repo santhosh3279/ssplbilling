@@ -658,6 +658,7 @@ async function saveEntry() {
     const payload = {
       voucher_type: entryType.value === 'Opening Entry' ? 'Journal Entry' : entryType.value,
       posting_date: postingDate.value,
+      company: localStorage.getItem('wb-company') || null,
       user_remark: userRemarks.value,
       balancing_account: balancingAccount.value.name,
       accounts: rows.value
