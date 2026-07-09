@@ -175,7 +175,7 @@
     </main>
 
     <!-- ═══ New Cheque Modal ═══ -->
-    <div v-if="showNewModal" class="fixed inset-0 z-40 flex items-center justify-center bg-black/50" @keydown.esc="showNewModal = false">
+    <div v-if="showNewModal" class="fixed inset-0 z-40 flex items-center justify-center bg-black/50" @keydown.esc.prevent.stop="showWarningModal = true">
       <div class="w-[560px] rounded-3xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div class="border-b border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
           <div class="text-xl font-bold">New Cheque Entry</div>
@@ -285,7 +285,7 @@
         </div>
 
         <div class="flex justify-end gap-3 border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
-          <button class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2 font-semibold" @click="showNewModal = false">Cancel</button>
+          <button class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2 font-semibold" @click="showWarningModal = true">Cancel</button>
           <button
             @click="submitNewCheque(true)"
             :disabled="isSaving || !canSaveNew"
@@ -377,11 +377,20 @@
       doctype="SSPL Cheque"
       @close="showPrintModal = false"
     />
+
+    <!-- Warning Discard Modal -->
+    <Warning
+      :show="showWarningModal"
+      title="Discard Changes"
+      message="Are you sure you want to discard this cheque entry?"
+      @close="showWarningModal = false"
+      @confirm="confirmDiscardNewCheque"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   fetchCheques,
@@ -393,6 +402,7 @@ import {
 } from '../api'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import Warning from '../components/Warning.vue'
 
 const router = useRouter()
 
@@ -434,6 +444,7 @@ const showPartySearch = ref(false)
 const partySearchRef = ref(null)
 const settleTarget = ref(null)
 const showPrintModal = ref(false)
+const showWarningModal = ref(false)
 const printTargetName = ref('')
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -592,7 +603,44 @@ const canSaveNew = computed(() => {
   return true
 })
 
-onMounted(loadCheques)
+function onKeydown(e) {
+  if (e.key === 'Escape') {
+    if (showPartySearch.value) return
+    if (showPrintModal.value) return
+    if (showWarningModal.value) return
+
+    if (showNewModal.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      showWarningModal.value = true
+      return
+    }
+
+    if (settleTarget.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      settleTarget.value = null
+      return
+    }
+
+    e.preventDefault()
+    router.push('/')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  loadCheques()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+})
+
+function confirmDiscardNewCheque() {
+  showWarningModal.value = false
+  showNewModal.value = false
+}
 
 watch(showPartySearch, (v) => {
   if (v) nextTick(() => partySearchRef.value?.focus())
