@@ -110,7 +110,7 @@ def get_parties_with_unlinked_entries(show_all=False):
 			pty = r["party"]
 			k = (je_name, acc, pty)
 			linked_doc = r["against_voucher_no"] if r["voucher_no"] == je_name else r["voucher_no"]
-			if k in ref_map and r["voucher_no"] == je_name and linked_doc in ref_map[k]:
+			if k in ref_map and linked_doc in ref_map[k]:
 				continue
 			links_map[k] = links_map.get(k, 0.0) + abs(float(r["amount_in_account_currency"] or 0.0))
 
@@ -343,7 +343,7 @@ def get_unlinked_entries(party_type, party):
 			pty = r["party"]
 			k = (je_name, acc, pty)
 			linked_doc = r["against_voucher_no"] if r["voucher_no"] == je_name else r["voucher_no"]
-			if k in ref_map and r["voucher_no"] == je_name and linked_doc in ref_map[k]:
+			if k in ref_map and linked_doc in ref_map[k]:
 				continue
 			links_map[(je_name, acc)] = links_map.get((je_name, acc), 0.0) + abs(float(r["amount_in_account_currency"] or 0.0))
 		
