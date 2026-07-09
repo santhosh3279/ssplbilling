@@ -451,6 +451,13 @@ function updateItemInsight(item) {
   }
 
   priceListsMeta.sort((a, b) => {
+    const isMrpA = a.name.toLowerCase() === 'mrp'
+    const isMrpB = b.name.toLowerCase() === 'mrp'
+
+    if (isMrpA !== isMrpB) {
+      return isMrpA ? 1 : -1
+    }
+
     const isBuyingA = a.buying ? 1 : 0
     const isBuyingB = b.buying ? 1 : 0
 
