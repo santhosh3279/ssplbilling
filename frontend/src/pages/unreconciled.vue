@@ -71,6 +71,27 @@
               placeholder="Filter ledgers…"
               class="w-72 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
             />
+            <button
+              @click="loadParties"
+              :disabled="partiesLoading"
+              class="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[var(--color-highlight)] focus:outline-none transition-colors active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Refresh Ledgers"
+            >
+              <svg
+                class="h-5 w-5"
+                :class="{ 'animate-spin': partiesLoading }"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
