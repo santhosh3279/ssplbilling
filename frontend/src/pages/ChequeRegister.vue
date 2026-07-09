@@ -649,7 +649,11 @@ watch(showPartySearch, (v) => {
 async function loadCheques() {
   isLoading.value = true
   try {
-    const res = await fetchCheques(statusFilter.value, directionFilter.value)
+    const res = await fetchCheques(
+      statusFilter.value,
+      directionFilter.value,
+      localStorage.getItem('wb-company') || ''
+    )
     cheques.value = res.cheques || []
     summary.value = res.summary || summary.value
   } catch (e) {
@@ -696,6 +700,7 @@ async function submitNewCheque(andPrint = false) {
   isSaving.value = true
   try {
     const res = await createCheque({
+      company: localStorage.getItem('wb-company') || '',
       direction: newForm.value.direction,
       party_type: newForm.value.party_type,
       party: newForm.value.party,

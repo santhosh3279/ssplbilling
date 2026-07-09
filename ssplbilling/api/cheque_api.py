@@ -17,13 +17,13 @@ RECEIVED_ACCOUNT = "Cheques in Hand"
 ISSUED_ACCOUNT = "Cheques Issued"
 
 
-def _company():
-    return frappe.defaults.get_global_default("company")
+def _company(company=None):
+    return company or frappe.defaults.get_global_default("company")
 
 
-def _get_or_create_clearing_account(direction):
+def _get_or_create_clearing_account(direction, company=None):
     """Return the clearing account for the direction, creating it on first use."""
-    company = _company()
+    company = _company(company)
     account_name = RECEIVED_ACCOUNT if direction == "Received" else ISSUED_ACCOUNT
     root_type = "Asset" if direction == "Received" else "Liability"
 
@@ -64,8 +64,8 @@ def _make_payment_entry(cheque, references, posting_date):
     """Party ↔ clearing account Payment Entry created when the cheque changes hands."""
     from erpnext.accounts.party import get_party_account
 
-    company = _company()
-    clearing = _get_or_create_clearing_account(cheque.direction)
+    company = cheque.company or _company()
+    clearing = _get_or_create_clearing_account(cheque.direction, company)
     party_account = get_party_account(cheque.party_type, cheque.party, company)
 
     pe = frappe.new_doc("Payment Entry")
@@ -148,10 +148,12 @@ def create_cheque(data=None, **kwargs):
     else:
         party_name_field = "name"
     party_name = frappe.db.get_value(party_type, party, party_name_field) or party
+    company = data.get("company") or _company()
 
     cheque = frappe.get_doc(
         {
             "doctype": "SSPL Cheque",
+            "company": company,
             "direction": direction,
             "party_type": party_type,
             "party": party,
@@ -172,7 +174,7 @@ def create_cheque(data=None, **kwargs):
 
 
 @frappe.whitelist()
-def get_cheques(status="Pending", direction="All", party=None, limit=200):
+def get_cheques(status="Pending", direction="All", party=None, company=None, limit=200):
     """List cheques for the register, plus pending totals for the summary cards."""
     filters = {}
     if status and status != "All":
@@ -181,6 +183,8 @@ def get_cheques(status="Pending", direction="All", party=None, limit=200):
         filters["direction"] = direction
     if party:
         filters["party"] = party
+    if company:
+        filters["company"] = company
 
     rows = frappe.get_all(
         "SSPL Cheque",
@@ -196,15 +200,15 @@ def get_cheques(status="Pending", direction="All", party=None, limit=200):
     )
 
     summary = {"received_total": 0.0, "received_count": 0, "issued_total": 0.0, "issued_count": 0}
-    pending = frappe.db.sql(
-        """
-        SELECT direction, SUM(amount) AS total, COUNT(*) AS cnt
-        FROM `tabSSPL Cheque`
-        WHERE status = 'Pending'
-        GROUP BY direction
-        """,
-        as_dict=True,
-    )
+    
+    pending_query = "SELECT direction, SUM(amount) AS total, COUNT(*) AS cnt FROM `tabSSPL Cheque` WHERE status = 'Pending'"
+    pending_args = {}
+    if company:
+        pending_query += " AND company = %(company)s"
+        pending_args["company"] = company
+    pending_query += " GROUP BY direction"
+    
+    pending = frappe.db.sql(pending_query, pending_args, as_dict=True)
     for p in pending:
         key = "received" if p.direction == "Received" else "issued"
         summary[f"{key}_total"] = float(p.total or 0)
