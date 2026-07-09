@@ -65,8 +65,10 @@
                 <!-- Posting Date -->
                 <td class="px-2 py-1.5 transition-colors focus-within:bg-[var(--color-focus)] w-56">
                   <input
+                    :ref="el => { if (el) expenseDateRefs[idx] = el }"
                     v-model="row.posting_date"
                     type="date"
+                    @keydown.enter.prevent="expenseSearchRefs[idx]?.focus()"
                     class="w-full bg-transparent text-2xl font-bold text-center focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)]"
                   />
                 </td>
@@ -351,6 +353,7 @@ const form = reactive({
 })
 
 const cashAccountBtnRef = ref(null)
+const expenseDateRefs = ref([])
 const expenseSearchRefs = ref([])
 const expensePaymentRefs = ref([])
 const expenseReceiptRefs = ref([])
@@ -502,7 +505,7 @@ async function handleSelect(item) {
     
     nextTick(() => {
       setTimeout(() => {
-        expenseSearchRefs.value[0]?.focus()
+        expenseDateRefs.value[0]?.focus()
       }, 50)
     })
     return
@@ -589,11 +592,11 @@ function handleRowRemarksEnter(idx) {
     })
     nextTick(() => {
       setTimeout(() => {
-        expenseSearchRefs.value[idx + 1]?.focus()
+        expenseDateRefs.value[idx + 1]?.focus()
       }, 50)
     })
   } else {
-    expenseSearchRefs.value[idx + 1]?.focus()
+    expenseDateRefs.value[idx + 1]?.focus()
   }
 }
 
@@ -760,7 +763,13 @@ onMounted(() => {
   useShortcuts({
     'ESCAPE': handleEscape,
   })
-  setTimeout(() => cashAccountBtnRef.value?.focus(), 300)
+  setTimeout(() => {
+    if (cashAccount.value.account && expenseDateRefs.value[0]) {
+      expenseDateRefs.value[0].focus()
+    } else {
+      cashAccountBtnRef.value?.focus()
+    }
+  }, 300)
 })
 </script>
 
