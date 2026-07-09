@@ -474,6 +474,7 @@ async function fetchCashAccountDetails() {
     const res = await frappeGet('ssplbilling.api.expense_api.get_ledger', {
       ledger_name: cashAccount.value.account,
       ledger_type: 'Account',
+      company: localStorage.getItem('wb-company') || '',
     })
     if (res) {
       cashAccount.value.name = res.account_name || res.label || cashAccount.value.account
@@ -545,6 +546,7 @@ async function fetchRowBalance(idx) {
     const res = await frappeGet('ssplbilling.api.expense_api.get_ledger', {
       ledger_name: row.account,
       ledger_type: row.party_type || 'Customer',
+      company: localStorage.getItem('wb-company') || '',
     })
     if (res && res.closing_balance !== undefined) {
       row.balance = res.closing_balance

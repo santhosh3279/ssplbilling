@@ -818,6 +818,7 @@ async function fetchMopBalance(idx) {
     const res = await frappeGet('ssplbilling.api.paymentv2_api.get_ledger', {
       ledger_name: row.account,
       ledger_type: 'Account',
+      company: localStorage.getItem('wb-company') || '',
     })
     if (res && res.closing_balance !== undefined) {
       row.balance = res.closing_balance
@@ -939,6 +940,7 @@ async function fetchOutstanding() {
     const res = await frappeGet('ssplbilling.api.paymentv2_api.get_ledger', {
       ledger_name: form.party,
       ledger_type: (activeTab.value === 'Internal Transfer' || !form.party_type || form.party_type === 'Account') ? 'Account' : form.party_type,
+      company: localStorage.getItem('wb-company') || '',
     })
     if (res && res.closing_balance !== undefined) {
       outstandingBalance.value = res.closing_balance

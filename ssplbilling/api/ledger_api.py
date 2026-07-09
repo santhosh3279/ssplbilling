@@ -2,7 +2,7 @@ import json
 import frappe
 
 @frappe.whitelist()
-def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None):
+def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None, company=None):
     """Return GL Entry rows for a ledger (Customer, Supplier, Employee, or Account) with a running balance.
 
     Args:
@@ -17,27 +17,30 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
     to_date = to_date or frappe.utils.today()
     from_date = from_date or frappe.utils.add_days(to_date, -90)
 
+    if not company:
+        company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+
     # Resolve display name
     if ledger_type == "Customer":
         label = frappe.db.get_value("Customer", ledger_name, "customer_name") or ledger_name
-        filter_sql = "party_type = 'Customer' AND party = %s"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "party_type = 'Customer' AND party = %s AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
     elif ledger_type == "Supplier":
         label = frappe.db.get_value("Supplier", ledger_name, "supplier_name") or ledger_name
-        filter_sql = "party_type = 'Supplier' AND party = %s"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "party_type = 'Supplier' AND party = %s AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
     elif ledger_type == "Employee":
         label = frappe.db.get_value("Employee", ledger_name, "employee_name") or ledger_name
-        filter_sql = "party_type = 'Employee' AND party = %s"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "party_type = 'Employee' AND party = %s AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
     else:
         label = frappe.db.get_value("Account", ledger_name, "account_name") or ledger_name
-        filter_sql = "account = %s AND (party IS NULL OR party = '')"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "account = %s AND (party IS NULL OR party = '') AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
 
     # Opening balance: sum of all GL entries before from_date
     opening_rows = frappe.db.sql(
@@ -263,9 +266,9 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
     }
 
 @frappe.whitelist()
-def get_customer_ledger(customer, from_date=None, to_date=None):
+def get_customer_ledger(customer, from_date=None, to_date=None, company=None):
     """Backward compatibility wrapper for get_ledger."""
-    return get_ledger(customer, "Customer", from_date, to_date)
+    return get_ledger(customer, "Customer", from_date, to_date, company)
 
 @frappe.whitelist()
 def get_voucher_detail(voucher_type, voucher_no):
@@ -300,7 +303,7 @@ def get_voucher_detail(voucher_type, voucher_no):
     return base
 
 @frappe.whitelist()
-def get_general_ledger(party_type, party, from_date=None, to_date=None):
+def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None):
     """Return GL entries using ERPNext's built-in General Ledger report engine."""
     if party_type == "Employee":
         current_user = frappe.session.user
@@ -319,7 +322,8 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None):
     from erpnext.accounts.report.general_ledger.general_ledger import execute as _gl_execute
     from erpnext import get_default_company
 
-    company = frappe.defaults.get_user_default("company") or get_default_company()
+    if not company:
+        company = frappe.defaults.get_user_default("company") or get_default_company()
     to_date = to_date or frappe.utils.today()
     from_date = from_date or frappe.utils.add_days(to_date, -90)
 

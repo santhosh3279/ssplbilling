@@ -478,6 +478,7 @@ export async function fetchLedger(ledgerName, ledgerType, fromDate, toDate) {
     ledger_type: ledgerType,
     from_date: fromDate,
     to_date: toDate,
+    company: localStorage.getItem('wb-company') || '',
   });
 }
 
@@ -499,6 +500,7 @@ export async function fetchCustomerLedger(customer, fromDate, toDate) {
     customer,
     from_date: fromDate,
     to_date: toDate,
+    company: localStorage.getItem('wb-company') || '',
   });
 }
 

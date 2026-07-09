@@ -672,6 +672,7 @@ async function fetchAndCache(from, to) {
     party: selectedParty.value.name,
     from_date: from,
     to_date: to,
+    company: localStorage.getItem('wb-company') || '',
   })
   ledgerCache.value = {
     partyKey: partyKey(),

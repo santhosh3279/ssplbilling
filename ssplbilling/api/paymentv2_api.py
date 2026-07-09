@@ -3,7 +3,7 @@ import frappe
 from collections import OrderedDict
 
 @frappe.whitelist()
-def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None):
+def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None, company=None):
     """Return GL Entry rows for a ledger (Customer, Supplier, Employee, or Account) with a running balance."""
     if not ledger_name:
         frappe.throw("ledger_name is required")
@@ -11,23 +11,26 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
     to_date = to_date or frappe.utils.today()
     from_date = from_date or frappe.utils.add_days(to_date, -90)
 
+    if not company:
+        company = frappe.defaults.get_global_default("company") or frappe.db.get_single_value('Global Defaults', 'default_company')
+
     # Resolve display name
     if ledger_type == "Customer":
-        filter_sql = "party_type = 'Customer' AND party = %s"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "party_type = 'Customer' AND party = %s AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
     elif ledger_type == "Supplier":
-        filter_sql = "party_type = 'Supplier' AND party = %s"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "party_type = 'Supplier' AND party = %s AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
     elif ledger_type == "Employee":
-        filter_sql = "party_type = 'Employee' AND party = %s"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "party_type = 'Employee' AND party = %s AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
     else:
-        filter_sql = "account = %s AND (party IS NULL OR party = '')"
-        params = (ledger_name, from_date)
-        detail_params = (ledger_name, from_date, to_date)
+        filter_sql = "account = %s AND (party IS NULL OR party = '') AND company = %s"
+        params = (ledger_name, company, from_date)
+        detail_params = (ledger_name, company, from_date, to_date)
 
     # Opening balance
     opening_rows = frappe.db.sql(
@@ -89,8 +92,8 @@ def get_ledger(ledger_name, ledger_type="Customer", from_date=None, to_date=None
     }
 
 @frappe.whitelist()
-def get_customer_ledger(customer, from_date=None, to_date=None):
-    return get_ledger(customer, "Customer", from_date, to_date)
+def get_customer_ledger(customer, from_date=None, to_date=None, company=None):
+    return get_ledger(customer, "Customer", from_date, to_date, company)
 
 @frappe.whitelist()
 def get_outstanding_invoices(party, party_type="Customer"):
