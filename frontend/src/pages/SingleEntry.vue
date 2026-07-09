@@ -1,10 +1,7 @@
 <template>
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- Header -->
-    <header 
-      class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
-      :class="activeTab === 'Payment' ? 'bg-red-500/30' : 'bg-green-500/30'"
-    >
+    <header class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 bg-blue-500/20 shadow-sm transition-colors duration-300">
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
         <button
@@ -23,35 +20,17 @@
             tabindex="0"
             @click="openSearchAccount"
             @keydown.enter.prevent="openSearchAccount"
-            class="ml-4 text-2xl font-normal text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-midlight)] focus:bg-[var(--color-midlight)] focus:ring-2 focus:ring-[var(--color-focus)] focus:outline-none cursor-pointer px-4 py-1.5 rounded-full border border-[var(--color-border)] shadow-sm transition-all animate-in fade-in slide-in-from-left-4 duration-500 inline-flex items-center gap-2"
+            class="ml-4 text-2xl font-normal text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-midlight)] focus:bg-[var(--color-midlight)] focus:ring-2 focus:ring-[var(--color-focus)] focus:outline-none cursor-pointer px-4 py-1.5 rounded-full border border-[var(--color-border)] shadow-sm transition-all inline-flex items-center gap-2"
           >
-            <span class="opacity-60 font-normal">{{ activeTab === 'Receipt' ? 'RECEIVE INTO:' : 'PAY FROM:' }}</span> 
+            <span class="opacity-60 font-normal">CASH / BANK:</span> 
             <span>{{ cashAccount.name }}</span>
           </span>
         </h1>
       </div>
 
-      <!-- Center: Tabs -->
-      <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5 items-center">
-        <button
-          v-for="t in ['Payment', 'Receipt']"
-          :key="t"
-          @click="onTabClick(t)"
-          class="min-w-[110px] rounded-md px-4 py-1 text-2xl font-black uppercase tracking-wide transition-all duration-200"
-          :class="activeTab === t
-            ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm'
-            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
-        >
-          {{ t }}
-        </button>
-        <div class="flex items-center ml-4 px-3 border-l border-[var(--color-border)]">
-          <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-bold text-[var(--color-text-muted)] shadow-sm">F7 to Cycle</kbd>
-        </div>
-      </div>
-
-      <!-- Right: Posting Date -->
+      <!-- Right: Global Posting Date Default -->
       <div class="flex items-center gap-2">
-        <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
+        <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Default Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
           <button @click="adjustDate(-1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
           <div class="relative min-w-[110px] px-3 py-1.5 text-center">
@@ -71,13 +50,10 @@
           <table class="w-full text-left border-collapse">
             <thead class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                <th class="px-4 py-2 w-56 text-center">Posting Date</th>
                 <th class="px-4 py-2 w-1/4">Party</th>
-                <th 
-                  class="px-4 py-2 text-right w-48"
-                  :class="activeTab === 'Receipt' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
-                >
-                  {{ activeTab === 'Receipt' ? 'Credit (Cr)' : 'Debit (Dr)' }}
-                </th>
+                <th class="px-4 py-2 text-right w-48 text-[var(--color-danger)]">Payment (Dr)</th>
+                <th class="px-4 py-2 text-right w-48 text-[var(--color-success)]">Receipt (Cr)</th>
                 <th class="px-4 py-2 w-1/4">Remarks</th>
                 <th class="px-4 py-2 w-[350px]">Links</th>
                 <th class="px-6 py-2 text-right w-48">Balance</th>
@@ -86,6 +62,16 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in form.rows" :key="idx" class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
+                <!-- Posting Date -->
+                <td class="px-2 py-1.5 transition-colors focus-within:bg-[var(--color-focus)] w-56">
+                  <input
+                    v-model="row.posting_date"
+                    type="date"
+                    class="w-full bg-transparent text-2xl font-bold text-center focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)]"
+                  />
+                </td>
+
+                <!-- Party -->
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
@@ -100,17 +86,29 @@
                     />
                     <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-highlight)] font-bold group-focus-within:text-[var(--color-text-on-focus)] uppercase">Search (Enter)</div>
                   </div>
-
                 </td>
 
-                <td 
-                  class="px-4 py-1.5 transition-colors focus-within:bg-[var(--color-focus)]"
-                  :class="activeTab === 'Receipt' ? 'bg-[var(--color-success)]/5' : 'bg-[var(--color-danger)]/5'"
-                >
+                <!-- Payment (Dr) -->
+                <td class="px-4 py-1.5 transition-colors focus-within:bg-[var(--color-focus)] bg-[var(--color-danger)]/5 w-48">
                   <input
-                    :ref="el => { if (el) expenseAmountRefs[idx] = el }"
-                    v-model.number="row.amount"
+                    :ref="el => { if (el) expensePaymentRefs[idx] = el }"
+                    v-model.number="row.payment"
                     type="number" step="0.01"
+                    @input="row.receipt = null"
+                    @keydown.enter.prevent="expenseReceiptRefs[idx]?.focus()"
+                    @keydown.end.prevent="focusReferenceNo"
+                    class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
+                    placeholder="0.00"
+                  />
+                </td>
+
+                <!-- Receipt (Cr) -->
+                <td class="px-4 py-1.5 transition-colors focus-within:bg-[var(--color-focus)] bg-[var(--color-success)]/5 w-48">
+                  <input
+                    :ref="el => { if (el) expenseReceiptRefs[idx] = el }"
+                    v-model.number="row.receipt"
+                    type="number" step="0.01"
+                    @input="row.payment = null"
                     @keydown.enter.prevent="handleAmountEnter(idx)"
                     @keydown.end.prevent="focusReferenceNo"
                     class="w-full bg-transparent text-5xl font-light text-right focus:outline-none text-[var(--color-text)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-inherit"
@@ -118,6 +116,7 @@
                   />
                 </td>
 
+                <!-- Remarks -->
                 <td class="px-2 py-1.5 transition-colors focus-within:bg-[var(--color-focus)]">
                   <input
                     v-model="row.remarks"
@@ -163,6 +162,7 @@
                   </div>
                 </td>
 
+                <!-- Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-surface-raised)]">
                   <div v-if="row.balance !== null" class="flex flex-col items-end">
                     <div class="text-4xl font-black" :class="row.balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
@@ -172,6 +172,7 @@
                   <div v-else class="text-[var(--color-text-muted)] text-xl italic text-right">—</div>
                 </td>
 
+                <!-- New Balance -->
                 <td class="px-6 py-1.5 bg-[var(--color-highlight)]/5">
                   <div v-if="row.balance !== null" class="flex flex-col items-end">
                     <div class="text-4xl font-black" :class="getNewBalance(row) > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
@@ -221,6 +222,12 @@
               />
             </div>
           </div>
+          <div class="flex flex-col gap-1 p-1.5">
+            <label class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total Amount</label>
+            <div class="text-4xl font-black text-[var(--color-text)]">
+              ₹{{ totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+            </div>
+          </div>
         </div>
 
         <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
@@ -267,8 +274,6 @@
       @confirm="showExitWarning = false; router.push('/')"
     />
 
-
-
     <!-- Success Popup -->
     <div v-if="showSuccess" class="fixed top-12 left-1/2 -translate-x-1/2 z-[200] w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
       <div class="rounded-3xl bg-[var(--color-surface)] p-6 shadow-2xl border-2 border-[var(--color-success)] flex items-center gap-6">
@@ -286,8 +291,8 @@
       :show="showModal"
       :partyType="form.rows[modalRowIdx].party_type"
       :party="form.rows[modalRowIdx].account"
-      :enteredAmount="form.rows[modalRowIdx].amount || 0"
-      :activeTab="activeTab"
+      :enteredAmount="modalEnteredAmount"
+      :activeTab="modalActiveTab"
       :modalAmounts="form.rows[modalRowIdx].modalAmounts"
       :mop="'Cash'"
       @close="closeModal"
@@ -309,7 +314,6 @@ import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 const router = useRouter()
 
 // --- State ---
-const activeTab = ref('Payment') // 'Payment', 'Receipt'
 const showExitWarning = ref(false)
 
 useSubwindowWatcher(showExitWarning, {
@@ -328,7 +332,19 @@ const searchTarget = ref('row') // 'row' or 'cash_account'
 
 const form = reactive({
   rows: [
-    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
+    { 
+      posting_date: new Date().toISOString().split('T')[0], 
+      account: '', 
+      account_name: '', 
+      payment: null, 
+      receipt: null, 
+      query: '', 
+      balance: null, 
+      remarks: '', 
+      party_type: '', 
+      allocations: [], 
+      modalAmounts: {} 
+    }
   ],
   reference_no: '',
   reference_date: new Date().toISOString().split('T')[0]
@@ -336,7 +352,8 @@ const form = reactive({
 
 const cashAccountBtnRef = ref(null)
 const expenseSearchRefs = ref([])
-const expenseAmountRefs = ref([])
+const expensePaymentRefs = ref([])
+const expenseReceiptRefs = ref([])
 const rowRemarksRefs = ref([])
 const referenceNoInput = ref(null)
 const referenceDateInput = ref(null)
@@ -358,10 +375,14 @@ const displayDate = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return form.rows.some(r => r.account && r.amount > 0) && cashAccount.value.account
+  return form.rows.some(r => r.account && ((parseFloat(r.payment) || 0) > 0 || (parseFloat(r.receipt) || 0) > 0)) && cashAccount.value.account
 })
 
-const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
+const totalRows = computed(() => form.rows.filter(r => r.account && ((parseFloat(r.payment) || 0) > 0 || (parseFloat(r.receipt) || 0) > 0)).length)
+
+const totalAmount = computed(() => {
+  return form.rows.reduce((sum, row) => sum + (parseFloat(row.payment) || parseFloat(row.receipt) || 0), 0)
+})
 
 const modalTitle = computed(() => {
   if (searchTarget.value === 'cash_account') return 'Select Cash / Bank Account'
@@ -370,9 +391,7 @@ const modalTitle = computed(() => {
 
 const modalSubtitle = computed(() => {
   if (searchTarget.value === 'cash_account') return 'Choose payment source or destination account'
-  if (activeTab.value === 'Payment') return 'Select Party to Pay (Debit)'
-  if (activeTab.value === 'Receipt') return 'Select Party to Receive From (Credit)'
-  return ''
+  return 'Select Customer, Supplier, Employee or Account'
 })
 
 const allowedTypes = computed(() => {
@@ -386,16 +405,26 @@ const initialSearchType = computed(() => {
 })
 
 const hasUnsavedItems = computed(() => {
-  return form.rows.some(r => r.account || r.amount > 0 || r.remarks) || form.reference_no !== ''
+  return form.rows.some(r => r.account || (parseFloat(r.payment) || 0) > 0 || (parseFloat(r.receipt) || 0) > 0 || r.remarks) || form.reference_no !== ''
+})
+
+const modalActiveTab = computed(() => {
+  if (modalRowIdx.value === null) return 'Payment'
+  const row = form.rows[modalRowIdx.value]
+  return (parseFloat(row.receipt) || 0) > 0 ? 'Receipt' : 'Payment'
+})
+
+const modalEnteredAmount = computed(() => {
+  if (modalRowIdx.value === null) return 0
+  const row = form.rows[modalRowIdx.value]
+  return parseFloat(row.payment) || parseFloat(row.receipt) || 0
 })
 
 function getNewBalance(row) {
   if (row.balance === null) return 0
-  const amt = parseFloat(row.amount) || 0
-  if (activeTab.value === 'Receipt') {
-    return row.balance - amt
-  }
-  return row.balance + amt
+  const payment = parseFloat(row.payment) || 0
+  const receipt = parseFloat(row.receipt) || 0
+  return row.balance + payment - receipt
 }
 
 function focusReferenceNo() {
@@ -458,11 +487,9 @@ function handleAccountEnter(idx) {
   if (!row.account) {
     openSearch(idx)
   } else {
-    expenseAmountRefs.value[idx]?.focus()
+    expensePaymentRefs.value[idx]?.focus()
   }
 }
-
-
 
 async function handleSelect(item) {
   showSearchModal.value = false
@@ -473,7 +500,6 @@ async function handleSelect(item) {
     localStorage.setItem('wb-cash', item.name)
     await fetchCashAccountDetails()
     
-    // Upon selection, focus to party selection of first row
     nextTick(() => {
       setTimeout(() => {
         expenseSearchRefs.value[0]?.focus()
@@ -492,8 +518,8 @@ async function handleSelect(item) {
   
   nextTick(() => {
     setTimeout(() => {
-      expenseAmountRefs.value[idx]?.focus()
-      expenseAmountRefs.value[idx]?.select()
+      expensePaymentRefs.value[idx]?.focus()
+      expensePaymentRefs.value[idx]?.select()
     }, 50)
   })
 }
@@ -517,7 +543,8 @@ async function fetchRowBalance(idx) {
 
 async function handleAmountEnter(idx) {
   const row = form.rows[idx]
-  if (row.amount > 0 && row.account) {
+  const amount = parseFloat(row.payment) || parseFloat(row.receipt) || 0
+  if (amount > 0 && row.account) {
     if (row.party_type && row.party_type !== 'Account') {
       try {
         const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
@@ -547,7 +574,19 @@ async function handleAmountEnter(idx) {
 
 function handleRowRemarksEnter(idx) {
   if (idx === form.rows.length - 1) {
-    form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} })
+    form.rows.push({ 
+      posting_date: new Date().toISOString().split('T')[0], 
+      account: '', 
+      account_name: '', 
+      payment: null, 
+      receipt: null, 
+      query: '', 
+      balance: null, 
+      remarks: '', 
+      party_type: '', 
+      allocations: [], 
+      modalAmounts: {} 
+    })
     nextTick(() => {
       setTimeout(() => {
         expenseSearchRefs.value[idx + 1]?.focus()
@@ -556,25 +595,6 @@ function handleRowRemarksEnter(idx) {
   } else {
     expenseSearchRefs.value[idx + 1]?.focus()
   }
-}
-
-function onTabClick(t) {
-  if (activeTab.value === t) return
-  activeTab.value = t
-  form.rows = [
-    { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
-  ]
-  nextTick(() => {
-    setTimeout(() => {
-      expenseSearchRefs.value[0]?.focus()
-    }, 50)
-  })
-}
-
-function cycleTab() {
-  const tabs = ['Payment', 'Receipt']
-  const nextIdx = (tabs.indexOf(activeTab.value) + 1) % tabs.length
-  onTabClick(tabs[nextIdx])
 }
 
 function handleBack() {
@@ -594,16 +614,18 @@ async function handleSubmit() {
   submitting.value = true
   const results = []
   try {
-    const validRows = form.rows.filter(r => r.account && r.amount > 0)
+    const validRows = form.rows.filter(r => r.account && ((parseFloat(r.payment) || 0) > 0 || (parseFloat(r.receipt) || 0) > 0))
     for (const row of validRows) {
       let paymentType = ''
       let party = ''
       let partyType = ''
       let account = ''
+      const isPayment = (parseFloat(row.payment) || 0) > 0
+      const amount = isPayment ? row.payment : row.receipt
 
       if (row.party_type === 'Account') {
         paymentType = 'Internal Transfer'
-        if (activeTab.value === 'Payment') {
+        if (isPayment) {
           party = cashAccount.value.account
           account = row.account
         } else {
@@ -612,14 +634,12 @@ async function handleSubmit() {
         }
         partyType = ''
       } else {
-        paymentType = activeTab.value === 'Payment' ? 'Pay' : 'Receive'
+        paymentType = isPayment ? 'Pay' : 'Receive'
         party = row.account
         partyType = row.party_type
         account = cashAccount.value.account
       }
 
-      // Filter out Payment Entry and Journal Entry references from the initial Payment Entry payload,
-      // as ERPNext's validate_reference_documents restricts references to only Sales/Purchase Invoices.
       const invoiceRefs = (row.allocations || [])
         .filter(a => ['Sales Invoice', 'Purchase Invoice'].includes(a.reference_doctype))
         .map(a => ({
@@ -634,12 +654,13 @@ async function handleSubmit() {
         payment_type: paymentType,
         party: party,
         party_type: partyType,
-        amount: row.amount,
+        amount: amount,
         mode_of_payment: 'Cash',
         account: account,
-        posting_date: postingDate.value,
+        posting_date: row.posting_date || postingDate.value,
         reference_no: form.reference_no,
         reference_date: form.reference_date,
+        company: localStorage.getItem('wb-company') || null,
         cost_center: localStorage.getItem('wb-cost-center'),
         remarks: row.remarks || '',
         "Custom Remarks": 1,
@@ -654,7 +675,6 @@ async function handleSubmit() {
         const pe_name = res.payment_entry
         results.push(pe_name)
 
-        // Handle cross-reconciliation (linking the new PE to unlinked Payments/Journals)
         const crossAllocations = (row.allocations || [])
           .filter(a => ['Payment Entry', 'Journal Entry'].includes(a.reference_doctype))
           .map(a => ({
@@ -664,7 +684,7 @@ async function handleSubmit() {
             invoice_type: a.reference_doctype,
             invoice_name: a.reference_name,
             amount: a.allocated_amount,
-            unreconciled_amount: row.amount
+            unreconciled_amount: amount
           }))
 
         if (crossAllocations.length > 0) {
@@ -705,7 +725,6 @@ function updateRowAllocations(allocations) {
     const idx = modalRowIdx.value
     form.rows[idx].allocations = allocations
     
-    // Re-sync modalAmounts to ensure state persistence
     const newModalAmounts = {}
     allocations.forEach(a => {
       newModalAmounts[a._row || a.reference_name] = a.allocated_amount
@@ -714,7 +733,6 @@ function updateRowAllocations(allocations) {
     
     closeModal()
     
-    // Focus remarks after modal
     nextTick(() => {
       setTimeout(() => {
         rowRemarksRefs.value[idx]?.focus()
@@ -740,7 +758,6 @@ function unlinkReference(idx, alloc) {
 onMounted(() => {
   fetchCashAccountDetails()
   useShortcuts({
-    'F7': cycleTab,
     'ESCAPE': handleEscape,
   })
   setTimeout(() => cashAccountBtnRef.value?.focus(), 300)
