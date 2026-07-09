@@ -288,8 +288,11 @@ onMounted(async () => {
     doc.incentive_ledger = rule.incentive_ledger || 'Employee Incentive - SSPL'
 
     // Set default company
-    const compList = await frappeGet('frappe.client.get_list', { doctype: 'Company', fields: ['name'], limit_page_length: 1 })
-    if (compList.length) doc.company = compList[0].name
+    doc.company = localStorage.getItem('wb-company') || ''
+    if (!doc.company) {
+      const compList = await frappeGet('frappe.client.get_list', { doctype: 'Company', fields: ['name'], limit_page_length: 1 })
+      if (compList.length) doc.company = compList[0].name
+    }
     
     // Default Cost Center
     doc.cost_center = localStorage.getItem('wb-cost-center') || ''
