@@ -549,6 +549,7 @@ async function handleSave() {
   try {
     const res = await frappePost('ssplbilling.api.repack_api.save_repack', {
       data: {
+        company: localStorage.getItem('wb-company') || null,
         name: repackName.value || undefined,
         naming_series: selectedSeries.value,
         posting_date: repackDate.value,

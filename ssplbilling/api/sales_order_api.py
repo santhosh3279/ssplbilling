@@ -278,6 +278,8 @@ def create_sales_order(data):
 		data = json.loads(data)
 
 	so = frappe.new_doc("Sales Order")
+	if data.get("company"):
+		so.company = data["company"]
 	so.naming_series = data.get("naming_series", "SSPL-SO-.YYYY.-")
 	so.customer = data["customer"]
 	so.transaction_date = data.get("date") or frappe.utils.today()
@@ -334,6 +336,8 @@ def update_sales_order(data):
 		frappe.throw("Sales Order not found")
 
 	so = frappe.get_doc("Sales Order", order_name)
+	if data.get("company"):
+		so.company = data["company"]
 	if so.docstatus != 0:
 		frappe.throw("Cannot edit a submitted or cancelled Sales Order")
 

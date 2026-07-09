@@ -374,6 +374,8 @@ def create_quotation(data):
 		data = json.loads(data)
 
 	qt = frappe.new_doc("Quotation")
+	if data.get("company"):
+		qt.company = data["company"]
 	qt.naming_series = data.get("naming_series", "SSPL-QT-.YYYY.-")
 	qt.quotation_to = "Customer"
 	qt.party_name = data["customer"]
@@ -444,6 +446,8 @@ def update_quotation(data):
 		frappe.throw("Quotation not found")
 
 	qt = frappe.get_doc("Quotation", quotation_name)
+	if data.get("company"):
+		qt.company = data["company"]
 	if qt.docstatus != 0:
 		frappe.throw("Cannot edit a submitted or cancelled Quotation")
 

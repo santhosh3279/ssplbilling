@@ -1143,6 +1143,7 @@ async function handleSave() {
   const isUpdate = isSaved.value
 
   const payload = {
+    company: localStorage.getItem('wb-company') || null,
     naming_series: selectedSeries.value,
     customer: customerId.value,
     date: invoiceDate.value,

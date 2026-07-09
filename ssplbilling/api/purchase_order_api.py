@@ -208,6 +208,8 @@ def create_purchase_order(data=None, **kwargs):
         frappe.throw("At least one item is required")
 
     po = frappe.new_doc("Purchase Order")
+    if data.get("company"):
+        po.company = data["company"]
     po.supplier = data["supplier"]
     po.transaction_date = data.get("date", frappe.utils.today())
     po.naming_series = data.get("naming_series", "PUR-ORD-.YY.-")
@@ -429,6 +431,8 @@ def update_purchase_order(data=None, **kwargs):
 
     order_name = data.get("invoice_name") or data.get("order_name")
     po = frappe.get_doc("Purchase Order", order_name)
+    if data.get("company"):
+        po.company = data["company"]
     
     if po.supplier != data["supplier"]:
         po.supplier = data["supplier"]

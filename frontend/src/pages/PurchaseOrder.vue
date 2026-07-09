@@ -1095,6 +1095,7 @@ async function handleSave() {
   }
 
   const payload = {
+    company: localStorage.getItem('wb-company') || null,
     naming_series: selectedSeries.value,
     supplier: supplierId.value,
     date: orderDate.value,

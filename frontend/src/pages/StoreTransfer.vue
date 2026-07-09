@@ -541,6 +541,7 @@ async function handleSave() {
   try {
     const res = await frappePost('ssplbilling.api.storetransfer_api.save_store_transfer', {
       data: {
+        company: localStorage.getItem('wb-company') || null,
         name: transferName.value || undefined,
         naming_series: selectedSeries.value,
         posting_date: transferDate.value,

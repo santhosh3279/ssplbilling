@@ -89,6 +89,8 @@ def update_stock_reconciliation(data=None, **kwargs):
     sr.posting_date = data.get("posting_date") or sr.posting_date
     sr.posting_time = data.get("posting_time") or sr.posting_time
     sr.purpose = data.get("purpose") or sr.purpose
+    if data.get("company"):
+        sr.company = data["company"]
     
     sr.items = []
     for item in data["items"]:

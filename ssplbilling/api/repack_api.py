@@ -45,6 +45,8 @@ def save_repack(data):
         se.purpose = "Repack"
         se.naming_series = data.get("naming_series") or "MAT-REP-.YYYY.-"
 
+    if data.get("company"):
+        se.company = data["company"]
     se.posting_date = data.get("posting_date") or frappe.utils.today()
     se.from_warehouse = data.get("from_warehouse")  # Default Source
     se.to_warehouse = data.get("to_warehouse")      # Default Destination

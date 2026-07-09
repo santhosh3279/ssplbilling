@@ -572,6 +572,7 @@ async function saveEntry() {
   if (!items.value.length) { alert('No items to save'); return }
 
   const payload = {
+    company: localStorage.getItem('wb-company') || null,
     name: entryName.value,
     posting_date: entryDate.value,
     purpose: purpose.value,
