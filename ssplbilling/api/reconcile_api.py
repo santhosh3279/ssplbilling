@@ -527,6 +527,38 @@ def post_reconciliation(party_type, party, allocations):
 	if not allocations:
 		frappe.throw("No allocations provided")
 
+	# Normalize allocations: ERPNext's Payment Reconciliation tool requires that 
+	# Payment Entry is always the "reference" (payment) and Journal Entry or Invoice is the "invoice_number" (outstanding).
+	# If we received a JE on the payment side and a PE on the invoice side, we must swap them.
+	normalized_allocations = []
+	for alloc in allocations:
+		p_type = alloc.get("payment_type")
+		p_name = alloc.get("payment_name")
+		ref_row = alloc.get("reference_row")
+		
+		i_type = alloc.get("invoice_type")
+		i_name = alloc.get("invoice_name")
+		
+		if i_type == "Payment Entry" and p_type == "Journal Entry":
+			pe_unallocated = frappe.db.get_value("Payment Entry", i_name, "unallocated_amount") or 0.0
+			normalized_allocations.append({
+				"payment_type": i_type,
+				"payment_name": i_name,
+				"reference_row": None,
+				"invoice_type": p_type,
+				"invoice_name": p_name,
+				"right_row": ref_row,
+				"amount": alloc["amount"],
+				"unreconciled_amount": float(pe_unallocated)
+			})
+		elif p_type == "Payment Entry":
+			pe_unallocated = frappe.db.get_value("Payment Entry", p_name, "unallocated_amount") or 0.0
+			alloc["unreconciled_amount"] = float(pe_unallocated)
+			normalized_allocations.append(alloc)
+		else:
+			normalized_allocations.append(alloc)
+	allocations = normalized_allocations
+
 	company = _get_company()
 	account = _get_party_account(party_type, party)
 
