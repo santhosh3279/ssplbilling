@@ -39,27 +39,67 @@ def get_parties_with_unlinked_entries(show_all=False):
 		as_dict=True,
 	)
 
-	je_rows = frappe.db.sql(
+	je_entries = frappe.db.sql(
 		"""
-		SELECT jea.party_type, jea.party,
-			CASE WHEN jea.credit_in_account_currency > jea.debit_in_account_currency THEN 'Cr' ELSE 'Dr' END AS direction,
-			COUNT(DISTINCT jea.parent) AS cnt,
-			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS amount
+		SELECT jea.party_type, jea.party, jea.parent AS name, jea.account,
+			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS total_amount,
+			SUM(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
+			         THEN ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)
+			         ELSE 0 END) AS unallocated_amount_sql,
+			CASE WHEN SUM(jea.credit_in_account_currency) > SUM(jea.debit_in_account_currency) THEN 'Cr' ELSE 'Dr' END AS direction
 		FROM `tabJournal Entry Account` jea
 		JOIN `tabJournal Entry` je  ON je.name  = jea.parent
 		JOIN `tabAccount`       acc ON acc.name = jea.account
 		WHERE je.docstatus = 1
 			AND jea.party_type IN ('Customer', 'Supplier')
-			AND (jea.reference_name IS NULL OR jea.reference_name = '')
 			AND acc.account_type IN ('Receivable', 'Payable')
 			AND je.company = %s
 			AND je.is_opening != 'Yes'
-		GROUP BY jea.party_type, jea.party,
-			(CASE WHEN jea.credit_in_account_currency > jea.debit_in_account_currency THEN 'Cr' ELSE 'Dr' END)
+		GROUP BY jea.parent, jea.account, jea.party_type, jea.party
 		""",
 		(company,),
 		as_dict=True,
 	)
+
+	je_rows = []
+	if je_entries:
+		je_names = list(set(r["name"] for r in je_entries))
+		pl_links = frappe.db.sql(
+			"""
+			SELECT 
+				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END as name,
+				account,
+				party,
+				SUM(ABS(amount_in_account_currency)) as linked_amount
+			FROM `tabPayment Ledger Entry`
+			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
+			  AND against_voucher_no != voucher_no
+			  AND delinked = 0
+			GROUP BY name, account, party
+			""",
+			(tuple(je_names), tuple(je_names), tuple(je_names)),
+			as_dict=True,
+		)
+		links_map = {(r["name"], r["account"], r["party"]): float(r["linked_amount"]) for r in pl_links}
+
+		grouped_je = {}
+		for je in je_entries:
+			linked = links_map.get((je["name"], je["account"], je["party"]), 0.0)
+			sql_unalloc = float(je.get("unallocated_amount_sql") or 0.0)
+			unallocated = max(0.0, sql_unalloc - linked)
+			if unallocated > 0.005:
+				key = (je["party_type"], je["party"], je["direction"])
+				if key not in grouped_je:
+					grouped_je[key] = frappe._dict({
+						"party_type": je["party_type"],
+						"party": je["party"],
+						"direction": je["direction"],
+						"cnt": 0,
+						"amount": 0.0
+					})
+				grouped_je[key]["cnt"] += 1
+				grouped_je[key]["amount"] += unallocated
+		je_rows = list(grouped_je.values())
 
 	# Return invoices (credit/debit notes) carry negative outstanding — they are
 	# credits waiting to be linked, same as an unallocated payment.
