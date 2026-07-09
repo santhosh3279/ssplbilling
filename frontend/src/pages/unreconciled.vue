@@ -132,14 +132,27 @@
                   :class="p.party_type === 'Customer' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'bg-[var(--color-supplier)]/10 text-[var(--color-supplier)]'"
                 >{{ p.party_type }}</span>
                 <span class="text-[15px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">
-                  <template v-if="p.unlinked_count > 0 && p.outstanding_count > 0">
-                    {{ p.unlinked_count }} Pay · {{ p.outstanding_count }} Inv
-                  </template>
-                  <template v-else-if="p.unlinked_count > 0">
-                    {{ p.unlinked_count }} Pay
+                  <template v-if="p.party_type === 'Customer'">
+                    <template v-if="p.unlinked_count > 0 && p.outstanding_count > 0">
+                      {{ p.unlinked_count }} Cr · {{ p.outstanding_count }} Dr
+                    </template>
+                    <template v-else-if="p.unlinked_count > 0">
+                      {{ p.unlinked_count }} Cr
+                    </template>
+                    <template v-else>
+                      {{ p.outstanding_count }} Dr
+                    </template>
                   </template>
                   <template v-else>
-                    {{ p.outstanding_count }} Inv
+                    <template v-if="p.unlinked_count > 0 && p.outstanding_count > 0">
+                      {{ p.unlinked_count }} Dr · {{ p.outstanding_count }} Cr
+                    </template>
+                    <template v-else-if="p.unlinked_count > 0">
+                      {{ p.unlinked_count }} Dr
+                    </template>
+                    <template v-else>
+                      {{ p.outstanding_count }} Cr
+                    </template>
                   </template>
                 </span>
               </div>
@@ -166,14 +179,18 @@
         <!-- Dashboard Summary Bar -->
         <div class="grid grid-cols-3 gap-6 shrink-0">
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Unlinked Payments</span>
+            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+              {{ partyType === 'Customer' ? 'Unlinked Credits' : 'Unlinked Debits' }}
+            </span>
             <div class="flex items-baseline justify-between mt-1">
               <span class="text-[45px] font-mono font-black text-[var(--color-warning)]">₹{{ fmt(totalUnlinkedAmount) }}</span>
               <span class="text-[18px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ payments.length }}</span>
             </div>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Outstanding Invoices</span>
+            <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+              {{ partyType === 'Customer' ? 'Unlinked Debits' : 'Unlinked Credits' }}
+            </span>
             <div class="flex items-baseline justify-between mt-1">
               <span class="text-[45px] font-mono font-black text-[var(--color-danger)]">₹{{ fmt(totalOutstandingAmount) }}</span>
               <span class="text-[18px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ invoices.length }}</span>
@@ -189,12 +206,14 @@
           <!-- Left Column: Unlinked Payments -->
           <div class="flex-1 flex flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
             <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 flex justify-between items-center">
-              <h3 class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">Unlinked Payments</h3>
+              <h3 class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">
+                {{ partyType === 'Customer' ? 'Unlinked Credits' : 'Unlinked Debits' }}
+              </h3>
               <span class="px-2.5 py-0.5 rounded-full bg-[var(--color-warning)]/10 text-[var(--color-warning)] text-[10px] font-black uppercase tracking-wider">{{ payments.length }}</span>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               <div v-if="payments.length === 0" class="text-center py-12 text-xs italic text-[var(--color-text-muted)]">
-                No unlinked payments found for this ledger.
+                No unlinked {{ partyType === 'Customer' ? 'credits' : 'debits' }} found for this ledger.
               </div>
               <div
                 v-for="pay in payments"
@@ -235,12 +254,16 @@
               
               <div class="space-y-3">
                 <div class="rounded-xl bg-[var(--color-bg)]/50 p-3 border border-[var(--color-border)]/50">
-                  <span class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">Selected Payment</span>
+                  <span class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">
+                    Selected {{ partyType === 'Customer' ? 'Credit' : 'Debit' }}
+                  </span>
                   <span class="text-[21px] font-black text-[var(--color-text)] truncate block mt-0.5">{{ selectedPaymentObj?.name || 'None' }}</span>
                 </div>
 
                 <div class="rounded-xl bg-[var(--color-bg)]/50 p-3 border border-[var(--color-border)]/50">
-                  <span class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">Selected Invoice</span>
+                  <span class="text-[13.5px] font-black uppercase tracking-widest text-[var(--color-text-muted)] block">
+                    Selected {{ partyType === 'Customer' ? 'Debit' : 'Credit' }}
+                  </span>
                   <span class="text-[21px] font-black text-[var(--color-text)] truncate block mt-0.5">{{ selectedInvoiceObj?.name || 'None' }}</span>
                 </div>
 
@@ -270,12 +293,14 @@
           <!-- Right Column: Outstanding Invoices -->
           <div class="flex-1 flex flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
             <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 flex justify-between items-center">
-              <h3 class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">Outstanding Invoices</h3>
+              <h3 class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">
+                {{ partyType === 'Customer' ? 'Unlinked Debits' : 'Unlinked Credits' }}
+              </h3>
               <span class="px-2.5 py-0.5 rounded-full bg-[var(--color-danger)]/10 text-[var(--color-danger)] text-[10px] font-black uppercase tracking-wider">{{ invoices.length }}</span>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               <div v-if="invoices.length === 0" class="text-center py-12 text-xs italic text-[var(--color-text-muted)]">
-                No outstanding invoices found for this ledger.
+                No unlinked {{ partyType === 'Customer' ? 'debits' : 'credits' }} found for this ledger.
               </div>
               <div
                 v-for="inv in invoices"
