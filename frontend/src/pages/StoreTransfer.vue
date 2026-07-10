@@ -1,6 +1,6 @@
 <template>
   <div class="h-screen bg-[var(--color-bg)] overflow-hidden">
-    <Stock_Template
+    <Item_Invoice_Template
       ref="invoiceTemplateRef"
       title="STORE TRANSFER"
       title-bar-color="#90cdf4"
@@ -8,7 +8,6 @@
       :doc-date="transferDate"
       :items="items"
       :total-amount="totalAmount"
-      :total-label="'Total Transfer Value'"
       :item-count="items.length"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentTransfers"
@@ -22,6 +21,7 @@
       :selected-sidebar-item-name="transferName"
       :show-bottom-left="false"
       :show-bottom-middle="false"
+      doctype="Stock Entry"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -138,103 +138,118 @@
 
       <template #row="{ item, index }">
         <tr 
-          class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50 outline-none"
+          :ref="el => { if (el) rowRefs[index] = el }"
+          class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50 outline-none transition-all cursor-pointer"
           :tabindex="isReadOnly ? -1 : 0"
+          :class="{
+            'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index),
+            'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index
+          }"
+          @focus="!isReadOnly && (selectedRowIdx = index)"
           @keydown="handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ index + 1 }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center" :class="selectedRowIdx === index ? 'text-black' : 'text-[var(--color-text-muted)]'">{{ index + 1 }}</td>
+          
           <td class="p-0 border-r border-[var(--color-border)]">
-            <input 
-              v-if="!isReadOnly"
+            <input v-if="!isReadOnly && editingRowIdx === index && editingField === 'code'"
+              ref="editCodeInput"
+              v-model="item.item_code"
+              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @focus="e => e.target.select()"
+              @keydown="onEditCodeKeydown($event, index)"
+            />
+            <span v-else class="block px-2 py-1 text-4xl font-mono" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
+          </td>
+
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.item_name }}</td>
+          
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input v-if="!isReadOnly && editingRowIdx === index && editingField === 'qty'"
+              ref="editQtyInput"
               v-model.number="item.qty"
               type="number"
-              class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-              @keydown.enter="focusBarcodeInput"
+              :step="item.uom === 'Nos' ? '1' : '0.01'"
+              class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @focus="e => e.target.select()"
+              @keydown="onEditQtyKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ item.qty }}</span>
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.rate }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ (item.qty * item.rate).toFixed(2) }}</td>
+
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.rate) }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.qty * item.rate) }}</td>
           <td class="px-2 py-1 text-center">
-            <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="removeItem(index)">&times;</button>
+            <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] focus:outline-none" @click="removeItem(index)">&times;</button>
           </td>
         </tr>
       </template>
 
       <template #calculation-rows>
-        <div class="flex flex-1 items-stretch p-4 gap-6">
-          <!-- Summary Card -->
-          <div class="flex-[3] flex flex-col justify-center gap-4">
-            <div class="rounded-2xl border-2 border-[var(--color-highlight)]/30 bg-[var(--color-highlight)]/5 p-6 shadow-xl flex justify-between items-baseline">
-              <div class="text-2xl font-black uppercase tracking-[0.2em] text-[var(--color-highlight)]">Total Transfer Value</div>
-              <div class="flex items-baseline gap-3 font-bold text-[var(--color-success)]">
-                <span class="text-4xl font-black">₹</span>
-                <span class="font-mono text-7xl font-black leading-none tabular-nums">{{ totalAmount }}</span>
-              </div>
-            </div>
-            <div class="text-2xl font-bold text-[var(--color-text-muted)] px-2">
-              Total {{ items.length }} items
-            </div>
-          </div>
+        <tr class="bg-[var(--color-highlight)]/5 font-bold">
+          <td colspan="2" class="px-4 py-6 text-3xl text-[var(--color-text)] border border-[var(--color-border)]">Total Transfer Value</td>
+          <td class="px-4 py-6 text-right font-mono text-[var(--color-success)] text-5xl border border-[var(--color-border)] font-black">₹ {{ format(totalAmount) }}</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="px-4 py-3 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Total Items</td>
+          <td class="px-4 py-3 text-right font-mono text-[var(--color-text-muted)] text-3xl border border-[var(--color-border)] font-bold">{{ items.length }}</td>
+        </tr>
+      </template>
 
-          <!-- Action Buttons -->
-          <div class="flex-[2] flex flex-col justify-center gap-3">
-            <!-- Row 1: Save or (New + Print) / (Edit + Print) -->
-            <div v-if="isReadOnly" class="flex gap-3">
-              <button 
-                ref="saveBtnRef" 
-                @click="handleSave" 
-                class="flex-1 rounded-xl py-5 text-center text-4xl font-bold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-all uppercase shadow-lg active:scale-[0.98] focus:ring-4 focus:ring-[var(--color-focus)]/50"
-              >
-                {{ saveButtonText }}
-              </button>
-              <button 
-                @click="handlePrint" 
-                class="flex-1 rounded-xl border-2 border-[var(--color-highlight)] bg-[var(--color-highlight)]/10 py-5 text-center text-4xl font-bold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-all uppercase shadow-lg active:scale-[0.98] focus:ring-4 focus:ring-[var(--color-highlight)]/30"
-              >
-                Print
-              </button>
-            </div>
+      <template #actions>
+        <div class="flex flex-col gap-2 h-full py-2">
+          <!-- Row 1: Save/Edit/New and Print -->
+          <div v-if="isReadOnly" class="flex gap-2">
             <button 
-              v-else
               ref="saveBtnRef" 
               @click="handleSave" 
-              class="w-full rounded-xl py-5 text-center text-4xl font-bold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-all uppercase shadow-lg active:scale-[0.98] focus:ring-4 focus:ring-[var(--color-focus)]/50"
+              class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)] focus:outline-none"
             >
               {{ saveButtonText }}
             </button>
+            <button 
+              @click="handlePrint" 
+              class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors focus:outline-none"
+            >
+              Print
+            </button>
+          </div>
+          <button 
+            v-else
+            ref="saveBtnRef" 
+            @click="handleSave" 
+            class="w-full rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)] focus:outline-none"
+          >
+            {{ saveButtonText }}
+          </button>
 
-            <!-- Row 2: Cancel / Submit / Print placeholder -->
-            <div class="flex gap-3">
-              <button 
-                @click="handleCancel" 
-                class="flex-1 rounded-xl border-2 border-[#C2A96E] bg-[#D4B896] py-4 text-center text-3xl font-bold text-[#4A3520] hover:brightness-105 transition-all shadow-lg active:scale-[0.98]"
-              >
-                Cancel
-              </button>
-              <button 
-                v-if="isDraft && isReadOnly" 
-                @click="handleSubmit" 
-                class="flex-1 rounded-xl border-2 border-[var(--color-success)] bg-[var(--color-success)]/10 py-4 text-center text-3xl font-bold text-[var(--color-success)] hover:bg-[var(--color-success)]/20 transition-all uppercase shadow-lg active:scale-[0.98]"
-              >
-                Submit
-              </button>
-              <button 
-                v-else
-                disabled
-                class="flex-1 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] py-4 text-center text-3xl font-bold text-[var(--color-text-muted)] opacity-30 cursor-not-allowed shadow-lg"
-              >
-                Print
-              </button>
-            </div>
+          <!-- Row 2: Cancel / Submit / Print placeholder -->
+          <div class="flex gap-2">
+            <button 
+              @click="handleCancel" 
+              class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors focus:outline-none"
+            >
+              Cancel
+            </button>
+            <button 
+              v-if="isDraft && isReadOnly" 
+              @click="handleSubmit" 
+              class="flex-1 rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition-colors uppercase focus:outline-none"
+            >
+              Submit
+            </button>
+            <button 
+              v-else
+              disabled
+              class="flex-1 rounded border border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] opacity-30 cursor-not-allowed py-2.5 text-center text-3xl font-semibold"
+            >
+              Print
+            </button>
           </div>
         </div>
       </template>
 
-    </Stock_Template>
+    </Item_Invoice_Template>
 
     <QuickItemSearch
       ref="quickSearchRef"
@@ -282,7 +297,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShortcuts } from '../services/shortcutManager'
-import Stock_Template from '../components/Stock_Template.vue'
+import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import Warning from '../components/Warning.vue'
@@ -314,6 +329,12 @@ const warehouses = ref([])
 const availableSeries = ref([])
 const selectedSeries = ref('')
 
+const selectedRowIdx = ref(-1)
+const rowRefs = ref([])
+const editingRowIdx = ref(-1)
+const editingField = ref(null)
+const editCodeInput = ref(null)
+const editQtyInput = ref(null)
 const isReadOnly = ref(false)
 const isDraft = ref(false)
 const submitting = ref(false)
@@ -387,6 +408,8 @@ async function fetchRecentTransfers() {
 }
 
 function focusBarcodeInput() {
+  selectedRowIdx.value = -1
+  exitEditMode()
   nextTick(() => barcodeInput.value?.focus())
 }
 
@@ -396,6 +419,81 @@ function focusFromWarehouse() {
 
 function focusToWarehouse() {
   nextTick(() => toWarehouseInput.value?.focus())
+}
+
+function focusRow(idx) {
+  selectedRowIdx.value = idx
+  nextTick(() => {
+    const el = rowRefs.value[idx]
+    if (el) {
+      el.focus()
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  })
+}
+
+function format(val) {
+  if (val === null || val === undefined || val === '') return '0.00'
+  const num = Number(val)
+  return isNaN(num) ? '0.00' : num.toFixed(2)
+}
+
+function focusEditField(field, idx) {
+  editingRowIdx.value = idx
+  editingField.value = field
+  selectedRowIdx.value = idx
+  nextTick(() => {
+    if (field === 'code') {
+      editCodeInput.value?.focus()
+      editCodeInput.value?.select()
+    } else if (field === 'qty') {
+      editQtyInput.value?.focus()
+      editQtyInput.value?.select()
+    }
+  })
+}
+
+function exitEditMode() {
+  editingRowIdx.value = -1
+  editingField.value = null
+}
+
+function onEditCodeKeydown(e, idx) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    const code = (items.value[idx]?.item_code || '').trim()
+    const match = lookupItemInCache(code)
+    if (match) {
+      items.value[idx].item_code = match.item_code
+      items.value[idx].item_name = match.item_name
+      items.value[idx].uom = match.uom
+      items.value[idx].rate = match.valuation_rate || match.rate || 0
+      focusEditField('qty', idx)
+    } else {
+      focusEditField('qty', idx)
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode()
+  }
+}
+
+function onEditQtyKeydown(e, idx) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    exitEditMode()
+    if (idx < items.value.length - 1) {
+      focusRow(idx + 1)
+      nextTick(() => {
+        focusEditField('code', idx + 1)
+      })
+    } else {
+      focusBarcodeInput()
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    exitEditMode()
+  }
 }
 
 function onBarcodeInput() {
@@ -421,6 +519,11 @@ function handleBarcodeKeydown(e) {
 
   if (e.key === 'Enter') {
     handleBarcodeEnter()
+  } else if (e.key === 'ArrowUp') {
+    if (items.value.length > 0) {
+      e.preventDefault()
+      focusRow(items.value.length - 1)
+    }
   }
 }
 
@@ -527,10 +630,24 @@ function removeItem(index) {
 }
 
 function handleRowKeydown(e, idx) {
-  if (e.target.tagName === 'INPUT') return
+  if (isReadOnly.value) return
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
+  
   if (e.key === 'ArrowDown') {
     e.preventDefault()
-    focusBarcodeInput()
+    if (idx < items.value.length - 1) {
+      focusRow(idx + 1)
+    } else {
+      focusBarcodeInput()
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (idx > 0) {
+      focusRow(idx - 1)
+    }
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    focusEditField('code', idx)
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault()
     removeItem(idx)
@@ -595,6 +712,8 @@ function resetForm() {
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   isReadOnly.value = false
   isDraft.value = false
+  selectedRowIdx.value = -1
+  exitEditMode()
   focusFromWarehouse()
 }
 
@@ -640,6 +759,8 @@ async function handleSelectSidebarItem(item) {
   }))
   isReadOnly.value = true
   isDraft.value = details.docstatus === 0
+  selectedRowIdx.value = -1
+  exitEditMode()
 }
 
 function formatDate(dateString) {

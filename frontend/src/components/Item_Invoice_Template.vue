@@ -268,9 +268,9 @@
                 <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Max Ord Qty</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-14">UOM</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Rate</th>
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Disc %</th>
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-warning)] w-24">DISC</th>
-                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Tax %</th>
+                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Disc %</th>
+                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-warning)] w-24">DISC</th>
+                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Tax %</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Amount</th>
                 <th class="border-b border-[var(--color-border)] w-8"></th>
               </tr>
@@ -319,12 +319,12 @@
       <!-- Bottom Panel (Summary / Actions) -->
       <div class="flex flex-[4] border-t border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden">
         <!-- Insights / Left Column -->
-        <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:360px;max-width:420px;">
+        <div v-if="showBottomLeft" class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:360px;max-width:420px;">
           <slot name="bottom-left"></slot>
         </div>
 
         <!-- Settings / Middle Column -->
-        <div class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;">
+        <div v-if="showBottomMiddle" class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;">
           <slot name="bottom-middle">
             <div class="flex flex-col gap-2 p-2">
               <!-- Export/Import buttons -->
@@ -603,6 +603,9 @@ const props = defineProps({
   sidebarLoading: { type: Boolean, default: false },
   sidebarItems: { type: Array, default: () => [] },
   selectedSidebarItemName: { type: String, default: '' },
+
+  showBottomLeft: { type: Boolean, default: true },
+  showBottomMiddle: { type: Boolean, default: true },
 
   // Settings Panel Props
   priceList: { type: String, default: 'Standard Selling' },
