@@ -738,14 +738,15 @@ const filteredTiles = computed(() => {
   if (!query) {
     return tiles.value
   }
-  const terms = query.split(/\s+/).filter(Boolean)
+  const terms = query.split(/[^a-z0-9]+/).filter(Boolean)
   if (terms.length === 0) {
     return tiles.value
   }
   return tiles.value.filter(tile => {
-    const name = tile.name.toLowerCase()
-    const desc = tile.desc.toLowerCase()
-    return terms.every(term => name.includes(term) || desc.includes(term))
+    const nameWords = tile.name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+    const descWords = tile.desc.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+    const allWords = [...nameWords, ...descWords]
+    return terms.every(term => allWords.some(word => word.startsWith(term)))
   })
 })
 
