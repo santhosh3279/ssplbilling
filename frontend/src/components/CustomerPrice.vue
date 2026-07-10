@@ -42,7 +42,7 @@
           :disabled="saving"
           @click="saveForCustomer"
           @keydown="onKeydown"
-          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
+          class="w-full rounded-xl border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20 disabled:opacity-50"
         >
           {{ saving ? 'Saving…' : 'Save for Customer' }}
         </button>
@@ -50,7 +50,7 @@
           ref="savePriceNoBtn"
           @click="$emit('dismiss')"
           @keydown="onKeydown"
-          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)]"
+          class="w-full rounded-xl border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
         >
           Dismiss
         </button>
