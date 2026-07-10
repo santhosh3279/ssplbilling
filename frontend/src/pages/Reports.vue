@@ -908,10 +908,12 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   const templateCols = []
   for (const t of activeTemplates.value) {
     templateCols.push({ key: `temp_taxable_${t.name}`, width: 18 }) // Taxable Value
-    templateCols.push({ key: `temp_cgst_${t.name}`, width: 14 })    // CGST Amount
-    templateCols.push({ key: `temp_sgst_${t.name}`, width: 14 })    // SGST Amount
-    templateCols.push({ key: `temp_igst_${t.name}`, width: 14 })    // IGST Amount
-    templateCols.push({ key: `temp_total_tax_${t.name}`, width: 16 }) // Total Tax for %
+    if (t.gst_rate > 0) {
+      templateCols.push({ key: `temp_cgst_${t.name}`, width: 14 })    // CGST Amount
+      templateCols.push({ key: `temp_sgst_${t.name}`, width: 14 })    // SGST Amount
+      templateCols.push({ key: `temp_igst_${t.name}`, width: 14 })    // IGST Amount
+      templateCols.push({ key: `temp_total_tax_${t.name}`, width: 16 }) // Total Tax for %
+    }
   }
 
   // Configure column widths
@@ -967,10 +969,12 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   ]
   for (const t of activeTemplates.value) {
     headers.push(`${t.title} Taxable Value`)
-    headers.push(`${t.title} CGST`)
-    headers.push(`${t.title} SGST`)
-    headers.push(`${t.title} IGST`)
-    headers.push(`${t.title} Total Tax`)
+    if (t.gst_rate > 0) {
+      headers.push(`${t.title} CGST`)
+      headers.push(`${t.title} SGST`)
+      headers.push(`${t.title} IGST`)
+      headers.push(`${t.title} Total Tax`)
+    }
   }
   headers.push(
     'CGST Amount',
@@ -999,14 +1003,16 @@ async function buildExcel(rows, companyName, companyAddressLines) {
       fmt(r.taxable_amount),
     ]
     for (const t of activeTemplates.value) {
-      const cgst = r.template_values?.[t.name]?.cgst || 0
-      const sgst = r.template_values?.[t.name]?.sgst || 0
-      const igst = r.template_values?.[t.name]?.igst || 0
       rowValues.push(fmt(r.template_values?.[t.name]?.taxable || 0))
-      rowValues.push(fmt(cgst))
-      rowValues.push(fmt(sgst))
-      rowValues.push(fmt(igst))
-      rowValues.push(fmt(cgst + sgst + igst))
+      if (t.gst_rate > 0) {
+        const cgst = r.template_values?.[t.name]?.cgst || 0
+        const sgst = r.template_values?.[t.name]?.sgst || 0
+        const igst = r.template_values?.[t.name]?.igst || 0
+        rowValues.push(fmt(cgst))
+        rowValues.push(fmt(sgst))
+        rowValues.push(fmt(igst))
+        rowValues.push(fmt(cgst + sgst + igst))
+      }
     }
     rowValues.push(
       fmt(r.cgst_amount),
@@ -1023,14 +1029,16 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
   const totals = []
   for (const t of activeTemplates.value) {
-    const cgstTotal = rows.reduce((s, r) => s + (r.template_values?.[t.name]?.cgst || 0), 0)
-    const sgstTotal = rows.reduce((s, r) => s + (r.template_values?.[t.name]?.sgst || 0), 0)
-    const igstTotal = rows.reduce((s, r) => s + (r.template_values?.[t.name]?.igst || 0), 0)
     totals.push(fmt(rows.reduce((s, r) => s + (r.template_values?.[t.name]?.taxable || 0), 0)))
-    totals.push(fmt(cgstTotal))
-    totals.push(fmt(sgstTotal))
-    totals.push(fmt(igstTotal))
-    totals.push(fmt(cgstTotal + sgstTotal + igstTotal))
+    if (t.gst_rate > 0) {
+      const cgstTotal = rows.reduce((s, r) => s + (r.template_values?.[t.name]?.cgst || 0), 0)
+      const sgstTotal = rows.reduce((s, r) => s + (r.template_values?.[t.name]?.sgst || 0), 0)
+      const igstTotal = rows.reduce((s, r) => s + (r.template_values?.[t.name]?.igst || 0), 0)
+      totals.push(fmt(cgstTotal))
+      totals.push(fmt(sgstTotal))
+      totals.push(fmt(igstTotal))
+      totals.push(fmt(cgstTotal + sgstTotal + igstTotal))
+    }
   }
   const totalsRow = worksheet.addRow([
     'GRAND TOTAL', '', '', '', '',
