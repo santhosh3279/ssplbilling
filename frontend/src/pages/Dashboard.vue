@@ -839,7 +839,7 @@ function handleTileKeyNav(e) {
       e.preventDefault()
       searchQuery.value = ''
     }
-  } else if (e.key === 'Delete') {
+  } else if (e.key === 'Delete' || (e.key === 'Backspace' && !isSearchInput)) {
     if (searchQuery.value) {
       e.preventDefault()
       searchQuery.value = ''
