@@ -827,6 +827,9 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
     const preDiscountRate = discount > 0
       ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(2))
       : effectiveRate
+    
+    const isManual = i.price_list_rate && Math.abs(i.price_list_rate - preDiscountRate) > 0.001
+
     return {
       item_code: i.item_code,
       item_name: i.item_name,
@@ -840,6 +843,7 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
       deleted: false,
       _is_free: effectiveRate === 0,
       amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
+      _is_manual_rate: isManual
     }
   })
 }
@@ -1165,14 +1169,6 @@ async function handleSave() {
       
       const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
       customerAddress.value = addrParts.join(', ')
-
-      try {
-        const pricing = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: customerId.value })
-        customerPricing.value = pricing || {}
-        reapplyCustomerPricing()
-      } catch (err) {
-        console.warn('Failed to fetch latest customer pricing:', err)
-      }
 
       applyRegionalTaxLogic()
     }
@@ -1500,7 +1496,8 @@ function onCsvFileSelected(e) {
         deleted: false,
         _is_free: effectiveRate === 0,
         amount: parseFloat((qty * effectiveRate).toFixed(2)),
-        _rowKey: makeRowKey()
+        _rowKey: makeRowKey(),
+        _is_manual_rate: true
       })
     }
     if (!parsed.length) { alert('No valid rows found in CSV.'); return }
@@ -1532,6 +1529,9 @@ function detectPriceChange(item, focusTarget) {
   const rateChanged = Math.abs(priceListStandard - currentRate) > 0.001
   const discountChanged = Math.abs(currentDiscount) > 0.001
 
+  // Set the manual rate flag based on whether the rate is different from standard pricing factor rate
+  item._is_manual_rate = rateChanged
+
   if (rateChanged || discountChanged) {
     priceDetectData.value = {
       ...item,
@@ -1549,7 +1549,14 @@ function onCustomerPriceSaved(freshPricing) {
   if (freshPricing && Object.keys(freshPricing).length) {
     customerPricing.value = freshPricing
   }
+  if (priceDetectData.value) {
+    const item = items.value.find(i => i.item_code === priceDetectData.value.item_code && !i.deleted)
+    if (item) {
+      item._is_manual_rate = false
+    }
+  }
   dismissPriceModal()
+  reapplyCustomerPricing()
 }
 
 async function updatePriceList() {
@@ -1561,6 +1568,14 @@ async function updatePriceList() {
       rate: priceDetectData.value.rate,
       uom: priceDetectData.value.uom || ''
     })
+    if (priceDetectData.value) {
+      const item = items.value.find(i => i.item_code === priceDetectData.value.item_code && !i.deleted)
+      if (item) {
+        item._is_manual_rate = false
+        item._base_rate = priceDetectData.value.rate
+        item.price_list_rate = priceDetectData.value.rate
+      }
+    }
     dismissPriceModal()
   } catch (e) {
     console.error('Failed to update price list:', e)
@@ -1770,6 +1785,7 @@ function onUomChange(idx) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
     item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+    item._is_manual_rate = false
     recalcAmount(idx)
   }
 }
@@ -1843,6 +1859,7 @@ function updateTableRates() {
       const newRate = getItemRateForPriceList(cached, item.uom)
       item._base_rate = newRate
       item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+      item._is_manual_rate = false
       recalcAmount(idx)
     }
   })
@@ -1860,6 +1877,10 @@ watch(priceList, (newList) => {
 function reapplyCustomerPricing() {
   items.value.forEach((item, idx) => {
     if (item.deleted || item._is_free) return
+    if (item._is_manual_rate) {
+      recalcAmount(idx)
+      return
+    }
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
@@ -1870,6 +1891,7 @@ function reapplyCustomerPricing() {
 
 watch(ignoreModifier, () => {
   items.value.forEach(item => {
+    if (item.deleted || item._is_manual_rate) return
     const base = item._base_rate ?? item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
@@ -2002,6 +2024,7 @@ function applyItemToRow(rowIdx, item) {
   if (!row._rowKey) row._rowKey = makeRowKey()
 
   if (!isSameItem) {
+    row._is_manual_rate = false
     const base = getItemRateForPriceList(item, row.uom)
     row._base_rate = base
     const cpFactor = customerPricing.value[item.item_code]
@@ -2313,6 +2336,9 @@ function handleCustomerSelected(cust) {
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
   ignoreModifier.value = false
   customerPricing.value = {}
+  items.value.forEach(item => {
+    item._is_manual_rate = false
+  })
   reapplyCustomerPricing()
   frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust.name || cust.label })
     .then(data => { customerPricing.value = data || {}; reapplyCustomerPricing() })
