@@ -68,28 +68,48 @@
               </div>
             </div>
 
-            <!-- Extra Barcodes -->
+            <!-- Extra Barcodes Table -->
             <div class="space-y-[4px]">
               <div class="flex items-center justify-between px-[20px]">
                 <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Additional Barcodes</label>
                 <button type="button" @click="addBarcodeRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add Barcode</button>
               </div>
-              <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/30 px-[20px] py-[4px] min-h-[64px] flex items-center">
-                <div class="flex flex-nowrap gap-[8px] overflow-x-auto custom-scrollbar w-full pb-[2px]">
-                  <div class="flex items-center gap-[8px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 px-[20px] py-[12px] shrink-0">
-                    <span class="font-mono text-2xl text-[var(--color-text)]">{{ form.barcode || '—' }}</span>
-                    <span class="text-sm font-bold uppercase text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] px-2 py-1 rounded">Primary</span>
-                  </div>
-                  <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[12px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[16px] py-[8px] relative group shrink-0">
-                    <div class="flex flex-col gap-1">
-                      <input :ref="el => { if (el) extraBarcodeInputs[idx] = el }" v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-[var(--color-text)] outline-none w-48" placeholder="Barcode..." />
-                      <select v-model="row.uom" class="bg-transparent border-none p-0 text-sm font-bold text-[var(--color-text-muted)] uppercase outline-none cursor-pointer hover:text-[var(--color-info)] transition-colors">
-                        <option v-for="u in availableUoms" :key="u" :value="u" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ u }}</option>
-                      </select>
-                    </div>
-                    <button type="button" @click="removeBarcodeRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none pr-1">&times;</button>
-                  </div>
-                </div>
+              <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 overflow-hidden">
+                <table class="w-full text-2xl">
+                  <thead>
+                    <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-[var(--color-text-muted)]">Barcode</th>
+                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-[var(--color-text-muted)]">UOM</th>
+                      <th class="w-16"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, idx) in form.extra_barcodes" :key="idx" class="border-b border-[var(--color-border)]/50 last:border-0">
+                      <td class="px-[20px] py-[12px]">
+                        <input
+                          :ref="el => { if (el) extraBarcodeInputs[idx] = el }"
+                          v-model="row.barcode"
+                          type="text"
+                          class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                          placeholder="Barcode..."
+                        />
+                      </td>
+                      <td class="px-[20px] py-[12px]">
+                        <select v-model="row.uom" class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none">
+                          <option v-for="u in availableUoms" :key="u" :value="u" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ u }}</option>
+                        </select>
+                      </td>
+                      <td class="px-[20px] py-[12px] text-center">
+                        <button type="button" @click="removeBarcodeRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none">&times;</button>
+                      </td>
+                    </tr>
+                    <tr v-if="!form.extra_barcodes.length">
+                      <td colspan="3" class="px-[20px] py-[24px] text-center text-2xl text-[var(--color-text-muted)] italic">
+                        No additional barcodes mapped
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
