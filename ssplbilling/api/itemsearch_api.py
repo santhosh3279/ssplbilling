@@ -170,7 +170,7 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 	]
 
 	# Barcodes
-	bc_rows = frappe.get_all("Item Barcode", filters={"parent": item_code}, fields=["barcode", "uom"])
+	bc_rows = frappe.get_all("Item Barcode", filters={"parent": item_code}, fields=["barcode", "uom"], order_by="idx asc")
 	item["barcodes_detailed"] = [{"barcode": b.barcode, "uom": b.uom or item.uom} for b in bc_rows]
 	item["barcodes"] = ",".join(b["barcode"] for b in item["barcodes_detailed"])
 
@@ -371,6 +371,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 		"Item Barcode",
 		filters={"parent": ["in", item_codes]},
 		fields=["parent as item_code", "barcode", "uom"],
+		order_by="idx asc",
 	)
 	item_barcodes_map = {}
 	for row in all_barcodes:
@@ -448,6 +449,7 @@ def get_customer_sales_history(customer):
 		"Item Barcode",
 		filters={"parent": ["in", item_codes]},
 		fields=["parent as item_code", "barcode"],
+		order_by="idx asc",
 	)
 	item_barcodes_map = {}
 	for row in all_barcodes:
@@ -492,6 +494,7 @@ def get_supplier_purchase_history(supplier):
 		"Item Barcode",
 		filters={"parent": ["in", item_codes]},
 		fields=["parent as item_code", "barcode"],
+		order_by="idx asc",
 	)
 	item_barcodes_map = {}
 	for row in all_barcodes:

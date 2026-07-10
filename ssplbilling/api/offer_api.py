@@ -130,6 +130,7 @@ def get_offer_details(pageaddress):
 			"Item Barcode",
 			filters={"parent": ["in", item_codes]},
 			fields=["parent as item_code", "barcode", "uom"],
+			order_by="idx asc",
 			ignore_permissions=True
 		)
 		for row in all_barcodes_data:
