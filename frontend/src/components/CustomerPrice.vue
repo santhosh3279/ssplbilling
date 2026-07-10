@@ -42,7 +42,7 @@
           :disabled="saving"
           @click="saveForCustomer"
           @keydown="onKeydown"
-          class="w-full rounded-xl bg-[var(--color-highlight)] px-6 py-4 text-3xl font-bold text-[var(--color-text-on-highlight)] hover:opacity-90 shadow-lg transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
+          class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50"
         >
           {{ saving ? 'Saving…' : 'Save for Customer' }}
         </button>
