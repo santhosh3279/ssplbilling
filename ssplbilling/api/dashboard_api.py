@@ -766,10 +766,13 @@ def get_ic_api_credits():
 		response = requests.get(url, headers=headers, timeout=10)
 		if response.status_code == 200:
 			data = response.json()
-			if data.get("success") and data.get("message"):
+			# GSP APIs (Frappe whitelisted methods) return the result inside 'message'
+			if "message" in data:
 				return {"success": True, "data": data["message"]}
+			elif "error" in data:
+				return {"success": False, "error": data["error"]}
 			else:
-				return {"success": False, "error": data.get("error") or "Unknown API response"}
+				return {"success": False, "error": "Unknown API response"}
 		else:
 			return {"success": False, "error": f"API HTTP Error {response.status_code}"}
 	except Exception as e:
