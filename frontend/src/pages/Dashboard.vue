@@ -174,47 +174,53 @@
         </div>
       </header>
 
-      <div v-if="currentTab === 'dashboard'" class="flex flex-row items-start justify-between gap-8 px-10 py-10">
-        <!-- Left: Bucketed Tiles -->
-        <div class="flex-shrink-0 space-y-4">
-          <!-- Column table (no buckets) when tiles come from SSPL Dashboard Tile Access;
-               10 tiles per column, overflow flows into the next column; ↑/↓ + Enter to navigate -->
-          <div v-if="isTileAccessMode" class="flex flex-row items-start gap-4">
-            <div v-for="(col, colIdx) in tileColumns" :key="colIdx" class="flex flex-col gap-2">
-              <div
-                v-for="(tile, rowIdx) in col"
-                :key="tile.id"
-                :id="'wb-tile-' + (colIdx * TILES_PER_COLUMN + rowIdx)"
-                class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
-                :class="colIdx * TILES_PER_COLUMN + rowIdx === focusedTileIndex ? 'ring-4 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
-                :style="{ width: '70mm', height: '15mm' }"
-                @click="focusedTileIndex = colIdx * TILES_PER_COLUMN + rowIdx; openModule(tile.id)"
-              >
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
-                  {{ tile.icon }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
-                  <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
-                </div>
-              </div>
-            </div>
+      <div v-if="currentTab === 'dashboard'" class="flex flex-col px-10 py-8 gap-6">
+        <!-- Search bar at the top -->
+        <div class="relative w-full max-w-lg group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-highlight)] transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
-          <template v-for="bucket in BUCKETS" :key="bucket.id">
-            <div v-if="!isTileAccessMode && tilesInBucket(bucket.id).length > 0">
-              <!-- Bucket Label -->
-              <div class="mb-1.5 flex items-center gap-2">
-                <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">{{ bucket.label }}</span>
-                <div class="h-px flex-1 bg-[var(--color-border)]"></div>
-              </div>
-              <!-- Tile Grid -->
-              <div class="grid grid-cols-3 gap-2">
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search tiles... (Arrow keys to navigate, Enter to open)"
+            class="w-full pl-11 pr-12 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] font-semibold placeholder-[var(--color-text-muted)] transition-all duration-300 focus:outline-none focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/15 shadow-sm hover:border-[var(--color-border)]/80"
+            @keydown="handleTileKeyNav"
+          />
+          <div class="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
+            <span v-if="!searchQuery" class="text-[10px] font-bold text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-1.5 py-0.5 rounded shadow-sm">/</span>
+            <button
+              v-else
+              @click="searchQuery = ''; focusSearch()"
+              class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors p-1 rounded-full hover:bg-[var(--color-border)]/30"
+              title="Clear search"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main content: Tiles and widgets -->
+        <div class="flex flex-row items-start justify-between gap-8 w-full">
+          <!-- Left: Bucketed Tiles -->
+          <div class="flex-shrink-0 space-y-4">
+            <!-- Column table (no buckets) when tiles come from SSPL Dashboard Tile Access;
+                 10 tiles per column, overflow flows into the next column; ↑/↓ + Enter to navigate -->
+            <div v-if="isTileAccessMode" class="flex flex-row items-start gap-4">
+              <div v-for="(col, colIdx) in tileColumns" :key="colIdx" class="flex flex-col gap-2">
                 <div
-                  v-for="tile in tilesInBucket(bucket.id)"
+                  v-for="(tile, rowIdx) in col"
                   :key="tile.id"
+                  :id="'wb-tile-' + (colIdx * TILES_PER_COLUMN + rowIdx)"
                   class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
+                  :class="colIdx * TILES_PER_COLUMN + rowIdx === focusedTileIndex ? 'ring-4 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
                   :style="{ width: '70mm', height: '15mm' }"
-                  @click="openModule(tile.id)"
+                  @click="focusedTileIndex = colIdx * TILES_PER_COLUMN + rowIdx; openModule(tile.id)"
                 >
                   <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
                     {{ tile.icon }}
@@ -226,8 +232,41 @@
                 </div>
               </div>
             </div>
-          </template>
-        </div>
+            <template v-for="bucket in BUCKETS" :key="bucket.id">
+              <div v-if="!isTileAccessMode && tilesInBucket(bucket.id).length > 0">
+                <!-- Bucket Label -->
+                <div class="mb-1.5 flex items-center gap-2">
+                  <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">{{ bucket.label }}</span>
+                  <div class="h-px flex-1 bg-[var(--color-border)]"></div>
+                </div>
+                <!-- Tile Grid -->
+                <div class="grid grid-cols-3 gap-2">
+                  <div
+                    v-for="tile in tilesInBucket(bucket.id)"
+                    :key="tile.id"
+                    :id="'wb-tile-' + getTileIndex(tile.id)"
+                    class="group relative cursor-pointer flex items-center gap-3 rounded-lg px-3 transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:brightness-110 bg-[var(--color-midlight)]"
+                    :class="getTileIndex(tile.id) === focusedTileIndex ? 'ring-4 ring-[var(--color-info)] translate-x-1 shadow-md' : ''"
+                    :style="{ width: '70mm', height: '15mm' }"
+                    @click="focusedTileIndex = getTileIndex(tile.id); openModule(tile.id)"
+                  >
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/5 text-lg">
+                      {{ tile.icon }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
+                      <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <div v-if="filteredTiles.length === 0" class="flex flex-col items-center justify-center py-16 text-center w-[70mm] md:w-[144mm] lg:w-[218mm] bg-[var(--color-surface-raised)] rounded-3xl border border-[var(--color-border)] shadow-md">
+              <div class="text-4xl mb-3">🔍</div>
+              <h3 class="text-base font-bold text-[var(--color-text)]">No Matching Tiles</h3>
+              <p class="mt-1 text-xs text-[var(--color-text-muted)] max-w-xs">No tiles match "{{ searchQuery }}". Try another search.</p>
+            </div>
+          </div>
 
         <!-- Right Column: Clock & MQTT Widgets -->
         <div class="flex-shrink-0 flex flex-col gap-4 w-[280px]">
@@ -317,6 +356,7 @@
           </div>
         </div>
       </div>
+    </div>
 
       <div v-else-if="currentTab === 'locked-bills' && userRole === 'admin'" class="px-10 py-8">
         <div class="mb-6 flex items-center justify-between">
@@ -691,22 +731,58 @@ const tiles = computed(() => {
 const isTileAccessMode = computed(() => Array.isArray(allowedTileIds.value))
 const focusedTileIndex = ref(0)
 
+const searchInputRef = ref(null)
+const searchQuery = ref('')
+
+const filteredTiles = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) {
+    return tiles.value
+  }
+  return tiles.value.filter(tile => 
+    tile.name.toLowerCase().includes(query) || 
+    tile.desc.toLowerCase().includes(query)
+  )
+})
+
+function getTileIndex(tileId) {
+  return filteredTiles.value.findIndex(t => t.id === tileId)
+}
+
+function focusSearch() {
+  nextTick(() => {
+    if (searchInputRef.value) {
+      searchInputRef.value.focus()
+      searchInputRef.value.select()
+    }
+  })
+}
+
+watch(searchQuery, () => {
+  focusedTileIndex.value = 0
+})
+
 // 10 tiles per column; overflow flows into the next column
 const TILES_PER_COLUMN = 10
 const tileColumns = computed(() => {
   const cols = []
-  for (let i = 0; i < tiles.value.length; i += TILES_PER_COLUMN) {
-    cols.push(tiles.value.slice(i, i + TILES_PER_COLUMN))
+  for (let i = 0; i < filteredTiles.value.length; i += TILES_PER_COLUMN) {
+    cols.push(filteredTiles.value.slice(i, i + TILES_PER_COLUMN))
   }
   return cols
 })
 
 function handleTileKeyNav(e) {
-  if (!isTileAccessMode.value || currentTab.value !== 'dashboard' || showGeneralSettings.value) return
+  if (currentTab.value !== 'dashboard' || showGeneralSettings.value) return
+  
   const tag = e.target?.tagName
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return
-  const count = tiles.value.length
+  const isSearchInput = e.target === searchInputRef.value
+  
+  if (!isSearchInput && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable)) return
+  
+  const count = filteredTiles.value.length
   if (!count) return
+
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     focusedTileIndex.value = (focusedTileIndex.value + 1) % count
@@ -714,27 +790,53 @@ function handleTileKeyNav(e) {
     e.preventDefault()
     focusedTileIndex.value = (focusedTileIndex.value - 1 + count) % count
   } else if (e.key === 'ArrowRight') {
-    e.preventDefault()
-    if (focusedTileIndex.value + TILES_PER_COLUMN < count) focusedTileIndex.value += TILES_PER_COLUMN
+    if (!isSearchInput) {
+      e.preventDefault()
+      if (isTileAccessMode.value) {
+        if (focusedTileIndex.value + TILES_PER_COLUMN < count) {
+          focusedTileIndex.value += TILES_PER_COLUMN
+        }
+      } else {
+        focusedTileIndex.value = (focusedTileIndex.value + 1) % count
+      }
+    }
   } else if (e.key === 'ArrowLeft') {
-    e.preventDefault()
-    if (focusedTileIndex.value - TILES_PER_COLUMN >= 0) focusedTileIndex.value -= TILES_PER_COLUMN
+    if (!isSearchInput) {
+      e.preventDefault()
+      if (isTileAccessMode.value) {
+        if (focusedTileIndex.value - TILES_PER_COLUMN >= 0) {
+          focusedTileIndex.value -= TILES_PER_COLUMN
+        }
+      } else {
+        focusedTileIndex.value = (focusedTileIndex.value - 1 + count) % count
+      }
+    }
   } else if (e.key === 'Enter') {
     e.preventDefault()
-    const tile = tiles.value[focusedTileIndex.value]
+    const tile = filteredTiles.value[focusedTileIndex.value]
     if (tile) openModule(tile.id)
+  } else if (e.key === 'Escape') {
+    if (isSearchInput && searchQuery.value) {
+      e.preventDefault()
+      searchQuery.value = ''
+    }
+  } else if (e.key === '/') {
+    if (!isSearchInput) {
+      e.preventDefault()
+      focusSearch()
+    }
   }
 }
 
 watch(focusedTileIndex, (idx) => {
   nextTick(() => document.getElementById('wb-tile-' + idx)?.scrollIntoView({ block: 'nearest' }))
 })
-watch(() => tiles.value.length, (count) => {
+watch(() => filteredTiles.value.length, (count) => {
   if (focusedTileIndex.value >= count) focusedTileIndex.value = 0
 })
 
 function tilesInBucket(bucketId) {
-  return tiles.value.filter(t => t.bucket === bucketId)
+  return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
 const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'unreconciled', 'cheques']
@@ -868,6 +970,8 @@ async function handleForceUnlock(billNo) {
 watch(currentTab, (newTab) => {
   if (newTab === 'locked-bills') {
     fetchLockedBills()
+  } else if (newTab === 'dashboard') {
+    focusSearch()
   }
 })
 
@@ -1094,6 +1198,7 @@ onMounted(async () => {
   window.addEventListener('wb-global-keyboard-toggle', syncKeyboardState)
   window.addEventListener('keydown', handleTileKeyNav)
   window.addEventListener('wb-item-cache-updated', _onItemCacheUpdated)
+  focusSearch()
 
   const socket = getFrappeSocket()
   if (socket) {
