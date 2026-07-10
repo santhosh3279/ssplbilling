@@ -146,7 +146,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:show'])
 
-const viewMode = ref('item') // 'invoice', 'item', or 'not-today'
+const viewMode = ref('not-today') // 'invoice', 'item', or 'not-today'
 const printLimit = ref(50)
 
 // Aggregate the invoice-wise history into one row per item_code.
@@ -205,6 +205,7 @@ function close() {
 // Keep printLimit synced with totalCount up to a reasonable default
 watch(() => props.show, (newVal) => {
   if (newVal) {
+    viewMode.value = 'not-today'
     printLimit.value = Math.min(totalCount.value || 50, 100)
   }
 })
