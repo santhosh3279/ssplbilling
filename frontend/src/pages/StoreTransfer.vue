@@ -158,6 +158,7 @@
               v-model="item.item_code"
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @focus="e => e.target.select()"
+              @input="onEditCodeInput(index)"
               @keydown="onEditCodeKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
@@ -256,7 +257,7 @@
     <QuickItemSearch
       ref="quickSearchRef"
       :results="quickSearchResults"
-      :query="barcodeQuery"
+      :query="editingRowIdx !== -1 && editingField === 'code' ? (items[editingRowIdx]?.item_code || '') : barcodeQuery"
       search-type="Stock"
       :warehouse="fromWarehouse"
       :anchor-el="quickSearchAnchor"
@@ -483,7 +484,33 @@ async function getItemDetailsFromServer(code) {
   }
 }
 
+function onEditCodeInput(rowIdx) {
+  const code = (items.value[rowIdx]?.item_code || '').trim()
+  if (code.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchAnchor.value = editCodeInput.value
+  } else {
+    quickSearchResults.value = []
+  }
+}
+
 async function onEditCodeKeydown(e, idx) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      quickSearchResults.value = []
+      return
+    }
+  }
+
   if (e.key === 'Enter') {
     e.preventDefault()
     const code = (items.value[idx]?.item_code || '').trim()
@@ -569,20 +596,33 @@ async function handleBarcodeEnter() {
 
 function onQuickSearchRefresh() {
   // After cache refresh, re-run search if there's a query
-  if (barcodeQuery.value) {
-    quickSearchResults.value = searchItemsInCache(barcodeQuery.value)
+  const query = (editingRowIdx.value !== -1 && editingField.value === 'code')
+    ? (items.value[editingRowIdx.value]?.item_code || '')
+    : barcodeQuery.value
+  if (query) {
+    quickSearchResults.value = searchItemsInCache(query)
   }
 }
 
 async function onQuickSearchSelect(item) {
+  if (!item) return
+  
   const res = await getItemDetailsFromServer(item.item_code)
-  if (res && res.found) {
-    setPendingItem(res)
+  const finalItem = (res && res.found) ? res : item
+  
+  if (editingRowIdx.value !== -1) {
+    const idx = editingRowIdx.value
+    items.value[idx].item_code = finalItem.item_code
+    items.value[idx].item_name = finalItem.item_name
+    items.value[idx].uom = finalItem.uom || finalItem.stock_uom || 'Nos'
+    items.value[idx].rate = finalItem.rate || finalItem.valuation_rate || 0
+    quickSearchResults.value = []
+    focusEditField('qty', idx)
   } else {
-    setPendingItem(item)
+    setPendingItem(finalItem)
+    barcodeQuery.value = ''
+    quickSearchResults.value = []
   }
-  barcodeQuery.value = ''
-  quickSearchResults.value = []
 }
 
 function openItemSearch(query) {
