@@ -78,6 +78,32 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 			else:
 				other_tax += float(tax.tax_amount or 0)
 
+		# Fetch items to calculate slab-wise taxable values
+		items = frappe.get_all(
+			"Sales Invoice Item",
+			filters={"parent": inv.name},
+			fields=["net_amount", "cgst_rate", "sgst_rate", "igst_rate"],
+		)
+		gst_0 = gst_5 = gst_12 = gst_18 = gst_28 = gst_other = 0.0
+		for item in items:
+			igst = float(item.igst_rate or 0)
+			cgst = float(item.cgst_rate or 0)
+			sgst = float(item.sgst_rate or 0)
+			total_rate = round(igst if igst > 0 else (cgst + sgst), 2)
+			net_amt = float(item.net_amount or 0)
+			if total_rate == 0.0:
+				gst_0 += net_amt
+			elif total_rate == 5.0:
+				gst_5 += net_amt
+			elif total_rate == 12.0:
+				gst_12 += net_amt
+			elif total_rate == 18.0:
+				gst_18 += net_amt
+			elif total_rate == 28.0:
+				gst_28 += net_amt
+			else:
+				gst_other += net_amt
+
 		result.append(
 			{
 				"invoice_no": inv.name,
@@ -86,6 +112,12 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 				"customer_name": inv.customer_name,
 				"customer_gstin": customer_gstin,
 				"taxable_amount": float(inv.net_total or 0),
+				"taxable_value_0": gst_0,
+				"taxable_value_5": gst_5,
+				"taxable_value_12": gst_12,
+				"taxable_value_18": gst_18,
+				"taxable_value_28": gst_28,
+				"taxable_value_other": gst_other,
 				"cgst_rate": cgst_rate,
 				"cgst_amount": cgst_amount,
 				"sgst_rate": sgst_rate,
@@ -171,6 +203,32 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 			else:
 				other_tax += float(tax.tax_amount or 0)
 
+		# Fetch items to calculate slab-wise taxable values
+		items = frappe.get_all(
+			"Quotation Item",
+			filters={"parent": qt.name},
+			fields=["net_amount", "cgst_rate", "sgst_rate", "igst_rate"],
+		)
+		gst_0 = gst_5 = gst_12 = gst_18 = gst_28 = gst_other = 0.0
+		for item in items:
+			igst = float(item.igst_rate or 0)
+			cgst = float(item.cgst_rate or 0)
+			sgst = float(item.sgst_rate or 0)
+			total_rate = round(igst if igst > 0 else (cgst + sgst), 2)
+			net_amt = float(item.net_amount or 0)
+			if total_rate == 0.0:
+				gst_0 += net_amt
+			elif total_rate == 5.0:
+				gst_5 += net_amt
+			elif total_rate == 12.0:
+				gst_12 += net_amt
+			elif total_rate == 18.0:
+				gst_18 += net_amt
+			elif total_rate == 28.0:
+				gst_28 += net_amt
+			else:
+				gst_other += net_amt
+
 		result.append(
 			{
 				"quotation_no": qt.name,
@@ -179,6 +237,12 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 				"customer_name": qt.customer_name,
 				"customer_gstin": customer_gstin,
 				"taxable_amount": float(qt.net_total or 0),
+				"taxable_value_0": gst_0,
+				"taxable_value_5": gst_5,
+				"taxable_value_12": gst_12,
+				"taxable_value_18": gst_18,
+				"taxable_value_28": gst_28,
+				"taxable_value_other": gst_other,
 				"cgst_rate": cgst_rate,
 				"cgst_amount": cgst_amount,
 				"sgst_rate": sgst_rate,
