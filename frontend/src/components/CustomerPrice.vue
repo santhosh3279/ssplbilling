@@ -1,11 +1,11 @@
 <template>
   <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-[2px]" v-if="!showPriceListUpdate">
-    <div class="w-[700px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-highlight)]/40 shadow-2xl">
-      <div class="bg-[var(--color-highlight)]/20 px-8 py-6 flex items-center gap-5 border-b border-[var(--color-highlight)]/30">
-        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-highlight)]/40 text-4xl text-[var(--color-highlight)]">💰</div>
+    <div class="w-[700px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-focus)] shadow-2xl">
+      <div class="bg-[var(--color-focus)]/20 px-8 py-6 flex items-center gap-5 border-b border-[var(--color-focus)]/30">
+        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-focus)]/30 text-4xl text-[var(--color-focus)]">💰</div>
         <div>
           <div class="text-4xl font-bold text-[var(--color-text)]">Update Item Price?</div>
-          <div class="text-xl text-[var(--color-highlight)] uppercase tracking-wider font-bold">Price Change Detected</div>
+          <div class="text-xl text-[var(--color-focus)] uppercase tracking-wider font-bold">Price Change Detected</div>
         </div>
       </div>
 
@@ -26,7 +26,7 @@
           </div>
           <div class="flex flex-col">
             <span class="text-lg text-[var(--color-text-muted)] uppercase font-bold">Factor</span>
-            <span class="text-5xl font-mono text-[var(--color-highlight)]">{{ multiplicationFactor.toFixed(4) }}</span>
+            <span class="text-5xl font-mono text-[var(--color-focus)]">{{ multiplicationFactor.toFixed(4) }}</span>
           </div>
         </div>
 
@@ -42,7 +42,7 @@
           :disabled="saving"
           @click="saveForCustomer"
           @keydown="onKeydown"
-          class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:border-[var(--color-highlight)] focus:ring-[10px] focus:ring-[var(--color-highlight)] disabled:opacity-50"
+          class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:border-[var(--color-focus)] focus:ring-[10px] focus:ring-[var(--color-focus)] disabled:opacity-50"
         >
           {{ saving ? 'Saving…' : 'Save for Customer' }}
         </button>
@@ -50,7 +50,7 @@
           ref="savePriceNoBtn"
           @click="$emit('dismiss')"
           @keydown="onKeydown"
-          class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:border-[var(--color-highlight)] focus:ring-[10px] focus:ring-[var(--color-highlight)]"
+          class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:border-[var(--color-focus)] focus:ring-[10px] focus:ring-[var(--color-focus)]"
         >
           Dismiss
         </button>
