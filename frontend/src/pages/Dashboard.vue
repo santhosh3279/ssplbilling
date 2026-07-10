@@ -839,6 +839,12 @@ function handleTileKeyNav(e) {
       e.preventDefault()
       searchQuery.value = ''
     }
+  } else if (e.key === 'Delete') {
+    if (searchQuery.value) {
+      e.preventDefault()
+      searchQuery.value = ''
+      focusSearch()
+    }
   } else if (e.key === '/') {
     if (!isSearchInput) {
       e.preventDefault()
