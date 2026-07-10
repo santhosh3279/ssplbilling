@@ -171,8 +171,8 @@
                       v-model="item.barcode"
                       readonly
                       class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] uppercase cursor-default"
-                      @keydown.enter.prevent="focusField('qty', idx)"
-                      @keydown.tab.prevent="focusField('qty', idx)"
+                      @keydown.enter.prevent="selectQtyField(idx)"
+                      @keydown.tab.prevent="selectQtyField(idx)"
                     />
                     <span v-else class="font-mono text-[var(--color-text-muted)] uppercase">{{ item.barcode || '—' }}</span>
                   </td>
@@ -183,8 +183,8 @@
                       :ref="el => setRef(el, 'uom', idx)"
                       v-model="item.uom"
                       class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
-                      @keydown.enter.prevent="focusField('qty', idx)"
-                      @keydown.tab.prevent="focusField('qty', idx)"
+                      @keydown.enter.prevent="selectQtyField(idx)"
+                      @keydown.tab.prevent="selectQtyField(idx)"
                       @keydown.shift.tab.prevent="focusField('code', idx)"
                       @change="onUomChange(idx)"
                     >
@@ -552,7 +552,7 @@ function focusNewUom() { nextTick(() => newUomSelect.value?.focus()) }
 function focusNewBarcode() { nextTick(() => newBarcodeInput.value?.focus()) }
 function focusAfterCode(idx) {
   if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) focusField('uom', idx)
-  else focusField('qty', idx)
+  else selectQtyField(idx)
 }
 function focusNewAfterCode() {
   if (newPending.item_code && getItemUoms(newPending.item_code).length > 1) focusNewUom()
@@ -591,12 +591,12 @@ function focusQty(idx) {
 }
 function moveToNextQty(idx) {
   const next = idx + 1
-  if (next < itemsToPrint.value.length) { selectedRow.value = next; selectQtyField(next) }
+  if (next < itemsToPrint.value.length) { selectRow(next) }
   else { selectedRow.value = -1; focusNewCode() }
 }
 function moveToPrevQty(idx) {
   const prev = idx - 1
-  if (prev >= 0) { selectedRow.value = prev; selectQtyField(prev) }
+  if (prev >= 0) { selectRow(prev) }
 }
 
 // ── Item lookup from cache ────────────────────────────────────────────────────
@@ -783,7 +783,7 @@ function onRowKeydown(e, idx) {
   if (e.target !== e.currentTarget) return
   if (e.key === 'ArrowDown')  { e.preventDefault(); moveRow(idx, 1) }
   else if (e.key === 'ArrowUp')   { e.preventDefault(); moveRow(idx, -1) }
-  else if (e.key === 'Enter')     { e.preventDefault(); focusField('code', idx) }
+  else if (e.key === 'Enter')     { e.preventDefault(); selectQtyField(idx) }
   else if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault()
     removeItem(idx)
