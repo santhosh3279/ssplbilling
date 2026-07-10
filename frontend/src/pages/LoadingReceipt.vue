@@ -203,7 +203,7 @@
                         >
                           <div class="flex items-baseline gap-3">
                             <span class="font-mono font-semibold text-[27px] shrink-0">{{ it.item_code }}</span>
-                            <span class="text-lg truncate" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
+                            <span class="text-[22.5px] truncate" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
                           </div>
                         </div>
                       </div>
@@ -306,7 +306,7 @@
                       >
                         <div class="flex items-baseline gap-3">
                           <span class="font-mono font-semibold text-[27px] shrink-0">{{ it.item_code }}</span>
-                          <span class="text-lg truncate" :class="i === newItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
+                          <span class="text-[22.5px] truncate" :class="i === newItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
                         </div>
                       </div>
                     </div>
