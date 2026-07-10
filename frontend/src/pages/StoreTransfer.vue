@@ -292,6 +292,13 @@
       :initial-template="defaultTemplate"
       @close="closePrintModal"
     />
+
+    <!-- Jump to Row Modal -->
+    <JumpToRowModal
+      v-model:show="showJumpModal"
+      :max-rows="items.length"
+      @jump="handleJump"
+    />
   </div>
 </template>
 
@@ -304,10 +311,12 @@ import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import Warning from '../components/Warning.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
 const showPrintModal = ref(false)
+const showJumpModal = ref(false)
 const defaultTemplate = ref('')
 const saveBtnRef = ref(null)
 
@@ -742,6 +751,12 @@ function handleBack() {
   } else {
     goBack()
   }
+}
+
+function handleJump(targetNo) {
+  if (items.value.length === 0) return
+  let idx = Math.max(0, Math.min(targetNo - 1, items.value.length - 1))
+  focusRow(idx)
 }
 
 function handleSidebarDateChange(dir) {
