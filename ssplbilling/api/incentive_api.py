@@ -105,12 +105,7 @@ def get_unposted_bills(user=None, cost_center=None):
 	)
 	
 	# 3. Fetch Stock Entries of purpose "Material Transfer"
-	se_allowed_res = get_allowed_series(doctype="Stock Entry", user=user)
 	se_filters = {"docstatus": 1, "purpose": "Material Transfer"}
-	if cost_center:
-		se_filters["cost_center"] = cost_center
-	if se_allowed_res.get("user_allowed_string") != "ALL":
-		se_filters["naming_series"] = ["in", se_allowed_res.get("allowed_series") or []]
 
 	stock_entries = frappe.get_all(
 		"Stock Entry",
