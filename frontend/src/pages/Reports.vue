@@ -920,18 +920,15 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     { key: 'cust_gstin', width: 18 },   // Customer GSTIN
     { key: 'taxable', width: 16 },      // Taxable Amount
     ...templateCols,
-    { key: 'cgst_rate', width: 12 },    // CGST Rate %
     { key: 'cgst_amt', width: 14 },     // CGST Amount
-    { key: 'sgst_rate', width: 12 },    // SGST Rate %
     { key: 'sgst_amt', width: 14 },     // SGST Amount
-    { key: 'igst_rate', width: 12 },    // IGST Rate %
     { key: 'igst_amt', width: 14 },     // IGST Amount
     { key: 'other_tax', width: 14 },    // Other Tax
     { key: 'total_tax', width: 14 },    // Total Tax
     { key: 'grand_total', width: 18 }   // Grand Total
   ]
 
-  const totalColsCount = 15 + templateCols.length
+  const totalColsCount = 12 + templateCols.length
 
   // Add Company Name in row 1
   const row1 = worksheet.addRow([companyName || ''])
@@ -962,9 +959,9 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     headers.push(`${t.title} Tax Value`)
   }
   headers.push(
-    'CGST Rate %', 'CGST Amount',
-    'SGST Rate %', 'SGST Amount',
-    'IGST Rate %', 'IGST Amount',
+    'CGST Amount',
+    'SGST Amount',
+    'IGST Amount',
     'Other Tax', 'Total Tax', 'Grand Total'
   )
   const tableHeaderRow = worksheet.addRow(headers)
@@ -992,11 +989,8 @@ async function buildExcel(rows, companyName, companyAddressLines) {
       rowValues.push(fmt(r.template_values?.[t.name]?.tax || 0))
     }
     rowValues.push(
-      fmt(r.cgst_rate),
       fmt(r.cgst_amount),
-      fmt(r.sgst_rate),
       fmt(r.sgst_amount),
-      fmt(r.igst_rate),
       fmt(r.igst_amount),
       fmt(r.other_tax),
       fmt(r.total_tax),
@@ -1016,9 +1010,9 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     'GRAND TOTAL', '', '', '', '',
     fmt(sum('taxable_amount')),
     ...totals,
-    '', fmt(sum('cgst_amount')),
-    '', fmt(sum('sgst_amount')),
-    '', fmt(sum('igst_amount')),
+    fmt(sum('cgst_amount')),
+    fmt(sum('sgst_amount')),
+    fmt(sum('igst_amount')),
     fmt(sum('other_tax')),
     fmt(sum('total_tax')),
     fmt(sum('grand_total')),
