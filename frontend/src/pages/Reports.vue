@@ -908,7 +908,9 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   const templateCols = []
   for (const t of activeTemplates.value) {
     templateCols.push({ key: `temp_taxable_${t.name}`, width: 18 }) // Taxable Value
-    templateCols.push({ key: `temp_tax_${t.name}`, width: 18 })    // Tax Value
+    templateCols.push({ key: `temp_cgst_${t.name}`, width: 14 })    // CGST Amount
+    templateCols.push({ key: `temp_sgst_${t.name}`, width: 14 })    // SGST Amount
+    templateCols.push({ key: `temp_igst_${t.name}`, width: 14 })    // IGST Amount
   }
 
   // Configure column widths
@@ -964,7 +966,9 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   ]
   for (const t of activeTemplates.value) {
     headers.push(`${t.title} Taxable Value`)
-    headers.push(`${t.title} Tax Value`)
+    headers.push(`${t.title} CGST`)
+    headers.push(`${t.title} SGST`)
+    headers.push(`${t.title} IGST`)
   }
   headers.push(
     'CGST Amount',
@@ -994,7 +998,9 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     ]
     for (const t of activeTemplates.value) {
       rowValues.push(fmt(r.template_values?.[t.name]?.taxable || 0))
-      rowValues.push(fmt(r.template_values?.[t.name]?.tax || 0))
+      rowValues.push(fmt(r.template_values?.[t.name]?.cgst || 0))
+      rowValues.push(fmt(r.template_values?.[t.name]?.sgst || 0))
+      rowValues.push(fmt(r.template_values?.[t.name]?.igst || 0))
     }
     rowValues.push(
       fmt(r.cgst_amount),
@@ -1012,7 +1018,9 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   const totals = []
   for (const t of activeTemplates.value) {
     totals.push(fmt(rows.reduce((s, r) => s + (r.template_values?.[t.name]?.taxable || 0), 0)))
-    totals.push(fmt(rows.reduce((s, r) => s + (r.template_values?.[t.name]?.tax || 0), 0)))
+    totals.push(fmt(rows.reduce((s, r) => s + (r.template_values?.[t.name]?.cgst || 0), 0)))
+    totals.push(fmt(rows.reduce((s, r) => s + (r.template_values?.[t.name]?.sgst || 0), 0)))
+    totals.push(fmt(rows.reduce((s, r) => s + (r.template_values?.[t.name]?.igst || 0), 0)))
   }
   const totalsRow = worksheet.addRow([
     'GRAND TOTAL', '', '', '', '',

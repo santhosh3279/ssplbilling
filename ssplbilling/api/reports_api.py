@@ -104,10 +104,12 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 				"cgst_amount", "sgst_amount", "igst_amount"
 			],
 		)
-		template_sums = {t.name: {"taxable": 0.0, "tax": 0.0} for t in templates}
+		template_sums = {t.name: {"taxable": 0.0, "cgst": 0.0, "sgst": 0.0, "igst": 0.0} for t in templates}
 		for item in items:
 			net_amt = float(item.net_amount or 0)
-			tax_amt = float(item.cgst_amount or 0) + float(item.sgst_amount or 0) + float(item.igst_amount or 0)
+			item_cgst = float(item.cgst_amount or 0)
+			item_sgst = float(item.sgst_amount or 0)
+			item_igst = float(item.igst_amount or 0)
 			template_name = item.item_tax_template
 			
 			if not template_name or template_name not in template_map:
@@ -120,7 +122,9 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 
 			if template_name in template_sums:
 				template_sums[template_name]["taxable"] += net_amt
-				template_sums[template_name]["tax"] += tax_amt
+				template_sums[template_name]["cgst"] += item_cgst
+				template_sums[template_name]["sgst"] += item_sgst
+				template_sums[template_name]["igst"] += item_igst
 
 		result.append(
 			{
@@ -243,10 +247,12 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 				"cgst_amount", "sgst_amount", "igst_amount"
 			],
 		)
-		template_sums = {t.name: {"taxable": 0.0, "tax": 0.0} for t in templates}
+		template_sums = {t.name: {"taxable": 0.0, "cgst": 0.0, "sgst": 0.0, "igst": 0.0} for t in templates}
 		for item in items:
 			net_amt = float(item.net_amount or 0)
-			tax_amt = float(item.cgst_amount or 0) + float(item.sgst_amount or 0) + float(item.igst_amount or 0)
+			item_cgst = float(item.cgst_amount or 0)
+			item_sgst = float(item.sgst_amount or 0)
+			item_igst = float(item.igst_amount or 0)
 			template_name = item.item_tax_template
 			
 			if not template_name or template_name not in template_map:
@@ -259,7 +265,9 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 
 			if template_name in template_sums:
 				template_sums[template_name]["taxable"] += net_amt
-				template_sums[template_name]["tax"] += tax_amt
+				template_sums[template_name]["cgst"] += item_cgst
+				template_sums[template_name]["sgst"] += item_sgst
+				template_sums[template_name]["igst"] += item_igst
 
 		result.append(
 			{
