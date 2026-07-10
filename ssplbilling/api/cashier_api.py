@@ -380,6 +380,11 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		pe.insert(); pe.submit()
 		return pe.name
 
+	original_discount_je = None
+	original_cash_pe = None
+	original_upi_pe = None
+	original_card_pe = None
+
 	if discount_amount > 0.01:
 		je = frappe.new_doc("Journal Entry")
 		je.voucher_type = "Journal Entry"
@@ -389,18 +394,25 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		je.append("accounts", {"account": si.debit_to, "credit_in_account_currency": discount_amount, "party_type": "Customer", "party": si.customer, "reference_type": "Sales Invoice", "reference_name": si.name})
 		je.insert(); je.submit()
 		payment_entries.append(je.name)
+		original_discount_je = je.name
 
 	if cash_amount > 0.01:
 		pe_name = _create_pe(cash_amount, cash_account)
-		if pe_name: payment_entries.append(pe_name)
+		if pe_name:
+			payment_entries.append(pe_name)
+			original_cash_pe = pe_name
 
 	if upi_amount > 0.01:
 		pe_name = _create_pe(upi_amount, upi_account)
-		if pe_name: payment_entries.append(pe_name)
+		if pe_name:
+			payment_entries.append(pe_name)
+			original_upi_pe = pe_name
 
 	if card_amount > 0.01:
 		pe_name = _create_pe(card_amount, card_account, ref_no=card_ref_no)
-		if pe_name: payment_entries.append(pe_name)
+		if pe_name:
+			payment_entries.append(pe_name)
+			original_card_pe = pe_name
 
 	# Mirror bill and payment entries if naming series matches configuration in Automatic Entries
 	try:
@@ -418,6 +430,10 @@ def submit_invoice_with_payment(data=None, **kwargs):
 				card_account=card_account,
 				discount_account=discount_account,
 				card_ref_no=card_ref_no,
+				original_cash_pe=original_cash_pe,
+				original_upi_pe=original_upi_pe,
+				original_card_pe=original_card_pe,
+				original_discount_je=original_discount_je,
 			)
 	except Exception:
 		frappe.log_error(title="Automatic Entries: mirror bill and payments failed", message=frappe.get_traceback())

@@ -171,13 +171,17 @@ def mirror_bill(si):
 		return None
 
 
-def _create_mirror_payment_entry(msi, amount, original_account, account_map, ref_no=None):
+def _create_mirror_payment_entry(msi, amount, original_account, account_map, ref_no=None, original_pe_name=None):
 	if amount <= 0.01 or not original_account:
 		return None
 	target_company = msi.company
 	paid_to = resolve_target_account(original_account, account_map, target_company)
 	if not paid_to:
 		return None
+
+	mirror_name = f"{original_pe_name}/" if original_pe_name else None
+	if mirror_name and frappe.db.exists("Payment Entry", mirror_name):
+		return mirror_name
 
 	outstanding = frappe.db.get_value("Sales Invoice", msi.name, "outstanding_amount") or 0
 	allocated = min(amount, outstanding)
@@ -193,6 +197,10 @@ def _create_mirror_payment_entry(msi, amount, original_account, account_map, ref
 	pe.paid_to = paid_to
 	pe.paid_amount = amount
 	pe.received_amount = amount
+
+	if original_pe_name and not ref_no:
+		ref_no = frappe.db.get_value("Payment Entry", original_pe_name, "reference_no")
+
 	if ref_no:
 		pe.reference_no = ref_no
 		pe.reference_date = msi.posting_date
@@ -203,14 +211,19 @@ def _create_mirror_payment_entry(msi, amount, original_account, account_map, ref
 			"allocated_amount": allocated,
 		})
 	pe.flags.ignore_permissions = True
-	pe.insert()
+	if mirror_name:
+		pe.insert(set_name=mirror_name)
+	else:
+		pe.insert()
 	pe.submit()
 	return pe.name
 
 
 def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_amount=0,
                      cash_account=None, upi_account=None, card_account=None,
-                     discount_account=None, card_ref_no=None):
+                     discount_account=None, card_ref_no=None,
+                     original_cash_pe=None, original_upi_pe=None, original_card_pe=None,
+                     original_discount_je=None):
 	"""Replicate the cash/UPI/card payments (and discount write-off) against the mirror
 	invoice `msi`. No-op if msi is None. Isolated with its own savepoint.
 	"""
@@ -225,38 +238,60 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 	try:
 		entries = []
 
-		pe_name = _create_mirror_payment_entry(msi, cash_amount, cash_account, account_map)
+		pe_name = _create_mirror_payment_entry(
+			msi, cash_amount, cash_account, account_map, original_pe_name=original_cash_pe
+		)
 		if pe_name:
 			entries.append(pe_name)
 
-		pe_name = _create_mirror_payment_entry(msi, upi_amount, upi_account, account_map)
+		pe_name = _create_mirror_payment_entry(
+			msi, upi_amount, upi_account, account_map, original_pe_name=original_upi_pe
+		)
 		if pe_name:
 			entries.append(pe_name)
 
-		pe_name = _create_mirror_payment_entry(msi, card_amount, card_account, account_map, ref_no=card_ref_no)
+		pe_name = _create_mirror_payment_entry(
+			msi, card_amount, card_account, account_map, ref_no=card_ref_no, original_pe_name=original_card_pe
+		)
 		if pe_name:
 			entries.append(pe_name)
 
 		if discount_amount > 0.01 and discount_account:
 			mapped_discount = resolve_target_account(discount_account, account_map, msi.company)
 			if mapped_discount:
-				je = frappe.new_doc("Journal Entry")
-				je.voucher_type = "Journal Entry"
-				je.posting_date = msi.posting_date
-				je.company = msi.company
-				je.append("accounts", {"account": mapped_discount, "debit_in_account_currency": discount_amount})
-				je.append("accounts", {
-					"account": msi.debit_to,
-					"credit_in_account_currency": discount_amount,
-					"party_type": "Customer",
-					"party": msi.customer,
-					"reference_type": "Sales Invoice",
-					"reference_name": msi.name,
-				})
-				je.flags.ignore_permissions = True
-				je.insert()
-				je.submit()
-				entries.append(je.name)
+				mirror_je_name = f"{original_discount_je}/" if original_discount_je else None
+				if mirror_je_name and frappe.db.exists("Journal Entry", mirror_je_name):
+					entries.append(mirror_je_name)
+				else:
+					je = frappe.new_doc("Journal Entry")
+					je.voucher_type = "Journal Entry"
+					je.posting_date = msi.posting_date
+					je.company = msi.company
+					je.append("accounts", {"account": mapped_discount, "debit_in_account_currency": discount_amount})
+					je.append("accounts", {
+						"account": msi.debit_to,
+						"credit_in_account_currency": discount_amount,
+						"party_type": "Customer",
+						"party": msi.customer,
+						"reference_type": "Sales Invoice",
+						"reference_name": msi.name,
+					})
+					if original_discount_je:
+						cheque_no, cheque_date = frappe.db.get_value(
+							"Journal Entry", original_discount_je, ["cheque_no", "cheque_date"]
+						)
+						if cheque_no:
+							je.cheque_no = cheque_no
+						if cheque_date:
+							je.cheque_date = cheque_date
+
+					je.flags.ignore_permissions = True
+					if mirror_je_name:
+						je.insert(set_name=mirror_je_name)
+					else:
+						je.insert()
+					je.submit()
+					entries.append(je.name)
 
 		frappe.db.release_savepoint(sp)
 		return entries
