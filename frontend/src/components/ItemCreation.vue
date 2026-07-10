@@ -233,58 +233,70 @@
               </div>
             </div>
 
-            <!-- Suppliers Mapping -->
+            <!-- Suppliers Mapping Table (Excel-style) -->
             <div class="space-y-[4px]">
               <div class="flex items-center justify-between px-[20px]">
                 <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Suppliers Mapping</label>
                 <button type="button" @click="addSupplierRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add Supplier</button>
               </div>
-              
-              <div class="space-y-[12px] max-h-72 overflow-y-auto custom-scrollbar pr-1">
-                <div v-for="(row, idx) in form.suppliers" :key="idx" class="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 space-y-3 relative">
-                  <!-- Remove button -->
-                  <button type="button" @click="removeSupplierRow(idx)" class="absolute right-[8px] top-[4px] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-3xl font-bold leading-none">&times;</button>
-                  
-                  <!-- Supplier Search Box -->
-                  <div class="space-y-[4px] relative">
-                    <label class="text-xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Supplier #{{ idx + 1 }}</label>
-                    <div class="relative">
-                      <input
-                        type="text"
-                        class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[16px] py-[8px] text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-                        :class="row.supplier ? 'border-[var(--color-success)]' : ''"
-                        placeholder="Search supplier..."
-                        autocomplete="off"
-                        :value="row.supplier_label || ''"
-                        @input="e => onSupplierRowInput(idx, e.target.value)"
-                        @focus="activeSupplierRowIdx = idx"
-                        @blur="onSupplierRowBlur"
-                      />
-                      <div
-                        v-if="activeSupplierRowIdx === idx && supplierOptions.length"
-                        class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[16px] py-[8px] shadow-xl"
-                      >
-                        <button
-                          v-for="opt in supplierOptions"
-                          :key="opt.name"
-                          type="button"
-                          class="w-full rounded-lg px-[16px] py-[8px] text-left hover:bg-[var(--color-info)]/20 transition-colors flex flex-col gap-1"
-                          @mousedown.prevent="selectSupplierForRow(idx, opt)"
+              <div class="border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
+                <table class="w-full border-collapse text-2xl">
+                  <thead>
+                    <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+                      <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Supplier</th>
+                      <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Part No</th>
+                      <th class="w-16"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[var(--color-border)]">
+                    <tr v-for="(row, idx) in form.suppliers" :key="idx" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition-colors">
+                      <td class="p-0 relative">
+                        <input
+                          type="text"
+                          class="w-full bg-transparent px-[10px] py-[6px] text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/10"
+                          :class="row.supplier ? 'text-[var(--color-success)] font-semibold' : ''"
+                          placeholder="Search supplier..."
+                          autocomplete="off"
+                          :value="row.supplier_label || ''"
+                          @input="e => onSupplierRowInput(idx, e.target.value)"
+                          @focus="activeSupplierRowIdx = idx"
+                          @blur="onSupplierRowBlur"
+                        />
+                        <div
+                          v-if="activeSupplierRowIdx === idx && supplierOptions.length"
+                          class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[10px] py-[6px] shadow-xl"
                         >
-                          <span class="text-xl font-bold text-[var(--color-text)]">{{ opt.label }}</span>
-                          <span class="text-sm text-[var(--color-text-muted)]">{{ opt.name }}</span>
-                        </button>
-                      </div>
-                    </div>
-                    <p v-if="row.supplier" class="text-base text-[var(--color-success)]">Mapped: {{ row.supplier }}</p>
-                  </div>
-
-
-                </div>
-                
-                <div v-if="form.suppliers.length === 0" class="rounded-xl border border-dashed border-[var(--color-border)] p-8 text-center text-2xl text-[var(--color-text-muted)]">
-                  No suppliers mapped. Click "+ Add Supplier" to link one.
-                </div>
+                          <button
+                            v-for="opt in supplierOptions"
+                            :key="opt.name"
+                            type="button"
+                            class="w-full rounded-lg px-[10px] py-[6px] text-left hover:bg-[var(--color-info)]/20 transition-colors flex flex-col gap-0.5"
+                            @mousedown.prevent="selectSupplierForRow(idx, opt)"
+                          >
+                            <span class="text-xl font-bold text-[var(--color-text)]">{{ opt.label }}</span>
+                            <span class="text-sm text-[var(--color-text-muted)]">{{ opt.name }}</span>
+                          </button>
+                        </div>
+                      </td>
+                      <td class="p-0">
+                        <input
+                          v-model="row.supplier_part_no"
+                          type="text"
+                          class="w-full bg-transparent px-[10px] py-[6px] text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/10"
+                          placeholder="Part No (Optional)..."
+                        />
+                      </td>
+                      <td class="p-0 text-center">
+                        <button type="button" @click="removeSupplierRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none w-full h-full py-[6px]">&times;</button>
+                      </td>
+                    </tr>
+                    <tr v-if="!form.suppliers.length">
+                      <td colspan="3" class="px-[10px] py-[12px] text-center text-2xl text-[var(--color-text-muted)] italic">
+                        No suppliers mapped
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
