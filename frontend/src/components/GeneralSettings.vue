@@ -476,6 +476,15 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (seriesPrefixes.length) {
     localStorage.setItem('wb-allowed-series', JSON.stringify(seriesPrefixes))
   }
+
+  // Cache Automatic Entries values under ae-* keys
+  if (settings.automatic_entries) {
+    const ae = settings.automatic_entries
+    localStorage.setItem('ae-alternative_company', ae.alternative_company || '')
+    localStorage.setItem('ae-warehouse', ae.warehouse || '')
+    localStorage.setItem('ae-series', JSON.stringify(ae.series || []))
+    localStorage.setItem('ae-accounts', JSON.stringify(ae.accounts || []))
+  }
 }
 
 async function handleSync() {
@@ -489,7 +498,7 @@ function showDebug(mode) {
     const vars = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      const isTargetKey = key.startsWith('wb-') || key.startsWith('wb_') || key.includes('cache')
+      const isTargetKey = key.startsWith('wb-') || key.startsWith('wb_') || key.startsWith('ae-') || key.includes('cache')
       const isLedgerCache = key.includes('ledger') || key.includes('partylink')
       if (isTargetKey && !isLedgerCache) {
         vars.push({ key, value: localStorage.getItem(key) })
