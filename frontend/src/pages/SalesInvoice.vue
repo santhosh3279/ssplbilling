@@ -592,6 +592,7 @@
       :party-name="customerName"
       party-noun="customer"
       :history="customerSalesHistory"
+      :current-items="activeItems"
     />
   </div>
 </template>

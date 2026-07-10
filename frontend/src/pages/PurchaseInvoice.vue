@@ -754,6 +754,7 @@
       :party-name="supplierName"
       party-noun="supplier"
       :history="supplierPurchaseHistory"
+      :current-items="activeItems"
     />
 
     <!-- Remark Modal (F6) -->

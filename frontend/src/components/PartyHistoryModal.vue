@@ -5,7 +5,7 @@
         <div class="flex items-center gap-6">
           <div>
             <div class="text-4xl font-bold">{{ title }}: {{ partyName }}</div>
-            <div class="text-xl text-[var(--color-text-muted)]">{{ viewMode === 'invoice' ? history.length : itemWise.length }} {{ viewMode === 'invoice' ? 'transactions' : 'unique items' }} previously purchased</div>
+            <div class="text-xl text-[var(--color-text-muted)]">{{ totalCount }} {{ totalNoun }} previously purchased</div>
           </div>
           <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-px ml-4">
             <button
@@ -21,6 +21,13 @@
               :class="viewMode === 'item' ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
             >
               Item-wise
+            </button>
+            <button
+              @click="viewMode = 'not-today'"
+              class="px-1.5 py-0.5 text-lg font-bold uppercase rounded transition-all"
+              :class="viewMode === 'not-today' ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            >
+              Not Today
             </button>
           </div>
         </div>
@@ -64,7 +71,7 @@
               </tr>
             </template>
             <!-- Item-wise Rows -->
-            <template v-else>
+            <template v-else-if="viewMode === 'item'">
               <tr v-for="(h, idx) in sortedItemWise" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
                 <td class="px-2 py-1.5 font-mono font-bold text-2xl text-[var(--color-highlight)]">{{ h.item_code }}</td>
                 <td class="px-2 py-1.5 text-3xl font-medium">{{ h.item_name }}</td>
@@ -75,9 +82,24 @@
                 <td class="px-2 py-1.5 text-xl text-[var(--color-info)]">{{ h.last_invoice }}</td>
               </tr>
             </template>
+            <!-- Not Today Rows -->
+            <template v-else-if="viewMode === 'not-today'">
+              <tr v-for="(h, idx) in sortedNotTodayItems" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
+                <td class="px-2 py-1.5 font-mono font-bold text-2xl text-[var(--color-highlight)]">{{ h.item_code }}</td>
+                <td class="px-2 py-1.5 text-3xl font-medium">{{ h.item_name }}</td>
+                <td class="px-2 py-1.5 font-mono text-lg text-[var(--color-text-muted)]">{{ h.barcodes }}</td>
+                <td class="px-2 py-1.5 text-right font-bold text-3xl">{{ Number(h.total_qty).toFixed(3) }}</td>
+                <td class="px-2 py-1.5 text-right font-mono text-3xl text-[var(--color-warning)]">{{ h.last_rate.toFixed(2) }}</td>
+                <td class="px-2 py-1.5 font-mono text-xl">{{ h.last_date }}</td>
+                <td class="px-2 py-1.5 text-xl text-[var(--color-info)]">{{ h.last_invoice }}</td>
+              </tr>
+            </template>
             <!-- Empty State -->
-            <tr v-if="viewMode === 'invoice' ? !history.length : !itemWise.length">
-              <td colspan="7" class="px-2 py-6 text-center text-2xl text-[var(--color-text-muted)] italic">No history available for this {{ partyNoun }}</td>
+            <tr v-if="viewMode === 'invoice' ? !history.length : (viewMode === 'item' ? !itemWise.length : !notTodayItems.length)">
+              <td colspan="7" class="px-2 py-6 text-center text-2xl text-[var(--color-text-muted)] italic">
+                <span v-if="viewMode === 'not-today'">All previously purchased items are in the current invoice</span>
+                <span v-else>No history available for this {{ partyNoun }}</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -101,11 +123,12 @@ const props = defineProps({
   partyNoun: { type: String, default: 'customer' }, // for the empty-state text
   history: { type: Array, default: () => [] }, // raw invoice-wise history rows
   title: { type: String, default: 'Purchase History' },
+  currentItems: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['update:show'])
 
-const viewMode = ref('item') // 'invoice' or 'item'
+const viewMode = ref('item') // 'invoice', 'item', or 'not-today'
 
 // Aggregate the invoice-wise history into one row per item_code.
 const itemWise = computed(() => {
@@ -127,12 +150,33 @@ const itemWise = computed(() => {
   return Object.values(map)
 })
 
+const notTodayItems = computed(() => {
+  const currentItemCodes = new Set(props.currentItems.map(i => i.item_code).filter(Boolean))
+  return itemWise.value.filter(item => !currentItemCodes.has(item.item_code))
+})
+
 const sortedHistory = computed(() => {
   return [...props.history].sort((a, b) => b.qty - a.qty)
 })
 
 const sortedItemWise = computed(() => {
   return [...itemWise.value].sort((a, b) => b.total_qty - a.total_qty)
+})
+
+const sortedNotTodayItems = computed(() => {
+  return [...notTodayItems.value].sort((a, b) => b.total_qty - a.total_qty)
+})
+
+const totalCount = computed(() => {
+  if (viewMode.value === 'invoice') return props.history.length
+  if (viewMode.value === 'item') return itemWise.value.length
+  return notTodayItems.value.length
+})
+
+const totalNoun = computed(() => {
+  if (viewMode.value === 'invoice') return 'transactions'
+  if (viewMode.value === 'item') return 'unique items'
+  return 'items not purchased today'
 })
 
 function close() {
