@@ -82,7 +82,7 @@
                   </div>
                   <div v-for="(row, idx) in form.extra_barcodes" :key="idx" class="flex items-center gap-[12px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[16px] py-[8px] relative group shrink-0">
                     <div class="flex flex-col gap-1">
-                      <input v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-[var(--color-text)] outline-none w-48" placeholder="Barcode..." />
+                      <input :ref="el => { if (el) extraBarcodeInputs[idx] = el }" v-model="row.barcode" type="text" class="bg-transparent border-none p-0 font-mono text-2xl text-[var(--color-text)] outline-none w-48" placeholder="Barcode..." />
                       <select v-model="row.uom" class="bg-transparent border-none p-0 text-sm font-bold text-[var(--color-text-muted)] uppercase outline-none cursor-pointer hover:text-[var(--color-info)] transition-colors">
                         <option v-for="u in availableUoms" :key="u" :value="u" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ u }}</option>
                       </select>
@@ -428,12 +428,23 @@ const form = ref({
   extra_barcodes: [],
 })
 
+const extraBarcodeInputs = ref([])
+
 function addBarcodeRow() {
+  const newIdx = form.value.extra_barcodes.length
   form.value.extra_barcodes.push({ barcode: '', uom: form.value.stock_uom })
+  nextTick(() => {
+    const el = extraBarcodeInputs.value[newIdx]
+    if (el) {
+      el.focus()
+      el.select()
+    }
+  })
 }
 
 function removeBarcodeRow(idx) {
   form.value.extra_barcodes.splice(idx, 1)
+  extraBarcodeInputs.value.splice(idx, 1)
 }
 
 function addUomRow() {
