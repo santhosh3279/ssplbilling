@@ -55,6 +55,7 @@
           </label>
           <div class="relative group">
             <select
+              ref="inheritSettingsSelectRef"
               v-model="selectedUser"
               @change="handleUserChange"
               class="w-full rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
@@ -662,6 +663,7 @@ const userInitials = computed(() => {
 
 const selectedUser = ref(localStorage.getItem('wb-inherited-user') || session.user.value)
 const allUsers = ref([])
+const inheritSettingsSelectRef = ref(null)
 
 async function handleUserChange() {
   if (selectedUser.value === session.user.value) {
@@ -867,6 +869,14 @@ const tileColumns = computed(() => {
 
 function handleTileKeyNav(e) {
   if (currentTab.value !== 'dashboard' || showGeneralSettings.value || showSystemPerformance.value) return
+
+  if (e.key === 'F4') {
+    if (isActualAdmin.value && inheritSettingsSelectRef.value) {
+      e.preventDefault()
+      inheritSettingsSelectRef.value.focus()
+      return
+    }
+  }
   
   const tag = e.target?.tagName
   const isSearchInput = e.target === searchInputRef.value
