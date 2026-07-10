@@ -185,33 +185,44 @@
 
           <!-- Column 3: Conversions, Rates & Supplier -->
           <div class="space-y-[16px]">
-            <!-- UOM Conversions -->
+            <!-- UOM Conversions Table (Excel-style) -->
             <div class="space-y-[4px]">
               <div class="flex items-center justify-between px-[20px]">
                 <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">UOM Conversions</label>
                 <button type="button" @click="addUomRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add UOM</button>
               </div>
-              <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 overflow-hidden">
-                <table class="w-full text-2xl">
+              <div class="border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
+                <table class="w-full border-collapse text-2xl">
                   <thead>
-                    <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-[var(--color-text-muted)]">UOM</th>
-                      <th class="px-[20px] py-[12px] text-left font-bold uppercase text-[var(--color-text-muted)]">Factor</th>
+                    <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+                      <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">UOM</th>
+                      <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Factor</th>
                       <th class="w-16"></th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr v-for="(row, idx) in form.uom_conversions" :key="idx" class="border-b border-[var(--color-border)]/50 last:border-0">
-                      <td class="px-[20px] py-[12px]">
-                        <select v-model="row.uom" class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] appearance-none">
-                          <option v-for="u in metadata.uoms" :key="u.name" :value="u.name" :disabled="u.name === form.stock_uom">{{ u.name }}</option>
+                  <tbody class="divide-y divide-[var(--color-border)]">
+                    <tr v-for="(row, idx) in form.uom_conversions" :key="idx" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition-colors">
+                      <td class="p-0">
+                        <select v-model="row.uom" class="w-full bg-transparent px-[10px] py-[6px] text-2xl text-[var(--color-text)] outline-none cursor-pointer focus:bg-[var(--color-info)]/10 appearance-none">
+                          <option v-for="u in metadata.uoms" :key="u.name" :value="u.name" :disabled="u.name === form.stock_uom" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ u.name }}</option>
                         </select>
                       </td>
-                      <td class="px-[20px] py-[12px]">
-                        <input v-model.number="row.conversion_factor" type="number" step="0.001" class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" />
+                      <td class="p-0">
+                        <input
+                          v-model.number="row.conversion_factor"
+                          type="number"
+                          step="0.001"
+                          class="w-full bg-transparent px-[10px] py-[6px] font-mono text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/10"
+                          placeholder="Factor..."
+                        />
                       </td>
-                      <td class="px-[20px] py-[12px] text-center">
-                        <button type="button" @click="removeUomRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none">&times;</button>
+                      <td class="p-0 text-center">
+                        <button type="button" @click="removeUomRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none w-full h-full py-[6px]">&times;</button>
+                      </td>
+                    </tr>
+                    <tr v-if="!form.uom_conversions.length">
+                      <td colspan="3" class="px-[10px] py-[12px] text-center text-2xl text-[var(--color-text-muted)] italic">
+                        No UOM conversions mapped
                       </td>
                     </tr>
                   </tbody>
