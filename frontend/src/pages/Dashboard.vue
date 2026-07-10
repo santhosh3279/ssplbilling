@@ -188,7 +188,6 @@
             type="text"
             placeholder="Search tiles... (Arrow keys to navigate, Enter to open)"
             class="w-full pl-11 pr-12 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] font-semibold placeholder-[var(--color-text-muted)] transition-all duration-300 focus:outline-none focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/15 shadow-sm hover:border-[var(--color-border)]/80"
-            @keydown="handleTileKeyNav"
           />
           <div class="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
             <span v-if="!searchQuery" class="text-[10px] font-bold text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-1.5 py-0.5 rounded shadow-sm">/</span>
