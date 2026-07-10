@@ -733,3 +733,45 @@ def get_frappe_site_name():
 		"site": frappe.local.site,
 		"socketio_port": frappe.conf.get("socketio_port", 9000),
 	}
+
+
+@frappe.whitelist()
+def get_ic_api_credits():
+	"""Fetch India Compliance API credits from resilient.tech GSP service."""
+	# Only allow users with System Manager role to check it
+	if "System Manager" not in frappe.get_roles(frappe.session.user):
+		frappe.throw("Not authorized", frappe.PermissionError)
+
+	import requests
+	from frappe.utils.password import get_decrypted_password
+
+	try:
+		api_secret = get_decrypted_password(
+			"GST Settings",
+			"GST Settings",
+			fieldname="api_secret",
+			raise_exception=False,
+		)
+		if not api_secret:
+			api_secret = frappe.conf.get("ic_api_secret")
+
+		if not api_secret:
+			return {"success": False, "error": "API Secret not configured in GST Settings"}
+
+		headers = {
+			"Content-Type": "application/json",
+			"x-api-key": api_secret
+		}
+		url = "https://asp.resilient.tech/v1/account.get_subscription_details"
+		response = requests.get(url, headers=headers, timeout=10)
+		if response.status_code == 200:
+			data = response.json()
+			if data.get("success") and data.get("message"):
+				return {"success": True, "data": data["message"]}
+			else:
+				return {"success": False, "error": data.get("error") or "Unknown API response"}
+		else:
+			return {"success": False, "error": f"API HTTP Error {response.status_code}"}
+	except Exception as e:
+		return {"success": False, "error": str(e)}
+

@@ -276,6 +276,46 @@
             <AnalogueClock />
           </div>
 
+          <!-- India Compliance API Credits Card -->
+          <div v-if="isActualAdmin" class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
+              <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">GST API Credits</span>
+              <button
+                @click.stop="fetchICCredits"
+                :disabled="icCreditsLoading"
+                class="rounded bg-[var(--color-surface-raised)] p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
+                title="Refresh Credits"
+              >
+                <svg class="h-3.5 w-3.5" :class="{'animate-spin text-[var(--color-info)]': icCreditsLoading}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+
+            <div v-if="icCreditsLoading" class="py-4 flex flex-col items-center justify-center gap-1.5">
+              <span class="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent inline-block"></span>
+              <span class="text-xs text-[var(--color-text-muted)] font-medium">Loading credits...</span>
+            </div>
+            <div v-else-if="icCreditsError" class="py-2 text-center">
+              <p class="text-xs font-bold text-[var(--color-danger)] leading-snug" :title="icCreditsError">{{ icCreditsError }}</p>
+              <button @click="fetchICCredits" class="mt-1 text-[10px] font-bold text-[var(--color-info)] hover:underline">Try Again</button>
+            </div>
+            <div v-else class="text-xs space-y-1.5">
+              <div class="flex justify-between items-baseline">
+                <span class="text-[var(--color-text-muted)]">Available:</span>
+                <span class="text-lg font-black text-[var(--color-info)] tracking-wide">{{ icCreditsBalance }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--color-text-muted)]">Used:</span>
+                <span class="font-mono font-bold text-[var(--color-text)]">{{ icCreditsUsed }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--color-text-muted)]">Expiry:</span>
+                <span class="font-bold text-[var(--color-text)]">{{ icCreditsExpiry || '—' }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- MQTT Server Status -->
           <div class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
             <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
@@ -564,6 +604,54 @@ function handleToggleKeyboard() {
 
 function syncKeyboardState() {
   isKeyboardVisible.value = readKeyboardVisible()
+}
+
+// ==================== INDIA COMPLIANCE API CREDITS ====================
+const icCreditsLoading = ref(false)
+const icCreditsError = ref('')
+const icCreditsBalance = ref('')
+const icCreditsUsed = ref('0')
+const icCreditsExpiry = ref('')
+
+async function fetchICCredits() {
+  if (!isActualAdmin.value) return
+  icCreditsLoading.value = true
+  icCreditsError.value = ''
+  try {
+    const res = await frappeGet('ssplbilling.api.dashboard_api.get_ic_api_credits')
+    if (res && res.success && res.data) {
+      const data = res.data
+      if (data.total_credits === -1) {
+        icCreditsBalance.value = 'Unlimited'
+      } else {
+        const bal = data.balance_credits ?? 0
+        icCreditsBalance.value = bal.toLocaleString('en-IN')
+      }
+      const used = data.used_credits ?? 0
+      icCreditsUsed.value = used.toLocaleString('en-IN')
+
+      if (data.expiry_date) {
+        try {
+          const parts = data.expiry_date.split('-')
+          if (parts.length === 3) {
+            icCreditsExpiry.value = `${parts[2]}-${parts[1]}-${parts[0]}`
+          } else {
+            icCreditsExpiry.value = data.expiry_date
+          }
+        } catch (_) {
+          icCreditsExpiry.value = data.expiry_date
+        }
+      } else {
+        icCreditsExpiry.value = ''
+      }
+    } else {
+      icCreditsError.value = res?.error || 'Failed to fetch credits'
+    }
+  } catch (err) {
+    icCreditsError.value = err.message || 'Error fetching credits'
+  } finally {
+    icCreditsLoading.value = false
+  }
 }
 
 // ==================== USER ====================
@@ -1244,6 +1332,7 @@ onMounted(async () => {
     } catch (e) {
       console.warn('[Dashboard] getAllUsers failed:', e)
     }
+    fetchICCredits()
   }
 
   // Settings/series/opening-cash/naming-series: fetch only on cache miss/expiry (see fetchSettings)
