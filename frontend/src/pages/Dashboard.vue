@@ -799,6 +799,28 @@ function handleTileKeyNav(e) {
     return
   }
 
+  // Handle global search control keys before checking count/matches
+  if (e.key === 'Escape') {
+    if (isSearchInput && searchQuery.value) {
+      e.preventDefault()
+      searchQuery.value = ''
+      return
+    }
+  } else if (e.key === 'Delete' || (e.key === 'Backspace' && !isSearchInput)) {
+    if (searchQuery.value) {
+      e.preventDefault()
+      searchQuery.value = ''
+      focusSearch()
+      return
+    }
+  } else if (e.key === '/') {
+    if (!isSearchInput) {
+      e.preventDefault()
+      focusSearch()
+      return
+    }
+  }
+
   const count = filteredTiles.value.length
   if (!count) return
 
@@ -834,22 +856,6 @@ function handleTileKeyNav(e) {
     e.preventDefault()
     const tile = filteredTiles.value[focusedTileIndex.value]
     if (tile) openModule(tile.id)
-  } else if (e.key === 'Escape') {
-    if (isSearchInput && searchQuery.value) {
-      e.preventDefault()
-      searchQuery.value = ''
-    }
-  } else if (e.key === 'Delete' || (e.key === 'Backspace' && !isSearchInput)) {
-    if (searchQuery.value) {
-      e.preventDefault()
-      searchQuery.value = ''
-      focusSearch()
-    }
-  } else if (e.key === '/') {
-    if (!isSearchInput) {
-      e.preventDefault()
-      focusSearch()
-    }
   }
 }
 
