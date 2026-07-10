@@ -738,10 +738,15 @@ const filteredTiles = computed(() => {
   if (!query) {
     return tiles.value
   }
-  return tiles.value.filter(tile => 
-    tile.name.toLowerCase().includes(query) || 
-    tile.desc.toLowerCase().includes(query)
-  )
+  const terms = query.split(/\s+/).filter(Boolean)
+  if (terms.length === 0) {
+    return tiles.value
+  }
+  return tiles.value.filter(tile => {
+    const name = tile.name.toLowerCase()
+    const desc = tile.desc.toLowerCase()
+    return terms.every(term => name.includes(term) || desc.includes(term))
+  })
 })
 
 function getTileIndex(tileId) {
