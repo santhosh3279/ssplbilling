@@ -191,7 +191,7 @@
                       />
                       <div
                         v-if="itemDropdownIdx === idx && rowItemResults.length"
-                        class="absolute left-0 top-full z-50 mt-1 w-[500px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                        class="absolute left-0 top-full z-50 mt-1 w-[600px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
                       >
                         <div
                           v-for="(it, i) in rowItemResults"
@@ -201,8 +201,10 @@
                           @mousedown.prevent="pickRowItem(idx, it)"
                           @mouseover="rowItemHighlight = i"
                         >
-                          <div class="font-mono font-semibold text-[27px]">{{ it.item_code }}</div>
-                          <div class="text-lg" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</div>
+                          <div class="flex items-baseline gap-3">
+                            <span class="font-mono font-semibold text-[27px] shrink-0">{{ it.item_code }}</span>
+                            <span class="text-lg truncate" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -292,7 +294,7 @@
                     />
                     <div
                       v-if="newItemResults.length"
-                      class="absolute left-0 top-full z-50 mt-1 w-[500px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                      class="absolute left-0 top-full z-50 mt-1 w-[600px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
                     >
                       <div
                         v-for="(it, i) in newItemResults"
@@ -302,8 +304,10 @@
                         @mousedown.prevent="pickNewItem(it)"
                         @mouseover="newItemHighlight = i"
                       >
-                        <div class="font-mono font-semibold text-[27px]">{{ it.item_code }}</div>
-                        <div class="text-lg" :class="i === newItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</div>
+                        <div class="flex items-baseline gap-3">
+                          <span class="font-mono font-semibold text-[27px] shrink-0">{{ it.item_code }}</span>
+                          <span class="text-lg truncate" :class="i === newItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
+                        </div>
                       </div>
                     </div>
                   </td>
