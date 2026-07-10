@@ -699,6 +699,15 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 		"grand_total": float(si.grand_total), 
 		"outstanding": float(si.outstanding_amount),
 		"posting_date": str(si.posting_date),
-		"due_date": str(si.due_date)
+		"due_date": str(si.due_date),
+		"advances": [{
+			"reference_type": adv.reference_type,
+			"reference_name": adv.reference_name,
+			"remarks": adv.remarks,
+			"advance_amount": float(adv.advance_amount),
+			"allocated_amount": float(adv.allocated_amount),
+			"ref_no": adv.ref_no,
+			"reference_row": adv.reference_row
+		} for adv in si.get("advances")]
 	}
 

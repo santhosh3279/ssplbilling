@@ -348,11 +348,20 @@
                 </div>
                 <div v-for="adv in selectedInvoice.advances" :key="adv.reference_name" 
                   class="flex items-center justify-between p-2.5 rounded-xl bg-[var(--color-info)]/10 border border-[var(--color-info)]/20 text-[11px] font-bold uppercase tracking-wider text-[var(--color-info)] group hover:bg-[var(--color-info)]/15 transition-colors shadow-sm">
-                  <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="opacity-70 group-hover:scale-110 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="opacity-70 group-hover:scale-110 transition-transform shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                     <span class="truncate max-w-[150px]">{{ adv.reference_name }}</span>
                   </div>
-                  <span class="font-mono text-[13px] font-black">₹{{ fmt(adv.allocated_amount) }}</span>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="font-mono text-[13px] font-black">₹{{ fmt(adv.allocated_amount) }}</span>
+                    <button 
+                      @click="removeAdvance(adv)"
+                      class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] p-0.5 rounded transition-colors"
+                      title="Remove credit note allocation"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1398,6 +1407,61 @@ function handleAllocationSuccess(res) {
     nextTick(() => { cashInput.value?.focus(); cashInput.value?.select() })
   }
   setTimeout(() => successMsg.value = '', 4000)
+}
+
+async function removeAdvance(adv) {
+  if (!selectedInvoice.value) return
+  
+  // Filter out this advance from the current advances list
+  const updatedAllocations = (selectedInvoice.value.advances || [])
+    .filter(a => a.reference_name !== adv.reference_name)
+    .map(a => ({
+      reference_name: a.reference_name,
+      reference_row: a.reference_row,
+      reference_type: a.reference_type,
+      allocated_amount: a.allocated_amount
+    }))
+
+  isSubmitting.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.cashier_api.update_invoice_advances', {
+      invoice_name: selectedInvoice.value.name,
+      allocations: updatedAllocations
+    })
+    if (res.status === 'success') {
+      // Update local advances and outstanding amounts using the response
+      if (res.outstanding !== undefined) selectedInvoice.value.outstanding_amount = res.outstanding
+      if (res.advances) selectedInvoice.value.advances = res.advances
+
+      // Update sidebar list outstanding amount
+      const idx = invoices.value.findIndex(i => i.name === selectedInvoice.value.name)
+      if (idx !== -1) {
+        invoices.value[idx].outstanding_amount = res.outstanding
+      }
+
+      // Also reload unallocated cash list to make this credit note available again in the modal
+      const unallocated = await frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
+        customer: selectedInvoice.value.customer,
+        invoice_name: selectedInvoice.value.name
+      })
+      const filteredUnallocated = (unallocated || []).filter(pe => pe.mode_of_payment === 'Credit Note')
+      
+      let remaining = res.outstanding || selectedInvoice.value.rounded_total || selectedInvoice.value.grand_total
+      unallocatedPayments.value = filteredUnallocated.map(pe => {
+        const alloc = Math.min(Number(pe.unallocated_amount), remaining)
+        remaining -= alloc
+        return { ...pe, amount_to_allocate: parseFloat(alloc.toFixed(2)) }
+      })
+      unallocatedAmountTotal.value = filteredUnallocated.reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
+
+      successMsg.value = `Removed advance: ${adv.reference_name}`
+      setTimeout(() => successMsg.value = '', 4000)
+    }
+  } catch (e) {
+    errorMsg.value = "Failed to remove advance: " + (e.message || e)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 // Shortcut Handlers
 function navigateBills(dir) {
