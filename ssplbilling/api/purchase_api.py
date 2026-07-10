@@ -337,13 +337,15 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
 
 
 @frappe.whitelist()
-def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=False, naming_series=None, draft_only=False):
+def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=False, naming_series=None, draft_only=False, company=None):
     """List Purchase Invoices for modification.
     
     draft_only=True  → only Draft invoices (docstatus=0).
     draft_only=False → all non-cancelled invoices for the date.
     """
     filters = [["docstatus", "!=", 2]]
+    if company:
+        filters.append(["company", "=", company])
     if not query:
         date_filter = posting_date or frappe.utils.today()
         filters.append(["posting_date", "=", date_filter])
@@ -365,7 +367,7 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
             "Purchase Invoice",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus"],
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus", "company"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -373,7 +375,7 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
         invoices = frappe.get_all(
             "Purchase Invoice",
             filters=filters,
-            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus"],
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus", "company"],
             limit=int(limit),
             order_by="name desc",
         )

@@ -1145,7 +1145,8 @@ async function fetchRecentInvoices() {
       limit: 100,
       posting_date: sidebarDate.value,
       naming_series: sidebarSeries.value.join(','),
-      draft_only: draftOnly.value
+      draft_only: draftOnly.value,
+      company: localStorage.getItem('wb-company') || ''
     })
   } catch (e) {
     recentInvoices.value = []
