@@ -9,7 +9,14 @@ def get_automatic_entries():
 
 
 def _sales_mirror_series(automatic_entries):
-	return {r.sales_invoice_series for r in (automatic_entries.series or []) if r.sales_invoice_series}
+	series_set = set()
+	for r in (automatic_entries.series or []):
+		if r.sales_invoice_series:
+			for val in r.sales_invoice_series.split(','):
+				val_clean = val.strip()
+				if val_clean:
+					series_set.add(val_clean)
+	return series_set
 
 
 def _account_map(automatic_entries):
@@ -24,7 +31,12 @@ def should_mirror_sales_invoice(naming_series, automatic_entries):
 	"""Whether `naming_series` is configured in Automatic Entries for cross-company mirroring."""
 	if not automatic_entries.alternative_company or not automatic_entries.warehouse:
 		return False
-	return naming_series in _sales_mirror_series(automatic_entries)
+	if not naming_series:
+		return False
+	for prefix in _sales_mirror_series(automatic_entries):
+		if naming_series == prefix or naming_series.startswith(prefix):
+			return True
+	return False
 
 
 def _mop_for_account(account, company):
