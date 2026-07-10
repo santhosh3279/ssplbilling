@@ -8,6 +8,9 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Back
         </button>
+        <button v-if="canAccessTile('sales')" @click="$router.push('/sales')" class="shrink-0 flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-raised)]/50 px-2.5 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all active:scale-95">
+          <span>🧾</span> Sales Invoice
+        </button>
         <div class="flex items-center gap-2 font-bold text-[var(--color-info)] truncate">
           <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
@@ -713,6 +716,7 @@ import CashierEntry from '../components/CashierEntry.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import Gstbillcreator from '../components/Gstbillcreator.vue'
 import Warning from '../components/Warning.vue'
+import { canAccessTile } from '../composables/usePermission'
 
 /**
  * HELPER: getTodayIST

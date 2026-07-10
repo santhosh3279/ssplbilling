@@ -81,6 +81,13 @@
             E-Way Bill: Cancelled
           </div>
           <button
+            v-if="canAccessTile('cashier')"
+            @click="router.push('/cashier')"
+            class="flex items-center gap-2 rounded bg-[var(--color-highlight)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 shadow-lg"
+          >
+            <span>🏧</span> Cashier Desk
+          </button>
+          <button
             v-if="customerId"
             @click="showHistoryModal = true"
             class="flex items-center gap-2 rounded bg-[var(--color-highlight)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 shadow-lg"
@@ -628,6 +635,7 @@ import { useShortcuts } from '../services/shortcutManager'
 import { session } from '../session'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
+import { canAccessTile } from '../composables/usePermission'
 
 const props = defineProps({
   isSubwindow: Boolean,
