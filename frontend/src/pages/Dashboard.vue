@@ -772,13 +772,27 @@ const tileColumns = computed(() => {
 })
 
 function handleTileKeyNav(e) {
-  if (currentTab.value !== 'dashboard' || showGeneralSettings.value) return
+  if (currentTab.value !== 'dashboard' || showGeneralSettings.value || showSystemPerformance.value) return
   
   const tag = e.target?.tagName
   const isSearchInput = e.target === searchInputRef.value
   
   if (!isSearchInput && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable)) return
   
+  // If the user types a character key anywhere, focus search box and type it
+  if (!isSearchInput && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== '/') {
+    e.preventDefault()
+    searchQuery.value += e.key
+    nextTick(() => {
+      if (searchInputRef.value) {
+        searchInputRef.value.focus()
+        const len = searchQuery.value.length
+        searchInputRef.value.setSelectionRange(len, len)
+      }
+    })
+    return
+  }
+
   const count = filteredTiles.value.length
   if (!count) return
 
