@@ -542,3 +542,234 @@ def get_item_purchase_history(item_code, current_supplier=None):
 	return history
 
 
+@frappe.whitelist()
+def print_party_history_pdf(party, party_type, limit=50, view_mode="item", current_items=None):
+	"""Generate a PDF of customer/supplier purchase history."""
+	if not party or not party_type:
+		frappe.throw("Missing party or party_type")
+
+	limit = frappe.utils.cint(limit) or 50
+
+	# 1. Fetch raw history
+	if party_type.lower() in ("customer", "sales invoice"):
+		raw_history = get_customer_sales_history(party)
+		party_noun = "Customer"
+		title = f"Sales History for Customer: {party}"
+	else:
+		raw_history = get_supplier_purchase_history(party)
+		party_noun = "Supplier"
+		title = f"Purchase History for Supplier: {party}"
+
+	# 2. Process data based on view_mode
+	processed_rows = []
+	if view_mode == "invoice":
+		# Sort by qty descending, limit results
+		sorted_raw = sorted(raw_history, key=lambda x: x.get("qty", 0), reverse=True)
+		processed_rows = sorted_raw[:limit]
+	else:
+		# Aggregate to item-wise
+		item_map = {}
+		for h in raw_history:
+			item_code = h.get("item_code")
+			if not item_code:
+				continue
+			if item_code not in item_map:
+				item_map[item_code] = {
+					"item_code": item_code,
+					"item_name": h.get("item_name", ""),
+					"barcodes": h.get("barcodes", ""),
+					"total_qty": 0.0,
+					"last_rate": h.get("rate", 0.0),
+					"last_date": h.get("date", ""),
+					"last_invoice": h.get("name", ""),
+				}
+			item_map[item_code]["total_qty"] += h.get("qty", 0.0)
+
+		item_list = list(item_map.values())
+
+		# If 'not-today', filter out items currently in invoice
+		if view_mode == "not-today" and current_items:
+			current_set = set(item.strip() for item in current_items.split(",") if item.strip())
+			item_list = [item for item in item_list if item["item_code"] not in current_set]
+
+		# Sort by total_qty descending, limit results
+		sorted_items = sorted(item_list, key=lambda x: x.get("total_qty", 0.0), reverse=True)
+		processed_rows = sorted_items[:limit]
+
+	# 3. Generate HTML
+	html = _generate_history_html(title, party_noun, party, view_mode, processed_rows)
+
+	# 4. Generate and return PDF
+	from frappe.utils.pdf import get_pdf
+	
+	frappe.response.type = "pdf"
+	frappe.response.filename = f"{party_noun}_History_{party.replace(' ', '_')}.pdf"
+	frappe.response.filecontent = get_pdf(html)
+
+
+def _generate_history_html(title, party_noun, party, view_mode, rows):
+	import datetime
+	generated_on = datetime.datetime.now().strftime("%d-%b-%Y %I:%M %p")
+
+	# Mode label
+	if view_mode == "invoice":
+		mode_label = "Invoice-wise Transactions"
+	elif view_mode == "item":
+		mode_label = "Item-wise Summary"
+	else:
+		mode_label = "Items Not Purchased Today"
+
+	# Build Table Header
+	if view_mode == "invoice":
+		headers = ["Date", "Item Code", "Item Name", "Barcodes", "Qty", "Rate", "Invoice"]
+		col_styles = [
+			"width: 12%; text-align: left;",
+			"width: 15%; text-align: left; font-family: monospace; font-weight: bold;",
+			"width: 33%; text-align: left;",
+			"width: 15%; text-align: left; font-family: monospace; color: #555;",
+			"width: 8%; text-align: right; font-weight: bold;",
+			"width: 10%; text-align: right; font-family: monospace; color: #b45309;",
+			"width: 7%; text-align: left;"
+		]
+	else:
+		headers = ["Item Code", "Item Name", "Barcodes", "Total Qty", "Last Rate", "Last Date", "Last Invoice"]
+		col_styles = [
+			"width: 15%; text-align: left; font-family: monospace; font-weight: bold;",
+			"width: 33%; text-align: left;",
+			"width: 15%; text-align: left; font-family: monospace; color: #555;",
+			"width: 8%; text-align: right; font-weight: bold;",
+			"width: 10%; text-align: right; font-family: monospace; color: #b45309;",
+			"width: 12%; text-align: left;",
+			"width: 7%; text-align: left;"
+		]
+
+	thead_html = "".join(f'<th style="{style} padding: 8px; border-bottom: 2px solid #ddd; background-color: #f3f4f6; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">{h}</th>' for h, style in zip(headers, col_styles))
+
+	# Build Table Rows
+	tbody_html = ""
+	if not rows:
+		tbody_html = f'<tr><td colspan="{len(headers)}" style="padding: 20px; text-align: center; font-style: italic; color: #777;">No history records found.</td></tr>'
+	else:
+		for r in rows:
+			if view_mode == "invoice":
+				qty_val = float(r.get("qty") or 0)
+				qty_str = f"{qty_val:.3f}" if qty_val % 1 != 0 else f"{int(qty_val)}"
+				cols = [
+					r.get("date", ""),
+					r.get("item_code", ""),
+					r.get("item_name", ""),
+					r.get("barcodes", ""),
+					qty_str,
+					f'{float(r.get("rate") or 0):.2f}',
+					r.get("name", "")
+				]
+			else:
+				total_qty_val = float(r.get("total_qty") or 0)
+				total_qty_str = f"{total_qty_val:.3f}" if total_qty_val % 1 != 0 else f"{int(total_qty_val)}"
+				cols = [
+					r.get("item_code", ""),
+					r.get("item_name", ""),
+					r.get("barcodes", ""),
+					total_qty_str,
+					f'{float(r.get("last_rate") or 0):.2f}',
+					r.get("last_date", ""),
+					r.get("last_invoice", "")
+				]
+
+			row_html = "<tr>"
+			for val, style in zip(cols, col_styles):
+				row_html += f'<td style="{style} padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 11px;">{val}</td>'
+			row_html += "</tr>"
+			tbody_html += row_html
+
+	# Main template
+	html = f"""
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="utf-8">
+		<style>
+			body {{
+				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+				color: #1f2937;
+				margin: 0;
+				padding: 0;
+			}}
+			.header {{
+				border-bottom: 3px solid #10b981;
+				padding-bottom: 12px;
+				margin-bottom: 20px;
+			}}
+			.header table {{
+				width: 100%;
+				border-collapse: collapse;
+			}}
+			.header .title {{
+				font-size: 18px;
+				font-weight: bold;
+				color: #111827;
+			}}
+			.header .meta {{
+				font-size: 11px;
+				color: #6b7280;
+				text-align: right;
+			}}
+			.header .subtitle {{
+				font-size: 12px;
+				color: #4b5563;
+				margin-top: 4px;
+				font-weight: 500;
+			}}
+			.content-table {{
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 10px;
+			}}
+			.footer {{
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				text-align: center;
+				font-size: 10px;
+				color: #9ca3af;
+				border-top: 1px solid #e5e7eb;
+				padding-top: 8px;
+			}}
+		</style>
+	</head>
+	<body>
+		<div class="header">
+			<table>
+				<tr>
+					<td>
+						<div class="title">{title}</div>
+						<div class="subtitle">Report Mode: {mode_label} (Top {len(rows)} items)</div>
+					</td>
+					<td class="meta">
+						<strong>Generated:</strong> {generated_on}<br>
+						<strong>Party Type:</strong> {party_noun}
+					</td>
+				</tr>
+			</table>
+		</div>
+		<table class="content-table">
+			<thead>
+				<tr>
+					{thead_html}
+				</tr>
+			</thead>
+			<tbody>
+				{tbody_html}
+			</tbody>
+		</table>
+		<div class="footer">
+			Sundaram and Sons Private Ltd — Wholesale Billing System
+		</div>
+	</body>
+	</html>
+	"""
+	return html
+
+
+

@@ -30,6 +30,24 @@
               Not Today
             </button>
           </div>
+          <!-- Print Controls -->
+          <div class="flex items-center gap-2 border border-[var(--color-border)] bg-[var(--color-bg)] rounded-lg p-1 ml-4 shadow-sm">
+            <span class="text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider pl-1 select-none">Print Limit:</span>
+            <input
+              type="number"
+              v-model.number="printLimit"
+              class="w-16 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 text-lg font-bold text-center text-[var(--color-text)] focus:outline-none focus:border-[var(--color-highlight)]"
+              min="1"
+            />
+            <button
+              @click="printPdf"
+              class="px-3 py-0.5 text-lg font-bold uppercase rounded bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-1 shadow-sm"
+              :disabled="!totalCount"
+              :class="{ 'opacity-50 cursor-not-allowed': !totalCount }"
+            >
+              🖨️ Print PDF
+            </button>
+          </div>
         </div>
         <button @click="close" class="text-4xl text-[var(--color-text-muted)] hover:text-[var(--color-text)]">✕</button>
       </div>
@@ -112,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 // Reusable "Purchase History" modal shared by Sales Invoice (customer) and Purchase
 // Invoice (supplier). The page owns the open state (v-model:show) so its keyboard
@@ -129,6 +147,7 @@ const props = defineProps({
 const emit = defineEmits(['update:show'])
 
 const viewMode = ref('item') // 'invoice', 'item', or 'not-today'
+const printLimit = ref(50)
 
 // Aggregate the invoice-wise history into one row per item_code.
 const itemWise = computed(() => {
@@ -181,6 +200,36 @@ const totalNoun = computed(() => {
 
 function close() {
   emit('update:show', false)
+}
+
+// Keep printLimit synced with totalCount up to a reasonable default
+watch(() => props.show, (newVal) => {
+  if (newVal) {
+    printLimit.value = Math.min(totalCount.value || 50, 100)
+  }
+})
+watch(viewMode, () => {
+  printLimit.value = Math.min(totalCount.value || 50, 100)
+})
+
+function printPdf() {
+  if (!props.partyName) return
+
+  const currentItemCodes = props.currentItems
+    .map(i => i.item_code)
+    .filter(Boolean)
+    .join(',')
+
+  const params = new URLSearchParams({
+    party: props.partyName,
+    party_type: props.partyNoun === 'supplier' ? 'Supplier' : 'Customer',
+    limit: printLimit.value || 50,
+    view_mode: viewMode.value,
+    current_items: currentItemCodes
+  })
+
+  const url = `/api/method/ssplbilling.api.itemsearch_api.print_party_history_pdf?${params.toString()}`
+  window.open(url, '_blank')
 }
 </script>
 
