@@ -1824,7 +1824,7 @@ function handleRowKeydown(e, idx) {
     }
   }
   // stopPropagation: shortcutManager also binds DELETE and would toggle the row right back
-  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); deleteItem(idx) }
+  else if (e.key === 'Delete') { e.preventDefault(); e.stopPropagation(); deleteItem(idx) }
 }
 
 function focusEditField(field, idx) {
