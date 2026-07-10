@@ -715,6 +715,7 @@
 
         { key: 'ALT + P', desc: 'Print barcodes' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
+        { key: 'M', desc: 'Modify invoice (when invoice is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change supplier (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
       ]"

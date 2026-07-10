@@ -45,6 +45,21 @@ function getEventKey(e) {
 }
 
 function handleKeyDown(e) {
+  const target = e.target
+  const isInputFocused = target && (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT' ||
+    target.isContentEditable
+  )
+
+  if (isInputFocused) {
+    const isControlOrAltOrMeta = e.ctrlKey || e.altKey || e.metaKey
+    if (!isControlOrAltOrMeta && e.key.length === 1) {
+      return
+    }
+  }
+
   const key = getEventKey(e)
 
   // 0. Priority Exception: F1, CTRL+I, and CTRL+L are always global
