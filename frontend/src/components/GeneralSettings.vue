@@ -499,8 +499,8 @@ function showDebug(mode) {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       const isTargetKey = key.startsWith('wb-') || key.startsWith('wb_') || key.startsWith('ae-') || key.includes('cache')
-      const isLedgerCache = key.includes('ledger') || key.includes('partylink')
-      if (isTargetKey && !isLedgerCache) {
+      const isExcluded = key.includes('ledger') || key.includes('partylink') || key === 'wb-settings-v2'
+      if (isTargetKey && !isExcluded) {
         vars.push({ key, value: localStorage.getItem(key) })
       }
     }
