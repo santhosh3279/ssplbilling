@@ -86,9 +86,9 @@ def resolve_target_account(original_account, account_map, target_company):
 
 def create_mirror_sales_invoice(si, automatic_entries):
 	"""Create + submit a mirror Sales Invoice for `si` in the alternate company, named
-	'-' + si.name, posted against the Automatic Entries warehouse with accounts
+	si.name + '/', posted against the Automatic Entries warehouse with accounts
 	substituted via resolve_target_account."""
-	mirror_name = f"-{si.name}"
+	mirror_name = f"{si.name}/"
 	if frappe.db.exists("Sales Invoice", mirror_name):
 		return frappe.get_doc("Sales Invoice", mirror_name)
 
