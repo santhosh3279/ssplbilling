@@ -86,7 +86,10 @@
       </div>
 
       <!-- Report Data Table -->
-      <div class="flex-1 overflow-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+      <div
+        @scroll="handleScroll"
+        class="flex-1 overflow-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg"
+      >
         <div v-if="loadingStockData" class="flex h-64 items-center justify-center">
           <div class="flex flex-col items-center gap-3">
             <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-border)] border-t-violet-500"></div>
@@ -114,7 +117,7 @@
           </thead>
           <tbody class="divide-y divide-[var(--color-border)] text-[var(--color-text)] font-mono">
             <tr
-              v-for="(row, idx) in filteredStockRows"
+              v-for="(row, idx) in displayedStockRows"
               :key="row.item_code + '_' + row.warehouse"
               class="transition-colors"
               :class="focusedRowIdx === idx ? 'stock-row-focused bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-sm' : 'hover:bg-[var(--color-surface-raised)]/30'"
@@ -148,6 +151,7 @@ const router = useRouter()
 const loadingStockData = ref(false)
 const stockReportRows = ref([])
 const focusedRowIdx = ref(-1)
+const maxDisplayed = ref(100)
 const filterOptions = ref({ warehouses: [], suppliers: [] })
 
 const stockFilters = ref({
@@ -175,6 +179,7 @@ async function loadStockReportData() {
       negative_only: stockFilters.value.negativeOnly
     })
     stockReportRows.value = data || []
+    maxDisplayed.value = 100
     focusedRowIdx.value = stockReportRows.value.length ? 0 : -1
   } catch (err) {
     console.error('Failed to load stock report data:', err)
@@ -189,6 +194,29 @@ watch(
     loadStockReportData()
   }
 )
+
+watch(
+  () => stockFilters.value.search,
+  () => {
+    maxDisplayed.value = 100
+    focusedRowIdx.value = 0
+  }
+)
+
+watch(focusedRowIdx, (newIdx) => {
+  if (newIdx >= maxDisplayed.value) {
+    maxDisplayed.value = newIdx + 50
+  }
+})
+
+function handleScroll(e) {
+  const el = e.target
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+    if (maxDisplayed.value < filteredStockRows.value.length) {
+      maxDisplayed.value += 100
+    }
+  }
+}
 
 const filteredStockRows = computed(() => {
   const query = stockFilters.value.search.trim().toLowerCase()
@@ -211,6 +239,10 @@ const filteredStockRows = computed(() => {
   }
 
   return rows
+})
+
+const displayedStockRows = computed(() => {
+  return filteredStockRows.value.slice(0, maxDisplayed.value)
 })
 
 function resetStockFilters() {
