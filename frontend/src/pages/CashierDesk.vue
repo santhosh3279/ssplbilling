@@ -1070,13 +1070,14 @@ async function selectInvoice(inv) {
     })
     
     let remaining = details.outstanding_amount || details.rounded_total || details.grand_total
-    unallocatedPayments.value = (unallocated || []).map(pe => {
+    const filteredUnallocated = (unallocated || []).filter(pe => pe.mode_of_payment === 'Credit Note')
+    unallocatedPayments.value = filteredUnallocated.map(pe => {
       const alloc = Math.min(Number(pe.unallocated_amount), remaining)
       remaining -= alloc
       return { ...pe, amount_to_allocate: parseFloat(alloc.toFixed(2)) }
     })
     
-    unallocatedAmountTotal.value = (unallocated || []).reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
+    unallocatedAmountTotal.value = filteredUnallocated.reduce((acc, p) => acc + Number(p.unallocated_amount || 0), 0)
 
     if (details.is_return) {
       toggleCredit(true)
