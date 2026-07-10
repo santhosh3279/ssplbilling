@@ -73,6 +73,10 @@
                 <span class="text-[var(--color-text-muted)]">Default Printer</span>
                 <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.default_printer || '--' }}</span>
               </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[var(--color-text-muted)]">Company</span>
+                <span class="font-medium text-[var(--color-text)]">{{ rawSettings.user_defaults?.company || '--' }}</span>
+              </div>
             </div>
           </div>
 
