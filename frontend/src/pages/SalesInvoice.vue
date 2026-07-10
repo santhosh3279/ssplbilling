@@ -573,7 +573,7 @@
       :extra="[
         { key: 'F2', desc: 'Clear bill / refresh bill number' },
         { key: 'F3', desc: 'Focus sidebar bill list' },
-        { key: 'F5', desc: 'Print invoice' },
+        { key: 'F5 / P', desc: 'Print invoice' },
 
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save invoice' },
@@ -1437,6 +1437,7 @@ async function handleModify() {
 }
 
 function handlePrint() {
+  if (!isReadOnly.value) return
   if (!isSaved.value) {
     alert('Please save the invoice before printing.')
     return

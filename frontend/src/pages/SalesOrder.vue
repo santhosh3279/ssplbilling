@@ -531,7 +531,7 @@
       :extra="[
         { key: 'F2', desc: 'Clear order / refresh order number' },
         { key: 'F3', desc: 'Focus modify panel' },
-        { key: 'F5', desc: 'Print order' },
+        { key: 'F5 / P', desc: 'Print order' },
 
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save order' },
@@ -1241,6 +1241,7 @@ async function handleModify() {
 }
 
 function handlePrint() {
+  if (!isReadOnly.value) return
   if (!isSaved.value) {
     alert('Please save the invoice before printing.')
     return
