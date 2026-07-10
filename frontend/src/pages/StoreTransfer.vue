@@ -21,6 +21,8 @@
       :selected-sidebar-item-name="transferName"
       :show-bottom-left="false"
       :show-bottom-middle="false"
+      table-class="flex-1"
+      bottom-class="h-44 shrink-0"
       doctype="Stock Entry"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"

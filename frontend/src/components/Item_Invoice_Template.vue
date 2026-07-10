@@ -252,7 +252,7 @@
       </div>
 
       <!-- Items Table Area -->
-      <div class="flex flex-[7] flex-col overflow-hidden">
+      <div class="flex flex-col overflow-hidden" :class="tableClass">
         <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
           <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]">
             <thead>
@@ -317,7 +317,7 @@
       </div>
 
       <!-- Bottom Panel (Summary / Actions) -->
-      <div class="flex flex-[4] border-t border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden">
+      <div class="flex border-t border-[var(--color-border)] bg-[var(--color-bg)] overflow-hidden" :class="bottomClass">
         <!-- Insights / Left Column -->
         <div v-if="showBottomLeft" class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:360px;max-width:420px;">
           <slot name="bottom-left"></slot>
@@ -606,6 +606,8 @@ const props = defineProps({
 
   showBottomLeft: { type: Boolean, default: true },
   showBottomMiddle: { type: Boolean, default: true },
+  tableClass: { type: String, default: 'flex-[7]' },
+  bottomClass: { type: String, default: 'flex-[4]' },
 
   // Settings Panel Props
   priceList: { type: String, default: 'Standard Selling' },
