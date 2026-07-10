@@ -2089,6 +2089,12 @@ function onEditCodeInput(rowIdx) {
 }
 
 function onEditCodeKeydown(e, rowIdx) {
+  if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    openItemSearch((items.value[rowIdx]?.item_code || '').trim(), rowIdx)
+    return
+  }
+
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault(); quickSearchRef.value.handleQuickSearchKeydown(e); return
@@ -2603,7 +2609,8 @@ function handlePendingDiscKeydown(e) {
 function handleRowKeydown(e, idx) {
   const item = items.value[idx]
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-  if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
+  if (e.key === 'ArrowRight') { e.preventDefault(); openItemSearch(item.item_code, idx) }
+  else if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
   else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') {
