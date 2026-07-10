@@ -5,11 +5,14 @@ from erpnext.controllers.accounts_controller import get_taxes_and_charges as _er
 from india_compliance.gst_india.constants import STATE_NUMBERS
 
 @frappe.whitelist()
-def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=None, draft_only=False):
+def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=None, draft_only=False, company=None):
     """List Sales Invoices for the sidebar bill panel."""
     draft_only = frappe.parse_json(draft_only)
 
     filters = [["docstatus", "!=", 2]]
+    if company:
+        filters.append(["company", "=", company])
+
     if not query:
         filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
 
@@ -38,7 +41,7 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
         "Sales Invoice",
         filters=filters,
         or_filters=or_filters,
-        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "rounded_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop"],
+        fields=["name", "customer", "customer_name", "posting_date", "grand_total", "rounded_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop", "company"],
         limit=int(limit),
         order_by="name desc",
     )

@@ -803,7 +803,12 @@ function handleDocDateChange(days) {
 }
 
 function sidebarCacheParams() {
-  return { date: sidebarDate.value, series: sidebarSeries.value, draftOnly: draftOnly.value }
+  return {
+    date: sidebarDate.value,
+    series: sidebarSeries.value,
+    draftOnly: draftOnly.value,
+    company: localStorage.getItem('wb-company') || ''
+  }
 }
 
 async function fetchRecentInvoices(force = false) {
@@ -826,7 +831,8 @@ async function fetchRecentInvoices(force = false) {
       limit: 100,
       posting_date: sidebarDate.value,
       naming_series: sidebarSeries.value.join(','),
-      draft_only: draftOnly.value
+      draft_only: draftOnly.value,
+      company: localStorage.getItem('wb-company') || ''
     })
     recentInvoices.value = (invoices || []).filter(inv => inv.docstatus !== 2)
     if (!sidebarSearch.value) {
@@ -842,6 +848,10 @@ async function fetchRecentInvoices(force = false) {
 // Returns true when handled, so onBillPanelUpdate skips the refetch.
 function applySidebarPanelEvent(data) {
   if (sidebarSearch.value) return false // search results — let the refetch handle it
+  const currentCompany = localStorage.getItem('wb-company') || ''
+  if (currentCompany && data?.row?.company && data.row.company !== currentCompany) {
+    return false
+  }
   recentInvoices.value = applyPanelEvent(recentInvoices.value, data, {
     date: sidebarDate.value,
     draftOnly: draftOnly.value

@@ -25,6 +25,7 @@ function sameParams(a, b) {
   return (
     a.date === b.date &&
     Boolean(a.draftOnly) === Boolean(b.draftOnly) &&
+    a.company === b.company &&
     JSON.stringify([...(a.series || [])].sort()) === JSON.stringify([...(b.series || [])].sort())
   )
 }
@@ -45,7 +46,7 @@ export function loadCachedPanel(doctype, params) {
 export function saveCachedPanel(doctype, params, rows) {
   try {
     localStorage.setItem(cacheKey(doctype), JSON.stringify({
-      params: { date: params.date, series: params.series || [], draftOnly: Boolean(params.draftOnly) },
+      params: { date: params.date, series: params.series || [], draftOnly: Boolean(params.draftOnly), company: params.company },
       rows: (rows || []).slice(0, MAX_ROWS),
       ts: Date.now(),
     }))
@@ -97,8 +98,9 @@ export function applyEventToCache(payload) {
   const cached = readCache(doctype)
   if (!cached || !cached.params) return
 
-  const { series = [] } = cached.params
+  const { series = [], company } = cached.params
   if (series.length && payload.naming_series && !series.includes(payload.naming_series)) return
+  if (company && payload.row?.company && payload.row.company !== company) return
 
   const rows = applyPanelEvent(cached.rows, payload, {
     date: cached.params.date,

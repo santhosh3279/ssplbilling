@@ -17,6 +17,7 @@ BILL_PANEL_DOCTYPES = {
 # so one list serves Sales Invoice, Purchase Invoice, orders and quotations.
 BILL_ROW_FIELDS = [
 	"name",
+	"company",
 	"customer",
 	"customer_name",
 	"custom_customer_name",
