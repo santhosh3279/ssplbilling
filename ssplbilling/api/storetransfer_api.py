@@ -63,12 +63,15 @@ def submit_store_transfer(name):
     return {"status": "Submitted"}
 
 @frappe.whitelist()
-def get_metadata():
-    """Fetch metadata for Store Transfer."""
-    return {
-        "warehouses": frappe.get_all("Warehouse", filters={"is_group": 0}, fields=["name"]),
-        "naming_series": get_naming_series()
-    }
+def get_metadata(company=None):
+	"""Fetch metadata for Store Transfer."""
+	filters = {"is_group": 0}
+	if company:
+		filters["company"] = company
+	return {
+		"warehouses": frappe.get_all("Warehouse", filters=filters, fields=["name"]),
+		"naming_series": get_naming_series()
+	}
 
 def get_naming_series():
     """Get naming series for Stock Entry."""
