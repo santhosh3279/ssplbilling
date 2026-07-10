@@ -458,16 +458,29 @@ function exitEditMode() {
   editingField.value = null
 }
 
-function onEditCodeKeydown(e, idx) {
+async function getItemDetailsFromServer(code) {
+  try {
+    const res = await frappePost('ssplbilling.api.storetransfer_api.get_item_details', {
+      item_code: code,
+      warehouse: fromWarehouse.value
+    })
+    return res
+  } catch (err) {
+    console.error(err)
+    return null
+  }
+}
+
+async function onEditCodeKeydown(e, idx) {
   if (e.key === 'Enter') {
     e.preventDefault()
     const code = (items.value[idx]?.item_code || '').trim()
-    const match = lookupItemInCache(code)
-    if (match) {
-      items.value[idx].item_code = match.item_code
-      items.value[idx].item_name = match.item_name
-      items.value[idx].uom = match.uom
-      items.value[idx].rate = match.valuation_rate || match.rate || 0
+    const res = await getItemDetailsFromServer(code)
+    if (res && res.found) {
+      items.value[idx].item_code = res.item_code
+      items.value[idx].item_name = res.item_name
+      items.value[idx].uom = res.uom
+      items.value[idx].rate = res.rate || 0
       focusEditField('qty', idx)
     } else {
       focusEditField('qty', idx)
@@ -531,25 +544,14 @@ async function handleBarcodeEnter() {
   if (!barcodeQuery.value) return
   
   const code = barcodeQuery.value.trim()
-  const match = lookupItemInCache(code)
+  const res = await getItemDetailsFromServer(code)
   
-  if (match) {
-    setPendingItem(match)
+  if (res && res.found) {
+    setPendingItem(res)
     barcodeQuery.value = ''
     quickSearchResults.value = []
   } else {
-    const res = await frappePost('ssplbilling.api.storetransfer_api.get_item_details', { 
-      item_code: barcodeQuery.value,
-      warehouse: fromWarehouse.value
-    })
-    
-    if (res.found) {
-      setPendingItem(res)
-      barcodeQuery.value = ''
-      quickSearchResults.value = []
-    } else {
-      openItemSearch(barcodeQuery.value)
-    }
+    openItemSearch(barcodeQuery.value)
   }
 }
 
@@ -560,8 +562,13 @@ function onQuickSearchRefresh() {
   }
 }
 
-function onQuickSearchSelect(item) {
-  setPendingItem(item)
+async function onQuickSearchSelect(item) {
+  const res = await getItemDetailsFromServer(item.item_code)
+  if (res && res.found) {
+    setPendingItem(res)
+  } else {
+    setPendingItem(item)
+  }
   barcodeQuery.value = ''
   quickSearchResults.value = []
 }
@@ -571,8 +578,13 @@ function openItemSearch(query) {
   showItemSearch.value = true
 }
 
-function handleItemSelect(item) {
-  setPendingItem(item)
+async function handleItemSelect(item) {
+  const res = await getItemDetailsFromServer(item.item_code)
+  if (res && res.found) {
+    setPendingItem(res)
+  } else {
+    setPendingItem(item)
+  }
   barcodeQuery.value = ''
   quickSearchResults.value = []
   showItemSearch.value = false
@@ -584,7 +596,7 @@ function setPendingItem(details) {
     item_name: details.item_name,
     qty: 0,
     uom: details.uom,
-    rate: details.valuation_rate || details.rate || 0
+    rate: details.rate || details.valuation_rate || 0
   }
   nextTick(() => {
     pendingQtyInput.value?.focus()
