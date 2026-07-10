@@ -219,7 +219,7 @@
                   </td>
                   <!-- Remove -->
                   <td class="px-2 py-1.5 text-center">
-                    <button @click.stop="itemsToPrint.splice(idx, 1); selectedRow = -1; focusNewCode()"
+                    <button @click.stop="removeItem(idx)"
                       class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/30 hover:text-[var(--color-danger)] transition text-2xl">&times;</button>
                   </td>
                 </tr>
@@ -663,6 +663,17 @@ function moveToLastRow() {
   if (last >= 0) { selectedRow.value = last; nextTick(() => rowRefs[last]?.focus()) }
 }
 
+function removeItem(idx) {
+  itemsToPrint.value.splice(idx, 1)
+  if (itemsToPrint.value.length === 0) {
+    selectedRow.value = -1
+    focusNewCode()
+  } else {
+    const nextIdx = Math.min(idx, itemsToPrint.value.length - 1)
+    selectRow(nextIdx)
+  }
+}
+
 // ── Quick Search handlers ───────────────────────────────────────────────────
 function onQuickSearchSelect(item) {
   if (editQuickSearchRowIdx.value !== null) {
@@ -775,9 +786,7 @@ function onRowKeydown(e, idx) {
   else if (e.key === 'Enter')     { e.preventDefault(); focusField('code', idx) }
   else if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault()
-    itemsToPrint.value.splice(idx, 1)
-    selectedRow.value = -1
-    focusNewCode()
+    removeItem(idx)
   }
 }
 
