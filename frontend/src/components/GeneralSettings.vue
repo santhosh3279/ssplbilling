@@ -489,7 +489,9 @@ function showDebug(mode) {
     const vars = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key.startsWith('wb-') || key.startsWith('wb_') || key.includes('cache')) {
+      const isTargetKey = key.startsWith('wb-') || key.startsWith('wb_') || key.includes('cache')
+      const isLedgerCache = key.includes('ledger') || key.includes('partylink')
+      if (isTargetKey && !isLedgerCache) {
         vars.push({ key, value: localStorage.getItem(key) })
       }
     }
