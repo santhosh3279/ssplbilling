@@ -40,13 +40,13 @@
             </button>
 
             <button
-              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/50 hover:border-[var(--color-border)] hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
               @click="openModal('quotation')"
             >
-              <span class="text-xl">📄</span>
+              <span class="text-xl">📊</span>
               <div class="text-left">
                 <div class="text-lg font-semibold">Quotation Register</div>
-                <div class="text-base text-[var(--color-text-muted)]">All Quotations</div>
+                <div class="text-base text-[var(--color-text-muted)]">All Quotations (Draft & Submitted)</div>
               </div>
             </button>
 
@@ -396,11 +396,11 @@ const modalConfig = computed(() => {
       title: 'Quotation Tax Register',
       subtitle: 'GST-wise summary of quotations (Draft & Submitted)',
       seriesLabel: 'Quotation Series',
-      btnClass: 'bg-[var(--color-highlight)] hover:opacity-90',
+      btnClass: 'bg-[var(--color-info)] hover:bg-[var(--color-info)]',
       sheetName: 'Quotation Tax Register',
       filePrefix: 'QuotationTaxRegister',
       noDataMsg: 'No quotations found for the selected criteria.',
-      docLabel: 'Bill No.',
+      docLabel: 'Quotation No',
     }
   }
   if (reportType.value === 'hsn') {
