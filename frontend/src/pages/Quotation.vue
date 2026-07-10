@@ -548,10 +548,11 @@
       :extra="[
         { key: 'F2', desc: 'Clear quotation / refresh number' },
         { key: 'F3', desc: 'Focus modify panel' },
-        { key: 'F5', desc: 'Print quotation' },
+        { key: 'F5 / P', desc: 'Print quotation' },
 
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save quotation' },
+        { key: 'M', desc: 'Modify quotation (when quotation is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
       ]"
@@ -1322,6 +1323,7 @@ async function handleModify() {
 }
 
 function handlePrint() {
+  if (!isReadOnly.value) return
   if (!isSaved.value) {
     alert('Please save the quotation before printing.')
     return
