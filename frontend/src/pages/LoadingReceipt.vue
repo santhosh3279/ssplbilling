@@ -367,7 +367,7 @@
             >Clear</button>
             <button
               v-if="docName"
-              @click="showPrint = true"
+              @click="showPrint = true; pendingClearAfterPrint = false"
               class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2.5 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition flex items-center gap-2"
             >🖨 Print</button>
             <button
@@ -388,7 +388,7 @@
     v-if="showPrint && docName"
     :invoice-name="docName"
     doctype="Loading Receipt"
-    @close="showPrint = false"
+    @close="closePrintModal"
   />
 
   <CustomerSearchModal
@@ -462,6 +462,7 @@ const selectedRow = ref(-1)
 const showPrint = ref(false)
 const showCustomerModal = ref(false)
 const showItemManager = ref(false)
+const pendingClearAfterPrint = ref(false)
 
 // customer search
 const customerQuery = ref('')
@@ -692,6 +693,7 @@ async function saveReceipt() {
     // sync sidebar to the saved receipt's date
     sidebarDate.value = form.value.date
     await Promise.all([fetchSidebarReceipts(), fetchTodayTotal()])
+    pendingClearAfterPrint.value = true
     showPrint.value = true
   } catch (e) {
     alert(e.message || 'Save failed')
@@ -707,6 +709,7 @@ function clearForm() {
   rows.value = []
   docName.value = null
   selectedRow.value = -1
+  pendingClearAfterPrint.value = false
   nextTick(focusBillNo)
 }
 
@@ -725,9 +728,23 @@ async function loadReceipt(name) {
     customerQuery.value = d.customer_name || d.customer
     rows.value = d.loading_items.map(r => ({ ...r }))
     selectedRow.value = -1
+    pendingClearAfterPrint.value = false
     nextTick(focusBillNo)
   } catch (e) {
     alert(e.message || 'Failed to load receipt')
+  }
+}
+
+function closePrintModal() {
+  showPrint.value = false
+  if (pendingClearAfterPrint.value) {
+    pendingClearAfterPrint.value = false
+    form.value = { date: today, bill_no: '', customer: '', customer_name: '', party_type: 'Customer', time: '' }
+    customerQuery.value = ''
+    rows.value = []
+    docName.value = null
+    selectedRow.value = -1
+    nextTick(focusBillNo)
   }
 }
 
